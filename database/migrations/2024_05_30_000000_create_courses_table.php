@@ -6,19 +6,19 @@ use Illuminate\Support\Facades\Schema;
 
 class CreateCoursesTable extends Migration
 {
-    public function up(): void
+    public function up()
     {
         Schema::create('courses', function (Blueprint $table) {
             $table->id();
-            $table->string('course_code')->unique();       // e.g. "TOU001"
-            $table->string('course_name');                 // e.g. "Tourism"
-            $table->string('abbreviation');                // e.g. "TOU"
-            $table->string('course_type');                 // e.g. "RTB Trade" or "REB Combination"
+            $table->string('course_name')->unique();
+            $table->string('abbreviation', 10);
+            $table->string('course_type', 50);
+            $table->string('course_code')->nullable(); // allow null initially
             $table->timestamps();
         });
     }
 
-    public function down(): void
+    public function down()
     {
         Schema::dropIfExists('courses');
     }

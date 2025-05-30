@@ -11,20 +11,32 @@ class AdminAuthController extends Controller
         return view('admin.login');
     }
 
-    public function login(Request $request)
-    {
-        $credentials = $request->only('email', 'password');
+   public function login(Request $request)
+{
+    $request->validate([
+        'email' => 'required|email',
+        'password' => 'required',
+    ]);
 
-        if (Auth::guard('admin')->attempt($credentials)) {
-            return redirect()->intended('/admin/dashboard');
-        }
+    $credentials = $request->only('email', 'password');
 
-        return back()->with('error', 'Invalid credentials');
+    if (Auth::guard('admin')->attempt($credentials)) {
+        $request->session()->regenerate();  // prevent session fixation
+        return redirect()->intended('/admin/dashboard');
     }
 
-    public function logout()
-    {
-        Auth::guard('admin')->logout();
-        return redirect()->route('admin.login.form');
-    }
+    return back()->withErrors(['email' => 'Invalid credentials'])->withInput();
+}
+
+
+    public function logout(Request $request)
+{
+    Auth::guard('admin')->logout();
+
+    $request->session()->invalidate();
+    $request->session()->regenerateToken();
+
+    return redirect()->route('admin.login.form');
+}
+
 }
