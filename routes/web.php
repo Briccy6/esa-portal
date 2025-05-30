@@ -3,6 +3,8 @@
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AdminLoginController;
+use App\Http\Controllers\AdminAuthController;
+
 Route::get('/', function () {
     return view('welcome');
 });
@@ -17,22 +19,18 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-// routes/web.php
 Route::get('/courses/search', [App\Http\Controllers\CourseController::class, 'search'])->name('courses.search');
-// admin routes
-Route::prefix('admin')->name('admin.')->group(function () {
-    Route::get('/login', [AdminLoginController::class, 'showLoginForm'])->name('login');
-    Route::post('/login', [AdminLoginController::class, 'login'])->name('login.submit');
-    Route::post('/logout', [AdminLoginController::class, 'logout'])->name('logout');
 
-    Route::middleware('AdminAuth')->group(function () {
-        Route::get('/dashboard', function () {
-            return view('admin.dashboard');
-        })->name('dashboard');
-    });
+// Admin routes
+Route::get('/admin/login', [AdminAuthController::class, 'showLoginForm'])->name('admin.login.form');
+Route::post('/admin/login', [AdminAuthController::class, 'login'])->name('admin.login');
+Route::post('/admin/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
+
+// Example protected route
+Route::middleware(['auth:admin'])->group(function () {
+    Route::get('/admin/dashboard', function () {
+        return 'Welcome to admin dashboard';
+    })->name('admin.dashboard');
 });
-
-
-
 
 require __DIR__.'/auth.php';

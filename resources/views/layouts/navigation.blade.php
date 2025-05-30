@@ -1,3 +1,14 @@
+<div class="bg-gray-100 text-gray-700 text-sm px-4 py-2 flex justify-between items-center w-full overflow-x-auto whitespace-nowrap">
+    <div>
+        📞 <span class="font-medium">Support:</span>
+        <a href="tel:+250788123456" class="text-blue-600 hover:underline">+250 788 123 456</a> |
+        ✉️ <span class="font-medium">Email:</span>
+        <a href="mailto:support@example.com" class="text-blue-600 hover:underline">support@example.com</a>
+    </div>
+    <div>
+        🕒 <span id="currentTime" class="font-medium"></span>
+    </div>
+</div>
 <nav x-data="{ open: false }" class="bg-white border-b border-gray-100">
     <!-- Primary Navigation Menu -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -19,6 +30,22 @@
                     <!-- Added Profile link -->
                     <x-nav-link :href="route('profile.edit')" :active="request()->routeIs('profile.edit')">
                         {{ __('Profile') }}
+                    </x-nav-link>
+                    <!-- Added Profile link -->
+                    <x-nav-link :href="route('profile.edit')" :active="request()->routeIs('profile.edit')">
+                        {{ __('Annoucements') }}
+                    </x-nav-link>
+                    <!-- Added Profile link -->
+                    <x-nav-link :href="route('profile.edit')" :active="request()->routeIs('profile.edit')">
+                        {{ __('Online Test') }}
+                    </x-nav-link>
+                    <!-- Added Profile link -->
+                    <x-nav-link :href="route('profile.edit')" :active="request()->routeIs('profile.edit')">
+                        {{ __('Message') }}
+                    </x-nav-link>
+                    <!-- Added Profile link -->
+                    <x-nav-link :href="route('profile.edit')" :active="request()->routeIs('profile.edit')">
+                        {{ __('Ask AI') }}
                     </x-nav-link>
                 </div>
             </div>
@@ -46,6 +73,16 @@
                         <x-dropdown-link :href="route('profile.edit')">
                             {{ __('Profile') }}
                         </x-dropdown-link>
+                        <x-dropdown-link :href="route('profile.edit')">
+                            {{ __('Transcripts') }}
+                        </x-dropdown-link>
+                        <x-dropdown-link :href="route('profile.edit')">
+                            {{ __('Test Results') }}
+                        </x-dropdown-link>
+                        <x-dropdown-link :href="route('profile.edit')">
+                            {{ __('Ask For Special Trainings') }}
+                        </x-dropdown-link>
+
 
                         <!-- Authentication -->
                         <form method="POST" action="{{ route('logout') }}">
@@ -113,3 +150,18 @@
         </div>
     </div>
 </nav>
+<script>
+    function updateTime() {
+        const timeElement = document.getElementById("currentTime");
+        const now = new Date();
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        const formattedDate = now.toLocaleDateString('en-US', options);
+        const formattedTime = now.toLocaleTimeString('en-US', { hour12: false });
+
+        timeElement.textContent = `${formattedDate}, ${formattedTime}`;
+    }
+
+    // Update time immediately and then every second
+    updateTime();
+    setInterval(updateTime, 1000);
+</script>
