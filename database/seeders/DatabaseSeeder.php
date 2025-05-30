@@ -23,6 +23,11 @@ class DatabaseSeeder extends Seeder
         AcademicYearsSeeder::class,
     ]);
 
+        $this->call([
+            AdminSeeder::class,
+        ]);
+
+       
     }
 
     }

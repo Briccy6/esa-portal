@@ -58,8 +58,9 @@ class RegisteredUserController extends Controller
             ->count() + 1;
 
         $studentNumber = str_pad($studentCount, 3, '0', STR_PAD_LEFT);
+        $regNumber = 'ESA' . strtoupper($course->abbreviation) . $studentNumber . $academicYear->year;
 
-        $regNumber = 'ESA' . strtoupper($course->abbreviation) . $studentNumber . $academicYear->year_range;
+
 
         // Store uploaded files
         $passportPhotoPath = $request->file('passport_photo')->store('passport_photos', 'public');

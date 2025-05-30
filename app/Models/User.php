@@ -2,62 +2,53 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
-   protected $fillable = [
-    'first_name',
-    'last_name',
-    'birthday',
-    'gender',
-    'phone',
-    'email',
-    'password',
-    'course_id',
-    'reg_number',
-    'id_document',
-    'result_slip',
-    'passport_photo',
-];
+    protected $fillable = [
+        'first_name',
+        'last_name',
+        'birthday',
+        'gender',
+        'phone',
+        'email',
+        'email_verified_at',
+        'password',
+        'remember_token',
+        'id_document',
+        'result_slip',
+        'passport_photo',
+        'course_id',
+        'academic_year_id',
+        'reg_number',
+    ];
 
-
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
-// app/Models/User.php
-public function courses()
-{
-    return $this->belongsToMany(Course::class);
-}
+
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'birthday' => 'date',
+    ];
 
     /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
+     * Relationships
      */
-    protected function casts(): array
+
+    public function course()
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        return $this->belongsTo(Course::class);
+    }
+
+    public function academicYear()
+    {
+        return $this->belongsTo(AcademicYear::class);
     }
 }

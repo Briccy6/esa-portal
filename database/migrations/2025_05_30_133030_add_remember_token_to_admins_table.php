@@ -11,14 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // database/migrations/xxxx_xx_xx_create_courses_table.php
-Schema::create('courses', function (Blueprint $table) {
-    $table->id();
-    $table->string('name');
-    $table->text('description')->nullable();
-    $table->timestamps();
-});
-
+        Schema::table('admins', function (Blueprint $table) {
+             $table->rememberToken()->nullable();
+        });
     }
 
     /**
@@ -26,6 +21,8 @@ Schema::create('courses', function (Blueprint $table) {
      */
     public function down(): void
     {
-        Schema::dropIfExists('courses');
+          Schema::table('admins', function (Blueprint $table) {
+        $table->dropColumn('remember_token');
+    });
     }
 };
