@@ -39,9 +39,9 @@ class RegisteredUserController extends Controller
             'course' => ['required', 'exists:courses,id'],
             'study_mode' => ['required', 'in:online,day,night'],
             'location' => ['required', 'in:kigali,musanze'],
-            'passport_photo' => ['required', 'image', 'mimes:jpg,jpeg,png', 'max:1024'],  // max size 100 KB
-            'id_document' => ['required', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:2048'],  // max size 2 MB
-            'result_slip' => ['required', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:2048'], // max size 2 MB
+            'passport_photo' => ['required', 'image', 'mimes:jpg,jpeg,png', 'max:1024'],  // max size 1MB
+            'id_document' => ['required', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:2048'],  // max size 2MB
+            'result_slip' => ['required', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:2048'], // max size 2MB
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
@@ -60,11 +60,9 @@ class RegisteredUserController extends Controller
         $studentNumber = str_pad($studentCount, 3, '0', STR_PAD_LEFT);
         $regNumber = 'ESA' . strtoupper($course->abbreviation) . $studentNumber . $academicYear->year;
 
-
-
         // Store uploaded files
         $passportPhotoPath = $request->file('passport_photo')->store('passport_photos', 'public');
-        $idUploadPath = $request->file('id_document')->store('id_document', 'public');
+        $idUploadPath = $request->file('id_document')->store('id_documents', 'public');
         $resultSlipPath = $request->file('result_slip')->store('result_slips', 'public');
 
         $user = User::create([

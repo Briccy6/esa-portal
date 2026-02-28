@@ -1,4 +1,5 @@
 import './bootstrap';
+import './reactbits';
 
 import Alpine from 'alpinejs';
 

@@ -10,7 +10,6 @@ class AcademicYearController extends Controller
 {
     public function index()
     {
-        // Use starting_date, not start_date
         $academicYears = AcademicYear::orderByDesc('starting_date')->get();
         return view('admin.academic_year.index', compact('academicYears'));
     }
@@ -22,62 +21,43 @@ class AcademicYearController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'year' => 'required|string|unique:academic_years,year',
-            'starting_date' => 'required|date|before_or_equal:expiry_date',
-            'expiry_date' => 'required|date|after_or_equal:starting_date',
-            'is_ongoing' => 'required|boolean',
-        ]);
-
-        // Prevent more than one active academic year
-        if ($validated['is_ongoing']) {
-            $existingActive = AcademicYear::where('is_ongoing', true)->first();
-            if ($existingActive) {
-                return back()
-                    ->withErrors(['is_ongoing' => 'You cannot have 2 running academic years at once.'])
-                    ->withInput();
-            }
-        }
+       $validated = $request->validate([
+    'year' => 'required|string|unique:academic_years,year',
+    'starting_date' => 'required|date|before_or_equal:expiry_date',
+    'expiry_date' => 'required|date|after_or_equal:starting_date',
+    'is_ongoing' => 'required|boolean',
+]);
 
         AcademicYear::create($validated);
 
         return redirect()->route('admin.academic_year.index')->with('success', 'Academic year created successfully.');
     }
 
-    public function edit(AcademicYear $academic_year)
+    public function edit(AcademicYear $academicYear)
     {
-        return view('admin.academic_year.edit', compact('academic_year'));
+        return view('admin.academic_year.edit', compact('academicYear'));
     }
 
-    public function update(Request $request, AcademicYear $academic_year)
+    public function update(Request $request, AcademicYear $academicYear)
     {
         $validated = $request->validate([
-            'year' => 'required|string|unique:academic_years,year,' . $academic_year->id,
-            'starting_date' => 'required|date|before_or_equal:expiry_date',
-            'expiry_date' => 'required|date|after_or_equal:starting_date',
+            'starting_date' => 'required|date|before_or_equal:end_date',
+            'end_date' => 'required|date|after_or_equal:start_date',
             'is_ongoing' => 'nullable|boolean',
         ]);
 
-        // Prevent more than one active academic year when updating
-        if (!empty($validated['is_ongoing']) && $validated['is_ongoing']) {
-            $existingActive = AcademicYear::where('is_ongoing', true)
-                ->where('id', '!=', $academic_year->id)
-                ->first();
-            if ($existingActive) {
-                return back()
-                    ->withErrors(['is_ongoing' => 'You cannot have 2 running academic years at once.'])
-                    ->withInput();
-            }
-        }
-
-        $academic_year->update($validated);
+        $academicYear->update($validated);
 
         return redirect()->route('admin.academic_year.index')->with('success', 'Academic year updated successfully.');
     }
 
-    public function destroy(AcademicYear $academic_year)
+    public function destroy(AcademicYear $academicYear)
     {
-        $academic_year->delete();
+        $academicYear->delete();
         return redirect()->route('admin.academic_year.index')->with('success', 'Academic year deleted.');
+    }
+    public function lock(){
+        @academicyear->lcok;
+        return redirect90->route('admin.academic_year.lock')->with('success', 'you not allowed to access these file');
     }
 }

@@ -1,7 +1,6 @@
 <?php
 
 return [
-
     /*
     |--------------------------------------------------------------------------
     | Application Name
@@ -101,7 +100,7 @@ return [
         Illuminate\Translation\TranslationServiceProvider::class,
         Illuminate\Validation\ValidationServiceProvider::class,
         Illuminate\View\ViewServiceProvider::class,
-
+        SimpleSoftwareIO\QrCode\QrCodeServiceProvider::class,
         /*
          * Package Service Providers...
          */
@@ -110,7 +109,6 @@ return [
          * Application Service Providers...
          */
         App\Providers\AppServiceProvider::class,
-       
     ],
 
     /*
@@ -154,7 +152,10 @@ return [
         'URL' => Illuminate\Support\Facades\URL::class,
         'Validator' => Illuminate\Support\Facades\Validator::class,
         'View' => Illuminate\Support\Facades\View::class,
-
+        'QrCode' => SimpleSoftwareIO\QrCode\Facades\QrCode::class,
     ],
 
+    'school_email' => env('SCHOOL_EMAIL', 'excellentservantacademy@gmail.com'),
+    'school_contact' => env('SCHOOL_CONTACT', '0788525247'),
+    'school_address' => env('SCHOOL_ADDRESS', 'Kigali, NdamaGE House, 2nd Floor'),
 ];

@@ -1,7 +1,6 @@
 <?php
 
 return [
-
     /*
     |--------------------------------------------------------------------------
     | Authentication Defaults
@@ -36,6 +35,20 @@ return [
         'driver' => 'session',
         'provider' => 'admins',
     ],
+
+      'staff' => [
+    'driver' => 'session',
+    'provider' => 'staffs',
+],
+'student' => [
+        'driver' => 'session',
+        'provider' => 'students',
+    ],
+    'teacher' => [
+        'driver' => 'session',
+        'provider' => 'teachers',
+    ],
+   
 ],
 
     /*
@@ -57,6 +70,49 @@ return [
         'driver' => 'eloquent',
         'model' => App\Models\Admin::class, // your Admin model
     ],
+   
+'staffs' => [
+        'driver' => 'eloquent',
+        'model' => App\Models\Staff::class, // your Staff model
+    ],
+       'students' => [
+        'driver' => 'eloquent',
+        'model' => App\Models\Student::class,
+    ],
+    'teachers' => [
+        'driver' => 'eloquent',
+        'model' => App\Models\Teacher::class,
+    ],
+     
+    
+],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Password Reset Brokers
+    |--------------------------------------------------------------------------
+    |
+    | Define password reset brokers for your application.
+    | Each broker has its own user provider.
+    |
+    */
+
+    'brokers' => [
+        'users' => [
+            'provider' => 'users',
+        ],
+        'admins' => [
+            'provider' => 'admins',
+        ],
+        'staffs' => [
+            'provider' => 'staffs',
+        ],
+        'students' => [
+            'provider' => 'students',
+            'table' => 'password_resets',
+            'expire' => 60,
+            'throttle' => 60,
+        ],
 ],
 
     /*
@@ -78,7 +134,13 @@ return [
 
         'admins' => [
             'provider' => 'admins',
-            'table' => 'admin_password_reset_tokens', // create this table or reuse password_reset_tokens
+            'table' => 'admin_password_reset_tokens',
+            'expire' => 60,
+            'throttle' => 60,
+        ],
+        'students' => [
+            'provider' => 'students',
+            'table' => 'password_resets',
             'expire' => 60,
             'throttle' => 60,
         ],

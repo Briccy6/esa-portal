@@ -26,6 +26,8 @@ class User extends Authenticatable
         'course_id',
         'academic_year_id',
         'reg_number',
+        'study_mode',
+        'location'
     ];
 
     protected $hidden = [
@@ -37,10 +39,6 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'birthday' => 'date',
     ];
-
-    /**
-     * Relationships
-     */
 
     public function course()
     {

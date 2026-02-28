@@ -1,49 +1,665 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Cache;
+// use Illuminate\Support\Facades\Route;
+use App\Models\Student;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AdminAuthController;
+use App\Http\Controllers\PaymentController; // corrected import (singular)
+use App\Http\Controllers\MarksController; // added for AJAX route
+use App\Http\Controllers\BranchController;
 use App\Http\Controllers\Admin\AcademicYearController; 
 use App\Http\Controllers\Admin\ClassController;
-use App\Http\Controllers\CourseController;// Adjust path as per your structure
+use App\Http\Controllers\CourseController;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\AdminLoginController;
+use App\Http\Controllers\StaffController;
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\TeacherController;
+use App\Http\Controllers\TariffController;
+use App\Http\Controllers\StaffAuthController;
+use App\Http\Controllers\LessonController;
+use App\Http\Controllers\LessonDetailsController;
+use App\Http\Controllers\TermController;
+use App\Http\Controllers\TimetableController;
+use App\Http\Controllers\SchoolFeeController;
+use App\Http\Controllers\PaymentTypeController;
+use App\Http\Controllers\StudentController;
+use App\Http\Controllers\FeePaymentController;
+use App\Http\Controllers\Api\EmailController;
+use App\Http\Controllers\TeacherDailyController;
+use App\Http\Controllers\ExamController;
+use App\Http\Controllers\GradeController;
+use App\Http\Controllers\YouTubeController;
+use App\Models\Announcement;
+use App\Http\Controllers\ContactController;
+use App\Http\Controllers\Teacher\ResourceController;
+use App\Http\Controllers\ExpenseController;
+use App\Http\Controllers\AdminProfileController;
+use App\Http\Controllers\AttendanceController;
 
-Route::get('/', function () {
-    return view('welcome');
+/*
+|--------------------------------------------------------------------------
+| Routes (updated)
+|--------------------------------------------------------------------------
+|
+| This routes file ensures:
+| - staff.* route names are available (e.g. staff.students.edit)
+| - the legacy/name-used-in-views route students.StudentCards is defined
+|   (some blade templates reference 'students.StudentCards' without the
+|    staff. prefix).
+|
+| After replacing this file run:
+|   composer dump-autoload
+|   php artisan route:clear
+|   php artisan cache:clear
+|   php artisan config:clear
+|
+*/
+
+Route::prefix('student')->name('student.')->middleware(['auth:student'])->group(function() {
+    Route::get('/resources', [\App\Http\Controllers\Student\ResourceViewController::class, 'index'])->name('resources.index');
+    Route::get('/resources/{resource}', [\App\Http\Controllers\Student\ResourceViewController::class, 'show'])->name('resources.show');
 });
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::prefix('timetable')->name('timetable.')->group(function () {
+    Route::get('/', [TimetableController::class, 'index'])->name('index');
+    Route::get('/courses-by-branch', [TimetableController::class, 'getCoursesByBranch'])->name('courses.by-branch');
+    Route::get('/export/pdf', [TimetableController::class, 'exportPdfByFilter'])->name('export.pdf');
+    Route::get('/print', [TimetableController::class, 'index'])->defaults('print', true)->name('print');
+    Route::get('/session/{session}/details', [TimetableController::class, 'sessionDetails'])->name('session.details');
+    Route::get('/{timetable}', [TimetableController::class, 'show'])->name('show');
+    Route::get('teacher/{teacherId}', [TimetableController::class, 'getByTeacher'])->name('byTeacher');
+    Route::get('course/{courseId}', [TimetableController::class, 'getByCourse'])->name('byCourse');
+    Route::get('day/{day}', [TimetableController::class, 'getByDay'])->name('byDay');
+});
 
+Route::get('/student/invoices', [\App\Http\Controllers\StudentController::class, 'invoices'])
+    ->middleware('auth:student')
+    ->name('student.invoices');
+
+Route::get('/student/exams', [\App\Http\Controllers\StudentController::class, 'studentExams'])
+    ->middleware('auth:student')
+    ->name('student.exams');
+
+Route::get('/timetables/create', [TimetableController::class, 'create'])->name('timetables.create');
+Route::post('/timetables', [TimetableController::class, 'store'])->name('timetable.store');
+
+Route::get('/student/courses', [\App\Http\Controllers\StudentController::class, 'courses'])
+    ->middleware('auth:student')
+    ->name('student.courses');
+
+Route::get('/student/grades', [\App\Http\Controllers\StudentController::class, 'grades'])
+    ->middleware('auth:student')
+    ->name('student.grades');
+
+Route::middleware('auth:student')->get('/student/exams/{exam}/take', [\App\Http\Controllers\ExamController::class, 'take'])
+    ->name('student.exams.take');
+
+Route::middleware('auth:student')->get('/student/exams/{exam}/marks', [\App\Http\Controllers\StudentController::class, 'studentExams'])
+    ->name('student.exams.marks');
+
+Route::get('/', function () {
+    $systemName = Cache::get('esa_system_name', 'ESA-Parnel');
+    $systemLogo = Cache::get('esa_system_logo');
+    $publicAnnouncements = Announcement::where('audience', 'public')->latest()->take(10)->get();
+
+    return view('welcome', compact('systemName', 'systemLogo', 'publicAnnouncements'));
+})->name('welcome');
+
+Route::get('/welcome', function () {
+    $systemName = Cache::get('esa_system_name', 'ESA-Parnel');
+    $systemLogo = Cache::get('esa_system_logo');
+    $publicAnnouncements = \App\Models\Announcement::where('audience', 'public')->latest()->take(10)->get();
+    return view('welcome', compact('systemName', 'systemLogo', 'publicAnnouncements'));
+})->name('welcome');
+
+// Course AJAX
+Route::get('/branches-by-course', [CourseController::class, 'getBranchesByCourse']);
+// Marks AJAX endpoint
+Route::get('/marks/ajax-students', [\App\Http\Controllers\MarksController::class, 'ajaxStudents']);
+
+// Registration & Login
+Route::post('/register', [RegisteredUserController::class, 'register'])->name('register');
+Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
+Route::post('/login', [LoginController::class, 'login']);
+Route::get('/courses/search', [CourseController::class, 'search'])->name('courses.search');
+
+// API routes
+Route::prefix('api')->group(function () {
+    Route::get('/academic-years', [StudentController::class, 'getAcademicYears'])->name('api.academic.years');
+    Route::get('/academic-years/{id}/terms', [TermController::class, 'getTermsByAcademicYear'])->name('api.terms.by.year');
+    Route::get('/academic-years/{id}/courses', [StudentController::class, 'getCoursesByAcademicYear'])->name('api.academic_year.courses');
+    Route::get('/branches', [StudentController::class, 'getBranchesByAcademicYear'])->name('api.branches.by.academicYear');
+    Route::get('/branches-by-year', [StudentController::class, 'getBranchesByAcademicYear'])->name('api.branches.by.year');
+    Route::get('/branches-by-academic-year', [StudentController::class, 'getBranchesByAcademicYear'])->name('students.getBranchesByAcademicYear');
+    Route::get('/courses', [StudentController::class, 'getCoursesByBranchAndYear'])->name('api.courses.by.branch.and.year');
+    Route::get('/courses-by-branch-year', [StudentController::class, 'getCoursesByBranchAndYear'])->name('api.courses.by.branch.year');
+    Route::get('/courses-by-branch-and-year', [StudentController::class, 'getCoursesByBranchAndYear'])->name('students.getCoursesByBranchAndYear');
+});
+
+// admin expenses export
+Route::get('admin/expenses/export', [\App\Http\Controllers\Admin\ReportController::class, 'exportExpenses'])->name('admin.expenses.export');
+
+// Student registration
+Route::get('/students/create', [StudentController::class, 'create'])->name('students.create');
+Route::post('/students', [StudentController::class, 'store'])->name('students.store');
+Route::get('/students/get-course-fee', [StudentController::class, 'getCourseFee'])->name('students.getCourseFee');
+
+// Legacy endpoints
+Route::get('/get-academic-years/{branch}', [StudentController::class, 'getAcademicYears'])->name('get.academic.years');
+Route::get('/get-courses/{branch}/{academicYear}', [StudentController::class, 'getCourses'])->name('get.courses');
+
+// Student login routes (non-authenticated)
+Route::prefix('student')->name('student.')->group(function () {
+    Route::get('/login', [StudentController::class, 'showLoginForm'])->name('login');
+    Route::get('/login/identification-type', [StudentController::class, 'showIdentificationTypeForm'])->name('login.identificationType');
+    Route::post('/login/id-type-selected', [StudentController::class, 'showIdNumberForm'])->name('login.idTypeSelected');
+    Route::post('/login/validate-id', [StudentController::class, 'validateIdNumber'])->name('login.validateId');
+    Route::get('/login/password', [StudentController::class, 'showPasswordForm'])->name('showPasswordForm');
+    Route::post('/login/password', [StudentController::class, 'loginWithPassword'])->name('login.withPassword');
+});
+
+// Authenticated user routes
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/dashboard', function () {
+        return view('dashboard');
+    })->name('dashboard');
+});
+
+// Profile routes
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-Route::get('/courses/search', [App\Http\Controllers\CourseController::class, 'search'])->name('courses.search');
+// Admin auth routes
+Route::prefix('admin')->group(function () {
+    Route::get('/login', [AdminAuthController::class, 'showLoginForm'])->name('admin.login.form');
+    Route::post('/login', [AdminAuthController::class, 'login'])->name('admin.login');
+    Route::post('/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
+});
 
-// Admin routes
-Route::get('/admin/login', [AdminAuthController::class, 'showLoginForm'])->name('admin.login.form');
-Route::post('/admin/login', [AdminAuthController::class, 'login'])->name('admin.login');
-Route::post('/admin/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
 
-Route::middleware(['auth:admin'])
-    ->prefix('admin')
-    ->name('admin.')
-    ->group(function () {
-        Route::get('/dashboard', function () {
-            return view('admin.dashboard');
-        })->name('dashboard');
+if (! Route::has('admin.teachers.index')) {
+    Route::middleware('auth:admin')->get('/admin/teachers', [TeacherController::class, 'index'])->name('admin.teachers.index');
+}
+// -----------------------------------------------------------------------------
 
-        // Academic Year resource routes with correct prefix and names
-        Route::resource('academic_year', AcademicYearController::class)->except(['show']);
-          Route::get('/course/create', [CourseController::class, 'create'])->name('course.create');
-Route::get('/courses', [CourseController::class, 'index'])->name('course.index');
-Route::get('/course/{id}/edit', [CourseController::class, 'edit'])->name('course.edit'); 
-        Route::put('/course/{id}', [CourseController::class, 'update'])->name('course.update');
-        Route::delete('/course/{id}', [CourseController::class, 'destroy'])->name('course.destroy');
-
-    Route::post('/course/store', [CourseController::class, 'store'])->name('course.store');
+if (! Route::has('teachers.index')) {
+    Route::middleware('auth:admin')->group(function () {
+        // Provide the non-prefixed teachers.* resource (URI: /teachers)
+        // This creates route names like teachers.index, teachers.create, teachers.store, etc.
+        Route::resource('teachers', TeacherController::class);
     });
+}
+// -----------------------------------------------------------------------------
 
+// Admin protected routes
+Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', [\App\Http\Controllers\AdminAuthController::class, 'dashboard'])->name('dashboard');
+
+    Route::resource('students', StudentController::class);
+    Route::resource('academic_year', AcademicYearController::class)->except(['show']);
+    Route::resource('messages', \App\Http\Controllers\MessageController::class);
+    Route::resource('announcements', \App\Http\Controllers\AnnouncementController::class);
+    Route::resource('tariffs', TariffController::class);
+    Route::resource('staff', \App\Http\Controllers\StaffController::class);
+    Route::resource('terms', TermController::class)->except(['show']);
+    Route::resource('payments', PaymentTypeController::class);
+    Route::resource('branch', BranchController::class);
+    Route::resource('teachers', TeacherController::class);
+
+    Route::get('/fees', [SchoolFeeController::class, 'index'])->name('fees.index');
+    Route::get('/fees/create', [SchoolFeeController::class, 'create'])->name('fees.create');
+    Route::post('/fees', [SchoolFeeController::class, 'store'])->name('fees.store');
+
+    // Course routes
+    Route::get('/course/create', [CourseController::class, 'create'])->name('course.create');
+    Route::post('/course/store', [CourseController::class, 'store'])->name('course.store');
+    Route::get('/courses', [CourseController::class, 'index'])->name('course.index');
+    Route::get('/course/{id}/edit', [CourseController::class, 'edit'])->name('course.edit');
+    Route::put('/course/{id}', [CourseController::class, 'update'])->name('course.update');
+    Route::delete('/course/{id}', [CourseController::class, 'destroy'])->name('course.destroy');
+
+    // Teacher assignment
+    Route::get('teachers/{teacher}/assign-course', [TeacherController::class, 'assignCourse'])->name('teachers.assignCourse');
+    Route::post('teachers/{teacher}/assign-course', [TeacherController::class, 'storeCourseAssignment'])->name('teachers.storeCourseAssignment');
+
+    // Student fees
+    Route::get('students/{student}/fees', [StudentController::class, 'showStudentFees'])->name('students.fees');
+    Route::patch('/students/{student}/discount', [StudentController::class, 'updateDiscount'])->name('students.updateDiscount');
+
+    // Preferences
+    Route::get('preferences', [\App\Http\Controllers\Admin\PreferenceController::class, 'index'])->name('preferences');
+    Route::post('preferences', [\App\Http\Controllers\Admin\PreferenceController::class, 'store'])->name('preferences.store');
+
+    Route::resource('grades', GradeController::class)->names('grades');
+    Route::resource('community-spaces', \App\Http\Controllers\Admin\CommunitySpaceController::class);
+    Route::post('community-spaces/{space}/add-students', [\App\Http\Controllers\Admin\CommunitySpaceController::class, 'addStudents'])->name('community-spaces.add-students');
+
+    // Admin profile
+    Route::get('profile', [\App\Http\Controllers\AdminProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('profile', [\App\Http\Controllers\AdminProfileController::class, 'update'])->name('profile.update');
+
+    // NESA Registration Management
+    Route::get('nesa', [\App\Http\Controllers\Admin\NesaRegistrationController::class, 'index'])->name('nesa.index');
+    Route::get('nesa/registered', [\App\Http\Controllers\Admin\NesaRegistrationController::class, 'registered'])->name('nesa.registered');
+    Route::get('nesa/pending', [\App\Http\Controllers\Admin\NesaRegistrationController::class, 'pending'])->name('nesa.pending');
+    Route::get('nesa/search', [\App\Http\Controllers\Admin\NesaRegistrationController::class, 'search'])->name('nesa.search');
+    Route::post('nesa/{student}/mark-registered', [\App\Http\Controllers\Admin\NesaRegistrationController::class, 'markAsRegistered'])->name('nesa.mark-registered');
+    Route::post('nesa/bulk-register', [\App\Http\Controllers\Admin\NesaRegistrationController::class, 'bulkRegister'])->name('nesa.bulk-register');
+    Route::get('nesa/{student}/edit', [\App\Http\Controllers\Admin\NesaRegistrationController::class, 'edit'])->name('nesa.edit');
+    Route::put('nesa/{student}', [\App\Http\Controllers\Admin\NesaRegistrationController::class, 'update'])->name('nesa.update');
+    Route::get('nesa/{student}/download', [\App\Http\Controllers\Admin\NesaRegistrationController::class, 'downloadDocument'])->name('nesa.download');
+    Route::get('nesa/export/registered', [\App\Http\Controllers\Admin\NesaRegistrationController::class, 'exportRegistered'])->name('nesa.export');
+
+    // Document Management
+    Route::get('documents', [\App\Http\Controllers\Admin\DocumentManagementController::class, 'index'])->name('documents.index');
+    Route::get('documents/{id}/edit', [\App\Http\Controllers\Admin\DocumentManagementController::class, 'edit'])->name('documents.edit');
+    Route::put('documents/{id}', [\App\Http\Controllers\Admin\DocumentManagementController::class, 'update'])->name('documents.update');
+    Route::post('documents/bulk-update', [\App\Http\Controllers\Admin\DocumentManagementController::class, 'bulkUpdate'])->name('documents.bulk.update');
+    Route::get('documents/{id}/download', [\App\Http\Controllers\Admin\DocumentManagementController::class, 'downloadDocument'])->name('documents.download');
+    Route::get('documents/{id}/preview', [\App\Http\Controllers\Admin\DocumentManagementController::class, 'previewDocument'])->name('documents.preview');
+
+    // Resource Management
+    Route::get('resources', [\App\Http\Controllers\Admin\ResourceController::class, 'index'])->name('resources.index');
+    Route::get('resources/create', [\App\Http\Controllers\Admin\ResourceController::class, 'create'])->name('resources.create');
+    Route::post('resources', [\App\Http\Controllers\Admin\ResourceController::class, 'store'])->name('resources.store');
+    Route::get('resources/{id}/edit', [\App\Http\Controllers\Admin\ResourceController::class, 'edit'])->name('resources.edit');
+    Route::put('resources/{id}', [\App\Http\Controllers\Admin\ResourceController::class, 'update'])->name('resources.update');
+    Route::delete('resources/{id}', [\App\Http\Controllers\Admin\ResourceController::class, 'destroy'])->name('resources.destroy');
+    Route::get('resources/{id}/download', [\App\Http\Controllers\Admin\ResourceController::class, 'downloadDocument'])->name('resources.download');
+    Route::get('resources/{id}/preview', [\App\Http\Controllers\Admin\ResourceController::class, 'previewDocument'])->name('resources.preview');
+    Route::get('resources/get-lessons/{courseId}', [\App\Http\Controllers\Admin\ResourceController::class, 'getLessons'])->name('resources.get-lessons');
+
+    Route::get('chat-test', function() {
+        return view('admin.profile.test');
+    })->name('chat.test');
+});
+
+// API helpers
+Route::get('/api/course/{course}/exams', function($courseId) {
+    $exams = \App\Models\Exam::whereHas('courses', function($q) use ($courseId) {
+        $q->where('courses.id', $courseId);
+    })->get(['id', 'title']);
+    return response()->json($exams);
+});
+
+Route::get('/api/teacher/branch/{branch}/course/{course}/students', function($branch, $course) {
+    $students = \App\Models\Student::where('course_id', $course)
+        ->where('branch_id', $branch)
+        ->get(['id', 'full_name']);
+    return response()->json($students);
+});
+
+// Misc endpoints
+
+Route::post('/admin/teachers/{teacher}/reset-password', [\App\Http\Controllers\TeacherController::class, 'resetPassword'])->name('admin.teachers.resetPassword');
+Route::get('/teachers/by-lesson', [\App\Http\Controllers\TeacherController::class, 'getByLesson'])->name('teachers.byLesson');
+Route::get('/lessons/by-courses', [\App\Http\Controllers\LessonController::class, 'getByCourses'])->name('lessons.byCourses');
+
+Route::get('/dos/timetable', [\App\Http\Controllers\DosTimetableController::class, 'index'])->name('dos.timetable.index');
+Route::get('/dos/timetable/{id}/edit', [\App\Http\Controllers\DosTimetableController::class, 'edit'])->name('dos.timetable.edit');
+Route::post('/dos/timetable/{id}/update', [\App\Http\Controllers\DosTimetableController::class, 'update'])->name('dos.timetable.update');
+Route::get('/dos/timetable/create', [\App\Http\Controllers\DosTimetableController::class, 'create'])->name('dos.timetable.create');
+Route::post('/dos/timetable/store', [\App\Http\Controllers\DosTimetableController::class, 'store'])->name('dos.timetable.store');
+
+Route::post('/admin/staff/{staff}/reset-password', [StaffController::class, 'resetPassword'])->name('admin.staff.reset_password');
+Route::get('/teacher/resources', [ResourceController::class, 'index'])->name('teacher.resources.index');
+
+// Attendance
+Route::get('/attendance/mark', [AttendanceController::class, 'showMarkForm'])->name('attendance.mark.form');
+Route::post('/attendance/mark/{timetable}', [AttendanceController::class, 'mark'])->name('attendance.mark');
+
+// protected student profile routes
+Route::middleware(['auth:student'])->group(function () {
+    Route::get('/student/profile', [App\Http\Controllers\StudentController::class, 'profile'])->name('students.profile');
+    Route::post('/student/profile', [App\Http\Controllers\StudentController::class, 'updateProfile'])->name('students.profile.update');
+});
+
+// Misc teacher routes
+Route::get('/teacher/resources', [ResourceController::class, 'index'])->name('teacher.resources.index');
+Route::get('/teachers/export', [TeacherController::class, 'export'])->name('admin.teachers.export');
+Route::get('/teacher/courses', [CourseController::class, 'index'])->name('teacher.courses.index');
+
+Route::prefix('staff')->name('staff.')->group(function () {
+    // Staff Authentication
+    Route::get('login', [StaffAuthController::class, 'showLoginForm'])->name('login');
+    Route::post('login', [StaffAuthController::class, 'login'])->name('login.submit');
+    Route::post('logout', [StaffAuthController::class, 'logout'])->name('logout');
+         // ===== PAYMENT ROUTES - ADD THESE HERE =====
+        Route::post('/students/{student}/pay-cash', [StudentController::class, 'payCash'])->name('students.pay-cash');
+        Route::get('/students/{student}/payments/ajax', [StudentController::class, 'ajaxPayments'])->name('students.payments.ajax');
+        Route::get('/students/{student}/transcript/ajax', [StudentController::class, 'transcriptAjax'])->name('students.transcript.ajax');
+        Route::get('/students/{student}/transcript/send', [StudentController::class, 'sendTranscript'])->name('students.transcript.send');
+        // ============================================
+
+
+    Route::middleware('auth:staff')->group(function () {
+        Route::get('dashboard', [StaffAuthController::class, 'dashboard'])->name('dashboard');
+        
+        // Transaction Management Routes (FIXED)
+        Route::get('/transactions/{transaction}/edit', [StudentController::class, 'editTransaction'])->name('transactions.edit');
+        Route::put('/transactions/{transaction}', [StudentController::class, 'editTransaction'])->name('transactions.update');
+        Route::delete('/transactions/{transaction}', [StudentController::class, 'deleteTransaction'])->name('transactions.destroy');
+            // Payment Routes - ADD THESE
+
+
+
+        // Student Management Routes
+        Route::get('/students/{student}/edit', [StudentController::class, 'editByStaff'])->name('students.edit');
+        Route::put('/students/{student}', [StudentController::class, 'updateByStaff'])->name('students.update');
+        Route::post('/students/{student}/complete-registration', [StudentController::class, 'completeRegistration'])->name('students.complete_registration');
+
+        Route::get('dashboard_dos', [StaffAuthController::class, 'dashboard'])->name('dashboard.dos');
+        Route::get('/students', [StudentController::class, 'index'])->name('students.index');
+        Route::get('/courses/{courseId}/branch/{branchId}/students', [StaffAuthController::class, 'getStudentsByCourseAndBranch'])->name('courses.branch.students');
+        Route::get('/students/cards', [StudentController::class, 'listStudentCards'])->name('students.StudentCards');
+        Route::get('/students/report', [StudentController::class, 'report'])->name('students.report');
+        Route::get('/students/attendance', [StudentController::class, 'attendance'])->name('students.attendance');
+        Route::post('/students/generate-cards-bulk', [StudentController::class, 'generateCardsBulk'])->name('students.generate_cards_bulk');
+        Route::post('/students/{student}/generate-card', [StudentController::class, 'generateStudentCard'])->name('students.generate_card');
+        Route::get('dashboard_accountant', [StaffAuthController::class, 'dashboard'])->name('dashboard.accountant');
+        
+        // Staff Profile
+        Route::get('profile', function () {
+            $staff = auth()->guard('staff')->user();
+            return view('staff.profile', compact('staff'));
+        })->name('profile');
+        Route::put('profile/update', [\App\Http\Controllers\StaffProfileController::class, 'update'])->name('profile.update');
+
+        // Lesson Management
+        Route::resource('lessons', LessonController::class);
+        Route::get('/lesson-units', [LessonDetailsController::class, 'index'])->name('lesson-units.index');
+        Route::get('/lessons/{lesson}/units/create', [LessonDetailsController::class, 'create'])->name('lesson-units.create');
+        Route::post('/lessons/{lesson}/units', [LessonDetailsController::class, 'store'])->name('lesson-units.store');
+        Route::get('/lesson-units/{unit}', [LessonDetailsController::class, 'show'])->name('lesson-units.show');
+        Route::get('/lesson-units/{unit}/edit', [LessonDetailsController::class, 'edit'])->name('lesson-units.edit');
+        Route::put('/lesson-units/{unit}', [LessonDetailsController::class, 'update'])->name('lesson-units.update');
+        Route::delete('/lesson-units/{unit}', [LessonDetailsController::class, 'destroy'])->name('lesson-units.destroy');
+        Route::get('/lessons/{lesson}/details/create', [LessonDetailsController::class, 'create'])->name('lesson.details.create');
+        Route::post('/lessons/{lesson}/details', [LessonDetailsController::class, 'store'])->name('lesson.details.store');
+    });
+});
+
+/*
+|--------------------------------------------------------------------------
+| Compatibility route(s) to satisfy templates that expect the name
+| 'students.StudentCards' (without the staff. prefix).
+|
+| We expose the same controller action at /students/cards and name it
+| 'students.StudentCards', and protect it with staff auth so it behaves
+| like the staff-only listing.
+|--------------------------------------------------------------------------
+*/
+Route::get('/students/cards', [App\Http\Controllers\StudentController::class, 'listStudentCards'])
+    ->name('students.StudentCards')
+    ->middleware('auth:staff');
+
+/*
+|--------------------------------------------------------------------------
+| Special routes for authorized user for editing/deleting transactions
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth:admin,staff'])->group(function () {
+    Route::get('/admin/transactions/{transaction}/edit', [StudentController::class, 'editTransaction'])->name('admin.transactions.edit');
+    Route::put('/admin/transactions/{transaction}', [StudentController::class, 'editTransaction'])->name('admin.transactions.update');
+    Route::delete('/admin/transactions/{transaction}', [StudentController::class, 'deleteTransaction'])->name('admin.transactions.delete');
+});
+
+Route::get('/admin/report', [App\Http\Controllers\Admin\ReportController::class, 'index'])->name('admin.report');
+Route::get('/teacher/photo/{id}', [\App\Http\Controllers\TeacherController::class, 'photo'])->name('teacher.photo');
+Route::get('marks', [\App\Http\Controllers\MarksController::class, 'index'])->name('marks.index');
+
+// Fee Payment Routes
+Route::prefix('fees')->group(function() {
+    Route::get('segments/{studentId}/{schoolFeeId}', [FeePaymentController::class, 'showSegments'])->name('fees.segments');
+    Route::get('payments/create/{studentId}/{segmentId}', [FeePaymentController::class, 'createPayment'])->name('payments.create');
+    Route::post('payments/store', [FeePaymentController::class, 'storePayment'])->name('payments.store');
+});
+
+Route::middleware('auth:student')->get('/student/profile', [StudentController::class, 'profile'])->name('students.profile');
+
+Route::get('/payments', [PaymentController::class, 'index']);
+Route::get('/payments/{id}', [PaymentController::class, 'show']);
+Route::post('/payments', [PaymentController::class, 'store']);
+Route::get('/students/total-paid', [PaymentController::class, 'totalPaidByStudents']);
+
+// Reset link
+Route::post('/admin/students/{student}/send-reset-link', [StudentController::class, 'sendResetLink'])->name('admin.students.sendResetLink');
+
+// Bulk email
+Route::post('/send-bulk-email', [EmailController::class, 'sendBulkEmail']);
+
+// Teacher Authentication
+Route::prefix('teacher')->name('teacher.')->group(function () {
+    Route::get('login', [\App\Http\Controllers\TeacherAuthController::class, 'showLoginForm'])->name('login');
+    Route::post('login', [\App\Http\Controllers\TeacherAuthController::class, 'login'])->name('login.submit');
+    Route::post('logout', [\App\Http\Controllers\TeacherAuthController::class, 'logout'])->name('logout');
+    Route::middleware('auth:teacher')->group(function () {
+        Route::get('dashboard', [\App\Http\Controllers\TeacherAuthController::class, 'dashboard'])->name('dashboard');
+    });
+});
+
+// Daily attendance
+Route::prefix('teacher')->group(function () {
+    Route::post('/daily', [TeacherDailyController::class, 'store'])->name('teacher.daily.store');
+});
+
+// AJAX for teacher
+Route::middleware('auth:teacher')->prefix('teacher')->group(function () {
+    Route::get('course/{course}/lessons', [\App\Http\Controllers\TeacherDailyController::class, 'getLessons'])->name('teacher.course.lessons');
+    Route::get('lesson/{lesson}/units', [\App\Http\Controllers\TeacherDailyController::class, 'getUnits'])->name('teacher.lesson.units');
+    Route::get('course/{course}/student-count', [\App\Http\Controllers\TeacherDailyController::class, 'getStudentCount'])->name('teacher.course.studentCount');
+});
+
+Route::middleware('auth:teacher')->prefix('teacher')->name('teacher.')->group(function () {
+    Route::get('profile/edit', [\App\Http\Controllers\TeacherProfileController::class, 'edit'])->name('profile.edit');
+    Route::post('profile/update', [\App\Http\Controllers\TeacherProfileController::class, 'update'])->name('profile.update');
+});
+
+Route::middleware('auth:teacher')->prefix('teacher')->name('teacher.')->group(function () {
+    Route::get('courses/details', [\App\Http\Controllers\TeacherAuthController::class, 'courseDetails'])->name('courses.details');
+});
+
+// Exams
+Route::resource('exams', \App\Http\Controllers\ExamController::class);
+Route::get('/api/courses/{course}/lessons', function($courseId) {
+    $lessons = \App\Models\Lesson::where('course_id', $courseId)->get(['id', 'title']);
+    return response()->json(['lessons' => $lessons]);
+});
+Route::get('/api/lessons/{lesson}/marks', function($lessonId) {
+    $lesson = \App\Models\Lesson::find($lessonId);
+    return response()->json(['total_marks' => $lesson ? $lesson->total_marks : 100]);
+});
+Route::get('/exams/{exam}/questions', [\App\Http\Controllers\ExamQuestionController::class, 'index'])->name('exams.questions');
+Route::get('/exams/{exam}/questions/create', [\App\Http\Controllers\ExamQuestionController::class, 'create'])->name('exams.questions.create');
+Route::post('/exams/{exam}/questions', [\App\Http\Controllers\ExamQuestionController::class, 'store'])->name('exams.questions.store');
+Route::post('/exams/{exam}/questions/import', [\App\Http\Controllers\ExamQuestionController::class, 'import'])->name('exams.questions.import');
+
+Route::middleware('auth:teacher')->prefix('teacher')->name('teacher.')->group(function () {
+    Route::resource('marks', \App\Http\Controllers\MarksController::class);
+});
+
+Route::get('/api/courses/{course}/students', function($courseId) {
+    $course = \App\Models\Course::with('students')->find($courseId);
+    $students = $course ? $course->students->map(function($s) {
+        return [
+            'id' => $s->id,
+            'name' => $s->name,
+            'student_id' => $s->student_id ?? null,
+        ];
+    }) : [];
+    return response()->json(['students' => $students]);
+});
+
+Route::get('/api/teacher/{teacher}/branch/{branch}/courses', function($teacherId, $branchId) {
+    $teacher = \App\Models\Teacher::findOrFail($teacherId);
+    $courses = $teacher->courses()->where('branch_id', $branchId)->get(['id', 'course_name']);
+    return response()->json(['courses' => $courses]);
+});
+
+Route::get('/api/teacher/{teacher}/course/{course}/lessons', function($teacherId, $courseId) {
+    $lessons = \App\Models\Lesson::where('course_id', $courseId)
+        ->where('teacher_id', $teacherId)
+        ->get(['id', 'title']);
+    return response()->json(['lessons' => $lessons]);
+});
+
+Route::get('/dos/dailies', [App\Http\Controllers\DosDailyController::class, 'index'])->name('dos.dailies.index');
+Route::get('/dos/dailies/{daily}', [App\Http\Controllers\DosDailyController::class, 'show'])->name('dos.dailies.show');
+Route::post('/dos/dailies/{daily}/approve', [App\Http\Controllers\DosDailyController::class, 'approve'])->name('dos.dailies.approve');
+Route::post('/dos/dailies/{daily}/attendance', [App\Http\Controllers\DosDailyController::class, 'updateAttendance'])->name('dos.dailies.attendance');
+
+Route::get('/api/lessons/{lesson}/course', function($lessonId) {
+    $lesson = \App\Models\Lesson::with('course')->find($lessonId);
+    return response()->json(['course_id' => $lesson?->course?->id]);
+});
+
+Route::middleware(['auth:admin,staff,teacher'])->group(function () {
+    Route::resource('marks', \App\Http\Controllers\MarksController::class);
+});
+
+Route::get('/teacher/dailies', [TeacherDailyController::class, 'index'])->name('teacher.dailies.index');
+
+Route::middleware('auth:teacher')->prefix('teacher')->name('teacher.')->group(function () {
+    Route::get('resources/create', [\App\Http\Controllers\Teacher\ResourceController::class, 'create'])->name('resources.create');
+    Route::post('resources', [\App\Http\Controllers\Teacher\ResourceController::class, 'store'])->name('resources.store');
+});
+
+Route::middleware('auth:teacher')->prefix('teacher')->name('teacher.')->group(function () {
+    Route::get('messages/create', [\App\Http\Controllers\MessageController::class, 'create'])->name('messages.create');
+    Route::post('messages', [\App\Http\Controllers\MessageController::class, 'store'])->name('messages.store');
+    Route::get('messages/inbox', [\App\Http\Controllers\MessageController::class, 'inbox'])->name('messages.inbox');
+    Route::get('messages/sent', [\App\Http\Controllers\MessageController::class, 'sent'])->name('messages.sent');
+});
+
+// Verification routes
+Route::post('/students/send-verification-code', [StudentController::class, 'sendVerificationCode'])->name('students.sendVerificationCode');
+Route::post('/students/verify-email-code', [StudentController::class, 'verifyEmailCode'])->name('students.verifyEmailCode');
+
+Route::middleware('auth:student')->get('/student/dashboard', [StudentController::class, 'dashboard'])->name('student.dashboard');
+Route::post('/student/login/submit', [StudentController::class, 'loginWithPassword'])->name('student.login.submit');
+Route::post('/student/login/validate-reg-number', [StudentController::class, 'validateRegNumber'])->name('student.login.validateRegNumber');
+Route::post('/student/login/validate-id-value', [StudentController::class, 'validateIdValue'])->name('student.login.validateIdValue');
+Route::get('/student/login/simple', [StudentController::class, 'showSimpleLoginForm'])->name('student.login.simple');
+Route::post('/student/login/code', [StudentController::class, 'loginWithCode'])->name('student.login.code');
+
+Route::post('/student/logout', function () {
+    Auth::guard('student')->logout();
+    request()->session()->invalidate();
+    request()->session()->regenerateToken();
+    return redirect('/');
+})->name('student.logout');
+
+Route::middleware('auth:student')->get('/student/fees/pay', function () {
+    return view('students.fees.pay');
+})->name('student.fees.pay');
+
+Route::middleware(['auth:staff'])->get('/staff/course-fees', [\App\Http\Controllers\StaffController::class, 'courseFees'])->name('staff.course_fees');
+
+Route::middleware(['auth:staff'])->get('/students', [\App\Http\Controllers\StudentController::class, 'index'])->name('students.index');
+Route::middleware(['auth:staff'])->get('/students/{student}/transcript/send', [\App\Http\Controllers\StudentController::class, 'sendTranscript'])->name('students.transcript.send');
+Route::middleware(['auth:staff'])->get('/students/{student}/payments', [\App\Http\Controllers\StudentController::class, 'payments'])->name('students.payments');
+Route::middleware(['auth:staff'])->get('/students/{student}/pay', [\App\Http\Controllers\StudentController::class, 'pay'])->name('students.pay');
+Route::middleware(['auth:staff'])->post('/students/{student}/pay', [\App\Http\Controllers\StudentController::class, 'pay'])->name('students.pay');
+
+Route::get('/students/{student}/payments/download', [StudentController::class, 'downloadPayments'])->name('students.payments.download');
+Route::get('/students/{student}/payments/ajax', [StudentController::class, 'ajaxPayments'])->name('students.payments.ajax');
+
+Route::get('/students/create', [\App\Http\Controllers\StudentController::class, 'create'])->name('students.create');
+Route::post('/students', [\App\Http\Controllers\StudentController::class, 'store'])->name('students.store');
+
+Route::get('/courses/registration-fee', [StudentController::class, 'getRegistrationFee'])->name('courses.registration_fee');
+Route::get('/students/branches-by-academic-year', [StudentController::class, 'getBranchesByAcademicYear'])->name('students.getBranchesByAcademicYear');
+Route::post('/students/flutterwave/initialize', [\App\Http\Controllers\FlutterwaveController::class, 'initializePayment'])->name('students.flutterwave.initialize');
+Route::get('/payment/callback', [StudentController::class, 'paymentCallback'])->name('students.payment.callback');
+
+Route::post('/admin/students/{student}/send-reset-link', [\App\Http\Controllers\StudentController::class, 'sendResetLink'])->name('admin.students.sendResetLink');
+Route::get('/admin/force-logout', [\App\Http\Controllers\AdminLoginController::class, 'forceLogout'])->name('admin.forceLogout');
+Route::get('/teacher/force-logout', [\App\Http\Controllers\TeacherAuthController::class, 'showForceLogout'])->name('teacher.force-logout');
+Route::get('/admin/force-logout', [\App\Http\Controllers\AdminAuthController::class, 'showForceLogout'])->name('admin.force-logout');
+Route::post('/admin/logout', [\App\Http\Controllers\AdminAuthController::class, 'logout'])->name('admin.logout');
+
+Route::get('/youtube/redirect', [YouTubeController::class, 'redirectToYouTube'])->name('youtube.redirect');
+Route::get('/youtube/callback', [YouTubeController::class, 'handleYouTubeCallback'])->name('youtube.callback');
+Route::get('/youtube/upload', [YouTubeController::class, 'showUploadForm'])->name('youtube.upload.form');
+Route::post('/youtube/upload', [YouTubeController::class, 'upload'])->name('youtube.upload');
+
+Route::post('/contact/send', [ContactController::class, 'send'])->name('contact.send');
+Route::post('/student/fees/pay', [StudentController::class, 'payFees'])->name('student.fees.pay');
+Route::post('/contact', [HomeController::class, 'handleContact'])->name('contact.send');
+Route::get('/ai/prepare-exam', [\App\Http\Controllers\ExamController::class, 'prepareExamAI'])->name('ai.prepare-exam');
+
+Route::get('/api/lessons/by-courses', function (\Illuminate\Http\Request $request) {
+    $courseIds = explode(',', $request->query('course_ids', ''));
+    $lessons = \App\Models\Lesson::whereIn('course_id', $courseIds)->get(['id', 'title']);
+    return response()->json(['lessons' => $lessons]);
+});
+
+Route::get('/student/pay/', [StudentController::class, 'payFees'])->name('student.pay');
+
+Route::get('/staff/one-time-login/{staff}', [StaffController::class, 'oneTimeLogin'])
+    ->name('staff.one_time_login')
+    ->middleware('signed');
+
+Route::post('/students/{student}/pay', [StudentController::class, 'payCash'])->name('students.pay');
+Route::get('/students/{student}/payments/ajax', [StudentController::class, 'ajaxPayments'])->name('students.payments.ajax');
+
+Route::post('/expenses', [ExpenseController::class, 'store'])->name('expenses.store');
+Route::post('/timetable/generate-ai', [TimetableController::class, 'generateWithAI'])->name('timetable.generate.ai');
+
+Route::get('/staff/google-meet', function () {
+    $branchCourses = \DB::table('branch_course')->get(['branch_id', 'course_id']);
+    return view('staff.google_meet', compact('branchCourses'));
+})->middleware('auth:staff');
+
+Route::get('/google/redirect', [App\Http\Controllers\GoogleMeetController::class, 'redirectToGoogle'])->name('google.redirect');
+Route::get('/google/callback', [App\Http\Controllers\GoogleMeetController::class, 'handleGoogleCallback'])->name('google.callback');
+Route::post('/google/create-meet', [App\Http\Controllers\GoogleMeetController::class, 'createMeet'])->name('google.create-meet');
+
+Route::get('/student/payment', [StudentController::class, 'showPaymentPage'])->name('student.payment');
+Route::post('/student/ai-exam', [StudentController::class, 'generateStudySummary'])->name('student.ai.exam');
+Route::post('/student/pay-fee', [StudentController::class, 'payFees'])->name('student.pay.fee');
+Route::get('/student/payments/create', [StudentController::class, 'showPaymentPage'])->name('student.payments.create');
+
+Route::post('/exam/{exam}/submit', [App\Http\Controllers\ExamController::class, 'submit'])->name('exam.submit');
+Route::middleware('auth:student')->get('/exam/{exam}/take', [App\Http\Controllers\ExamController::class, 'take'])->name('exam.take');
+Route::get('/exam/{exam}/disqualified', [App\Http\Controllers\ExamController::class, 'disqualify'])->name('exam.disqualified');
+
+// Test logo debug
+Route::get('/test-logo', function() {
+    $systemLogo = \Illuminate\Support\Facades\Cache::get('esa_system_logo');
+    $storagePath = storage_path('app/public/' . $systemLogo);
+    $publicPath = public_path('storage/' . $systemLogo);
+    return response()->json([
+        'cached_logo' => $systemLogo,
+        'storage_exists' => $systemLogo ? file_exists($storagePath) : false,
+        'public_exists' => $systemLogo ? file_exists($publicPath) : false,
+        'storage_path' => $storagePath,
+        'public_path' => $publicPath,
+        'asset_url' => $systemLogo ? asset('storage/' . $systemLogo) : null,
+    ]);
+});
+
+// Transcripts
+Route::get('/students/{student}/transcript', [App\Http\Controllers\StudentController::class, 'transcript'])->name('students.transcript');
+Route::get('/students/{student}/transcript/ajax', [App\Http\Controllers\StudentController::class, 'transcriptAjax']);
+
+Route::get('resources/{resource}/view-document', [ResourceController::class, 'viewDocument'])->name('resources.viewDocument');
+Route::get('resources/{resource}/stream-video', [ResourceController::class, 'streamVideo'])->name('resources.streamVideo');
+
+// Teacher resource routes
+
+Route::get('/teacher/course/{course}/students', [\App\Http\Controllers\TeacherDailyController::class, 'getStudents']);
+Route::put('teacher/resources/{resource}', [\App\Http\Controllers\Teacher\ResourceController::class, 'update'])->name('teacher.resources.update');
+Route::get('teacher/resources/{resource}/edit', [\App\Http\Controllers\Teacher\ResourceController::class, 'edit'])->name('teacher.resources.edit');
+Route::delete('teacher/resources/{id}', [\App\Http\Controllers\Teacher\ResourceController::class, 'destroy'])->name('teacher.resources.destroy');
+Route::get('teacher/resources/{resource}/view-document', [\App\Http\Controllers\Teacher\ResourceController::class, 'viewDocument'])->name('teacher.resources.viewDocument');
+
+Route::get('dos/courses', [\App\Http\Controllers\DosCourseController::class, 'index'])->name('dos.courses.index');
+Route::post('dos/courses/assign-lesson', [\App\Http\Controllers\DosCourseController::class, 'assignLesson'])->name('dos.courses.assignLesson');

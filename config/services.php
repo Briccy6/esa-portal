@@ -1,7 +1,6 @@
 <?php
 
 return [
-
     /*
     |--------------------------------------------------------------------------
     | Third Party Services
@@ -34,5 +33,17 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
+
+    'youtube' => [
+        'api_key'      => env('YOUTUBE_API_KEY'),
+        'client_id'    => env('YOUTUBE_CLIENT_ID'),
+        'client_secret'=> env('YOUTUBE_CLIENT_SECRET'),
+        'redirect'     => env('YOUTUBE_REDIRECT_URI'),
+    ],
+    'flutterwave' => [
+    'secret_key' => env('FLW_SECRET_KEY'),
+    'public_key' => env('FLW_PUBLIC_KEY'),
+    'redirect_url' => env('APP_URL') . '/payment/callback',
+],
 
 ];

@@ -1,0 +1,2168 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Student;
+use App\Models\Course;
+use App\Models\Branch;
+use App\Models\AcademicYear;
+use App\Models\Term;
+use App\Models\Payment;
+use App\Models\SchoolFee;
+use App\Models\PaymentRecord;
+use App\Models\EmailVerification;
+use App\Models\Transcript;
+use App\Models\Announcement;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\StudentWelcomeMail;
+use App\Mail\StudentEmailVerificationMail;
+use Illuminate\Support\Facades\Storage;
+use App\Models\StudentTransaction;
+use OpenAI\Laravel\Facades\OpenAI;
+use App\Models\Exam;
+use App\Models\Timetable;
+use App\Models\CourseMaterial;
+use App\Models\StudentCard;
+use App\Models\Attendance;
+
+class StudentController extends Controller
+{
+    public function studentExams()
+    {
+        $student = auth('student')->user();
+
+        $exams = \App\Models\Exam::whereHas('courses', function($q) use ($student) {
+            $q->where('courses.id', $student->course_id);
+        })->with(['marks' => function($q) use ($student) {
+            $q->where('student_id', $student->id);
+        }])
+        ->get();
+
+        return view('students.exams', compact('exams'));
+    }
+
+    public function invoices()
+    {
+        $student = auth('student')->user();
+        $invoices = \App\Models\StudentTransaction::where('student_id', $student->id)
+            ->whereIn('status', ['paid', 'successful', 'pending'])
+            ->orderByDesc('created_at')
+            ->get();
+
+        return view('students.invoices', compact('invoices'));
+    }
+
+    public function courses()
+    {
+        $student = auth('student')->user();
+
+        $courses = \App\Models\Course::where('id', $student->course_id)->get();
+
+        foreach ($courses as $course) {
+            $course->lessons = \App\Models\Lesson::with(['teacher', 'terms'])
+                ->where('course_id', $course->id)
+                ->get();
+        }
+
+        return view('students.courses', compact('courses'));
+    }
+
+    public function grades()
+    {
+        $student = auth('student')->user();
+        if (!$student) {
+            abort(403, 'Unauthorized');
+        }
+
+        $marks = \App\Models\marks::where('student_id', $student->id)
+            ->with(['course', 'branch'])
+            ->get();
+
+        foreach ($marks as $mark) {
+            $allMarks = \App\Models\marks::where([
+                    'course_id'  => $mark->course_id,
+                    'branch_id'  => $mark->branch_id,
+                ])
+                ->orderByDesc('value')
+                ->pluck('student_id', 'value')
+                ->toArray();
+
+            $sortedMarks = array_keys($allMarks);
+            $position = array_search($mark->value, $sortedMarks) + 1;
+            $mark->position = $position;
+            $mark->total_students = count($allMarks);
+        }
+
+        return view('students.grades', compact('marks'));
+    }
+     
+    public function index(Request $request)
+    {
+        $staff = auth('staff')->user();
+        $admin = auth('admin')->user();
+
+        if (!$staff && !$admin) {
+            abort(403, 'Unauthorized: Not logged in as staff or admin.');
+        }
+
+        // Build base query
+        if ($admin) {
+            $students = Student::with(['course', 'branch', 'academicYear', 'NESARegistration']);
+        } else {
+            $branchIds = $staff->branches()->pluck('branches.id')->toArray();
+            $students = Student::whereIn('branch_id', $branchIds)->with(['course', 'branch', 'academicYear', 'NESARegistration']);
+        }
+
+        // Apply live search filters
+        if ($request->filled('name')) {
+            $students->where('full_name', 'like', '%' . $request->name . '%');
+        }
+        if ($request->filled('reg_number')) {
+            $students->where('reg_number', 'like', '%' . $request->reg_number . '%');
+        }
+        if ($request->filled('email')) {
+            $students->where('email', 'like', '%' . $request->email . '%');
+        }
+        if ($request->filled('telephone')) {
+            $students->where('phone', 'like', '%' . $request->telephone . '%');
+        }
+        if ($request->filled('academic_year')) {
+            $students->whereHas('academicYear', function($q) use ($request) {
+                $q->where('year', 'like', '%' . $request->academic_year . '%');
+            });
+        }
+        if ($request->filled('course')) {
+            $students->whereHas('course', function($q) use ($request) {
+                $q->where('course_name', 'like', '%' . $request->course . '%')
+                  ->orWhere('abbreviation', 'like', '%' . $request->course . '%');
+            });
+        }
+
+        // Paginate results
+        $students = $students->orderBy('created_at', 'desc')->paginate(20);
+
+        // If AJAX request, return only the table partial
+        if ($request->ajax() || $request->wantsJson()) {
+            if ($admin) {
+                return view('admin.students.partials.students_table', compact('students'))->render();
+            } else {
+                return view('staff.partials.students_table', compact('students'))->render();
+            }
+        }
+
+        // Return full view for normal requests
+        if ($admin) {
+            return view('admin.students.index', compact('students'));
+        } else {
+            return view('students.index', compact('students'));
+        }
+    }
+
+    public function create()
+    {
+        $branches = Branch::all();
+        $courses = Course::all();
+        $academicYears = AcademicYear::all();
+
+        return view('students.create', compact('branches', 'courses', 'academicYears'));
+    }
+
+    public function getAcademicYears()
+    {
+        return AcademicYear::orderByDesc('starting_date')->get();
+    }
+
+    public function getBranchesByAcademicYear(Request $request)
+    {
+        $academicYearId = $request->query('academic_year_id');
+
+        if (!$academicYearId) {
+            return response()->json([], 400);
+        }
+
+        $branchIds = DB::table('branch_course')
+            ->join('courses', 'branch_course.course_id', '=', 'courses.id')
+            ->where('courses.academic_year_id', $academicYearId)
+            ->pluck('branch_course.branch_id')
+            ->unique();
+
+        $branches = Branch::whereIn('id', $branchIds)->get();
+
+        return response()->json($branches);
+    }
+
+    public function getCoursesByBranchAndYear(Request $request)
+    {
+        $branchId = $request->query('branch_id');
+        $academicYearId = $request->query('academic_year_id');
+
+        if (!$branchId || !$academicYearId) {
+            return response()->json([], 400);
+        }
+
+        $courses = Course::where('academic_year_id', $academicYearId)
+            ->whereHas('branches', function ($q) use ($branchId) {
+                $q->where('branch_id', $branchId);
+            })
+            ->get();
+
+        return response()->json($courses);
+    }
+
+    public function showStudentFees(Request $request, $studentId)
+    {
+        $academicYears = AcademicYear::all();
+        $terms = Term::all();
+
+        $academicYearId = $request->query('academic_year_id') ?? ($academicYears->first()->id ?? null);
+        $termId = $request->query('term_id') ?? ($terms->first()->id ?? null);
+        $studentCardFee = 2000;
+        $schoolFee = null;
+        if ($academicYearId && $termId) {
+            $schoolFee = SchoolFee::where('academic_year_id', $academicYearId)
+                ->where('term_id', $termId)
+                ->first();
+        }
+
+        return view('admin.students.show_fees', compact('academicYears', 'terms', 'schoolFee', 'academicYearId', 'termId','studentCardFee'));
+    }
+
+    public function show(Student $student, Request $request)
+    {
+        $academicYearId = $request->get('academic_year_id');
+        $termId = $request->get('term_id');
+
+        $student->load('branch', 'course');
+
+        $schoolFee = null;
+        if ($academicYearId && $termId) {
+            $schoolFee = SchoolFee::where('academic_year_id', $academicYearId)
+                ->where('term_id', $termId)
+                ->first();
+        }
+
+        $studentCardFee = 2000;
+
+        // UPDATED: Use correct fee type names matching the form
+        $paid = [
+            'registration' => StudentTransaction::where('student_id', $student->id)
+                ->where('type', 'registration_fee')
+                ->where('status', 'successful')
+                ->sum('amount'),
+            'tuition' => StudentTransaction::where('student_id', $student->id)
+                ->where('type', 'school_fee')
+                ->where('status', 'successful')
+                ->sum('amount'),
+            'practical' => StudentTransaction::where('student_id', $student->id)
+                ->where('type', 'practical_fee')
+                ->where('status', 'successful')
+                ->sum('amount'),
+            'trip' => StudentTransaction::where('student_id', $student->id)
+                ->where('type', 'trip_fee')
+                ->where('status', 'successful')
+                ->sum('amount'),
+        ];
+
+        $studentCardPaid = StudentTransaction::where('student_id', $student->id)
+            ->where('type', 'student_card')
+            ->where('status', 'successful')
+            ->sum('amount');
+
+        $totalPaid = array_sum($paid) + $studentCardPaid;
+
+        return view('admin.students.show', compact(
+            'student', 'schoolFee', 'academicYearId', 'termId',
+            'studentCardFee', 'studentCardPaid', 'paid', 'totalPaid'
+        ));
+    }
+
+    /**
+     * Show edit form for staff
+     */
+    public function editByStaff(Student $student)
+    {
+        if (!auth()->guard('staff')->check()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        // Check if staff has access to this student's branch
+        $staff = auth('staff')->user();
+        $branchIds = $staff->branches()->pluck('branches.id')->toArray();
+        
+        if (!in_array($student->branch_id, $branchIds)) {
+            return redirect()->back()->with('error', 'You do not have access to edit this student.');
+        }
+
+        $branches = Branch::whereIn('id', $branchIds)->get();
+        $courses = Course::all();
+        $academicYears = AcademicYear::all();
+
+        return view('staff.students.edit', compact('student', 'branches', 'courses', 'academicYears'));
+    }
+
+    /**
+     * Update student by staff
+     */
+    public function updateByStaff(Request $request, Student $student)
+    {
+        if (!auth()->guard('staff')->check()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        // Check if staff has access to this student's branch
+        $staff = auth('staff')->user();
+        $branchIds = $staff->branches()->pluck('branches.id')->toArray();
+        
+        if (!in_array($student->branch_id, $branchIds)) {
+            return redirect()->back()->with('error', 'You do not have access to edit this student.');
+        }
+
+        $request->validate([
+            'full_name' => 'required|string|max:255',
+            'email' => 'required|email|max:255|unique:students,email,' . $student->id,
+            'phone' => 'required|string|max:20',
+            'branch_id' => 'required|exists:branches,id',
+            'course_id' => 'required|exists:courses,id',
+            'academic_year_id' => 'required|exists:academic_years,id',
+            'discount' => 'nullable|numeric|min:0|max:100',
+            'identification_type' => 'nullable|in:ID,Passport',
+            'id_number' => 'nullable|string|max:50',
+            'id_photo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'passport_photo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'senior6_document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'senior3_document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'other_supporting_document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+        ], [
+            'full_name.required' => 'Student name is required',
+            'email.required' => 'Email address is required',
+            'email.email' => 'Please enter a valid email address',
+            'email.unique' => 'This email is already registered',
+            'phone.required' => 'Phone number is required',
+            'id_photo.image' => 'ID photo must be an image file',
+            'id_photo.max' => 'ID photo size must not exceed 2MB',
+            'passport_photo.image' => 'Passport photo must be an image file',
+            'passport_photo.max' => 'Passport photo size must not exceed 2MB',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $updatedFields = [];
+
+            // Update basic information
+            if ($request->full_name !== $student->full_name) {
+                $student->full_name = $request->full_name;
+                $updatedFields[] = 'Full Name';
+            }
+
+            if ($request->email !== $student->email) {
+                $student->email = $request->email;
+                $updatedFields[] = 'Email';
+            }
+
+            if ($request->phone !== $student->phone) {
+                $student->phone = $request->phone;
+                $updatedFields[] = 'Phone';
+            }
+
+            if ($request->branch_id != $student->branch_id) {
+                $student->branch_id = $request->branch_id;
+                $updatedFields[] = 'Branch';
+            }
+
+            if ($request->course_id != $student->course_id) {
+                $student->course_id = $request->course_id;
+                $updatedFields[] = 'Course';
+            }
+
+            if ($request->academic_year_id != $student->academic_year_id) {
+                $student->academic_year_id = $request->academic_year_id;
+                $updatedFields[] = 'Academic Year';
+            }
+
+            if ($request->filled('discount') && $request->discount != $student->discount) {
+                $student->discount = $request->discount;
+                $updatedFields[] = 'Discount';
+            }
+
+            if ($request->filled('identification_type') && $request->identification_type !== $student->identification_type) {
+                $student->identification_type = $request->identification_type;
+                $updatedFields[] = 'Identification Type';
+            }
+
+            if ($request->filled('id_number') && $request->id_number !== $student->id_number) {
+                $student->id_number = $request->id_number;
+                $updatedFields[] = 'ID Number';
+            }
+
+            // Handle file uploads
+            if ($request->hasFile('id_photo')) {
+                if ($student->id_photo && Storage::disk('public')->exists($student->id_photo)) {
+                    Storage::disk('public')->delete($student->id_photo);
+                }
+                $student->id_photo = $request->file('id_photo')->store('students/id_photo', 'public');
+                $updatedFields[] = 'ID Photo';
+            }
+
+            if ($request->hasFile('passport_photo')) {
+                if ($student->passport_photo && Storage::disk('public')->exists($student->passport_photo)) {
+                    Storage::disk('public')->delete($student->passport_photo);
+                }
+                $student->passport_photo = $request->file('passport_photo')->store('students/passport_photo', 'public');
+                $updatedFields[] = 'Passport Photo';
+            }
+
+            if ($request->hasFile('senior6_document')) {
+                if ($student->senior6_document && Storage::disk('public')->exists($student->senior6_document)) {
+                    Storage::disk('public')->delete($student->senior6_document);
+                }
+                $student->senior6_document = $request->file('senior6_document')->store('students/documents', 'public');
+                $updatedFields[] = 'Senior 6 Certificate';
+            }
+
+            if ($request->hasFile('senior3_document')) {
+                if ($student->senior3_document && Storage::disk('public')->exists($student->senior3_document)) {
+                    Storage::disk('public')->delete($student->senior3_document);
+                }
+                $student->senior3_document = $request->file('senior3_document')->store('students/documents', 'public');
+                $updatedFields[] = 'Senior 3 Certificate';
+            }
+
+            if ($request->hasFile('other_supporting_document')) {
+                if ($student->other_supporting_document && Storage::disk('public')->exists($student->other_supporting_document)) {
+                    Storage::disk('public')->delete($student->other_supporting_document);
+                }
+                $student->other_supporting_document = $request->file('other_supporting_document')->store('students/documents', 'public');
+                $updatedFields[] = 'Supporting Document';
+            }
+
+            $student->save();
+
+            DB::commit();
+
+            Log::info('Student updated by staff', [
+                'student_id' => $student->id,
+                'staff_id' => auth('staff')->user()->id,
+                'updated_fields' => $updatedFields
+            ]);
+
+            if (count($updatedFields) > 0) {
+                // Use the route name that exists in your routes file (your staff route uses ->name('students.edit'))
+                return redirect()->route('students.edit', $student)
+                    ->with('success', 'Student information updated successfully!')
+                    ->with('updated_fields', $updatedFields);
+            } else {
+                return redirect()->route('students.edit', $student)
+                    ->with('success', 'No changes were made.');
+            }
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            Log::error('Student update failed', [
+                'student_id' => $student->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return back()->withInput()
+                ->with('error', 'Failed to update student information: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Complete student registration (add missing documents/info)
+     */
+    public function completeRegistration(Request $request, Student $student)
+    {
+        if (!auth()->guard('staff')->check()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized action.'
+            ], 403);
+        }
+
+        // Check if staff has access to this student's branch
+        $staff = auth('staff')->user();
+        $branchIds = $staff->branches()->pluck('branches.id')->toArray();
+        
+        if (!in_array($student->branch_id, $branchIds)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have access to complete registration for this student.'
+            ], 403);
+        }
+
+        $request->validate([
+            'identification_type' => 'required|in:ID,Passport',
+            'id_number' => 'required|string|max:50',
+            'id_photo' => 'required|image|mimes:jpg,jpeg,png|max:2048',
+            'passport_photo' => 'required|image|mimes:jpg,jpeg,png|max:2048',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $student->identification_type = $request->identification_type;
+            $student->id_number = $request->id_number;
+            
+            if ($request->hasFile('id_photo')) {
+                $student->id_photo = $request->file('id_photo')->store('students/id_photo', 'public');
+            }
+            
+            if ($request->hasFile('passport_photo')) {
+                $student->passport_photo = $request->file('passport_photo')->store('students/passport_photo', 'public');
+            }
+            
+            $student->save();
+
+            DB::commit();
+
+            Log::info('Registration completed by staff', [
+                'student_id' => $student->id,
+                'staff_id' => auth('staff')->user()->id
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Registration completed successfully!',
+                'student' => [
+                    'full_name' => $student->full_name,
+                    'reg_number' => $student->reg_number,
+                    'email' => $student->email
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            Log::error('Complete registration failed', [
+                'student_id' => $student->id,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to complete registration: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // NOTE: Duplicate editTransaction/deleteTransaction methods were removed.
+    // The authorized editTransaction and deleteTransaction implementations are below.
+
+    public function edit(Student $student)
+    {
+        if (!auth()->guard('admin')->check() && !auth()->guard('staff')->check()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $branches = Branch::all();
+        $courses = Course::all();
+        $academicYears = AcademicYear::all();
+
+        return view('admin.students.edit', compact('student', 'branches', 'courses', 'academicYears'));
+    }
+
+    public function update(Request $request, Student $student)
+    {
+        if (!auth()->guard('admin')->check() && !auth()->guard('staff')->check()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $request->validate([
+            'full_name' => 'required|string|max:255',
+            'email' => 'required|email|max:255|unique:students,email,' . $student->id,
+            'phone' => 'required|string|max:20',
+            'branch_id' => 'required|exists:branches,id',
+            'course_id' => 'required|exists:courses,id',
+            'academic_year_id' => 'required|exists:academic_years,id',
+            'discount' => 'nullable|numeric|min:0|max:100',
+            'id_photo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'passport_photo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'senior6_document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'senior3_document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'other_supporting_document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'password' => 'nullable|string|min:8|confirmed',
+            'identification_type' => 'required|in:ID,Passport',
+            'id_number' => 'required|string|max:50',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $student->full_name = $request->full_name;
+            $student->email = $request->email;
+            $student->phone = $request->phone;
+            $student->branch_id = $request->branch_id;
+            $student->course_id = $request->course_id;
+            $student->academic_year_id = $request->academic_year_id;
+            $student->discount = $request->discount ?? 0;
+
+            if ($request->hasFile('id_photo')) {
+                if ($student->id_photo) {
+                    Storage::disk('public')->delete($student->id_photo);
+                }
+                $student->id_photo = $request->file('id_photo')->store('students/id_photo', 'public');
+            }
+
+            if ($request->hasFile('passport_photo')) {
+                if ($student->passport_photo) {
+                    Storage::disk('public')->delete($student->passport_photo);
+                }
+                $student->passport_photo = $request->file('passport_photo')->store('students/passport_photo', 'public');
+            }
+
+            if ($request->hasFile('senior6_document')) {
+                if ($student->senior6_document) {
+                    Storage::disk('public')->delete($student->senior6_document);
+                }
+                $student->senior6_document = $request->file('senior6_document')->store('students/documents', 'public');
+            }
+
+            if ($request->hasFile('senior3_document')) {
+                if ($student->senior3_document) {
+                    Storage::disk('public')->delete($student->senior3_document);
+                }
+                $student->senior3_document = $request->file('senior3_document')->store('students/documents', 'public');
+            }
+
+            if ($request->hasFile('other_supporting_document')) {
+                if ($student->other_supporting_document) {
+                    Storage::disk('public')->delete($student->other_supporting_document);
+                }
+                $student->other_supporting_document = $request->file('other_supporting_document')->store('students/documents', 'public');
+            }
+
+            if ($request->filled('password')) {
+                $student->password = bcrypt($request->password);
+                $student->password_plain = $request->password;
+            }
+
+            if ($request->filled('identification_type')) {
+                $student->identification_type = $request->identification_type;
+            }
+            if ($request->filled('id_number')) {
+                $student->id_number = $request->id_number;
+            }
+
+            $student->save();
+
+            DB::commit();
+
+            return redirect()->route('admin.students.show', $student)
+                ->with('success', 'Student information updated successfully.');
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            Log::error('Student update failed', [
+                'student_id' => $student->id,
+                'error' => $e->getMessage()
+            ]);
+
+            return back()->withInput()->with('error', 'Failed to update student information. Please try again.');
+        }
+    }
+
+    public function updateDiscount(Request $request, $id)
+    {
+        $request->validate([
+            'discount' => 'nullable|numeric|min:0|max:100',
+        ]);
+
+        $student = Student::findOrFail($id);
+        $student->discount = $request->discount ?? 0;
+        $student->save();
+
+        return redirect()->back()->with('success', 'Student discount updated successfully.');
+    }
+
+    public function sendResetLink(Request $request, $id)
+    {
+        $student = Student::findOrFail($id);
+        $status = Password::broker('students')->sendResetLink(['email' => $student->email]);
+
+        if ($status === Password::RESET_LINK_SENT) {
+            return response()->json(['success' => true, 'message' => __($status)]);
+        } else {
+            return response()->json(['success' => false, 'message' => __($status)]);
+        }
+    }
+
+    public function confirmRegistrationFee(Request $request, $studentId)
+    {
+        $student = Student::findOrFail($studentId);
+
+        $registrationRecord = PaymentRecord::where('student_id', $student->id)
+            ->where('type', 'registration')
+            ->where('is_paid', false)
+            ->first();
+
+        if ($registrationRecord) {
+            $registrationRecord->is_paid = true;
+            $registrationRecord->save();
+
+            $schoolFeeToken = Str::random(32);
+            PaymentRecord::create([
+                'student_id' => $student->id,
+                'type' => 'school_fee',
+                'token' => $schoolFeeToken,
+                'expires_at' => now()->addDays(30),
+                'is_paid' => false,
+            ]);
+
+            $password = $student->plain_password ?? 'Your chosen password';
+            Mail::to($student->email)->send(new StudentWelcomeMail($student, $password));
+        }
+
+        return redirect()->back()->with('success', 'Registration fee confirmed. School fee token generated and email sent.');
+    }
+
+    public function sendVerificationCode(Request $request)
+    {
+        $request->validate(['reg_number' => 'required|string']);
+
+        $student = Student::where('reg_number', $request->reg_number)->first();
+        if (!$student) {
+            return response()->json(['message' => 'Registration number not found.'], 404);
+        }
+
+        $code = rand(100000, 999999);
+        EmailVerification::updateOrCreate(
+            ['email' => $student->email],
+            [
+                'code' => $code,
+                'expires_at' => now()->addMinutes(10),
+                'verified' => false,
+            ]
+        );
+
+        Mail::to($student->email)->send(new StudentEmailVerificationMail($code));
+
+        return response()->json(['message' => 'Verification code sent to your email.']);
+    }
+
+    public function verifyEmailCode(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'code' => 'required|string',
+        ]);
+
+        $record = EmailVerification::where('email', $request->email)
+            ->where('code', $request->code)
+            ->where('expires_at', '>', now())
+            ->first();
+
+        if ($record) {
+            $record->verified = true;
+            $record->save();
+            return response()->json(['message' => 'Email verified.']);
+        } else {
+            return response()->json(['message' => 'Invalid or expired code.'], 422);
+        }
+    }
+
+    public function store(Request $request)
+    {
+        // Case 1: Manual registration (Secretary, cash)
+        if ($request->filled('amount_paid') && $request->filled('fee_type')) {
+            $request->validate([
+                'full_name' => 'required|string|max:255',
+                'email' => 'required|email|unique:students,email',
+                'phone' => 'required|string',
+                'academic_year_id' => 'required|exists:academic_years,id',
+                'branch_id' => 'required|exists:branches,id',
+                'course_id' => 'required|exists:courses,id',
+                'fee_type' => 'required|string',
+                'amount_paid' => 'required|numeric|min:1',
+            ]);
+
+            DB::beginTransaction();
+            try {
+                $course = Course::findOrFail($request->course_id);
+                $academicYear = AcademicYear::findOrFail($request->academic_year_id);
+                $plainPassword = Str::random(8);
+
+                $maxAttempts = 5;
+                $student = null;
+                
+                for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+                    try {
+                        $regNumber = $this->generateUniqueRegNumber($course->abbreviation, $academicYear->year);
+                        
+                        $student = Student::create([
+                            'full_name' => $request->full_name,
+                            'email' => $request->email,
+                            'phone' => $request->phone,
+                            'branch_id' => $request->branch_id,
+                            'course_id' => $request->course_id,
+                            'academic_year_id' => $request->academic_year_id,
+                            'reg_number' => $regNumber,
+                            'password' => bcrypt($plainPassword),
+                            'payed_registration_fees' => $request->fee_type === 'registration_fee' ? 1 : 0,
+                        ]);
+                        
+                        break; // Success!
+                        
+                    } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
+                        if ($attempt === $maxAttempts) {
+                            throw new \Exception('Unable to generate unique registration number after ' . $maxAttempts . ' attempts. Please try again.');
+                        }
+                        usleep(100000); // 0.1 second
+                        continue;
+                    }
+                }
+                
+                if (!$student) {
+                    throw new \Exception('Failed to create student record.');
+                }
+
+                StudentTransaction::create([
+                    'student_id' => $student->id,
+                    'tx_ref' => 'CASH-' . $student->id . '-' . time() . '-' . uniqid(),
+                    'type' => $request->fee_type,
+                    'amount' => $request->amount_paid,
+                    'currency' => 'RWF',
+                    'status' => 'successful',
+                    'meta' => json_encode([
+                        'method' => 'cash',
+                        'recorded_by' => auth()->user()->name ?? 'staff',
+                    ]),
+                    'paid_at' => now(),
+                ]);
+
+                DB::commit();
+
+                if ($student->email) {
+                    try {
+                        Mail::to($student->email)->send(new \App\Mail\StudentWelcomeMail($student, $plainPassword));
+                    } catch (\Exception $e) {
+                        \Log::error('Failed to send student welcome email', ['error' => $e->getMessage()]);
+                    }
+                }
+
+                return back()->with('success', 'Student registered successfully. Registration Number: ' . $student->reg_number);
+                
+            } catch (\Exception $e) {
+                DB::rollback();
+                \Log::error('Student registration failed', ['error' => $e->getMessage()]);
+                return back()->with('error', 'Registration failed: ' . $e->getMessage());
+            }
+        }
+
+        // Case 2: Self-registration (Online with Flutterwave)
+        $request->validate([
+            'full_name' => 'required|string',
+            'email' => 'required|email|unique:students,email',
+            'phone' => 'required|string',
+            'academic_year_id' => 'required|exists:academic_years,id',
+            'branch_id' => 'required|exists:branches,id',
+            'course_id' => 'required|exists:courses,id',
+            'passport_photo' => 'nullable|file|max:200',
+            'id_photo' => 'nullable|file|max:200',
+            'education_level' => 'required|in:s6,s3,other',
+            'senior6_document' => 'nullable|file|max:200',
+            'senior3_document' => 'nullable|file|max:200',
+            'other_supporting_document' => 'nullable|file|max:200',
+        ]);
+
+        $fileData = [];
+        foreach (['id_photo', 'passport_photo', 'senior6_document', 'senior3_document', 'other_supporting_document'] as $field) {
+            if ($request->hasFile($field)) {
+                $fileData[$field] = $request->file($field)->store('temp', 'public');
+            }
+        }
+
+        $registrationData = [
+            'full_name' => $request->full_name,
+            'email' => $request->email,
+            'phone' => $request->phone,
+            'branch_id' => $request->branch_id,
+            'course_id' => $request->course_id,
+            'academic_year_id' => $request->academic_year_id,
+            'education_level' => $request->education_level,
+            'files' => $fileData,
+        ];
+        session(['student_registration' => $registrationData]);
+
+        $course = Course::findOrFail($request->course_id);
+        $amount = $course->registration_fee;
+        $tx_ref = 'TX-' . time() . '-' . uniqid();
+
+        $flutterwavePayload = [
+            "tx_ref" => $tx_ref,
+            "amount" => $amount,
+            "currency" => "RWF",
+            "redirect_url" => route('students.payment.callback'),
+            "customer" => [
+                "email" => $request->email,
+                "phonenumber" => $request->phone,
+                "name" => $request->full_name,
+            ],
+            "customizations" => [
+                "title" => "Student Registration",
+                "description" => "Pay for registration at ESA E-Learning",
+                "email" => $request->email,
+                "logo" => url('/logo.png'),
+            ],
+            "meta" => [
+                "session_key" => session()->getId(),
+            ]
+        ];
+
+        session(['student_registration_tx_ref' => $tx_ref]);
+
+        $response = Http::withToken(config('services.flutterwave.secret_key'))
+            ->post('https://api.flutterwave.com/v3/payments', $flutterwavePayload);
+
+        if ($response->successful()) {
+            $paymentLink = $response->json()['data']['link'];
+            return redirect($paymentLink);
+        } else {
+            \Log::error('Flutterwave payment init failed', ['body' => $response->body()]);
+            return back()->with('error', 'Flutterwave payment session failed.');
+        }
+    }
+
+    public function paymentCallback(Request $request)
+    {
+        Log::info('Flutterwave callback received', $request->all());
+
+        $tx_ref = $request->query('tx_ref');
+        $status = $request->query('status');
+        $transaction_id = $request->query('transaction_id');
+
+        if ($status !== 'successful' || !$transaction_id) {
+            Log::error('Payment not successful or missing transaction_id', compact('status', 'transaction_id'));
+            StudentTransaction::where('tx_ref', $tx_ref)->update([
+                'status' => 'failed',
+                'transaction_id' => $transaction_id,
+            ]);
+            return redirect()->route('students.create')->with('error', 'Payment failed or cancelled.');
+        }
+
+        $verifyResponse = Http::withToken(config('services.flutterwave.secret_key'))
+            ->get("https://api.flutterwave.com/v3/transactions/{$transaction_id}/verify");
+
+        Log::info('Flutterwave verification response', ['body' => $verifyResponse->body()]);
+
+        if (!$verifyResponse->successful() || ($verifyResponse->json('data.status') !== 'successful')) {
+            Log::error('Payment verification failed', ['body' => $verifyResponse->body()]);
+            StudentTransaction::where('tx_ref', $tx_ref)->update([
+                'status' => 'failed',
+                'transaction_id' => $transaction_id,
+            ]);
+            return redirect()->route('students.create')->with('error', 'Payment verification failed.');
+        }
+
+        $sessionTxRef = session('student_registration_tx_ref');
+        $registrationData = session('student_registration');
+
+        if (!$registrationData || $tx_ref !== $sessionTxRef) {
+            return redirect()->route('students.create')->with('error', 'Registration data not found. Please try again.');
+        }
+
+        if (Student::where('email', $registrationData['email'])->exists()) {
+            session()->forget(['student_registration', 'student_registration_tx_ref']);
+            return redirect()->route('students.create')->with('error', 'A student with this email already exists. Please log in or use a different email.');
+        }
+
+        DB::beginTransaction();
+        try {
+            $course = Course::findOrFail($registrationData['course_id']);
+            $academicYear = AcademicYear::findOrFail($registrationData['academic_year_id']);
+            $plainPassword = Str::random(8);
+            
+            // Move files from temp to final location
+            $finalFiles = [];
+            foreach ($registrationData['files'] as $field => $tempPath) {
+                if ($tempPath) {
+                    $filename = basename($tempPath);
+                    $finalPath = "students/{$field}/" . $filename;
+                    Storage::disk('public')->move($tempPath, $finalPath);
+                    $finalFiles[$field] = $finalPath;
+                } else {
+                    $finalFiles[$field] = null;
+                }
+            }
+            
+            // Retry logic for student creation
+            $maxAttempts = 5;
+            $student = null;
+            
+            for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+                try {
+                    $regNumber = $this->generateUniqueRegNumber($course->abbreviation, $academicYear->year);
+                    
+                    $student = Student::create([
+                        'full_name' => $registrationData['full_name'],
+                        'email' => $registrationData['email'],
+                        'phone' => $registrationData['phone'],
+                        'branch_id' => $registrationData['branch_id'],
+                        'course_id' => $registrationData['course_id'],
+                        'academic_year_id' => $registrationData['academic_year_id'],
+                        'reg_number' => $regNumber,
+                        'password' => bcrypt($plainPassword),
+                        'id_photo' => $finalFiles['id_photo'] ?? null,
+                        'passport_photo' => $finalFiles['passport_photo'] ?? null,
+                        'senior6_document' => $finalFiles['senior6_document'] ?? null,
+                        'senior3_document' => $finalFiles['senior3_document'] ?? null,
+                        'other_supporting_document' => $finalFiles['other_supporting_document'] ?? null,
+                        'payed_registration_fees' => 1,
+                    ]);
+                    
+                    break; // Success!
+                    
+                } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
+                    if ($attempt === $maxAttempts) {
+                        DB::rollback();
+                        session()->forget(['student_registration', 'student_registration_tx_ref']);
+                        return redirect()->route('students.create')
+                            ->with('error', 'Registration failed due to duplicate entry. Please try again.');
+                    }
+                    usleep(100000); // Wait 0.1 second before retry
+                    continue;
+                }
+            }
+            
+            if (!$student) {
+                throw new \Exception('Failed to create student record.');
+            }
+
+            StudentTransaction::create([
+                'student_id' => $student->id,
+                'tx_ref' => $tx_ref,
+                'transaction_id' => $transaction_id,
+                'type' => 'registration_fee',
+                'amount' => $course->registration_fee,
+                'currency' => 'RWF',
+                'status' => 'paid',
+                'meta' => json_encode([
+                    'email' => $student->email,
+                    'phone' => $student->phone,
+                ]),
+                'paid_at' => now(),
+            ]);
+            
+            DB::commit();
+            
+            // Send confirmation email
+            try {
+                Mail::to($student->email)->send(new StudentWelcomeMail($student, $plainPassword));
+            } catch (\Exception $e) {
+                Log::error('Failed to send welcome email', ['error' => $e->getMessage()]);
+            }
+            
+            // Clean up session
+            session()->forget(['student_registration', 'student_registration_tx_ref']);
+            
+            // Log the student in
+            Auth::guard('student')->login($student);
+            
+            if (Auth::guard('student')->check()) {
+                return redirect()->route('student.dashboard')
+                    ->with('success', 'Payment completed successfully. Welcome to ESA! Your registration number is: ' . $student->reg_number);
+            } else {
+                return redirect()->route('students.login')
+                    ->with('success', 'Payment completed. Your registration number is: ' . $student->reg_number . '. Please log in.');
+            }
+            
+        } catch (\Exception $e) {
+            DB::rollback();
+            Log::error('Payment callback failed', ['error' => $e->getMessage()]);
+            session()->forget(['student_registration', 'student_registration_tx_ref']);
+            return redirect()->route('students.create')
+                ->with('error', 'Registration failed: ' . $e->getMessage());
+        }
+    }
+
+    public function showLoginForm()
+    {
+        return view('students.login-simple');
+    }
+
+    public function loginWithPassword(Request $request)
+    {
+        $request->validate([
+            'reg_number' => 'required|string',
+            'password' => 'required|string',
+        ]);
+
+        $student = \App\Models\Student::where('reg_number', $request->reg_number)->first();
+
+        if (!$student || !Hash::check($request->password, $student->password)) {
+            return back()->withInput()->with('error', 'Invalid credentials.');
+        }
+
+        Auth::guard('student')->login($student);
+
+        return redirect()->route('student.dashboard');
+    }
+
+    public function loginWithCode(Request $request)
+    {
+        $request->validate([
+            'reg_number' => 'required|string',
+            'code' => 'required|string',
+        ]);
+
+        $student = \App\Models\Student::where('reg_number', $request->reg_number)->first();
+        if (!$student) {
+            return back()->withInput()->with('error', 'Invalid registration number.');
+        }
+
+        $record = \App\Models\EmailVerification::where('email', $student->email)
+            ->where('code', $request->code)
+            ->where('expires_at', '>', now())
+            ->first();
+
+        if (!$record) {
+            return back()->withInput()->with('error', 'Invalid or expired code.');
+        }
+
+        Auth::guard('student')->login($student);
+
+        $record->delete();
+
+        return redirect()->route('student.dashboard');
+    }
+
+    public function dashboard(Request $request)
+    {
+        $student = auth()->guard('student')->user();
+
+        $approvedAttendances = $student->attendances()
+            ->where('approved', 1)
+            ->orderByDesc('marked_at')
+            ->get();
+
+        $totalDays = $approvedAttendances->count();
+        $attendedDays = $approvedAttendances->where('status', 'present')->count();
+        $attendancePercent = $totalDays > 0 ? round(($attendedDays / $totalDays) * 100, 2) : 0;
+
+        // Get course fees
+        $registrationFee = $student->course->registration_fee ?? 0;
+        $tripFee = $student->course->trip_fee ?? 0;
+        $tuitionFee = $student->course->tuition_fee ?? 0;
+        $praticalfee = $student->course->pratical_fee ?? 0;
+        $studentCardFee = 2000;
+
+        // UPDATED: Get paid amounts using correct fee type names
+        $paidRegistration = \App\Models\StudentTransaction::where('student_id', $student->id)
+            ->where('type', 'registration_fee')
+            ->whereIn('status', ['successful', 'paid'])
+            ->sum('amount');
+
+        $paidTrip = \App\Models\StudentTransaction::where('student_id', $student->id)
+            ->where('type', 'trip_fee')
+            ->whereIn('status', ['successful', 'paid'])
+            ->sum('amount');
+
+        $paidTuition = \App\Models\StudentTransaction::where('student_id', $student->id)
+            ->where('type', 'school_fee')
+            ->whereIn('status', ['successful', 'paid'])
+            ->sum('amount');
+
+        $paidPractical = \App\Models\StudentTransaction::where('student_id', $student->id)
+            ->where('type', 'practical_fee')
+            ->whereIn('status', ['successful', 'paid'])
+            ->sum('amount');
+
+        $paidStudentCard = \App\Models\StudentTransaction::where('student_id', $student->id)
+            ->where('type', 'student_card')
+            ->whereIn('status', ['successful', 'paid'])
+            ->sum('amount');
+
+        // Calculate totals with discount
+        $discountableFees = $tripFee + $tuitionFee + $praticalfee;
+        
+        $discount = $student->discount ?? 0;
+        $discountAmount = ($discount > 0) ? ($discountableFees * ($discount / 100)) : 0;
+
+        $totalFees = $registrationFee + $studentCardFee + ($discountableFees - $discountAmount);
+
+        $paidFees = \App\Models\StudentTransaction::where('student_id', $student->id)
+            ->whereIn('status', ['successful', 'paid'])
+            ->sum('amount');
+
+        $balance = $totalFees - $paidFees;
+
+        $announcements = \App\Models\Announcement::latest()->take(5)->get();
+
+        $examIds = \DB::table('course_exam')
+            ->where('course_id', $student->course_id)
+            ->pluck('exam_id');
+        $exams = \App\Models\Exam::whereIn('id', $examIds)->get();
+
+        $marks = \DB::table('marks')
+            ->where('student_id', $student->id)
+            ->whereIn('exam_id', $examIds)
+            ->pluck('value', 'exam_id');
+
+        $liveClass = null;
+           
+        $payment = \App\Models\StudentTransaction::where('student_id', $student->id)
+            ->where('status', 'pending')
+            ->latest()
+            ->first();
+
+        $totalPastAttendances = $student->attendances()
+            ->where('date', '<', now())
+            ->count();
+
+        $markedAttendances = $student->attendances()
+            ->where('date', '<', now())
+            ->where('status', 'P') 
+            ->count();
+
+        $attendancePercent = $totalPastAttendances > 0
+            ? round(($markedAttendances / $totalPastAttendances) * 100, 2)
+            : 0;
+
+        $attendances = $student->attendances()
+            ->with(['lesson', 'lesson.teacher'])
+            ->orderByDesc('date')
+            ->get();
+
+        return view('students.dashboard', [
+            'student' => $student,
+            'registrationFee' => $registrationFee,
+            'tripFee' => $tripFee,
+            'tuitionFee' => $tuitionFee,
+            'praticalfee' => $praticalfee,
+            'studentCardFee' => $studentCardFee,
+            'paidRegistration' => $paidRegistration,
+            'paidTrip' => $paidTrip,
+            'paidTuition' => $paidTuition,
+            'paidPractical' => $paidPractical,
+            'paidStudentCard' => $paidStudentCard,
+            'discountableFees' => $discountableFees,
+            'discount' => $discount,
+            'discountAmount' => $discountAmount,
+            'totalFees' => $totalFees,
+            'paidFees' => $paidFees,
+            'balance' => $balance,
+            'announcements' => $announcements,
+            'exams' => $exams,
+            'marks' => $marks,
+            'liveClass' => $liveClass,
+            'attendancePercent' => $attendancePercent,
+            'attendances' => $attendances,
+            'approvedAttendances' => $approvedAttendances,
+            'payment' => $payment,
+        ]);
+    }
+
+    public function showPaymentPage()
+    {
+        $student = Auth::guard('student')->user()->load('course');
+        $registrationFee = $student->course->registration_fee ?? 0;
+        $tuitionFee = $student->course->tuition_fee ?? 0;
+        $tripFee = $student->course->trip_fee ?? 0;
+        $practicalFee = $student->course->pratical_fee ?? 0;
+
+        return view('students.payment', compact(
+            'student',
+            'registrationFee',
+            'tuitionFee',
+            'tripFee',
+            'practicalFee'
+        ));
+    }
+
+    public function refreshAnnouncements()
+    {
+        $announcements = Announcement::whereIn('audience', ['student', 'public'])
+            ->latest()->take(5)->get();
+
+        $html = '';
+        if ($announcements->count() > 0) {
+            foreach ($announcements as $announcement) {
+                $html .= '<div class="border-l-4 border-blue-500 pl-3 py-2">';
+                $html .= '<div class="font-medium text-sm text-gray-800">' . e($announcement->title) . '</div>';
+                $html .= '<div class="text-xs text-gray-600 mt-1">' . e(Str::limit($announcement->content, 100)) . '</div>';
+                $html .= '<div class="text-xs text-blue-600 mt-1">' . $announcement->created_at->diffForHumans() . '</div>';
+                $html .= '</div>';
+            }
+        } else {
+            $html = '<div class="text-center text-gray-500 py-4">No announcements at the moment</div>';
+        }
+
+        return response()->json(['html' => $html]);
+    }
+
+    public function payFees(Request $request)
+    {
+        $request->validate([
+            'pay_amount' => 'required|numeric|min:1',
+            'pay_number' => 'required|string',
+        ]);
+
+        $student = Auth::guard('student')->user();
+
+        $balance = $this->calculateStudentBalance($student);
+        if ($request->pay_amount > $balance) {
+            return response()->json(['message' => 'Amount exceeds remaining balance.'], 422);
+        }
+
+        $tx_ref = 'STU-' . $student->id . '-' . time() . '-' . uniqid();
+        $amount = $request->pay_amount;
+
+        $flutterwavePayload = [
+            "tx_ref" => $tx_ref,
+            "amount" => $amount,
+            "currency" => "RWF",
+            "redirect_url" => route('students.payment.callback'),
+            "customer" => [
+                "email" => $student->email,
+                "phonenumber" => $request->pay_number,
+                "name" => $student->full_name,
+            ],
+            "customizations" => [
+                "title" => "Student Fee Payment",
+                "description" => "Pay your fees at ESA E-Learning",
+                "logo" => url('/logo.png'),
+            ],
+            "meta" => [
+                "student_id" => $student->id,
+            ]
+        ];
+
+        $response = Http::withToken(config('services.flutterwave.secret_key'))
+            ->post('https://api.flutterwave.com/v3/payments', $flutterwavePayload);
+
+        if ($response->successful() && isset($response->json()['data']['link'])) {
+            StudentTransaction::create([
+                'student_id' => $student->id,
+                'tx_ref' => $tx_ref,
+                'type' => 'school_fee',
+                'amount' => $amount,
+                'currency' => 'RWF',
+                'status' => 'pending',
+                'meta' => json_encode([
+                    'email' => $student->email,
+                    'phone' => $request->pay_number,
+                ]),
+            ]);
+
+            return response()->json(['payment_link' => $response->json()['data']['link']]);
+        } else {
+            Log::error('Flutterwave fee payment init failed', ['body' => $response->body()]);
+            return response()->json(['message' => 'Payment initialization failed.'], 422);
+        }
+    }
+
+    private function calculateStudentBalance($student)
+    {
+        $registrationFee = $student->course->registration_fee ?? 0;
+        $tripFee = $student->course->trip_fee ?? 0;
+        $tuitionFee = $student->course->tuition_fee ?? 0;
+        $praticalFee = $student->course->pratical_fee ?? 0;
+        $discount = $student->discount ?? 0;
+
+        $discountableFees = $tripFee + $tuitionFee + $praticalFee;
+        $studentCardFee = 2000;
+        
+        $discountAmount = ($discount > 0) ? ($discountableFees * ($discount / 100)) : 0;
+        
+        $totalFees = $registrationFee + $studentCardFee + ($discountableFees - $discountAmount);
+
+        $paidFees = \App\Models\StudentTransaction::where('student_id', $student->id)
+            ->whereIn('status', ['successful', 'paid'])
+            ->sum('amount');
+        
+        return max(0, $totalFees - $paidFees);
+    }
+
+   // Replace the existing payCash method in your StudentController with the following:
+
+public function payCash(Request $request, $studentId)
+{
+    try {
+        // Force JSON response for AJAX requests
+        $isAjax = $request->ajax() || 
+                  $request->wantsJson() || 
+                  $request->header('X-Requested-With') === 'XMLHttpRequest' ||
+                  $request->header('Accept') === 'application/json';
+
+        // Normalize fee_type early (trim and map common synonyms)
+        $incomingFeeType = $request->input('fee_type');
+        if (is_string($incomingFeeType)) {
+            $incomingFeeType = trim($incomingFeeType);
+        }
+
+        // Map common variants/synonyms to canonical values
+        $feeTypeMap = [
+            'tuition_fee'    => 'school_fee',
+            'tuition'        => 'school_fee',
+            'school fee'     => 'school_fee',
+            'school-fee'     => 'school_fee',
+            'registration'   => 'registration_fee',
+            'pratical_fee'   => 'practical_fee',
+            'pratical'       => 'practical_fee',
+            'practical'      => 'practical_fee',
+            'trip'           => 'trip_fee',
+            'studentcard'    => 'student_card',
+            'student-card'   => 'student_card',
+            'card'           => 'student_card',
+        ];
+
+        if ($incomingFeeType && isset($feeTypeMap[strtolower($incomingFeeType)])) {
+            $incomingFeeType = $feeTypeMap[strtolower($incomingFeeType)];
+        }
+
+        $request->merge(['fee_type' => $incomingFeeType]);
+
+        // Validate input
+        $validated = \Validator::make($request->all(), [
+            'amount_paid' => 'required|numeric|min:1',
+            'fee_type' => 'required|string|in:registration_fee,school_fee,trip_fee,practical_fee,student_card',
+        ], [
+            'amount_paid.required' => 'Please enter the payment amount.',
+            'amount_paid.numeric' => 'Payment amount must be a number.',
+            'amount_paid.min' => 'Payment amount must be at least 1 RWF.',
+            'fee_type.required' => 'Please select a fee type.',
+            'fee_type.in' => 'Invalid fee type selected.',
+        ]);
+
+        if ($validated->fails()) {
+            $errors = $validated->errors()->all();
+            $message = implode(' ', $errors);
+            
+            if ($isAjax) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $message,
+                    'errors' => $validated->errors()
+                ], 422);
+            }
+            return back()->withErrors($validated)->withInput();
+        }
+
+        // Find student
+        $student = Student::findOrFail($studentId);
+
+        // Get course
+        $course = $student->course;
+        if (!$course) {
+            $message = 'Student course not found. Cannot process payment.';
+            return $isAjax 
+                ? response()->json(['success' => false, 'message' => $message], 400)
+                : back()->with('error', $message);
+        }
+
+        // Get fee amounts
+        $registrationFee = floatval($course->registration_fee ?? 0);
+        $tripFee = floatval($course->trip_fee ?? 0);
+        $schoolFee = floatval($course->tuition_fee ?? 0);
+        $practicalFee = floatval($course->practical_fee ?? $course->pratical_fee ?? 0);
+        $studentCardFee = 2000;
+        $discount = floatval($student->discount ?? 0);
+
+        // Get already paid amounts
+        $paidRegistration = StudentTransaction::where('student_id', $student->id)
+            ->where('type', 'registration_fee')
+            ->whereIn('status', ['successful', 'paid'])
+            ->sum('amount');
+
+        $paidSchoolFee = StudentTransaction::where('student_id', $student->id)
+            ->where('type', 'school_fee')
+            ->whereIn('status', ['successful', 'paid'])
+            ->sum('amount');
+
+        $paidPractical = StudentTransaction::where('student_id', $student->id)
+            ->where('type', 'practical_fee')
+            ->whereIn('status', ['successful', 'paid'])
+            ->sum('amount');
+
+        $paidTrip = StudentTransaction::where('student_id', $student->id)
+            ->where('type', 'trip_fee')
+            ->whereIn('status', ['successful', 'paid'])
+            ->sum('amount');
+
+        $paidStudentCard = StudentTransaction::where('student_id', $student->id)
+            ->where('type', 'student_card')
+            ->whereIn('status', ['successful', 'paid'])
+            ->sum('amount');
+
+        // Calculate remaining balance for the specific fee type
+        $remainingAmount = 0;
+        $feeTypeName = '';
+        $totalFeeAmount = 0;
+
+        switch ($request->fee_type) {
+            case 'registration_fee':
+                $totalFeeAmount = $registrationFee;
+                $remainingAmount = $registrationFee - $paidRegistration;
+                $feeTypeName = 'Registration Fee';
+                break;
+
+            case 'school_fee':
+                $totalFeeAmount = $schoolFee;
+                $remainingAmount = $schoolFee - $paidSchoolFee;
+                $feeTypeName = 'School Fee';
+                break;
+
+            case 'practical_fee':
+                $totalFeeAmount = $practicalFee;
+                $remainingAmount = $practicalFee - $paidPractical;
+                $feeTypeName = 'Practical Fee';
+                break;
+
+            case 'trip_fee':
+                $totalFeeAmount = $tripFee;
+                $remainingAmount = $tripFee - $paidTrip;
+                $feeTypeName = 'Trip Fee';
+                break;
+
+            case 'student_card':
+                $totalFeeAmount = $studentCardFee;
+                $remainingAmount = $studentCardFee - $paidStudentCard;
+                $feeTypeName = 'Student Card';
+                break;
+
+            default:
+                $message = 'Invalid fee type: ' . $request->fee_type;
+                return $isAjax 
+                    ? response()->json(['success' => false, 'message' => $message], 400)
+                    : back()->with('error', $message);
+        }
+
+        // Validate fee exists
+        if ($totalFeeAmount <= 0) {
+            $message = "{$feeTypeName} is not configured for this course.";
+            return $isAjax 
+                ? response()->json(['success' => false, 'message' => $message], 400)
+                : back()->with('error', $message);
+        }
+
+        // Validate not already fully paid
+        if ($remainingAmount <= 0) {
+            $message = "{$feeTypeName} has already been fully paid.";
+            return $isAjax 
+                ? response()->json(['success' => false, 'message' => $message], 400)
+                : back()->with('warning', $message);
+        }
+
+        // Validate amount doesn't exceed remaining
+        $amountPaid = floatval($request->amount_paid);
+        if ($amountPaid > $remainingAmount) {
+            $message = "Payment amount (" . number_format($amountPaid, 0) . " RWF) exceeds remaining balance of " . number_format($remainingAmount, 0) . " RWF";
+            return $isAjax 
+                ? response()->json(['success' => false, 'message' => $message], 422)
+                : back()->with('error', $message);
+        }
+
+        DB::beginTransaction();
+
+        // Create transaction
+        $transaction = StudentTransaction::create([
+            'student_id' => $student->id,
+            'tx_ref' => 'CASH-' . $student->id . '-' . time() . '-' . uniqid(),
+            'type' => $request->fee_type,
+            'amount' => $amountPaid,
+            'currency' => 'RWF',
+            'status' => 'successful',
+            'meta' => json_encode([
+                'method' => 'cash',
+                'recorded_by' => auth()->user()->name ?? auth('staff')->user()->name ?? 'staff',
+                'recorded_at' => now()->toDateTimeString(),
+                'fee_name' => $feeTypeName,
+            ]),
+            'paid_at' => now(),
+        ]);
+
+        if (!$transaction || !$transaction->id) {
+            DB::rollBack();
+            $message = 'Payment failed: Unable to create transaction record.';
+            Log::error('Transaction creation failed', ['student_id' => $student->id]);
+            return $isAjax 
+                ? response()->json(['success' => false, 'message' => $message], 500)
+                : back()->with('error', $message);
+        }
+
+        // Calculate new balance
+        $discountableFees = $tripFee + $schoolFee + $practicalFee;
+        $discountAmount = ($discount > 0) ? ($discountableFees * ($discount / 100)) : 0;
+        $totalFees = $registrationFee + $studentCardFee + ($discountableFees - $discountAmount);
+
+        $paidFees = StudentTransaction::where('student_id', $student->id)
+            ->whereIn('status', ['successful', 'paid'])
+            ->sum('amount');
+
+        $balance = $totalFees - $paidFees;
+        $newRemaining = $remainingAmount - $amountPaid;
+
+        DB::commit();
+
+        // Send email (best effort)
+        try {
+            Mail::to($student->email)->send(
+                new \App\Mail\StudentCashPaymentConfirmationMail(
+                    $student, $amountPaid, $balance, now()->addDays(30),
+                    $totalFees, $paidFees, $registrationFee, $tripFee,
+                    $schoolFee, $practicalFee, $discountAmount,
+                    $request->fee_type, $studentCardFee
+                )
+            );
+        } catch (\Exception $e) {
+            Log::error('Email failed', ['error' => $e->getMessage()]);
+        }
+
+        Log::info('Cash payment recorded', [
+            'transaction_id' => $transaction->id,
+            'student_id' => $student->id,
+            'fee_type' => $feeTypeName,
+            'amount' => $amountPaid,
+        ]);
+
+        $successMessage = "Payment recorded successfully! " .
+            number_format($amountPaid, 0) . " RWF paid for {$feeTypeName}. " .
+            "Remaining: " . number_format($newRemaining, 0) . " RWF.";
+
+        // ALWAYS return JSON for AJAX
+        if ($isAjax) {
+            return response()->json([
+                'success' => true,
+                'message' => $successMessage,
+                'balance' => $balance,
+                'remaining' => $newRemaining
+            ], 200);
+        }
+
+        return back()->with('success', $successMessage);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::error('Cash payment failed', [
+            'student_id' => $studentId,
+            'error' => $e->getMessage(),
+        ]);
+
+        $message = 'Payment failed: ' . $e->getMessage();
+        
+        // Check if we already detected AJAX mode
+        if (isset($isAjax) && $isAjax) {
+            return response()->json(['success' => false, 'message' => $message], 500);
+        }
+
+        return back()->with('error', $message);
+    }
+}
+
+    public function ajaxPayments($studentId)
+    {
+        $student = \App\Models\Student::findOrFail($studentId);
+        $payments = \App\Models\StudentTransaction::where('student_id', $student->id)
+            ->orderByDesc('paid_at')
+            ->get();
+
+        return view('students.partials.payments_table', compact('student', 'payments'))->render();
+    }
+
+    public function sendTranscript($studentId)
+    {
+        $student = \App\Models\Student::findOrFail($studentId);
+        $transactions = \App\Models\StudentTransaction::where('student_id', $student->id)
+            ->orderBy('paid_at')
+            ->get();
+
+        $registrationFee = $student->course->registration_fee ?? 0;
+        $tripFee = $student->course->trip_fee ?? 0;
+        $tuitionFee = $student->course->tuition_fee ?? 0;
+        $praticalFee = $student->course->pratical_fee ?? 0;
+        $discount = $student->discount ?? 0;
+        $studentCardFee = 2000;
+
+        $discountableFees = $tripFee + $tuitionFee + $praticalFee;
+        
+        $discountAmount = ($discount > 0) ? ($discountableFees * ($discount / 100)) : 0;
+        
+        $totalToBePaid = $registrationFee + $studentCardFee + ($discountableFees - $discountAmount);
+
+        $totalPaid = \App\Models\StudentTransaction::where('student_id', $student->id)
+            ->whereIn('status', ['successful', 'paid'])
+            ->sum('amount');
+        $outstanding = $totalToBePaid - $totalPaid;
+
+        \Mail::to($student->email)->send(
+            new \App\Mail\StudentTranscriptMail(
+                $student,
+                $transactions,
+                $totalToBePaid,
+                $totalPaid,
+                $outstanding,
+                $studentCardFee,
+                $discountAmount
+            )
+        );
+
+        return back()->with('success', 'Transcript sent to student.');
+    }
+
+    public function generateStudentCard(Request $request, $studentId)
+    {
+        $student = Student::with('course', 'branch', 'academicYear')->findOrFail($studentId);
+
+        if (StudentCard::where('student_id', $student->id)->exists()) {
+            return back()->with('error', 'Student card already exists for this student.');
+        }
+
+        // Convert image to base64 before storing
+        $passportPhoto = null;
+        if ($student->passport_photo) {
+            // If stored as file path
+            if (Storage::disk('public')->exists($student->passport_photo)) {
+                $passportPhoto = base64_encode(Storage::disk('public')->get($student->passport_photo));
+            }
+            // If already base64
+            elseif (strpos($student->passport_photo, 'base64') !== false || strlen($student->passport_photo) > 1000) {
+                $passportPhoto = $student->passport_photo;
+            }
+        }
+
+        StudentCard::create([
+            'student_id' => $student->id,
+            'reg_number' => $student->reg_number,
+            'course' => $student->course->course_name ?? '',
+            'branch' => $student->branch->name ?? '',
+            'passport_photo' => $passportPhoto,
+            'academic_year' => $student->academicYear->year ?? date('Y'),
+            'card_generated_by' => Auth::user()->name ?? 'system',
+            'generated_at' => now(),
+        ]);
+
+        return back()->with('success', 'Student card generated successfully.');
+    }
+
+    public function listStudentCards()
+    {
+        $cards = StudentCard::with('student')->latest()->paginate(20);
+        return view('students.StudentCard', compact('cards'));
+    }
+
+    public function generateCardsBulk(Request $request)
+    {
+        $query = Student::with(['course', 'branch', 'academicYear']);
+
+        if ($request->filled('name')) {
+            $query->where('full_name', 'like', '%' . $request->name . '%');
+        }
+        if ($request->filled('reg_number')) {
+            $query->where('reg_number', 'like', '%' . $request->reg_number . '%');
+        }
+        if ($request->filled('email')) {
+            $query->where('email', 'like', '%' . $request->email . '%');
+        }
+        if ($request->filled('telephone')) {
+            $query->where('phone', 'like', '%' . $request->telephone . '%');
+        }
+        if ($request->filled('academic_year')) {
+            $query->whereHas('academicYear', function($q) use ($request) {
+                $q->where('year', 'like', '%' . $request->academic_year . '%');
+            });
+        }
+        if ($request->filled('course')) {
+            $query->whereHas('course', function($q) use ($request) {
+                $q->where('course_name', 'like', '%' . $request->course . '%')
+                  ->orWhere('abbreviation', 'like', '%' . $request->course . '%');
+            });
+        }
+
+        $students = $query->get();
+        $generated = 0;
+        $skipped = 0;
+
+        foreach ($students as $student) {
+            if (\App\Models\StudentCard::where('student_id', $student->id)->exists()) {
+                $skipped++;
+                continue;
+            }
+            $hasPaid = \App\Models\StudentTransaction::where('student_id', $student->id)
+                ->where('type', 'student_card')
+                ->whereIn('status', ['successful', 'paid'])
+                ->exists();
+            if (!$hasPaid) {
+                $skipped++;
+                continue;
+            }
+            \App\Models\StudentCard::create([
+                'student_id' => $student->id,
+                'reg_number' => $student->reg_number,
+                'course' => $student->course->course_name ?? '',
+                'branch' => $student->branch->name ?? '',
+                'passport_photo' => $student->passport_photo ?? null,
+                'academic_year' => $student->academicYear->year ?? date('Y'),
+                'card_generated_by' => \Auth::user()->name ?? 'system',
+                'generated_at' => now(),
+            ]);
+            $generated++;
+        }
+
+        return back()->with('success', "$generated student card(s) generated. $skipped skipped (already exists or not paid).");
+    }
+
+    private function generateUniqueRegNumber($courseAbbreviation, $yearRange)
+    {
+        $course = Course::where('abbreviation', $courseAbbreviation)->first();
+        $academicYear = AcademicYear::where('year', $yearRange)->first();
+        
+        if (!$course || !$academicYear) {
+            return 'ESA' . strtoupper($courseAbbreviation) . time() . $yearRange;
+        }
+        
+        $prefix = 'ESA' . strtoupper($courseAbbreviation);
+        
+        $existingNumbers = Student::where('course_id', $course->id)
+            ->where('academic_year_id', $academicYear->id)
+            ->where('reg_number', 'like', $prefix . '%')
+            ->pluck('reg_number')
+            ->map(function($regNumber) use ($prefix, $yearRange) {
+                $pattern = '/^' . preg_quote($prefix, '/') . '(\d+)' . preg_quote($yearRange, '/') . '$/';
+                if (preg_match($pattern, $regNumber, $matches)) {
+                    return (int) $matches[1];
+                }
+                return 0;
+            })
+            ->filter()
+            ->toArray();
+        
+        if (empty($existingNumbers)) {
+            $nextNumber = 1;
+        } else {
+            $nextNumber = max($existingNumbers) + 1;
+        }
+        
+        $studentNumber = str_pad($nextNumber, 2, '0', STR_PAD_LEFT);
+        $regNumber = $prefix . $studentNumber . $yearRange;
+        
+        while (Student::where('reg_number', $regNumber)->exists()) {
+            $nextNumber++;
+            $studentNumber = str_pad($nextNumber, 2, '0', STR_PAD_LEFT);
+            $regNumber = $prefix . $studentNumber . $yearRange;
+            
+            if ($nextNumber > 9999) {
+                $regNumber = $prefix . uniqid() . $yearRange;
+                break;
+            }
+        }
+        
+        return $regNumber;
+    }
+
+    public function profile()
+    {
+        $student = auth()->user();
+        return view('students.profile', compact('student'));
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $student = auth()->user();
+
+        $request->validate([
+            'full_name' => 'nullable|string|max:255',
+            'telephone' => 'nullable|string|max:20',
+            'email' => 'nullable|email|max:255',
+            'sex' => 'nullable|in:Male,Female,Other',
+            'identification_type' => 'nullable|in:ID,Passport',
+            'id_number' => 'nullable|string|max:50',
+            'id_photo' => 'nullable|image|mimes:jpg,jpeg,png|max:200',
+            'passport_photo' => 'nullable|image|mimes:jpg,jpeg,png|max:200',
+            'education_level' => 'nullable|string|max:50',
+            'senior3_document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:200',
+            'senior6_document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:200',
+            'other_supporting_document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:200',
+            'password' => 'nullable|string|min:8|confirmed',
+        ]);
+
+        $updatedFields = [];
+
+        if ($request->filled('full_name') && $request->full_name !== $student->full_name) {
+            $student->full_name = $request->full_name;
+            $updatedFields[] = 'Full Name';
+        }
+        if ($request->filled('telephone') && $request->telephone !== $student->phone) {
+            $student->phone = $request->telephone;
+            $updatedFields[] = 'Telephone';
+        }
+        if ($request->filled('email') && $request->email !== $student->email) {
+            $student->email = $request->email;
+            $updatedFields[] = 'Email';
+        }
+        if ($request->filled('sex') && $request->sex !== $student->sex) {
+            $student->sex = $request->sex;
+            $updatedFields[] = 'Sex';
+        }
+        if ($request->filled('identification_type') && $request->identification_type !== $student->identification_type) {
+            $student->identification_type = $request->identification_type;
+            $updatedFields[] = 'Identification Type';
+        }
+        if ($request->filled('id_number') && $request->id_number !== $student->id_number) {
+            $student->id_number = $request->id_number;
+            $updatedFields[] = ($request->identification_type === 'ID') ? 'ID Number' : 'Passport Number';
+        }
+        if ($request->hasFile('id_photo')) {
+            $student->id_photo = base64_encode(file_get_contents($request->file('id_photo')->getRealPath()));
+            $updatedFields[] = ($request->identification_type === 'ID') ? 'ID Image' : 'Passport Image';
+        }
+        if ($request->hasFile('passport_photo')) {
+            $student->passport_photo = base64_encode(file_get_contents($request->file('passport_photo')->getRealPath()));
+            $updatedFields[] = 'Passport Photo';
+        }
+        if ($request->filled('education_level') && $request->education_level !== $student->education_level) {
+            $student->education_level = $request->education_level;
+            $updatedFields[] = 'Education Level';
+        }
+        if ($request->education_level === 'Senior 3' && $request->hasFile('senior3_document')) {
+            $student->senior3_document = base64_encode(file_get_contents($request->file('senior3_document')->getRealPath()));
+            $updatedFields[] = 'Senior 3 Document';
+        }
+        if ($request->education_level === 'Senior 6' && $request->hasFile('senior6_document')) {
+            $student->senior6_document = base64_encode(file_get_contents($request->file('senior6_document')->getRealPath()));
+            $updatedFields[] = 'Senior 6 Document';
+        }
+        if ($request->education_level === 'Other' && $request->hasFile('other_supporting_document')) {
+            $student->other_supporting_document = base64_encode(file_get_contents($request->file('other_supporting_document')->getRealPath()));
+            $updatedFields[] = 'Other Supporting Document';
+        }
+        if ($request->filled('password')) {
+            $student->password = \Hash::make($request->password);
+            $updatedFields[] = 'Password';
+        }
+
+        if (count($updatedFields)) {
+            $student->save();
+            return back()->with('success', 'Profile updated successfully.')->with('updated_fields', $updatedFields);
+        } else {
+            return back()->with('success', 'No changes were made.');
+        }
+    }
+
+    public function attendance(Request $request)
+    {
+        if (auth()->guard('student')->check()) {
+            $user = auth()->guard('student')->user();
+            $attendanceRecords = $user->attendances()->orderBy('date')->get();
+            $totalDays = $attendanceRecords->count();
+            $attendedDays = $attendanceRecords->where('status', 'P')->count();
+            $progress = $totalDays > 0 ? round(($attendedDays / $totalDays) * 100) : 0;
+
+            $approvedAttendances = $user->attendances()
+                ->where('approved', 1)
+                ->orderByDesc('marked_at')
+                ->get();
+
+            $totalDays = $approvedAttendances->count();
+            $attendedDays = $approvedAttendances->where('status', 'present')->count();
+            $attendancePercent = $totalDays > 0 ? round(($attendedDays / $totalDays) * 100, 2) : 0;
+
+            return view('students.attendance', compact(
+                'approvedAttendances',
+                'totalDays',
+                'attendedDays',
+                'attendancePercent'
+            ));
+        }
+
+        if (auth()->guard('staff')->check() || auth()->guard('teacher')->check()) {
+            $courses = Course::all();
+            $branches = Branch::all();
+
+            $today = now()->format('Y-m-d');
+            $lessons = [];
+            $students = [];
+
+            if ($request->filled('course_id') && $request->filled('branch_id')) {
+                $courseId = $request->course_id;
+                $branchId = $request->branch_id;
+
+                $dayOfWeek = strtolower(now()->format('l'));
+
+                $lessons = \App\Models\Timetable::where('course_id', $courseId)
+                    ->where('branch_id', $branchId)
+                    ->where('day_of_week', $dayOfWeek)
+                    ->where('is_active', true)
+                    ->where('effective_from', '<=', $today)
+                    ->where(function($q) use ($today) {
+                        $q->whereNull('effective_to')->orWhere('effective_to', '>=', $today);
+                    })
+                    ->orderBy('start_time')
+                    ->get();
+
+                $students = \App\Models\Student::where('course_id', $courseId)
+                    ->where('branch_id', $branchId)
+                    ->get();
+            }
+
+            return view('staff.attendance_manage', compact('courses', 'branches', 'lessons', 'students', 'today'));
+        }
+
+        if (auth()->guard('admin')->check()) {
+            $students = \App\Models\Student::with('attendances')->get();
+            return view('admin.attendance_dashboard', compact('students'));
+        }
+
+        abort(403);
+    }
+
+    public function destroy($id)
+    {
+        try {
+            $student = Student::findOrFail($id);
+            $studentName = $student->full_name;
+            
+            // Check if student has transactions
+            $transactionCount = $student->transactions()->count();
+            
+            if ($transactionCount > 0) {
+                return redirect()->back()->with('error', 
+                    "Cannot delete student '{$studentName}'. Student has {$transactionCount} transaction(s). Please contact admin.");
+            }
+            
+            // Delete student photo if exists
+            if ($student->id_photo && Storage::disk('public')->exists($student->id_photo)) {
+                Storage::disk('public')->delete($student->id_photo);
+            }
+            
+            // Delete the student
+            $student->delete();
+            
+            Log::info("Student deleted successfully", [
+                'student_id' => $id,
+                'student_name' => $studentName,
+                'deleted_by' => auth()->user()->id ?? auth('admin')->user()->id ?? 'system'
+            ]);
+            
+            return redirect()->back()
+                ->with('success', "Student '{$studentName}' has been successfully deleted.");
+                
+        } catch (\Exception $e) {
+            Log::error("Error during student deletion", [
+                'student_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+            
+            return redirect()->back()
+                ->with('error', 'An error occurred while deleting the student: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Edit transaction (authorized user only)
+     * Only for the authorized email in admin/staff guards.
+     */
+ public function editTransaction(Request $request, $transactionId)
+{
+    // The staff routes are protected with auth:staff middleware, so ensure staff is present.
+    $staff = auth('staff')->user();
+    if (! $staff) {
+        // If staff guard fails, show a 403 for security.
+        abort(403, 'Unauthorized. Only staff can edit transactions.');
+    }
+
+    $transaction = StudentTransaction::findOrFail($transactionId);
+
+    // If this is a GET request, return the staff edit form that your modal will load.
+    if ($request->isMethod('get')) {
+        // Prefer a staff-specific edit view. If you want to reuse the admin view, change the view name.
+        return view('staff.transactions.edit', compact('transaction'));
+    }
+
+    // For PUT requests: validate and update
+    $request->validate([
+        'amount' => 'required|numeric|min:0',
+        'type' => 'required|string',
+        'status' => 'required|string',
+        'paid_at' => 'nullable|date',
+    ]);
+
+    $transaction->amount = $request->input('amount');
+    $transaction->type = $request->input('type');
+    $transaction->status = $request->input('status');
+    if ($request->filled('paid_at')) {
+        $transaction->paid_at = $request->input('paid_at');
+    }
+    $transaction->save();
+
+    Log::info('Transaction edited by staff', [
+        'transaction_id' => $transaction->id,
+        'edited_by' => $staff->email ?? 'staff',
+        'changes' => $request->only(['amount', 'type', 'status', 'paid_at']),
+    ]);
+
+    if ($request->wantsJson() || $request->ajax()) {
+        return response()->json(['success' => true, 'message' => 'Transaction updated successfully.']);
+    }
+
+    return redirect()->back()->with('success', 'Transaction updated successfully.');
+}
+
+public function deleteTransaction(Request $request, $transactionId)
+{
+    // The staff routes are protected with auth:staff middleware, so ensure staff is present.
+    $staff = auth('staff')->user();
+    if (! $staff) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Unauthorized. Only staff can delete transactions.'
+        ], 403);
+    }
+
+    try {
+        $transaction = StudentTransaction::findOrFail($transactionId);
+        $transaction->delete();
+
+        Log::info('Transaction deleted by staff', [
+            'transaction_id' => $transactionId,
+            'deleted_by' => $staff->email ?? 'staff'
+        ]);
+
+        return response()->json(['success' => true, 'message' => 'Transaction deleted successfully.']);
+    } catch (\Exception $e) {
+        Log::error('Failed to delete transaction by staff', [
+            'transaction_id' => $transactionId,
+            'error' => $e->getMessage()
+        ]);
+        return response()->json(['success' => false, 'message' => 'Failed to delete transaction: ' . $e->getMessage()], 500);
+    }
+}
+    public function transcriptAjax($studentId)
+    {
+        $student = \App\Models\Student::findOrFail($studentId);
+        
+        $payments = \App\Models\StudentTransaction::where('student_id', $studentId)
+            ->whereIn('status', ['successful', 'paid', 'completed'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+        
+        \Log::info('Payments found: ' . $payments->count());
+        \Log::info('Types: ' . $payments->pluck('type')->toJson());
+        
+        return view('students.partials.transcript_table', compact('student', 'payments'))->render();
+    }
+
+    public function transcript($studentId)
+    {
+        $student = \App\Models\Student::findOrFail($studentId);
+        
+        $payments = \App\Models\StudentTransaction::where('student_id', $studentId)
+            ->whereIn('status', ['successful', 'paid', 'completed'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+        
+        return view('students.transcript', compact('student', 'payments'));
+    }
+
+    private function buildRegNumber(string $abbr, string $yearRange, int $id): string
+    {
+        return $abbr . str_pad($id, 3, '0', STR_PAD_LEFT) . $yearRange;
+    }
+}

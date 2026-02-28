@@ -23,4 +23,25 @@ class AcademicYear extends Model
         'expiry_date' => 'date',
         'is_ongoing' => 'boolean',
     ];
+     public function terms()
+    {
+        return $this->hasMany(Term::class);
+    }
+
+    public function schoolFees()
+    {
+        return $this->hasMany(SchoolFee::class);
+    }
+   public function students()
+    {
+        return $this->hasMany(Student::class);
+    }
+
+  
+    public function courses()
+{
+    return $this->hasMany(Course::class);
+}
+
+
 }
