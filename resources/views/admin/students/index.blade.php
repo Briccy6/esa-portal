@@ -17,9 +17,12 @@
                         <p class="page-subtitle">Manage and view all registered students</p>
                     </div>
                     <div class="header-actions">
-                        <a href="{{ route('admin.students.create') }}" class="btn btn-primary btn-lg">
+                        <a href="{{ route('admin.students.create') }}" class="btn btn-primary btn-lg me-2">
                             <i class="bi bi-plus-circle me-2"></i>Add New Student
                         </a>
+                        <button type="button" class="btn btn-success btn-lg" data-bs-toggle="modal" data-bs-target="#nesaRegistrationModal">
+                            <i class="bi bi-award me-2"></i>Register NESA
+                        </button>
                     </div>
                 </div>
             </div>
@@ -146,12 +149,6 @@
                     <th>Student Name</th>
                     <th>Branch</th>
                     <th>Course</th>
-                    <th>Reg Number</th>
-                    <th>NESA Registered</th>
-                    <th>Total to Pay</th>
-                    <th>Discount & Final Payment</th>
-                    <th>Total Paid</th>
-                    <th>Remaining</th>
                     <th class="text-center">Actions</th>
                 </tr>
             </thead>
@@ -179,15 +176,6 @@
                         $totalToPay = $studentcard + $registrationFee + ($discountableFees - $discountAmount);
 
                         // Get payments from student_transactions table
-                        $studentTransactions = \App\Models\StudentTransaction::where('student_id', $student->id)
-                            ->whereIn('status', ['successful', 'paid'])
-                            ->get();
-
-                        $totalPaid = $studentTransactions->sum('amount');
-                        $remaining = $totalToPay - $totalPaid;
-                        $hasPaidReg = $studentTransactions
-                            ->where('type', 'registration')
-                            ->sum('amount') > 0;
                     @endphp
                     <tr class="student-row" data-student-id="{{ $student->id }}">
                         <td class="fw-bold text-primary">{{ $students->firstItem() + $index }}</td>
@@ -195,16 +183,27 @@
                             <div class="student-info">
                                 <div class="student-avatar">
                                     @if($student->id_photo)
-                                        <img src="{{ asset('storage/' . $student->id_photo) }}" alt="Student Photo" class="avatar-img">
-                                    @else
-                                        <div class="avatar-placeholder">
-                                            {{ substr($student->full_name, 0, 2) }}
-                                        </div>
-                                    @endif
+                                    @php
+                                        // support both raw base64 and storage paths
+                                        $photoSrc = '';
+                                        if(str_starts_with($student->id_photo, 'data:image')) {
+                                            $photoSrc = $student->id_photo;
+                                        } elseif(preg_match('/^[A-Za-z0-9\/\r\n+]+={0,2}$/', $student->id_photo)) {
+                                            // looks like base64 without prefix
+                                            $photoSrc = 'data:image/jpeg;base64,' . $student->id_photo;
+                                        } else {
+                                            $photoSrc = asset('storage/' . $student->id_photo);
+                                        }
+                                    @endphp
+                                    <img src="{{ $photoSrc }}" alt="Student Photo" class="avatar-img">
+                                @else
+                                    <div class="avatar-placeholder">
+                                        {{ substr($student->full_name, 0, 2) }}
+                                    </div>
+                                @endif
                                 </div>
                                 <div class="student-details">
                                     <div class="student-name">{{ $student->full_name }}</div>
-                                    <small class="text-muted d-block">Reg: {{ $student->reg_number }}</small>
                                     <div class="student-meta">
                                         <span class="meta-item">
                                             <i class="bi bi-building"></i>
@@ -212,20 +211,9 @@
                                         </span>
                                         <span class="meta-item">
                                             <i class="bi bi-book"></i>
-                                            {{ $student->course->course_name ?? 'N/A' }}
+                                            {{ $student->course->abbreviation ?? $student->course->course_name ?? 'N/A' }}
                                         </span>
                                     </div>
-                                    @if($student->nesa_registered)
-                                        <span class="badge bg-success nesa-badge">
-                                            <i class="bi bi-check-circle"></i>
-                                            NESA Registered
-                                        </span>
-                                    @else
-                                        <span class="badge bg-secondary nesa-badge">
-                                            <i class="bi bi-x-circle"></i>
-                                            Not Registered
-                                        </span>
-                                    @endif
                                 </div>
                             </div>
                         </td>
@@ -233,95 +221,42 @@
                             {{ $student->branch->name ?? 'N/A' }}
                         </td>
                         <td>
-                            {{ $student->course->course_name ?? 'N/A' }}
-                        </td>
-                        <td>
-                            {{ $student->reg_number }}
-                        </td>
-                        <td>
-                            @if($student->nesa_registered)
-                                <span class="badge bg-success">Yes</span>
-                            @else
-                                <span class="badge bg-danger">No</span>
-                            @endif
-                        </td>
-                        <td>
-                            <span class="badge bg-primary">
-                                {{ number_format($totalToPay, 2) }}
-                            </span>
-                            <br>
-                            <small class="text-muted">
-                                Reg: {{ number_format($registrationFee, 2) }} | 
-                                Other: {{ number_format($discountableFees - $discountAmount, 2) }}
-                            </small>
-                        </td>
-                        <td>
-                            @if($discount > 0)
-                                <span class="badge bg-success">{{ $discount }}% Discount</span>
-                                <br>
-                                <small class="text-muted">Applied to: {{ number_format($discountableFees, 2) }}</small>
-                            @else
-                                <span class="badge bg-secondary">No Discount</span>
-                            @endif
-                        </td>
-                        <td>
-                            <span class="badge bg-info">
-                                {{ number_format($totalPaid, 2) }}
-                            </span>
-                        </td>
-                        <td>
-                            <span class="badge bg-warning text-dark">
-                                {{ number_format($remaining, 2) }}
-                            </span>
+                            {{ $student->course->abbreviation ?? $student->course->course_name ?? 'N/A' }}
                         </td>
                         <td class="text-center">
                             <div class="action-buttons">
                                 <a href="{{ route('admin.students.show', $student->id) }}" 
-                                   class="btn btn-sm btn-outline-primary" 
+                                   class="btn btn-sm btn-outline-primary action-btn" 
                                    data-bs-toggle="tooltip" 
                                    title="View Details">
                                     <i class="bi bi-eye"></i>
                                 </a>
                                 <a href="{{ route('admin.students.edit', $student->id) }}" 
-                                   class="btn btn-sm btn-outline-warning" 
+                                   class="btn btn-sm btn-outline-warning action-btn" 
                                    data-bs-toggle="tooltip" 
                                    title="Edit Student">
                                     <i class="bi bi-pencil"></i>
                                 </a>
                                 <a href="javascript:void(0);" 
-                                   class="btn btn-sm btn-outline-secondary" 
+                                   class="btn btn-sm btn-outline-secondary action-btn" 
                                    data-bs-toggle="tooltip" 
                                    title="Show Password"
                                    onclick="showPasswordModal('{{ $student->reg_number }}', '{{ $student->password_plain ?? 'Not Available' }}')">
                                     <i class="bi bi-key"></i>
                                 </a>
                                 <button type="button" 
-                                        class="btn btn-sm btn-outline-danger" 
+                                        class="btn btn-sm btn-outline-danger action-btn" 
                                         data-bs-toggle="tooltip" 
                                         title="Delete Student"
                                         onclick="confirmDelete({{ $student->id }}, '{{ addslashes($student->full_name) }}')">
                                     <i class="bi bi-trash"></i>
-                                </button>
-                                <button type="button"
-                                        class="btn btn-sm btn-outline-info"
-                                        data-bs-toggle="tooltip"
-                                        title="Set Discount"
-                                        onclick="showDiscountModal({{ $student->id }}, '{{ $student->reg_number }}', '{{ addslashes($student->full_name) }}', {{ $student->discount ?? 0 }})">
-                                    <i class="bi bi-percent"></i>
-                                </button>
-                                <button type="button"
-                                        class="btn btn-sm btn-outline-dark"
-                                        data-bs-toggle="tooltip"
-                                        title="Generate Transcript"
-                                        onclick="showTranscriptModal({{ $student->id }}, '{{ addslashes($student->full_name) }}', '{{ $student->reg_number }}')">
-                                    <i class="bi bi-receipt"></i>
                                 </button>
                             </div>
                         </td>
                     </tr>
                 @empty
                     <tr class="no-data-row">
-                        <td colspan="8" class="text-center py-5">
+                        <td colspan="6" class="text-center py-5">
                             <div class="no-data-content">
                                 <i class="bi bi-people display-1 text-muted mb-3"></i>
                                 <h5 class="text-muted">No Students Found</h5>
@@ -340,11 +275,11 @@
     @if($students->hasPages())
     <div class="table-footer">
         <div class="d-flex justify-content-between align-items-center p-3">
-            <div class="text-muted">
-                Showing {{ $students->firstItem() }} to {{ $students->lastItem() }} of {{ $students->total() }} students
+            <div class="pagination-info">
+                Showing <strong>{{ $students->firstItem() }}</strong> to <strong>{{ $students->lastItem() }}</strong> of <strong>{{ $students->total() }}</strong> students
             </div>
-            <div>
-                {{ $students->links() }}
+            <div class="pagination-wrapper">
+                {{ $students->links('') }}
             </div>
         </div>
     </div>
@@ -469,33 +404,60 @@
         font-size: 0.9rem;
     }
     
-    .nesa-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.25rem;
-        padding: 0.25rem 0.5rem;
-        border-radius: 12px;
-        font-size: 0.75rem;
-        font-weight: 500;
-        margin-top: 0.5rem;
-    }
-    
-    .nesa-badge.bg-success {
-        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-        color: white;
-    }
-    
-    .nesa-badge.bg-secondary {
-        background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
-        color: white;
-    }
     
     .action-buttons .btn {
         transition: all 0.3s ease;
+        transform: translateY(0);
+        opacity: 1;
     }
 
     .action-buttons .btn:hover {
         transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .action-buttons .btn:focus {
+        transform: translateY(-2px);
+        box-shadow: 0 0 0 8px rgba(0,0,0,0.2);
+        outline: none;
+    }
+
+    .action-buttons .btn:active {
+        transform: translateY(0);
+        box-shadow: 0 0 0 4px rgba(0,0,0,0.25);
+    }
+
+    /* Reactbits Animation Classes */
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes pulse {
+        0%, 100% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.05);
+        }
+    }
+
+    .action-buttons .btn {
+        animation: slideIn 0.3s ease-out;
+    }
+
+    .action-buttons .btn:hover {
+        animation: pulse 0.5s ease-in-out infinite;
+    }
+
+    .action-buttons .btn:active {
+        animation: none;
     }
 
     .no-data-content {
@@ -508,7 +470,147 @@
     }
 
     .pagination {
-        margin-bottom: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 2rem 0;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    /* Target Laravel pagination structure */
+    .pagination .page-link,
+    .pagination > span > a,
+    .pagination > a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 40px;
+        height: 40px;
+        margin: 0 0.25rem;
+        padding: 0;
+        border: 2px solid transparent;
+        border-radius: 8px;
+        font-weight: 500;
+        font-size: 0.875rem;
+        line-height: 1;
+        color: #6c757d;
+        background: #ffffff;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+        animation: slideIn 0.4s ease-out;
+    }
+
+    .pagination .page-link::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        border-radius: 50%;
+        background: rgba(102, 126, 234, 0.1);
+        transform: translate(-50%, -50%);
+        transition: all 0.3s ease;
+    }
+
+    .pagination .page-link:hover::before {
+        width: 100%;
+        height: 100%;
+        background: rgba(102, 126, 234, 0.15);
+    }
+
+    .pagination .page-link:hover {
+        color: #ffffff;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-color: #667eea;
+        transform: translateY(-2px) scale(1.05);
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+
+    .pagination .page-link:focus {
+        color: #ffffff;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-color: #667eea;
+        transform: translateY(-1px) scale(1.02);
+        box-shadow: 0 0 0 8px rgba(102, 126, 234, 0.4);
+        outline: none;
+    }
+
+    .pagination .page-link:active {
+        transform: translateY(0) scale(0.98);
+        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2);
+    }
+
+    .pagination .active {
+        color: #ffffff;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-color: #667eea;
+        font-weight: 600;
+        transform: scale(1.05);
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        animation: pulse 2s ease-in-out infinite;
+    }
+
+    .pagination .disabled {
+        color: #adb5bd;
+        background: #f8f9fa;
+        border-color: #e9ecef;
+        cursor: not-allowed;
+        opacity: 0.6;
+        transform: none;
+        animation: none;
+    }
+
+    .pagination .disabled:hover {
+        transform: none;
+        box-shadow: none;
+        animation: none;
+    }
+
+    .pagination .disabled::before {
+        display: none;
+    }
+
+    /* Pagination info text */
+    .pagination-info {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.5rem 1rem;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        font-size: 0.875rem;
+        color: #6c757d;
+        font-weight: 500;
+        margin: 0 1rem;
+        animation: slideIn 0.5s ease-out;
+    }
+
+    .pagination-info strong {
+        color: #495057;
+        font-weight: 600;
+    }
+
+    /* Responsive pagination */
+    @media (max-width: 768px) {
+        .pagination {
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .pagination .page-link {
+            min-width: 35px;
+            height: 35px;
+            font-size: 0.8rem;
+            margin: 0.125rem;
+        }
+        
+        .pagination-info {
+            font-size: 0.8rem;
+            margin: 0.5rem 0;
+        }
     }
 
     @media (max-width: 768px) {
@@ -1007,6 +1109,7 @@ function initializeTooltips() {
     });
 }
 
+
 function clearFilters() {
     console.log('Clearing filters');
     document.getElementById('nameSearch').value = '';
@@ -1017,110 +1120,141 @@ function clearFilters() {
     performSearch();
 }
 
-// Modal Functions
-function confirmDelete(studentId, studentName) {
-    document.getElementById('studentName').textContent = studentName;
-    document.getElementById('deleteForm').action = `/admin/students/${studentId}`;
-    const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
-    deleteModal.show();
-}
-
-function showPasswordModal(regNumber, password) {
-    document.getElementById('modalRegNumber').textContent = regNumber;
-    document.getElementById('modalPassword').value = password;
-    document.getElementById('modalPassword').type = 'text';
-    document.getElementById('togglePasswordIcon').className = 'bi bi-eye';
-    const modal = new bootstrap.Modal(document.getElementById('passwordModal'));
-    modal.show();
-}
-
-function togglePasswordVisibility() {
-    const input = document.getElementById('modalPassword');
-    const icon = document.getElementById('togglePasswordIcon');
-    if (input.type === 'password') {
-        input.type = 'text';
-        icon.className = 'bi bi-eye';
-    } else {
-        input.type = 'password';
-        icon.className = 'bi bi-eye-slash';
-    }
-}
-
-function showDiscountModal(studentId, regNumber, fullName, discount) {
-    document.getElementById('discountRegNumber').textContent = regNumber;
-    document.getElementById('discountFullName').textContent = fullName;
-    document.getElementById('discountInput').value = discount;
-    document.getElementById('discountForm').action = `/admin/students/${studentId}/discount`;
-    const modal = new bootstrap.Modal(document.getElementById('discountModal'));
-    modal.show();
-}
-
-function showTranscriptModal(studentId, fullName, regNumber) {
-    document.getElementById('transcriptStudentName').textContent = fullName;
-    document.getElementById('transcriptRegNumber').textContent = regNumber;
-    
-    const tbody = document.getElementById('transcriptTableBody');
-    tbody.innerHTML = '<tr><td colspan="4" class="text-center"><span class="spinner-border spinner-border-sm"></span> Loading...</td></tr>';
-    
-    fetch(`/admin/students/${studentId}/transcript-ajax`)
-        .then(response => response.text())
-        .then(html => {
-            tbody.innerHTML = html;
-        })
-        .catch(error => {
-            console.error('Error loading transcript:', error);
-            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error loading transcript</td></tr>';
-        });
-    
-    const modal = new bootstrap.Modal(document.getElementById('transcriptModal'));
-    modal.show();
-}
-
-// Export and Print Functions
-function exportToCSV() {
-    const table = document.querySelector('#studentsTableContainer table');
-    if (!table) return;
-    
-    const rows = Array.from(table.querySelectorAll('tr'));
-    const csv = rows.map(row => {
-        const cells = Array.from(row.querySelectorAll('th, td'));
-        return cells.slice(0, -1).map(cell => {
-            return `"${cell.textContent.trim().replace(/"/g, '""')}"`;
-        }).join(',');
-    }).join('\n');
-
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'students_list_' + new Date().toISOString().split('T')[0] + '.csv';
-    a.click();
-    window.URL.revokeObjectURL(url);
-}
-
-function printTable() {
-    window.print();
-}
 </script>
 
-<style media="print">
-    .page-header,
-    .filters-card,
-    .stats-card,
-    .header-actions,
-    .action-buttons,
-    .btn,
-    .pagination {
-        display: none !important;
-    }
+<!-- NESA Registration Modal -->
+<div class="modal fade" id="nesaRegistrationModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <form id="nesaRegistrationForm" method="POST" action="{{ route('admin.nesa.markAsRegistered', ['student' => ':studentId']) }}" enctype="multipart/form-data">
+            @csrf
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-award me-2"></i>NESA Registration
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Select Student</label>
+                            <select name="student_id" id="studentSelect" class="form-select" required>
+                                <option value="">Choose a student...</option>
+                                @foreach($students as $student)
+                                    @if(!$student->nesa_registered)
+                                    <option value="{{ $student->id }}" 
+                                            data-reg-number="{{ $student->reg_number }}"
+                                            data-name="{{ $student->full_name }}"
+                                            data-email="{{ $student->email }}"
+                                            data-branch="{{ $student->branch->name ?? 'N/A' }}"
+                                            data-course="{{ $student->course->abbreviation ?? $student->course->course_name ?? 'N/A' }}">
+                                        {{ $student->reg_number }} - {{ $student->full_name }}
+                                    </option>
+                                    @endif
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Registration Status</label>
+                            <div class="form-control bg-light">
+                                <span id="studentStatus" class="badge bg-warning">Not Registered</span>
+                            </div>
+                        </div>
+                    </div>
 
-    .table-card {
-        box-shadow: none;
-        border: 1px solid #ddd;
-    }
+                    <div id="studentInfo" class="alert alert-info d-none">
+                        <h6><i class="bi bi-person-fill me-2"></i>Student Information</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Name:</strong> <span id="infoName"></span><br>
+                                <strong>Reg Number:</strong> <span id="infoRegNumber"></span><br>
+                                <strong>Email:</strong> <span id="infoEmail"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Branch:</strong> <span id="infoBranch"></span><br>
+                                <strong>Course:</strong> <span id="infoCourse"></span>
+                            </div>
+                        </div>
+                    </div>
 
-    body {
-        font-size: 12px;
-    }
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <label for="nesa_sdms_code" class="form-label fw-bold">NESA SDMS Code *</label>
+                            <input type="text" name="nesa_sdms_code" id="nesa_sdms_code" class="form-control" required maxlength="50">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="nesa_reg_number" class="form-label fw-bold">NESA Registration Number *</label>
+                            <input type="text" name="nesa_reg_number" id="nesa_reg_number" class="form-control" required maxlength="50">
+                        </div>
+                    </div>
+
+                    <div class="row mt-3">
+                        <div class="col-md-12">
+                            <label for="nesa_document" class="form-label fw-bold">NESA Document</label>
+                            <input type="file" name="nesa_document" id="nesa_document" class="form-control" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+                            <div class="form-text">Accepted formats: PDF, DOC, DOCX, JPG, JPEG, PNG (Max: 5MB)</div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-3">
+                        <div class="col-md-12">
+                            <label for="nesa_remarks" class="form-label fw-bold">Remarks</label>
+                            <textarea name="nesa_remarks" id="nesa_remarks" class="form-control" rows="3" maxlength="500" placeholder="Any additional remarks..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-circle me-1"></i>Register for NESA
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const studentSelect = document.getElementById('studentSelect');
+    const studentInfo = document.getElementById('studentInfo');
+    const studentStatus = document.getElementById('studentStatus');
+    
+    studentSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        
+        if (this.value) {
+            // Show student information
+            document.getElementById('infoName').textContent = selectedOption.dataset.name;
+            document.getElementById('infoRegNumber').textContent = selectedOption.dataset.regNumber;
+            document.getElementById('infoEmail').textContent = selectedOption.dataset.email;
+            document.getElementById('infoBranch').textContent = selectedOption.dataset.branch;
+            document.getElementById('infoCourse').textContent = selectedOption.dataset.course;
+            
+            studentInfo.classList.remove('d-none');
+            studentStatus.className = 'badge bg-info';
+            studentStatus.textContent = 'Ready for Registration';
+            
+            // Update form action
+            const form = document.getElementById('nesaRegistrationForm');
+            form.action = form.action.replace(':studentId', this.value);
+        } else {
+            studentInfo.classList.add('d-none');
+            studentStatus.className = 'badge bg-warning';
+            studentStatus.textContent = 'Not Registered';
+        }
+    });
+});
+</script>
+
+<style>
+.table-card {
+    box-shadow: none;
+    border: 1px solid #ddd;
+}
+
+body {
+    font-size: 12px;
+}
 </style>
 @endsection

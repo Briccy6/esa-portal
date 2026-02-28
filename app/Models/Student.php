@@ -83,6 +83,11 @@ class Student extends Authenticatable
     {
         return $this->hasMany(Transcript::class);
     }
+    
+    public function NESARegistration()
+    {
+        return $this->hasOne(NESARegistration::class);
+    }
      use Notifiable;
     public function sendPasswordResetNotification($token)
     {

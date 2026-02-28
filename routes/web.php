@@ -203,6 +203,8 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::get('/dashboard', [\App\Http\Controllers\AdminAuthController::class, 'dashboard'])->name('dashboard');
 
     Route::resource('students', StudentController::class);
+    // NESA student endpoints removed
+
     Route::resource('academic_year', AcademicYearController::class)->except(['show']);
     Route::resource('messages', \App\Http\Controllers\MessageController::class);
     Route::resource('announcements', \App\Http\Controllers\AnnouncementController::class);
@@ -238,20 +240,18 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::post('preferences', [\App\Http\Controllers\Admin\PreferenceController::class, 'store'])->name('preferences.store');
 
     Route::resource('grades', GradeController::class)->names('grades');
-    Route::resource('community-spaces', \App\Http\Controllers\Admin\CommunitySpaceController::class);
-    Route::post('community-spaces/{space}/add-students', [\App\Http\Controllers\Admin\CommunitySpaceController::class, 'addStudents'])->name('community-spaces.add-students');
+    // community-spaces feature removed – no routes needed
+
 
     // Admin profile
     Route::get('profile', [\App\Http\Controllers\AdminProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('profile', [\App\Http\Controllers\AdminProfileController::class, 'update'])->name('profile.update');
 
-    // NESA Registration Management
-    Route::get('nesa', [\App\Http\Controllers\Admin\NesaRegistrationController::class, 'index'])->name('nesa.index');
-    Route::get('nesa/registered', [\App\Http\Controllers\Admin\NesaRegistrationController::class, 'registered'])->name('nesa.registered');
-    Route::get('nesa/pending', [\App\Http\Controllers\Admin\NesaRegistrationController::class, 'pending'])->name('nesa.pending');
-    Route::get('nesa/search', [\App\Http\Controllers\Admin\NesaRegistrationController::class, 'search'])->name('nesa.search');
-    Route::post('nesa/{student}/mark-registered', [\App\Http\Controllers\Admin\NesaRegistrationController::class, 'markAsRegistered'])->name('nesa.mark-registered');
+    // NESA Registration Management (disabled)
+    // routes removed per request
+
     Route::post('nesa/bulk-register', [\App\Http\Controllers\Admin\NesaRegistrationController::class, 'bulkRegister'])->name('nesa.bulk-register');
+    Route::post('nesa/{student}/mark-as-registered', [\App\Http\Controllers\Admin\NesaRegistrationController::class, 'markAsRegistered'])->name('nesa.markAsRegistered');
     Route::get('nesa/{student}/edit', [\App\Http\Controllers\Admin\NesaRegistrationController::class, 'edit'])->name('nesa.edit');
     Route::put('nesa/{student}', [\App\Http\Controllers\Admin\NesaRegistrationController::class, 'update'])->name('nesa.update');
     Route::get('nesa/{student}/download', [\App\Http\Controllers\Admin\NesaRegistrationController::class, 'downloadDocument'])->name('nesa.download');

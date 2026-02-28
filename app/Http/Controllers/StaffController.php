@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Staff;
 use App\Models\Course;
+use App\Models\Student;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Hash;
@@ -16,7 +17,8 @@ class StaffController extends Controller
     public function index()
     {
         $staffs = Staff::all();
-        return view('admin.staff.index', compact('staffs'));
+        $students = Student::with(['branch', 'course'])->get();
+        return view('admin.staff.index', compact('staffs', 'students'));
     }
 
     public function create()

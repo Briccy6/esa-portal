@@ -18,56 +18,33 @@
             <thead class="table-header-custom">
                 <tr>
                     <th>#</th>
-                    <th>Reg Number</th>
-                    <th>Has Paid Registration</th>
-                    <th>Total to Pay</th>
-                    <th>Discount & Final Payment</th>
-                    <th>Total Paid</th>
-                    <th>Remaining</th>
+                    <th>Student Name</th>
+                    <th>Branch</th>
+                    <th>Course</th>
                     <th class="text-center">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($students as $index => $student)
-                    @php
-                        // Fetch the related course model
-                        $course = \App\Models\Course::find($student->course_id);
-                        $discount = $student->discount ?? 0;
-
-                        // Calculate fees
-                        $registrationFee = $course ? floatval($course->registration_fee) : 0;
-                        $tuitionFee = $course ? floatval($course->tuition_fee) : 0;
-                        $practicalFee = $course ? floatval($course->practical_fee) : 0;
-                        $tripFee = $course ? floatval($course->trip_fee) : 0;
-
-                        // Calculate discountable fees (exclude registration fee from discount)
-                        $discountableFees = $tuitionFee + $practicalFee + $tripFee;
-
-                        // Apply discount only to discountable fees
-                        $discountAmount = ($discount > 0) ? ($discountableFees * ($discount / 100)) : 0;
-                        $studentcard = 2000;
-                        
-                        // Total fees after discount (registration fee is not discounted)
-                        $totalToPay = $studentcard + $registrationFee + ($discountableFees - $discountAmount);
-
-                        // Get payments from student_transactions table
-                        $studentTransactions = \App\Models\StudentTransaction::where('student_id', $student->id)
-                            ->whereIn('status', ['successful', 'paid'])
-                            ->get();
-
-                        $totalPaid = $studentTransactions->sum('amount');
-                        $remaining = $totalToPay - $totalPaid;
-                        $hasPaidReg = $studentTransactions
-                            ->where('type', 'registration')
-                            ->sum('amount') > 0;
-                    @endphp
                     <tr class="student-row" data-student-id="{{ $student->id }}">
                         <td class="fw-bold text-primary">{{ $students->firstItem() + $index }}</td>
                         <td>
                             <div class="student-info">
                                 <div class="student-avatar">
                                     @if($student->id_photo)
-                                        <img src="{{ asset('storage/' . $student->id_photo) }}" alt="Student Photo" class="avatar-img">
+                                        @php
+                                            // support both raw base64 and storage paths
+                                            $photoSrc = '';
+                                            if(str_starts_with($student->id_photo, 'data:image')) {
+                                                $photoSrc = $student->id_photo;
+                                            } elseif(preg_match('/^[A-Za-z0-9\/\r\n+]+={0,2}$/', $student->id_photo)) {
+                                                // looks like base64 without prefix
+                                                $photoSrc = 'data:image/jpeg;base64,' . $student->id_photo;
+                                            } else {
+                                                $photoSrc = asset('storage/' . $student->id_photo);
+                                            }
+                                        @endphp
+                                        <img src="{{ $photoSrc }}" alt="Student Photo" class="avatar-img">
                                     @else
                                         <div class="avatar-placeholder">
                                             {{ substr($student->full_name, 0, 2) }}
@@ -75,46 +52,25 @@
                                     @endif
                                 </div>
                                 <div class="student-details">
-                                    <span class="student-name">{{ $student->full_name }}</span>
-                                    <small class="text-muted d-block">{{ $student->reg_number }}</small>
+                                    <div class="student-name">{{ $student->full_name }}</div>
+                                    <div class="student-meta">
+                                        <span class="meta-item">
+                                            <i class="bi bi-building"></i>
+                                            {{ $student->branch->name ?? 'N/A' }}
+                                        </span>
+                                        <span class="meta-item">
+                                            <i class="bi bi-book"></i>
+                                            {{ $student->course->abbreviation ?? $student->course->course_name ?? 'N/A' }}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </td>
                         <td>
-                            @if($hasPaidReg)
-                                <span class="badge bg-success">Yes</span>
-                            @else
-                                <span class="badge bg-danger">No</span>
-                            @endif
+                            {{ $student->branch->name ?? 'N/A' }}
                         </td>
                         <td>
-                            <span class="badge bg-primary">
-                                {{ number_format($totalToPay, 2) }}
-                            </span>
-                            <br>
-                            <small class="text-muted">
-                                Reg: {{ number_format($registrationFee, 2) }} | 
-                                Other: {{ number_format($discountableFees - $discountAmount, 2) }}
-                            </small>
-                        </td>
-                        <td>
-                            @if($discount > 0)
-                                <span class="badge bg-success">{{ $discount }}% Discount</span>
-                                <br>
-                                <small class="text-muted">Applied to: {{ number_format($discountableFees, 2) }}</small>
-                            @else
-                                <span class="badge bg-secondary">No Discount</span>
-                            @endif
-                        </td>
-                        <td>
-                            <span class="badge bg-info">
-                                {{ number_format($totalPaid, 2) }}
-                            </span>
-                        </td>
-                        <td>
-                            <span class="badge bg-warning text-dark">
-                                {{ number_format($remaining, 2) }}
-                            </span>
+                            {{ $student->course->abbreviation ?? $student->course->course_name ?? 'N/A' }}
                         </td>
                         <td class="text-center">
                             <div class="action-buttons">
@@ -163,7 +119,7 @@
                     </tr>
                 @empty
                     <tr class="no-data-row">
-                        <td colspan="8" class="text-center py-5">
+                        <td colspan="5" class="text-center py-5">
                             <div class="no-data-content">
                                 <i class="bi bi-people display-1 text-muted mb-3"></i>
                                 <h5 class="text-muted">No Students Found</h5>
@@ -278,6 +234,25 @@
     .student-name {
         font-weight: 600;
         color: #2c3e50;
+    }
+    
+    .student-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        margin-top: 0.25rem;
+    }
+    
+    .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+    
+    .meta-item i {
+        font-size: 0.9rem;
     }
 
     .action-buttons {

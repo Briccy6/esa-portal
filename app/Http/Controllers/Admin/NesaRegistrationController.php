@@ -85,7 +85,7 @@ class NesaRegistrationController extends Controller
         $student->update($data);
 
         return redirect()
-            ->route('admin.nesa.index')
+            ->route('admin.students.index')
             ->with('success', 'NESA registration updated successfully for ' . $student->full_name);
     }
 
@@ -122,7 +122,7 @@ class NesaRegistrationController extends Controller
         );
 
         return redirect()
-            ->route('admin.nesa.pending')
+            ->route('admin.students.index')
             ->with('success', $student->full_name . ' has been successfully registered for NESA examination.');
     }
 
@@ -160,7 +160,7 @@ class NesaRegistrationController extends Controller
         }
 
         return redirect()
-            ->route('admin.nesa.pending')
+            ->route('admin.students.index')
             ->with('success', $registeredCount . ' students have been successfully registered for NESA examination.');
     }
 

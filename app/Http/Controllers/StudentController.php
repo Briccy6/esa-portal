@@ -115,10 +115,10 @@ class StudentController extends Controller
 
         // Build base query
         if ($admin) {
-            $students = Student::with(['course', 'branch', 'academicYear', 'NESARegistration']);
+            $students = Student::with(['course', 'branch', 'academicYear']);
         } else {
             $branchIds = $staff->branches()->pluck('branches.id')->toArray();
-            $students = Student::whereIn('branch_id', $branchIds)->with(['course', 'branch', 'academicYear', 'NESARegistration']);
+            $students = Student::whereIn('branch_id', $branchIds)->with(['course', 'branch', 'academicYear']);
         }
 
         // Apply live search filters
@@ -2159,6 +2159,21 @@ public function deleteTransaction(Request $request, $transactionId)
             ->get();
         
         return view('students.transcript', compact('student', 'payments'));
+    }
+
+    public function getNESADetails($studentId)
+    {
+        $student = Student::findOrFail($studentId);
+        
+        return response()->json([
+            'success' => true,
+            'nesa_registered' => $student->nesa_registered,
+            'nesa_registration_date' => $student->nesa_registration_date,
+            'nesa_sdms_code' => $student->nesa_sdms_code,
+            'nesa_reg_number' => $student->nesa_reg_number,
+            'nesa_remarks' => $student->nesa_remarks,
+            'nesa_document' => $student->nesa_document
+        ]);
     }
 
     private function buildRegNumber(string $abbr, string $yearRange, int $id): string
