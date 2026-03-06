@@ -79,19 +79,71 @@
                     <hr>
 
                     @if($liveClass->status === 'active')
-                        <div class="alert alert-success">
-                            <h5><i class="fas fa-broadcast-tower"></i> This class is currently live!</h5>
-                            <p>Join now to participate in the live session.</p>
-                        </div>
+                        @php
+                            $studentRequest = \App\Models\LiveClassRequest::where('live_class_id', $liveClass->id)
+                                ->where('user_id', Auth::guard('student')->user()->id)
+                                ->where('user_type', 'student')
+                                ->first();
+                        @endphp
+                        
+                        @if($studentRequest)
+                            @switch($studentRequest->status)
+                                @case('pending')
+                                    <div class="alert alert-warning">
+                                        <h5><i class="fas fa-clock"></i> Request Pending</h5>
+                                        <p>Your request to join this class is pending approval.</p>
+                                        <p>Submitted: {{ $studentRequest->created_at->format('M j, Y H:i') }}</p>
+                                    </div>
+                                    <div class="text-center">
+                                        <button class="btn btn-outline-warning btn-lg" disabled>
+                                            <i class="fas fa-clock"></i> Request Pending
+                                        </button>
+                                    </div>
+                                    @break
+                                @case('approved')
+                                    <div class="alert alert-success">
+                                        <h5><i class="fas fa-check-circle"></i> Request Approved</h5>
+                                        <p>Your request has been approved! You can now join the live class.</p>
+                                    </div>
+                                    <div class="text-center">
+                                        <form action="{{ route('student.live-classes.join', $liveClass) }}" method="POST">
+                                            @csrf
+                                            <button type="submit" class="btn btn-success btn-lg">
+                                                <i class="fas fa-video"></i> Join Live Class Now
+                                            </button>
+                                        </form>
+                                    </div>
+                                    @break
+                                @case('rejected')
+                                    <div class="alert alert-danger">
+                                        <h5><i class="fas fa-times-circle"></i> Request Rejected</h5>
+                                        <p>Your request was rejected.</p>
+                                        @if($studentRequest->rejected_reason)
+                                            <p><strong>Reason:</strong> {{ $studentRequest->rejected_reason }}</p>
+                                        @endif
+                                    </div>
+                                    <div class="text-center">
+                                        <button class="btn btn-outline-danger btn-lg" disabled>
+                                            <i class="fas fa-times-circle"></i> Request Rejected
+                                        </button>
+                                    </div>
+                                    @break
+                            @endswitch
+                        @else
+                            <div class="alert alert-success">
+                                <h5><i class="fas fa-broadcast-tower"></i> This class is currently live!</h5>
+                                <p>Join now to participate in the live session.</p>
+                            </div>
 
-                        <div class="text-center">
-                            <form action="{{ route('student.live-classes.join', $liveClass) }}" method="POST">
-                                @csrf
-                                <button type="submit" class="btn btn-success btn-lg">
-                                    <i class="fas fa-video"></i> Join Live Class Now
-                                </button>
-                            </form>
-                        </div>
+                            <div class="text-center">
+                                <form action="{{ route('student.live-classes.join', $liveClass) }}" method="POST">
+                                    @csrf
+                                    <button type="submit" class="btn btn-success btn-lg">
+                                        <i class="fas fa-video"></i> Join Live Class Now
+                                    </button>
+                                </form>
+                            </div>
+                        @endif
                     @elseif($liveClass->start_time->isFuture())
                         <div class="alert alert-info">
                             <h5><i class="fas fa-clock"></i> Class hasn't started yet</h5>

@@ -253,8 +253,6 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     
     // Live Class Request Management
     Route::get('live-classes/{liveClass}/requests', [LiveClassController::class, 'manageRequests'])->name('live-classes.requests');
-    Route::post('live-classes/{liveClass}/requests/{requestId}/approve', [LiveClassController::class, 'approveRequest'])->name('live-classes.requests.approve');
-    Route::post('live-classes/{liveClass}/requests/{requestId}/reject', [LiveClassController::class, 'rejectRequest'])->name('live-classes.requests.reject');
 
 
     // Admin profile
@@ -638,6 +636,7 @@ Route::get('/api/teachers/search', [SearchController::class, 'teachers'])->name(
 // Live Class Homepage API
 Route::get('/api/live-classes/homepage', [LiveClassController::class, 'homepageLiveClasses'])->name('api.live-classes.homepage');
 Route::get('/api/live-classes/{liveClass}/check-access', [LiveClassController::class, 'checkClassAccess'])->name('api.live-classes.check-access');
+Route::get('/api/live-classes/{liveClass}/requests', [LiveClassController::class, 'apiGetRequests'])->name('api.live-classes.requests');
 
 Route::get('/live-classes', [LiveClassController::class, 'index'])->name('live-classes.index');
 Route::get('/live-classes/{liveClass}', [LiveClassController::class, 'show'])->name('live-classes.show');
@@ -667,6 +666,12 @@ Route::middleware('auth:teacher')->prefix('teacher')->name('teacher.')->group(fu
     Route::get('/live-classes/{liveClass}/room', [LiveClassController::class, 'room'])->name('live-classes.room');
     Route::post('/live-classes/{liveClass}/start', [LiveClassController::class, 'start'])->name('live-classes.start');
     Route::post('/live-classes/{liveClass}/end', [LiveClassController::class, 'end'])->name('live-classes.end');
+});
+
+// Live Class Request Management (accessible from room)
+Route::middleware(['auth:admin,staff,teacher'])->group(function () {
+    Route::post('live-classes/{liveClass}/requests/{requestId}/approve', [LiveClassController::class, 'approveRequest'])->name('live-classes.requests.approve');
+    Route::post('live-classes/{liveClass}/requests/{requestId}/reject', [LiveClassController::class, 'rejectRequest'])->name('live-classes.requests.reject');
 });
 
 // WebRTC Routes (Protected)

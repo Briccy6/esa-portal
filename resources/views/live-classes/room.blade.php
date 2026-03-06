@@ -603,6 +603,173 @@
         opacity: 1;
         transform: translateX(-50%) translateY(0);
     }
+
+    /* Panel Toggle */
+    .lc-panel-toggle {
+        margin-left: auto;
+        color: var(--text-muted);
+        font-size: 10px;
+        transition: color 0.2s;
+    }
+
+    .lc-panel-header:hover .lc-panel-toggle {
+        color: var(--text-primary);
+    }
+
+    /* Interactive Elements */
+    .lc-interactive-btn {
+        position: absolute;
+        background: rgba(99,179,237,0.1);
+        border: 1px solid var(--border-glow);
+        border-radius: 8px;
+        color: var(--accent-blue);
+        padding: 8px 16px;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        z-index: 45;
+    }
+
+    .lc-interactive-btn:hover {
+        background: rgba(99,179,237,0.2);
+        transform: scale(1.05);
+    }
+
+    .lc-live-info-btn {
+        top: 80px;
+        left: 20px;
+    }
+
+    .lc-participants-btn {
+        top: 120px;
+        left: 20px;
+    }
+
+    /* Request Popup */
+    .lc-request-popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: var(--bg-panel);
+        border: 1px solid var(--border-subtle);
+        border-radius: 12px;
+        padding: 0;
+        min-width: 400px;
+        max-width: 500px;
+        z-index: 1000;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+        backdrop-filter: blur(20px) saturate(1.6);
+    }
+
+    .lc-request-popup.show {
+        animation: popupSlideIn 0.3s ease-out;
+    }
+
+    @keyframes popupSlideIn {
+        from {
+            opacity: 0;
+            transform: translate(-50%, -40%);
+        }
+        to {
+            opacity: 1;
+            transform: translate(-50%, -50%);
+        }
+    }
+
+    .lc-request-popup-header {
+        background: rgba(255,255,255,0.025);
+        border-bottom: 1px solid var(--border-subtle);
+        padding: 16px 20px;
+        border-radius: 12px 12px 0 0;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .lc-request-popup-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .lc-request-popup-badge {
+        background: var(--accent-red);
+        color: white;
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 100px;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+    }
+
+    .lc-request-popup-body {
+        padding: 20px;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .lc-request-item {
+        background: rgba(255,255,255,0.02);
+        border: 1px solid var(--border-subtle);
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 12px;
+        transition: all 0.2s;
+    }
+
+    .lc-request-item:hover {
+        background: rgba(255,255,255,0.04);
+        border-color: var(--border-glow);
+    }
+
+    .lc-request-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .lc-request-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+    }
+
+    .lc-request-btn {
+        padding: 6px 12px;
+        border: none;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        flex: 1;
+    }
+
+    .lc-request-approve {
+        background: var(--accent-green);
+        color: white;
+    }
+
+    .lc-request-approve:hover {
+        background: #4fd1c5;
+    }
+
+    .lc-request-reject {
+        background: var(--accent-red);
+        color: white;
+    }
+
+    .lc-request-reject:hover {
+        background: #fc8181;
+    }
 </style>
 @endsection
 
@@ -630,10 +797,11 @@
 
         <!-- ── Chat Panel ── -->
         @if($liveClass->chat_enabled)
-        <div class="lc-panel lc-chat">
-            <div class="lc-panel-header">
+        <div class="lc-panel lc-chat" id="chatPanel">
+            <div class="lc-panel-header" onclick="togglePanel('chatPanel')" style="cursor: pointer;">
                 <div class="lc-panel-icon"><i class="fas fa-comments"></i></div>
                 <span class="lc-panel-title">Chat</span>
+                <span class="lc-panel-toggle" id="chatToggle"><i class="fas fa-chevron-down"></i></span>
             </div>
             <div class="lc-chat-messages" id="chatMessages">
                 <!-- messages -->
@@ -673,15 +841,16 @@
 
         <!-- ── Student Requests Panel ── -->
         @if((Auth::guard('admin')->check() || Auth::guard('teacher')->check() || Auth::guard('staff')->check()) && $studentRequests->count() > 0)
-        <div class="lc-panel" style="top: 410px; right: 20px; width: 260px; max-height: 280px;">
-            <div class="lc-panel-header">
+        <div class="lc-panel" style="top: 410px; right: 20px; width: 300px; max-height: 350px; z-index: 40;" id="requestsPanel">
+            <div class="lc-panel-header" onclick="togglePanel('requestsPanel')" style="cursor: pointer;">
                 <div class="lc-panel-icon"><i class="fas fa-user-clock"></i></div>
                 <span class="lc-panel-title">Requests</span>
                 <span class="lc-panel-badge">{{ $studentRequests->count() }}</span>
+                <span class="lc-panel-toggle" id="requestsToggle"><i class="fas fa-chevron-down"></i></span>
             </div>
-            <div class="lc-participants-list" style="max-height: 200px;">
+            <div class="lc-participants-list" id="requestsList" style="max-height: 250px; overflow-y: auto;">
                 @foreach($studentRequests as $request)
-                <div class="lc-participant" style="border-left: 3px solid var(--accent-blue);">
+                <div class="lc-participant" style="border-left: 3px solid var(--accent-blue); margin-bottom: 8px; padding: 10px;">
                     <div class="lc-participant-avatar" style="background: linear-gradient(135deg, var(--accent-blue), var(--accent-teal));">
                         {{ substr($request->user->full_name ?? 'S', 0, 1) }}
                     </div>
@@ -690,6 +859,9 @@
                         <div class="lc-participant-role">{{ $request->user->course?->course_name ?? 'No Course' }}</div>
                         <div style="font-size: 9px; color: var(--text-muted); margin-top: 2px;">
                             {{ \Carbon\Carbon::parse($request->created_at)->diffForHumans() }}
+                        </div>
+                        <div style="font-size: 9px; color: var(--text-secondary); margin-top: 2px;">
+                            <strong>Reason:</strong> {{ Str::limit($request->reason, 50) ?? 'No reason provided' }}
                         </div>
                     </div>
                     <div class="lc-participant-indicators">
@@ -708,6 +880,45 @@
 
         <!-- Toast notification -->
         <div class="lc-toast" id="toast"></div>
+
+        <!-- Interactive Elements -->
+        <button class="lc-interactive-btn lc-live-info-btn" onclick="showLiveInfo()">
+            <i class="fas fa-broadcast-tower"></i> Live Now
+        </button>
+        <button class="lc-interactive-btn lc-participants-btn" onclick="showParticipants()">
+            <i class="fas fa-users"></i> Participate
+        </button>
+
+        <!-- Live Info Panel (Hidden by default) -->
+        <div id="liveInfo" style="display: none; position: absolute; top: 160px; left: 20px; width: 280px; z-index: 44;" class="lc-panel">
+            <div class="lc-panel-header">
+                <div class="lc-panel-icon"><i class="fas fa-info-circle"></i></div>
+                <span class="lc-panel-title">Live Class Info</span>
+            </div>
+            <div style="padding: 12px; font-size: 12px; color: var(--text-secondary);">
+                <p><strong>Class:</strong> {{ $liveClass->title }}</p>
+                <p><strong>Duration:</strong> {{ $liveClass->start_time->diffInHours($liveClass->end_time) }} hours</p>
+                <p><strong>Participants:</strong> <span id="participantCount">1</span></p>
+                <p><strong>Status:</strong> <span style="color: var(--accent-green);">● Live</span></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Request Popup (Hidden by default) -->
+    <div id="requestPopup" class="lc-request-popup" style="display: none;">
+        <div class="lc-request-popup-header">
+            <div class="lc-request-popup-title">
+                <i class="fas fa-user-clock"></i>
+                New Student Request
+                <span class="lc-request-popup-badge">NEW</span>
+            </div>
+            <button onclick="closeRequestPopup()" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 18px;">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="lc-request-popup-body" id="requestPopupBody">
+            <!-- Requests will be loaded here -->
+        </div>
     </div>
 
     <!-- ─── Controls Bar ─── -->
@@ -946,6 +1157,153 @@ function leaveClass() {
     }
 }
 
+/* ── Panel Toggles ── */
+function togglePanel(panelId) {
+    const panel = document.getElementById(panelId);
+    const toggle = document.getElementById(panelId.replace('Panel', 'Toggle'));
+    const icon = toggle.querySelector('i');
+    
+    if (panel.style.display === 'none') {
+        panel.style.display = 'flex';
+        icon.className = 'fas fa-chevron-down';
+    } else {
+        panel.style.display = 'none';
+        icon.className = 'fas fa-chevron-right';
+    }
+}
+
+/* ── Live Now & Participate Elements ── */
+function showLiveInfo() {
+    const info = document.getElementById('liveInfo');
+    if (info.style.display === 'none') {
+        info.style.display = 'block';
+        showToast('📺 Live class information shown');
+    } else {
+        info.style.display = 'none';
+        showToast('📺 Live class information hidden');
+    }
+}
+
+function showParticipants() {
+    const participants = document.getElementById('participantsList');
+    if (participants.style.display === 'none') {
+        participants.style.display = 'flex';
+        showToast('👥 Participants list shown');
+    } else {
+        participants.style.display = 'none';
+        showToast('👥 Participants list hidden');
+    }
+}
+
+/* ── Request Popup Management ── */
+let currentRequests = @json($studentRequests->map(function($request) {
+    return [
+        'id' => $request->id,
+        'name' => $request->user->full_name ?? 'Unknown'
+    ];
+}));
+let requestCheckInterval = null;
+
+function showRequestPopup() {
+    const popup = document.getElementById('requestPopup');
+    const body = document.getElementById('requestPopupBody');
+    
+    // Load current requests into popup
+    body.innerHTML = '';
+    currentRequests.forEach(function(request) {
+        const requestHtml = `
+        <div class="lc-request-item">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-blue), var(--accent-teal)); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 14px;">
+                    ${request.name.charAt(0).toUpperCase()}
+                </div>
+                <div style="flex: 1;">
+                    <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">
+                        ${request.name}
+                    </div>
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">
+                        ${request.courseName || 'No Course'} • ${request.timeAgo}
+                    </div>
+                    ${request.reason ? `<div style="font-size: 11px; color: var(--text-muted); font-style: italic;">"${request.reason}"</div>` : ''}
+                </div>
+            </div>
+            <div class="lc-request-actions">
+                <button class="lc-request-btn lc-request-approve" onclick="approveFromPopup(${request.id})">
+                    <i class="fas fa-check"></i> Approve
+                </button>
+                <button class="lc-request-btn lc-request-reject" onclick="rejectFromPopup(${request.id})">
+                    <i class="fas fa-times"></i> Reject
+                </button>
+            </div>
+        </div>
+    `;
+        body.innerHTML += requestHtml;
+    });
+    
+    popup.style.display = 'block';
+    popup.classList.add('show');
+    
+    // Show notification
+    showToast('🔔 New student request received!');
+}
+
+function closeRequestPopup() {
+    const popup = document.getElementById('requestPopup');
+    popup.style.display = 'none';
+    popup.classList.remove('show');
+}
+
+function approveFromPopup(requestId) {
+    approveRequest(requestId);
+    // Remove the approved request from popup
+    const requestItem = event.target.closest('.lc-request-item');
+    if (requestItem) {
+        requestItem.style.opacity = '0.5';
+        requestItem.innerHTML = '<div style="text-align: center; color: var(--accent-green);"><i class="fas fa-check-circle"></i> Approved</div>';
+    }
+}
+
+function rejectFromPopup(requestId) {
+    rejectRequest(requestId);
+    // Remove the rejected request from popup
+    const requestItem = event.target.closest('.lc-request-item');
+    if (requestItem) {
+        requestItem.style.opacity = '0.5';
+        requestItem.innerHTML = '<div style="text-align: center; color: var(--accent-red);"><i class="fas fa-times-circle"></i> Rejected</div>';
+    }
+}
+
+// Check for new requests periodically
+function startRequestMonitoring() {
+    requestCheckInterval = setInterval(() => {
+        fetch(`/api/live-classes/{{ $liveClass->id }}/requests`, {
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.requests && data.requests.length > currentRequests.length) {
+                // New request detected
+                currentRequests = data.requests;
+                showRequestPopup();
+                updateRequestBadge(data.requests.length);
+            }
+        })
+        .catch(error => console.error('Error checking requests:', error));
+    }, 5000); // Check every 5 seconds
+}
+
+function updateRequestBadge(count) {
+    const badge = document.querySelector('.lc-panel-badge');
+    if (badge) {
+        badge.textContent = count;
+        if (count > 0) {
+            badge.style.background = 'var(--accent-red)';
+        }
+    }
+}
+
 /* ── Student Requests ── */
 function approveRequest(requestId) {
     if (confirm('Approve this student request?')) {
@@ -1003,6 +1361,11 @@ window.addEventListener('beforeunload', () => {
     if (localStream) localStream.getTracks().forEach(t => t.stop());
 });
 
-document.addEventListener('DOMContentLoaded', initializeWebRTC);
+document.addEventListener('DOMContentLoaded', function() {
+    initializeWebRTC();
+    
+    // Start monitoring for new requests
+    startRequestMonitoring();
+});
 </script>
 @endsection

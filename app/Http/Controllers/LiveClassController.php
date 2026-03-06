@@ -539,7 +539,24 @@ class LiveClassController extends Controller
             return response()->json(['success' => true, 'message' => 'Request rejected']);
         }
 
-        return back()->with('success', 'Request rejected');
+        return response()->json(['success' => true, 'message' => 'Request rejected']);
+    }
+
+    /**
+     * API endpoint to get requests for real-time monitoring
+     */
+    public function apiGetRequests(LiveClass $liveClass)
+    {
+        $requests = $liveClass->requests()
+            ->with(['user' => function($query) {
+                $query->select('id', 'full_name', 'course_id');
+            }])
+            ->where('user_type', 'student')
+            ->where('status', 'pending')
+            ->latest()
+            ->get();
+
+        return response()->json(['requests' => $requests]);
     }
 
     private function recordParticipant($liveClass, $user, $userType)
@@ -622,7 +639,9 @@ class LiveClassController extends Controller
         $studentRequests = [];
         if (Auth::guard('admin')->check() || Auth::guard('teacher')->check() || Auth::guard('staff')->check()) {
             $studentRequests = $liveClass->requests()
-                ->with('user')
+                ->with(['user' => function($query) {
+                    $query->select('id', 'full_name', 'course_id');
+                }])
                 ->where('user_type', 'student')
                 ->where('status', 'pending')
                 ->latest()
