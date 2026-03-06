@@ -655,8 +655,8 @@ Route::post('/live-classes/{liveClass}/request', [LiveClassController::class, 's
 
 // Student Live Class Routes
 Route::middleware('auth:student')->prefix('student')->name('student.')->group(function () {
-    Route::get('/live-classes', [LiveClassController::class, 'index'])->name('live-classes.index');
-    Route::get('/live-classes/{liveClass}', [LiveClassController::class, 'show'])->name('live-classes.show');
+    Route::get('/live-classes', [LiveClassController::class, 'studentIndex'])->name('live-classes.index');
+    Route::get('/live-classes/{liveClass}', [LiveClassController::class, 'studentShow'])->name('live-classes.show');
     Route::post('/live-classes/{liveClass}/join', [LiveClassController::class, 'join'])->name('live-classes.join');
     Route::get('/live-classes/{liveClass}/room', [LiveClassController::class, 'room'])->name('live-classes.room');
 });

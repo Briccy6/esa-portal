@@ -1,4 +1,4 @@
-@extends('students.layout')
+@extends('students.app')
 @section('content')
 <div class="container py-4">
     <h2>My Invoices</h2>

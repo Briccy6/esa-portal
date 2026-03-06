@@ -22,6 +22,24 @@ class LiveClassController extends Controller
         return view('admin.live-classes.index', compact('liveClasses'));
     }
 
+    /**
+     * Student-specific live classes index - only shows enrolled courses
+     */
+    public function studentIndex()
+    {
+        $student = Auth::guard('student')->user();
+        
+        // Get only live classes for student's enrolled courses
+        $liveClasses = LiveClass::whereHas('courses', function($query) use ($student) {
+            $query->where('course_id', $student->course_id);
+        })
+        ->with(['branches', 'courses', 'lessons', 'teacher'])
+        ->orderBy('start_time', 'desc')
+        ->paginate(10);
+
+        return view('students.live-classes.index', compact('liveClasses'));
+    }
+
     public function homepageLiveClasses()
     {
         // Get active live classes that are currently running or scheduled
@@ -301,7 +319,24 @@ class LiveClassController extends Controller
 
         $liveClass->load(['branches', 'courses', 'lessons', 'teacher']);
         
-        return view('live-classes.show', compact('liveClass'));
+        return view('admin.live-classes.show', compact('liveClass'));
+    }
+
+    /**
+     * Student-specific live class show - only for enrolled courses
+     */
+    public function studentShow(LiveClass $liveClass)
+    {
+        $student = Auth::guard('student')->user();
+        
+        // Verify student is enrolled in this live class's course
+        if (!$liveClass->courses->contains('id', $student->course_id)) {
+            abort(403, 'You are not authorized to access this live class');
+        }
+
+        $liveClass->load(['branches', 'courses', 'lessons', 'teacher']);
+        
+        return view('students.live-classes.show', compact('liveClass'));
     }
 
     public function edit(LiveClass $liveClass)

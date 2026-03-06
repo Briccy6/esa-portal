@@ -1,5 +1,5 @@
 {{-- filepath: d:\website\esa\resources\views\students\exams.blade.php --}}
-@extends('students.layout')
+@extends('students.app')
 
 @section('content')
 <style>

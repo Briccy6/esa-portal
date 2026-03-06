@@ -1,4 +1,4 @@
-@extends('students.layout')
+@extends('students.app')
 
 @section('content')
     <h2>My Attendance</h2>
