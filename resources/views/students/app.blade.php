@@ -276,6 +276,12 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a href="{{ route('student.live-classes.index') }}" class="nav-link {{ request()->routeIs('student.live-classes.*') ? 'active' : '' }}">
+                                <i class="bi bi-broadcast"></i>
+                                Live Classes
+                            </a>
+                        </li>
+                        <li class="nav-item">
        
 <a href="{{ route('student.resources.index') }}" class="nav-link {{ request()->routeIs('student.resources.index') ? 'active' : '' }}">
     <i class="bi bi-file-earmark-text"></i>

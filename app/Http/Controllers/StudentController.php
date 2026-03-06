@@ -1116,7 +1116,13 @@ class StudentController extends Controller
             return back()->withInput()->with('error', 'Invalid credentials.');
         }
 
+        // Clean up any existing sessions for this student
+        $this->cleanupExistingSessions($student, 'student');
+
         Auth::guard('student')->login($student);
+
+        // Store new session fingerprint
+        $this->storeSessionFingerprint($request, $student, 'student');
 
         return redirect()->route('student.dashboard');
     }
@@ -2189,6 +2195,44 @@ public function deleteTransaction(Request $request, $transactionId)
             'nesa_remarks' => $student->nesa_remarks,
             'nesa_document' => $student->nesa_document
         ]);
+    }
+
+    /**
+     * Clean up existing sessions for a user
+     */
+    private function cleanupExistingSessions($user, $guard)
+    {
+        $sessionKey = 'user_session_' . $guard . '_' . $user->id;
+        session()->forget($sessionKey);
+        session()->forget('last_activity_' . $guard . '_' . $user->id);
+        session()->forget('password_hash_' . $guard);
+    }
+
+    /**
+     * Store session fingerprint for validation
+     */
+    private function storeSessionFingerprint($request, $user, $guard)
+    {
+        $sessionKey = 'user_session_' . $guard . '_' . $user->id;
+        $fingerprint = $this->generateSessionFingerprint($request);
+        session()->put($sessionKey, $fingerprint);
+        session()->put('last_activity_' . $guard . '_' . $user->id, now());
+    }
+
+    /**
+     * Generate session fingerprint
+     */
+    private function generateSessionFingerprint($request): string
+    {
+        $data = [
+            'ip' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'accept_language' => $request->header('Accept-Language'),
+            'accept_encoding' => $request->header('Accept-Encoding'),
+            'session_id' => session()->getId(),
+        ];
+        
+        return hash('sha256', serialize($data));
     }
 
     private function buildRegNumber(string $abbr, string $yearRange, int $id): string

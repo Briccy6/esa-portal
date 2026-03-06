@@ -387,6 +387,109 @@
         </div>
     @endif
 
+    <!-- Live Classes Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h3 class="section-title">
+                <i class="bi bi-broadcast me-2"></i>
+                Live Classes
+            </h3>
+        </div>
+        <div class="col-12">
+            <div class="info-card">
+                <div class="info-card-header">
+                    <h4>
+                        <i class="bi bi-camera-video me-2"></i>
+                        Available Live Classes
+                    </h4>
+                    <a href="{{ route('student.live-classes.index') }}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-eye"></i> View All
+                    </a>
+                </div>
+                <div class="info-card-body">
+                    <div id="live-classes-container">
+                        <div class="text-center py-3">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2 text-muted">Loading live classes...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Exams Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h3 class="section-title">
+                <i class="bi bi-file-earmark-text me-2"></i>
+                Exams
+            </h3>
+        </div>
+        <div class="col-12">
+            <div class="info-card">
+                <div class="info-card-header">
+                    <h4>
+                        <i class="bi bi-journal-check me-2"></i>
+                        Upcoming Exams
+                    </h4>
+                    <a href="{{ route('student.exams') }}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-list"></i> View All
+                    </a>
+                </div>
+                <div class="info-card-body">
+                    <div class="exam-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">Final Examinations</h6>
+                                <p class="text-muted mb-0">Check your exam schedule and results</p>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-warning text-dark">Upcoming</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NESA Registration Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h3 class="section-title">
+                <i class="bi bi-shield-check me-2"></i>
+                NESA Registration
+            </h3>
+        </div>
+        <div class="col-12">
+            <div class="info-card">
+                <div class="info-card-header">
+                    <h4>
+                        <i class="bi bi-award me-2"></i>
+                        Registration Status
+                    </h4>
+                    <button class="btn btn-sm btn-info" onclick="showNesaModal()">
+                        <i class="bi bi-info-circle"></i> Check Status
+                    </button>
+                </div>
+                <div class="info-card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1">National Examination and Assessment Authority</h6>
+                            <p class="text-muted mb-0">Check your NESA registration status and download forms</p>
+                        </div>
+                        <div class="text-end">
+                            <span id="nesa-status-badge" class="badge bg-secondary">Checking...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row">
         <!-- Announcements -->
         @if($announcements->count())
@@ -464,18 +567,6 @@
                 </div>
             </div>
         @endif
-    </div>
-
-   
-  
-    
-</div>
-
-<!-- Enhanced Payment Modal -->
-<div class="modal fade" id="payFeeModal" tabindex="-1" aria-labelledby="payFeeModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <form id="payFeeForm" method="POST" action="{{ route('student.pay.fee') }}">
-            @csrf
             <input type="hidden" name="fee_type" id="feeTypeInput">
             <div class="modal-content payment-modal">
                 <div class="modal-header">
@@ -985,18 +1076,203 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 
-// Add CSS animation for loading spinner
-const style = document.createElement('style');
-style.textContent = `
-    .spin {
-        animation: spin 1s linear infinite;
-    }
+// NESA Registration Modal
+function showNesaModal() {
+    const modal = new bootstrap.Modal(document.getElementById('nesaModal'));
+    modal.show();
     
-    @keyframes spin {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
-    }
-`;
-document.head.appendChild(style);
+    // Simulate checking NESA registration status
+    setTimeout(() => {
+        const nesaContent = document.getElementById('nesa-content');
+        const nesaLoading = document.getElementById('nesa-loading');
+        const nesaFooter = document.getElementById('nesa-modal-footer');
+        const nesaBadge = document.getElementById('nesa-status-badge');
+        
+        // Simulate different scenarios (randomly for demo)
+        const isRegistered = Math.random() > 0.5;
+        
+        if (isRegistered) {
+            // Show registered status
+            nesaContent.innerHTML = `
+                <div class="alert alert-success">
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="bi bi-check-circle-fill me-3 fs-4"></i>
+                        <div>
+                            <h6 class="mb-1">NESA Registration Complete</h6>
+                            <p class="mb-0">You are successfully registered with NESA for the current academic year.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="registration-info">
+                    <h6 class="mb-3">Registration Details:</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Registration Number:</strong> NESA-2024-${Math.floor(Math.random() * 10000)}</p>
+                            <p><strong>Academic Year:</strong> 2024-2025</p>
+                            <p><strong>Registration Date:</strong> ${new Date().toLocaleDateString()}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Status:</strong> <span class="badge bg-success">Active</span></p>
+                            <p><strong>Examination Center:</strong> Kigali Center</p>
+                            <p><strong>Next Exam:</strong> Final Examinations</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-3">
+                    <h6 class="mb-3">Available Downloads:</h6>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-primary btn-sm" onclick="downloadNesaForm('registration')">
+                            <i class="bi bi-download me-1"></i> Registration Form
+                        </button>
+                        <button class="btn btn-primary btn-sm" onclick="downloadNesaForm('examination')">
+                            <i class="bi bi-download me-1"></i> Examination Form
+                        </button>
+                        <button class="btn btn-primary btn-sm" onclick="downloadNesaForm('certificate')">
+                            <i class="bi bi-download me-1"></i> Registration Certificate
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            nesaFooter.innerHTML = `
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success" onclick="printNesaCertificate()">
+                    <i class="bi bi-printer me-1"></i> Print Certificate
+                </button>
+            `;
+            
+            nesaBadge.className = 'badge bg-success';
+            nesaBadge.textContent = 'Registered';
+        } else {
+            // Show not registered status with appeal option
+            nesaContent.innerHTML = `
+                <div class="alert alert-warning">
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="bi bi-exclamation-triangle-fill me-3 fs-4"></i>
+                        <div>
+                            <h6 class="mb-1">NESA Registration Required</h6>
+                            <p class="mb-0">You are not currently registered with NESA for this academic year.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="registration-info">
+                    <h6 class="mb-3">Why NESA Registration is Important:</h6>
+                    <ul>
+                        <li>Required for national examinations</li>
+                        <li>Validates your academic credentials</li>
+                        <li>Enables certificate issuance</li>
+                        <li>Required for further education opportunities</li>
+                    </ul>
+                </div>
+                
+                <div class="mt-3">
+                    <div class="alert alert-info">
+                        <h6 class="mb-2">Registration Process:</h6>
+                        <ol class="mb-0">
+                            <li>Submit registration form with required documents</li>
+                            <li>Pay registration fees</li>
+                            <li>Wait for NESA approval</li>
+                            <li>Receive registration confirmation</li>
+                        </ol>
+                    </div>
+                </div>
+            `;
+            
+            nesaFooter.innerHTML = `
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-warning" onclick="submitNesaAppeal()">
+                    <i class="bi bi-envelope me-1"></i> Submit Appeal
+                </button>
+            `;
+            
+            nesaBadge.className = 'badge bg-warning text-dark';
+            nesaBadge.textContent = 'Not Registered';
+        }
+        
+        nesaLoading.classList.add('d-none');
+        nesaContent.classList.remove('d-none');
+    }, 1500);
+}
+
+// Download NESA Forms
+function downloadNesaForm(type) {
+    // Simulate form download
+    alert(`Downloading ${type} form... This would normally download the actual PDF form.`);
+}
+
+// Print NESA Certificate
+function printNesaCertificate() {
+    window.print();
+}
+
+// Submit NESA Appeal
+function submitNesaAppeal() {
+    const modal = bootstrap.Modal.getInstance(document.getElementById('nesaModal'));
+    modal.hide();
+    
+    // Show appeal form modal or redirect
+    alert('Appeal form would open here. This would allow students to submit their NESA registration appeal with required documents.');
+}
+
+// Load Live Classes
+function loadLiveClasses() {
+    fetch('/api/live-classes/homepage')
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('live-classes-container');
+            
+            if (data.liveClasses && data.liveClasses.length > 0) {
+                container.innerHTML = data.liveClasses.map(liveClass => `
+                    <div class="live-class-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">${liveClass.title}</h6>
+                                <p class="text-muted mb-0">
+                                    <i class="bi bi-calendar me-1"></i>
+                                    ${new Date(liveClass.start_time).toLocaleString()}
+                                </p>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-success">Active</span>
+                                <br>
+                                <button class="btn btn-sm btn-primary mt-2" onclick="joinLiveClass(${liveClass.id})">
+                                    <i class="bi bi-camera-video me-1"></i> Join
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                container.innerHTML = `
+                    <div class="text-center py-3">
+                        <i class="bi bi-camera-video-off fs-1 text-muted"></i>
+                        <p class="text-muted mt-2">No live classes available right now</p>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading live classes:', error);
+            document.getElementById('live-classes-container').innerHTML = `
+                <div class="text-center py-3">
+                    <p class="text-danger">Error loading live classes</p>
+                </div>
+            `;
+        });
+}
+
+// Join Live Class
+function joinLiveClass(classId) {
+    window.location.href = `/student/live-classes/${classId}/join`;
+}
+
+// Load live classes when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    loadLiveClasses();
+});
+
 </script>
 @endsection
