@@ -45,8 +45,7 @@ class LiveClassController extends Controller
         // Get active live classes that are currently running or scheduled
         $query = LiveClass::with(['branches', 'courses', 'lessons', 'teacher'])
             ->whereIn('status', ['scheduled', 'active'])
-            ->where('start_time', '<=', now())
-            ->where('end_time', '>=', now())
+            ->where('end_time', '>=', now())  // Only check that it hasn't ended
             ->orderBy('start_time', 'asc');
         
         // If student is logged in, only show classes for their courses
@@ -431,6 +430,8 @@ class LiveClassController extends Controller
         }
 
         $student = Auth::guard('student')->user();
+        $student->load(['branch', 'course']);
+        $liveClass->load(['courses', 'teacher']);
         
         // Check if already requested
         $existingRequest = $liveClass->requests()
@@ -506,23 +507,37 @@ class LiveClassController extends Controller
     public function approveRequest(Request $request, LiveClass $liveClass, $requestId)
     {
         $classRequest = $liveClass->requests()->findOrFail($requestId);
-        $admin = Auth::guard('admin')->user();
+        $admin = Auth::guard('admin')->user() ?? Auth::guard('teacher')->user() ?? Auth::guard('staff')->user();
         
-        $classRequest->approve($admin->id);
+        $classRequest->approve($admin->id ?? null);
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Request approved successfully']);
+        }
 
         return back()->with('success', 'Request approved successfully');
     }
 
     public function rejectRequest(Request $request, LiveClass $liveClass, $requestId)
     {
-        $request->validate([
-            'reason' => 'required|string|max:500'
-        ]);
+        if ($request->ajax() || $request->wantsJson()) {
+            $data = json_decode($request->getContent(), true) ?? [];
+            $reason = $data['reason'] ?? null;
+        } else {
+            $request->validate([
+                'reason' => 'required|string|max:500'
+            ]);
+            $reason = $request->reason;
+        }
 
         $classRequest = $liveClass->requests()->findOrFail($requestId);
-        $admin = Auth::guard('admin')->user();
+        $admin = Auth::guard('admin')->user() ?? Auth::guard('teacher')->user() ?? Auth::guard('staff')->user();
         
-        $classRequest->reject($request->reason, $admin->id);
+        $classRequest->reject($reason, $admin->id ?? null);
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Request rejected']);
+        }
 
         return back()->with('success', 'Request rejected');
     }
@@ -603,7 +618,18 @@ class LiveClassController extends Controller
 
         $liveClass->load(['branches', 'courses', 'lessons', 'teacher']);
         
-        return view('live-classes.room', compact('liveClass', 'isTeacher'));
+        // Load student requests for teachers/admins
+        $studentRequests = [];
+        if (Auth::guard('admin')->check() || Auth::guard('teacher')->check() || Auth::guard('staff')->check()) {
+            $studentRequests = $liveClass->requests()
+                ->with('user')
+                ->where('user_type', 'student')
+                ->where('status', 'pending')
+                ->latest()
+                ->get();
+        }
+        
+        return view('live-classes.room', compact('liveClass', 'isTeacher', 'studentRequests'));
     }
 
     public function end(LiveClass $liveClass)

@@ -17,8 +17,8 @@
                         
                         <div class="row">
                             <div class="col-md-6">
-                                <p><strong>Course:</strong> {{ $liveClass->course?->course_name ?? 'N/A' }}</p>
-                                <p><strong>Teacher:</strong> {{ $liveClass->teacher?->name ?? 'N/A' }}</p>
+                                <p><strong>Course:</strong> {{ $liveClass->courses->first()?->course_name ?? 'N/A' }}</p>
+                                <p><strong>Teacher:</strong> {{ $liveClass->teacher?->teacher_name ?? 'N/A' }}</p>
                             </div>
                             <div class="col-md-6">
                                 <p><strong>Start Time:</strong> {{ $liveClass->start_time->format('M j, Y H:i') }}</p>
@@ -57,7 +57,7 @@
                                     <p><strong>Name:</strong> {{ $student->full_name }}</p>
                                     <p><strong>Registration Number:</strong> {{ $student->reg_number }}</p>
                                     <p><strong>Course:</strong> {{ $student->course?->course_name ?? 'N/A' }}</p>
-                                    <p><strong>Branch:</strong> {{ $student->branch?->branch_name ?? 'N/A' }}</p>
+                                    <p><strong>Branch:</strong> {{ $student->branch?->name ?? 'N/A' }}</p>
                                 </div>
                             </div>
                         </div>

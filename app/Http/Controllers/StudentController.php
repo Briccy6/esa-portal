@@ -724,43 +724,93 @@ class StudentController extends Controller
 
             $password = $student->plain_password ?? 'Your chosen password';
             Mail::to($student->email)->send(new StudentWelcomeMail($student, $password));
+
+            return redirect()->back()->with('success', 'Registration fee confirmed. School fee token generated and email sent.');
         }
 
-        return redirect()->back()->with('success', 'Registration fee confirmed. School fee token generated and email sent.');
+        return redirect()->back()->with('error', 'No pending registration fee found for this student.');
     }
 
     public function sendVerificationCode(Request $request)
     {
-        // Handle JSON requests
-        if ($request->isJson()) {
-            $data = $request->json()->all();
-            $regNumber = $data['reg_number'] ?? null;
-        } else {
-            $regNumber = $request->input('reg_number');
-        }
-        
-        if (!$regNumber) {
-            return response()->json(['message' => 'Registration number is required.'], 400);
-        }
+        try {
+            // Handle JSON requests
+            if ($request->isJson()) {
+                $data = $request->json()->all();
+                $regNumber = $data['reg_number'] ?? null;
+            } else {
+                $regNumber = $request->input('reg_number');
+            }
+            
+            if (!$regNumber) {
+                return response()->json(['message' => 'Registration number is required.'], 400);
+            }
 
-        $student = Student::where('reg_number', $regNumber)->first();
-        if (!$student) {
-            return response()->json(['message' => 'Registration number not found.'], 404);
-        }
+            $student = Student::where('reg_number', $regNumber)->first();
+            if (!$student) {
+                return response()->json(['message' => 'Registration number not found.'], 404);
+            }
 
-        $code = rand(100000, 999999);
-        EmailVerification::updateOrCreate(
-            ['email' => $student->email],
-            [
+            $code = rand(100000, 999999);
+            
+            // Delete any existing verification for this email
+            EmailVerification::where('email', $student->email)->delete();
+            
+            // Get next ID manually to avoid auto-increment issues
+            $nextId = DB::table('email_verifications')->max('id') + 1;
+            
+            // Insert with explicit ID
+            DB::table('email_verifications')->insert([
+                'id' => $nextId,
+                'email' => $student->email,
                 'code' => $code,
                 'expires_at' => now()->addMinutes(10),
                 'verified' => false,
-            ]
-        );
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
 
-        Mail::to($student->email)->send(new StudentEmailVerificationMail($code));
-
-        return response()->json(['message' => 'Verification code sent to your email.']);
+            // Try to send email
+            try {
+                Mail::to($student->email)->send(new StudentEmailVerificationMail($code));
+                Log::info('Verification email sent successfully', ['email' => $student->email, 'code' => $code]);
+                
+                return response()->json([
+                    'message' => 'Verification code sent to your email.',
+                    'debug' => [
+                        'email' => $student->email,
+                        'code' => $code,
+                        'expires_at' => now()->addMinutes(10)->format('Y-m-d H:i:s')
+                    ]
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to send verification email', [
+                    'email' => $student->email,
+                    'error' => $e->getMessage(),
+                    'code' => $code
+                ]);
+                
+                return response()->json([
+                    'message' => 'Verification code generated but email failed to send. Code: ' . $code,
+                    'debug' => [
+                        'email_error' => $e->getMessage(),
+                        'code' => $code,
+                        'expires_at' => now()->addMinutes(10)->format('Y-m-d H:i:s')
+                    ]
+                ]);
+            }
+            
+        } catch (\Exception $e) {
+            Log::error('sendVerificationCode failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'message' => 'Failed to send verification code. Please try again.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     public function verifyEmailCode(Request $request)
@@ -1103,6 +1153,44 @@ class StudentController extends Controller
         return view('students.login-simple');
     }
 
+    public function loginWithCode(Request $request)
+    {
+        try {
+            $request->validate([
+                'reg_number' => 'required|string',
+                'code' => 'required|string',
+            ]);
+
+            $student = Student::where('reg_number', $request->reg_number)->first();
+            if (!$student) {
+                return back()->withInput()->with('error', 'Invalid registration number.');
+            }
+
+            $record = EmailVerification::where('email', $student->email)
+                ->where('code', $request->code)
+                ->where('expires_at', '>', now())
+                ->first();
+
+            if (!$record) {
+                return back()->withInput()->with('error', 'Invalid or expired code.');
+            }
+
+            Auth::guard('student')->login($student);
+
+            $record->delete();
+
+            return redirect()->route('student.dashboard');
+            
+        } catch (\Exception $e) {
+            Log::error('loginWithCode failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return back()->withInput()->with('error', 'Login failed. Please try again.');
+        }
+    }
+
     public function loginWithPassword(Request $request)
     {
         $request->validate([
@@ -1122,37 +1210,6 @@ class StudentController extends Controller
         Auth::guard('student')->login($student);
 
         // Store new session fingerprint
-        $this->storeSessionFingerprint($request, $student, 'student');
-
-        return redirect()->route('student.dashboard');
-    }
-
-    public function loginWithCode(Request $request)
-    {
-        $request->validate([
-            'reg_number' => 'required|string',
-            'code' => 'required|string',
-        ]);
-
-        $student = \App\Models\Student::where('reg_number', $request->reg_number)->first();
-        if (!$student) {
-            return back()->withInput()->with('error', 'Invalid registration number.');
-        }
-
-        $record = \App\Models\EmailVerification::where('email', $student->email)
-            ->where('code', $request->code)
-            ->where('expires_at', '>', now())
-            ->first();
-
-        if (!$record) {
-            return back()->withInput()->with('error', 'Invalid or expired code.');
-        }
-
-        Auth::guard('student')->login($student);
-
-        $record->delete();
-
-        return redirect()->route('student.dashboard');
     }
 
     public function dashboard(Request $request)
@@ -1172,10 +1229,17 @@ class StudentController extends Controller
         $registrationFee = $student->course->registration_fee ?? 0;
         $tripFee = $student->course->trip_fee ?? 0;
         $tuitionFee = $student->course->tuition_fee ?? 0;
-        $praticalfee = $student->course->pratical_fee ?? 0;
-        $studentCardFee = 2000;
+        $praticalFee = $student->course->pratical_fee ?? 0;
+        $discount = $student->discount ?? 0;
 
-        // UPDATED: Get paid amounts using correct fee type names
+        $discountableFees = $tripFee + $tuitionFee + $praticalFee;
+        $studentCardFee = 2000;
+        
+        $discountAmount = ($discount > 0) ? ($discountableFees * ($discount / 100)) : 0;
+        
+        $totalFees = $registrationFee + $studentCardFee + ($discountableFees - $discountAmount);
+
+        // Calculate paid amounts for each fee type
         $paidRegistration = \App\Models\StudentTransaction::where('student_id', $student->id)
             ->where('type', 'registration_fee')
             ->whereIn('status', ['successful', 'paid'])
@@ -1201,205 +1265,49 @@ class StudentController extends Controller
             ->whereIn('status', ['successful', 'paid'])
             ->sum('amount');
 
-        // Calculate totals with discount
-        $discountableFees = $tripFee + $tuitionFee + $praticalfee;
-        
-        $discount = $student->discount ?? 0;
-        $discountAmount = ($discount > 0) ? ($discountableFees * ($discount / 100)) : 0;
+        // Get announcements and exams
+        $announcements = \App\Models\Announcement::orderByDesc('created_at')->limit(5)->get();
+        $exams = \App\Models\Exam::whereHas('courses', function($query) use ($student) {
+            $query->where('courses.id', $student->course_id);
+        })->orderBy('class_date')->limit(5)->get();
 
-        $totalFees = $registrationFee + $studentCardFee + ($discountableFees - $discountAmount);
-
-        $paidFees = \App\Models\StudentTransaction::where('student_id', $student->id)
-            ->whereIn('status', ['successful', 'paid'])
-            ->sum('amount');
-
-        $balance = $totalFees - $paidFees;
-
-        $announcements = \App\Models\Announcement::latest()->take(5)->get();
-
-        $examIds = \DB::table('course_exam')
-            ->where('course_id', $student->course_id)
-            ->pluck('exam_id');
-        $exams = \App\Models\Exam::whereIn('id', $examIds)->get();
-
-        $marks = \DB::table('marks')
-            ->where('student_id', $student->id)
-            ->whereIn('exam_id', $examIds)
-            ->pluck('value', 'exam_id');
-
-        $liveClass = null;
-           
-        $payment = \App\Models\StudentTransaction::where('student_id', $student->id)
-            ->where('status', 'pending')
-            ->latest()
+        // Get live class
+        $liveClass = \App\Models\LiveClass::where('start_time', '>', now())
+            ->orderBy('start_time')
             ->first();
 
-        $totalPastAttendances = $student->attendances()
-            ->where('date', '<', now())
-            ->count();
-
-        $markedAttendances = $student->attendances()
-            ->where('date', '<', now())
-            ->where('status', 'P') 
-            ->count();
-
-        $attendancePercent = $totalPastAttendances > 0
-            ? round(($markedAttendances / $totalPastAttendances) * 100, 2)
-            : 0;
-
-        $attendances = $student->attendances()
-            ->with(['lesson', 'lesson.teacher'])
-            ->orderByDesc('date')
-            ->get();
-
-        return view('students.dashboard', [
-            'student' => $student,
-            'registrationFee' => $registrationFee,
-            'tripFee' => $tripFee,
-            'tuitionFee' => $tuitionFee,
-            'praticalfee' => $praticalfee,
-            'studentCardFee' => $studentCardFee,
-            'paidRegistration' => $paidRegistration,
-            'paidTrip' => $paidTrip,
-            'paidTuition' => $paidTuition,
-            'paidPractical' => $paidPractical,
-            'paidStudentCard' => $paidStudentCard,
-            'discountableFees' => $discountableFees,
-            'discount' => $discount,
-            'discountAmount' => $discountAmount,
-            'totalFees' => $totalFees,
-            'paidFees' => $paidFees,
-            'balance' => $balance,
-            'announcements' => $announcements,
-            'exams' => $exams,
-            'marks' => $marks,
-            'liveClass' => $liveClass,
-            'attendancePercent' => $attendancePercent,
-            'attendances' => $attendances,
-            'approvedAttendances' => $approvedAttendances,
-            'payment' => $payment,
-        ]);
-    }
-
-    public function showPaymentPage()
-    {
-        $student = Auth::guard('student')->user()->load('course');
-        $registrationFee = $student->course->registration_fee ?? 0;
-        $tuitionFee = $student->course->tuition_fee ?? 0;
-        $tripFee = $student->course->trip_fee ?? 0;
-        $practicalFee = $student->course->pratical_fee ?? 0;
-
-        return view('students.payment', compact(
-            'student',
-            'registrationFee',
-            'tuitionFee',
-            'tripFee',
-            'practicalFee'
-        ));
-    }
-
-    public function refreshAnnouncements()
-    {
-        $announcements = Announcement::whereIn('audience', ['student', 'public'])
-            ->latest()->take(5)->get();
-
-        $html = '';
-        if ($announcements->count() > 0) {
-            foreach ($announcements as $announcement) {
-                $html .= '<div class="border-l-4 border-blue-500 pl-3 py-2">';
-                $html .= '<div class="font-medium text-sm text-gray-800">' . e($announcement->title) . '</div>';
-                $html .= '<div class="text-xs text-gray-600 mt-1">' . e(Str::limit($announcement->content, 100)) . '</div>';
-                $html .= '<div class="text-xs text-blue-600 mt-1">' . $announcement->created_at->diffForHumans() . '</div>';
-                $html .= '</div>';
+        // Get marks for exams
+        $marks = [];
+        foreach ($exams as $exam) {
+            $mark = \App\Models\marks::where('exam_id', $exam->id)
+                ->where('student_id', $student->id)
+                ->first();
+            if ($mark) {
+                $marks[$exam->id] = $mark->value;
             }
-        } else {
-            $html = '<div class="text-center text-gray-500 py-4">No announcements at the moment</div>';
         }
 
-        return response()->json(['html' => $html]);
-    }
-
-    public function payFees(Request $request)
-    {
-        $request->validate([
-            'pay_amount' => 'required|numeric|min:1',
-            'pay_number' => 'required|string',
-        ]);
-
-        $student = Auth::guard('student')->user();
-
-        $balance = $this->calculateStudentBalance($student);
-        if ($request->pay_amount > $balance) {
-            return response()->json(['message' => 'Amount exceeds remaining balance.'], 422);
-        }
-
-        $tx_ref = 'STU-' . $student->id . '-' . time() . '-' . uniqid();
-        $amount = $request->pay_amount;
-
-        $flutterwavePayload = [
-            "tx_ref" => $tx_ref,
-            "amount" => $amount,
-            "currency" => "RWF",
-            "redirect_url" => route('students.payment.callback'),
-            "customer" => [
-                "email" => $student->email,
-                "phonenumber" => $request->pay_number,
-                "name" => $student->full_name,
-            ],
-            "customizations" => [
-                "title" => "Student Fee Payment",
-                "description" => "Pay your fees at ESA E-Learning",
-                "logo" => url('/logo.png'),
-            ],
-            "meta" => [
-                "student_id" => $student->id,
-            ]
-        ];
-
-        $response = Http::withToken(config('services.flutterwave.secret_key'))
-            ->post('https://api.flutterwave.com/v3/payments', $flutterwavePayload);
-
-        if ($response->successful() && isset($response->json()['data']['link'])) {
-            StudentTransaction::create([
-                'student_id' => $student->id,
-                'tx_ref' => $tx_ref,
-                'type' => 'school_fee',
-                'amount' => $amount,
-                'currency' => 'RWF',
-                'status' => 'pending',
-                'meta' => json_encode([
-                    'email' => $student->email,
-                    'phone' => $request->pay_number,
-                ]),
-            ]);
-
-            return response()->json(['payment_link' => $response->json()['data']['link']]);
-        } else {
-            Log::error('Flutterwave fee payment init failed', ['body' => $response->body()]);
-            return response()->json(['message' => 'Payment initialization failed.'], 422);
-        }
-    }
-
-    private function calculateStudentBalance($student)
-    {
-        $registrationFee = $student->course->registration_fee ?? 0;
-        $tripFee = $student->course->trip_fee ?? 0;
-        $tuitionFee = $student->course->tuition_fee ?? 0;
-        $praticalFee = $student->course->pratical_fee ?? 0;
-        $discount = $student->discount ?? 0;
-
-        $discountableFees = $tripFee + $tuitionFee + $praticalFee;
-        $studentCardFee = 2000;
-        
-        $discountAmount = ($discount > 0) ? ($discountableFees * ($discount / 100)) : 0;
-        
-        $totalFees = $registrationFee + $studentCardFee + ($discountableFees - $discountAmount);
-
-        $paidFees = \App\Models\StudentTransaction::where('student_id', $student->id)
-            ->whereIn('status', ['successful', 'paid'])
-            ->sum('amount');
-        
-        return max(0, $totalFees - $paidFees);
+        return view('students.dashboard', compact(
+            'student',
+            'approvedAttendances',
+            'attendancePercent',
+            'registrationFee',
+            'tripFee',
+            'tuitionFee',
+            'praticalFee',
+            'studentCardFee',
+            'discount',
+            'discountAmount',
+            'paidRegistration',
+            'paidTrip',
+            'paidTuition',
+            'paidPractical',
+            'paidStudentCard',
+            'announcements',
+            'exams',
+            'marks',
+            'liveClass'
+        ));
     }
 
    // Replace the existing payCash method in your StudentController with the following:

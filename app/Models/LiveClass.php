@@ -129,7 +129,7 @@ class LiveClass extends Model
 
         // Check branch type
         if ($this->branches()->count() > 0) {
-            $hasOnlineBranch = $this->branches()->where('branch_type', 'online')->exists();
+            $hasOnlineBranch = $this->branches()->where('name', 'online')->exists();
             $studentBranchIds = $this->branches()->pluck('branches.id')->toArray();
             
             // If student is not in any of the selected branches

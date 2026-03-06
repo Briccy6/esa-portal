@@ -607,6 +607,7 @@
 @endsection
 
 @section('content')
+<meta name="csrf-token" content="{{ csrf_token() }}">
 <div class="lc-root">
 
     <!-- ─── Stage ─── -->
@@ -666,6 +667,41 @@
                         <div class="lc-indicator active" title="Camera on"><i class="fas fa-video"></i></div>
                     </div>
                 </div>
+            </div>
+        </div>
+        @endif
+
+        <!-- ── Student Requests Panel ── -->
+        @if((Auth::guard('admin')->check() || Auth::guard('teacher')->check() || Auth::guard('staff')->check()) && $studentRequests->count() > 0)
+        <div class="lc-panel" style="top: 410px; right: 20px; width: 260px; max-height: 280px;">
+            <div class="lc-panel-header">
+                <div class="lc-panel-icon"><i class="fas fa-user-clock"></i></div>
+                <span class="lc-panel-title">Requests</span>
+                <span class="lc-panel-badge">{{ $studentRequests->count() }}</span>
+            </div>
+            <div class="lc-participants-list" style="max-height: 200px;">
+                @foreach($studentRequests as $request)
+                <div class="lc-participant" style="border-left: 3px solid var(--accent-blue);">
+                    <div class="lc-participant-avatar" style="background: linear-gradient(135deg, var(--accent-blue), var(--accent-teal));">
+                        {{ substr($request->user->full_name ?? 'S', 0, 1) }}
+                    </div>
+                    <div class="lc-participant-info">
+                        <div class="lc-participant-name">{{ $request->user->full_name ?? 'Unknown' }}</div>
+                        <div class="lc-participant-role">{{ $request->user->course?->course_name ?? 'No Course' }}</div>
+                        <div style="font-size: 9px; color: var(--text-muted); margin-top: 2px;">
+                            {{ \Carbon\Carbon::parse($request->created_at)->diffForHumans() }}
+                        </div>
+                    </div>
+                    <div class="lc-participant-indicators">
+                        <button onclick="approveRequest({{ $request->id }})" class="lc-indicator" style="background: rgba(104,211,145,0.1); border-color: rgba(104,211,145,0.2); color: var(--accent-green);" title="Approve">
+                            <i class="fas fa-check"></i>
+                        </button>
+                        <button onclick="rejectRequest({{ $request->id }})" class="lc-indicator" style="background: rgba(252,129,129,0.1); border-color: rgba(252,129,129,0.2); color: var(--accent-red);" title="Reject">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                @endforeach
             </div>
         </div>
         @endif
@@ -907,6 +943,59 @@ function leaveClass() {
         if (isRecording) stopRecording();
         if (timerInterval) clearInterval(timerInterval);
         window.location.href = '{{ route("admin.live-classes.index") }}';
+    }
+}
+
+/* ── Student Requests ── */
+function approveRequest(requestId) {
+    if (confirm('Approve this student request?')) {
+        fetch(`/live-classes/{{ $liveClass->id }}/requests/${requestId}/approve`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('✓ Request approved');
+                location.reload(); // Reload to update the requests list
+            } else {
+                showToast('✗ Failed to approve request');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('✗ Error approving request');
+        });
+    }
+}
+
+function rejectRequest(requestId) {
+    const reason = prompt('Reason for rejection (optional):');
+    if (reason !== null) {
+        fetch(`/live-classes/{{ $liveClass->id }}/requests/${requestId}/reject`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({ reason: reason })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('✗ Request rejected');
+                location.reload(); // Reload to update the requests list
+            } else {
+                showToast('✗ Failed to reject request');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('✗ Error rejecting request');
+        });
     }
 }
 

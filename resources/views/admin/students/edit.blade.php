@@ -60,7 +60,7 @@
                 <div class="card-body p-5">
                     <form action="{{ route('admin.students.update', $student) }}" method="POST" enctype="multipart/form-data">
                         @csrf
-                        @method('PUT')
+                        @method('PATCH')
                         
                         <div class="row g-4">
                             <!-- Personal Information -->
@@ -106,6 +106,34 @@
                                                value="{{ old('phone', $student->phone) }}" 
                                                required>
                                         @error('phone')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="identification_type" class="form-label fw-bold">Identification Type *</label>
+                                        <select class="form-select @error('identification_type') is-invalid @enderror" 
+                                                id="identification_type" 
+                                                name="identification_type" 
+                                                required>
+                                            <option value="">Select Identification Type</option>
+                                            <option value="ID" {{ old('identification_type', $student->identification_type) == 'ID' ? 'selected' : '' }}>National ID</option>
+                                            <option value="Passport" {{ old('identification_type', $student->identification_type) == 'Passport' ? 'selected' : '' }}>Passport</option>
+                                        </select>
+                                        @error('identification_type')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="id_number" class="form-label fw-bold">Identification Number *</label>
+                                        <input type="text" 
+                                               class="form-control @error('id_number') is-invalid @enderror" 
+                                               id="id_number" 
+                                               name="id_number" 
+                                               value="{{ old('id_number', $student->id_number) }}" 
+                                               required>
+                                        @error('id_number')
                                             <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
                                     </div>

@@ -288,7 +288,7 @@
                     </div>
                 </div>
                 <div class="fee-card-body">
-                    <div class="fee-amount">{{ number_format($praticalfee, 2) }} <span>Rwf</span></div>
+                    <div class="fee-amount">{{ number_format($praticalFee, 2) }} <span>Rwf</span></div>
                     <div class="fee-details">
                         <div class="fee-detail-item paid">
                             <i class="bi bi-check-circle"></i>
@@ -296,13 +296,13 @@
                         </div>
                         <div class="fee-detail-item remaining">
                             <i class="bi bi-clock"></i>
-                            <span>Remaining: {{ number_format(max($praticalfee - ($paidPractical ?? 0), 0), 2) }} Rwf</span>
+                            <span>Remaining: {{ number_format(max($praticalFee - ($paidPractical ?? 0), 0), 2) }} Rwf</span>
                         </div>
                     </div>
-                    @if(($praticalfee - ($paidPractical ?? 0)) > 0)
+                    @if(($praticalFee - ($paidPractical ?? 0)) > 0)
                         <button type="button" class="btn btn-pay pay-fee-btn"
                                 data-feetype="practical"
-                                data-amount="{{ $praticalfee - ($paidPractical ?? 0) }}">
+                                data-amount="{{ $praticalFee - ($paidPractical ?? 0) }}">
                             <i class="bi bi-credit-card me-1"></i>
                             Pay Now
                         </button>
@@ -314,7 +314,7 @@
                     @endif
                 </div>
                 <div class="progress-bar">
-                    <div class="progress-fill" style="width: {{ $praticalfee > 0 ? (($paidPractical ?? 0) / $praticalfee) * 100 : 0 }}%"></div>
+                    <div class="progress-fill" style="width: {{ $praticalFee > 0 ? (($paidPractical ?? 0) / $praticalFee) * 100 : 0 }}%"></div>
                 </div>
             </div>
         </div>
