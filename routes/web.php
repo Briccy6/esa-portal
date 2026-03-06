@@ -43,6 +43,9 @@ use App\Http\Controllers\BlogController;
 use App\Http\Controllers\LiveClassController;
 use App\Http\Controllers\WebRTCController;
 use App\Http\Controllers\Api\SearchController;
+use App\Http\Controllers\QuestionBankController;
+use App\Http\Controllers\ExamTakingController;
+use App\Http\Controllers\ExamResultsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -258,6 +261,19 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     // Admin profile
     Route::get('profile', [\App\Http\Controllers\AdminProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('profile', [\App\Http\Controllers\AdminProfileController::class, 'update'])->name('profile.update');
+
+    // Question Banks
+    Route::get('question-banks', [QuestionBankController::class, 'index'])->name('question-banks.index');
+    Route::get('question-banks/create', [QuestionBankController::class, 'create'])->name('question-banks.create');
+    Route::post('question-banks', [QuestionBankController::class, 'store'])->name('question-banks.store');
+    Route::get('question-banks/{questionBank}', [QuestionBankController::class, 'show'])->name('question-banks.show');
+    Route::get('question-banks/{questionBank}/edit', [QuestionBankController::class, 'edit'])->name('question-banks.edit');
+    Route::put('question-banks/{questionBank}', [QuestionBankController::class, 'update'])->name('question-banks.update');
+    Route::delete('question-banks/{questionBank}', [QuestionBankController::class, 'destroy'])->name('question-banks.destroy');
+    Route::get('question-banks/{questionBank}/add-question', [QuestionBankController::class, 'addQuestion'])->name('question-banks.add-question');
+    Route::post('question-banks/{questionBank}/questions', [QuestionBankController::class, 'storeQuestion'])->name('question-banks.store-question');
+    Route::post('question-banks/{questionBank}/import', [QuestionBankController::class, 'importQuestions'])->name('question-banks.import');
+    Route::get('question-banks/{questionBank}/export', [QuestionBankController::class, 'exportQuestions'])->name('question-banks.export');
 
     // NESA Registration Management (disabled)
     // routes removed per request
@@ -633,6 +649,13 @@ Route::get('/api/courses/search', [SearchController::class, 'courses'])->name('a
 Route::get('/api/lessons/search', [SearchController::class, 'lessons'])->name('api.lessons.search');
 Route::get('/api/teachers/search', [SearchController::class, 'teachers'])->name('api.teachers.search');
 
+// API Routes for branch-courses relationship
+Route::get('/api/branches/{branch}/courses', function($branchId) {
+    $branch = \App\Models\Branch::findOrFail($branchId);
+    $courses = $branch->courses()->get(['courses.id', 'course_name']);
+    return response()->json($courses);
+})->name('api.branches.courses');
+
 // Live Class Homepage API
 Route::get('/api/live-classes/homepage', [LiveClassController::class, 'homepageLiveClasses'])->name('api.live-classes.homepage');
 Route::get('/api/live-classes/{liveClass}/check-access', [LiveClassController::class, 'checkClassAccess'])->name('api.live-classes.check-access');
@@ -657,6 +680,9 @@ Route::middleware('auth:student')->prefix('student')->name('student.')->group(fu
     Route::get('/live-classes', [LiveClassController::class, 'studentIndex'])->name('live-classes.index');
     Route::get('/live-classes/{liveClass}', [LiveClassController::class, 'studentShow'])->name('live-classes.show');
     Route::post('/live-classes/{liveClass}/join', [LiveClassController::class, 'join'])->name('live-classes.join');
+    Route::get('/live-classes/{liveClass}/join', function (\App\Models\LiveClass $liveClass) {
+        return redirect()->route('student.live-classes.room', $liveClass);
+    });
     Route::get('/live-classes/{liveClass}/room', [LiveClassController::class, 'room'])->name('live-classes.room');
 });
 
@@ -761,3 +787,55 @@ Route::middleware('auth:admin')->prefix('admin')->name('admin.')->group(function
 
 Route::get('dos/courses', [\App\Http\Controllers\DosCourseController::class, 'index'])->name('dos.courses.index');
 Route::post('dos/courses/assign-lesson', [\App\Http\Controllers\DosCourseController::class, 'assignLesson'])->name('dos.courses.assignLesson');
+
+// Enhanced Exam System Routes
+Route::middleware(['auth:admin,staff,teacher'])->prefix('exams')->name('exams.')->group(function () {
+    // Question Banks
+    Route::resource('question-banks', QuestionBankController::class);
+    Route::get('question-banks/{questionBank}/add-question', [QuestionBankController::class, 'addQuestion'])->name('question-banks.add-question');
+    Route::post('question-banks/{questionBank}/questions', [QuestionBankController::class, 'storeQuestion'])->name('question-banks.store-question');
+    Route::post('question-banks/{questionBank}/import', [QuestionBankController::class, 'importQuestions'])->name('question-banks.import');
+    Route::get('question-banks/{questionBank}/export', [QuestionBankController::class, 'exportQuestions'])->name('question-banks.export');
+    
+    // Enhanced Exam Management
+    Route::get('{exam}/questions', [ExamController::class, 'questions'])->name('questions');
+    Route::get('{exam}/results', [ExamResultsController::class, 'index'])->name('results');
+    Route::get('{exam}/results/{attempt}', [ExamResultsController::class, 'studentResults'])->name('student-results');
+    Route::get('{exam}/analytics', [ExamResultsController::class, 'analytics'])->name('analytics');
+    Route::get('{exam}/report', [ExamResultsController::class, 'generateReport'])->name('report');
+    Route::get('{exam}/export', [ExamResultsController::class, 'exportResults'])->name('export');
+    Route::post('{exam}/release-results', [ExamResultsController::class, 'releaseResults'])->name('release-results');
+    Route::post('{exam}/grade-essay', [ExamResultsController::class, 'gradeEssay'])->name('grade-essay');
+    Route::post('{exam}/bulk-grade', [ExamResultsController::class, 'bulkGrade'])->name('bulk-grade');
+});
+
+// Admin-specific exam routes
+Route::middleware(['auth:admin'])->prefix('admin/exams')->name('admin.exams.')->group(function () {
+    Route::get('/', [ExamController::class, 'index'])->name('index');
+    Route::get('/create', [ExamController::class, 'create'])->name('create');
+    Route::post('/', [ExamController::class, 'store'])->name('store');
+    Route::get('/{exam}', [ExamController::class, 'show'])->name('show');
+    Route::get('/{exam}/edit', [ExamController::class, 'edit'])->name('edit');
+    Route::put('/{exam}', [ExamController::class, 'update'])->name('update');
+    Route::delete('/{exam}', [ExamController::class, 'destroy'])->name('destroy');
+});
+
+// Teacher-specific exam routes
+Route::middleware(['auth:teacher'])->prefix('teacher/exams')->name('teacher.exams.')->group(function () {
+    Route::get('/', [ExamController::class, 'index'])->name('index');
+    Route::get('/create', [ExamController::class, 'create'])->name('create');
+    Route::post('/', [ExamController::class, 'store'])->name('store');
+    Route::get('/{exam}', [ExamController::class, 'show'])->name('show');
+    Route::get('/{exam}/edit', [ExamController::class, 'edit'])->name('edit');
+    Route::put('/{exam}', [ExamController::class, 'update'])->name('update');
+    Route::delete('/{exam}', [ExamController::class, 'destroy'])->name('destroy');
+});
+
+// Student Exam Taking Routes
+Route::middleware('auth:student')->prefix('exams')->name('exams.')->group(function () {
+    Route::get('{exam}/start', [ExamTakingController::class, 'start'])->name('start');
+    Route::get('{exam}/take/{session}/{questionNumber?}', [ExamTakingController::class, 'takeQuestion'])->name('take-question');
+    Route::post('{exam}/save-answer/{session}/{questionNumber}', [ExamTakingController::class, 'saveAnswer'])->name('save-answer');
+    Route::post('{exam}/submit/{session}', [ExamTakingController::class, 'submitExam'])->name('submit');
+    Route::post('{exam}/log-violation/{session}', [ExamTakingController::class, 'logViolation'])->name('log-violation');
+});

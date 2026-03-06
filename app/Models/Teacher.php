@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use App\Models\Course;
+use App\Models\Lesson;
 use App\Models\Branch; // Import Branch model
 
 class Teacher extends Authenticatable

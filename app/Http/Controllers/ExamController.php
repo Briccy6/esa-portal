@@ -11,6 +11,8 @@ use App\Mail\ExamCreatedMail;
 use Illuminate\Support\Facades\Mail;
 use App\Models\Announcement;
 use App\Models\AcademicYear;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 
 class ExamController extends Controller
 {
@@ -48,80 +50,131 @@ class ExamController extends Controller
      */
 
 public function create()
-{
-    $courses = Course::all();
-    $lessons = Lesson::all();
-    $teachers = \App\Models\Teacher::all();
-    $academicYears = \App\Models\AcademicYear::orderBy('year', 'desc')->get();
-    $terms = \App\Models\Term::all();
-    $examPassword = \Illuminate\Support\Str::random(8); // Generate random password
+    {
+        // Check if admin is authenticated
+        if (auth('admin')->check()) {
+            $user = auth('admin')->user();
+            // Admin can access all courses, lessons, and branches
+            $courses = Course::all();
+            $lessons = Lesson::all();
+            $branches = \App\Models\Branch::all();
+            $teachers = \App\Models\Teacher::all();
+            $academicYears = \App\Models\AcademicYear::orderBy('year', 'desc')->get();
+            $terms = \App\Models\Term::all();
+        } elseif (auth('teacher')->check()) {
+            $user = auth('teacher')->user();
+            // Teacher can only access their assigned courses and lessons
+            $courses = $user->courses;
+            $lessons = $user->lessons;
+            $branches = $user->branches ?? collect();
+            $teachers = collect([$user]);
+            $academicYears = \App\Models\AcademicYear::orderBy('year', 'desc')->get();
+            $terms = \App\Models\Term::all();
+        } else {
+            abort(403, 'Unauthorized');
+        }
+        
+        $questionBanks = \App\Models\QuestionBank::where(function($query) use ($user) {
+            if (auth('admin')->check()) {
+                // Admin can see all question banks
+                return $query;
+            } elseif (auth('teacher')->check()) {
+                return $query->where('teacher_id', $user->id);
+            }
+        })->get();
 
-    return view('exams.create', compact('courses', 'lessons', 'teachers', 'academicYears', 'terms', 'examPassword'));
-}
+        $examPassword = \Illuminate\Support\Str::random(8);
 
-/**
- * Store a newly created resource in storage.
- */
-public function store(Request $request)
-{
-    $request->validate([
-        'title' => 'required|string|max:255',
-        'subject' => 'nullable|string|max:255',
-        'description' => 'nullable|string',
-        'exam_weight' => 'required|integer|min:1|max:100',
-        'total_marks' => 'required|integer|min:1',
-        'class_date' => 'required|date',
-        'instructions' => 'nullable|string',
-        'exam_type' => 'required|string',
-        'academic_year_id' => 'required|exists:academic_years,id',
-        'teacher_id' => 'required|exists:teachers,id',
-        'term_id' => 'required|exists:terms,id',
-        'notes' => 'nullable|string',
-        'exam_password' => 'nullable|string|max:255',
-        'is_active' => 'required|boolean',
-        'course_ids' => 'required|array|min:1',
-        'course_ids.*' => 'exists:courses,id',
-        'lesson_ids' => 'required|array|min:1',
-        'lesson_ids.*' => 'exists:lessons,id',
-    ]);
-    
-    try {
-        // Loop through each course and create a separate exam
-        foreach ($request->course_ids as $courseId) {
-            $exam = Exam::create([
+        return view('exams.create', compact(
+            'courses', 'lessons', 'branches', 'teachers', 
+            'academicYears', 'terms', 'questionBanks', 'examPassword'
+        ));
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(Request $request)
+    {
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'exam_weight' => 'required|integer|min:1|max:100',
+            'total_marks' => 'required|integer|min:1',
+            'class_date' => 'required|date',
+            'exam_type' => 'required|string',
+            'branch_id' => 'required|exists:branches,id',
+            'academic_year_id' => 'required|exists:academic_years,id',
+            'teacher_id' => 'required|exists:teachers,id',
+            'term_id' => 'required|exists:terms,id',
+            'notes' => 'nullable|string',
+            'exam_password' => 'nullable|string|max:255',
+            'course_ids' => 'required|array|min:1',
+            'course_ids.*' => 'exists:courses,id',
+            'lesson_ids' => 'required|array|min:1',
+            'lesson_ids.*' => 'exists:lessons,id',
+        ]);
+        
+        try {
+            // Debug: Log the request data first
+            \Log::info('Request data: ' . json_encode($request->all()));
+            
+            // Create a single exam for multiple courses and lessons
+            $examData = [
                 'title' => $request->title,
-                'subject' => $request->subject,
                 'description' => $request->description,
-                'exam_weight' => $request->exam_weight,
-                'total_marks' => $request->total_marks,
-                'class_date' => $request->class_date,
-                'instructions' => $request->instructions,
                 'exam_type' => $request->exam_type,
+                'class_date' => $request->class_date,
                 'academic_year_id' => $request->academic_year_id,
                 'teacher_id' => $request->teacher_id,
                 'term_id' => $request->term_id,
                 'notes' => $request->notes,
                 'exam_password' => $request->exam_password,
-                'is_active' => $request->is_active,
-            ]);
+                'is_active' => true, // Default to active
+            ];
             
-            foreach ($request->course_ids as $courseId) {
-                $exam->courses()->attach($courseId);
+            // Add optional fields if they exist in the database
+            if (Schema::hasColumn('exams', 'exam_weight')) {
+                $examData['exam_weight'] = $request->exam_weight;
             }
+            if (Schema::hasColumn('exams', 'total_marks')) {
+                $examData['total_marks'] = $request->total_marks;
+            }
+            if (Schema::hasColumn('exams', 'branch_id')) {
+                $examData['branch_id'] = $request->branch_id;
+            }
+            
+            \Log::info('Exam data to create: ' . json_encode($examData));
+            
+            $exam = Exam::create($examData);
+            
+            \Log::info('Exam created successfully with ID: ' . $exam->id);
+            
+            // Attach courses to this exam
+            $exam->courses()->attach($request->course_ids);
             
             // Attach lessons to this exam
-            foreach ($request->lesson_ids as $lessonId) {
-                $exam->lessons()->attach($lessonId);
+            $exam->lessons()->attach($request->lesson_ids);
+            
+            \Log::info('Courses and lessons attached successfully');
+            
+            // Redirect based on authentication
+            if (auth('admin')->check()) {
+                return redirect()->route('admin.exams.index')->with('success', 'Exam created successfully.');
+            } else {
+                return redirect()->route('exams.index')->with('success', 'Exam created successfully.');
             }
+        } catch (\Exception $e) {
+            // Log the detailed error for debugging
+            \Log::error('Exam creation failed: ' . $e->getMessage());
+            \Log::error('Stack trace: ' . $e->getTraceAsString());
+            \Log::error('Request data: ' . json_encode($request->all()));
+            
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Failed to create exam: ' . $e->getMessage());
         }
-        
-        return redirect()->route('exams.index')->with('success', 'Exams created successfully.');
-    } catch (\Exception $e) {
-        return redirect()->back()
-            ->withInput()
-            ->with('error', 'Failed to create exams: ' . $e->getMessage());
     }
-}
 
     /**
      * Display the specified resource.

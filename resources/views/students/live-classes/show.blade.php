@@ -106,12 +106,9 @@
                                         <p>Your request has been approved! You can now join the live class.</p>
                                     </div>
                                     <div class="text-center">
-                                        <form action="{{ route('student.live-classes.join', $liveClass) }}" method="POST">
-                                            @csrf
-                                            <button type="submit" class="btn btn-success btn-lg">
-                                                <i class="fas fa-video"></i> Join Live Class Now
-                                            </button>
-                                        </form>
+                                        <a href="{{ route('student.live-classes.room', $liveClass) }}" class="btn btn-success btn-lg">
+                                            <i class="fas fa-video"></i> Join Live Class Now
+                                        </a>
                                     </div>
                                     @break
                                 @case('rejected')
@@ -136,12 +133,9 @@
                             </div>
 
                             <div class="text-center">
-                                <form action="{{ route('student.live-classes.join', $liveClass) }}" method="POST">
-                                    @csrf
-                                    <button type="submit" class="btn btn-success btn-lg">
-                                        <i class="fas fa-video"></i> Join Live Class Now
-                                    </button>
-                                </form>
+                                <a href="{{ route('student.live-classes.room', $liveClass) }}" class="btn btn-success btn-lg">
+                                    <i class="fas fa-video"></i> Join Live Class Now
+                                </a>
                             </div>
                         @endif
                     @elseif($liveClass->start_time->isFuture())

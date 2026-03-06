@@ -95,6 +95,13 @@ class LiveClassController extends Controller
 
         // Check if user is authenticated
         if (!$user) {
+            // If fee is 0, public users can join without payment
+            if ($liveClass->public_fee == 0 && ($liveClass->access_type === 'public' || $liveClass->access_type === 'both')) {
+                $response['canJoin'] = true;
+                $response['reason'] = 'Access granted - free public class';
+                return response()->json($response);
+            }
+            
             $response['requiresPayment'] = $liveClass->access_type === 'public' || $liveClass->access_type === 'both';
             $response['paymentAmount'] = $liveClass->public_fee;
             $response['currency'] = $liveClass->currency;
@@ -113,8 +120,28 @@ class LiveClassController extends Controller
                 return response()->json($response);
             }
             
+            // Check if student has an approved request (bypass payment requirement)
+            $approvedRequest = $liveClass->requests()
+                ->where('user_id', $student->id)
+                ->where('user_type', 'student')
+                ->where('status', 'approved')
+                ->first();
+                
+            if ($approvedRequest) {
+                $response['canJoin'] = true;
+                $response['reason'] = 'Access granted - request approved';
+                return response()->json($response);
+            }
+            
             // Student is enrolled - check if payment is required
             if ($liveClass->access_type === 'public' || $liveClass->access_type === 'both') {
+                // If fee is 0, allow access without payment
+                if ($liveClass->public_fee == 0) {
+                    $response['canJoin'] = true;
+                    $response['reason'] = 'Access granted - free class';
+                    return response()->json($response);
+                }
+                
                 // Check if student has already paid
                 $payment = \App\Models\LiveClassPayment::where('live_class_id', $liveClass->id)
                     ->where('user_id', $student->id)
@@ -443,7 +470,7 @@ class LiveClassController extends Controller
             if ($existingRequest->status === 'pending') {
                 return back()->with('info', 'Your request is already pending approval');
             } elseif ($existingRequest->status === 'approved') {
-                return redirect()->route('live-classes.join', $liveClass)
+                return redirect()->route('live-classes.room', $liveClass)
                     ->with('success', 'Your request has been approved! You can now join the class.');
             } else {
                 return back()->with('error', 'Your request was rejected: ' . $existingRequest->rejected_reason);
@@ -623,9 +650,41 @@ class LiveClassController extends Controller
         // Check permissions and class status
         if (Auth::guard('student')->check()) {
             $student = Auth::guard('student')->user();
-            if (!$liveClass->courses->contains('id', $student->course_id) || $liveClass->status !== 'active') {
+            
+            // Check if student has an approved request or is enrolled
+            $approvedRequest = $liveClass->requests()
+                ->where('user_id', $student->id)
+                ->where('user_type', 'student')
+                ->where('status', 'approved')
+                ->first();
+            
+            $isEnrolled = $liveClass->courses->contains('id', $student->course_id);
+            
+            if ((!$approvedRequest && !$isEnrolled) || $liveClass->status !== 'active') {
                 abort(403, 'You cannot join this class');
             }
+            
+            // Create participant record if not exists
+            $existingParticipant = $liveClass->participants()
+                ->where('user_id', $student->id)
+                ->where('user_type', 'student')
+                ->where('is_active', true)
+                ->whereNull('left_at')
+                ->first();
+                
+            if (!$existingParticipant) {
+                $liveClass->participants()->create([
+                    'user_id' => $student->id,
+                    'user_type' => 'student',
+                    'email' => $student->email,
+                    'name' => $student->full_name,
+                    'joined_at' => now(),
+                    'is_active' => true,
+                    'ip_address' => request()->ip(),
+                    'browser_info' => request()->userAgent(),
+                ]);
+            }
+            
             $isTeacher = false;
         } else {
             // Admin, staff, or teacher

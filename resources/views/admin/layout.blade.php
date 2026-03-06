@@ -628,6 +628,22 @@
                 <div class="nav-header">Academic</div>
                 
                 <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
+                    <a href="{{ route('admin.exams.index') }}" class="nav-link {{ request()->routeIs('admin.exams.*') ? 'active' : '' }}">
+                        <i class="fas fa-file-alt"></i>
+                        <span class="nav-text">Exams</span>
+                    </a>
+                    <div class="nav-indicator" x-show="hover" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200"></div>
+                </div>
+
+                <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
+                    <a href="{{ route('admin.question-banks.index') }}" class="nav-link {{ request()->routeIs('admin.question-banks.*') ? 'active' : '' }}">
+                        <i class="fas fa-database"></i>
+                        <span class="nav-text">Question Banks</span>
+                    </a>
+                    <div class="nav-indicator" x-show="hover" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200"></div>
+                </div>
+                
+                <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
                     <a href="{{ route('admin.live-classes.index') }}" class="nav-link {{ request()->routeIs('admin.live-classes.*') ? 'active' : '' }}">
                         <i class="fas fa-video"></i>
                         <span class="nav-text">Live Classes</span>

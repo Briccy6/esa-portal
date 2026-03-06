@@ -31,13 +31,15 @@
                     <x-nav-link :href="route('profile.edit')" :active="request()->routeIs('profile.edit')">
                         {{ __('Profile') }}
                     </x-nav-link>
+                    
+                    <!-- Exams Link -->
+                    <x-nav-link href="#" :active="request()->routeIs('exams.*')">
+                        {{ __('Online Tests') }}
+                    </x-nav-link>
+                    
                     <!-- Added Profile link -->
                     <x-nav-link :href="route('profile.edit')" :active="request()->routeIs('profile.edit')">
                         {{ __('Annoucements') }}
-                    </x-nav-link>
-                    <!-- Added Profile link -->
-                    <x-nav-link :href="route('profile.edit')" :active="request()->routeIs('profile.edit')">
-                        {{ __('Online Test') }}
                     </x-nav-link>
                     <!-- Added Profile link -->
                     <x-nav-link :href="route('profile.edit')" :active="request()->routeIs('profile.edit')">
