@@ -36,7 +36,8 @@ class LiveClassRequest extends Model
         if ($this->user_type === 'student') {
             return $this->belongsTo(Student::class, 'user_id');
         }
-        return null;
+        // For other user types, return a relationship that will return null
+        return $this->belongsTo(Student::class, 'user_id')->whereNull('id');
     }
 
     public function approvedByUser()
