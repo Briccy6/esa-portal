@@ -241,6 +241,19 @@ class LiveClassController extends Controller
         return view('live-classes.public-payment', compact('liveClass'));
     }
 
+    /**
+     * Show the form for creating a new live class
+     */
+    public function create()
+    {
+        $branches = Branch::all();
+        $courses = Course::all();
+        $lessons = Lesson::all();
+        $teachers = Teacher::all();
+        
+        return view('admin.live-classes.create', compact('branches', 'courses', 'lessons', 'teachers'));
+    }
+
     public function store(Request $request)
     {
         $request->validate([
