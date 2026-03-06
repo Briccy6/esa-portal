@@ -146,7 +146,12 @@ class StudentController extends Controller
             });
         }
 
-        // Paginate results
+        // Get all students for NESA registration modal (not paginated)
+        $allStudents = Student::with(['branch', 'course'])
+            ->orderBy('full_name', 'asc')
+            ->get();
+
+        // Paginate results for the table
         $students = $students->orderBy('created_at', 'desc')->paginate(20);
 
         // If AJAX request, return only the table partial
@@ -160,9 +165,9 @@ class StudentController extends Controller
 
         // Return full view for normal requests
         if ($admin) {
-            return view('admin.students.index', compact('students'));
+            return view('admin.students.index', compact('students', 'allStudents'));
         } else {
-            return view('students.index', compact('students'));
+            return view('students.index', compact('students', 'allStudents'));
         }
     }
 

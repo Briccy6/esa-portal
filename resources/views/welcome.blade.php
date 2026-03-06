@@ -393,6 +393,7 @@
                 <nav class="hidden md:flex items-center space-x-6">
                     <a href="#home" class="text-text-light hover:text-accent-color font-medium transition duration-300">Home</a>
                     <a href="#announcements" class="text-text-light hover:text-accent-color font-medium transition duration-300">Announcements</a>
+                    <a href="{{ route('blogs.index') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300">Blog</a>
                     <a href="#quick-access" class="text-text-light hover:text-accent-color font-medium transition duration-300">Portals</a>
                     <a href="#about" class="text-text-light hover:text-accent-color font-medium transition duration-300">About</a>
                     <a href="#contact" class="text-text-light hover:text-accent-color font-medium transition duration-300">Contact</a>
@@ -436,6 +437,7 @@
         <nav class="flex flex-col items-center space-y-4">
             <a href="#home" class="text-text-light hover:text-accent-color font-medium transition duration-300" @click="open = false">Home</a>
             <a href="#announcements" class="text-text-light hover:text-accent-color font-medium transition duration-300" @click="open = false">Announcements</a>
+            <a href="{{ route('blogs.index') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300" @click="open = false">Blog</a>
             <a href="#quick-access" class="text-text-light hover:text-accent-color font-medium transition duration-300" @click="open = false">Portals</a>
             <a href="#about" class="text-text-light hover:text-accent-color font-medium transition duration-300" @click="open = false">About</a>
             <a href="#contact" class="text-text-light hover:text-accent-color font-medium transition duration-300" @click="open = false">Contact</a>

@@ -13,7 +13,7 @@
         "laravel/breeze": "^2.3",
         "laravel/framework": "^12.5",
         "laravel/tinker": "^2.10.1",
-        "livewire/livewire": "^3.7",
+        "livewire/livewire": "^4.2",
         "maatwebsite/excel": "^3.1",
         "phpoffice/phpspreadsheet": "^1.30",
         "psy/psysh": "^0.12",

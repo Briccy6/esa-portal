@@ -1137,22 +1137,28 @@ function clearFilters() {
                 <div class="modal-body">
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label class="form-label fw-bold">Select Student</label>
-                            <select name="student_id" id="studentSelect" class="form-select" required>
-                                <option value="">Choose a student...</option>
-                                @foreach($students as $student)
-                                    @if(!$student->nesa_registered)
+                            <label class="form-label fw-bold">Search & Select Student</label>
+                            <input type="text" 
+                                   id="studentSearchInput" 
+                                   class="form-control" 
+                                   placeholder="Type to search students..."
+                                   autocomplete="off"
+                                   list="studentList">
+                            <datalist id="studentList">
+                                @foreach($allStudents as $student)
                                     <option value="{{ $student->id }}" 
                                             data-reg-number="{{ $student->reg_number }}"
                                             data-name="{{ $student->full_name }}"
                                             data-email="{{ $student->email }}"
                                             data-branch="{{ $student->branch->name ?? 'N/A' }}"
-                                            data-course="{{ $student->course->abbreviation ?? $student->course->course_name ?? 'N/A' }}">
-                                        {{ $student->reg_number }} - {{ $student->full_name }}
+                                            data-course="{{ $student->course->abbreviation ?? $student->course->course_name ?? 'N/A' }}"
+                                            data-nesa-registered="{{ $student->nesa_registered ? 'true' : 'false' }}"
+                                            data-search-text="{{ strtolower($student->full_name . ' ' . $student->reg_number . ' ' . ($student->branch->name ?? '') . ' ' . ($student->course->abbreviation ?? $student->course->course_name ?? '')) }}">
+                                        {{ $student->reg_number }} - {{ $student->full_name }} {{ $student->nesa_registered ? '(✓ Registered)' : '' }}
                                     </option>
-                                    @endif
                                 @endforeach
-                            </select>
+                            </datalist>
+                            <input type="hidden" name="student_id" id="studentSelect" value="">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Registration Status</label>
@@ -1216,14 +1222,30 @@ function clearFilters() {
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const studentSearchInput = document.getElementById('studentSearchInput');
     const studentSelect = document.getElementById('studentSelect');
     const studentInfo = document.getElementById('studentInfo');
     const studentStatus = document.getElementById('studentStatus');
+    const dataList = document.getElementById('studentList');
+    const allOptions = Array.from(dataList.options);
     
-    studentSelect.addEventListener('change', function() {
-        const selectedOption = this.options[this.selectedIndex];
+    // Debug: Log available students
+    console.log('Total students loaded:', allOptions.length);
+    console.log('Datalist options:', allOptions);
+    
+    // Show student info function
+    function showStudentInfo() {
+        // Get the selected option by finding the one with matching value
+        let selectedOption = null;
+        for (let i = 0; i < allOptions.length; i++) {
+            if (allOptions[i].value === studentSelect.value) {
+                selectedOption = allOptions[i];
+                break;
+            }
+        }
         
-        if (this.value) {
+        // Only show info if we have both a value and a valid option
+        if (studentSelect.value && selectedOption && studentSelect.value !== '') {
             // Show student information
             document.getElementById('infoName').textContent = selectedOption.dataset.name;
             document.getElementById('infoRegNumber').textContent = selectedOption.dataset.regNumber;
@@ -1237,13 +1259,73 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Update form action
             const form = document.getElementById('nesaRegistrationForm');
-            form.action = form.action.replace(':studentId', this.value);
+            form.action = form.action.replace(':studentId', studentSelect.value);
+            console.log('Form action updated to:', form.action);
+            console.log('Student selected:', selectedOption.dataset.name, 'ID:', studentSelect.value);
         } else {
-            studentInfo.classList.add('d-none');
-            studentStatus.className = 'badge bg-warning';
-            studentStatus.textContent = 'Not Registered';
+            hideStudentInfo();
+        }
+    }
+    
+    // Hide student info function
+    function hideStudentInfo() {
+        studentInfo.classList.add('d-none');
+        studentStatus.className = 'badge bg-warning';
+        studentStatus.textContent = 'Not Registered';
+    }
+    
+    // Event listeners
+    studentSearchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase().trim();
+        console.log('Searching for:', searchTerm);
+        
+        // Find matching option
+        let matchedOption = null;
+        for (let i = 0; i < allOptions.length; i++) {
+            const option = allOptions[i];
+            const searchText = option.dataset.searchText || '';
+            const isNesaRegistered = option.dataset.nesaRegistered === 'true';
+            
+            // Only show non-NESA registered students in search results
+            if (searchText.includes(searchTerm) && !isNesaRegistered) {
+                matchedOption = option;
+                break;
+            }
+        }
+        
+        // Update hidden input and show info if match found
+        if (matchedOption) {
+            studentSelect.value = matchedOption.value;
+            showStudentInfo();
+            console.log('Match found:', matchedOption.dataset.name);
+        } else {
+            studentSelect.value = '';
+            hideStudentInfo();
         }
     });
+    
+    // Handle selection from datalist - use multiple events for better compatibility
+    studentSearchInput.addEventListener('change', function() {
+        console.log('Input changed, value:', this.value);
+        showStudentInfo();
+    });
+    
+    // Also handle blur event for when user clicks away
+    studentSearchInput.addEventListener('blur', function() {
+        console.log('Input blurred, value:', this.value);
+        setTimeout(() => showStudentInfo(), 100); // Small delay to ensure datalist selection is processed
+    });
+    
+    // Handle keyup for Enter key
+    studentSearchInput.addEventListener('keyup', function(e) {
+        if (e.key === 'Enter') {
+            console.log('Enter pressed, showing student info');
+            showStudentInfo();
+        }
+    });
+    
+    // Initialize
+    console.log('Searchable input initialized');
 });
 </script>
 
@@ -1255,6 +1337,36 @@ document.addEventListener('DOMContentLoaded', function() {
 
 body {
     font-size: 12px;
+}
+
+/* Searchable Select Styles */
+.searchable-select-container {
+    position: relative;
+}
+
+.searchable-select-container .select-wrapper {
+    position: relative;
+}
+
+.searchable-select-container .select-arrow {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: #6c757d;
+    z-index: 1;
+}
+
+.searchable-select-container select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    padding-right: 35px;
+}
+
+.searchable-select-container select:focus + .select-arrow {
+    color: #0d6efd;
 }
 </style>
 @endsection

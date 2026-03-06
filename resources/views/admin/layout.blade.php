@@ -514,6 +514,8 @@
             }
         }
     </style>
+    @yield('styles')
+    @livewireStyles
 </head>
 <body>
  @include('partials.storage-warning')
@@ -593,18 +595,33 @@
                     </a>
                 </div>
             </div>
-            <div class="nav-item">
-                   <a href="{{ route('admin.preferences') }}" class="nav-link {{ request()->routeIs('admin.preferences') ? 'active' : '' }}">
-            <i class="fas fa-sliders-h"></i>
-            <span class="nav-text">Preferences</span>
-        </a>
+            <div class="nav-section">
+                <div class="nav-header">Management</div>
+                
+                <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
+                    <a href="{{ route('admin.preferences') }}" class="nav-link {{ request()->routeIs('admin.preferences') ? 'active' : '' }}">
+                        <i class="fas fa-sliders-h"></i>
+                        <span class="nav-text">Preferences</span>
+                    </a>
+                    <div class="nav-indicator" x-show="hover" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200"></div>
                 </div>
-<li class="nav-item">
-    <a href="{{ route('admin.students.index') }}" class="nav-link">
-        <i class="fas fa-user-graduate"></i>
-        <span class="nav-text">Students</span>
-    </a>
-</li>
+                
+                <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
+                    <a href="{{ route('admin.students.index') }}" class="nav-link {{ request()->routeIs('admin.students.*') ? 'active' : '' }}">
+                        <i class="fas fa-user-graduate"></i>
+                        <span class="nav-text">Students</span>
+                    </a>
+                    <div class="nav-indicator" x-show="hover" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200"></div>
+                </div>
+                
+                <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
+                    <a href="{{ route('admin.blogs.index') }}" class="nav-link {{ request()->routeIs('admin.blogs.*') ? 'active' : '' }}">
+                        <i class="fas fa-blog"></i>
+                        <span class="nav-text">Blogs</span>
+                    </a>
+                    <div class="nav-indicator" x-show="hover" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200"></div>
+                </div>
+            </div>
 
 
             <div class="nav-section">
@@ -678,6 +695,14 @@
                     <a href="{{ route('admin.messages.index') }}" class="nav-link {{ request()->routeIs('admin.messages.*') ? 'active' : '' }}">
                         <i class="fas fa-envelope"></i>
                         <span class="nav-text">Messages</span>
+                    </a>
+                    <div class="nav-indicator" x-show="hover" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200"></div>
+                </div>
+                
+                <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
+                    <a href="{{ route('admin.blogs.index') }}" class="nav-link {{ request()->routeIs('admin.blogs.*') ? 'active' : '' }}">
+                        <i class="fas fa-blog"></i>
+                        <span class="nav-text">Blog Management</span>
                     </a>
                     <div class="nav-indicator" x-show="hover" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200"></div>
                 </div>
@@ -839,7 +864,8 @@
     </script>
 
         @yield('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        @livewireScripts
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-</body>
+    </body>
 </html>

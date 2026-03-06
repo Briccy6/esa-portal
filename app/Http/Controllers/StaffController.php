@@ -17,8 +17,13 @@ class StaffController extends Controller
     public function index()
     {
         $staffs = Staff::all();
-        $students = Student::with(['branch', 'course'])->get();
-        return view('admin.staff.index', compact('staffs', 'students'));
+        
+        // Get all students for NESA registration modal (not paginated)
+        $allStudents = Student::with(['branch', 'course'])
+            ->orderBy('full_name', 'asc')
+            ->get();
+            
+        return view('admin.staff.index', compact('staffs', 'allStudents'));
     }
 
     public function create()
