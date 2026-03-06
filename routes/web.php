@@ -40,6 +40,9 @@ use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\AdminProfileController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\BlogController;
+use App\Http\Controllers\LiveClassController;
+use App\Http\Controllers\WebRTCController;
+use App\Http\Controllers\Api\SearchController;
 
 /*
 |--------------------------------------------------------------------------
@@ -242,6 +245,16 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
 
     Route::resource('grades', GradeController::class)->names('grades');
     // community-spaces feature removed – no routes needed
+
+    // Live Classes
+    Route::resource('live-classes', LiveClassController::class);
+    Route::post('live-classes/{liveClass}/start', [LiveClassController::class, 'start'])->name('live-classes.start');
+    Route::post('live-classes/{liveClass}/end', [LiveClassController::class, 'end'])->name('live-classes.end');
+    
+    // Live Class Request Management
+    Route::get('live-classes/{liveClass}/requests', [LiveClassController::class, 'manageRequests'])->name('live-classes.requests');
+    Route::post('live-classes/{liveClass}/requests/{requestId}/approve', [LiveClassController::class, 'approveRequest'])->name('live-classes.requests.approve');
+    Route::post('live-classes/{liveClass}/requests/{requestId}/reject', [LiveClassController::class, 'rejectRequest'])->name('live-classes.requests.reject');
 
 
     // Admin profile
@@ -596,10 +609,52 @@ Route::post('/student/fees/pay', [StudentController::class, 'payFees'])->name('s
 Route::post('/contact', [HomeController::class, 'handleContact'])->name('contact.send');
 Route::get('/ai/prepare-exam', [\App\Http\Controllers\ExamController::class, 'prepareExamAI'])->name('ai.prepare-exam');
 
-Route::get('/api/lessons/by-courses', function (\Illuminate\Http\Request $request) {
-    $courseIds = explode(',', $request->query('course_ids', ''));
-    $lessons = \App\Models\Lesson::whereIn('course_id', $courseIds)->get(['id', 'title']);
-    return response()->json(['lessons' => $lessons]);
+// API Routes for autocomplete
+Route::get('/api/branches/search', [SearchController::class, 'branches'])->name('api.branches.search');
+Route::get('/api/courses/search', [SearchController::class, 'courses'])->name('api.courses.search');
+Route::get('/api/lessons/search', [SearchController::class, 'lessons'])->name('api.lessons.search');
+Route::get('/api/teachers/search', [SearchController::class, 'teachers'])->name('api.teachers.search');
+
+// Live Class Homepage API
+Route::get('/api/live-classes/homepage', [LiveClassController::class, 'homepageLiveClasses'])->name('api.live-classes.homepage');
+Route::get('/api/live-classes/{liveClass}/check-access', [LiveClassController::class, 'checkClassAccess'])->name('api.live-classes.check-access');
+
+Route::get('/live-classes', [LiveClassController::class, 'index'])->name('live-classes.index');
+Route::get('/live-classes/{liveClass}', [LiveClassController::class, 'show'])->name('live-classes.show');
+Route::post('/live-classes/{liveClass}/join', [LiveClassController::class, 'join'])->name('live-classes.join');
+Route::get('/live-classes/{liveClass}/room', [LiveClassController::class, 'room'])->name('live-classes.room');
+
+// Public Access Routes
+Route::get('/live-classes/{liveClass}/public-join', [LiveClassController::class, 'publicJoin'])->name('live-classes.public-join');
+Route::get('/live-classes/{liveClass}/payment', [LiveClassController::class, 'showPaymentForm'])->name('live-classes.payment');
+Route::post('/live-classes/{liveClass}/payment', [LiveClassController::class, 'processPayment'])->name('live-classes.payment.process');
+
+// Student Request Routes
+Route::get('/live-classes/{liveClass}/request', [LiveClassController::class, 'requestAccess'])->name('live-classes.request');
+Route::post('/live-classes/{liveClass}/request', [LiveClassController::class, 'submitRequest'])->name('live-classes.request.submit');
+
+// Student Live Class Routes
+Route::middleware('auth:student')->prefix('student')->name('student.')->group(function () {
+    Route::get('/live-classes', [LiveClassController::class, 'index'])->name('live-classes.index');
+    Route::get('/live-classes/{liveClass}', [LiveClassController::class, 'show'])->name('live-classes.show');
+    Route::post('/live-classes/{liveClass}/join', [LiveClassController::class, 'join'])->name('live-classes.join');
+    Route::get('/live-classes/{liveClass}/room', [LiveClassController::class, 'room'])->name('live-classes.room');
+});
+
+// Teacher Live Class Routes
+Route::middleware('auth:teacher')->prefix('teacher')->name('teacher.')->group(function () {
+    Route::get('/live-classes', [LiveClassController::class, 'index'])->name('live-classes.index');
+    Route::get('/live-classes/{liveClass}/room', [LiveClassController::class, 'room'])->name('live-classes.room');
+    Route::post('/live-classes/{liveClass}/start', [LiveClassController::class, 'start'])->name('live-classes.start');
+    Route::post('/live-classes/{liveClass}/end', [LiveClassController::class, 'end'])->name('live-classes.end');
+});
+
+// WebRTC Routes (Protected)
+Route::middleware(['auth:admin,staff,teacher,student'])->prefix('webrtc')->name('webrtc.')->group(function () {
+    Route::post('/signaling/{roomId}', [WebRTCController::class, 'signaling'])->name('signaling');
+    Route::post('/join/{roomId}', [WebRTCController::class, 'joinRoom'])->name('join');
+    Route::post('/leave/{roomId}', [WebRTCController::class, 'leaveRoom'])->name('leave');
+    Route::post('/chat/{roomId}', [WebRTCController::class, 'chatMessage'])->name('chat');
 });
 
 Route::get('/student/pay/', [StudentController::class, 'payFees'])->name('student.pay');

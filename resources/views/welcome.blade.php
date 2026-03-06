@@ -468,6 +468,9 @@
         </nav>
     </div>
 
+    <!-- Live Streaming Banner -->
+    @include('components.live-streaming-banner')
+
     <!-- Hero Section with Carousel -->
     <section id="home" class="hero-carousel">
         <!-- Carousel Items - Using placeholder images for demo -->
