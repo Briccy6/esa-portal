@@ -17,4 +17,10 @@ class EmailVerification extends Model
         'expires_at' => 'datetime',
         'verified' => 'boolean',
     ];
+
+    protected $primaryKey = 'id';
+
+    public $incrementing = true;
+
+    protected $keyType = 'int';
 }

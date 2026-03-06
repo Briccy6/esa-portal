@@ -731,9 +731,19 @@ class StudentController extends Controller
 
     public function sendVerificationCode(Request $request)
     {
-        $request->validate(['reg_number' => 'required|string']);
+        // Handle JSON requests
+        if ($request->isJson()) {
+            $data = $request->json()->all();
+            $regNumber = $data['reg_number'] ?? null;
+        } else {
+            $regNumber = $request->input('reg_number');
+        }
+        
+        if (!$regNumber) {
+            return response()->json(['message' => 'Registration number is required.'], 400);
+        }
 
-        $student = Student::where('reg_number', $request->reg_number)->first();
+        $student = Student::where('reg_number', $regNumber)->first();
         if (!$student) {
             return response()->json(['message' => 'Registration number not found.'], 404);
         }

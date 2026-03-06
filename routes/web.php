@@ -561,6 +561,26 @@ Route::post('/student/login/submit', [StudentController::class, 'loginWithPasswo
 Route::post('/student/login/validate-reg-number', [StudentController::class, 'validateRegNumber'])->name('student.login.validateRegNumber');
 Route::post('/student/login/validate-id-value', [StudentController::class, 'validateIdValue'])->name('student.login.validateIdValue');
 Route::get('/student/login/simple', [StudentController::class, 'showSimpleLoginForm'])->name('student.login.simple');
+
+// Email test route
+Route::get('/test-email', function() {
+    try {
+        \Illuminate\Support\Facades\Mail::raw('This is a test email from Excellent Servant Academy application.', function($message) {
+            $message->to('excellentservantacademy@gmail.com')
+                    ->subject('Test Email - ESA Application')
+                    ->from('excellentservantacademy@gmail.com', 'Excellent Servant Academy');
+        });
+        
+        return 'Test email sent successfully! Check your inbox.';
+    } catch (\Exception $e) {
+        return 'Error sending email: ' . $e->getMessage();
+    }
+})->name('test.email');
+
+// Test verification route
+Route::get('/test-verification', function() {
+    return view('test_verification');
+})->name('test.verification');
 Route::post('/student/login/code', [StudentController::class, 'loginWithCode'])->name('student.login.code');
 
 Route::post('/student/logout', function () {
