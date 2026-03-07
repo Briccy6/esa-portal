@@ -40,7 +40,7 @@
         </div>
     @endif
     
-    <form id="examForm" method="POST" action="{{ route('exam.submit', $exam->id) }}">
+    <form id="examForm" method="POST" action="{{ route('student.exams.submit', $exam->id) }}">
         @csrf
         <div id="questionArea"></div>
         <div class="d-flex justify-content-between mt-4">
@@ -142,7 +142,7 @@ document.addEventListener('keydown', function(e) {
 // --- Cheating detection: Tab switch or blur = immediate disqualify ---
 function disqualify() {
     alert('You have been disqualified for leaving the exam window.');
-    window.location.href = "{{ route('exam.disqualified', $exam->id) }}";
+    window.location.href = "{{ route('student.exams.disqualified', $exam->id) }}";
 }
 window.onblur = disqualify;
 document.addEventListener('visibilitychange', function() {

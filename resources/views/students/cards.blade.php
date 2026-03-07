@@ -267,8 +267,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function openExamFullscreen(examId) {
-    const url = "{{ url('/exam') }}/" + examId + "/take";
-    const win = window.open(url, '_blank');
-    win.focus();
+    const url = "{{ url('/student/exams') }}/" + examId + "/take";
+    window.location.href = url;
 }
 </script>

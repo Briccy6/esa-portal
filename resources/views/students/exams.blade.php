@@ -432,9 +432,27 @@
                 <div class="exam-actions">
                     @if($examDate->isFuture() || $examDate->isToday())
                         @if(!$hasMark)
-                            <a href="{{ route('exam.take', $exam->id) }}" class="action-btn btn-take-exam">
+                            {{-- DEBUG: Show authentication status --}}
+                            @php
+                                $isAuthenticated = auth('student')->check();
+                                $debugInfo = "Auth: " . ($isAuthenticated ? "YES" : "NO");
+                                if ($isAuthenticated) {
+                                    $student = auth('student')->user();
+                                    $debugInfo .= " | Student: " . $student->full_name . " (ID: " . $student->id . ")";
+                                }
+                                Log::info('TAKE EXAM BUTTON DEBUG - ' . $debugInfo);
+                            @endphp
+                            
+                            <a href="{{ route('student.exams.take', $exam->id) }}" 
+                               class="action-btn btn-take-exam"
+                               onclick="console.log('{{$debugInfo}}'); console.log('Exam ID: {{$exam->id}}, Route: {{route('student.exams.take', $exam->id)}}');">
                                 🚀 Take Exam
                             </a>
+                            
+                            {{-- DEBUG INFO DISPLAY --}}
+                            <div style="font-size: 10px; color: #666; margin-top: 5px;">
+                                Debug: {{$debugInfo}}
+                            </div>
                         @else
                             <div class="status-badge badge-completed">
                                 ✅ Completed

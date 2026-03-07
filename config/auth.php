@@ -26,30 +26,31 @@ return [
     |
     */
 'guards' => [
-    'web' => [
-        'driver' => 'session',
-        'provider' => 'users',
-    ],
+        'web' => [
+            'driver' => 'session',
+            'provider' => 'users',
+        ],
 
-    'admin' => [
-        'driver' => 'session',
-        'provider' => 'admins',
-    ],
+        'admin' => [
+            'driver' => 'session',
+            'provider' => 'admins',
+        ],
 
-      'staff' => [
-    'driver' => 'session',
-    'provider' => 'staffs',
-],
-'student' => [
-        'driver' => 'session',
-        'provider' => 'students',
+        'staff' => [
+            'driver' => 'session',
+            'provider' => 'staffs',
+        ],
+        
+        'student' => [
+            'driver' => 'session',
+            'provider' => 'students',
+        ],
+        
+        'teacher' => [
+            'driver' => 'session',
+            'provider' => 'teachers',
+        ],
     ],
-    'teacher' => [
-        'driver' => 'session',
-        'provider' => 'teachers',
-    ],
-   
-],
 
     /*
     |--------------------------------------------------------------------------
@@ -62,30 +63,28 @@ return [
     */
 
    'providers' => [
-    'users' => [
-        'driver' => 'eloquent',
-        'model' => App\Models\User::class,
-    ],
-    'admins' => [
-        'driver' => 'eloquent',
-        'model' => App\Models\Admin::class, // your Admin model
-    ],
-   
-'staffs' => [
-        'driver' => 'eloquent',
-        'model' => App\Models\Staff::class, // your Staff model
-    ],
+        'users' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\User::class,
+        ],
+        'admins' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Admin::class, // your Admin model
+        ],
+        
+        'staffs' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Staff::class, // your Staff model
+        ],
        'students' => [
-        'driver' => 'eloquent',
-        'model' => App\Models\Student::class,
+            'driver' => 'eloquent',
+            'model' => App\Models\Student::class,
+        ],
+        'teachers' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Teacher::class,
+        ],
     ],
-    'teachers' => [
-        'driver' => 'eloquent',
-        'model' => App\Models\Teacher::class,
-    ],
-     
-    
-],
 
     /*
     |--------------------------------------------------------------------------

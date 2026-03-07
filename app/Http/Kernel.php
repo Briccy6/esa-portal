@@ -64,5 +64,8 @@ class Kernel extends HttpKernel
          
         // Session validation middleware
         'validate.session' => \App\Http\Middleware\ValidateSession::class,
+        
+        // Debug middleware
+        'debug.student.auth' => \App\Http\Middleware\DebugStudentAuth::class,
     ];
 }

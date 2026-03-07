@@ -21,6 +21,9 @@ class Exam extends Model
         'token_cost', 'is_public', 'public_price', 'start_time', 'end_time', 'allow_public_after_end',
     ];
 
+    // Cache for question count to prevent multiple queries
+    protected $_questionCount = null;
+
     protected $casts = [
         'class_date' => 'date',
         'is_active' => 'boolean',
@@ -135,11 +138,14 @@ class Exam extends Model
      */
     public function getCalculatedTokenCost()
     {
-        $questionCount = $this->questions()->count();
+        // Cache question count to prevent multiple queries
+        if (!isset($this->_questionCount)) {
+            $this->_questionCount = $this->questions()->count();
+        }
         
         // If exam has no manual token cost set, calculate based on questions
         if ($this->token_cost === null || $this->token_cost === 0) {
-            return $questionCount; // 1 token per question
+            return $this->_questionCount; // 1 token per question
         }
         
         // If manual token cost is set, use it (for backward compatibility)
@@ -159,11 +165,14 @@ class Exam extends Model
      */
     public function updateTokenCostBasedOnQuestions()
     {
-        $questionCount = $this->questions()->count();
+        // Cache question count to prevent multiple queries
+        if (!isset($this->_questionCount)) {
+            $this->_questionCount = $this->questions()->count();
+        }
         
         // Only update if no manual token cost is set
         if ($this->token_cost === null || $this->token_cost === 0) {
-            $this->token_cost = $questionCount;
+            $this->token_cost = $this->_questionCount;
             $this->save();
         }
     }
@@ -174,7 +183,9 @@ class Exam extends Model
     public function getFormattedTokenCostAttribute()
     {
         $cost = $this->getCalculatedTokenCost();
-        $questionCount = $this->questions()->count();
+        
+        // Use cached question count if available
+        $questionCount = $this->_questionCount ?? $this->questions()->count();
         
         if ($cost === $questionCount) {
             return "{$cost} tokens ({$questionCount} questions × 1 token each)";

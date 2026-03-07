@@ -1220,6 +1220,9 @@ class StudentController extends Controller
         Auth::guard('student')->login($student);
 
         // Store new session fingerprint
+        $this->storeSessionFingerprint($request, $student, 'student');
+        
+        return redirect()->route('student.dashboard')->with('success', 'Login successful!');
     }
 
     public function dashboard(Request $request)

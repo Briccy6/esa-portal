@@ -620,8 +620,8 @@
                                         <p class="exam-tokens">
                                             <i class="bi bi-coins me-1"></i>
                                             {{ $exam->formatted_token_cost }}
-                                            @if(auth()->user()->token)
-                                                | Your balance: {{ auth()->user()->token->balance }} tokens
+                                            @if(auth('student')->user()->token)
+                                                | Your balance: {{ auth('student')->user()->token->balance }} tokens
                                             @endif
                                         </p>
                                     @endif
@@ -640,7 +640,7 @@
                                             </span>
                                         @endif
                                     @else
-                                        @if($exam->requiresTokens() && (!auth()->user()->token || !auth()->user()->token->canAfford($exam->getCalculatedTokenCost())))
+                                        @if($exam->requiresTokens() && (!auth('student')->user()->token || !auth('student')->user()->token->canAfford($exam->getCalculatedTokenCost())))
                                             <span class="status-badge insufficient-tokens">
                                                 <i class="bi bi-exclamation-triangle me-1"></i>
                                                 Insufficient tokens

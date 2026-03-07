@@ -13,6 +13,7 @@ use App\Models\Announcement;
 use App\Models\AcademicYear;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Log;
 
 class ExamController extends Controller
 {
@@ -48,8 +49,7 @@ class ExamController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-
-public function create()
+    public function create()
     {
         // Check if admin is authenticated
         if (auth('admin')->check()) {
@@ -123,7 +123,7 @@ public function create()
         
         try {
             // Debug: Log the request data first
-            \Log::info('Request data: ' . json_encode($request->all()));
+            Log::info('Request data: ' . json_encode($request->all()));
             
             // Create a single exam for multiple courses and lessons
             $examData = [
@@ -150,11 +150,11 @@ public function create()
                 $examData['branch_id'] = $request->branch_id;
             }
             
-            \Log::info('Exam data to create: ' . json_encode($examData));
+            Log::info('Exam data to create: ' . json_encode($examData));
             
             $exam = Exam::create($examData);
             
-            \Log::info('Exam created successfully with ID: ' . $exam->id);
+            Log::info('Exam created successfully with ID: ' . $exam->id);
             
             // Attach courses to this exam
             $exam->courses()->attach($request->course_ids);
@@ -162,7 +162,7 @@ public function create()
             // Attach lessons to this exam
             $exam->lessons()->attach($request->lesson_ids);
             
-            \Log::info('Courses and lessons attached successfully');
+            Log::info('Courses and lessons attached successfully');
             
             // Process question bank selections
             if ($request->question_bank_ids && $request->questions_per_bank) {
@@ -172,7 +172,7 @@ public function create()
             // Auto-calculate token cost based on number of questions
             $exam->updateTokenCostBasedOnQuestions();
             
-            \Log::info('Token cost calculated based on questions: ' . $exam->token_cost . ' tokens');
+            Log::info('Token cost calculated based on questions: ' . $exam->token_cost . ' tokens');
             
             // Redirect based on authentication
             if (auth('admin')->check()) {
@@ -182,9 +182,9 @@ public function create()
             }
         } catch (\Exception $e) {
             // Log the detailed error for debugging
-            \Log::error('Exam creation failed: ' . $e->getMessage());
-            \Log::error('Stack trace: ' . $e->getTraceAsString());
-            \Log::error('Request data: ' . json_encode($request->all()));
+            Log::error('Exam creation failed: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            Log::error('Request data: ' . json_encode($request->all()));
             
             return redirect()->back()
                 ->withInput()
@@ -259,50 +259,94 @@ public function create()
     }
 
     /**
-     * Show the exam page for the student to take the exam.
+     * Show exam page for student to take exam.
      */
     public function take(Exam $exam)
     {
+        // DEBUG: Log method entry
+        Log::info('=== EXAM TAKE METHOD STARTED ===');
+        Log::info('Exam ID: ' . $exam->id);
+        Log::info('Exam Title: ' . $exam->title);
+        
+        // DEBUG: Check authentication status
+        $isAuthenticated = auth('student')->check();
+        Log::info('Student authenticated: ' . ($isAuthenticated ? 'YES' : 'NO'));
+        
+        if (!$isAuthenticated) {
+            Log::info('Student not authenticated, available guards:');
+            Log::info('Web guard check: ' . (auth()->check() ? 'YES' : 'NO'));
+            Log::info('Default guard: ' . auth()->getDefaultDriver());
+            return redirect()->route('student.login')->with('error', 'Please login to take exam.');
+        }
+        
         $student = auth('student')->user();
+        Log::info('Student ID: ' . $student->id);
+        Log::info('Student Name: ' . $student->full_name);
+        Log::info('Student Reg Number: ' . $student->reg_number);
 
         // Prevent re-taking if disqualified (session)
-        if (session("disqualified_exam_{$exam->id}")) {
-            return redirect()->route('dashboard')->with('error', 'You have been disqualified from this exam.');
-        }
+        // TEMPORARILY DISABLED FOR DEBUGGING
+        // if (session("disqualified_exam_{$exam->id}")) {
+        //     Log::info('Student disqualified via session');
+        //     return redirect()->route('dashboard')->with('error', 'You have been disqualified from this exam.');
+        // }
 
         // Prevent re-taking if disqualified (DB)
         $existingMark = Mark::where('student_id', $student->id)
             ->where('exam_id', $exam->id)
             ->first();
 
+        Log::info('Existing mark found: ' . ($existingMark ? 'YES' : 'NO'));
+        if ($existingMark) {
+            Log::info('Existing mark status: ' . $existingMark->status);
+            Log::info('Existing mark value: ' . $existingMark->value);
+        }
+
         if ($existingMark && $existingMark->status === 'disqualified') {
+            Log::info('Student disqualified via database');
             return redirect()->route('dashboard')->with('error', 'You have been disqualified from this exam.');
         }
 
         // Prevent re-attempts
         if ($existingMark) {
+            Log::info('Student already attempted exam');
             return redirect()->route('dashboard')->with('error', 'You already took this exam.');
         }
 
         // Check and deduct tokens if required
+        Log::info('Exam requires tokens: ' . ($exam->requiresTokens() ? 'YES' : 'NO'));
+        
         if ($exam->requiresTokens()) {
             $studentToken = $student->token;
             $tokenCost = $exam->getCalculatedTokenCost();
             
+            Log::info('Token cost: ' . $tokenCost);
+            Log::info('Student token exists: ' . ($studentToken ? 'YES' : 'NO'));
+            
+            if ($studentToken) {
+                Log::info('Student token balance: ' . $studentToken->balance);
+                Log::info('Can afford tokens: ' . ($studentToken->canAfford($tokenCost) ? 'YES' : 'NO'));
+            }
+            
             if (!$studentToken || !$studentToken->canAfford($tokenCost)) {
                 $balance = $studentToken->balance ?? 0;
+                Log::info('Insufficient tokens - required: ' . $tokenCost . ', has: ' . $balance);
                 return redirect()->route('student.dashboard')->with('error', 
                     "Insufficient tokens! This exam requires {$tokenCost} tokens. You have {$balance} tokens.");
             }
 
             // Deduct tokens for exam attempt
+            Log::info('Attempting to deduct tokens...');
             $transaction = $studentToken->spendTokens(
                 $tokenCost, 
                 "Exam attempt: {$exam->title}", 
                 'exam'
             );
 
+            Log::info('Token transaction successful: ' . ($transaction ? 'YES' : 'NO'));
+
             if (!$transaction) {
+                Log::info('Failed to deduct tokens');
                 return redirect()->route('student.dashboard')->with('error', 'Failed to deduct tokens. Please try again.');
             }
         }
@@ -310,7 +354,21 @@ public function create()
         // Start cheating detection session or timestamp
         session(["exam_start_time_{$exam->id}" => now()]);
         session(["cheating_attempts_{$exam->id}" => 0]);
-        $questions = $exam->questions->shuffle()->values();
+        
+        Log::info('Session variables set for exam');
+        
+        // Load questions with optimized query - limit to 100 questions max to prevent timeout
+        Log::info('Loading questions...');
+        $questions = $exam->questions()
+            ->select(['id', 'exam_id', 'text', 'question_type', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer', 'marks'])
+            ->limit(100)
+            ->inRandomOrder()
+            ->get();
+
+        Log::info('Questions loaded: ' . $questions->count());
+        Log::info('Returning view: exams.take');
+        Log::info('=== EXAM TAKE METHOD COMPLETED ===');
+
         return view('exams.take', [
             'exam' => $exam,
             'questions' => $questions,
@@ -449,7 +507,7 @@ public function create()
             ]);
         }
         
-        \Log::info('Added ' . $allQuestions->count() . ' questions from question banks to exam ' . $exam->id);
+        Log::info('Added ' . $allQuestions->count() . ' questions from question banks to exam ' . $exam->id);
     }
 
     /**

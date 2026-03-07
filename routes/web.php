@@ -108,6 +108,12 @@ Route::get('/student/grades', [\App\Http\Controllers\StudentController::class, '
 Route::middleware('auth:student')->get('/student/exams/{exam}/take', [\App\Http\Controllers\ExamController::class, 'take'])
     ->name('student.exams.take');
 
+Route::middleware('auth:student')->post('/student/exams/{exam}/submit', [\App\Http\Controllers\ExamController::class, 'submit'])
+    ->name('student.exams.submit');
+
+Route::middleware('auth:student')->get('/student/exams/{exam}/disqualified', [\App\Http\Controllers\ExamController::class, 'disqualify'])
+    ->name('student.exams.disqualified');
+
 Route::middleware('auth:student')->get('/student/exams/{exam}/marks', [\App\Http\Controllers\StudentController::class, 'studentExams'])
     ->name('student.exams.marks');
 
@@ -696,8 +702,10 @@ Route::get('/live-classes/{liveClass}/payment', [LiveClassController::class, 'sh
 Route::post('/live-classes/{liveClass}/payment', [LiveClassController::class, 'processPayment'])->name('live-classes.payment.process');
 
 // Student Request Routes
-Route::get('/live-classes/{liveClass}/request', [LiveClassController::class, 'requestAccess'])->name('live-classes.request');
-Route::post('/live-classes/{liveClass}/request', [LiveClassController::class, 'submitRequest'])->name('live-classes.request.submit');
+Route::middleware('auth:student')->group(function () {
+    Route::get('/live-classes/{liveClass}/request', [LiveClassController::class, 'requestAccess'])->name('live-classes.request');
+    Route::post('/live-classes/{liveClass}/request', [LiveClassController::class, 'submitRequest'])->name('live-classes.request.submit');
+});
 
 // Student Live Class Routes
 Route::middleware('auth:student')->prefix('student')->name('student.')->group(function () {
@@ -857,7 +865,6 @@ Route::middleware('auth:student')->prefix('exams')->name('exams.')->group(functi
     Route::get('{exam}/take/{session}/{questionNumber?}', [ExamTakingController::class, 'takeQuestion'])->name('take-question');
     Route::post('{exam}/save-answer/{session}/{questionNumber}', [ExamTakingController::class, 'saveAnswer'])->name('save-answer');
     Route::post('{exam}/submit/{session}', [ExamTakingController::class, 'submitExam'])->name('submit');
-    Route::post('{exam}/log-violation/{session}', [ExamTakingController::class, 'logViolation'])->name('log-violation');
 });
 
 // Token Management Routes
@@ -872,7 +879,6 @@ Route::middleware('auth:student')->prefix('subscriptions')->name('subscriptions.
     Route::get('/', [SubscriptionController::class, 'index'])->name('index');
     Route::post('/purchase', [SubscriptionController::class, 'purchase'])->name('purchase');
     Route::get('/payment/{studentSubscription}', [SubscriptionController::class, 'payment'])->name('payment');
-    Route::post('/payment/{studentSubscription}', [SubscriptionController::class, 'completePayment'])->name('payment.complete');
 });
 
 // Secretary Token Management Routes

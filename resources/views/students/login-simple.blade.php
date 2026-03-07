@@ -517,6 +517,25 @@
                     <i class="fas fa-exclamation-triangle me-2"></i>{{ session('error') }}
                 </div>
             @endif
+            
+            {{-- Show auth debug message --}}
+            @if(session('auth_debug'))
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Authentication Debug:</strong> {{ session('auth_debug') }}
+                    <br>
+                    <small class="text-muted">
+                        This message appears when you're redirected to login because you tried to access a protected page.
+                    </small>
+                </div>
+            @endif
+            
+            {{-- Show session success --}}
+            @if(session('success'))
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
+                </div>
+            @endif
 
             {{-- Show validation errors --}}
             @if ($errors->any())
