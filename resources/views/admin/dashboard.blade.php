@@ -72,25 +72,56 @@
         </div>
     </div>
 
-    <!-- NESA Registration Quick Access -->
+    <!-- Report Cards Quick Access -->
     <div class="row mb-4">
         <div class="col-12">
-            <div class="card border-left-purple shadow h-100 py-3">
+            <div class="card border-left-primary shadow h-100 py-3">
                 <div class="card-header py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="m-0 font-weight-bold text-purple">NESA Registration Management</h6>
-                <div class="card-header py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="m-0 font-weight-bold text-warning">Revenue vs Expenses</h6>
-                    <i class="fas fa-balance-scale"></i>
+                    <h6 class="m-0 font-weight-bold text-primary">Report Cards Management</h6>
+                    <a href="{{ route('admin.report-cards.index') }}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-arrow-right"></i> View All Report Cards
+                    </a>
                 </div>
                 <div class="card-body">
-                    <canvas id="revenueExpenseChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Row 2: Expenses by Branch -->
-    <div class="row mb-4">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h4 class="text-primary">{{ App\Models\ReportCard::count() }}</h4>
+                                <p class="text-muted">Total Report Cards</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h4 class="text-success">{{ App\Models\ReportCard::where('status', 'approved')->count() }}</h4>
+                                <p class="text-muted">Approved</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h4 class="text-warning">{{ App\Models\ReportCard::where('status', 'pending')->count() }}</h4>
+                                <p class="text-muted">Pending</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h4 class="text-info">{{ App\Models\SchoolInformation::count() }}</h4>
+                                <p class="text-muted">School Configured</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <a href="{{ route('admin.report-cards.create') }}" class="btn btn-success btn-block">
+                                    <i class="fas fa-plus"></i> Generate New Report Card
+                                </a>
+                            </div>
+                            <div class="col-md-6">
+                                <a href="{{ route('admin.school-information.edit') }}" class="btn btn-info btn-block">
+                                    <i class="fas fa-cog"></i> Configure School Info
+                                </a>
+                            </div>
+                        </div>
         <div class="col-xl-8 col-lg-7 mb-4">
             <div class="card shadow h-100">
                 <div class="card-header py-3 d-flex justify-content-between align-items-center">

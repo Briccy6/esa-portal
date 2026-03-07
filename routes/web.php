@@ -49,6 +49,7 @@ use App\Http\Controllers\ExamResultsController;
 use App\Http\Controllers\TokenController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\SecretaryAuthController;
+use App\Http\Controllers\ReportCardController;
 
 /*
 |--------------------------------------------------------------------------
@@ -332,6 +333,22 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::get('resources/{id}/download', [\App\Http\Controllers\Admin\ResourceController::class, 'downloadDocument'])->name('resources.download');
     Route::get('resources/{id}/preview', [\App\Http\Controllers\Admin\ResourceController::class, 'previewDocument'])->name('resources.preview');
     Route::get('resources/get-lessons/{courseId}', [\App\Http\Controllers\Admin\ResourceController::class, 'getLessons'])->name('resources.get-lessons');
+
+    // Report Cards
+    Route::get('report-cards', [ReportCardController::class, 'index'])->name('report-cards.index');
+    Route::get('report-cards/create', [ReportCardController::class, 'create'])->name('report-cards.create');
+    Route::post('report-cards', [ReportCardController::class, 'store'])->name('report-cards.store');
+    Route::get('report-cards/{reportCard}', [ReportCardController::class, 'show'])->name('report-cards.show');
+    Route::get('report-cards/{reportCard}/edit', [ReportCardController::class, 'edit'])->name('report-cards.edit');
+    Route::put('report-cards/{reportCard}', [ReportCardController::class, 'update'])->name('report-cards.update');
+    Route::delete('report-cards/{reportCard}', [ReportCardController::class, 'destroy'])->name('report-cards.destroy');
+    Route::get('report-cards/{reportCard}/print', [ReportCardController::class, 'printReport'])->name('report-cards.print');
+    Route::post('report-cards/generate-class', [ReportCardController::class, 'generateForClass'])->name('report-cards.generate-class');
+    Route::get('report-cards/print-class', [ReportCardController::class, 'printClassReports'])->name('report-cards.print-class');
+
+    // School Information
+    Route::get('school-information', [\App\Http\Controllers\SchoolInformationController::class, 'edit'])->name('school-information.edit');
+    Route::put('school-information', [\App\Http\Controllers\SchoolInformationController::class, 'update'])->name('school-information.update');
 
     Route::get('chat-test', function() {
         return view('admin.profile.test');

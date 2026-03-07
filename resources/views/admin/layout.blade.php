@@ -829,6 +829,18 @@
             <span class="nav-text">System Report</span>
         </a>
     </div>
+    <div class="nav-item">
+        <a href="{{ route('admin.report-cards.index') }}" class="nav-link {{ request()->routeIs('admin.report-cards.*') ? 'active' : '' }}">
+            <i class="fas fa-file-alt"></i>
+            <span class="nav-text">Report Cards</span>
+        </a>
+    </div>
+    <div class="nav-item">
+        <a href="{{ route('admin.school-information.edit') }}" class="nav-link {{ request()->routeIs('admin.school-information.*') ? 'active' : '' }}">
+            <i class="fas fa-school"></i>
+            <span class="nav-text">School Information</span>
+        </a>
+    </div>
 </div>
 
         </div>

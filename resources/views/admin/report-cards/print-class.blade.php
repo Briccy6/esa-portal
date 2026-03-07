@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Class Reports - {{ $reportCards->first()->course->course_name }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1cm;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 10px;
+            line-height: 1.2;
+            color: #333;
+            background: white;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #2c3e50;
+            padding-bottom: 10px;
+        }
+        
+        .school-info {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        
+        .logo {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+        }
+        
+        .school-details {
+            flex: 1;
+            text-align: center;
+            margin: 0 15px;
+        }
+        
+        .school-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 3px;
+        }
+        
+        .school-address {
+            font-size: 9px;
+            color: #666;
+            margin-bottom: 2px;
+        }
+        
+        .school-contact {
+            font-size: 8px;
+            color: #666;
+        }
+        
+        .report-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin: 10px 0 8px 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .class-info {
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 11px;
+            color: #2c3e50;
+        }
+        
+        .student-report {
+            page-break-after: always;
+            margin-bottom: 30px;
+        }
+        
+        .student-report:last-child {
+            page-break-after: auto;
+        }
+        
+        .student-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 3px;
+        }
+        
+        .student-name {
+            font-size: 14px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .student-details {
+            font-size: 9px;
+            color: #666;
+        }
+        
+        .marks-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+            font-size: 9px;
+        }
+        
+        .marks-table th {
+            background: #34495e;
+            color: white;
+            padding: 6px 4px;
+            text-align: center;
+            font-weight: bold;
+            border: 1px solid #2c3e50;
+        }
+        
+        .marks-table td {
+            padding: 4px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+        
+        .marks-table .subject-name {
+            text-align: left;
+            font-weight: 500;
+        }
+        
+        .marks-table .total-row {
+            background: #ecf0f1;
+            font-weight: bold;
+        }
+        
+        .grade-a { color: #27ae60; font-weight: bold; }
+        .grade-b { color: #3498db; font-weight: bold; }
+        .grade-c { color: #f39c12; font-weight: bold; }
+        .grade-d { color: #e67e22; font-weight: bold; }
+        .grade-f { color: #e74c3c; font-weight: bold; }
+        
+        .summary-box {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 9px;
+        }
+        
+        .summary-section {
+            background: #f8f9fa;
+            padding: 8px;
+            border-radius: 3px;
+            flex: 1;
+            margin: 0 3px;
+        }
+        
+        .summary-section h4 {
+            font-size: 10px;
+            margin-bottom: 5px;
+            color: #2c3e50;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 2px;
+        }
+        
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 2px 0;
+        }
+        
+        .signature-section {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px solid #ddd;
+            font-size: 8px;
+        }
+        
+        .signature-box {
+            text-align: center;
+            width: 45%;
+        }
+        
+        .signature-line {
+            border-bottom: 1px solid #333;
+            margin-bottom: 3px;
+            height: 20px;
+        }
+        
+        @media print {
+            body {
+                margin: 0;
+                padding: 0;
+            }
+            
+            .student-report {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    @foreach($reportCards as $reportCard)
+        <div class="student-report">
+            <div class="header">
+                <div class="school-info">
+                    @if($schoolInfo && $schoolInfo->logo_path)
+                        <img src="{{ $schoolInfo->logo_url }}" alt="School Logo" class="logo">
+                    @else
+                        <div style="width: 60px; height: 60px; background: #ecf0f1; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
+                            <span style="color: #7f8c8d; font-size: 8px;">LOGO</span>
+                        </div>
+                    @endif
+                    
+                    <div class="school-details">
+                        <div class="school-name">
+                            {{ $schoolInfo->school_name ?? 'SCHOOL NAME' }}
+                        </div>
+                        <div class="school-address">
+                            {{ $schoolInfo->address ?? 'School Address' }}
+                        </div>
+                        <div class="school-contact">
+                            @if($schoolInfo->phone) Tel: {{ $schoolInfo->phone }} @endif
+                            @if($schoolInfo->email) | Email: {{ $schoolInfo->email }} @endif
+                        </div>
+                    </div>
+                    
+                    <div style="width: 60px;"></div>
+                </div>
+                
+                <div class="report-title">
+                    Report Card
+                </div>
+                
+                <div class="class-info">
+                    {{ $reportCard->course->course_name }} | {{ $reportCard->academicYear->year }} | Term {{ $reportCard->term->term }}
+                </div>
+            </div>
+
+            <div class="student-header">
+                <div>
+                    <div class="student-name">{{ $reportCard->student->full_name }}</div>
+                    <div class="student-details">
+                        Reg: {{ $reportCard->student->reg_number ?? 'N/A' }} | 
+                        Sex: {{ ucfirst($reportCard->student->sex ?? 'N/A') }} |
+                        Position: {{ $reportCard->position_display }}
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <div class="student-details">
+                        Status: {{ ucfirst($reportCard->status) }}<br>
+                        @if($reportCard->approved_at)
+                        Approved: {{ $reportCard->approved_at->format('d M Y') }}
+                        @endif
+                    </div>
+                </div>
+            </div>
+
+            <table class="marks-table">
+                <thead>
+                    <tr>
+                        <th style="width: 30%;">Subject</th>
+                        <th style="width: 18%;">Exam (60%)</th>
+                        <th style="width: 18%;">Test Avg (40%)</th>
+                        <th style="width: 12%;">Total</th>
+                        <th style="width: 10%;">Grade</th>
+                        <th style="width: 12%;">Remarks</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($reportCard->subjects as $subject)
+                        <tr>
+                            <td class="subject-name">{{ $subject->subject_name }}</td>
+                            <td>{{ number_format($subject->exam_mark, 2) }}</td>
+                            <td>{{ number_format($subject->test_average, 2) }}</td>
+                            <td><strong>{{ number_format($subject->total_mark, 2) }}</strong></td>
+                            <td class="grade-{{ strtolower(substr($subject->grade, 0, 1)) }}">{{ $subject->grade }}</td>
+                            <td>{{ $subject->remarks ?? '-' }}</td>
+                        </tr>
+                    @endforeach
+                    
+                    <tr class="total-row">
+                        <td><strong>TOTAL/AVERAGE</strong></td>
+                        <td><strong>{{ number_format($reportCard->subjects->avg('exam_mark'), 2) }}</strong></td>
+                        <td><strong>{{ number_format($reportCard->subjects->avg('test_average'), 2) }}</strong></td>
+                        <td><strong>{{ number_format($reportCard->average_marks, 2) }}</strong></td>
+                        <td class="grade-{{ strtolower(substr($reportCard->grade, 0, 1)) }}"><strong>{{ $reportCard->grade }}</strong></td>
+                        <td>-</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="summary-box">
+                <div class="summary-section">
+                    <h4>Performance</h4>
+                    <div class="summary-item">
+                        <span>Subjects:</span>
+                        <strong>{{ $reportCard->subjects->count() }}</strong>
+                    </div>
+                    <div class="summary-item">
+                        <span>Average:</span>
+                        <strong>{{ number_format($reportCard->average_marks, 2) }}%</strong>
+                    </div>
+                    <div class="summary-item">
+                        <span>Grade:</span>
+                        <strong class="grade-{{ strtolower(substr($reportCard->grade, 0, 1)) }}">{{ $reportCard->grade }}</strong>
+                    </div>
+                </div>
+                
+                <div class="summary-section">
+                    <h4>Class Standing</h4>
+                    <div class="summary-item">
+                        <span>Position:</span>
+                        <strong>{{ $reportCard->class_position ?? 'N/A' }}</strong>
+                    </div>
+                    <div class="summary-item">
+                        <span>Total Students:</span>
+                        <strong>{{ $reportCard->total_students }}</strong>
+                    </div>
+                    <div class="summary-item">
+                        <span>Term:</span>
+                        <strong>{{ $reportCard->term->term }}</strong>
+                    </div>
+                </div>
+            </div>
+
+            @if($reportCard->remarks)
+                <div style="background: #fff3cd; padding: 8px; border-radius: 3px; margin-bottom: 10px; font-size: 9px;">
+                    <strong>Remarks:</strong> {{ $reportCard->remarks }}
+                </div>
+            @endif
+
+            <div class="signature-section">
+                <div class="signature-box">
+                    <div class="signature-line">
+                        @if($schoolInfo && $schoolInfo->principal_signature)
+                            <img src="{{ $schoolInfo->principal_signature_url }}" alt="Principal Signature" style="max-height: 20px;">
+                        @endif
+                    </div>
+                    <div>
+                        {{ $schoolInfo->principal_name ?? 'Principal' }}<br>
+                        Principal Signature
+                    </div>
+                </div>
+                
+                <div class="signature-box">
+                    <div class="signature-line">
+                        @if($reportCard->approvedBy)
+                            <img src="{{ asset('storage/' . $reportCard->approvedBy->signature ?? '') }}" alt="Teacher Signature" style="max-height: 20px;">
+                        @endif
+                    </div>
+                    <div>
+                        {{ $reportCard->approvedBy->name ?? 'Class Teacher' }}<br>
+                        Class Teacher Signature
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endforeach
+</body>
+</html>
