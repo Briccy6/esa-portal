@@ -301,6 +301,19 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::get('nesa/{student}/download', [\App\Http\Controllers\Admin\NesaRegistrationController::class, 'downloadDocument'])->name('nesa.download');
     Route::get('nesa/export/registered', [\App\Http\Controllers\Admin\NesaRegistrationController::class, 'exportRegistered'])->name('nesa.export');
 
+    // Accounting Reports
+    Route::middleware(['role:admin,accountant'])->group(function () {
+        Route::get('/accounting', [\App\Http\Controllers\AccountingController::class, 'index'])->name('accounting.index');
+        Route::get('/accounting/cashbook', [\App\Http\Controllers\AccountingController::class, 'cashbook'])->name('accounting.cashbook');
+        Route::get('/accounting/balance-sheet', [\App\Http\Controllers\AccountingController::class, 'balanceSheet'])->name('accounting.balance-sheet');
+        Route::get('/accounting/trial-balance', [\App\Http\Controllers\AccountingController::class, 'trialBalance'])->name('accounting.trial-balance');
+        Route::get('/accounting/cash-flow-statement', [\App\Http\Controllers\AccountingController::class, 'cashFlowStatement'])->name('accounting.cash-flow-statement');
+        Route::get('/accounting/export/cashbook', [\App\Http\Controllers\AccountingController::class, 'exportCashbook'])->name('accounting.export.cashbook');
+        Route::get('/accounting/export/balance-sheet', [\App\Http\Controllers\AccountingController::class, 'exportBalanceSheet'])->name('accounting.export.balance-sheet');
+        Route::get('/accounting/export/trial-balance', [\App\Http\Controllers\AccountingController::class, 'exportTrialBalance'])->name('accounting.export.trial-balance');
+        Route::get('/accounting/export/cash-flow-statement', [\App\Http\Controllers\AccountingController::class, 'exportCashFlowStatement'])->name('accounting.export.cash-flow-statement');
+    });
+
     // Document Management
     Route::get('documents', [\App\Http\Controllers\Admin\DocumentManagementController::class, 'index'])->name('documents.index');
     Route::get('documents/{id}/edit', [\App\Http\Controllers\Admin\DocumentManagementController::class, 'edit'])->name('documents.edit');
