@@ -1248,7 +1248,7 @@ class StudentController extends Controller
                 'status'     => 'successful',
                 'meta'       => json_encode([
                     'method'      => 'cash',
-                    'recorded_by' => auth()->user()->name ?? auth('staff')->user()->name ?? 'staff',
+                    'recorded_by' => auth('staff')->user()->name ?? auth('admin')->user()->name ?? 'staff',
                     'recorded_at' => now()->toDateTimeString(),
                     'fee_name'    => $feeTypeName,
                 ]),
@@ -1377,88 +1377,138 @@ class StudentController extends Controller
         return back()->with('success', 'Transcript sent to student.');
     }
 
+    // =========================================================================
+    // GENERATE STUDENT CARD
+    // Fixed bugs:
+    //   1. QrCode::create() does not exist — use QrCode facade with correct chain
+    //   2. QrCode method names were wrong (setSize, setMargin etc. don't exist)
+    //   3. Auth::user() returns null in staff context — use auth('staff') / auth('admin')
+    //   4. passport_photo base64 detection was fragile — now uses strlen() only
+    //   5. QR output is SVG; stored as raw SVG string (no base64) so it renders
+    //      correctly in blade via {!! $card->qr_code !!} or as a data URI
+    // =========================================================================
     public function generateStudentCard(Request $request, $studentId)
     {
         $student = Student::with('course', 'branch', 'academicYear')->findOrFail($studentId);
 
+        // Resolve the actor (staff or admin)
+        $actor = auth('staff')->user() ?? auth('admin')->user();
+        $actorName = $actor->name ?? $actor->email ?? 'system';
+
+        // Prevent duplicate cards
         if (StudentCard::where('student_id', $student->id)->exists()) {
             return back()->with('error', 'Student card already exists for this student.');
         }
 
-        // Check if student has paid the student Card fee
+        // Verify student_card fee has been paid
         $studentCardPaid = StudentTransaction::where('student_id', $student->id)
             ->where('type', 'student_card')
             ->whereIn('status', ['successful', 'paid'])
             ->exists();
 
         if (!$studentCardPaid) {
-            return back()->with('error', 'Student must pay the Student Card fee (2000 RWF) before generating ID card.');
+            return back()->with('error', 'Student must pay the Student Card fee (2,000 RWF) before generating an ID card.');
         }
 
-        $passportPhoto = null;
+        // ── Resolve passport photo ─────────────────────────────────────────────
+        // Photos can be stored as a Storage path (staff upload) OR as a raw
+        // base64 string (student self-registration via updateProfile).
+        // We detect which one by checking whether the value looks like a file path.
+        $passportPhotoBase64 = null;
+
         if ($student->passport_photo) {
-            if (Storage::disk('public')->exists($student->passport_photo)) {
-                $passportPhoto = base64_encode(Storage::disk('public')->get($student->passport_photo));
-            } elseif (strpos($student->passport_photo, 'base64') !== false || strlen($student->passport_photo) > 1000) {
-                $passportPhoto = $student->passport_photo;
+            $photoValue = $student->passport_photo;
+
+            // If it's short enough to be a file path and exists on disk, read it
+            if (strlen($photoValue) < 500 && Storage::disk('public')->exists($photoValue)) {
+                try {
+                    $passportPhotoBase64 = base64_encode(
+                        Storage::disk('public')->get($photoValue)
+                    );
+                } catch (\Exception $e) {
+                    Log::warning('Could not read passport photo from storage', [
+                        'student_id' => $student->id,
+                        'path'       => $photoValue,
+                        'error'      => $e->getMessage(),
+                    ]);
+                }
+            } elseif (strlen($photoValue) >= 500) {
+                // Already a raw base64 string stored directly in the DB
+                $passportPhotoBase64 = $photoValue;
             }
         }
 
-        // Generate QR code with student information
-        $qrData = [
-            'student_name' => $student->full_name,
-            'reg_number' => $student->reg_number,
-            'course' => $student->course->course_name ?? '',
-            'branch' => $student->branch->name ?? '',
-            'academic_year' => $student->academicYear->year ?? date('Y'),
+        // ── Generate QR code ───────────────────────────────────────────────────
+        // CORRECT usage of simplesoftwareio/simple-qrcode:
+        //   \QrCode::size(int)->margin(int)->errorCorrection(string)->generate(string)
+        // Returns an SVG string by default. We store the raw SVG.
+        $qrData = json_encode([
+            'student_name'   => $student->full_name,
+            'reg_number'     => $student->reg_number,
+            'course'         => $student->course->course_name ?? '',
+            'branch'         => $student->branch->name ?? '',
+            'academic_year'  => $student->academicYear->year ?? date('Y'),
             'generated_date' => now()->format('Y-m-d H:i:s'),
-        ];
-
-        $qrCode = base64_encode(
-            \SimpleSoftwareIO\QrCode\Generator::create(json_encode($qrData))
-                ->setMargin(0)
-                ->setSize(200)
-                ->setErrorCorrectionLevel(\SimpleSoftwareIO\QrCode\ErrorCorrectionLevel::High)
-                ->setEncoding('UTF-8')
-                ->generate()
-        );
-
-        StudentCard::create([
-            'student_id'       => $student->id,
-            'reg_number'       => $student->reg_number,
-            'course'           => $student->course->course_name ?? '',
-            'branch'           => $student->branch->name ?? '',
-            'passport_photo'   => $passportPhoto,
-            'qr_code'         => $qrCode,
-            'academic_year'    => $student->academicYear->year ?? date('Y'),
-            'card_generated_by'=> Auth::user()->name ?? 'system',
-            'generated_at'     => now(),
         ]);
 
-        // Send email notification to student
+        try {
+            // simplesoftwareio/simple-qrcode v4+ API
+            $qrSvg = \QrCode::size(200)
+                ->margin(0)
+                ->errorCorrection('H')
+                ->encoding('UTF-8')
+                ->generate($qrData);
+
+            // $qrSvg is an Illuminate\Support\HtmlString (or plain string in v3)
+            // Cast to string so we can store it
+            $qrCode = (string) $qrSvg;
+
+        } catch (\Exception $e) {
+            Log::error('QR code generation failed', [
+                'student_id' => $student->id,
+                'error'      => $e->getMessage(),
+            ]);
+            return back()->with('error', 'Failed to generate QR code: ' . $e->getMessage());
+        }
+
+        // ── Create the StudentCard record ──────────────────────────────────────
+        StudentCard::create([
+            'student_id'        => $student->id,
+            'reg_number'        => $student->reg_number,
+            'course'            => $student->course->course_name ?? '',
+            'branch'            => $student->branch->name ?? '',
+            'passport_photo'    => $passportPhotoBase64,
+            'qr_code'           => $qrCode,          // raw SVG string
+            'academic_year'     => $student->academicYear->year ?? date('Y'),
+            'card_generated_by' => $actorName,
+            'generated_at'      => now(),
+        ]);
+
+        // ── Email notification ─────────────────────────────────────────────────
         if ($student->email) {
             try {
                 Mail::to($student->email)->send(
                     new \App\Mail\StudentCardGeneratedMail([
-                        'student_name' => $student->full_name,
-                        'reg_number' => $student->reg_number,
-                        'course' => $student->course->course_name ?? '',
-                        'branch' => $student->branch->name ?? '',
+                        'student_name'        => $student->full_name,
+                        'reg_number'          => $student->reg_number,
+                        'course'              => $student->course->course_name ?? '',
+                        'branch'              => $student->branch->name ?? '',
                         'card_generated_date' => now()->format('F j, Y \a\t g:i A'),
-                        'generated_by' => Auth::user()->name ?? 'system',
+                        'generated_by'        => $actorName,
                     ])
                 );
-                
+
                 Log::info('Student card generation email sent', [
                     'student_id' => $student->id,
-                    'email' => $student->email,
+                    'email'      => $student->email,
                 ]);
             } catch (\Exception $e) {
                 Log::error('Failed to send student card generation email', [
                     'student_id' => $student->id,
-                    'email' => $student->email,
-                    'error' => $e->getMessage(),
+                    'email'      => $student->email,
+                    'error'      => $e->getMessage(),
                 ]);
+                // Non-fatal — card was still created successfully
             }
         }
 
@@ -1471,6 +1521,10 @@ class StudentController extends Controller
         return view('students.StudentCard', compact('cards'));
     }
 
+    // =========================================================================
+    // GENERATE CARDS BULK
+    // Same QR code fixes applied as generateStudentCard above.
+    // =========================================================================
     public function generateCardsBulk(Request $request)
     {
         $query = Student::with(['course', 'branch', 'academicYear']);
@@ -1499,16 +1553,21 @@ class StudentController extends Controller
             });
         }
 
+        $actor     = auth('staff')->user() ?? auth('admin')->user();
+        $actorName = $actor->name ?? $actor->email ?? 'system';
+
         $students  = $query->get();
         $generated = 0;
         $skipped   = 0;
 
         foreach ($students as $student) {
+            // Skip if card already exists
             if (StudentCard::where('student_id', $student->id)->exists()) {
                 $skipped++;
                 continue;
             }
 
+            // Skip if student_card fee not paid
             $hasPaid = StudentTransaction::where('student_id', $student->id)
                 ->where('type', 'student_card')
                 ->whereIn('status', ['successful', 'paid'])
@@ -1519,173 +1578,446 @@ class StudentController extends Controller
                 continue;
             }
 
-            // Generate QR code with student information
-            $qrData = [
-                'student_name' => $student->full_name,
-                'reg_number' => $student->reg_number,
-                'course' => $student->course->course_name ?? '',
-                'branch' => $student->branch->name ?? '',
-                'academic_year' => $student->academicYear->year ?? date('Y'),
+            // Build QR data
+            $qrData = json_encode([
+                'student_name'   => $student->full_name,
+                'reg_number'     => $student->reg_number,
+                'course'         => $student->course->course_name ?? '',
+                'branch'         => $student->branch->name ?? '',
+                'academic_year'  => $student->academicYear->year ?? date('Y'),
                 'generated_date' => now()->format('Y-m-d H:i:s'),
-            ];
+            ]);
 
-            $qrCode = base64_encode(
-                \SimpleSoftwareIO\QrCode\Generator::create(json_encode($qrData))
-                    ->setMargin(0)
-                    ->setSize(200)
-                    ->setErrorCorrectionLevel(\SimpleSoftwareIO\QrCode\ErrorCorrectionLevel::High)
-                    ->setEncoding('UTF-8')
-                    ->generate()
-            );
+            try {
+                $qrSvg = \QrCode::size(200)
+                    ->margin(0)
+                    ->errorCorrection('H')
+                    ->encoding('UTF-8')
+                    ->generate($qrData);
+
+                $qrCode = (string) $qrSvg;
+            } catch (\Exception $e) {
+                Log::error('Bulk QR generation failed for student', [
+                    'student_id' => $student->id,
+                    'error'      => $e->getMessage(),
+                ]);
+                $skipped++;
+                continue;
+            }
+
+            // Resolve passport photo
+            $passportPhotoBase64 = null;
+            if ($student->passport_photo) {
+                $photoValue = $student->passport_photo;
+                if (strlen($photoValue) < 500 && Storage::disk('public')->exists($photoValue)) {
+                    try {
+                        $passportPhotoBase64 = base64_encode(Storage::disk('public')->get($photoValue));
+                    } catch (\Exception $e) {
+                        // Leave as null — non-fatal
+                    }
+                } elseif (strlen($photoValue) >= 500) {
+                    $passportPhotoBase64 = $photoValue;
+                }
+            }
 
             StudentCard::create([
-                'student_id'       => $student->id,
-                'reg_number'       => $student->reg_number,
-                'course'           => $student->course->course_name ?? '',
-                'branch'           => $student->branch->name ?? '',
-                'passport_photo'   => $student->passport_photo ?? null,
-                'qr_code'         => $qrCode,
-                'academic_year'    => $student->academicYear->year ?? date('Y'),
-                'card_generated_by'=> Auth::user()->name ?? 'system',
-                'generated_at'     => now(),
+                'student_id'        => $student->id,
+                'reg_number'        => $student->reg_number,
+                'course'            => $student->course->course_name ?? '',
+                'branch'            => $student->branch->name ?? '',
+                'passport_photo'    => $passportPhotoBase64,
+                'qr_code'           => $qrCode,
+                'academic_year'     => $student->academicYear->year ?? date('Y'),
+                'card_generated_by' => $actorName,
+                'generated_at'      => now(),
             ]);
 
             $generated++;
         }
 
-        return back()->with('success', "$generated student card(s) generated. $skipped skipped (already exists or not paid).");
+        return back()->with('success', "{$generated} student card(s) generated. {$skipped} skipped (already exists or fee not paid).");
     }
 
-    private function generateUniqueRegNumber($courseAbbreviation, $yearRange)
+    // =========================================================================
+    // EDIT TRANSACTION
+    // Handles GET (return edit view) — kept for backward compatibility.
+    // The modal-based AJAX flow uses updateTransaction() below instead.
+    // =========================================================================
+    public function editTransaction(Request $request, $transactionId)
     {
-        $course       = Course::where('abbreviation', $courseAbbreviation)->first();
-        $academicYear = AcademicYear::where('year', $yearRange)->first();
-
-        if (!$course || !$academicYear) {
-            return 'ESA' . strtoupper($courseAbbreviation) . time() . $yearRange;
+        $staff = auth('staff')->user();
+        if (!$staff) {
+            abort(403, 'Unauthorized. Only staff can edit transactions.');
         }
 
-        $prefix = 'ESA' . strtoupper($courseAbbreviation);
+        $transaction = StudentTransaction::findOrFail($transactionId);
 
-        $existingNumbers = Student::where('course_id', $course->id)
-            ->where('academic_year_id', $academicYear->id)
-            ->where('reg_number', 'like', $prefix . '%')
-            ->pluck('reg_number')
-            ->map(function ($regNumber) use ($prefix, $yearRange) {
-                $pattern = '/^' . preg_quote($prefix, '/') . '(\d+)' . preg_quote($yearRange, '/') . '$/';
-                if (preg_match($pattern, $regNumber, $matches)) {
-                    return (int) $matches[1];
-                }
-                return 0;
-            })
-            ->filter()
-            ->toArray();
-
-        $nextNumber   = empty($existingNumbers) ? 1 : max($existingNumbers) + 1;
-        $studentNumber = str_pad($nextNumber, 2, '0', STR_PAD_LEFT);
-        $regNumber     = $prefix . $studentNumber . $yearRange;
-
-        while (Student::where('reg_number', $regNumber)->exists()) {
-            $nextNumber++;
-            $studentNumber = str_pad($nextNumber, 2, '0', STR_PAD_LEFT);
-            $regNumber     = $prefix . $studentNumber . $yearRange;
-
-            if ($nextNumber > 9999) {
-                $regNumber = $prefix . uniqid() . $yearRange;
-                break;
-            }
+        if ($request->isMethod('get')) {
+            return view('staff.transactions.edit', compact('transaction'));
         }
 
-        return $regNumber;
+        // Legacy POST fallback (non-AJAX form submit)
+        $request->validate([
+            'amount'  => 'required|numeric|min:0',
+            'type'    => 'required|string',
+            'status'  => 'required|string',
+            'paid_at' => 'nullable|date',
+        ]);
+
+        $transaction->amount = $request->input('amount');
+        $transaction->type   = $request->input('type');
+        $transaction->status = $request->input('status');
+        if ($request->filled('paid_at')) {
+            $transaction->paid_at = $request->input('paid_at');
+        }
+        $transaction->save();
+
+        Log::info('Transaction edited by staff (legacy)', [
+            'transaction_id' => $transaction->id,
+            'edited_by'      => $staff->email ?? 'staff',
+        ]);
+
+        return redirect()->back()->with('success', 'Transaction updated successfully.');
     }
 
-    /**
-     * Verify QR code for attendance
-     * Endpoint: GET /qr-scan/{qrData}
-     */
+    // =========================================================================
+    // UPDATE TRANSACTION  ← THIS METHOD WAS MISSING — NOW ADDED
+    // Route: PUT /staff/transactions/{transaction} → staff.transactions.update
+    // Called via AJAX from the payments table edit modal.
+    // =========================================================================
+    public function updateTransaction(Request $request, $transactionId)
+    {
+        $staff = auth('staff')->user();
+        if (!$staff) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized. Only staff can edit transactions.',
+            ], 403);
+        }
+
+        try {
+            $transaction = StudentTransaction::findOrFail($transactionId);
+
+            $validated = \Validator::make($request->all(), [
+                'amount' => 'required|numeric|min:1',
+                'type'   => 'required|in:registration_fee,school_fee,practical_fee,trip_fee,student_card',
+                'notes'  => 'nullable|string|max:500',
+            ]);
+
+            if ($validated->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => implode(' ', $validated->errors()->all()),
+                    'errors'  => $validated->errors(),
+                ], 422);
+            }
+
+            // Preserve existing meta, update/add notes + audit fields
+            $meta = is_array($transaction->meta)
+                ? $transaction->meta
+                : (json_decode($transaction->meta, true) ?? []);
+
+            $meta['notes']     = $request->input('notes', '');
+            $meta['edited_by'] = $staff->name ?? $staff->email ?? 'staff';
+            $meta['edited_at'] = now()->toDateTimeString();
+
+            $transaction->amount = $request->input('amount');
+            $transaction->type   = $request->input('type');
+            $transaction->meta   = $meta;   // model casts meta as 'array' → auto JSON-encoded
+            $transaction->save();
+
+            Log::info('Transaction updated by staff', [
+                'transaction_id' => $transaction->id,
+                'edited_by'      => $staff->email ?? 'staff',
+                'changes'        => $request->only(['amount', 'type', 'notes']),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Payment updated successfully.',
+            ]);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Transaction not found.',
+            ], 404);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to update transaction', [
+                'transaction_id' => $transactionId,
+                'error'          => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update payment: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // =========================================================================
+    // DELETE TRANSACTION
+    // Route: DELETE /staff/transactions/{transaction} → staff.transactions.destroy
+    // =========================================================================
+    public function deleteTransaction(Request $request, $transactionId)
+    {
+        $staff = auth('staff')->user();
+        if (!$staff) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized. Only staff can delete transactions.',
+            ], 403);
+        }
+
+        try {
+            $transaction = StudentTransaction::findOrFail($transactionId);
+            $transaction->delete();
+
+            Log::info('Transaction deleted by staff', [
+                'transaction_id' => $transactionId,
+                'deleted_by'     => $staff->email ?? 'staff',
+            ]);
+
+            return response()->json(['success' => true, 'message' => 'Transaction deleted successfully.']);
+        } catch (\Exception $e) {
+            Log::error('Failed to delete transaction by staff', [
+                'transaction_id' => $transactionId,
+                'error'          => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete transaction: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function transcriptAjax($studentId)
+    {
+        $student = Student::findOrFail($studentId);
+
+        $payments = StudentTransaction::where('student_id', $studentId)
+            ->whereIn('status', ['successful', 'paid', 'completed'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return view('students.partials.transcript_table', compact('student', 'payments'))->render();
+    }
+
+    public function transcript($studentId)
+    {
+        $student  = Student::findOrFail($studentId);
+        $payments = StudentTransaction::where('student_id', $studentId)
+            ->whereIn('status', ['successful', 'paid', 'completed'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return view('students.transcript', compact('student', 'payments'));
+    }
+
+    public function getNESADetails($studentId)
+    {
+        $student = Student::findOrFail($studentId);
+
+        return response()->json([
+            'success'               => true,
+            'nesa_registered'       => $student->nesa_registered,
+            'nesa_registration_date'=> $student->nesa_registration_date,
+            'nesa_sdms_code'        => $student->nesa_sdms_code,
+            'nesa_reg_number'       => $student->nesa_reg_number,
+            'nesa_remarks'          => $student->nesa_remarks,
+            'nesa_document'         => $student->nesa_document,
+        ]);
+    }
+
+    public function registerNesa(Request $request, Student $student)
+    {
+        if (!auth()->guard('staff')->check()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $request->validate([
+            'nesa_registered'       => 'required|boolean',
+            'nesa_sdms_code'        => 'nullable|string|max:100',
+            'nesa_reg_number'       => 'nullable|string|max:100',
+            'nesa_registration_date'=> 'nullable|date',
+            'nesa_remarks'          => 'nullable|string|max:500',
+            'nesa_document'         => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $nesaRegistered = (bool) $request->nesa_registered;
+            $student->nesa_registered = $nesaRegistered;
+
+            if ($nesaRegistered) {
+                if ($request->filled('nesa_sdms_code')) {
+                    $student->nesa_sdms_code = $request->nesa_sdms_code;
+                }
+                if ($request->filled('nesa_reg_number')) {
+                    $student->nesa_reg_number = $request->nesa_reg_number;
+                }
+                if ($request->filled('nesa_registration_date')) {
+                    $student->nesa_registration_date = $request->nesa_registration_date;
+                }
+                if ($request->filled('nesa_remarks')) {
+                    $student->nesa_remarks = $request->nesa_remarks;
+                }
+                if ($request->hasFile('nesa_document')) {
+                    if ($student->nesa_document && Storage::disk('public')->exists($student->nesa_document)) {
+                        Storage::disk('public')->delete($student->nesa_document);
+                    }
+                    $student->nesa_document = $request->file('nesa_document')
+                        ->store('students/nesa_documents', 'public');
+                }
+            } else {
+                $student->nesa_sdms_code         = null;
+                $student->nesa_reg_number        = null;
+                $student->nesa_registration_date = null;
+                $student->nesa_remarks           = null;
+            }
+
+            $student->save();
+            DB::commit();
+
+            Log::info('NESA registration updated', [
+                'student_id'      => $student->id,
+                'nesa_registered' => $nesaRegistered,
+                'updated_by'      => auth('staff')->user()->id,
+            ]);
+
+            if ($nesaRegistered && $student->email) {
+                try {
+                    Mail::to($student->email)->send(new \App\Mail\StudentNesaRegistrationMail([
+                        'name'              => $student->full_name,
+                        'email'             => $student->email,
+                        'reg_number'        => $student->reg_number,
+                        'sdms_code'         => $student->nesa_sdms_code,
+                        'nesa_reg_number'   => $student->nesa_reg_number,
+                        'registration_date' => $student->nesa_registration_date
+                            ? \Carbon\Carbon::parse($student->nesa_registration_date)->format('d M Y')
+                            : null,
+                    ]));
+                } catch (\Exception $e) {
+                    Log::error('Failed to send NESA registration email', [
+                        'student_id' => $student->id,
+                        'error'      => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            return redirect()->route('staff.students.edit', $student)
+                ->with('success', $nesaRegistered
+                    ? 'NESA registration saved successfully. Student has been notified via email.'
+                    : 'Student marked as not registered with NESA.');
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            Log::error('NESA registration update failed', [
+                'student_id' => $student->id,
+                'error'      => $e->getMessage(),
+            ]);
+
+            return redirect()->back()
+                ->with('error', 'Failed to save NESA registration: ' . $e->getMessage())
+                ->withInput();
+        }
+    }
+
+    public function viewDocument(Request $request, Student $student, $documentType)
+    {
+        $validTypes = ['id_photo', 'passport_photo', 'senior3_document', 'senior6_document', 'other_supporting_document'];
+        if (!in_array($documentType, $validTypes)) {
+            abort(404, 'Invalid document type');
+        }
+
+        $documentPath = $student->$documentType;
+        if (!$documentPath) {
+            abort(404, 'Document not found');
+        }
+
+        try {
+            if (!Storage::disk('public')->exists($documentPath)) {
+                abort(404, 'Document file not found');
+            }
+
+            $file     = Storage::disk('public')->get($documentPath);
+            $mimeType = Storage::disk('public')->mimeType($documentPath);
+
+            return response($file)
+                ->header('Content-Type', $mimeType)
+                ->header('Content-Disposition', 'inline; filename="' . basename($documentPath) . '"');
+
+        } catch (\Exception $e) {
+            Log::error('Error viewing student document', [
+                'student_id'    => $student->id,
+                'document_type' => $documentType,
+                'error'         => $e->getMessage(),
+            ]);
+
+            abort(500, 'Error loading document');
+        }
+    }
+
     public function verifyQRCode($qrData)
     {
         try {
-            // Decode QR data
             $decodedData = json_decode(base64_decode($qrData), true);
-            
+
             if (!$decodedData) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invalid QR code format',
-                    'data' => null
-                ], 400);
+                return response()->json(['success' => false, 'message' => 'Invalid QR code format', 'data' => null], 400);
             }
 
-            // Validate required fields
             $requiredFields = ['student_name', 'reg_number', 'course', 'branch', 'academic_year'];
             foreach ($requiredFields as $field) {
                 if (empty($decodedData[$field])) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => "Missing required field: {$field}",
-                        'data' => null
-                    ], 400);
+                    return response()->json(['success' => false, 'message' => "Missing required field: {$field}", 'data' => null], 400);
                 }
             }
 
-            // Find student by registration number
             $student = Student::with(['course', 'branch', 'academicYear'])
                 ->where('reg_number', $decodedData['reg_number'])
                 ->first();
 
             if (!$student) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Student not found',
-                    'data' => null
-                ], 404);
+                return response()->json(['success' => false, 'message' => 'Student not found', 'data' => null], 404);
             }
 
-            // Check if student card exists
             $studentCard = StudentCard::where('student_id', $student->id)
                 ->where('academic_year', $decodedData['academic_year'])
                 ->first();
 
             if (!$studentCard) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Student card not generated or invalid academic year',
-                    'data' => null
-                ], 404);
+                return response()->json(['success' => false, 'message' => 'Student card not found for this academic year', 'data' => null], 404);
             }
 
-            // Return student information for attendance
             return response()->json([
                 'success' => true,
                 'message' => 'Student verified successfully',
-                'data' => [
-                    'student_id' => $student->id,
-                    'student_name' => $student->full_name,
-                    'reg_number' => $student->reg_number,
-                    'course' => $student->course->course_name ?? '',
-                    'branch' => $student->branch->name ?? '',
-                    'academic_year' => $student->academicYear->year ?? '',
-                    'email' => $student->email,
-                    'phone' => $student->phone,
-                    'sex' => $student->sex,
-                    'card_generated_at' => $studentCard->generated_at,
-                    'verification_time' => now()->format('Y-m-d H:i:s'),
-                ]
+                'data'    => [
+                    'student_id'       => $student->id,
+                    'student_name'     => $student->full_name,
+                    'reg_number'       => $student->reg_number,
+                    'course'           => $student->course->course_name ?? '',
+                    'branch'           => $student->branch->name ?? '',
+                    'academic_year'    => $student->academicYear->year ?? '',
+                    'email'            => $student->email,
+                    'phone'            => $student->phone,
+                    'sex'              => $student->sex,
+                    'card_generated_at'=> $studentCard->generated_at,
+                    'verification_time'=> now()->format('Y-m-d H:i:s'),
+                ],
             ]);
 
         } catch (\Exception $e) {
             Log::error('QR Code verification failed', [
-                'qr_data' => $qrData,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'QR code verification failed: ' . $e->getMessage(),
-                'data' => null
-            ], 500);
+            return response()->json(['success' => false, 'message' => 'QR code verification failed: ' . $e->getMessage(), 'data' => null], 500);
         }
     }
 
@@ -1800,10 +2132,10 @@ class StudentController extends Controller
         }
 
         if (auth()->guard('staff')->check() || auth()->guard('teacher')->check()) {
-            $courses = Course::all();
+            $courses  = Course::all();
             $branches = Branch::all();
-            $today   = now()->format('Y-m-d');
-            $lessons = [];
+            $today    = now()->format('Y-m-d');
+            $lessons  = [];
             $students = [];
 
             if ($request->filled('course_id') && $request->filled('branch_id')) {
@@ -1860,7 +2192,7 @@ class StudentController extends Controller
             Log::info("Student deleted successfully", [
                 'student_id'   => $id,
                 'student_name' => $studentName,
-                'deleted_by'   => auth()->user()->id ?? auth('admin')->user()->id ?? 'system',
+                'deleted_by'   => auth('staff')->user()->id ?? auth('admin')->user()->id ?? 'system',
             ]);
 
             return redirect()->back()
@@ -1877,259 +2209,49 @@ class StudentController extends Controller
         }
     }
 
-    public function editTransaction(Request $request, $transactionId)
+    // ── Private helpers ───────────────────────────────────────────────────────
+
+    private function generateUniqueRegNumber($courseAbbreviation, $yearRange)
     {
-        $staff = auth('staff')->user();
-        if (!$staff) {
-            abort(403, 'Unauthorized. Only staff can edit transactions.');
+        $course       = Course::where('abbreviation', $courseAbbreviation)->first();
+        $academicYear = AcademicYear::where('year', $yearRange)->first();
+
+        if (!$course || !$academicYear) {
+            return 'ESA' . strtoupper($courseAbbreviation) . time() . $yearRange;
         }
 
-        $transaction = StudentTransaction::findOrFail($transactionId);
+        $prefix = 'ESA' . strtoupper($courseAbbreviation);
 
-        if ($request->isMethod('get')) {
-            return view('staff.transactions.edit', compact('transaction'));
-        }
-
-        $request->validate([
-            'amount'  => 'required|numeric|min:0',
-            'type'    => 'required|string',
-            'status'  => 'required|string',
-            'paid_at' => 'nullable|date',
-        ]);
-
-        $transaction->amount = $request->input('amount');
-        $transaction->type   = $request->input('type');
-        $transaction->status = $request->input('status');
-        if ($request->filled('paid_at')) {
-            $transaction->paid_at = $request->input('paid_at');
-        }
-        $transaction->save();
-
-        Log::info('Transaction edited by staff', [
-            'transaction_id' => $transaction->id,
-            'edited_by'      => $staff->email ?? 'staff',
-            'changes'        => $request->only(['amount', 'type', 'status', 'paid_at']),
-        ]);
-
-        return redirect()->back()->with('success', 'Transaction updated successfully.');
-    }
-
-    public function deleteTransaction(Request $request, $transactionId)
-    {
-        $staff = auth('staff')->user();
-        if (!$staff) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized. Only staff can delete transactions.',
-            ], 403);
-        }
-
-        try {
-            $transaction = StudentTransaction::findOrFail($transactionId);
-            $transaction->delete();
-
-            Log::info('Transaction deleted by staff', [
-                'transaction_id' => $transactionId,
-                'deleted_by'     => $staff->email ?? 'staff',
-            ]);
-
-            return response()->json(['success' => true, 'message' => 'Transaction deleted successfully.']);
-        } catch (\Exception $e) {
-            Log::error('Failed to delete transaction by staff', [
-                'transaction_id' => $transactionId,
-                'error'          => $e->getMessage(),
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to delete transaction: ' . $e->getMessage(),
-            ], 500);
-        }
-    }
-
-    public function transcriptAjax($studentId)
-    {
-        $student = Student::findOrFail($studentId);
-
-        $payments = StudentTransaction::where('student_id', $studentId)
-            ->whereIn('status', ['successful', 'paid', 'completed'])
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        Log::info('Payments found: ' . $payments->count());
-        Log::info('Types: ' . $payments->pluck('type')->toJson());
-
-        return view('students.partials.transcript_table', compact('student', 'payments'))->render();
-    }
-
-    public function transcript($studentId)
-    {
-        $student  = Student::findOrFail($studentId);
-        $payments = StudentTransaction::where('student_id', $studentId)
-            ->whereIn('status', ['successful', 'paid', 'completed'])
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        return view('students.transcript', compact('student', 'payments'));
-    }
-
-    public function getNESADetails($studentId)
-    {
-        $student = Student::findOrFail($studentId);
-
-        return response()->json([
-            'success'               => true,
-            'nesa_registered'       => $student->nesa_registered,
-            'nesa_registration_date'=> $student->nesa_registration_date,
-            'nesa_sdms_code'        => $student->nesa_sdms_code,
-            'nesa_reg_number'       => $student->nesa_reg_number,
-            'nesa_remarks'          => $student->nesa_remarks,
-            'nesa_document'         => $student->nesa_document,
-        ]);
-    }
-
-    /**
-     * Save NESA registration details for a student.
-     * Route: PUT /staff/students/{student}/nesa  (name: staff.students.nesa)
-     */
-    public function registerNesa(Request $request, Student $student)
-    {
-        if (!auth()->guard('staff')->check()) {
-            abort(403, 'Unauthorized action.');
-        }
-
-        $request->validate([
-            'nesa_registered'       => 'required|boolean',
-            'nesa_sdms_code'        => 'nullable|string|max:100',
-            'nesa_reg_number'       => 'nullable|string|max:100',
-            'nesa_registration_date'=> 'nullable|date',
-            'nesa_remarks'          => 'nullable|string|max:500',
-            'nesa_document'         => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
-        ]);
-
-        try {
-            DB::beginTransaction();
-
-            $nesaRegistered = (bool) $request->nesa_registered;
-            $student->nesa_registered = $nesaRegistered;
-
-            if ($nesaRegistered) {
-                if ($request->filled('nesa_sdms_code')) {
-                    $student->nesa_sdms_code = $request->nesa_sdms_code;
+        $existingNumbers = Student::where('course_id', $course->id)
+            ->where('academic_year_id', $academicYear->id)
+            ->where('reg_number', 'like', $prefix . '%')
+            ->pluck('reg_number')
+            ->map(function ($regNumber) use ($prefix, $yearRange) {
+                $pattern = '/^' . preg_quote($prefix, '/') . '(\d+)' . preg_quote($yearRange, '/') . '$/';
+                if (preg_match($pattern, $regNumber, $matches)) {
+                    return (int) $matches[1];
                 }
-                if ($request->filled('nesa_reg_number')) {
-                    $student->nesa_reg_number = $request->nesa_reg_number;
-                }
-                if ($request->filled('nesa_registration_date')) {
-                    $student->nesa_registration_date = $request->nesa_registration_date;
-                }
-                if ($request->filled('nesa_remarks')) {
-                    $student->nesa_remarks = $request->nesa_remarks;
-                }
-                if ($request->hasFile('nesa_document')) {
-                    // Delete old proof document if present
-                    if ($student->nesa_document && Storage::disk('public')->exists($student->nesa_document)) {
-                        Storage::disk('public')->delete($student->nesa_document);
-                    }
-                    $student->nesa_document = $request->file('nesa_document')
-                        ->store('students/nesa_documents', 'public');
-                }
-            } else {
-                // Clear NESA fields if marked as not registered
-                $student->nesa_sdms_code         = null;
-                $student->nesa_reg_number        = null;
-                $student->nesa_registration_date = null;
-                $student->nesa_remarks           = null;
+                return 0;
+            })
+            ->filter()
+            ->toArray();
+
+        $nextNumber    = empty($existingNumbers) ? 1 : max($existingNumbers) + 1;
+        $studentNumber = str_pad($nextNumber, 2, '0', STR_PAD_LEFT);
+        $regNumber     = $prefix . $studentNumber . $yearRange;
+
+        while (Student::where('reg_number', $regNumber)->exists()) {
+            $nextNumber++;
+            $studentNumber = str_pad($nextNumber, 2, '0', STR_PAD_LEFT);
+            $regNumber     = $prefix . $studentNumber . $yearRange;
+
+            if ($nextNumber > 9999) {
+                $regNumber = $prefix . uniqid() . $yearRange;
+                break;
             }
-
-            $student->save();
-            DB::commit();
-
-            Log::info('NESA registration updated', [
-                'student_id'      => $student->id,
-                'nesa_registered' => $nesaRegistered,
-                'updated_by'      => auth('staff')->user()->id,
-            ]);
-
-            // Send automatic email to student when registered with NESA
-            if ($nesaRegistered && $student->email) {
-                try {
-                    $studentData = [
-                        'name' => $student->full_name,
-                        'email' => $student->email,
-                        'reg_number' => $student->reg_number,
-                        'sdms_code' => $student->nesa_sdms_code,
-                        'nesa_reg_number' => $student->nesa_reg_number,
-                        'registration_date' => $student->nesa_registration_date ? \Carbon\Carbon::parse($student->nesa_registration_date)->format('d M Y') : null,
-                    ];
-                    
-                    Mail::to($student->email)->send(new \App\Mail\StudentNesaRegistrationMail($studentData));
-                    
-                    Log::info('NESA registration email sent', [
-                        'student_id' => $student->id,
-                        'email' => $student->email,
-                        'sdms_code' => $student->nesa_sdms_code,
-                    ]);
-                } catch (\Exception $e) {
-                    Log::error('Failed to send NESA registration email', [
-                        'student_id' => $student->id,
-                        'email' => $student->email,
-                        'error' => $e->getMessage(),
-                    ]);
-                }
-            }
-
-            return redirect()->route('staff.students.edit', $student)
-                ->with('success', $nesaRegistered
-                    ? 'NESA registration saved successfully. Student has been notified via email.'
-                    : 'Student marked as not registered with NESA.');
-
-        } catch (\Exception $e) {
-            DB::rollback();
-            Log::error('NESA registration update failed', [
-                'student_id' => $student->id,
-                'error'      => $e->getMessage(),
-            ]);
-
-            return redirect()->back()
-                ->with('error', 'Failed to save NESA registration: ' . $e->getMessage())
-                ->withInput();
-        }
-    }
-
-    public function viewDocument(Request $request, Student $student, $documentType)
-    {
-        $validTypes = ['id_photo', 'passport_photo', 'senior3_document', 'senior6_document', 'other_supporting_document'];
-        if (!in_array($documentType, $validTypes)) {
-            abort(404, 'Invalid document type');
         }
 
-        $documentPath = $student->$documentType;
-        if (!$documentPath) {
-            abort(404, 'Document not found');
-        }
-
-        try {
-            if (!Storage::disk('public')->exists($documentPath)) {
-                abort(404, 'Document file not found');
-            }
-
-            $file     = Storage::disk('public')->get($documentPath);
-            $mimeType = Storage::disk('public')->mimeType($documentPath);
-
-            return response($file)
-                ->header('Content-Type', $mimeType)
-                ->header('Content-Disposition', 'inline; filename="' . basename($documentPath) . '"');
-
-        } catch (\Exception $e) {
-            Log::error('Error viewing student document', [
-                'student_id'    => $student->id,
-                'document_type' => $documentType,
-                'error'         => $e->getMessage(),
-            ]);
-
-            abort(500, 'Error loading document');
-        }
+        return $regNumber;
     }
 
     private function cleanupExistingSessions($user, $guard)

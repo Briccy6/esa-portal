@@ -38,6 +38,9 @@ class ExamController extends Controller
                 ->with(['courses', 'lessons'])
                 ->latest()
                 ->paginate(10);
+        } elseif (auth('staff')->check()) {
+            // Staff (including accountants) can see all exams
+            $exams = Exam::with(['courses', 'lessons'])->latest()->paginate(10);
         } else {
             $exams = Exam::with(['courses', 'lessons'])->latest()->paginate(10);
         }
@@ -68,6 +71,15 @@ class ExamController extends Controller
             $lessons = $user->lessons;
             $branches = $user->branches ?? collect();
             $teachers = collect([$user]);
+            $academicYears = \App\Models\AcademicYear::orderBy('year', 'desc')->get();
+            $terms = \App\Models\Term::all();
+        } elseif (auth('staff')->check()) {
+            $user = auth('staff')->user();
+            // Staff (including accountants) can access all courses, lessons, and branches
+            $courses = Course::all();
+            $lessons = Lesson::all();
+            $branches = \App\Models\Branch::all();
+            $teachers = \App\Models\Teacher::all();
             $academicYears = \App\Models\AcademicYear::orderBy('year', 'desc')->get();
             $terms = \App\Models\Term::all();
         } else {

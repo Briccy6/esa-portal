@@ -192,18 +192,6 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('exams.*') ? 'active' : '' }}" href="{{ route('exams.index') }}">
-                            <span class="nav-icon"><i class="fas fa-file-alt"></i></span>
-                            <span class="nav-text">Exams</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('exams.question-banks.*') ? 'active' : '' }}" href="{{ route('exams.question-banks.index') }}">
-                            <span class="nav-icon"><i class="fas fa-database"></i></span>
-                            <span class="nav-text">Question Banks</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
                         <button type="button" class="nav-link w-100 text-start" data-bs-toggle="modal" data-bs-target="#addStudentModal">
                             <span class="nav-icon"><i class="fas fa-user-plus"></i></span>
                             <span class="nav-text">Add Student</span>

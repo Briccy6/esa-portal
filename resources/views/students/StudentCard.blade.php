@@ -387,7 +387,9 @@
                         <div style="text-align: center;">
                             <div style="font-size: 10px; color: #64748b; font-weight: 600; margin-bottom: 5px;">SCAN FOR VERIFICATION</div>
                             @if($card->qr_code)
-                                <img src="data:image/png;base64,{{ $card->qr_code }}" alt="QR Code" style="width: 80px; height: 80px; border: 1px solid #e2e8f0;">
+                                <div style="width: 80px; height: 80px; border: 1px solid #e2e8f0; border-radius: 4px; overflow: hidden;">
+                                    {!! $card->qr_code !!}
+                                </div>
                             @else
                                 <div style="width: 80px; height: 80px; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: center; color: #64748b;">
                                     <i class="fas fa-qrcode" style="font-size: 40px;"></i>
@@ -553,7 +555,7 @@ function clearFilters() {
 
 function printStudentCard(cardId) {
     const content = document.getElementById('studentCardContent' + cardId).innerHTML;
-    const printWindow = window.open('', '', 'width=800,height=600');
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
     printWindow.document.write(`
         <!DOCTYPE html>
         <html>

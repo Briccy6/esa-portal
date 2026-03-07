@@ -532,7 +532,7 @@
                                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                 </div>
                                 <form id="generateCardForm{{ $student->id }}"
-                                      action="{{ route('staff.students.generate-card', $student->id) }}"
+                                      action="{{ route('staff.students.generate_card', $student->id) }}"
                                       method="POST"
                                       onsubmit="handleGenerateCard(event, {{ $student->id }})">
                                     @csrf
