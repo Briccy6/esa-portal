@@ -25,14 +25,16 @@
         }
         
         .header-section {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
             border-bottom: 1px solid black;
         }
         
         .header-cell {
             padding: 8px;
             font-size: 10px;
+            flex: 1;
         }
         
         .header-cell:not(:last-child) {
@@ -200,19 +202,14 @@
         <!-- Header Section -->
         <div class="header-section">
             <div class="header-cell">
-                @if($schoolInfo && $schoolInfo->logo_url)
-                    <img src="{{ $schoolInfo->logo_url }}" alt="School Logo" class="school-logo">
-                @else
-                    <div style="width: 100px; height: 100px; background: #ecf0f1; border: 2px dashed #bdc3c7; display: flex; align-items: center; justify-content: center;">
-                        <div style="text-align: center;">
-                            <div style="color: #7f8c8d; font-size: 8px; font-weight: bold;">LOGO</div>
-                        </div>
-                    </div>
-                @endif
-            </div>
-            
-            <div class="header-cell">
-                <div class="logo-container">
+                <!-- Student Information -->
+                <div style="text-align: center; font-size: 9px;">
+                    <div><span class="font-bold">NAME:</span> {{ $reportCard->student->full_name }}</div>
+                    <div><span class="font-bold">REG NO:</span> {{ $reportCard->student->reg_number ?? 'N/A' }}</div>
+                    <div><span class="font-bold">CLASS:</span> {{ $reportCard->course->course_name }}</div>
+                    <div><span class="font-bold">YEAR:</span> {{ $reportCard->academicYear->year }}</div>
+                </div>
+                <div class="logo-container" style="margin-top: 8px;">
                     @if($reportCard->student->passport_photo)
                         <img src="data:image/jpeg;base64,{{ base64_encode($reportCard->student->passport_photo) }}" alt="Student Photo" class="student-photo">
                     @else
@@ -223,12 +220,21 @@
                         </div>
                     @endif
                 </div>
-                <!-- Student Information -->
-                <div style="text-align: center; margin-top: 8px; font-size: 9px;">
-                    <div><span class="font-bold">NAME:</span> {{ $reportCard->student->full_name }}</div>
-                    <div><span class="font-bold">REG NO:</span> {{ $reportCard->student->reg_number ?? 'N/A' }}</div>
-                    <div><span class="font-bold">CLASS:</span> {{ $reportCard->course->course_name }}</div>
-                    <div><span class="font-bold">YEAR:</span> {{ $reportCard->academicYear->year }}</div>
+            </div>
+            
+            <div class="header-cell">
+                <div class="logo-container">
+                    @if($schoolInfo && $schoolInfo->logo)
+                        <img src="data:image/jpeg;base64,{{ base64_encode($schoolInfo->logo) }}" alt="School Logo" class="school-logo">
+                    @elseif($schoolInfo && $schoolInfo->logo_url)
+                        <img src="{{ $schoolInfo->logo_url }}" alt="School Logo" class="school-logo">
+                    @else
+                        <div style="width: 100px; height: 100px; background: #ecf0f1; border: 2px dashed #bdc3c7; display: flex; align-items: center; justify-content: center;">
+                            <div style="text-align: center;">
+                                <div style="color: #7f8c8d; font-size: 8px; font-weight: bold;">SCHOOL<br>LOGO</div>
+                            </div>
+                        </div>
+                    @endif
                 </div>
             </div>
             
@@ -424,7 +430,9 @@
                         <th>Promoted after re-assessment</th>
                         <th>Advised to Repeat</th>
                         <th>Dismissed</th>
-                        <th>School Manager<br>Hirwa Alain Brian<br>SIGNATURE<br>____/____/{{ date('Y') }}</th>
+                        <th>School Manager<br>@if($schoolInfo && $schoolInfo->principal_name){{ $schoolInfo->principal_name }}@else School Manager @endif<br>SIGNATURE<br>____/____/{{ date('Y') }}</th>
+                        <th>SIGNATURE</th>
+                        <th>STAMP</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -435,7 +443,26 @@
                         <td><input type="checkbox" class="checkbox"></td>
                         <td><input type="checkbox" class="checkbox"></td>
                         <td><input type="checkbox" class="checkbox"></td>
-                        <td></td>
+                        <td>
+                            @if($schoolInfo && $schoolInfo->principal_signature_data)
+                                <img src="data:image/jpeg;base64,{{ base64_encode($schoolInfo->principal_signature_data) }}" alt="Principal Signature" style="max-height: 40px; max-width: 80px;">
+                            @elseif($schoolInfo && $schoolInfo->principal_signature_url)
+                                <img src="{{ $schoolInfo->principal_signature_url }}" alt="Principal Signature" style="max-height: 40px; max-width: 80px;">
+                            @else
+                                <div style="height: 40px; border-bottom: 1px solid #ccc; width: 80px; margin: 0 auto;"></div>
+                            @endif
+                        </td>
+                        <td>
+                            @if($schoolInfo && $schoolInfo->stamp_signature_data)
+                                <img src="data:image/jpeg;base64,{{ base64_encode($schoolInfo->stamp_signature_data) }}" alt="School Stamp" style="max-height: 40px; max-width: 80px;">
+                            @elseif($schoolInfo && $schoolInfo->stamp_signature_url)
+                                <img src="{{ $schoolInfo->stamp_signature_url }}" alt="School Stamp" style="max-height: 40px; max-width: 80px;">
+                            @else
+                                <div style="height: 40px; border: 1px dashed #ccc; width: 80px; margin: 0 auto; display: flex; align-items: center; justify-content: center;">
+                                    <span style="font-size: 6px; color: #999;">STAMP</span>
+                                </div>
+                            @endif
+                        </td>
                     </tr>
                 </tbody>
             </table>
