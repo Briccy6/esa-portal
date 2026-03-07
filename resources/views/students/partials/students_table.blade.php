@@ -438,6 +438,53 @@
                         </div>
                     </div>
 
+                    {{-- ============================================================
+                         GENERATE STUDENT CARD MODAL
+                    ============================================================ --}}
+                    <div class="modal fade" id="generateCardModal{{ $student->id }}" tabindex="-1" aria-labelledby="generateCardLabel{{ $student->id }}" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header bg-warning text-white">
+                                    <h5 class="modal-title" id="generateCardLabel{{ $student->id }}">
+                                        <i class="fas fa-id-card me-2"></i>
+                                        Generate Student ID Card — {{ $student->full_name }}
+                                    </h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                </div>
+                                <form method="POST" action="{{ route('students.generate_card', $student->id) }}" onsubmit="return confirmGenerateCard(event, '{{ $student->full_name }}')">
+                                    @csrf
+                                    <div class="modal-body">
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            <strong>Student Information:</strong>
+                                            <div class="mt-2">
+                                                <p class="mb-1"><strong>Name:</strong> {{ $student->full_name }}</p>
+                                                <p class="mb-1"><strong>Reg Number:</strong> {{ $student->reg_number }}</p>
+                                                <p class="mb-1"><strong>Course:</strong> {{ $student->course->course_name ?? 'N/A' }}</p>
+                                                <p class="mb-0"><strong>Branch:</strong> {{ $student->branch->name ?? 'N/A' }}</p>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="alert alert-warning">
+                                            <i class="fas fa-exclamation-triangle me-2"></i>
+                                            <strong>Important:</strong> Student must have paid the Student Card fee (2000 RWF) before generating ID card.
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="submit" class="btn btn-warning">
+                                            <i class="fas fa-id-card me-1"></i>
+                                            Generate ID Card
+                                        </button>
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                            <i class="fas fa-times me-1"></i>
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
                 @empty
                     <tr class="no-data-row">
                         <td colspan="9" class="text-center py-5">
@@ -625,6 +672,90 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 });
+
+// ─── Generate Student Card ───────────────────────────────────────────────────
+function confirmGenerateCard(event, studentName) {
+    event.preventDefault();
+    
+    if (!confirm(`Are you sure you want to generate the Student ID Card for "${studentName}"?`)) {
+        return;
+    }
+    
+    const form = event.target;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    
+    // Disable button and show loading
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generating...';
+    
+    // Get CSRF token
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+    
+    // Make AJAX request
+    fetch(form.action, {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': csrfToken,
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: new FormData(form),
+        credentials: 'same-origin'
+    })
+    .then(async response => {
+        const contentType = response.headers.get('content-type');
+        let data;
+        
+        if (contentType && contentType.includes('application/json')) {
+            data = await response.json();
+        } else {
+            const text = await response.text();
+            console.log('Non-JSON response:', text);
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                data = { 
+                    success: response.ok, 
+                    message: response.ok ? 'Student card generated successfully' : 'Student card generation failed'
+                };
+            }
+        }
+        
+        return { status: response.status, ok: response.ok, data };
+    })
+    .then(({ status, ok, data }) => {
+        if (ok && data.success !== false) {
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.querySelector(`#generateCardModal${event.target.action.match(/\d+/)[0]}`));
+            if (modal) modal.hide();
+            
+            // Show success message
+            const message = data.message || 'Student card generated successfully';
+            showAlert('success', message);
+            
+            // Reload page after short delay
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        } else {
+            // Show error message
+            const message = data.message || data.error || 'Failed to generate student card';
+            showAlert('danger', message);
+            
+            // Re-enable button
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-id-card me-1"></i>Generate ID Card';
+        }
+    })
+    .catch(error => {
+        console.error('Student card generation error:', error);
+        showAlert('danger', 'Student card generation failed. Please check your connection and try again.');
+        
+        // Re-enable button
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-id-card me-1"></i>Generate ID Card';
+    });
+}
 
 // ─── Alert helper ─────────────────────────────────────────────────────────────
 function showAlert(type, message) {

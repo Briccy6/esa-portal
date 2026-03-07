@@ -163,8 +163,8 @@
 @push('scripts')
 <script>
     function openEditModal(paymentId) {
-        // staff URL for edit
-        const url = '/staff/transactions/' + paymentId + '/edit';
+        // Use correct transaction route
+        const url = '/transactions/' + paymentId + '/edit';
         const modal = new bootstrap.Modal(document.getElementById('editTransactionModal'));
         const body = document.getElementById('editTransactionModalBody');
         body.innerHTML = '<div class="text-center"><span class="spinner-border"></span> Loading...</div>';
@@ -182,6 +182,56 @@
         })
         .then(html => {
             body.innerHTML = html;
+
+            // Add form submission handler
+            const form = body.querySelector('form');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+
+                    const formData = new FormData(form);
+                    const submitBtn = form.querySelector('button[type="submit"]');
+                    const originalText = submitBtn.innerHTML;
+
+                    // Show loading state
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+
+                    fetch(form.action, {
+                        method: 'PUT',
+                        body: formData,
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(resp => resp.json())
+                    .then(json => {
+                        if (json.success) {
+                            // Close modal
+                            const modal = bootstrap.Modal.getInstance(document.getElementById('editTransactionModal'));
+                            if (modal) modal.hide();
+
+                            // Show success message
+                            alert(json.message || 'Transaction updated successfully.');
+
+                            // Reload page to show updated data
+                            location.reload();
+                        } else {
+                            alert(json.message || 'Failed to update transaction.');
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Error updating transaction:', err);
+                        alert('An error occurred while updating the transaction.');
+                    })
+                    .finally(() => {
+                        // Reset button state
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalText;
+                    });
+                });
+            }
         })
         .catch(err => {
             body.innerHTML = '<div class="alert alert-danger">Unable to load edit form.</div>';
@@ -194,7 +244,7 @@
             return;
         }
 
-        const url = '/staff/transactions/' + paymentId;
+        const url = '/transactions/' + paymentId;
         fetch(url, {
             method: 'DELETE',
             headers: {
@@ -214,7 +264,7 @@
         })
         .catch(err => {
             console.error(err);
-            alert('An error occurred while deleting the transaction.');
+            alert('An error occurred while deleting transaction.');
         });
     }
 </script>

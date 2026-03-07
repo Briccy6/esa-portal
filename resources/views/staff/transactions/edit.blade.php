@@ -7,7 +7,7 @@
             <strong>Edit Transaction #{{ $transaction->id }}</strong>
         </div>
         <div class="card-body">
-            <form method="POST" action="{{ route('staff.transactions.update', $transaction->id) }}">
+            <form method="POST" action="{{ route('transactions.update', $transaction->id) }}">
                 @csrf
                 @method('PUT')
 

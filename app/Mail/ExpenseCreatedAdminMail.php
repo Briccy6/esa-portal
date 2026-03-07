@@ -20,6 +20,6 @@ class ExpenseCreatedAdminMail extends Mailable
     public function build()
     {
         return $this->subject('New Expense Recorded')
-            ->view('emails.expense_created_admin');
+            ->view('emails.expense_created_admin_simple');
     }
 }

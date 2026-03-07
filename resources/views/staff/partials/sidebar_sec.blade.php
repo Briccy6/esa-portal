@@ -192,13 +192,7 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('admin.accounting.*') ? 'active' : '' }}" href="{{ route('admin.accounting.index') }}">
-                            <span class="nav-icon"><i class="fas fa-balance-scale"></i></span>
-                            <span class="nav-text">Accounting Reports</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('admin.exams.*') ? 'active' : '' }}" href="{{ route('admin.exams.index') }}">
+                        <a class="nav-link {{ request()->routeIs('exams.*') ? 'active' : '' }}" href="{{ route('exams.index') }}">
                             <span class="nav-icon"><i class="fas fa-file-alt"></i></span>
                             <span class="nav-text">Exams</span>
                         </a>

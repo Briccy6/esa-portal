@@ -11,7 +11,7 @@
             @php
                 $totalFee = ($course->tuition_fee ?? 0) + ($course->registration_fee ?? 0) + ($course->trip_fee ?? 0) - ($course->discount_fee ?? 0);
                 $studentCount = $course->students->count();
-                $totalPaid = $course->transcripts->sum('amount_paid');
+                $totalPaid = 0; // Transcripts table doesn't exist yet
                 $totalDue = ($studentCount * $totalFee) - $totalPaid;
             @endphp
             <div class="col-md-4">

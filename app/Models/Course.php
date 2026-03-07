@@ -38,10 +38,6 @@ public function academicYear()
     {
         return $this->hasMany(Student::class);
     }
-    public function transcripts()
-    {
-        return $this->hasMany(Transcript::class);
-    }
     public function exams()
     {
         return $this->belongsToMany(Exam::class);

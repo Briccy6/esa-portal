@@ -374,6 +374,27 @@
                             border-radius: 50%;
                         "></div>
                     </div>
+                    <!-- QR Code Section -->
+                    <div style="
+                        position: absolute;
+                        bottom: 25px;
+                        right: 25px;
+                        background: white;
+                        border-radius: 10px;
+                        padding: 10px;
+                        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+                    ">
+                        <div style="text-align: center;">
+                            <div style="font-size: 10px; color: #64748b; font-weight: 600; margin-bottom: 5px;">SCAN FOR VERIFICATION</div>
+                            @if($card->qr_code)
+                                <img src="data:image/png;base64,{{ $card->qr_code }}" alt="QR Code" style="width: 80px; height: 80px; border: 1px solid #e2e8f0;">
+                            @else
+                                <div style="width: 80px; height: 80px; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: center; color: #64748b;">
+                                    <i class="fas fa-qrcode" style="font-size: 40px;"></i>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
                     <!-- Important Notice -->
                     <div style="
                         margin-top: 20px;

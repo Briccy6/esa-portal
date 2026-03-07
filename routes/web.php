@@ -440,7 +440,7 @@ Route::prefix('staff')->name('staff.')->group(function () {
         
         // Transaction Management Routes (FIXED)
         Route::get('/transactions/{transaction}/edit', [StudentController::class, 'editTransaction'])->name('transactions.edit');
-        Route::put('/transactions/{transaction}', [StudentController::class, 'editTransaction'])->name('transactions.update');
+        Route::put('/transactions/{transaction}', [StudentController::class, 'updateTransaction'])->name('transactions.update');
         Route::delete('/transactions/{transaction}', [StudentController::class, 'deleteTransaction'])->name('transactions.destroy');
             // Payment Routes - ADD THESE
 
@@ -460,6 +460,7 @@ Route::prefix('staff')->name('staff.')->group(function () {
         Route::get('/students/report', [StudentController::class, 'report'])->name('students.report');
         Route::get('/students/attendance', [StudentController::class, 'attendance'])->name('students.attendance');
         Route::post('/students/generate-cards-bulk', [StudentController::class, 'generateCardsBulk'])->name('students.generate_cards_bulk');
+        Route::get('/students/qr-scan/{qrData}', [StudentController::class, 'verifyQRCode'])->name('students.qr_scan');
         Route::post('/students/{student}/generate-card', [StudentController::class, 'generateStudentCard'])->name('students.generate_card');
         Route::get('dashboard_accountant', [StaffAuthController::class, 'dashboard'])->name('dashboard.accountant');
         

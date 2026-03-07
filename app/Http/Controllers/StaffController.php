@@ -139,7 +139,7 @@ class StaffController extends Controller
 
     public function courseFees()
     {
-        $courses = \App\Models\Course::with(['branches', 'teachers', 'students', 'transcripts'])->get();
+        $courses = \App\Models\Course::with(['branches', 'teachers', 'students'])->get();
         return view('staff.course_fees', compact('courses'));
     }
 

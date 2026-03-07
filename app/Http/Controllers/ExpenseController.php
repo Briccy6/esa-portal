@@ -58,8 +58,13 @@ class ExpenseController extends Controller
         }
 
         // Send email to admin
-        \Mail::to(config('mail.admin_address', 'excellentservantacademy@gmail.com'))
-            ->send(new \App\Mail\ExpenseCreatedAdminMail($expense));
+        try {
+            \Mail::to(config('mail.admin_address', 'excellentservantacademy@gmail.com'))
+                ->send(new \App\Mail\ExpenseCreatedAdminMail($expense));
+        } catch (\Exception $e) {
+            // Log email error but don't prevent expense creation
+            \Log::error('Failed to send expense email: ' . $e->getMessage());
+        }
 
         return back()->with('success', 'Expense recorded successfully.');
     }

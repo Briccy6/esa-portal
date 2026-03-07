@@ -1385,6 +1385,16 @@ class StudentController extends Controller
             return back()->with('error', 'Student card already exists for this student.');
         }
 
+        // Check if student has paid the student Card fee
+        $studentCardPaid = StudentTransaction::where('student_id', $student->id)
+            ->where('type', 'student_card')
+            ->whereIn('status', ['successful', 'paid'])
+            ->exists();
+
+        if (!$studentCardPaid) {
+            return back()->with('error', 'Student must pay the Student Card fee (2000 RWF) before generating ID card.');
+        }
+
         $passportPhoto = null;
         if ($student->passport_photo) {
             if (Storage::disk('public')->exists($student->passport_photo)) {
@@ -1394,16 +1404,63 @@ class StudentController extends Controller
             }
         }
 
+        // Generate QR code with student information
+        $qrData = [
+            'student_name' => $student->full_name,
+            'reg_number' => $student->reg_number,
+            'course' => $student->course->course_name ?? '',
+            'branch' => $student->branch->name ?? '',
+            'academic_year' => $student->academicYear->year ?? date('Y'),
+            'generated_date' => now()->format('Y-m-d H:i:s'),
+        ];
+
+        $qrCode = base64_encode(
+            \SimpleSoftwareIO\QrCode\Generator::create(json_encode($qrData))
+                ->setMargin(0)
+                ->setSize(200)
+                ->setErrorCorrectionLevel(\SimpleSoftwareIO\QrCode\ErrorCorrectionLevel::High)
+                ->setEncoding('UTF-8')
+                ->generate()
+        );
+
         StudentCard::create([
             'student_id'       => $student->id,
             'reg_number'       => $student->reg_number,
             'course'           => $student->course->course_name ?? '',
             'branch'           => $student->branch->name ?? '',
             'passport_photo'   => $passportPhoto,
+            'qr_code'         => $qrCode,
             'academic_year'    => $student->academicYear->year ?? date('Y'),
             'card_generated_by'=> Auth::user()->name ?? 'system',
             'generated_at'     => now(),
         ]);
+
+        // Send email notification to student
+        if ($student->email) {
+            try {
+                Mail::to($student->email)->send(
+                    new \App\Mail\StudentCardGeneratedMail([
+                        'student_name' => $student->full_name,
+                        'reg_number' => $student->reg_number,
+                        'course' => $student->course->course_name ?? '',
+                        'branch' => $student->branch->name ?? '',
+                        'card_generated_date' => now()->format('F j, Y \a\t g:i A'),
+                        'generated_by' => Auth::user()->name ?? 'system',
+                    ])
+                );
+                
+                Log::info('Student card generation email sent', [
+                    'student_id' => $student->id,
+                    'email' => $student->email,
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to send student card generation email', [
+                    'student_id' => $student->id,
+                    'email' => $student->email,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
 
         return back()->with('success', 'Student card generated successfully.');
     }
@@ -1462,12 +1519,32 @@ class StudentController extends Controller
                 continue;
             }
 
+            // Generate QR code with student information
+            $qrData = [
+                'student_name' => $student->full_name,
+                'reg_number' => $student->reg_number,
+                'course' => $student->course->course_name ?? '',
+                'branch' => $student->branch->name ?? '',
+                'academic_year' => $student->academicYear->year ?? date('Y'),
+                'generated_date' => now()->format('Y-m-d H:i:s'),
+            ];
+
+            $qrCode = base64_encode(
+                \SimpleSoftwareIO\QrCode\Generator::create(json_encode($qrData))
+                    ->setMargin(0)
+                    ->setSize(200)
+                    ->setErrorCorrectionLevel(\SimpleSoftwareIO\QrCode\ErrorCorrectionLevel::High)
+                    ->setEncoding('UTF-8')
+                    ->generate()
+            );
+
             StudentCard::create([
                 'student_id'       => $student->id,
                 'reg_number'       => $student->reg_number,
                 'course'           => $student->course->course_name ?? '',
                 'branch'           => $student->branch->name ?? '',
                 'passport_photo'   => $student->passport_photo ?? null,
+                'qr_code'         => $qrCode,
                 'academic_year'    => $student->academicYear->year ?? date('Y'),
                 'card_generated_by'=> Auth::user()->name ?? 'system',
                 'generated_at'     => now(),
@@ -1520,6 +1597,96 @@ class StudentController extends Controller
         }
 
         return $regNumber;
+    }
+
+    /**
+     * Verify QR code for attendance
+     * Endpoint: GET /qr-scan/{qrData}
+     */
+    public function verifyQRCode($qrData)
+    {
+        try {
+            // Decode QR data
+            $decodedData = json_decode(base64_decode($qrData), true);
+            
+            if (!$decodedData) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid QR code format',
+                    'data' => null
+                ], 400);
+            }
+
+            // Validate required fields
+            $requiredFields = ['student_name', 'reg_number', 'course', 'branch', 'academic_year'];
+            foreach ($requiredFields as $field) {
+                if (empty($decodedData[$field])) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Missing required field: {$field}",
+                        'data' => null
+                    ], 400);
+                }
+            }
+
+            // Find student by registration number
+            $student = Student::with(['course', 'branch', 'academicYear'])
+                ->where('reg_number', $decodedData['reg_number'])
+                ->first();
+
+            if (!$student) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Student not found',
+                    'data' => null
+                ], 404);
+            }
+
+            // Check if student card exists
+            $studentCard = StudentCard::where('student_id', $student->id)
+                ->where('academic_year', $decodedData['academic_year'])
+                ->first();
+
+            if (!$studentCard) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Student card not generated or invalid academic year',
+                    'data' => null
+                ], 404);
+            }
+
+            // Return student information for attendance
+            return response()->json([
+                'success' => true,
+                'message' => 'Student verified successfully',
+                'data' => [
+                    'student_id' => $student->id,
+                    'student_name' => $student->full_name,
+                    'reg_number' => $student->reg_number,
+                    'course' => $student->course->course_name ?? '',
+                    'branch' => $student->branch->name ?? '',
+                    'academic_year' => $student->academicYear->year ?? '',
+                    'email' => $student->email,
+                    'phone' => $student->phone,
+                    'sex' => $student->sex,
+                    'card_generated_at' => $studentCard->generated_at,
+                    'verification_time' => now()->format('Y-m-d H:i:s'),
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('QR Code verification failed', [
+                'qr_data' => $qrData,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'QR code verification failed: ' . $e->getMessage(),
+                'data' => null
+            ], 500);
+        }
     }
 
     public function profile()
@@ -1744,10 +1911,6 @@ class StudentController extends Controller
             'changes'        => $request->only(['amount', 'type', 'status', 'paid_at']),
         ]);
 
-        if ($request->wantsJson() || $request->ajax()) {
-            return response()->json(['success' => true, 'message' => 'Transaction updated successfully.']);
-        }
-
         return redirect()->back()->with('success', 'Transaction updated successfully.');
     }
 
@@ -1771,7 +1934,6 @@ class StudentController extends Controller
             ]);
 
             return response()->json(['success' => true, 'message' => 'Transaction deleted successfully.']);
-
         } catch (\Exception $e) {
             Log::error('Failed to delete transaction by staff', [
                 'transaction_id' => $transactionId,
