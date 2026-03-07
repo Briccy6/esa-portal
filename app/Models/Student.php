@@ -197,7 +197,7 @@ class Student extends Authenticatable
     public function canAttemptExam($exam)
     {
         // Registered students with sufficient tokens
-        if ($this->hasTokens($exam->token_cost)) {
+        if ($this->hasTokens($exam->getCalculatedTokenCost())) {
             return true;
         }
 

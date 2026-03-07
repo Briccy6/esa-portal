@@ -126,7 +126,61 @@ class Exam extends Model
 
     public function requiresTokens()
     {
-        return $this->token_cost > 0;
+        return $this->getCalculatedTokenCost() > 0;
+    }
+
+    /**
+     * Calculate token cost based on number of questions
+     * 1 token per question by default for affordability
+     */
+    public function getCalculatedTokenCost()
+    {
+        $questionCount = $this->questions()->count();
+        
+        // If exam has no manual token cost set, calculate based on questions
+        if ($this->token_cost === null || $this->token_cost === 0) {
+            return $questionCount; // 1 token per question
+        }
+        
+        // If manual token cost is set, use it (for backward compatibility)
+        return $this->token_cost;
+    }
+
+    /**
+     * Get the effective token cost for display and calculations
+     */
+    public function getEffectiveTokenCostAttribute()
+    {
+        return $this->getCalculatedTokenCost();
+    }
+
+    /**
+     * Auto-update token cost based on question count
+     */
+    public function updateTokenCostBasedOnQuestions()
+    {
+        $questionCount = $this->questions()->count();
+        
+        // Only update if no manual token cost is set
+        if ($this->token_cost === null || $this->token_cost === 0) {
+            $this->token_cost = $questionCount;
+            $this->save();
+        }
+    }
+
+    /**
+     * Get formatted token cost display
+     */
+    public function getFormattedTokenCostAttribute()
+    {
+        $cost = $this->getCalculatedTokenCost();
+        $questionCount = $this->questions()->count();
+        
+        if ($cost === $questionCount) {
+            return "{$cost} tokens ({$questionCount} questions × 1 token each)";
+        }
+        
+        return "{$cost} tokens";
     }
 
     public function requiresPayment()
@@ -178,7 +232,7 @@ class Exam extends Model
                 'allowed' => false,
                 'reason' => 'Insufficient tokens',
                 'action' => 'buy_tokens',
-                'required' => $this->token_cost,
+                'required' => $this->getCalculatedTokenCost(),
                 'has' => $student->token_balance
             ];
         }
@@ -188,11 +242,6 @@ class Exam extends Model
             'reason' => 'Access denied',
             'action' => 'register'
         ];
-    }
-
-    public function getFormattedTokenCostAttribute()
-    {
-        return $this->token_cost . ' tokens';
     }
 
     public function getFormattedPublicPriceAttribute()

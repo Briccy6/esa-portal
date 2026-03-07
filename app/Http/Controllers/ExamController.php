@@ -169,6 +169,11 @@ public function create()
                 $this->addQuestionsFromBanks($exam, $request->question_bank_ids, $request->questions_per_bank);
             }
             
+            // Auto-calculate token cost based on number of questions
+            $exam->updateTokenCostBasedOnQuestions();
+            
+            \Log::info('Token cost calculated based on questions: ' . $exam->token_cost . ' tokens');
+            
             // Redirect based on authentication
             if (auth('admin')->check()) {
                 return redirect()->route('admin.exams.index')->with('success', 'Exam created successfully.');
@@ -223,6 +228,7 @@ public function create()
             'exam_weight' => 'required|integer|min:1|max:100',
             'description' => 'nullable|string',
             'instructions' => 'nullable|string',
+            'token_cost' => 'required|integer|min:0',
         ]);
 
         $exam->update([
@@ -232,6 +238,7 @@ public function create()
             'exam_weight' => $request->exam_weight,
             'description' => $request->description,
             'instructions' => $request->instructions,
+            'token_cost' => $request->token_cost,
         ]);
 
         $exam->courses()->sync($request->course_ids);
@@ -280,16 +287,17 @@ public function create()
         // Check and deduct tokens if required
         if ($exam->requiresTokens()) {
             $studentToken = $student->token;
+            $tokenCost = $exam->getCalculatedTokenCost();
             
-            if (!$studentToken || !$studentToken->canAfford($exam->token_cost)) {
+            if (!$studentToken || !$studentToken->canAfford($tokenCost)) {
                 $balance = $studentToken->balance ?? 0;
                 return redirect()->route('student.dashboard')->with('error', 
-                    "Insufficient tokens! This exam requires {$exam->token_cost} tokens. You have {$balance} tokens.");
+                    "Insufficient tokens! This exam requires {$tokenCost} tokens. You have {$balance} tokens.");
             }
 
             // Deduct tokens for exam attempt
             $transaction = $studentToken->spendTokens(
-                $exam->token_cost, 
+                $tokenCost, 
                 "Exam attempt: {$exam->title}", 
                 'exam'
             );

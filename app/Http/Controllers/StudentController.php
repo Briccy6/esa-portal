@@ -1226,6 +1226,9 @@ class StudentController extends Controller
     {
         $student = auth()->guard('student')->user();
 
+        // Initialize tokens for student if they don't exist
+        $student->initializeTokens();
+
         $approvedAttendances = $student->attendances()
             ->where('approved', 1)
             ->orderByDesc('marked_at')

@@ -16,7 +16,7 @@ class TokenController extends Controller
         $token = $student->token;
         $transactions = $token ? $token->transactions()->latest()->paginate(20) : collect();
 
-        return view('tokens.index', compact('student', 'token', 'transactions'));
+        return view('students.tokens.index', compact('student', 'token', 'transactions'));
     }
 
     public function purchase(Request $request)

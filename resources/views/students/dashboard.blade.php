@@ -363,6 +363,75 @@
         </div>
     </div>
 
+    <!-- Token Management Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h3 class="section-title">
+                <i class="bi bi-coin me-2"></i>
+                Token Management
+            </h3>
+        </div>
+        <div class="col-12">
+            <div class="info-card">
+                <div class="info-card-header">
+                    <h4>
+                        <i class="bi bi-wallet2 me-2"></i>
+                        Your Token Balance
+                    </h4>
+                    <a href="{{ route('tokens.dashboard') }}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-gear"></i> Manage Tokens
+                    </a>
+                </div>
+                <div class="info-card-body">
+                    <div class="token-overview">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <div class="token-balance-display">
+                                    <div class="balance-amount">
+                                        <span class="token-icon">
+                                            <i class="bi bi-coin"></i>
+                                        </span>
+                                        <span class="balance-number">{{ $student->token_balance ?? 0 }}</span>
+                                        <span class="balance-label">tokens</span>
+                                    </div>
+                                    <div class="balance-details">
+                                        <div class="detail-item">
+                                            <i class="bi bi-arrow-down-circle text-success"></i>
+                                            <span>Total Earned: {{ $student->token ? $student->token->total_earned : 0 }}</span>
+                                        </div>
+                                        <div class="detail-item">
+                                            <i class="bi bi-arrow-up-circle text-danger"></i>
+                                            <span>Total Spent: {{ $student->token ? $student->token->total_spent : 0 }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="token-actions">
+                                    <a href="{{ route('tokens.index') }}" class="btn btn-success btn-lg w-100 mb-2">
+                                        <i class="bi bi-plus-circle me-2"></i>
+                                        Buy More Tokens
+                                    </a>
+                                    <a href="{{ route('tokens.dashboard') }}" class="btn btn-outline-primary w-100">
+                                        <i class="bi bi-clock-history me-2"></i>
+                                        View History
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    @if($student->token_balance < 10)
+                    <div class="alert alert-warning mt-3">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>Low Token Balance!</strong> You have less than 10 tokens. Consider purchasing more to avoid missing out on exams.
+                    </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Live Class Alert -->
     @if($liveClass)
         <div class="row mb-4">
@@ -415,6 +484,13 @@
                             <p class="mt-2 text-muted">Loading live classes...</p>
                         </div>
                     </div>
+                    
+                    @if($student->token_balance < 10)
+                    <div class="alert alert-warning mt-3">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>Low Token Balance!</strong> You have less than 10 tokens. Consider purchasing more to avoid missing out on exams.
+                    </div>
+                    @endif
                 </div>
             </div>
         </div>
@@ -543,7 +619,7 @@
                                     @if($exam->requiresTokens())
                                         <p class="exam-tokens">
                                             <i class="bi bi-coins me-1"></i>
-                                            Cost: {{ $exam->token_cost }} tokens
+                                            {{ $exam->formatted_token_cost }}
                                             @if(auth()->user()->token)
                                                 | Your balance: {{ auth()->user()->token->balance }} tokens
                                             @endif
@@ -564,7 +640,7 @@
                                             </span>
                                         @endif
                                     @else
-                                        @if($exam->requiresTokens() && (!auth()->user()->token || !auth()->user()->token->canAfford($exam->token_cost)))
+                                        @if($exam->requiresTokens() && (!auth()->user()->token || !auth()->user()->token->canAfford($exam->getCalculatedTokenCost())))
                                             <span class="status-badge insufficient-tokens">
                                                 <i class="bi bi-exclamation-triangle me-1"></i>
                                                 Insufficient tokens
@@ -1030,15 +1106,215 @@
         background: #f1f5f9;
     }
 
-    .info-card-body::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
-        border-radius: 2px;
-    }
+        .exam-date {
+            color: #64748b;
+            font-size: 0.875rem;
+            margin: 0;
+        }
 
-    .info-card-body::-webkit-scrollbar-thumb:hover {
-        background: #94a3b8;
-    }
-</style>
+        .exam-tokens {
+            color: #059669;
+            font-size: 0.875rem;
+            margin: 0.25rem 0 0 0;
+            font-weight: 500;
+        }
+
+        .exam-tokens i {
+            color: #f59e0b;
+        }
+
+        .status-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .status-badge.completed {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-badge.pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-badge.upcoming {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .status-badge.insufficient-tokens {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .payment-modal .btn-close {
+            filter: brightness(0) invert(1);
+        }
+
+        .payment-form .form-control {
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .payment-form .form-control:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .payment-form .form-label {
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Token Management Styles */
+        .token-overview {
+            padding: 1rem 0;
+        }
+
+        .token-balance-display {
+            text-align: center;
+            padding: 2rem;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border-radius: 16px;
+            border: 2px solid #e2e8f0;
+        }
+
+        .balance-amount {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .token-icon {
+            font-size: 3rem;
+            color: #f59e0b;
+            margin-right: 1rem;
+            animation: pulse 2s infinite;
+        }
+
+        .balance-number {
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: #1e293b;
+            line-height: 1;
+        }
+
+        .balance-label {
+            font-size: 1.2rem;
+            color: #64748b;
+            margin-left: 0.5rem;
+            font-weight: 500;
+        }
+
+        .balance-details {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 1rem;
+        }
+
+        .detail-item {
+            display: flex;
+            align-items: center;
+            font-size: 0.9rem;
+            color: #64748b;
+        }
+
+        .detail-item i {
+            margin-right: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .token-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+        }
+
+        /* Responsive adjustments for tokens */
+        @media (max-width: 768px) {
+            .token-balance-display {
+                padding: 1.5rem 1rem;
+            }
+            
+            .balance-number {
+                font-size: 2.5rem;
+            }
+            
+            .token-icon {
+                font-size: 2rem;
+            }
+            
+            .balance-details {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .welcome-title {
+                font-size: 1.5rem;
+            }
+
+            .welcome-subtitle {
+                font-size: 1rem;
+            }
+
+            .live-class-alert {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .live-class-icon {
+                margin-right: 0;
+                margin-bottom: 1rem;
+            }
+
+            .exam-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .exam-status {
+                margin-top: 0.5rem;
+            }
+        }
+
+        /* Custom Scrollbar */
+        .info-card-body::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .info-card-body::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        .info-card-body::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 2px;
+        }
+
+        .info-card-body::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
 @endsection
 
 @section('scripts')
