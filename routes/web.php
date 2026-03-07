@@ -891,6 +891,7 @@ Route::middleware(['auth:admin'])->prefix('admin/subscriptions')->name('subscrip
     Route::get('/{subscription}/edit', [SubscriptionController::class, 'adminEdit'])->name('admin-edit');
     Route::put('/{subscription}', [SubscriptionController::class, 'adminUpdate'])->name('admin-update');
     Route::post('/{subscription}/toggle', [SubscriptionController::class, 'adminToggle'])->name('admin-toggle');
+    Route::delete('/{subscription}', [SubscriptionController::class, 'adminDestroy'])->name('admin-destroy');
     Route::get('/student-subscriptions', [SubscriptionController::class, 'studentSubscriptions'])->name('student-subscriptions');
     Route::post('/extend/{studentSubscription}', [SubscriptionController::class, 'extendSubscription'])->name('extend');
 });

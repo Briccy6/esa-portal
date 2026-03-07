@@ -6,7 +6,7 @@
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 text-gray-800">Create New Subscription</h1>
-        <a href="{{ route('admin.subscriptions.index') }}" class="btn btn-secondary">
+        <a href="{{ route('subscriptions.admin-index') }}" class="btn btn-secondary">
             <i class="fas fa-arrow-left"></i> Back to Subscriptions
         </a>
     </div>
@@ -16,7 +16,7 @@
             <h6 class="m-0 font-weight-bold text-primary">Subscription Details</h6>
         </div>
         <div class="card-body">
-            <form action="{{ route('admin.subscriptions.store') }}" method="POST">
+            <form action="{{ route('subscriptions.admin-store') }}" method="POST">
                 @csrf
                 
                 <div class="row">
@@ -151,7 +151,7 @@
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-save"></i> Create Subscription
                         </button>
-                        <a href="{{ route('admin.subscriptions.index') }}" class="btn btn-secondary">
+                        <a href="{{ route('subscriptions.admin-index') }}" class="btn btn-secondary">
                             <i class="fas fa-times"></i> Cancel
                         </a>
                     </div>

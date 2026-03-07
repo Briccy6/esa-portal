@@ -89,10 +89,26 @@ class SubscriptionController extends Controller
             'duration_days' => 'required|integer|min:1',
             'is_active' => 'boolean',
             'is_recommended' => 'boolean',
-            'features' => 'nullable|array',
+            'features' => 'nullable|string',
         ]);
 
-        $subscription = Subscription::create($request->all());
+        // Convert features string to array
+        $features = null;
+        if ($request->filled('features')) {
+            $features = array_filter(array_map('trim', explode("\n", $request->features)));
+        }
+
+        $subscription = Subscription::create([
+            'name' => $request->name,
+            'description' => $request->description,
+            'tokens_included' => $request->tokens_included,
+            'price' => $request->price,
+            'tier' => $request->tier,
+            'duration_days' => $request->duration_days,
+            'is_active' => $request->boolean('is_active', true),
+            'is_recommended' => $request->boolean('is_recommended', false),
+            'features' => $features,
+        ]);
 
         return redirect()->route('subscriptions.admin-index')
             ->with('success', 'Subscription created successfully');
@@ -114,10 +130,26 @@ class SubscriptionController extends Controller
             'duration_days' => 'required|integer|min:1',
             'is_active' => 'boolean',
             'is_recommended' => 'boolean',
-            'features' => 'nullable|array',
+            'features' => 'nullable|string',
         ]);
 
-        $subscription->update($request->all());
+        // Convert features string to array
+        $features = null;
+        if ($request->filled('features')) {
+            $features = array_filter(array_map('trim', explode("\n", $request->features)));
+        }
+
+        $subscription->update([
+            'name' => $request->name,
+            'description' => $request->description,
+            'tokens_included' => $request->tokens_included,
+            'price' => $request->price,
+            'tier' => $request->tier,
+            'duration_days' => $request->duration_days,
+            'is_active' => $request->boolean('is_active', true),
+            'is_recommended' => $request->boolean('is_recommended', false),
+            'features' => $features,
+        ]);
 
         return redirect()->route('subscriptions.admin-index')
             ->with('success', 'Subscription updated successfully');
@@ -152,5 +184,19 @@ class SubscriptionController extends Controller
 
         return redirect()->back()
             ->with('success', 'Subscription extended successfully');
+    }
+
+    public function adminDestroy(Subscription $subscription)
+    {
+        // Check if subscription has any active student subscriptions
+        if ($subscription->studentSubscriptions()->count() > 0) {
+            return redirect()->route('subscriptions.admin-index')
+                ->with('error', 'Cannot delete subscription with active student subscriptions');
+        }
+
+        $subscription->delete();
+
+        return redirect()->route('subscriptions.admin-index')
+            ->with('success', 'Subscription deleted successfully');
     }
 }

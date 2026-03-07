@@ -6,7 +6,7 @@
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 text-gray-800">Edit Subscription: {{ $subscription->name }}</h1>
-        <a href="{{ route('admin.subscriptions.index') }}" class="btn btn-secondary">
+        <a href="{{ route('subscriptions.admin-index') }}" class="btn btn-secondary">
             <i class="fas fa-arrow-left"></i> Back to Subscriptions
         </a>
     </div>
@@ -16,7 +16,7 @@
             <h6 class="m-0 font-weight-bold text-primary">Subscription Details</h6>
         </div>
         <div class="card-body">
-            <form action="{{ route('admin.subscriptions.update', $subscription->id) }}" method="POST">
+            <form action="{{ route('subscriptions.admin-update', $subscription->id) }}" method="POST">
                 @csrf
                 @method('PUT')
                 
@@ -166,11 +166,11 @@
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-save"></i> Update Subscription
                         </button>
-                        <a href="{{ route('admin.subscriptions.index') }}" class="btn btn-secondary">
+                        <a href="{{ route('subscriptions.admin-index') }}" class="btn btn-secondary">
                             <i class="fas fa-times"></i> Cancel
                         </a>
                         @if($subscription->studentSubscriptions()->count() === 0)
-                            <form action="{{ route('admin.subscriptions.destroy', $subscription->id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this subscription?')">
+                            <form action="{{ route('subscriptions.admin-destroy', $subscription->id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this subscription?')">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="btn btn-danger">

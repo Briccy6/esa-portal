@@ -6,7 +6,7 @@
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 text-gray-800">Subscription Management</h1>
-        <a href="{{ route('admin.subscriptions.create') }}" class="btn btn-primary">
+        <a href="{{ route('subscriptions.admin-create') }}" class="btn btn-primary">
             <i class="fas fa-plus"></i> Create New Subscription
         </a>
     </div>
@@ -131,10 +131,10 @@
                             </td>
                             <td>
                                 <div class="btn-group btn-group-sm" role="group">
-                                    <a href="{{ route('admin.subscriptions.edit', $subscription->id) }}" class="btn btn-outline-primary">
+                                    <a href="{{ route('subscriptions.admin-edit', $subscription->id) }}" class="btn btn-outline-primary">
                                         <i class="fas fa-edit"></i>
                                     </a>
-                                    <form action="{{ route('admin.subscriptions.toggle', $subscription->id) }}" method="POST" style="display: inline;">
+                                    <form action="{{ route('subscriptions.admin-toggle', $subscription->id) }}" method="POST" style="display: inline;">
                                         @csrf
                                         <button type="submit" class="btn btn-outline-{{ $subscription->is_active ? 'warning' : 'success' }}">
                                             <i class="fas fa-{{ $subscription->is_active ? 'pause' : 'play' }}"></i>
@@ -159,10 +159,10 @@
                 </div>
                 <div class="card-body">
                     <div class="list-group list-group-flush">
-                        <a href="{{ route('admin.subscriptions.create') }}" class="list-group-item list-group-item-action">
+                        <a href="{{ route('subscriptions.admin-create') }}" class="list-group-item list-group-item-action">
                             <i class="fas fa-plus"></i> Create New Subscription
                         </a>
-                        <a href="{{ route('admin.subscriptions.student-subscriptions') }}" class="list-group-item list-group-item-action">
+                        <a href="{{ route('subscriptions.student-subscriptions') }}" class="list-group-item list-group-item-action">
                             <i class="fas fa-users"></i> View Student Subscriptions
                         </a>
                         <a href="#" class="list-group-item list-group-item-action" onclick="exportSubscriptions()">
