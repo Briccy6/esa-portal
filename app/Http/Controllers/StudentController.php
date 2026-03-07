@@ -658,6 +658,9 @@ class StudentController extends Controller
                     throw new \Exception('Failed to create student record.');
                 }
 
+                // Initialize tokens for new student
+                $student->initializeTokens(10); // Give 10 default tokens for exams
+
                 StudentTransaction::create([
                     'student_id' => $student->id,
                     'tx_ref'     => 'CASH-' . $student->id . '-' . time() . '-' . uniqid(),
@@ -867,6 +870,9 @@ class StudentController extends Controller
             if (!$student) {
                 throw new \Exception('Failed to create student record.');
             }
+
+            // Initialize tokens for new student
+            $student->initializeTokens(10); // Give 10 default tokens for exams
 
             StudentTransaction::create([
                 'student_id'     => $student->id,

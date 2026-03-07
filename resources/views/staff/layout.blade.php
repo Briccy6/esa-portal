@@ -145,6 +145,12 @@
                                 Lessons
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('staff.subscriptions.*') ? 'active' : '' }}" href="{{ route('staff.subscriptions.index') }}">
+                                <i class="fas fa-coins me-2"></i>
+                                Subscriptions
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </div>

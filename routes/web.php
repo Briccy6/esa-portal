@@ -462,7 +462,7 @@ Route::prefix('staff')->name('staff.')->group(function () {
         Route::post('/students/generate-cards-bulk', [StudentController::class, 'generateCardsBulk'])->name('students.generate_cards_bulk');
         Route::get('/students/qr-scan/{qrData}', [StudentController::class, 'verifyQRCode'])->name('students.qr_scan');
         Route::post('/students/{student}/generate-card', [StudentController::class, 'generateStudentCard'])->name('students.generate_card');
-        Route::get('dashboard_accountant', [StaffAuthController::class, 'dashboard'])->name('dashboard.accountant');
+        Route::get('/dashboard_accountant', [StaffAuthController::class, 'dashboard'])->name('dashboard.accountant');
         
         // Staff Profile
         Route::get('profile', function () {
@@ -482,6 +482,15 @@ Route::prefix('staff')->name('staff.')->group(function () {
         Route::delete('/lesson-units/{unit}', [LessonDetailsController::class, 'destroy'])->name('lesson-units.destroy');
         Route::get('/lessons/{lesson}/details/create', [LessonDetailsController::class, 'create'])->name('lesson.details.create');
         Route::post('/lessons/{lesson}/details', [LessonDetailsController::class, 'store'])->name('lesson.details.store');
+
+        // Subscription Management Routes for Staff
+        Route::prefix('subscriptions')->name('subscriptions.')->group(function () {
+            Route::get('/', [SubscriptionController::class, 'staffIndex'])->name('index');
+            Route::get('/create', [SubscriptionController::class, 'staffCreate'])->name('create');
+            Route::post('/', [SubscriptionController::class, 'staffStore'])->name('store');
+            Route::get('/{studentSubscription}', [SubscriptionController::class, 'staffShow'])->name('show');
+            Route::get('/reports', [SubscriptionController::class, 'staffReports'])->name('reports');
+        });
     });
 });
 

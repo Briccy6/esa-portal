@@ -5,8 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\Subscription;
 use App\Models\StudentSubscription;
 use App\Models\Student;
+use App\Models\StudentTransaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class SubscriptionController extends Controller
 {
@@ -198,5 +201,165 @@ class SubscriptionController extends Controller
 
         return redirect()->route('subscriptions.admin-index')
             ->with('success', 'Subscription deleted successfully');
+    }
+
+    // Staff methods for recording subscription payments
+    public function staffIndex()
+    {
+        $staff = auth('staff')->user();
+        $subscriptions = StudentSubscription::with(['student', 'subscription'])
+            ->whereHas('student', function ($query) use ($staff) {
+                $branchIds = $staff->branches()->pluck('branches.id')->toArray();
+                $query->whereIn('branch_id', $branchIds);
+            })
+            ->orderByDesc('created_at')
+            ->paginate(20);
+
+        return view('staff.subscriptions.index', compact('subscriptions'));
+    }
+
+    public function staffCreate()
+    {
+        $staff = auth('staff')->user();
+        $subscriptions = Subscription::active()->get();
+        
+        $branchIds = $staff->branches()->pluck('branches.id')->toArray();
+        $students = Student::whereIn('branch_id', $branchIds)
+            ->orderBy('full_name')
+            ->get();
+
+        return view('staff.subscriptions.create', compact('subscriptions', 'students'));
+    }
+
+    public function staffStore(Request $request)
+    {
+        $request->validate([
+            'student_id' => 'required|exists:students,id',
+            'subscription_id' => 'required|exists:subscriptions,id',
+            'amount_paid' => 'required|numeric|min:0',
+            'payment_method' => 'required|in:cash,bank_transfer,mobile_money,other',
+            'payment_reference' => 'nullable|string|max:255',
+            'payment_date' => 'required|date',
+        ]);
+
+        $staff = auth('staff')->user();
+        $student = Student::findOrFail($request->student_id);
+        $subscription = Subscription::findOrFail($request->subscription_id);
+
+        // Verify staff has access to this student
+        $branchIds = $staff->branches()->pluck('branches.id')->toArray();
+        if (!in_array($student->branch_id, $branchIds)) {
+            return back()->with('error', 'You do not have access to this student.');
+        }
+
+        DB::beginTransaction();
+        try {
+            // Create student subscription
+            $studentSubscription = StudentSubscription::create([
+                'student_id' => $student->id,
+                'subscription_id' => $subscription->id,
+                'paid_amount' => $request->amount_paid,
+                'payment_reference' => $request->payment_reference,
+                'payment_status' => 'paid',
+                'starts_at' => now(),
+                'ends_at' => now()->addDays($subscription->duration_days),
+                'is_active' => true,
+            ]);
+
+            // Create payment transaction record
+            StudentTransaction::create([
+                'student_id' => $student->id,
+                'tx_ref' => 'SUB-' . $student->id . '-' . time() . '-' . uniqid(),
+                'type' => 'subscription',
+                'amount' => $request->amount_paid,
+                'currency' => 'RWF',
+                'status' => 'successful',
+                'meta' => json_encode([
+                    'method' => $request->payment_method,
+                    'subscription_id' => $subscription->id,
+                    'subscription_name' => $subscription->name,
+                    'tokens_included' => $subscription->tokens_included,
+                    'recorded_by' => $staff->name,
+                    'payment_reference' => $request->payment_reference,
+                ]),
+                'paid_at' => $request->payment_date,
+            ]);
+
+            // Initialize tokens for student if not already done
+            $student->initializeTokens();
+            
+            // Add tokens from subscription
+            $student->token->addTokens(
+                $subscription->tokens_included,
+                "Tokens from {$subscription->name} subscription",
+                'subscription'
+            );
+
+            DB::commit();
+
+            Log::info('Subscription payment recorded', [
+                'student_id' => $student->id,
+                'subscription_id' => $subscription->id,
+                'amount' => $request->amount_paid,
+                'tokens_added' => $subscription->tokens_included,
+                'staff_id' => $staff->id,
+            ]);
+
+            return redirect()->route('staff.subscriptions.index')
+                ->with('success', "Subscription payment recorded successfully! {$subscription->tokens_included} tokens added to {$student->full_name}'s account.");
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            Log::error('Subscription payment recording failed', [
+                'error' => $e->getMessage(),
+                'student_id' => $student->id,
+                'subscription_id' => $subscription->id,
+            ]);
+
+            return back()->with('error', 'Failed to record subscription payment: ' . $e->getMessage())
+                ->withInput();
+        }
+    }
+
+    public function staffShow(StudentSubscription $studentSubscription)
+    {
+        $staff = auth('staff')->user();
+        
+        // Verify staff has access to this student
+        $branchIds = $staff->branches()->pluck('branches.id')->toArray();
+        if (!in_array($studentSubscription->student->branch_id, $branchIds)) {
+            abort(403, 'Unauthorized access to this subscription.');
+        }
+
+        $studentSubscription->load(['student', 'subscription']);
+        
+        return view('staff.subscriptions.show', compact('studentSubscription'));
+    }
+
+    public function staffReports()
+    {
+        $staff = auth('staff')->user();
+        
+        $subscriptions = StudentSubscription::with(['student', 'subscription'])
+            ->whereHas('student', function ($query) use ($staff) {
+                $branchIds = $staff->branches()->pluck('branches.id')->toArray();
+                $query->whereIn('branch_id', $branchIds);
+            })
+            ->where('payment_status', 'paid')
+            ->orderByDesc('created_at')
+            ->get();
+
+        $totalRevenue = $subscriptions->sum('paid_amount');
+        $totalTokens = $subscriptions->sum(function ($sub) {
+            return $sub->subscription->tokens_included;
+        });
+        $totalSubscriptions = $subscriptions->count();
+
+        return view('staff.subscriptions.reports', compact(
+            'subscriptions',
+            'totalRevenue',
+            'totalTokens',
+            'totalSubscriptions'
+        ));
     }
 }
