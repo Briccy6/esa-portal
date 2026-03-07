@@ -7,6 +7,7 @@ use App\Models\Term;
 use App\Models\Course;
 use App\Models\Teacher;
 use App\Models\LessonUnit;
+use App\Models\AcademicYear;
 
 class Lesson extends Model
 {
@@ -17,6 +18,7 @@ class Lesson extends Model
         'lesson_weight',
         'max_test_marks',
         'max_exam_marks',
+        'academic_year_id',
     ];
 
     public function teacher()
@@ -27,6 +29,11 @@ class Lesson extends Model
     public function course()
     {
         return $this->belongsTo(Course::class, 'course_id');
+    }
+
+    public function academicYear()
+    {
+        return $this->belongsTo(AcademicYear::class, 'academic_year_id');
     }
 
     public function terms()

@@ -1,4 +1,4 @@
-@extends('staff.layout')
+@extends('staff.partials.sidebar_sec')
 
 @section('title', 'Accountant Dashboard')
 

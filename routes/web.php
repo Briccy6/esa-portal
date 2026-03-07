@@ -334,26 +334,6 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::get('resources/{id}/preview', [\App\Http\Controllers\Admin\ResourceController::class, 'previewDocument'])->name('resources.preview');
     Route::get('resources/get-lessons/{courseId}', [\App\Http\Controllers\Admin\ResourceController::class, 'getLessons'])->name('resources.get-lessons');
 
-    // Lesson Management
-    Route::resource('lessons', LessonController::class);
-    Route::get('/teachers/by-course/{courseId}', function($courseId) {
-        $teachers = DB::table('teacher_course')
-            ->join('teachers', 'teacher_course.teacher_id', '=', 'teachers.id')
-            ->where('teacher_course.course_id', $courseId)
-            ->select('teachers.id', 'teachers.teacher_name')
-            ->get();
-        return response()->json(['teachers' => $teachers]);
-    })->name('teachers.by.course');
-    Route::get('/lesson-units', [LessonDetailsController::class, 'index'])->name('lesson-units.index');
-    Route::get('/lessons/{lesson}/units/create', [LessonDetailsController::class, 'create'])->name('lesson-units.create');
-    Route::post('/lessons/{lesson}/units', [LessonDetailsController::class, 'store'])->name('lesson-units.store');
-    Route::get('/lesson-units/{unit}', [LessonDetailsController::class, 'show'])->name('lesson-units.show');
-    Route::get('/lesson-units/{unit}/edit', [LessonDetailsController::class, 'edit'])->name('lesson-units.edit');
-    Route::put('/lesson-units/{unit}', [LessonDetailsController::class, 'update'])->name('lesson-units.update');
-    Route::delete('/lesson-units/{unit}', [LessonDetailsController::class, 'destroy'])->name('lesson-units.destroy');
-    Route::get('/lessons/{lesson}/details/create', [LessonDetailsController::class, 'create'])->name('lesson.details.create');
-    Route::post('/lessons/{lesson}/details', [LessonDetailsController::class, 'store'])->name('lesson.details.store');
-
     // Report Cards
     Route::get('report-cards', [ReportCardController::class, 'index'])->name('report-cards.index');
     Route::get('report-cards/create', [ReportCardController::class, 'create'])->name('report-cards.create');
@@ -382,6 +362,13 @@ Route::middleware(['auth:staff'])->prefix('secretary')->name('secretary.')->grou
     Route::post('/logout', [SecretaryAuthController::class, 'logout'])->name('logout');
     
     Route::get('/dashboard', [SecretaryAuthController::class, 'dashboard'])->name('dashboard');
+    
+    // Student Registration Management
+    Route::get('/student-registration', [App\Http\Controllers\Secretary\StudentRegistrationController::class, 'index'])->name('student-registration.index');
+    Route::get('/student-registration/{student}', [App\Http\Controllers\Secretary\StudentRegistrationController::class, 'show'])->name('student-registration.show');
+    Route::get('/student-registration/{student}/edit', [App\Http\Controllers\Secretary\StudentRegistrationController::class, 'edit'])->name('student-registration.edit');
+    Route::put('/student-registration/{student}', [App\Http\Controllers\Secretary\StudentRegistrationController::class, 'update'])->name('student-registration.update');
+    Route::post('/student-registration/{student}/complete', [App\Http\Controllers\Secretary\StudentRegistrationController::class, 'completeRegistration'])->name('student-registration.complete');
     
     // Token Management (secretary-specific)
     Route::get('/tokens', [TokenController::class, 'secretaryIndex'])->name('tokens.index');
@@ -462,7 +449,9 @@ Route::prefix('staff')->name('staff.')->group(function () {
         // Student Management Routes
         Route::get('/students/{student}/edit', [StudentController::class, 'editByStaff'])->name('students.edit');
         Route::put('/students/{student}', [StudentController::class, 'updateByStaff'])->name('students.update');
+        Route::put('/students/{student}/nesa', [StudentController::class, 'registerNesa'])->name('students.nesa');
         Route::post('/students/{student}/complete-registration', [StudentController::class, 'completeRegistration'])->name('students.complete_registration');
+        Route::get('/students/{student}/view-document/{documentType}', [StudentController::class, 'viewDocument'])->name('students.view_document');
 
         Route::get('dashboard_dos', [StaffAuthController::class, 'dashboard'])->name('dashboard.dos');
         Route::get('/students', [StudentController::class, 'index'])->name('students.index');

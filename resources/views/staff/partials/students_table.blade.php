@@ -1,5 +1,65 @@
-
 {{-- resources/views/staff/partials/students_table.blade.php --}}
+
+<style>
+.action-btn-icon {
+    width: 36px;
+    height: 36px;
+    padding: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    margin: 2px;
+    position: relative;
+}
+
+.action-btn-icon:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.action-btn-icon i {
+    margin: 0;
+}
+
+.action-btn-icon::after {
+    content: attr(data-tooltip-text);
+    position: absolute;
+    bottom: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+    z-index: 1000;
+}
+
+.action-btn-icon:hover::after {
+    opacity: 1;
+}
+
+.student-photo-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #e9ecef;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Tooltip styling */
+[data-bs-toggle="tooltip"] {
+    position: relative;
+}
+</style>
 
 <!-- Enhanced Alert Messages -->
 <div class="alert-container">
@@ -64,11 +124,9 @@
                 <tr>
                     <th class="d-none d-md-table-cell">#</th>
                     <th>Student Info</th>
-                    <th class="d-none d-lg-table-cell">Course</th>
                     <th class="d-none d-lg-table-cell">Branch</th>
-                    <th class="d-none d-xl-table-cell">Total Fees</th>
-                    <th class="d-none d-lg-table-cell">Paid</th>
-                    <th>Balance</th>
+                 
+                    <th class="d-none d-lg-table-cell">NESA Status</th>
                     <th class="d-none d-lg-table-cell">Registration Status</th>
                     <th class="text-center">Actions</th>
                 </tr>
@@ -76,7 +134,8 @@
             <tbody>
                 @forelse($students as $index => $student)
                     @php
-                        $course = \App\Models\Course::find($student->course_id);
+                        $student->load(['course', 'branch']); // Ensure relationships are loaded
+                        $course = $student->course;
                         $discount = $student->discount ?? 0;
 
                         // Calculate fees
@@ -124,17 +183,31 @@
                                 <div class="student-avatar d-none d-sm-flex">
                                     @if($student->passport_photo)
                                         @php
-                                            // Check if it's already base64 with data:image prefix
+                                            // DEBUG: Show passport photo data
+                                            echo '<!-- DEBUG: Passport photo data for student ' . $student->id . ' (' . $student->full_name . ') -->';
+                                            echo '<!-- DEBUG: Raw passport_photo value: "' . $student->passport_photo . '" -->';
+                                            echo '<!-- DEBUG: Passport photo length: ' . strlen($student->passport_photo) . ' -->';
+                                            
+                                            // Check if it's a file path or base64
                                             if(strpos($student->passport_photo, 'data:image') === 0) {
+                                                // It's already base64 with prefix
                                                 $photoSrc = $student->passport_photo;
+                                                echo '<!-- DEBUG: Detected as base64 with prefix -->';
+                                            } elseif(strpos($student->passport_photo, 'students/') !== false) {
+                                                // It's a file path, create URL
+                                                $photoSrc = Storage::url($student->passport_photo);
+                                                echo '<!-- DEBUG: Detected as file path, URL: "' . $photoSrc . '" -->';
                                             } else {
-                                                // If it's base64 without prefix, add it
+                                                // It might be base64 without prefix
                                                 $photoSrc = 'data:image/jpeg;base64,' . $student->passport_photo;
+                                                echo '<!-- DEBUG: Treating as base64 without prefix -->';
                                             }
+                                            
+                                            echo '<!-- DEBUG: Final photo source: "' . $photoSrc . '" -->';
                                         @endphp
                                         <img src="{{ $photoSrc }}" 
                                              alt="{{ $student->full_name }}" 
-                                             class="avatar-img"
+                                             class="student-photo-avatar"
                                              onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                                         <div class="avatar-placeholder" style="display: none;">
                                             {{ strtoupper(substr($student->full_name, 0, 2)) }}
@@ -146,93 +219,110 @@
                                     @endif
                                 </div>
                                 <div class="student-details">
-                                    <span class="student-name d-block">{{ $student->full_name }}</span>
+                                    <span class="student-name d-block">
+                                        {{ $student->full_name }}
+                                        @if($student->nesa_registered)
+                                            <small class="text-success d-block ms-2">
+                                                <i class="fas fa-check-circle"></i> 
+                                                SDMS: {{ $student->nesa_sdms_code ?? 'N/A' }}
+                                            </small>
+                                        @endif
+                                    </span>
                                     <small class="text-muted d-block">{{ $student->reg_number }}</small>
                                     <small class="text-muted d-block d-lg-none">
-                                        {{ $student->course->abbreviation ?? '-' }} | {{ $student->branch->name ?? '-' }}
+                                        {{ $student->branch->name ?? '-' }}
                                     </small>
                                 </div>
                             </div>
                         </td>
-                        <td class="d-none d-lg-table-cell">{{ $student->course->abbreviation ?? '-' }}</td>
                         <td class="d-none d-lg-table-cell">{{ $student->branch->name ?? '-' }}</td>
-                        <td class="d-none d-xl-table-cell">
-                            <span class="badge bg-primary">
-                                {{ number_format($totalToPay, 0) }} RWF
-                            </span>
-                        </td>
                         <td class="d-none d-lg-table-cell">
-                            <span class="badge bg-info">
-                                {{ number_format($totalPaid, 0) }} RWF
-                            </span>
-                        </td>
-                        <td>
-                            <span class="badge {{ $remaining > 0 ? 'bg-warning text-dark' : 'bg-success' }}">
-                                {{ number_format($remaining, 0) }} RWF
-                            </span>
+                            @if($student->nesa_registered)
+                                <span class="badge bg-success" title="NESA Registered">
+                                    <i class="fas fa-check-circle"></i>
+                                </span>
+                            @else
+                                <span class="badge bg-secondary" title="Not Registered">
+                                    <i class="fas fa-times-circle"></i>
+                                </span>
+                            @endif
                         </td>
                         <td class="d-none d-lg-table-cell">
                             @if($registrationComplete)
-                                <span class="badge bg-success">
-                                    <i class="fas fa-check-circle"></i> Complete
+                                <span class="badge bg-success" title="Registration Complete">
+                                    <i class="fas fa-check-circle"></i>
                                 </span>
                             @else
-                                <span class="badge bg-warning text-dark">
-                                    <i class="fas fa-exclamation-triangle"></i> Incomplete
+                                <span class="badge bg-warning text-dark" title="Registration Incomplete">
+                                    <i class="fas fa-exclamation-triangle"></i>
                                 </span>
                             @endif
                         </td>
                         <td>
-                            <div class="btn-group-vertical d-grid gap-1" role="group">
+                            <div class="btn-group-horizontal d-flex gap-1 flex-wrap" role="group">
                                 <!-- Edit Student Button -->
                                 <a href="{{ route('staff.students.edit', $student) }}" 
-                                   class="btn btn-sm btn-outline-primary"
-                                   title="Edit Student Information">
-                                    <i class="fas fa-edit me-1"></i> Edit Info
+                                   class="btn btn-sm btn-outline-primary action-btn-icon"
+                                   title="Edit Student Information"
+                                   data-bs-toggle="tooltip"
+                                   data-tooltip-text="Edit Info">
+                                    <i class="fas fa-edit"></i>
                                 </a>
 
                                 <!-- Complete Registration Button (if incomplete) -->
                                 @if(!$registrationComplete)
-                                    <button class="btn btn-sm btn-outline-warning" 
+                                    <button class="btn btn-sm btn-outline-warning action-btn-icon" 
                                             data-bs-toggle="modal" 
                                             data-bs-target="#completeRegModal{{ $student->id }}"
-                                            title="Complete Registration">
-                                        <i class="fas fa-clipboard-check me-1"></i> Complete Reg
+                                            title="Complete Registration"
+                                            data-bs-toggle="tooltip"
+                                            data-tooltip-text="Complete Reg">
+                                        <i class="fas fa-clipboard-check"></i>
                                     </button>
                                 @endif
 
-                                <button class="btn btn-sm btn-primary" 
+                                <button class="btn btn-sm btn-primary action-btn-icon" 
                                         data-bs-toggle="modal" 
                                         data-bs-target="#payModal{{ $student->id }}"
-                                        title="Record Cash Payment">
-                                    <i class="fas fa-money-bill-wave me-1"></i> Pay Cash
+                                        title="Record Cash Payment"
+                                        data-bs-toggle="tooltip"
+                                        data-tooltip-text="Pay Cash">
+                                    <i class="fas fa-money-bill-wave"></i>
                                 </button>
                                 
-                                <button class="btn btn-sm btn-warning" 
+                                <button class="btn btn-sm btn-warning action-btn-icon" 
                                         data-bs-toggle="modal"
                                         data-bs-target="#generateCardModal{{ $student->id }}"
-                                        title="Generate Student ID Card">
-                                    <i class="fas fa-id-card me-1"></i> ID Card
+                                        title="Generate Student ID Card"
+                                        data-bs-toggle="tooltip"
+                                        data-tooltip-text="ID Card">
+                                    <i class="fas fa-id-card"></i>
                                 </button>
                                 
-                                <button class="btn btn-sm btn-info text-white" 
+                                <button class="btn btn-sm btn-info text-white action-btn-icon" 
                                         data-bs-toggle="modal"
                                         data-bs-target="#transcriptModal{{ $student->id }}"
-                                        title="View Payment Transcript">
-                                    <i class="fas fa-file-invoice-dollar me-1"></i> Transcript
+                                        title="View Payment Transcript"
+                                        data-bs-toggle="tooltip"
+                                        data-tooltip-text="Transcript">
+                                    <i class="fas fa-file-invoice-dollar"></i>
                                 </button>
                                 
                                 <a href="{{ route('students.transcript.send', $student->id) }}" 
-                                   class="btn btn-sm btn-success"
-                                   title="Email Transcript to Student">
-                                    <i class="fas fa-envelope me-1"></i> Send Email
+                                   class="btn btn-sm btn-success action-btn-icon"
+                                   title="Email Transcript to Student"
+                                   data-bs-toggle="tooltip"
+                                   data-tooltip-text="Send Email">
+                                    <i class="fas fa-envelope"></i>
                                 </a>
 
                                 @if(auth()->user() && auth()->user()->email === 'hirwabran9@gmail.com')
-                                <button class="btn btn-sm btn-danger" 
+                                <button class="btn btn-sm btn-danger action-btn-icon" 
                                         onclick="confirmDelete({{ $student->id }}, '{{ addslashes($student->full_name) }}')"
-                                        title="Delete Student">
-                                    <i class="fas fa-trash me-1"></i> Delete
+                                        title="Delete Student"
+                                        data-bs-toggle="tooltip"
+                                        data-tooltip-text="Delete">
+                                    <i class="fas fa-trash"></i>
                                 </button>
                                 @endif
                             </div>
@@ -281,6 +371,9 @@
                                                 @if($student->id_photo)
                                                     <small class="text-success">
                                                         <i class="fas fa-check-circle"></i> Current photo exists
+                                                        <a href="javascript:void(0)" onclick="viewDocument('id_photo', {{ $student->id }})" class="text-primary ms-1">
+                                                            <i class="fas fa-eye"></i> View
+                                                        </a>
                                                     </small>
                                                 @endif
                                             </div>
@@ -292,6 +385,59 @@
                                                 @if($student->passport_photo)
                                                     <small class="text-success">
                                                         <i class="fas fa-check-circle"></i> Current photo exists
+                                                        <a href="javascript:void(0)" onclick="viewDocument('passport_photo', {{ $student->id }})" class="text-primary ms-1">
+                                                            <i class="fas fa-eye"></i> View
+                                                        </a>
+                                                    </small>
+                                                @endif
+                                            </div>
+                                        </div>
+
+                                        <!-- Supporting Documents Section -->
+                                        <hr class="my-4">
+                                        <h6 class="mb-3">
+                                            <i class="fas fa-file-alt me-2"></i>Supporting Documents
+                                        </h6>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-4 mb-3">
+                                                <label class="form-label">S3 Result Slip</label>
+                                                <input type="file" name="senior3_document" class="form-control" 
+                                                       accept=".pdf,.jpg,.jpeg,.png">
+                                                @if($student->senior3_document)
+                                                    <small class="text-success d-block">
+                                                        <i class="fas fa-check-circle"></i> Document uploaded
+                                                        <a href="javascript:void(0)" onclick="viewDocument('senior3_document', {{ $student->id }})" class="text-primary ms-1">
+                                                            <i class="fas fa-eye"></i> View
+                                                        </a>
+                                                    </small>
+                                                @endif
+                                            </div>
+
+                                            <div class="col-md-4 mb-3">
+                                                <label class="form-label">S6 Result Slip</label>
+                                                <input type="file" name="senior6_document" class="form-control" 
+                                                       accept=".pdf,.jpg,.jpeg,.png">
+                                                @if($student->senior6_document)
+                                                    <small class="text-success d-block">
+                                                        <i class="fas fa-check-circle"></i> Document uploaded
+                                                        <a href="javascript:void(0)" onclick="viewDocument('senior6_document', {{ $student->id }})" class="text-primary ms-1">
+                                                            <i class="fas fa-eye"></i> View
+                                                        </a>
+                                                    </small>
+                                                @endif
+                                            </div>
+
+                                            <div class="col-md-4 mb-3">
+                                                <label class="form-label">Other Supporting Document</label>
+                                                <input type="file" name="other_supporting_document" class="form-control" 
+                                                       accept=".pdf,.jpg,.jpeg,.png">
+                                                @if($student->other_supporting_document)
+                                                    <small class="text-success d-block">
+                                                        <i class="fas fa-check-circle"></i> Document uploaded
+                                                        <a href="javascript:void(0)" onclick="viewDocument('other_supporting_document', {{ $student->id }})" class="text-primary ms-1">
+                                                            <i class="fas fa-eye"></i> View
+                                                        </a>
                                                     </small>
                                                 @endif
                                             </div>
@@ -879,6 +1025,177 @@ function handlePayment(event, studentId) {
     });
 }
 
+// Handle Complete Registration
+function handleCompleteRegistration(event, studentId) {
+    event.preventDefault();
+    
+    const form = document.getElementById(`completeRegForm${studentId}`);
+    const formData = new FormData(form);
+    const submitBtn = form.querySelector('button[type="submit"]');
+    
+    // Disable button and show loading
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
+    
+    // Get CSRF token
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+    
+    // Make AJAX request
+    fetch(`/staff/students/${studentId}/complete-registration`, {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': csrfToken,
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: formData,
+        credentials: 'same-origin'
+    })
+    .then(async response => {
+        const contentType = response.headers.get('content-type');
+        let data;
+        
+        if (contentType && contentType.includes('application/json')) {
+            data = await response.json();
+        } else {
+            const text = await response.text();
+            console.log('Non-JSON response:', text);
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                data = { 
+                    success: response.ok, 
+                    message: response.ok ? 'Registration completed successfully' : 'Registration completion failed'
+                };
+            }
+        }
+        
+        return { status: response.status, ok: response.ok, data };
+    })
+    .then(({ status, ok, data }) => {
+        if (ok && data.success !== false) {
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById(`completeRegModal${studentId}`));
+            if (modal) modal.hide();
+            
+            // Show success message
+            const message = data.message || 'Registration completed successfully';
+            showAlert('success', message);
+            
+            // Reload page after short delay
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        } else {
+            // Show error message
+            const message = data.message || data.error || 'Registration completion failed. Please try again.';
+            showAlert('danger', message);
+            
+            // Re-enable button
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-check me-1"></i>Complete Registration';
+        }
+    })
+    .catch(error => {
+        console.error('Registration completion error:', error);
+        showAlert('danger', 'Registration completion failed. Please check your connection and try again.');
+        
+        // Re-enable button
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-check me-1"></i>Complete Registration';
+    });
+}
+
+// View Document
+function viewDocument(documentType, studentId) {
+    // Create a modal to display the document
+    const modalHtml = `
+        <div class="modal fade" id="documentModal" tabindex="-1">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Document Viewer</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading document...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if present
+    const existingModal = document.getElementById('documentModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add modal to body
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('documentModal'));
+    modal.show();
+    
+    // Load document content
+    fetch(`/staff/students/${studentId}/view-document/${documentType}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to load document');
+            }
+            return response.blob();
+        })
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const modalBody = document.querySelector('#documentModal .modal-body');
+            
+            // Check if it's an image or PDF
+            if (blob.type.startsWith('image/')) {
+                modalBody.innerHTML = `
+                    <img src="${url}" class="img-fluid" alt="Document" style="max-height: 70vh;">
+                    <div class="mt-3">
+                        <a href="${url}" download="document" class="btn btn-primary">
+                            <i class="fas fa-download me-1"></i>Download
+                        </a>
+                    </div>
+                `;
+            } else if (blob.type === 'application/pdf') {
+                modalBody.innerHTML = `
+                    <iframe src="${url}" width="100%" height="500px" style="border: none;"></iframe>
+                    <div class="mt-3">
+                        <a href="${url}" download="document.pdf" class="btn btn-primary">
+                            <i class="fas fa-download me-1"></i>Download
+                        </a>
+                    </div>
+                `;
+            } else {
+                modalBody.innerHTML = `
+                    <div class="alert alert-info">
+                        <i class="fas fa-file me-2"></i>
+                        Document is ready for download
+                    </div>
+                    <a href="${url}" download="document" class="btn btn-primary">
+                        <i class="fas fa-download me-1"></i>Download Document
+                    </a>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading document:', error);
+            const modalBody = document.querySelector('#documentModal .modal-body');
+            modalBody.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Failed to load document. Please try again.
+                </div>
+            `;
+        });
+}
+
 // Enhanced showAlert function with better positioning
 function showAlert(type, message) {
     const alertHtml = `
@@ -918,4 +1235,14 @@ function showAlert(type, message) {
     }, 5000);
 }
 
+// Initialize Bootstrap tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+    tooltipList.forEach(function (tooltip) {
+        tooltip.show()
+    });
+});
 </script>

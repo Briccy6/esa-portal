@@ -535,9 +535,9 @@
                 </div>
                 
                 <div class="nav-item">
-                    <a href="#" class="nav-link">
+                    <a href="{{ route('secretary.student-registration.index') }}" class="nav-link {{ request()->routeIs('secretary.student-registration.*') ? 'active' : '' }}">
                         <i class="fas fa-user-graduate"></i>
-                        <span class="nav-text">Students</span>
+                        <span class="nav-text">Complete Registration</span>
                     </a>
                 </div>
                 
