@@ -14,7 +14,7 @@ return new class extends Migration
         if (!Schema::hasTable('terms')) {
             Schema::create('terms', function (Blueprint $table) {
                 $table->id();
-                $table->string('name'); // e.g. "Term 1", "Term 2", "Term 3"
+                $table->string('name')->nullable(); // e.g. "Term 1", "Term 2", "Term 3"
                 $table->foreignId('academic_year_id')->constrained()->onDelete('cascade');
                 $table->date('start_date');
                 $table->date('end_date');

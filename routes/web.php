@@ -334,6 +334,26 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::get('resources/{id}/preview', [\App\Http\Controllers\Admin\ResourceController::class, 'previewDocument'])->name('resources.preview');
     Route::get('resources/get-lessons/{courseId}', [\App\Http\Controllers\Admin\ResourceController::class, 'getLessons'])->name('resources.get-lessons');
 
+    // Lesson Management
+    Route::resource('lessons', LessonController::class);
+    Route::get('/teachers/by-course/{courseId}', function($courseId) {
+        $teachers = DB::table('teacher_course')
+            ->join('teachers', 'teacher_course.teacher_id', '=', 'teachers.id')
+            ->where('teacher_course.course_id', $courseId)
+            ->select('teachers.id', 'teachers.teacher_name')
+            ->get();
+        return response()->json(['teachers' => $teachers]);
+    })->name('teachers.by.course');
+    Route::get('/lesson-units', [LessonDetailsController::class, 'index'])->name('lesson-units.index');
+    Route::get('/lessons/{lesson}/units/create', [LessonDetailsController::class, 'create'])->name('lesson-units.create');
+    Route::post('/lessons/{lesson}/units', [LessonDetailsController::class, 'store'])->name('lesson-units.store');
+    Route::get('/lesson-units/{unit}', [LessonDetailsController::class, 'show'])->name('lesson-units.show');
+    Route::get('/lesson-units/{unit}/edit', [LessonDetailsController::class, 'edit'])->name('lesson-units.edit');
+    Route::put('/lesson-units/{unit}', [LessonDetailsController::class, 'update'])->name('lesson-units.update');
+    Route::delete('/lesson-units/{unit}', [LessonDetailsController::class, 'destroy'])->name('lesson-units.destroy');
+    Route::get('/lessons/{lesson}/details/create', [LessonDetailsController::class, 'create'])->name('lesson.details.create');
+    Route::post('/lessons/{lesson}/details', [LessonDetailsController::class, 'store'])->name('lesson.details.store');
+
     // Report Cards
     Route::get('report-cards', [ReportCardController::class, 'index'])->name('report-cards.index');
     Route::get('report-cards/create', [ReportCardController::class, 'create'])->name('report-cards.create');

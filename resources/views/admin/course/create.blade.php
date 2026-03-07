@@ -86,6 +86,11 @@
         <button type="button" class="btn btn-outline-warning" onclick="showFeeInput('discount')">Add Discount</button>
     </div>
     <div id="fee-inputs">
+        {{-- Always include hidden inputs for optional fees to prevent null errors --}}
+        <input type="hidden" name="practical_fee" value="0">
+        <input type="hidden" name="trip_fee" value="0">
+        <input type="hidden" name="discount_fee" value="0">
+        
         {{-- Dynamic fee inputs will appear here --}}
         @foreach(['registration', 'tuition', 'practical', 'trip', 'discount'] as $type)
             @if(old($type . '_fee'))

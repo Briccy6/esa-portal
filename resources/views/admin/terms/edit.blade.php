@@ -12,7 +12,7 @@
                             <i class="fas fa-edit fa-2x"></i>
                         </div>
                         <div>
-                            <h2 class="mb-1 fw-bold">Edit {{ $term->term }}</h2>
+                            <h2 class="mb-1 fw-bold">Edit {{ $term->name }}</h2>
                             <p class="mb-0 opacity-90">Update term information and dates</p>
                         </div>
                     </div>
@@ -57,12 +57,12 @@
                                     $badgeClass = 'bg-info';
                                     $icon = 'fas fa-clock';
                                     
-                                    if($term->starting_date && $term->ending_date) {
-                                        if($now->lt($term->starting_date)) {
+                                    if($term->start_date && $term->end_date) {
+                                        if($now->lt($term->start_date)) {
                                             $status = 'upcoming';
                                             $badgeClass = 'bg-info';
                                             $icon = 'fas fa-clock';
-                                        } elseif($now->between($term->starting_date, $term->ending_date)) {
+                                        } elseif($now->between($term->start_date, $term->end_date)) {
                                             $status = 'active';
                                             $badgeClass = 'bg-success';
                                             $icon = 'fas fa-play-circle';
@@ -111,18 +111,18 @@
                                 <span class="input-group-text bg-light border-end-0">
                                     <i class="fas fa-bookmark text-muted"></i>
                                 </span>
-                                <input type="text" class="form-control border-start-0 bg-light" value="{{ $term->term }}" readonly>
+                                <input type="text" class="form-control border-start-0 bg-light" value="{{ $term->name }}" readonly>
                             </div>
-                            <input type="hidden" name="term" value="{{ $term->term }}">
+                            <input type="hidden" name="name" value="{{ $term->name }}">
                         </div>
 
                         <!-- Date Fields Row -->
                         <div class="row g-3">
-                            <!-- Starting Date -->
+                            <!-- Start Date -->
                             <div class="col-md-6">
                                 <div class="form-group mb-4">
-                                    <label for="starting_date" class="form-label fw-semibold text-dark mb-2">
-                                        <i class="fas fa-play-circle me-2 text-success"></i>Starting Date
+                                    <label for="start_date" class="form-label fw-semibold text-dark mb-2">
+                                        <i class="fas fa-play-circle me-2 text-success"></i>Start Date
                                     </label>
                                     <div class="input-group">
                                         <span class="input-group-text border-end-0">
@@ -130,36 +130,36 @@
                                         </span>
                                         <input
                                             type="date"
-                                            name="starting_date"
-                                            id="starting_date"
-                                            class="form-control border-start-0 date-input @error('starting_date') is-invalid @enderror"
-                                            value="{{ old('starting_date', $term->starting_date ? $term->starting_date->format('Y-m-d') : '') }}"
+                                            name="start_date"
+                                            id="start_date"
+                                            class="form-control border-start-0 date-input @error('start_date') is-invalid @enderror"
+                                            value="{{ old('start_date', $term->start_date ? $term->start_date->format('Y-m-d') : '') }}"
                                             required
-                                            min="{{ getMinStartDate($term->academicYear, $existingTerms ?? collect(), $term->term) }}"
+                                            min="{{ $term->academicYear->starting_date->format('Y-m-d') }}"
                                             max="{{ $term->academicYear->expiry_date->format('Y-m-d') }}"
                                         >
-                                        @error('starting_date')
+                                        @error('start_date')
                                             <div class="invalid-feedback">{{ $message }}</div>
                                         @else
                                             <div class="invalid-feedback">
-                                                Please select a valid starting date.
+                                                Please select a valid start date.
                                             </div>
                                         @enderror
                                     </div>
-                                    @if($term->starting_date)
+                                    @if($term->start_date)
                                         <small class="text-muted mt-1 d-block">
                                             <i class="fas fa-info-circle me-1"></i>
-                                            Current: {{ $term->starting_date->format('M d, Y (l)') }}
+                                            Current: {{ $term->start_date->format('M d, Y (l)') }}
                                         </small>
                                     @endif
                                 </div>
                             </div>
 
-                            <!-- Ending Date -->
+                            <!-- End Date -->
                             <div class="col-md-6">
                                 <div class="form-group mb-4">
-                                    <label for="ending_date" class="form-label fw-semibold text-dark mb-2">
-                                        <i class="fas fa-stop-circle me-2 text-danger"></i>Ending Date
+                                    <label for="end_date" class="form-label fw-semibold text-dark mb-2">
+                                        <i class="fas fa-stop-circle me-2 text-danger"></i>End Date
                                     </label>
                                     <div class="input-group">
                                         <span class="input-group-text border-end-0">
@@ -167,26 +167,26 @@
                                         </span>
                                         <input
                                             type="date"
-                                            name="ending_date"
-                                            id="ending_date"
-                                            class="form-control border-start-0 date-input @error('ending_date') is-invalid @enderror"
-                                            value="{{ old('ending_date', $term->ending_date ? $term->ending_date->format('Y-m-d') : '') }}"
+                                            name="end_date"
+                                            id="end_date"
+                                            class="form-control border-start-0 date-input @error('end_date') is-invalid @enderror"
+                                            value="{{ old('end_date', $term->end_date ? $term->end_date->format('Y-m-d') : '') }}"
                                             required
-                                            min="{{ old('starting_date', $term->starting_date ? $term->starting_date->format('Y-m-d') : '') }}"
+                                            min="{{ old('start_date', $term->start_date ? $term->start_date->format('Y-m-d') : '') }}"
                                             max="{{ $term->academicYear->expiry_date->format('Y-m-d') }}"
                                         >
-                                        @error('ending_date')
+                                        @error('end_date')
                                             <div class="invalid-feedback">{{ $message }}</div>
                                         @else
                                             <div class="invalid-feedback">
-                                                Please select a valid ending date.
+                                                Please select a valid end date.
                                             </div>
                                         @enderror
                                     </div>
-                                    @if($term->ending_date)
+                                    @if($term->end_date)
                                         <small class="text-muted mt-1 d-block">
                                             <i class="fas fa-info-circle me-1"></i>
-                                            Current: {{ $term->ending_date->format('M d, Y (l)') }}
+                                            Current: {{ $term->end_date->format('M d, Y (l)') }}
                                         </small>
                                     @endif
                                 </div>
@@ -199,9 +199,9 @@
                                 <i class="fas fa-clock me-2"></i>Duration Information
                             </h6>
                             <div id="durationDisplay" class="text-muted">
-                                @if($term->starting_date && $term->ending_date)
+                                @if($term->start_date && $term->end_date)
                                     @php
-                                        $duration = $term->starting_date->diffInDays($term->ending_date);
+                                        $duration = $term->start_date->diffInDays($term->end_date);
                                         $weeks = floor($duration / 7);
                                         $days = $duration % 7;
                                     @endphp
@@ -223,7 +223,7 @@
                                     <i class="fas fa-undo me-2"></i>Reset
                                 </button>
                                 <button type="submit" class="btn btn-warning btn-lg px-5 py-3 fw-semibold shadow-sm">
-                                    <i class="fas fa-save me-2"></i>Update {{ $term->term }}
+                                    <i class="fas fa-save me-2"></i>Update {{ $term->name }}
                                     <span class="spinner-border spinner-border-sm ms-2 d-none" role="status"></span>
                                 </button>
                             </div>
@@ -540,16 +540,16 @@ function getMinStartDate($academicYear, $existingTerms, $currentTerm) {
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const startingDateInput = document.querySelector('input[name="starting_date"]');
-    const endingDateInput = document.querySelector('input[name="ending_date"]');
+    const startDateInput = document.querySelector('input[name="start_date"]');
+    const endDateInput = document.querySelector('input[name="end_date"]');
     const form = document.querySelector('form');
     const submitBtn = document.querySelector('button[type="submit"]');
     const spinner = submitBtn.querySelector('.spinner-border');
     const durationDisplay = document.getElementById('durationDisplay');
 
     // Store original values for reset functionality
-    const originalStartDate = startingDateInput.value;
-    const originalEndDate = endingDateInput.value;
+    const originalStartDate = startDateInput.value;
+    const originalEndDate = endDateInput.value;
 
     // Get values from Laravel
     const academicYearStart = new Date('{{ $term->academicYear->starting_date->format("Y-m-d") }}');
@@ -557,9 +557,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Function to calculate and display duration
     function updateDuration() {
-        if (startingDateInput.value && endingDateInput.value) {
-            const startDate = new Date(startingDateInput.value);
-            const endDate = new Date(endingDateInput.value);
+        if (startDateInput.value && endDateInput.value) {
+            const startDate = new Date(startDateInput.value);
+            const endDate = new Date(endDateInput.value);
             
             if (endDate >= startDate) {
                 const diffTime = Math.abs(endDate - startDate);
@@ -581,20 +581,20 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // Update ending_date.min to starting_date's selected value dynamically
-    startingDateInput.addEventListener('change', () => {
-        if (startingDateInput.value) {
-            endingDateInput.min = startingDateInput.value;
-            // If ending_date < starting_date, reset it
-            if (endingDateInput.value && endingDateInput.value < startingDateInput.value) {
-                endingDateInput.value = startingDateInput.value;
+    // Update end_date.min to start_date's selected value dynamically
+    startDateInput.addEventListener('change', () => {
+        if (startDateInput.value) {
+            endDateInput.min = startDateInput.value;
+            // If end_date < start_date, reset it
+            if (endDateInput.value && endDateInput.value < startDateInput.value) {
+                endDateInput.value = startDateInput.value;
             }
         }
         updateDuration();
     });
 
-    // Update duration when ending date changes
-    endingDateInput.addEventListener('change', updateDuration);
+    // Update duration when end date changes
+    endDateInput.addEventListener('change', updateDuration);
 
     // Form submission with loading state
     form.addEventListener('submit', function(e) {
@@ -628,8 +628,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Reset form functionality
     window.resetForm = function() {
-        startingDateInput.value = originalStartDate;
-        endingDateInput.value = originalEndDate;
+        startDateInput.value = originalStartDate;
+        endDateInput.value = originalEndDate;
         form.classList.remove('was-validated');
         updateDuration();
         

@@ -90,11 +90,11 @@ class CourseController extends Controller
         'abbreviation'     => $validated['abbreviation'],
         'course_type'      => $validated['course_type'],
         'academic_year_id' => $ongoingAcademicYear->id,
-        'registration_fee' => $request->input('registration_fee'),
-        'tuition_fee'      => $request->input('tuition_fee'),
-        'practical_fee'    => $request->input('practical_fee', null),
-        'trip_fee'         => $request->input('trip_fee', null),
-        'discount_fee'     => $request->input('discount_fee', null),
+        'registration_fee' => $request->input('registration_fee', 0),
+        'tuition_fee'      => $request->input('tuition_fee', 0),
+        'practical_fee'    => $request->input('practical_fee', 0),
+        'trip_fee'         => $request->input('trip_fee', 0),
+        'discount_fee'     => $request->input('discount_fee', 0),
         'total_cost'      => $totalCost,
     ]);
 
@@ -196,12 +196,68 @@ public function destroy($id)
 {
     $course = Course::findOrFail($id);
 
-    // Detach related branches before deleting, if relationship exists
-    $course->branches()->detach();
+    try {
+        // Delete in the correct order to avoid foreign key constraints
+        
+        // 1. Delete report card subjects that reference lessons of this course
+        $lessonIds = $course->lessons()->pluck('id');
+        if ($lessonIds->isNotEmpty()) {
+            \App\Models\ReportCardSubject::whereIn('lesson_id', $lessonIds)->delete();
+            
+            // 2. Delete lesson units for these lessons (if table exists)
+            try {
+                \App\Models\LessonUnit::whereIn('lesson_id', $lessonIds)->delete();
+            } catch (\Exception $e) {
+                // LessonUnit table might not exist, continue
+            }
+            
+            // 3. Delete lesson-exam relationships for these lessons (if table exists)
+            try {
+                \DB::table('lesson_exam')->whereIn('lesson_id', $lessonIds)->delete();
+            } catch (\Exception $e) {
+                // lesson_exam table might not exist, continue
+            }
+            
+            // 4. Delete lesson-term relationships for these lessons (if table exists)
+            try {
+                \DB::table('lesson_term')->whereIn('lesson_id', $lessonIds)->delete();
+            } catch (\Exception $e) {
+                // lesson_term table might not exist, continue
+            }
+            
+            // 5. Delete the lessons themselves
+            $course->lessons()->delete();
+        }
+        
+        // 6. Delete other related records (only if tables exist)
+        $course->marks()->delete();
+        
+        // 7. Try to delete transcripts (if table exists)
+        try {
+            $course->transcripts()->delete();
+        } catch (\Exception $e) {
+            // transcripts table might not exist, continue
+        }
+        
+        // 8. Detach relationships (many-to-many)
+        $course->branches()->detach();
+        $course->exams()->detach();
+        
+        // 9. Finally delete the course
+        $course->delete();
 
-    $course->delete();
-
-    return redirect()->route('admin.course.index')->with('success', 'Course deleted successfully.');
+        return redirect()->route('admin.course.index')->with('success', 'Course and all related data deleted successfully.');
+        
+    } catch (\Illuminate\Database\QueryException $e) {
+        // If there's still a foreign key constraint, provide a more helpful error
+        if ($e->getCode() == '23000') {
+            return redirect()->route('admin.course.index')
+                ->with('error', 'Cannot delete this course because it is referenced by other records. Please contact administrator.');
+        }
+        
+        // Re-throw the exception if it's something else
+        throw $e;
+    }
 }
 
 // Get branches for a given academic year (for AJAX)
@@ -259,7 +315,12 @@ public function getBranchesByCourse(Request $request) {
 
 private function calculateTotalCost($tuition, $practical, $trip, $discount)
 {
-    $subtotal = floatval($tuition) + floatval($practical) + floatval($trip);
+    $tuition = floatval($tuition ?? 0);
+    $practical = floatval($practical ?? 0);
+    $trip = floatval($trip ?? 0);
+    $discount = floatval($discount ?? 0);
+    
+    $subtotal = $tuition + $practical + $trip;
     if ($discount > 0 && $discount <= 100) {
         return round($subtotal - ($subtotal * ($discount / 100)), 2);
     }

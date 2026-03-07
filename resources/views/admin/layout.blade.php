@@ -644,6 +644,30 @@
                 <div class="nav-header">Academic</div>
                 
                 <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
+                    <a href="{{ route('admin.course.index') }}" class="nav-link {{ request()->routeIs('admin.course.*') ? 'active' : '' }}">
+                        <i class="fas fa-book"></i>
+                        <span class="nav-text">Courses</span>
+                    </a>
+                    <div class="nav-indicator" x-show="hover" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200"></div>
+                </div>
+
+                <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
+                    <a href="{{ route('admin.terms.index') }}" class="nav-link {{ request()->routeIs('admin.terms.*') ? 'active' : '' }}">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span class="nav-text">Terms</span>
+                    </a>
+                    <div class="nav-indicator" x-show="hover" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200"></div>
+                </div>
+
+                <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
+                    <a href="{{ route('admin.lessons.index') }}" class="nav-link {{ request()->routeIs('admin.lessons.*') ? 'active' : '' }}">
+                        <i class="fas fa-chalkboard"></i>
+                        <span class="nav-text">Lessons</span>
+                    </a>
+                    <div class="nav-indicator" x-show="hover" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200"></div>
+                </div>
+
+                <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
                     <a href="{{ route('admin.exams.index') }}" class="nav-link {{ request()->routeIs('admin.exams.*') ? 'active' : '' }}">
                         <i class="fas fa-file-alt"></i>
                         <span class="nav-text">Exams</span>

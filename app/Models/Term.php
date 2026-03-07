@@ -11,14 +11,14 @@ class Term extends Model
 
     protected $fillable = [
         'academic_year_id',
-        'term',
-        'starting_date',
-        'ending_date',
+        'name',
+        'start_date',
+        'end_date',
     ];
 
     protected $casts = [
-        'starting_date' => 'date',
-        'ending_date' => 'date',
+        'start_date' => 'date',
+        'end_date' => 'date',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];

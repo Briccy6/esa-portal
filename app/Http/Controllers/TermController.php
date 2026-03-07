@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\AcademicYear;
 use App\Models\Term;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class TermController extends Controller
 {
@@ -18,7 +19,7 @@ class TermController extends Controller
         }
 
         $terms = Term::where('academic_year_id', $academicYear->id)
-                     ->orderBy('term')
+                     ->orderBy('name')
                      ->get();
 
         return view('admin.terms.index', compact('academicYear', 'terms'));
@@ -33,13 +34,11 @@ class TermController extends Controller
         }
 
         $existingTerms = Term::where('academic_year_id', $academicYear->id)
-                             ->orderBy('term')
+                             ->orderBy('name')
                              ->get();
 
-        $terms = $existingTerms;
-
         $termOrder = ['Term 1' => 1, 'Term 2' => 2, 'Term 3' => 3];
-        $createdTerms = $existingTerms->pluck('term')->toArray();
+        $createdTerms = $existingTerms->pluck('name')->toArray();
 
         $nextTerm = null;
         foreach ($termOrder as $term => $order) {
@@ -57,84 +56,97 @@ class TermController extends Controller
             'academicYear' => $academicYear,
             'nextTerm' => $nextTerm,
             'existingTerms' => $existingTerms,
-            'terms' => $terms,
         ]);
     }
 
     public function store(Request $request)
     {
-        $rules = [
-            'academic_year_id' => 'required|exists:academic_years,id',
-            'term' => 'required|string|in:Term 1,Term 2,Term 3',
-            'starting_date' => 'required|date',
-            'ending_date' => 'required|date|after_or_equal:starting_date',
-        ];
+        try {
+            $rules = [
+                'academic_year_id' => 'required|exists:academic_years,id',
+                'name'             => 'required|string|in:Term 1,Term 2,Term 3',
+                'start_date'       => 'required|date',
+                'end_date'         => 'required|date|after_or_equal:start_date',
+            ];
 
-        $validated = $request->validate($rules);
+            $validated = $request->validate($rules);
 
-        $academicYear = AcademicYear::find($validated['academic_year_id']);
-        if (!$academicYear) {
-            return back()->withErrors(['academic_year_id' => 'Invalid academic year.'])->withInput();
-        }
-
-        $term = $validated['term'];
-        $existingTerms = Term::where('academic_year_id', $academicYear->id)->get();
-
-        $termOrder = ['Term 1' => 1, 'Term 2' => 2, 'Term 3' => 3];
-
-        foreach ($termOrder as $t => $order) {
-            if ($order < $termOrder[$term] && !$existingTerms->contains('term', $t)) {
-                return back()->withErrors(['term' => "Please create $t before creating $term."])->withInput();
+            $academicYear = AcademicYear::find($validated['academic_year_id']);
+            if (!$academicYear) {
+                return back()->withErrors(['academic_year_id' => 'Invalid academic year.'])->withInput();
             }
-            if ($order == $termOrder[$term] && $existingTerms->contains('term', $term)) {
-                return back()->withErrors(['term' => "$term already exists."])->withInput();
+
+            $term = $validated['name'];
+            $existingTerms = Term::where('academic_year_id', $academicYear->id)->get();
+
+            $termOrder = ['Term 1' => 1, 'Term 2' => 2, 'Term 3' => 3];
+
+            // Ensure previous terms exist and this term doesn't already exist
+            foreach ($termOrder as $t => $order) {
+                if ($order < $termOrder[$term] && !$existingTerms->contains('name', $t)) {
+                    return back()->withErrors(['name' => "Please create $t before creating $term."])->withInput();
+                }
+                if ($order == $termOrder[$term] && $existingTerms->contains('name', $term)) {
+                    return back()->withErrors(['name' => "$term already exists."])->withInput();
+                }
             }
-        }
 
-        $minStartDate = Carbon::parse($academicYear->starting_date);
-        $maxEndDate = Carbon::parse($academicYear->expiry_date);
+            $minStartDate = Carbon::parse($academicYear->starting_date);
+            $maxEndDate   = Carbon::parse($academicYear->expiry_date);
 
-        if ($term === 'Term 2') {
-            $term1 = $existingTerms->firstWhere('term', 'Term 1');
-            if (!$term1) {
-                return back()->withErrors(['term' => 'Term 1 must be created first.'])->withInput();
+            if ($term === 'Term 2') {
+                $term1 = $existingTerms->firstWhere('name', 'Term 1');
+                if (!$term1) {
+                    return back()->withErrors(['name' => 'Term 1 must be created first.'])->withInput();
+                }
+                $minStartDate = Carbon::parse($term1->end_date)->addDay();
+            } elseif ($term === 'Term 3') {
+                $term2 = $existingTerms->firstWhere('name', 'Term 2');
+                if (!$term2) {
+                    return back()->withErrors(['name' => 'Term 2 must be created first.'])->withInput();
+                }
+                $minStartDate = Carbon::parse($term2->end_date)->addDay();
             }
-            $minStartDate = Carbon::parse($term1->ending_date)->addDay();
-        } elseif ($term === 'Term 3') {
-            $term2 = $existingTerms->firstWhere('term', 'Term 2');
-            if (!$term2) {
-                return back()->withErrors(['term' => 'Term 2 must be created first.'])->withInput();
+
+            $startingDate = Carbon::parse($validated['start_date']);
+            $endingDate   = Carbon::parse($validated['end_date']);
+
+            if ($startingDate->lt($minStartDate)) {
+                return back()->withErrors(['start_date' => "Start date cannot be before {$minStartDate->format('Y-m-d')}"])->withInput();
             }
-            $minStartDate = Carbon::parse($term2->ending_date)->addDay();
+
+            if ($endingDate->gt($maxEndDate)) {
+                return back()->withErrors(['end_date' => "End date cannot be after {$maxEndDate->format('Y-m-d')}"])->withInput();
+            }
+
+            Term::create([
+                'academic_year_id' => $academicYear->id,
+                'name'             => $term,
+                'start_date'       => $startingDate->format('Y-m-d'),
+                'end_date'         => $endingDate->format('Y-m-d'),
+            ]);
+
+            return redirect()->route('admin.terms.index')->with('success', "$term created successfully.");
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return back()->withErrors($e->errors())->withInput();
+        } catch (\Exception $e) {
+            return back()->withErrors(['name' => 'Failed to create term: ' . $e->getMessage()])->withInput();
         }
-
-        $startingDate = Carbon::parse($validated['starting_date']);
-        $endingDate = Carbon::parse($validated['ending_date']);
-
-        if ($startingDate->lt($minStartDate)) {
-            return back()->withErrors(['starting_date' => "Starting date cannot be before {$minStartDate->format('Y-m-d')}"])->withInput();
-        }
-
-        if ($endingDate->gt($maxEndDate)) {
-            return back()->withErrors(['ending_date' => "Ending date cannot be after {$maxEndDate->format('Y-m-d')}"])->withInput();
-        }
-
-        Term::create([
-            'academic_year_id' => $academicYear->id,
-            'term' => $term,
-            'starting_date' => $startingDate->format('Y-m-d'),
-            'ending_date' => $endingDate->format('Y-m-d'),
-        ]);
-
-        return redirect()->route('admin.terms.index')->with('success', "$term created successfully.");
     }
 
     public function edit($id)
     {
         $term = Term::findOrFail($id);
         $academicYear = $term->academicYear;
+        
+        // Get existing terms for validation
+        $existingTerms = Term::where('academic_year_id', $academicYear->id)
+                             ->where('id', '!=', $term->id)
+                             ->orderBy('name')
+                             ->get();
 
-        return view('admin.terms.edit', compact('term', 'academicYear'));
+        return view('admin.terms.edit', compact('term', 'academicYear', 'existingTerms'));
     }
 
     public function update(Request $request, $id)
@@ -142,12 +154,12 @@ class TermController extends Controller
         $term = Term::findOrFail($id);
 
         $validated = $request->validate([
-            'starting_date' => 'required|date',
-            'ending_date' => 'required|date|after_or_equal:starting_date',
+            'start_date' => 'required|date',
+            'end_date'   => 'required|date|after_or_equal:start_date',
         ]);
 
-        $term->starting_date = $validated['starting_date'];
-        $term->ending_date = $validated['ending_date'];
+        $term->start_date = $validated['start_date'];
+        $term->end_date   = $validated['end_date'];
         $term->save();
 
         return redirect()->route('admin.terms.index')->with('success', 'Term updated successfully.');
@@ -156,35 +168,56 @@ class TermController extends Controller
     public function destroy($id)
     {
         $term = Term::findOrFail($id);
-        $term->delete();
 
-        return redirect()->route('admin.terms.index')->with('success', 'Term deleted successfully.');
+        try {
+            \App\Models\ReportCardSubject::whereHas('reportCard', function ($query) use ($term) {
+                $query->where('term_id', $term->id);
+            })->delete();
+
+            \App\Models\ReportCard::where('term_id', $term->id)->delete();
+
+            try {
+                $term->schoolFees()->delete();
+            } catch (\Exception $e) {
+                // school_fees table might not exist, continue
+            }
+
+            $term->delete();
+
+            return redirect()->route('admin.terms.index')->with('success', 'Term and all related data deleted successfully.');
+
+        } catch (\Illuminate\Database\QueryException $e) {
+            if ($e->getCode() == '23000') {
+                return redirect()->route('admin.terms.index')
+                    ->with('error', 'Cannot delete this term because it is referenced by other records. Please contact administrator.');
+            }
+
+            throw $e;
+        }
     }
+
     public function getTermsByAcademicYear($academicYearId)
-{
-    try {
-        // Validate the academic year ID
-        if (!is_numeric($academicYearId)) {
-            return response()->json(['error' => 'Invalid academic year ID'], 400);
+    {
+        try {
+            if (!is_numeric($academicYearId)) {
+                return response()->json(['error' => 'Invalid academic year ID'], 400);
+            }
+
+            $academicYear = AcademicYear::find($academicYearId);
+            if (!$academicYear) {
+                return response()->json(['error' => 'Academic year not found'], 404);
+            }
+
+            $terms = Term::where('academic_year_id', $academicYearId)
+                ->select('id', 'name', 'start_date', 'end_date')
+                ->orderBy('name')
+                ->get();
+
+            return response()->json($terms);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching terms by academic year: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to fetch terms'], 500);
         }
-        
-        // Check if academic year exists
-        $academicYear = AcademicYear::find($academicYearId);
-        if (!$academicYear) {
-            return response()->json(['error' => 'Academic year not found'], 404);
-        }
-        
-        // Fetch terms for the given academic year
-        $terms = Term::where('academic_year_id', $academicYearId)
-            ->select('id', 'term', 'starting_date', 'ending_date')
-            ->orderBy('term')
-            ->get();
-        
-        return response()->json($terms);
-        
-    } catch (\Exception $e) {
-        Log::error('Error fetching terms by academic year: ' . $e->getMessage());
-        return response()->json(['error' => 'Failed to fetch terms'], 500);
     }
-}
 }

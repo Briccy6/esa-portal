@@ -13,11 +13,11 @@ use App\Models\AcademicYear;
 class LessonController extends Controller
 {
     public function index()
-{
-    $lessonDetails = Lesson::with(['course', 'teacher', 'units'])->get();
+    {
+        $lessonDetails = Lesson::with(['course', 'teacher', 'units'])->get();
 
-    return view('details.index', compact('lessonDetails'));
-}
+        return view('admin.lessons.index', compact('lessonDetails'));
+    }
 
     public function create(Request $request)
     {
@@ -37,7 +37,7 @@ class LessonController extends Controller
 
         $ongoingAcademicYear = AcademicYear::where('is_ongoing', true)->first();
 
-return view('lessons.create', compact('courses', 'teachers', 'ongoingAcademicYear', 'terms'));
+return view('admin.lessons.create', compact('courses', 'teachers', 'ongoingAcademicYear', 'terms'));
     }
 
     public function store(Request $request)
@@ -86,7 +86,7 @@ public function createDetails(Request $request, $lessonId)
     $terms = Term::whereIn('id', $termIds)->get();
 
     // Pass lesson and terms to your view
-    return view('lessons.details.create', compact('lesson', 'terms'));
+    return view('admin.lessons.details.create', compact('lesson', 'terms'));
 }
  public function show($lessonId)
     {
@@ -94,7 +94,7 @@ public function createDetails(Request $request, $lessonId)
 
         // Load any other relations or data as needed
 
-        return view('details.show', compact('lesson'));
+        return view('admin.lessons.show', compact('lesson'));
     }
     /**
      * Show the form to create lesson details (outcomes)

@@ -40,7 +40,7 @@
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Active Terms</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $terms->where('status', 'active')->count() }}</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $terms->where(function($term) { $now = now(); return $term->start_date && $term->end_date && $now->between($term->start_date, $term->end_date); })->count() }}</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-play-circle fa-2x text-gray-300"></i>
@@ -55,7 +55,7 @@
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Upcoming Terms</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $terms->where('starting_date', '>', now())->count() }}</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $terms->where('start_date', '>', now())->count() }}</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-clock fa-2x text-gray-300"></i>
@@ -70,7 +70,7 @@
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Completed Terms</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $terms->where('ending_date', '<', now())->count() }}</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $terms->where('end_date', '<', now())->count() }}</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-check-circle fa-2x text-gray-300"></i>
@@ -151,17 +151,17 @@
                                     <td>
                                         <div class="d-flex align-items-center">
                                             <div class="term-icon me-3">
-                                                @if($term->term == 'Term 1')
+                                                @if($term->name == 'Term 1')
                                                     <i class="fas fa-play-circle text-success"></i>
-                                                @elseif($term->term == 'Term 2')
+                                                @elseif($term->name == 'Term 2')
                                                     <i class="fas fa-pause-circle text-warning"></i>
                                                 @else
                                                     <i class="fas fa-stop-circle text-danger"></i>
                                                 @endif
                                             </div>
                                             <div>
-                                                <div class="fw-bold text-dark">{{ $term->term }}</div>
-                                                <small class="text-muted">{{ ucfirst($term->term) }}</small>
+                                                <div class="fw-bold text-dark">{{ $term->name }}</div>
+                                                <small class="text-muted">{{ ucfirst($term->name) }}</small>
                                             </div>
                                         </div>
                                     </td>
@@ -173,23 +173,23 @@
                                     <td>
                                         <div class="date-display">
                                             <i class="fas fa-calendar-plus text-success me-2"></i>
-                                            <span class="fw-semibold">{{ $term->starting_date ? $term->starting_date->format('M d, Y') : 'Not Set' }}</span>
+                                            <span class="fw-semibold">{{ $term->start_date ? $term->start_date->format('M d, Y') : 'Not Set' }}</span>
                                             <br>
-                                            <small class="text-muted">{{ $term->starting_date ? $term->starting_date->format('l') : '' }}</small>
+                                            <small class="text-muted">{{ $term->start_date ? $term->start_date->format('l') : '' }}</small>
                                         </div>
                                     </td>
                                     <td>
                                         <div class="date-display">
                                             <i class="fas fa-calendar-minus text-danger me-2"></i>
-                                            <span class="fw-semibold">{{ $term->ending_date ? $term->ending_date->format('M d, Y') : 'Not Set' }}</span>
+                                            <span class="fw-semibold">{{ $term->end_date ? $term->end_date->format('M d, Y') : 'Not Set' }}</span>
                                             <br>
-                                            <small class="text-muted">{{ $term->ending_date ? $term->ending_date->format('l') : '' }}</small>
+                                            <small class="text-muted">{{ $term->end_date ? $term->end_date->format('l') : '' }}</small>
                                         </div>
                                     </td>
                                     <td>
-                                        @if($term->starting_date && $term->ending_date)
+                                        @if($term->start_date && $term->end_date)
                                             @php
-                                                $duration = $term->starting_date->diffInDays($term->ending_date);
+                                                $duration = $term->start_date->diffInDays($term->end_date);
                                                 $weeks = floor($duration / 7);
                                                 $days = $duration % 7;
                                             @endphp
@@ -209,12 +209,12 @@
                                             $badgeClass = 'bg-info';
                                             $icon = 'fas fa-clock';
                                             
-                                            if($term->starting_date && $term->ending_date) {
-                                                if($now->lt($term->starting_date)) {
+                                            if($term->start_date && $term->end_date) {
+                                                if($now->lt($term->start_date)) {
                                                     $status = 'upcoming';
                                                     $badgeClass = 'bg-info';
                                                     $icon = 'fas fa-clock';
-                                                } elseif($now->between($term->starting_date, $term->ending_date)) {
+                                                } elseif($now->between($term->start_date, $term->end_date)) {
                                                     $status = 'active';
                                                     $badgeClass = 'bg-success';
                                                     $icon = 'fas fa-play-circle';
@@ -249,7 +249,7 @@
                                             <!-- Delete Button -->
                                             <button class="btn btn-outline-danger btn-sm action-btn" 
                                                     title="Delete Term"
-                                                    onclick="confirmDelete({{ $term->id }}, '{{ $term->term }}')">
+                                                    onclick="confirmDelete({{ $term->id }}, '{{ $term->name }}')">
                                                 <i class="fas fa-trash-alt"></i>
                                             </button>
                                         </div>

@@ -1,5 +1,7 @@
 @extends('admin.layout')
 
+@section('title', 'Create Term')
+
 @section('content')
 <div class="container mt-4">
     <div class="row justify-content-center">
@@ -18,14 +20,49 @@
                     </div>
                 </div>
 
+                <!-- Error Messages -->
                 @if(session('error'))
-                    <div class="alert alert-danger border-0 rounded-0 mb-0">
-                        <i class="fas fa-exclamation-triangle me-2"></i>{{ session('error') }}
+                    <div class="alert alert-danger border-0 rounded-0 mb-4" role="alert">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <div>
+                                <strong>Error:</strong> {{ session('error') }}
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
+                <!-- Success Messages -->
+                @if(session('success'))
+                    <div class="alert alert-success border-0 rounded-0 mb-4" role="alert">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-check-circle me-2"></i>
+                            <div>
+                                <strong>Success:</strong> {{ session('success') }}
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
+                <!-- Validation Errors -->
+                @if($errors->any())
+                    <div class="alert alert-warning border-0 rounded-0 mb-4" role="alert">
+                        <div class="d-flex align-items-start">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <div>
+                                <strong>Please fix the following errors:</strong>
+                                <ul class="mb-0 mt-2">
+                                    @foreach($errors->all() as $error)
+                                        <li>{{ $error }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        </div>
                     </div>
                 @endif
 
                 <div class="card-body p-4 p-md-5">
-                    <form action="{{ route('admin.terms.store') }}" method="POST" class="needs-validation" novalidate>
+                    <form action="{{ route('admin.terms.store') }}" method="POST" class="needs-validation" id="termForm">
                         @csrf
 
                         <!-- Academic Year Field -->
@@ -38,21 +75,8 @@
                                     <i class="fas fa-calendar-alt text-muted"></i>
                                 </span>
                                 <input type="text" class="form-control border-start-0 bg-light" value="{{ $academicYear->year }}" readonly>
-                            </div>
-                            <input type="hidden" name="academic_year_id" value="{{ $academicYear->id }}">
-                            <input type="hidden" name="term" value="{{ $nextTerm }}">
-                        </div>
-
-                        <!-- Term Field -->
-                        <div class="form-group mb-4">
-                            <label class="form-label fw-semibold text-dark mb-2">
-                                <i class="fas fa-tag me-2 text-primary"></i>Term
-                            </label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light border-end-0">
-                                    <i class="fas fa-bookmark text-muted"></i>
-                                </span>
-                                <input type="text" class="form-control border-start-0 bg-light" value="{{ $nextTerm }}" readonly>
+                                <input type="hidden" name="academic_year_id" value="{{ $academicYear->id }}">
+                                <input type="hidden" name="name" value="{{ $nextTerm }}">
                             </div>
                         </div>
 
@@ -61,20 +85,20 @@
                             <!-- Starting Date -->
                             <div class="col-md-6">
                                 <div class="form-group mb-4">
-                                    <label for="starting_date" class="form-label fw-semibold text-dark mb-2">
+                                    <label for="start_date" class="form-label fw-semibold text-dark mb-2">
                                         <i class="fas fa-play-circle me-2 text-success"></i>Starting Date
                                     </label>
                                     <div class="input-group">
                                         <span class="input-group-text border-end-0">
                                             <i class="fas fa-calendar-day text-success"></i>
                                         </span>
-                                        <input
+                                        <input 
                                             type="date"
-                                            name="starting_date"
-                                            id="starting_date"
+                                            name="start_date"
+                                            id="start_date"
                                             class="form-control border-start-0 date-input"
                                             required
-                                            min="{{ getMinStartDate($academicYear, $existingTerms, $nextTerm) }}"
+                                            min="{{ $academicYear->starting_date->format('Y-m-d') }}"
                                             max="{{ $academicYear->expiry_date->format('Y-m-d') }}"
                                         >
                                         <div class="invalid-feedback">
@@ -87,20 +111,20 @@
                             <!-- Ending Date -->
                             <div class="col-md-6">
                                 <div class="form-group mb-4">
-                                    <label for="ending_date" class="form-label fw-semibold text-dark mb-2">
+                                    <label for="end_date" class="form-label fw-semibold text-dark mb-2">
                                         <i class="fas fa-stop-circle me-2 text-danger"></i>Ending Date
                                     </label>
                                     <div class="input-group">
                                         <span class="input-group-text border-end-0">
                                             <i class="fas fa-calendar-times text-danger"></i>
                                         </span>
-                                        <input
+                                        <input 
                                             type="date"
-                                            name="ending_date"
-                                            id="ending_date"
+                                            name="end_date"
+                                            id="end_date"
                                             class="form-control border-start-0 date-input"
                                             required
-                                            min="{{ getMinStartDate($academicYear, $existingTerms, $nextTerm) }}"
+                                            min="{{ $academicYear->starting_date->format('Y-m-d') }}"
                                             max="{{ $academicYear->expiry_date->format('Y-m-d') }}"
                                         >
                                         <div class="invalid-feedback">
@@ -113,9 +137,12 @@
 
                         <!-- Submit Button -->
                         <div class="d-grid gap-2 d-md-flex justify-content-md-center mt-5">
-                            <button type="submit" class="btn btn-primary btn-lg px-5 py-3 fw-semibold shadow-sm">
+                            <button type="submit" class="btn btn-primary btn-lg px-5 py-3 fw-semibold shadow-sm" id="submitBtn">
                                 <i class="fas fa-plus-circle me-2"></i>Create {{ $nextTerm }}
-                                <span class="spinner-border spinner-border-sm ms-2 d-none" role="status"></span>
+                                <span class="spinner-border spinner-border-sm ms-2 d-none" role="status" id="submitSpinner"></span>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary px-4 py-2" onclick="window.history.back()">
+                                <i class="fas fa-times me-1"></i>Cancel
                             </button>
                         </div>
                     </form>
@@ -125,8 +152,46 @@
     </div>
 </div>
 
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const startingDateInput = document.querySelector('input[name="start_date"]');
+    const endingDateInput = document.querySelector('input[name="end_date"]');
+    const form = document.querySelector('form');
+    const submitBtn = document.querySelector('button[type="submit"]');
+    const spinner = submitBtn.querySelector('.spinner-border');
+
+    // Set minimum ending date based on starting date selection
+    startingDateInput.addEventListener('change', () => {
+        if (startingDateInput.value) {
+            endingDateInput.min = startingDateInput.value;
+            // If ending_date < starting_date, reset it
+            if (endingDateInput.value && endingDateInput.value < startingDateInput.value) {
+                endingDateInput.value = startingDateInput.value;
+            }
+        }
+    });
+
+    // Form submission with loading state
+    form.addEventListener('submit', function(e) {
+        if (form.checkValidity()) {
+            submitBtn.classList.add('btn-loading');
+            spinner.classList.remove('d-none');
+            submitBtn.disabled = true;
+        }
+    });
+
+    // Bootstrap form validation
+    form.addEventListener('submit', function(e) {
+        if (!form.checkValidity()) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        form.classList.add('was-validated');
+    });
+});
+</script>
+
 <style>
-/* Custom styles for the form */
 .bg-gradient-primary {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
@@ -259,33 +324,11 @@
     left: 100%;
 }
 
-.alert-danger {
-    background: linear-gradient(135deg, #ff6b6b, #ee5a52);
-    color: white;
-    border: none;
-    font-weight: 500;
-}
-
-.form-group {
-    position: relative;
-}
-
-.invalid-feedback {
-    font-size: 0.875rem;
-    font-weight: 500;
-}
-
-/* Loading state */
-.btn-loading .spinner-border {
-    display: inline-block !important;
-}
-
 .btn-loading {
     pointer-events: none;
     opacity: 0.7;
 }
 
-/* Responsive adjustments */
 @media (max-width: 768px) {
     .card-body {
         padding: 1.5rem !important;
@@ -310,13 +353,11 @@
     }
 }
 
-/* Focus management for better accessibility */
 .form-control:focus,
 .btn:focus {
     outline: none;
 }
 
-/* Animation for form appearance */
 @keyframes fadeInUp {
     from {
         opacity: 0;
@@ -333,125 +374,3 @@
 }
 </style>
 @endsection
-
-@php
-// Helper function inside blade to calculate min starting date for term
-function getMinStartDate($academicYear, $existingTerms, $nextTerm) {
-    if ($nextTerm == 'Term 1') {
-        return $academicYear->starting_date->format('Y-m-d');
-    } elseif ($nextTerm == 'Term 2') {
-        $term1 = $existingTerms->firstWhere('term', 'Term 1');
-        return $term1 ? $term1->ending_date->addDay()->format('Y-m-d') : $academicYear->starting_date->format('Y-m-d');
-    } elseif ($nextTerm == 'Term 3') {
-        $term2 = $existingTerms->firstWhere('term', 'Term 2');
-        return $term2 ? $term2->ending_date->addDay()->format('Y-m-d') : $academicYear->starting_date->format('Y-m-d');
-    }
-    return $academicYear->starting_date->format('Y-m-d');
-}
-@endphp
-
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const startingDateInput = document.querySelector('input[name="starting_date"]');
-    const endingDateInput = document.querySelector('input[name="ending_date"]');
-    const form = document.querySelector('form');
-    const submitBtn = document.querySelector('button[type="submit"]');
-    const spinner = submitBtn.querySelector('.spinner-border');
-
-    // Get values passed from Laravel as data attributes or hidden inputs (you can add these if needed)
-    const academicYearStart = new Date('{{ $academicYear->starting_date->format("Y-m-d") }}');
-    const academicYearEnd = new Date('{{ $academicYear->expiry_date->format("Y-m-d") }}');
-
-    // Existing terms info from Laravel (JSON encoded)
-    const existingTerms = @json($existingTerms);
-
-    // Get the nextTerm from Laravel (string: "Term 1", "Term 2", "Term 3")
-    const nextTerm = '{{ $nextTerm }}';
-
-    // Function to parse date string "YYYY-MM-DD" into Date object
-    function parseDate(str) {
-        const [year, month, day] = str.split('-');
-        return new Date(year, month - 1, day);
-    }
-
-    // Calculate minStartDate based on existing terms and nextTerm
-    function getMinStartDate() {
-        if (nextTerm === 'Term 1') {
-            return academicYearStart;
-        }
-        if (nextTerm === 'Term 2') {
-            let term1 = existingTerms.find(t => t.term === 'Term 1');
-            if (term1) {
-                let d = parseDate(term1.ending_date);
-                d.setDate(d.getDate() + 1); // day after term 1 ends
-                return d;
-            }
-        }
-        if (nextTerm === 'Term 3') {
-            let term2 = existingTerms.find(t => t.term === 'Term 2');
-            if (term2) {
-                let d = parseDate(term2.ending_date);
-                d.setDate(d.getDate() + 1); // day after term 2 ends
-                return d;
-            }
-        }
-        return academicYearStart; // fallback
-    }
-
-    // Set the min and max attributes for the date inputs accordingly
-    function setDateConstraints() {
-        const minStartDate = getMinStartDate();
-        startingDateInput.min = minStartDate.toISOString().split('T')[0];
-        startingDateInput.max = academicYearEnd.toISOString().split('T')[0];
-
-        // Initially set ending date min as starting date min, max as academic year end
-        endingDateInput.min = startingDateInput.min;
-        endingDateInput.max = academicYearEnd.toISOString().split('T')[0];
-    }
-
-    setDateConstraints();
-
-    // Update ending_date.min to starting_date's selected value dynamically
-    startingDateInput.addEventListener('change', () => {
-        if (startingDateInput.value) {
-            endingDateInput.min = startingDateInput.value;
-            // If ending_date < starting_date, reset it
-            if (endingDateInput.value && endingDateInput.value < startingDateInput.value) {
-                endingDateInput.value = startingDateInput.value;
-            }
-        } else {
-            endingDateInput.min = startingDateInput.min;
-        }
-    });
-
-    // Form submission with loading state
-    form.addEventListener('submit', function(e) {
-        if (form.checkValidity()) {
-            submitBtn.classList.add('btn-loading');
-            spinner.classList.remove('d-none');
-            submitBtn.disabled = true;
-        }
-    });
-
-    // Bootstrap form validation
-    form.addEventListener('submit', function(e) {
-        if (!form.checkValidity()) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-        form.classList.add('was-validated');
-    });
-
-    // Add smooth focus transitions
-    const inputs = document.querySelectorAll('.form-control');
-    inputs.forEach(input => {
-        input.addEventListener('focus', function() {
-            this.parentElement.classList.add('focused');
-        });
-        
-        input.addEventListener('blur', function() {
-            this.parentElement.classList.remove('focused');
-        });
-    });
-});
-</script>

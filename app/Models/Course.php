@@ -77,8 +77,4 @@ public function academicYear()
             'teacher_id'                   // Local key on lessons table
         );
     }
-    public function communitySpaces()
-    {
-        return $this->belongsToMany(CommunitySpace::class, 'community_space_course');
-    }
 }
