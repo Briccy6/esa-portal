@@ -8,25 +8,53 @@ use App\Models\Course;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class QuestionBankController extends Controller
 {
+    use AuthorizesRequests {
+        authorize as protected baseAuthorize;
+    }
+
+    /**
+     * Ensure the correct guard is used for authorization when multiple guards are in use.
+     */
+    public function authorize($ability, $arguments = [])
+    {
+        if (auth('admin')->check()) {
+            Auth::shouldUse('admin');
+        } elseif (auth('staff')->check()) {
+            Auth::shouldUse('staff');
+        } elseif (auth('teacher')->check()) {
+            Auth::shouldUse('teacher');
+        }
+        return $this->baseAuthorize($ability, $arguments);
+    }
     public function index()
     {
-        $user = Auth::user();
-        
-        if ($user->admin) {
+        $user = $this->getAuthUser();
+        if (!$user) {
+            abort(403, 'Unauthorized');
+        }
+
+        if (auth('admin')->check()) {
             // Admin can see all question banks
-            $questionBanks = QuestionBank::with(['course', 'academicYear', 'questions' => function($query) {
+            $questionBanks = QuestionBank::with(['course', 'academicYear', 'teacher', 'questions' => function($query) {
                 $query->select('id', 'question_bank_id', 'question_type', 'text', 'marks');
             }])
             ->orderBy('name')
             ->paginate(10);
-        } elseif ($user->teacher) {
-            // Teacher can only see their own question banks
-            $teacher = $user->teacher;
+        } elseif (auth('staff')->check()) {
+            // Staff can see all question banks
+            $questionBanks = QuestionBank::with(['course', 'academicYear', 'teacher', 'questions' => function($query) {
+                $query->select('id', 'question_bank_id', 'question_type', 'text', 'marks');
+            }])
+            ->orderBy('name')
+            ->paginate(10);
+        } elseif (auth('teacher')->check()) {
+            $teacher = auth('teacher')->user();
             $questionBanks = QuestionBank::where('teacher_id', $teacher->id)
-                ->with(['course', 'academicYear', 'questions' => function($query) {
+                ->with(['course', 'academicYear', 'teacher', 'questions' => function($query) {
                     $query->select('id', 'question_bank_id', 'question_type', 'text', 'marks');
                 }])
                 ->orderBy('name')
@@ -38,18 +66,40 @@ class QuestionBankController extends Controller
         return view('question-banks.index', compact('questionBanks'));
     }
 
+    /**
+     * Get the authenticated user from admin, staff, or teacher guard.
+     */
+    protected function getAuthUser()
+    {
+        if (auth('admin')->check()) {
+            return auth('admin')->user();
+        }
+        if (auth('staff')->check()) {
+            return auth('staff')->user();
+        }
+        if (auth('teacher')->check()) {
+            return auth('teacher')->user();
+        }
+        return null;
+    }
+
     public function create()
     {
-        $user = Auth::user();
-        
-        if ($user->admin) {
-            // Admin can access all courses and academic years
+        $user = $this->getAuthUser();
+        if (!$user) {
+            abort(403, 'Unauthorized');
+        }
+
+        if (auth('admin')->check()) {
             $courses = Course::all();
             $academicYears = \App\Models\AcademicYear::orderBy('year', 'desc')->get();
             $teachers = \App\Models\Teacher::all();
-        } elseif ($user->teacher) {
-            // Teacher can only access their assigned courses
-            $teacher = $user->teacher;
+        } elseif (auth('staff')->check()) {
+            $courses = Course::all();
+            $academicYears = \App\Models\AcademicYear::orderBy('year', 'desc')->get();
+            $teachers = \App\Models\Teacher::all();
+        } elseif (auth('teacher')->check()) {
+            $teacher = auth('teacher')->user();
             $courses = $teacher->courses;
             $academicYears = \App\Models\AcademicYear::orderBy('year', 'desc')->get();
             $teachers = collect([$teacher]);
@@ -83,7 +133,7 @@ class QuestionBankController extends Controller
             'is_active' => true,
         ]);
 
-        return redirect()->route('question-banks.index')
+        return redirect()->route('admin.question-banks.index')
             ->with('success', 'Question bank created successfully!');
     }
 
@@ -101,12 +151,19 @@ class QuestionBankController extends Controller
     public function edit(QuestionBank $questionBank)
     {
         $this->authorize('update', $questionBank);
-        
-        $teacher = Auth::user()->teacher;
-        $courses = $teacher->courses;
-        $academicYears = \App\Models\AcademicYear::orderBy('year', 'desc')->get();
 
-        return view('question-banks.edit', compact('questionBank', 'courses', 'academicYears'));
+        if (auth('admin')->check() || auth('staff')->check()) {
+            $courses = Course::all();
+            $academicYears = \App\Models\AcademicYear::orderBy('year', 'desc')->get();
+            $teachers = \App\Models\Teacher::all();
+        } else {
+            $teacher = auth('teacher')->user();
+            $courses = $teacher->courses;
+            $academicYears = \App\Models\AcademicYear::orderBy('year', 'desc')->get();
+            $teachers = collect([$teacher]);
+        }
+
+        return view('question-banks.edit', compact('questionBank', 'courses', 'academicYears', 'teachers'));
     }
 
     public function update(Request $request, QuestionBank $questionBank)
@@ -133,7 +190,7 @@ class QuestionBankController extends Controller
             'is_active' => $request->has('is_active'),
         ]);
 
-        return redirect()->route('question-banks.show', $questionBank)
+        return redirect()->route('admin.question-banks.show', $questionBank)
             ->with('success', 'Question bank updated successfully!');
     }
 
@@ -143,7 +200,7 @@ class QuestionBankController extends Controller
         
         $questionBank->delete();
         
-        return redirect()->route('question-banks.index')
+        return redirect()->route('admin.question-banks.index')
             ->with('success', 'Question bank deleted successfully!');
     }
 
@@ -209,7 +266,7 @@ class QuestionBankController extends Controller
 
         Question::create($questionData);
 
-        return redirect()->route('question-banks.show', $questionBank)
+        return redirect()->route('admin.question-banks.show', $questionBank)
             ->with('success', 'Question added successfully!');
     }
 
@@ -218,7 +275,7 @@ class QuestionBankController extends Controller
         $this->authorize('update', $questionBank);
 
         $validator = Validator::make($request->all(), [
-            'csv_file' => 'required|file|mimes:csv,txt|max:10240',
+            'csv_file' => 'required|file|max:10240',
         ]);
 
         if ($validator->fails()) {
@@ -226,38 +283,92 @@ class QuestionBankController extends Controller
         }
 
         $file = $request->file('csv_file');
-        $path = $file->getRealPath();
-        $data = array_map('str_getcsv', file($path));
+        if (!$file) {
+            return back()->with('error', 'No file was uploaded.');
+        }
 
-        $headers = array_shift($data); // Remove header row
+        // Check if it's a valid CSV file by checking the extension and content
+        $extension = strtolower($file->getClientOriginalExtension());
+        if (!in_array($extension, ['csv', 'txt'])) {
+            return back()->with('error', 'File must be a CSV or TXT file.');
+        }
+        $path = $file->getRealPath();
+        
+        // Read CSV file properly
+        $csvData = [];
+        if (($handle = fopen($path, 'r')) !== FALSE) {
+            while (($row = fgetcsv($handle, 1000, ',')) !== FALSE) {
+                $csvData[] = $row;
+            }
+            fclose($handle);
+        }
+        
+        if (empty($csvData)) {
+            return back()->with('error', 'CSV file is empty or could not be read.');
+        }
+
+        $headers = array_shift($csvData); // Remove header row
+        // Clean headers - trim whitespace, normalize to lowercase for case-insensitive matching
+        $headers = array_map(function($header) {
+            return strtolower(trim(preg_replace('/\s+/', ' ', $header)));
+        }, $headers);
+        
         $imported = 0;
         $errors = [];
 
-        foreach ($data as $row) {
+        foreach ($csvData as $rowIndex => $row) {
             try {
+                // Skip empty rows
+                if (empty(array_filter($row))) {
+                    continue;
+                }
+                
+                // Pad or trim row to match header count (handles extra/missing columns)
+                $row = array_pad(array_slice($row, 0, count($headers)), count($headers), null);
+                $row = array_map(function($val) { return $val !== null ? trim((string) $val) : ''; }, $row);
+                
                 $questionData = array_combine($headers, $row);
+                if ($questionData === false) {
+                    $errors[] = "Row " . ($rowIndex + 2) . ": Could not parse columns.";
+                    continue;
+                }
+                
+                // Get text - support common column names
+                $text = $questionData['text'] ?? $questionData['question'] ?? $questionData['question text'] ?? '';
+                $text = trim($text);
+                
+                // Validate required fields
+                if ($text === '') {
+                    $errors[] = "Row " . ($rowIndex + 2) . ": Question text is required";
+                    continue;
+                }
                 
                 Question::create([
                     'question_bank_id' => $questionBank->id,
                     'question_type' => $questionData['question_type'] ?? 'multiple_choice',
-                    'text' => $questionData['text'],
+                    'text' => $text,
                     'option_a' => $questionData['option_a'] ?? null,
                     'option_b' => $questionData['option_b'] ?? null,
                     'option_c' => $questionData['option_c'] ?? null,
                     'option_d' => $questionData['option_d'] ?? null,
-                    'correct_answer' => $questionData['correct_answer'] ?? null,
-                    'marks' => $questionData['marks'] ?? 1,
+                    'correct_answer' => isset($questionData['correct_answer']) && $questionData['correct_answer'] !== '' ? $questionData['correct_answer'] : null,
+                    'marks' => is_numeric($questionData['marks'] ?? 1) ? (int)$questionData['marks'] : 1,
                     'explanation' => $questionData['explanation'] ?? null,
                 ]);
                 
                 $imported++;
             } catch (\Exception $e) {
-                $errors[] = "Row " . ($imported + 1) . ": " . $e->getMessage();
+                $errors[] = "Row " . ($rowIndex + 2) . ": " . $e->getMessage();
             }
         }
 
-        return redirect()->route('question-banks.show', $questionBank)
-            ->with('success', "Imported {$imported} questions successfully!")
+        $message = "Imported {$imported} questions successfully!";
+        if (!empty($errors)) {
+            $message .= " However, there were " . count($errors) . " errors.";
+        }
+
+        return redirect()->route('admin.question-banks.show', $questionBank)
+            ->with('success', $message)
             ->with('errors', $errors);
     }
 

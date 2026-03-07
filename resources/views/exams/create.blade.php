@@ -674,6 +674,49 @@ body {
                     </div>
                 </div>
 
+                <!-- Question Bank Selection -->
+                <div class="lc-section">
+                    <h2 class="lc-section-title">
+                        <i class="fas fa-question-circle"></i>
+                        Questions from Question Banks
+                    </h2>
+                    
+                    <div class="lc-grid">
+                        <div class="lc-field">
+                            <label class="lc-label">Select Question Banks</label>
+                            <div class="lc-select-wrapper">
+                                <select name="question_bank_ids[]" id="question_bank_ids" class="lc-select" multiple>
+                                    @foreach($questionBanks as $questionBank)
+                                        <option value="{{ $questionBank->id }}">
+                                            {{ $questionBank->name }} ({{ $questionBank->questions->count() }} questions)
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <i class="fas fa-chevron-down lc-select-icon"></i>
+                            </div>
+                            <small class="lc-help">Ctrl+click to select multiple question banks</small>
+                        </div>
+                        
+                        <div class="lc-field">
+                            <label class="lc-label">Number of Questions per Bank</label>
+                            <input type="number" name="questions_per_bank" id="questions_per_bank" class="lc-input" 
+                                   min="1" max="50" value="10" placeholder="e.g., 10">
+                            <small class="lc-help">How many questions to randomly select from each bank</small>
+                        </div>
+                    </div>
+                    
+                    <div class="lc-field">
+                        <button type="button" id="previewQuestions" class="lc-btn lc-btn-secondary">
+                            <i class="fas fa-eye"></i>
+                            Preview Selected Questions
+                        </button>
+                        <div id="questionsPreview" class="mt-3" style="display: none;">
+                            <h4>Questions Preview:</h4>
+                            <div id="questionsList"></div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Form Actions -->
                 <div class="lc-actions">
                     <a href="{{ route('admin.exams.index') }}" class="lc-btn lc-btn-secondary">
@@ -790,6 +833,69 @@ $(document).ready(function() {
             lessonSelect.empty().append('<option value="">Select courses first</option>');
         }
     });
+
+    // Question Bank Preview Functionality
+    $('#previewQuestions').on('click', function() {
+        const selectedBanks = $('#question_bank_ids').val();
+        const questionsPerBank = $('#questions_per_bank').val();
+        
+        if (!selectedBanks || selectedBanks.length === 0) {
+            alert('Please select at least one question bank');
+            return;
+        }
+        
+        if (!questionsPerBank || questionsPerBank < 1) {
+            alert('Please specify a valid number of questions per bank');
+            return;
+        }
+        
+        // Show loading state
+        $('#questionsList').html('<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading questions...</div>');
+        $('#questionsPreview').show();
+        
+        // Fetch questions from selected banks
+        $.ajax({
+            url: '/admin/question-banks/preview-questions',
+            method: 'POST',
+            data: {
+                _token: $('meta[name="csrf-token"]').attr('content'),
+                question_bank_ids: selectedBanks,
+                questions_per_bank: questionsPerBank
+            },
+            success: function(response) {
+                displayQuestionsPreview(response.questions);
+            },
+            error: function() {
+                $('#questionsList').html('<div class="alert alert-danger">Error loading questions. Please try again.</div>');
+            }
+        });
+    });
+    
+    function displayQuestionsPreview(questions) {
+        let html = '<div class="row">';
+        
+        questions.forEach(function(question, index) {
+            html += `
+                <div class="col-md-6 mb-3">
+                    <div class="card">
+                        <div class="card-header">
+                            <strong>Q${index + 1}:</strong> ${question.question_type} (${question.marks} marks)
+                        </div>
+                        <div class="card-body">
+                            <p>${question.text}</p>
+                            ${question.options ? '<small><strong>Options:</strong> ' + question.options + '</small>' : ''}
+                            <br><small><strong>Bank:</strong> ${question.question_bank_name}</small>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        html += `<div class="alert alert-info mt-3">Total: ${questions.length} questions will be added to this exam.</div>`;
+        
+        $('#questionsList').html(html);
+    }
 
     // Form validation
     $('#examForm').on('submit', function(e) {

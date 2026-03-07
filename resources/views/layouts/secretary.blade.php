@@ -3,11 +3,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>E-learning Portal</title>
+    <title>E-learning Portal | Secretary</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="{{  asset('images/esa.png')  }}">
-     
+    
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
@@ -19,7 +19,7 @@
 
 <body class="font-sans antialiased">
     <div class="min-h-screen bg-gray-100">
-        @include('layouts.navigation')
+        @include('layouts.secretary-navigation')
 
         <!-- Page Heading -->
         @isset($header)
@@ -32,7 +32,9 @@
 
         <!-- Page Content -->
         <main>
-            {{ $slot }}
+           @yield('content')
+
+           
         </main>
     </div>
 

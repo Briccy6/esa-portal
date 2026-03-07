@@ -377,7 +377,7 @@
         @forelse($exams as $exam)
             @php
                 $today = \Carbon\Carbon::today();
-                $examDate = \Carbon\Carbon::parse($exam->date);
+                $examDate = \Carbon\Carbon::parse($exam->class_date);
                 $hasMark = $exam->marks && $exam->marks->count() > 0;
                 
                 $cardClass = '';
@@ -406,11 +406,11 @@
                 <div class="exam-meta">
                     <div class="exam-meta-item">
                         <span>📅</span>
-                        <span>{{ \Carbon\Carbon::parse($exam->date)->format('M d, Y') }}</span>
+                        <span>{{ \Carbon\Carbon::parse($exam->class_date)->format('M d, Y') }}</span>
                     </div>
                     <div class="exam-meta-item">
                         <span>⏱️</span>
-                        <span>{{ \Carbon\Carbon::parse($exam->date)->format('h:i A') }}</span>
+                        <span>{{ \Carbon\Carbon::parse($exam->class_date)->format('h:i A') }}</span>
                     </div>
                 </div>
                 
@@ -425,7 +425,7 @@
                     </div>
                     <div class="exam-detail exam-date-detail">
                         <div class="exam-detail-label">Exam Date</div>
-                        <div class="exam-detail-value">{{ \Carbon\Carbon::parse($exam->date)->format('l, F j, Y \a\t g:i A') }}</div>
+                        <div class="exam-detail-value">{{ \Carbon\Carbon::parse($exam->class_date)->format('l, F j, Y \a\t g:i A') }}</div>
                     </div>
                 </div>
                 

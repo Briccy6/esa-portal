@@ -540,6 +540,15 @@
                                         <i class="bi bi-calendar-event me-1"></i>
                                         {{ \Carbon\Carbon::parse($exam->class_date)->format('d M Y') }}
                                     </p>
+                                    @if($exam->requiresTokens())
+                                        <p class="exam-tokens">
+                                            <i class="bi bi-coins me-1"></i>
+                                            Cost: {{ $exam->token_cost }} tokens
+                                            @if(auth()->user()->token)
+                                                | Your balance: {{ auth()->user()->token->balance }} tokens
+                                            @endif
+                                        </p>
+                                    @endif
                                 </div>
                                 <div class="exam-status">
                                     @if(\Carbon\Carbon::parse($exam->class_date)->isPast())
@@ -555,10 +564,17 @@
                                             </span>
                                         @endif
                                     @else
-                                        <span class="status-badge upcoming">
-                                            <i class="bi bi-calendar-plus me-1"></i>
-                                            Upcoming
-                                        </span>
+                                        @if($exam->requiresTokens() && (!auth()->user()->token || !auth()->user()->token->canAfford($exam->token_cost)))
+                                            <span class="status-badge insufficient-tokens">
+                                                <i class="bi bi-exclamation-triangle me-1"></i>
+                                                Insufficient tokens
+                                            </span>
+                                        @else
+                                            <a href="{{ route('student.exams.take', $exam->id) }}" class="btn btn-sm btn-primary">
+                                                <i class="bi bi-play-circle me-1"></i>
+                                                Take Exam
+                                            </a>
+                                        @endif
                                     @endif
                                 </div>
                             </div>
@@ -914,6 +930,17 @@
         margin: 0;
     }
 
+    .exam-tokens {
+        color: #059669;
+        font-size: 0.875rem;
+        margin: 0.25rem 0 0 0;
+        font-weight: 500;
+    }
+
+    .exam-tokens i {
+        color: #f59e0b;
+    }
+
     .status-badge {
         padding: 0.5rem 1rem;
         border-radius: 20px;
@@ -937,11 +964,9 @@
         color: #1e40af;
     }
 
-    /* Payment Modal */
-    .payment-modal .modal-header {
-        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-        color: white;
-        border-bottom: none;
+    .status-badge.insufficient-tokens {
+        background: #fee2e2;
+        color: #dc2626;
     }
 
     .payment-modal .btn-close {

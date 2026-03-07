@@ -46,6 +46,9 @@ use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\QuestionBankController;
 use App\Http\Controllers\ExamTakingController;
 use App\Http\Controllers\ExamResultsController;
+use App\Http\Controllers\TokenController;
+use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\SecretaryAuthController;
 
 /*
 |--------------------------------------------------------------------------
@@ -113,13 +116,6 @@ Route::get('/', function () {
     $systemLogo = Cache::get('esa_system_logo');
     $publicAnnouncements = Announcement::where('audience', 'public')->latest()->take(10)->get();
 
-    return view('welcome', compact('systemName', 'systemLogo', 'publicAnnouncements'));
-})->name('welcome');
-
-Route::get('/welcome', function () {
-    $systemName = Cache::get('esa_system_name', 'ESA-Parnel');
-    $systemLogo = Cache::get('esa_system_logo');
-    $publicAnnouncements = \App\Models\Announcement::where('audience', 'public')->latest()->take(10)->get();
     return view('welcome', compact('systemName', 'systemLogo', 'publicAnnouncements'));
 })->name('welcome');
 
@@ -196,15 +192,6 @@ if (! Route::has('admin.teachers.index')) {
 }
 // -----------------------------------------------------------------------------
 
-if (! Route::has('teachers.index')) {
-    Route::middleware('auth:admin')->group(function () {
-        // Provide the non-prefixed teachers.* resource (URI: /teachers)
-        // This creates route names like teachers.index, teachers.create, teachers.store, etc.
-        Route::resource('teachers', TeacherController::class);
-    });
-}
-// -----------------------------------------------------------------------------
-
 // Admin protected routes
 Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\AdminAuthController::class, 'dashboard'])->name('dashboard');
@@ -249,6 +236,28 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::resource('grades', GradeController::class)->names('grades');
     // community-spaces feature removed – no routes needed
 
+    // Token Management
+    Route::get('/tokens', [TokenController::class, 'secretaryIndex'])->name('tokens.index');
+    Route::post('/tokens/add/{student}', [TokenController::class, 'secretaryAddTokens'])->name('tokens.add');
+    Route::post('/tokens/deduct/{student}', [TokenController::class, 'secretaryDeductTokens'])->name('tokens.deduct');
+    Route::get('/tokens/history/{student?}', [TokenController::class, 'transactionHistory'])->name('tokens.history');
+    
+    // Admin Token Management (same controller methods)
+    Route::get('/admin/tokens', [TokenController::class, 'secretaryIndex'])->name('admin.tokens.index');
+    Route::post('/admin/tokens/add/{student}', [TokenController::class, 'secretaryAddTokens'])->name('admin.tokens.add');
+    Route::post('/admin/tokens/deduct/{student}', [TokenController::class, 'secretaryDeductTokens'])->name('admin.tokens.deduct');
+    Route::get('/admin/tokens/history/{student?}', [TokenController::class, 'transactionHistory'])->name('admin.tokens.history');
+
+    // Subscription Management
+    Route::get('/subscriptions', [SubscriptionController::class, 'adminIndex'])->name('subscriptions.index');
+    Route::get('/subscriptions/create', [SubscriptionController::class, 'adminCreate'])->name('subscriptions.create');
+    Route::post('/subscriptions', [SubscriptionController::class, 'adminStore'])->name('subscriptions.store');
+    Route::get('/subscriptions/{subscription}/edit', [SubscriptionController::class, 'adminEdit'])->name('subscriptions.edit');
+    Route::put('/subscriptions/{subscription}', [SubscriptionController::class, 'adminUpdate'])->name('subscriptions.update');
+    Route::post('/subscriptions/{subscription}/toggle', [SubscriptionController::class, 'adminToggle'])->name('subscriptions.toggle');
+    Route::get('/subscriptions/student-subscriptions', [SubscriptionController::class, 'studentSubscriptions'])->name('subscriptions.student-subscriptions');
+    Route::post('/subscriptions/extend/{studentSubscription}', [SubscriptionController::class, 'extendSubscription'])->name('subscriptions.extend');
+
     // Live Classes
     Route::resource('live-classes', LiveClassController::class);
     Route::post('live-classes/{liveClass}/start', [LiveClassController::class, 'start'])->name('live-classes.start');
@@ -274,6 +283,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::post('question-banks/{questionBank}/questions', [QuestionBankController::class, 'storeQuestion'])->name('question-banks.store-question');
     Route::post('question-banks/{questionBank}/import', [QuestionBankController::class, 'importQuestions'])->name('question-banks.import');
     Route::get('question-banks/{questionBank}/export', [QuestionBankController::class, 'exportQuestions'])->name('question-banks.export');
+    Route::post('question-banks/preview-questions', [ExamController::class, 'previewQuestions'])->name('question-banks.preview-questions');
 
     // NESA Registration Management (disabled)
     // routes removed per request
@@ -307,6 +317,21 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::get('chat-test', function() {
         return view('admin.profile.test');
     })->name('chat.test');
+});
+
+// Secretary protected routes
+Route::middleware(['auth:staff'])->prefix('secretary')->name('secretary.')->group(function () {
+    Route::get('/login', [SecretaryAuthController::class, 'showLoginForm'])->name('login.form');
+    Route::post('/login', [SecretaryAuthController::class, 'login'])->name('login');
+    Route::post('/logout', [SecretaryAuthController::class, 'logout'])->name('logout');
+    
+    Route::get('/dashboard', [SecretaryAuthController::class, 'dashboard'])->name('dashboard');
+    
+    // Token Management (secretary-specific)
+    Route::get('/tokens', [TokenController::class, 'secretaryIndex'])->name('tokens.index');
+    Route::post('/tokens/add/{student}', [TokenController::class, 'secretaryAddTokens'])->name('tokens.add');
+    Route::post('/tokens/deduct/{student}', [TokenController::class, 'secretaryDeductTokens'])->name('tokens.deduct');
+    Route::get('/tokens/history/{student?}', [TokenController::class, 'transactionHistory'])->name('tokens.history');
 });
 
 // API helpers
@@ -613,8 +638,8 @@ Route::middleware(['auth:staff'])->get('/staff/course-fees', [\App\Http\Controll
 Route::middleware(['auth:staff'])->get('/students', [\App\Http\Controllers\StudentController::class, 'index'])->name('students.index');
 Route::middleware(['auth:staff'])->get('/students/{student}/transcript/send', [\App\Http\Controllers\StudentController::class, 'sendTranscript'])->name('students.transcript.send');
 Route::middleware(['auth:staff'])->get('/students/{student}/payments', [\App\Http\Controllers\StudentController::class, 'payments'])->name('students.payments');
-Route::middleware(['auth:staff'])->get('/students/{student}/pay', [\App\Http\Controllers\StudentController::class, 'pay'])->name('students.pay');
-Route::middleware(['auth:staff'])->post('/students/{student}/pay', [\App\Http\Controllers\StudentController::class, 'pay'])->name('students.pay');
+Route::middleware(['auth:staff'])->get('/students/{student}/pay', [\App\Http\Controllers\StudentController::class, 'pay'])->name('students.pay.show');
+Route::middleware(['auth:staff'])->post('/students/{student}/pay', [\App\Http\Controllers\StudentController::class, 'pay'])->name('students.pay.store');
 
 Route::get('/students/{student}/payments/download', [StudentController::class, 'downloadPayments'])->name('students.payments.download');
 Route::get('/students/{student}/payments/ajax', [StudentController::class, 'ajaxPayments'])->name('students.payments.ajax');
@@ -623,7 +648,6 @@ Route::get('/students/create', [\App\Http\Controllers\StudentController::class, 
 Route::post('/students', [\App\Http\Controllers\StudentController::class, 'store'])->name('students.store');
 
 Route::get('/courses/registration-fee', [StudentController::class, 'getRegistrationFee'])->name('courses.registration_fee');
-Route::get('/students/branches-by-academic-year', [StudentController::class, 'getBranchesByAcademicYear'])->name('students.getBranchesByAcademicYear');
 Route::post('/students/flutterwave/initialize', [\App\Http\Controllers\FlutterwaveController::class, 'initializePayment'])->name('students.flutterwave.initialize');
 Route::get('/payment/callback', [StudentController::class, 'paymentCallback'])->name('students.payment.callback');
 
@@ -638,8 +662,8 @@ Route::get('/youtube/callback', [YouTubeController::class, 'handleYouTubeCallbac
 Route::get('/youtube/upload', [YouTubeController::class, 'showUploadForm'])->name('youtube.upload.form');
 Route::post('/youtube/upload', [YouTubeController::class, 'upload'])->name('youtube.upload');
 
-Route::post('/contact/send', [ContactController::class, 'send'])->name('contact.send');
-Route::post('/student/fees/pay', [StudentController::class, 'payFees'])->name('student.fees.pay');
+Route::post('/contact/send', [ContactController::class, 'send'])->name('contact.send.form');
+Route::post('/student/fees/pay', [StudentController::class, 'payFees'])->name('student.fees.pay.process');
 Route::post('/contact', [HomeController::class, 'handleContact'])->name('contact.send');
 Route::get('/ai/prepare-exam', [\App\Http\Controllers\ExamController::class, 'prepareExamAI'])->name('ai.prepare-exam');
 
@@ -713,9 +737,6 @@ Route::get('/student/pay/', [StudentController::class, 'payFees'])->name('studen
 Route::get('/staff/one-time-login/{staff}', [StaffController::class, 'oneTimeLogin'])
     ->name('staff.one_time_login')
     ->middleware('signed');
-
-Route::post('/students/{student}/pay', [StudentController::class, 'payCash'])->name('students.pay');
-Route::get('/students/{student}/payments/ajax', [StudentController::class, 'ajaxPayments'])->name('students.payments.ajax');
 
 Route::post('/expenses', [ExpenseController::class, 'store'])->name('expenses.store');
 Route::post('/timetable/generate-ai', [TimetableController::class, 'generateWithAI'])->name('timetable.generate.ai');
@@ -798,7 +819,6 @@ Route::middleware(['auth:admin,staff,teacher'])->prefix('exams')->name('exams.')
     Route::get('question-banks/{questionBank}/export', [QuestionBankController::class, 'exportQuestions'])->name('question-banks.export');
     
     // Enhanced Exam Management
-    Route::get('{exam}/questions', [ExamController::class, 'questions'])->name('questions');
     Route::get('{exam}/results', [ExamResultsController::class, 'index'])->name('results');
     Route::get('{exam}/results/{attempt}', [ExamResultsController::class, 'studentResults'])->name('student-results');
     Route::get('{exam}/analytics', [ExamResultsController::class, 'analytics'])->name('analytics');
@@ -838,4 +858,54 @@ Route::middleware('auth:student')->prefix('exams')->name('exams.')->group(functi
     Route::post('{exam}/save-answer/{session}/{questionNumber}', [ExamTakingController::class, 'saveAnswer'])->name('save-answer');
     Route::post('{exam}/submit/{session}', [ExamTakingController::class, 'submitExam'])->name('submit');
     Route::post('{exam}/log-violation/{session}', [ExamTakingController::class, 'logViolation'])->name('log-violation');
+});
+
+// Token Management Routes
+Route::middleware('auth:student')->prefix('tokens')->name('tokens.')->group(function () {
+    Route::get('/', [TokenController::class, 'index'])->name('index');
+    Route::get('/dashboard', [TokenController::class, 'dashboard'])->name('dashboard');
+    Route::post('/purchase', [TokenController::class, 'purchase'])->name('purchase');
+});
+
+// Subscription Routes
+Route::middleware('auth:student')->prefix('subscriptions')->name('subscriptions.')->group(function () {
+    Route::get('/', [SubscriptionController::class, 'index'])->name('index');
+    Route::post('/purchase', [SubscriptionController::class, 'purchase'])->name('purchase');
+    Route::get('/payment/{studentSubscription}', [SubscriptionController::class, 'payment'])->name('payment');
+    Route::post('/payment/{studentSubscription}', [SubscriptionController::class, 'completePayment'])->name('payment.complete');
+});
+
+// Secretary Token Management Routes
+Route::middleware(['auth:admin,staff'])->prefix('tokens')->name('tokens.')->group(function () {
+    Route::get('/secretary', [TokenController::class, 'secretaryIndex'])->name('secretary-index');
+    Route::post('/add/{student}', [TokenController::class, 'secretaryAddTokens'])->name('add');
+    Route::post('/deduct/{student}', [TokenController::class, 'secretaryDeductTokens'])->name('deduct');
+    Route::get('/history/{student?}', [TokenController::class, 'transactionHistory'])->name('history');
+});
+
+// Admin Subscription Management Routes
+Route::middleware(['auth:admin'])->prefix('admin/subscriptions')->name('subscriptions.')->group(function () {
+    Route::get('/', [SubscriptionController::class, 'adminIndex'])->name('admin-index');
+    Route::get('/create', [SubscriptionController::class, 'adminCreate'])->name('admin-create');
+    Route::post('/', [SubscriptionController::class, 'adminStore'])->name('admin-store');
+    Route::get('/{subscription}/edit', [SubscriptionController::class, 'adminEdit'])->name('admin-edit');
+    Route::put('/{subscription}', [SubscriptionController::class, 'adminUpdate'])->name('admin-update');
+    Route::post('/{subscription}/toggle', [SubscriptionController::class, 'adminToggle'])->name('admin-toggle');
+    Route::get('/student-subscriptions', [SubscriptionController::class, 'studentSubscriptions'])->name('student-subscriptions');
+    Route::post('/extend/{studentSubscription}', [SubscriptionController::class, 'extendSubscription'])->name('extend');
+});
+
+// Public Exam Access Routes
+Route::prefix('exam')->name('exam.')->group(function () {
+    Route::get('/{exam}/payment', function(Exam $exam) {
+        if (!$exam->requiresPayment()) {
+            return redirect()->route('exam.take', $exam);
+        }
+        return view('exam.payment', compact('exam'));
+    })->name('payment');
+    
+    Route::post('/{exam}/payment', function(Request $request, Exam $exam) {
+        // Process payment logic here
+        return redirect()->route('exam.take', $exam)->with('success', 'Payment processed successfully');
+    })->name('payment.process');
 });

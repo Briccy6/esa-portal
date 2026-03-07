@@ -39,11 +39,21 @@ class StudentController extends Controller
     {
         $student = auth('student')->user();
 
-        $exams = \App\Models\Exam::whereHas('courses', function($q) use ($student) {
-            $q->where('courses.id', $student->course_id);
-        })->with(['marks' => function($q) use ($student) {
+        // Get exams that are associated with the student's courses or lessons
+        $exams = \App\Models\Exam::where(function($query) use ($student) {
+            // Check if exam is associated with student's courses
+            $query->whereHas('courses', function($q) use ($student) {
+                $q->where('courses.id', $student->course_id);
+            })
+            // Or check if exam is associated with student's lessons
+            ->orWhereHas('lessons', function($q) use ($student) {
+                $q->where('lessons.course_id', $student->course_id);
+            });
+        })
+        ->with(['marks' => function($q) use ($student) {
             $q->where('student_id', $student->id);
         }])
+        ->orderBy('class_date', 'asc')
         ->get();
 
         return view('students.exams', compact('exams'));
@@ -82,12 +92,12 @@ class StudentController extends Controller
             abort(403, 'Unauthorized');
         }
 
-        $marks = \App\Models\marks::where('student_id', $student->id)
+        $marks = \App\Models\Mark::where('student_id', $student->id)
             ->with(['course', 'branch'])
             ->get();
 
         foreach ($marks as $mark) {
-            $allMarks = \App\Models\marks::where([
+            $allMarks = \App\Models\Mark::where([
                     'course_id'  => $mark->course_id,
                     'branch_id'  => $mark->branch_id,
                 ])
@@ -1279,7 +1289,7 @@ class StudentController extends Controller
         // Get marks for exams
         $marks = [];
         foreach ($exams as $exam) {
-            $mark = \App\Models\marks::where('exam_id', $exam->id)
+            $mark = \App\Models\Mark::where('exam_id', $exam->id)
                 ->where('student_id', $student->id)
                 ->first();
             if ($mark) {

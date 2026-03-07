@@ -47,7 +47,7 @@
                                         <td>{{ $questionBank->name }}</td>
                                         <td>{{ Str::limit($questionBank->description, 50) }}</td>
                                         <td>{{ $questionBank->course?->course_name ?? 'N/A' }}</td>
-                                        <td>{{ $questionBank->course?->branches?->first()?->name ?? 'N/A' }}</td>
+                                        <td>{{ $questionBank->course?->branch?->name ?? 'N/A' }}</td>
                                         <td>{{ $questionBank->academicYear?->year ?? 'N/A' }}</td>
                                         <td>{{ $questionBank->teacher?->teacher_name ?? 'N/A' }}</td>
                                         <td>

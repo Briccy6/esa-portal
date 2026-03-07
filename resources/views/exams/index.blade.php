@@ -392,7 +392,7 @@
                         <a href="{{ route('admin.exams.show', $exam) }}" class="btn btn-primary btn-exam">
                             <i class="fas fa-eye"></i> View
                         </a>
-                        <a href="#" class="btn btn-info btn-exam" onclick="alert('Questions management not yet implemented')">
+                        <a href="{{ route('exams.questions', $exam) }}" class="btn btn-info btn-exam">
                             <i class="fas fa-question-circle"></i> Questions
                         </a>
                         <a href="#" class="btn btn-success btn-exam" onclick="alert('Results not yet implemented')">

@@ -150,4 +150,104 @@ class Student extends Authenticatable
     {
         return $this->nesa_registered ? 'Registered' : 'Not Registered';
     }
+
+    /**
+     * Token related relationships and methods
+     */
+    public function token()
+    {
+        return $this->hasOne(Token::class);
+    }
+
+    public function tokenTransactions()
+    {
+        return $this->hasManyThrough(TokenTransaction::class, Token::class);
+    }
+
+    public function examTokens()
+    {
+        return $this->hasMany(ExamToken::class);
+    }
+
+    public function subscriptions()
+    {
+        return $this->hasMany(StudentSubscription::class);
+    }
+
+    public function activeSubscription()
+    {
+        return $this->hasOne(StudentSubscription::class)->active()->paid();
+    }
+
+    public function getTokenBalanceAttribute()
+    {
+        return $this->token ? $this->token->balance : 0;
+    }
+
+    public function getFormattedTokenBalanceAttribute()
+    {
+        return number_format($this->token_balance) . ' tokens';
+    }
+
+    public function hasTokens($amount)
+    {
+        return $this->token_balance >= $amount;
+    }
+
+    public function canAttemptExam($exam)
+    {
+        // Registered students with sufficient tokens
+        if ($this->hasTokens($exam->token_cost)) {
+            return true;
+        }
+
+        // Check if student has active subscription that covers this exam
+        if ($this->activeSubscription) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public function initializeTokens($defaultTokens = 10)
+    {
+        if (!$this->token) {
+            $token = $this->token()->create([
+                'balance' => $defaultTokens,
+                'total_earned' => $defaultTokens,
+            ]);
+
+            $token->addTokens($defaultTokens, 'Welcome tokens for new student', 'registration');
+
+            return $token;
+        }
+
+        return $this->token;
+    }
+
+    public function purchaseSubscription($subscriptionId, $paymentReference = null)
+    {
+        $subscription = Subscription::findOrFail($subscriptionId);
+
+        $studentSubscription = $this->subscriptions()->create([
+            'subscription_id' => $subscriptionId,
+            'paid_amount' => $subscription->price,
+            'payment_reference' => $paymentReference,
+            'payment_status' => $paymentReference ? 'paid' : 'pending',
+            'starts_at' => now(),
+            'ends_at' => now()->addDays($subscription->duration_days),
+            'is_active' => $paymentReference ? true : false,
+        ]);
+
+        if ($paymentReference) {
+            $this->initializeTokens();
+            $this->token->addTokens(
+                $subscription->tokens_included,
+                "Tokens from {$subscription->name} subscription",
+                'subscription'
+            );
+        }
+
+        return $studentSubscription;
+    }
 }

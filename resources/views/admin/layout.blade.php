@@ -613,6 +613,22 @@
                     </a>
                     <div class="nav-indicator" x-show="hover" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200"></div>
                 </div>
+
+                <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
+                    <a href="{{ route('admin.tokens.index') }}" class="nav-link {{ request()->routeIs('admin.tokens.*') ? 'active' : '' }}">
+                        <i class="fas fa-coins"></i>
+                        <span class="nav-text">Token Management</span>
+                    </a>
+                    <div class="nav-indicator" x-show="hover" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200"></div>
+                </div>
+
+                <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
+                    <a href="{{ route('subscriptions.admin-index') }}" class="nav-link {{ request()->routeIs('admin.subscriptions.*') ? 'active' : '' }}">
+                        <i class="fas fa-crown"></i>
+                        <span class="nav-text">Subscriptions</span>
+                    </a>
+                    <div class="nav-indicator" x-show="hover" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200"></div>
+                </div>
                 
                 <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
                     <a href="{{ route('admin.blogs.index') }}" class="nav-link {{ request()->routeIs('admin.blogs.*') ? 'active' : '' }}">
@@ -680,7 +696,7 @@
                 </div>
                 
                 <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
-                    <a href="{{ route('teachers.create') }}" class="nav-link {{ request()->routeIs('admin.teacher.create') ? 'active' : '' }}">
+                    <a href="{{ route('admin.teachers.create') }}" class="nav-link {{ request()->routeIs('admin.teachers.create') ? 'active' : '' }}">
                         <i class="fas fa-chalkboard-teacher"></i>
                         <span class="nav-text">Teachers</span>
                     </a>

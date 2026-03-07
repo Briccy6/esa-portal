@@ -29,6 +29,17 @@
 <div class="exam-container">
     <h2>{{ $exam->title }}</h2>
     <p><strong>Instructions:</strong> {{ $exam->instructions ?? 'Read each question carefully.' }}</p>
+    
+    @if($exam->requiresTokens())
+        <div class="alert alert-info mb-3">
+            <i class="fas fa-coins"></i> 
+            <strong>Token Cost:</strong> {{ $exam->token_cost }} tokens 
+            @if(isset($student) && $student->token)
+                | <strong>Your Balance:</strong> {{ $student->token->balance }} tokens
+            @endif
+        </div>
+    @endif
+    
     <form id="examForm" method="POST" action="{{ route('exam.submit', $exam->id) }}">
         @csrf
         <div id="questionArea"></div>

@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Exam;
 use App\Models\Course;
 use App\Models\Lesson;
-use App\Models\Marks;
+use App\Models\Mark;
 use Illuminate\Http\Request;
 use App\Mail\ExamCreatedMail;
 use Illuminate\Support\Facades\Mail;
@@ -115,6 +115,12 @@ public function create()
             'lesson_ids.*' => 'exists:lessons,id',
         ]);
         
+        $request->validate([
+            'question_bank_ids' => 'nullable|array',
+            'question_bank_ids.*' => 'exists:question_banks,id',
+            'questions_per_bank' => 'nullable|integer|min:1|max:50',
+        ]);
+        
         try {
             // Debug: Log the request data first
             \Log::info('Request data: ' . json_encode($request->all()));
@@ -158,6 +164,11 @@ public function create()
             
             \Log::info('Courses and lessons attached successfully');
             
+            // Process question bank selections
+            if ($request->question_bank_ids && $request->questions_per_bank) {
+                $this->addQuestionsFromBanks($exam, $request->question_bank_ids, $request->questions_per_bank);
+            }
+            
             // Redirect based on authentication
             if (auth('admin')->check()) {
                 return redirect()->route('admin.exams.index')->with('success', 'Exam created successfully.');
@@ -181,7 +192,7 @@ public function create()
      */
     public function show(Exam $exam)
     {
-        $exam->load(['courses', 'lessons']);
+        $exam->load(['courses', 'lessons', 'academic_year', 'term', 'teacher', 'branch']);
         return view('exams.show', compact('exam'));
     }
 
@@ -253,7 +264,7 @@ public function create()
         }
 
         // Prevent re-taking if disqualified (DB)
-        $existingMark = Marks::where('student_id', $student->id)
+        $existingMark = Mark::where('student_id', $student->id)
             ->where('exam_id', $exam->id)
             ->first();
 
@@ -266,6 +277,28 @@ public function create()
             return redirect()->route('dashboard')->with('error', 'You already took this exam.');
         }
 
+        // Check and deduct tokens if required
+        if ($exam->requiresTokens()) {
+            $studentToken = $student->token;
+            
+            if (!$studentToken || !$studentToken->canAfford($exam->token_cost)) {
+                $balance = $studentToken->balance ?? 0;
+                return redirect()->route('student.dashboard')->with('error', 
+                    "Insufficient tokens! This exam requires {$exam->token_cost} tokens. You have {$balance} tokens.");
+            }
+
+            // Deduct tokens for exam attempt
+            $transaction = $studentToken->spendTokens(
+                $exam->token_cost, 
+                "Exam attempt: {$exam->title}", 
+                'exam'
+            );
+
+            if (!$transaction) {
+                return redirect()->route('student.dashboard')->with('error', 'Failed to deduct tokens. Please try again.');
+            }
+        }
+
         // Start cheating detection session or timestamp
         session(["exam_start_time_{$exam->id}" => now()]);
         session(["cheating_attempts_{$exam->id}" => 0]);
@@ -273,6 +306,7 @@ public function create()
         return view('exams.take', [
             'exam' => $exam,
             'questions' => $questions,
+            'student' => $student,
         ]);
     }
 
@@ -285,21 +319,31 @@ public function create()
         session(["disqualified_exam_{$exam->id}" => true]);
 
         // Record disqualification in DB
-        Marks::updateOrCreate(
-            [
-                'student_id' => $student->id,
-                'exam_id' => $exam->id,
-            ],
-            [
+        $existingMark = Mark::where('student_id', $student->id)
+            ->where('exam_id', $exam->id)
+            ->first();
+
+        if ($existingMark) {
+            $existingMark->update([
                 'course_id' => $exam->courses->first()->id ?? null,
                 'branch_id' => $student->branch_id,
                 'value' => 0,
                 'grade_id' => null,
                 'status' => 'disqualified',
-            ]
-        );
+            ]);
+        } else {
+            Mark::create([
+                'student_id' => $student->id,
+                'exam_id' => $exam->id,
+                'course_id' => $exam->courses->first()->id ?? null,
+                'branch_id' => $student->branch_id,
+                'value' => 0,
+                'grade_id' => null,
+                'status' => 'disqualified',
+            ]);
+        }
 
-        return redirect()->route('student.dashboard')->with('error', 'You have been disqualified from this exam.');
+        return view('exams.disqualified', compact('exam'));
     }
 
     /**
@@ -333,20 +377,116 @@ public function create()
         }
 
         // Save the mark
-        Marks::updateOrCreate(
-            [
-                'student_id' => $student->id,
-                'exam_id' => $exam->id,
-            ],
-            [
+        $existingMark = Mark::where('student_id', $student->id)
+            ->where('exam_id', $exam->id)
+            ->first();
+
+        if ($existingMark) {
+            $existingMark->update([
                 'course_id' => $exam->courses->first()->id ?? null,
                 'branch_id' => $student->branch_id,
                 'value' => $score,
                 'grade_id' => null,
                 'status' => 'completed',
-            ]
-        );
+            ]);
+        } else {
+            Mark::create([
+                'student_id' => $student->id,
+                'exam_id' => $exam->id,
+                'course_id' => $exam->courses->first()->id ?? null,
+                'branch_id' => $student->branch_id,
+                'value' => $score,
+                'grade_id' => null,
+                'status' => 'completed',
+            ]);
+        }
 
         return redirect()->route('student.dashboard')->with('success', 'Exam submitted! Your score: ' . $score . '/100');
     }
-} 
+
+    /**
+     * Add questions from question banks to an exam
+     */
+    private function addQuestionsFromBanks(Exam $exam, array $questionBankIds, int $questionsPerBank)
+    {
+        $allQuestions = collect();
+        
+        foreach ($questionBankIds as $bankId) {
+            $bank = \App\Models\QuestionBank::find($bankId);
+            if ($bank) {
+                // Get random questions from this bank
+                $questions = $bank->questions()->inRandomOrder()->limit($questionsPerBank)->get();
+                $allQuestions = $allQuestions->concat($questions);
+            }
+        }
+        
+        // Create new questions for the exam
+        foreach ($allQuestions as $question) {
+            \App\Models\Question::create([
+                'exam_id' => $exam->id,
+                'question_bank_id' => $question->question_bank_id,
+                'text' => $question->text,
+                'question_type' => $question->question_type,
+                'option_a' => $question->option_a,
+                'option_b' => $question->option_b,
+                'option_c' => $question->option_c,
+                'option_d' => $question->option_d,
+                'correct_answer' => $question->correct_answer,
+                'correct_answers' => $question->correct_answers,
+                'marks' => $question->marks,
+                'weight' => $question->weight,
+                'difficulty_level' => $question->difficulty_level,
+                'explanation' => $question->explanation,
+                'keywords' => $question->keywords,
+            ]);
+        }
+        
+        \Log::info('Added ' . $allQuestions->count() . ' questions from question banks to exam ' . $exam->id);
+    }
+
+    /**
+     * Preview questions from selected question banks
+     */
+    public function previewQuestions(Request $request)
+    {
+        $request->validate([
+            'question_bank_ids' => 'required|array',
+            'question_bank_ids.*' => 'exists:question_banks,id',
+            'questions_per_bank' => 'required|integer|min:1|max:50',
+        ]);
+        
+        $allQuestions = collect();
+        
+        foreach ($request->question_bank_ids as $bankId) {
+            $bank = \App\Models\QuestionBank::find($bankId);
+            if ($bank) {
+                $questions = $bank->questions()->inRandomOrder()->limit($request->questions_per_bank)->get();
+                $allQuestions = $allQuestions->concat($questions);
+            }
+        }
+        
+        // Format questions for preview
+        $formattedQuestions = $allQuestions->map(function($question) {
+            return [
+                'text' => $question->text,
+                'question_type' => $question->question_type,
+                'marks' => $question->marks,
+                'options' => $this->formatOptions($question),
+                'question_bank_name' => $question->questionBank->name ?? 'Unknown',
+            ];
+        });
+        
+        return response()->json(['questions' => $formattedQuestions]);
+    }
+
+    private function formatOptions($question)
+    {
+        $options = [];
+        if ($question->option_a) $options[] = $question->option_a;
+        if ($question->option_b) $options[] = $question->option_b;
+        if ($question->option_c) $options[] = $question->option_c;
+        if ($question->option_d) $options[] = $question->option_d;
+        
+        return implode(' | ', $options);
+    }
+}
