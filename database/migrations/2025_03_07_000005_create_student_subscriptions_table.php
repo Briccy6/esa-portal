@@ -16,8 +16,8 @@ return new class extends Migration
                 $table->decimal('paid_amount', 8, 2);
                 $table->string('payment_reference')->nullable();
                 $table->string('payment_status')->default('pending')->comment('pending, paid, failed, refunded');
-                $table->timestamp('starts_at');
-                $table->timestamp('ends_at');
+                $table->timestamp('starts_at')->useCurrent();
+                $table->timestamp('ends_at')->useCurrent();
                 $table->boolean('is_active')->default(true);
                 $table->timestamps();
 

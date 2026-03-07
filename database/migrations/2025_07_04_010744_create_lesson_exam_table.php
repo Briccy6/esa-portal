@@ -13,11 +13,11 @@ return new class extends Migration
     {
           if (!Schema::hasTable('lesson_exam')) {
         Schema::create('lesson_exam', function (Blueprint $table) {
-            $table->id();
-            $table->foreign('id')->references('id')->on('exams')->onDelete('cascade');
-
+            $table->foreignId('exam_id')->constrained()->onDelete('cascade');
             $table->foreignId('lesson_id')->constrained()->onDelete('cascade');
             $table->timestamps();
+            
+            $table->primary(['exam_id', 'lesson_id']);
         });
     }
     }

@@ -12,12 +12,24 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('resources', function (Blueprint $table) {
-            $table->decimal('price', 8, 2)->default(0.00)->after('document_mime');
-            $table->boolean('is_public')->default(false)->after('price');
-            $table->boolean('is_free')->default(true)->after('is_public');
-            $table->string('watermark_path')->nullable()->after('is_free');
-            $table->boolean('watermark_applied')->default(false)->after('watermark_path');
-            $table->text('admin_notes')->nullable()->after('watermark_applied');
+            if (!Schema::hasColumn('resources', 'price')) {
+                $table->decimal('price', 8, 2)->default(0.00);
+            }
+            if (!Schema::hasColumn('resources', 'is_public')) {
+                $table->boolean('is_public')->default(false);
+            }
+            if (!Schema::hasColumn('resources', 'is_free')) {
+                $table->boolean('is_free')->default(true);
+            }
+            if (!Schema::hasColumn('resources', 'watermark_path')) {
+                $table->string('watermark_path')->nullable();
+            }
+            if (!Schema::hasColumn('resources', 'watermark_applied')) {
+                $table->boolean('watermark_applied')->default(false);
+            }
+            if (!Schema::hasColumn('resources', 'admin_notes')) {
+                $table->text('admin_notes')->nullable();
+            }
         });
     }
 

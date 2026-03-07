@@ -9,18 +9,42 @@ return new class extends Migration
     public function up()
     {
         Schema::table('live_class_payments', function (Blueprint $table) {
-            $table->string('name')->nullable()->after('email');
-            $table->string('phone')->nullable()->after('name');
-            $table->decimal('amount', 10, 2)->nullable()->after('phone');
-            $table->string('currency', 3)->nullable()->after('amount');
-            $table->string('payment_method')->nullable()->after('currency');
-            $table->string('transaction_id')->nullable()->after('payment_method');
-            $table->string('status')->default('pending')->after('transaction_id');
-            $table->string('payment_gateway')->nullable()->after('status');
-            $table->json('gateway_response')->nullable()->after('payment_gateway');
-            $table->timestamp('paid_at')->nullable()->after('gateway_response');
-            $table->timestamp('refunded_at')->nullable()->after('paid_at');
-            $table->text('refund_reason')->nullable()->after('refunded_at');
+            if (!Schema::hasColumn('live_class_payments', 'name')) {
+                $table->string('name')->nullable()->after('email');
+            }
+            if (!Schema::hasColumn('live_class_payments', 'phone')) {
+                $table->string('phone')->nullable()->after('name');
+            }
+            if (!Schema::hasColumn('live_class_payments', 'amount')) {
+                $table->decimal('amount', 10, 2)->nullable()->after('phone');
+            }
+            if (!Schema::hasColumn('live_class_payments', 'currency')) {
+                $table->string('currency', 3)->nullable()->after('amount');
+            }
+            if (!Schema::hasColumn('live_class_payments', 'payment_method')) {
+                $table->string('payment_method')->nullable()->after('currency');
+            }
+            if (!Schema::hasColumn('live_class_payments', 'transaction_id')) {
+                $table->string('transaction_id')->nullable()->after('payment_method');
+            }
+            if (!Schema::hasColumn('live_class_payments', 'status')) {
+                $table->string('status')->default('pending')->after('transaction_id');
+            }
+            if (!Schema::hasColumn('live_class_payments', 'payment_gateway')) {
+                $table->string('payment_gateway')->nullable()->after('status');
+            }
+            if (!Schema::hasColumn('live_class_payments', 'gateway_response')) {
+                $table->json('gateway_response')->nullable()->after('payment_gateway');
+            }
+            if (!Schema::hasColumn('live_class_payments', 'paid_at')) {
+                $table->timestamp('paid_at')->nullable()->after('gateway_response');
+            }
+            if (!Schema::hasColumn('live_class_payments', 'refunded_at')) {
+                $table->timestamp('refunded_at')->nullable()->after('paid_at');
+            }
+            if (!Schema::hasColumn('live_class_payments', 'refund_reason')) {
+                $table->text('refund_reason')->nullable()->after('refunded_at');
+            }
         });
     }
 

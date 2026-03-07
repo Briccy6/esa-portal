@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -18,7 +19,10 @@ return new class extends Migration
         
         Schema::table('branch_teacher', function (Blueprint $table) {
             $table->id()->first();
-            $table->unique(['branch_id', 'teacher_id']);
+            // Only add unique key if it doesn't exist
+            if (!collect(DB::select("SHOW INDEXES FROM branch_teacher WHERE Key_name = 'branch_teacher_branch_id_teacher_id_unique'"))->count()) {
+                $table->unique(['branch_id', 'teacher_id']);
+            }
         });
     }
 

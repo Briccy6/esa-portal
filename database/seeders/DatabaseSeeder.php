@@ -15,20 +15,13 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
-{
-    $this->call([
-        CoursesTableSeeder::class,
-    ]);
-     $this->call([
-        AcademicYearsSeeder::class,
-    ]);
-
         $this->call([
+            CoursesTableSeeder::class,
+            AcademicYearsSeeder::class,
             AdminSeeder::class,
+            SchoolInformationSeeder::class,
+            KigaliTourismMarksSeeder::class,
         ]);
-
-       
-    }
 
     }
 }

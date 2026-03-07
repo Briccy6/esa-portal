@@ -13,8 +13,8 @@ return new class extends Migration
             $table->foreignId('exam_id')->constrained()->onDelete('cascade');
             $table->foreignId('student_id')->constrained()->onDelete('cascade');
             $table->foreignId('attempt_id')->constrained('exam_attempts')->onDelete('cascade');
-            $table->timestamp('session_start');
-            $table->timestamp('last_activity');
+            $table->timestamp('session_start')->nullable();
+            $table->timestamp('last_activity')->nullable();
             $table->integer('time_remaining_seconds');
             $table->boolean('is_fullscreen')->default(false);
             $table->integer('tab_switches')->default(0);

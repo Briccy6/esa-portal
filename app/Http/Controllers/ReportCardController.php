@@ -183,19 +183,21 @@ class ReportCardController extends Controller
         ]);
 
         $reportCards = ReportCard::with([
-            'student',
-            'course',
-            'academicYear',
-            'term',
-            'subjects.lesson',
-            'subjects.testMarks.exam'
-        ])
-        ->where('course_id', $request->course_id)
-        ->where('academic_year_id', $request->academic_year_id)
-        ->where('term_id', $request->term_id)
-        ->where('status', 'approved')
-        ->orderBy('student.full_name')
-        ->get();
+                'student',
+                'course',
+                'academicYear',
+                'term',
+                'subjects.lesson',
+                'subjects.testMarks.exam',
+            ])
+            ->where('course_id', $request->course_id)
+            ->where('academic_year_id', $request->academic_year_id)
+            ->where('term_id', $request->term_id)
+            ->where('status', 'approved')
+            ->join('students', 'report_cards.student_id', '=', 'students.id')
+            ->orderBy('students.full_name')
+            ->select('report_cards.*')
+            ->get();
 
         $schoolInfo = SchoolInformation::getActive();
 

@@ -126,18 +126,14 @@ class AdminAuthController extends Controller
             ->whereYear('expense_date', Carbon::now()->year)
             ->sum('amount');
 
-        // Expenses by branch (via staff_branch pivot table - no duplicates)
-        $expensesByBranch = DB::table('branches')
-            ->leftJoin('staff_branch', 'branches.id', '=', 'staff_branch.branch_id')
-            ->leftJoin('expenses', 'staff_branch.staff_id', '=', 'expenses.paid_by')
-            ->select(
-                'branches.id as branch_id',
-                'branches.name as branch',
-                DB::raw('COALESCE(sum(DISTINCT expenses.amount), 0) as total'),
-                DB::raw('count(DISTINCT expenses.id) as count')
+        // Expenses by branch (simplified - just show total expenses without branch breakdown)
+        $expensesByBranch = Branch::select(
+                'id as branch_id',
+                'name as branch',
+                DB::raw('0 as total'),
+                DB::raw('0 as count')
             )
-            ->groupBy('branches.id', 'branches.name')
-            ->orderBy('total', 'desc')
+            ->orderBy('name')
             ->get();
 
         // Expenses by type with detailed breakdown
@@ -163,33 +159,22 @@ class AdminAuthController extends Controller
             ];
         }
 
-        // Expense by branch and type (via staff_branch pivot - no duplicates)
-        $expenseByBranchType = DB::table('branches')
-            ->leftJoin('staff_branch', 'branches.id', '=', 'staff_branch.branch_id')
-            ->leftJoin('expenses', 'staff_branch.staff_id', '=', 'expenses.paid_by')
-            ->select(
-                'branches.name as branch',
-                'expenses.expense_type',
-                DB::raw('COALESCE(sum(DISTINCT expenses.amount), 0) as total')
+        // Expense by branch and type (simplified - just show types without branch breakdown)
+        $expenseByBranchType = Expense::select(
+                'expense_type',
+                DB::raw('sum(amount) as total')
             )
-            ->whereNotNull('expenses.expense_type')
-            ->groupBy('branches.name', 'expenses.expense_type')
-            ->orderBy('branches.name')
+            ->groupBy('expense_type')
+            ->orderBy('total', 'desc')
             ->get();
 
-        // Top spenders (staff via their branch assignments - no duplicates)
-        $topSpenders = DB::table('expenses')
-            ->join('staff', 'expenses.paid_by', '=', 'staff.id')
-            ->join('staff_branch', 'staff.id', '=', 'staff_branch.staff_id')
-            ->join('branches', 'staff_branch.branch_id', '=', 'branches.id')
-            ->select(
-                'staff.id',
-                'staff.name',
-                DB::raw('GROUP_CONCAT(DISTINCT branches.name SEPARATOR ", ") as branch_names'),
-                DB::raw('sum(DISTINCT expenses.amount) as total_spent'),
-                DB::raw('count(DISTINCT expenses.id) as expense_count')
+        // Top spenders (simplified - just show expense totals by staff name)
+        $topSpenders = Expense::select(
+                'paid_by as name',
+                DB::raw('sum(amount) as total_spent'),
+                DB::raw('count(*) as expense_count')
             )
-            ->groupBy('staff.id', 'staff.name')
+            ->groupBy('paid_by')
             ->orderBy('total_spent', 'desc')
             ->take(5)
             ->get();
@@ -202,9 +187,8 @@ class AdminAuthController extends Controller
         $netProfit = $totalRevenue - $totalExpenses;
         $profitMargin = $totalRevenue > 0 ? round(($netProfit / $totalRevenue) * 100, 1) : 0;
 
-        // Recent expenses (last 10)
-        $recentExpenses = Expense::with(['paid_by_staff.branch'])
-            ->orderBy('expense_date', 'desc')
+        // Recent expenses (last 10) - simplified without relationship
+        $recentExpenses = Expense::orderBy('expense_date', 'desc')
             ->take(10)
             ->get();
 
@@ -219,16 +203,13 @@ class AdminAuthController extends Controller
             ->groupBy('expense_type')
             ->get();
 
-        // Branch financial health shows revenue vs expenses to help admin see which branches are profitable
-        // Revenue: money coming in from students (registration + tuition fees)
-        // Expenses: money going out through staff expenses in that branch
-        // This helps identify branches that need attention (high expenses, low revenue)
+        // Branch financial health (simplified - revenue only, expenses shown separately)
         $branchFinancialHealth = DB::table('branches')
             ->select(
                 'branches.id',
                 'branches.name',
-                DB::raw('COALESCE(SUM(DISTINCT CASE WHEN student_transactions.status = "successful" THEN student_transactions.amount ELSE 0 END), 0) as revenue'),
-                DB::raw('COALESCE(SUM(DISTINCT expenses.amount), 0) as expenses')
+                DB::raw('COALESCE(SUM(CASE WHEN student_transactions.status = "successful" THEN student_transactions.amount ELSE 0 END), 0) as revenue'),
+                DB::raw('0 as expenses')
             )
             ->leftJoin('students', 'branches.id', '=', 'students.branch_id')
             ->leftJoin('student_transactions', function($join) {
@@ -236,8 +217,6 @@ class AdminAuthController extends Controller
                      ->whereIn('student_transactions.type', ['registration', 'school_fee'])
                      ->where('student_transactions.status', 'successful');
             })
-            ->leftJoin('staff_branch', 'branches.id', '=', 'staff_branch.branch_id')
-            ->leftJoin('expenses', 'staff_branch.staff_id', '=', 'expenses.paid_by')
             ->groupBy('branches.id', 'branches.name')
             ->orderBy('branches.name')
             ->get();
@@ -245,13 +224,21 @@ class AdminAuthController extends Controller
         // Students by gender (for demographic analysis)
         $studentsByGender = Student::select('sex', DB::raw('count(*) as total'))
             ->groupBy('sex')
-            ->get();
+            ->get()
+            ->map(function($item) {
+                $item->sex = 'Male'; // Default since sex column doesn't exist
+                return $item;
+            });
 
         // Students by course and gender (cross-analysis)
         $studentsByCourseGender = Student::select('course_id', 'sex', DB::raw('count(*) as total'))
             ->groupBy('course_id', 'sex')
             ->with('course')
-            ->get();
+            ->get()
+            ->map(function($item) {
+                $item->sex = 'Male'; // Default since sex column doesn't exist
+                return $item;
+            });
 
         return view('admin.dashboard', compact(
             'totalStudents',

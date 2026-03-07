@@ -13,29 +13,63 @@ return new class extends Migration
     {
         Schema::table('live_classes', function (Blueprint $table) {
             // Add new columns at the end of the table
-            $table->string('title')->after('summary');
-            $table->text('description')->nullable()->after('title');
-            $table->unsignedBigInteger('teacher_id')->nullable()->after('description');
-            $table->string('status')->default('scheduled')->after('teacher_id');
-            $table->string('meeting_id')->nullable()->after('status');
-            $table->string('password')->nullable()->after('meeting_id');
+            if (!Schema::hasColumn('live_classes', 'title')) {
+                $table->string('title')->after('summary');
+            }
+            if (!Schema::hasColumn('live_classes', 'description')) {
+                $table->text('description')->nullable()->after('title');
+            }
+            if (!Schema::hasColumn('live_classes', 'teacher_id')) {
+                $table->unsignedBigInteger('teacher_id')->nullable()->after('description');
+                $table->foreign('teacher_id')->references('id')->on('teachers')->onDelete('set null');
+            }
+            if (!Schema::hasColumn('live_classes', 'status')) {
+                $table->string('status')->default('scheduled')->after('teacher_id');
+            }
+            if (!Schema::hasColumn('live_classes', 'meeting_id')) {
+                $table->string('meeting_id')->nullable()->after('status');
+            }
+            if (!Schema::hasColumn('live_classes', 'password')) {
+                $table->string('password')->nullable()->after('meeting_id');
+            }
             
             // Add access control columns
-            $table->string('access_type')->default('students_only')->after('password');
-            $table->decimal('public_fee', 10, 2)->nullable()->after('access_type');
-            $table->string('currency', 3)->default('USD')->after('public_fee');
-            $table->integer('required_payment_percentage')->default(0)->after('currency');
-            $table->boolean('allow_public_requests')->default(false)->after('required_payment_percentage');
-            $table->integer('max_participants')->nullable()->after('allow_public_requests');
-            $table->boolean('auto_approve_online_students')->default(true)->after('max_participants');
-            $table->boolean('require_student_approval')->default(false)->after('auto_approve_online_students');
-            $table->boolean('device_restriction')->default(true)->after('require_student_approval');
-            $table->boolean('recording_enabled')->default(false)->after('device_restriction');
-            $table->boolean('chat_enabled')->default(true)->after('recording_enabled');
-            $table->boolean('screen_share_enabled')->default(true)->after('chat_enabled');
-            
-            // Add foreign key for teacher
-            $table->foreign('teacher_id')->references('id')->on('teachers')->onDelete('set null');
+            if (!Schema::hasColumn('live_classes', 'access_type')) {
+                $table->string('access_type')->default('students_only')->after('password');
+            }
+            if (!Schema::hasColumn('live_classes', 'public_fee')) {
+                $table->decimal('public_fee', 10, 2)->nullable()->after('access_type');
+            }
+            if (!Schema::hasColumn('live_classes', 'currency')) {
+                $table->string('currency', 3)->default('USD')->after('public_fee');
+            }
+            if (!Schema::hasColumn('live_classes', 'required_payment_percentage')) {
+                $table->integer('required_payment_percentage')->default(0)->after('currency');
+            }
+            if (!Schema::hasColumn('live_classes', 'allow_public_requests')) {
+                $table->boolean('allow_public_requests')->default(false)->after('required_payment_percentage');
+            }
+            if (!Schema::hasColumn('live_classes', 'max_participants')) {
+                $table->integer('max_participants')->nullable()->after('allow_public_requests');
+            }
+            if (!Schema::hasColumn('live_classes', 'auto_approve_online_students')) {
+                $table->boolean('auto_approve_online_students')->default(true)->after('max_participants');
+            }
+            if (!Schema::hasColumn('live_classes', 'require_student_approval')) {
+                $table->boolean('require_student_approval')->default(false)->after('auto_approve_online_students');
+            }
+            if (!Schema::hasColumn('live_classes', 'device_restriction')) {
+                $table->boolean('device_restriction')->default(true)->after('require_student_approval');
+            }
+            if (!Schema::hasColumn('live_classes', 'recording_enabled')) {
+                $table->boolean('recording_enabled')->default(false)->after('device_restriction');
+            }
+            if (!Schema::hasColumn('live_classes', 'chat_enabled')) {
+                $table->boolean('chat_enabled')->default(true)->after('recording_enabled');
+            }
+            if (!Schema::hasColumn('live_classes', 'screen_share_enabled')) {
+                $table->boolean('screen_share_enabled')->default(true)->after('chat_enabled');
+            }
         });
 
         // Create pivot tables for many-to-many relationships

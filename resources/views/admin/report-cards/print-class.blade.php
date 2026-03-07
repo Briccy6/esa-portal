@@ -102,6 +102,32 @@
             background: #f8f9fa;
             border-radius: 3px;
         }
+
+        .student-header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .student-photo {
+            width: 48px;
+            height: 48px;
+            border-radius: 4px;
+            object-fit: cover;
+            border: 1px solid #ddd;
+        }
+
+        .student-photo-placeholder {
+            width: 48px;
+            height: 48px;
+            border-radius: 4px;
+            border: 1px dashed #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8px;
+            color: #999;
+        }
         
         .student-name {
             font-size: 14px;
@@ -252,12 +278,21 @@
             </div>
 
             <div class="student-header">
-                <div>
-                    <div class="student-name">{{ $reportCard->student->full_name }}</div>
-                    <div class="student-details">
-                        Reg: {{ $reportCard->student->reg_number ?? 'N/A' }} | 
-                        Sex: {{ ucfirst($reportCard->student->sex ?? 'N/A') }} |
-                        Position: {{ $reportCard->position_display }}
+                <div class="student-header-left">
+                    @if($reportCard->student->passport_photo)
+                        <img src="data:image/jpeg;base64,{{ base64_encode($reportCard->student->passport_photo) }}" alt="Student Photo" class="student-photo">
+                    @else
+                        <div class="student-photo-placeholder">
+                            PHOTO
+                        </div>
+                    @endif
+                    <div>
+                        <div class="student-name">{{ $reportCard->student->full_name }}</div>
+                        <div class="student-details">
+                            Reg: {{ $reportCard->student->reg_number ?? 'N/A' }} | 
+                            Sex: {{ ucfirst($reportCard->student->sex ?? 'N/A') }} |
+                            Position: {{ $reportCard->position_display }}
+                        </div>
                     </div>
                 </div>
                 <div style="text-align: right;">

@@ -13,8 +13,12 @@ return new class extends Migration
     {
         // Check if the id column exists and doesn't have auto_increment
         if (Schema::hasTable('marks') && Schema::hasColumn('marks', 'id')) {
-            // Drop and recreate the id column with proper auto_increment
-            \DB::statement('ALTER TABLE marks MODIFY id INT AUTO_INCREMENT PRIMARY KEY');
+            // Check if auto_increment is already set
+            $columnInfo = \DB::select("SHOW COLUMNS FROM marks WHERE Field = 'id'");
+            if ($columnInfo && !str_contains($columnInfo[0]->Extra, 'auto_increment')) {
+                // Drop and recreate the id column with proper auto_increment
+                \DB::statement('ALTER TABLE marks MODIFY id INT AUTO_INCREMENT PRIMARY KEY');
+            }
         }
     }
 
