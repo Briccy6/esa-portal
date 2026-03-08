@@ -121,7 +121,7 @@
                                                     <i class="fas fa-user text-info"></i>
                                                 </div>
                                                 <div>
-                                                    <span class="fw-medium teacher-name">{{ $daily->teacher->teacher_name ?? '-' }}</span>
+                                                    <span class="fw-medium teacher-name">{{ $daily->teacher->name ?? '-' }}</span>
                                                     @if($daily->teacher)
                                                         <br><small class="text-muted">ID: {{ $daily->teacher->id }}</small>
                                                     @endif
