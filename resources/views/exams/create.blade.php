@@ -779,20 +779,42 @@ $(document).ready(function() {
                     // Trigger Select2 to update
                     courseSelect.trigger('change.select2');
                 } else {
-                    courseSelect.empty().append('<option value="">No courses available</option>');
-                    // Trigger Select2 to update
-                    courseSelect.trigger('change.select2');
+                    // If no courses for this branch, load all courses as fallback
+                    loadAllCourses(courseSelect);
                 }
             }).fail(function() {
-                courseSelect.empty().append('<option value="">Error loading courses</option>');
+                // If API fails, load all courses as fallback
+                loadAllCourses(courseSelect);
             });
         } else {
-            courseSelect.empty().append('<option value="">Select branch first</option>');
+            // If no branch selected, load all courses
+            loadAllCourses(courseSelect);
         }
         
         // Clear lessons when branch changes
         $('#lesson_ids').empty().append('<option value="">Select courses first</option>');
     });
+
+    // Function to load all courses
+    function loadAllCourses(courseSelect) {
+        courseSelect.empty().append('<option value="">Loading all courses...</option>');
+        
+        $.get('/api/courses/all', function(data) {
+            if (data && data.length > 0) {
+                courseSelect.empty();
+                data.forEach(function(course) {
+                    courseSelect.append(`<option value="${course.id}">${course.course_name}</option>`);
+                });
+                // Trigger Select2 to update
+                courseSelect.trigger('change.select2');
+            } else {
+                courseSelect.empty().append('<option value="">No courses available</option>');
+                courseSelect.trigger('change.select2');
+            }
+        }).fail(function() {
+            courseSelect.empty().append('<option value="">Error loading courses</option>');
+        });
+    }
 
     // Course selection changes lessons
     $('#course_ids').on('change', function() {

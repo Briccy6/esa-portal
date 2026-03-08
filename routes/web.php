@@ -807,6 +807,12 @@ Route::get('/api/branches/{branch}/courses', function($branchId) {
     return response()->json($courses);
 })->name('api.branches.courses');
 
+// API Route to get all courses
+Route::get('/api/courses/all', function() {
+    $courses = \App\Models\Course::all(['id', 'course_name']);
+    return response()->json($courses);
+})->name('api.courses.all');
+
 // Live Class Homepage API
 Route::get('/api/live-classes/homepage', [LiveClassController::class, 'homepageLiveClasses'])->name('api.live-classes.homepage');
 Route::get('/api/live-classes/{liveClass}/check-access', [LiveClassController::class, 'checkClassAccess'])->name('api.live-classes.check-access');
