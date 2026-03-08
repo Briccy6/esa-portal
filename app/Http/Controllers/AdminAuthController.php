@@ -113,6 +113,11 @@ class AdminAuthController extends Controller
             $totalRevenue = $tokenRevenue + $liveClassRevenue + $resourceRevenue + $subscriptionRevenue;
             $totalExpenses = Expense::sum('amount') ?? 0;
             $netProfit = $totalRevenue - $totalExpenses;
+            $profitMargin = $totalRevenue > 0 ? round(($netProfit / $totalRevenue) * 100, 2) : 0;
+
+            // Recent data for dashboard tables
+            $recentStudents = Student::with(['branch', 'course'])->latest()->take(10)->get();
+            $recentExpenses = Expense::with(['paid_by_staff.branch'])->latest()->get();
 
             // Cache the results for 1 hour
             $dashboardData = compact(
@@ -127,6 +132,9 @@ class AdminAuthController extends Controller
                 'totalRevenue',
                 'totalExpenses',
                 'netProfit',
+                'profitMargin',
+                'recentStudents',
+                'recentExpenses',
                 'monthlyTokenRevenue',
                 'monthlyLiveClassRevenue',
                 'monthlyResourceRevenue',
