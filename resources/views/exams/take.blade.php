@@ -56,12 +56,18 @@ let current = 0;
 let answers = {};
 const total = questions.length;
 
+// Debug: Log questions to console
+console.log('Questions loaded:', questions);
+console.log('First question:', questions[0]);
+
 // Render a single question
 function renderQuestion(idx) {
     const q = questions[idx];
+    console.log('Rendering question:', q);
+    
     let html = `<div class="mb-4">
         <label>
-            <strong>Q${idx+1}:</strong> ${q.text}
+            <strong>Q${idx+1}:</strong> ${q.text || 'No question text available'}
             <span class="badge bg-info text-dark ms-2">Marks: ${q.marks ?? 1}</span>
         </label>`;
     const options = [q.option_a, q.option_b, q.option_c, q.option_d].filter(Boolean);
