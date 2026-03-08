@@ -117,25 +117,21 @@ class AdminAuthController extends Controller
 
             // Recent data for dashboard tables
             $recentStudents = Student::with(['branch', 'course'])->latest()->take(10)->get();
-            $recentExpenses = Expense::with(['paid_by_staff.branch'])->latest()->get();
+            $recentExpenses = Expense::latest()->take(10)->get();
 
             // Chart data variables
             $studentsByGender = Student::select('sex', DB::raw('count(*) as total'))
                 ->groupBy('sex')
                 ->get();
 
-            $registrationPaidPercent = Student::where('registration_fee_status', 'paid')->count() > 0 
-                ? round((Student::where('registration_fee_status', 'paid')->count() / Student::count()) * 100, 1)
+            $registrationPaidPercent = Student::where('payed_registration_fees', true)->count() > 0 
+                ? round((Student::where('payed_registration_fees', true)->count() / Student::count()) * 100, 1)
                 : 0;
 
-            $tuitionPaidPercent = Student::where('tuition_fee_status', 'paid')->count() > 0
-                ? round((Student::where('tuition_fee_status', 'paid')->count() / Student::count()) * 100, 1)
-                : 0;
+            $tuitionPaidPercent = 0; // No tuition fee status column exists, set to 0 for now
 
-            $expensesByBranch = Expense::join('staff', 'expenses.paid_by_staff_id', '=', 'staff.id')
-                ->join('branches', 'staff.branch_id', '=', 'branches.id')
-                ->select('branches.name as branch', DB::raw('sum(expenses.amount) as total'))
-                ->groupBy('branches.name')
+            $expensesByBranch = Expense::select('paid_by as branch', DB::raw('sum(amount) as total'))
+                ->groupBy('paid_by')
                 ->get();
 
             $expensesByType = Expense::select('expense_type', DB::raw('sum(amount) as total'))
@@ -144,7 +140,7 @@ class AdminAuthController extends Controller
 
             $branchFinancialHealth = Branch::select('branches.name',
                     DB::raw('(SELECT COALESCE(sum(paid_amount), 0) FROM student_subscriptions WHERE branch_id = branches.id AND payment_status = "paid" AND is_active = 1) as revenue'),
-                    DB::raw('(SELECT COALESCE(sum(e.amount), 0) FROM expenses e JOIN staff s ON e.paid_by_staff_id = s.id WHERE s.branch_id = branches.id) as expenses'))
+                    DB::raw('(SELECT COALESCE(sum(e.amount), 0) FROM expenses e WHERE e.paid_by = branches.name) as expenses'))
                 ->get();
 
             $expenseTrend = Expense::select(
