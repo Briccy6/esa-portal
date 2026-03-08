@@ -139,7 +139,7 @@ class AdminAuthController extends Controller
                 ->get();
 
             $branchFinancialHealth = Branch::select('branches.name',
-                    DB::raw('(SELECT COALESCE(sum(paid_amount), 0) FROM student_subscriptions WHERE branch_id = branches.id AND payment_status = "paid" AND is_active = 1) as revenue'),
+                    DB::raw('(SELECT COALESCE(sum(ss.paid_amount), 0) FROM student_subscriptions ss JOIN students s ON ss.student_id = s.id WHERE s.branch_id = branches.id AND ss.payment_status = "paid" AND ss.is_active = 1) as revenue'),
                     DB::raw('(SELECT COALESCE(sum(e.amount), 0) FROM expenses e WHERE e.paid_by = branches.name) as expenses'))
                 ->get();
 
