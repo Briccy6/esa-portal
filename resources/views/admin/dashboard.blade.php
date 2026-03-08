@@ -507,7 +507,7 @@
                                     <td>{{ \Carbon\Carbon::parse($expense->expense_date)->format('M d') }}</td>
                                     <td>{{ ucfirst($expense->expense_type) }}</td>
                                     <td>{{ number_format($expense->amount) }}</td>
-                                    <td>{{ $expense->paid_by_staff->branch->name ?? 'N/A' }}</td>
+                                    <td>{{ $expense->paid_by ?? 'N/A' }}</td>
                                 </tr>
                                 @endforeach
                             </tbody>

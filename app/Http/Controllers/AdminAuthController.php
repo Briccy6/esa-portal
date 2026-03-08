@@ -153,6 +153,13 @@ class AdminAuthController extends Controller
                 ->get()
                 ->toArray();
 
+            // Tuition by branch data
+            $tuitionByBranch = Branch::select('name as branch', 
+                    DB::raw('(SELECT COUNT(*) FROM students WHERE branch_id = branches.id) * 100000 as expected')) // Assuming 100,000 RWF per student
+                ->get();
+
+            $tuitionPaidByBranch = collect(); // Empty collection since we don't have tuition payment tracking
+
             // Cache the results for 1 hour
             $dashboardData = compact(
                 'totalStudents',
@@ -176,6 +183,8 @@ class AdminAuthController extends Controller
                 'expensesByType',
                 'branchFinancialHealth',
                 'expenseTrend',
+                'tuitionByBranch',
+                'tuitionPaidByBranch',
                 'monthlyTokenRevenue',
                 'monthlyLiveClassRevenue',
                 'monthlyResourceRevenue',
