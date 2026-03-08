@@ -62,9 +62,6 @@ class Kernel extends HttpKernel
         // Your admin auth middleware
          'admin.auth' => \App\Http\Middleware\AdminAuth::class,
          
-        // Enhanced admin authentication middleware
-        'admin.ensure' => \App\Http\Middleware\EnsureAdminAuth::class,
-         
         // Session validation middleware
         'validate.session' => \App\Http\Middleware\ValidateSession::class,
         

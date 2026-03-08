@@ -210,9 +210,19 @@ Route::prefix('admin')->group(function () {
 });
 
 
-if (! Route::has('admin.teachers.index')) {
-    Route::middleware('auth:admin')->get('/admin/teachers', [TeacherController::class, 'index'])->name('admin.teachers.index');
-}
+// Admin Teacher Routes
+Route::middleware('auth:admin')->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/teachers', [TeacherController::class, 'index'])->name('teachers.index');
+    Route::get('/teachers/create', [TeacherController::class, 'create'])->name('teachers.create');
+    Route::post('/teachers', [TeacherController::class, 'store'])->name('teachers.store');
+    Route::get('/teachers/{teacher}', [TeacherController::class, 'show'])->name('teachers.show');
+    Route::get('/teachers/{teacher}/edit', [TeacherController::class, 'edit'])->name('teachers.edit');
+    Route::put('/teachers/{teacher}', [TeacherController::class, 'update'])->name('teachers.update');
+    Route::delete('/teachers/{teacher}', [TeacherController::class, 'destroy'])->name('teachers.destroy');
+    Route::post('/teachers/{teacher}/reset-password', [TeacherController::class, 'resetPassword'])->name('teachers.resetPassword');
+    Route::get('/teachers/by-lesson', [TeacherController::class, 'getByLesson'])->name('teachers.byLesson');
+    Route::get('/lessons/by-courses', [LessonController::class, 'getByCourses'])->name('lessons.byCourses');
+});
 
 // Teacher protected routes
 Route::middleware('auth:teacher')->prefix('teacher')->name('teacher.')->group(function () {
@@ -954,7 +964,7 @@ Route::prefix('exams')->name('public.exams.')->group(function () {
 });
 
 // Admin Blog Routes
-Route::middleware(['auth:admin', 'admin.ensure'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware('auth:admin')->prefix('admin')->name('admin.')->group(function () {
     Route::get('/blogs', [BlogController::class, 'index'])->name('blogs.index');
     Route::get('/blogs/create', [BlogController::class, 'create'])->name('blogs.create');
     Route::post('/blogs', [BlogController::class, 'store'])->name('blogs.store');

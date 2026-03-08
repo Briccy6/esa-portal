@@ -231,6 +231,11 @@ class AdminAuthController extends Controller
             ->where('price', '>', 0)
             ->sum('price');
 
+        // Subscription Revenue (from active student subscriptions)
+        $subscriptionRevenue = StudentSubscription::where('payment_status', 'paid')
+            ->where('is_active', true)
+            ->sum('paid_amount');
+
         // Monthly breakdown for each revenue source
         $monthlyTokenRevenue = TokenTransaction::where('type', 'credit')
             ->where('source', 'purchase')
@@ -249,6 +254,13 @@ class AdminAuthController extends Controller
             ->whereYear('created_at', Carbon::now()->year)
             ->sum('price');
 
+        // Monthly subscription revenue
+        $monthlySubscriptionRevenue = StudentSubscription::where('payment_status', 'paid')
+            ->where('is_active', true)
+            ->whereMonth('paid_at', Carbon::now()->month)
+            ->whereYear('paid_at', Carbon::now()->year)
+            ->sum('paid_amount');
+
         // Update total revenue to include all sources
         $totalRevenue = $registrationPaidAmount + 
             StudentTransaction::where('type', 'school_fee')
@@ -256,7 +268,8 @@ class AdminAuthController extends Controller
                 ->sum('amount') +
             $tokenRevenue + 
             $liveClassRevenue + 
-            $resourceRevenue;
+            $resourceRevenue + 
+            $subscriptionRevenue;
 
         // Recalculate profit and margin
         $netProfit = $totalRevenue - $totalExpenses;
@@ -357,7 +370,9 @@ class AdminAuthController extends Controller
             'resourceRevenue',
             'monthlyTokenRevenue',
             'monthlyLiveClassRevenue',
-            'monthlyResourceRevenue'
+            'monthlyResourceRevenue',
+            'subscriptionRevenue',
+            'monthlySubscriptionRevenue'
         );
         
         Cache::put($cacheKey, $dashboardData, 3600); // Cache for 1 hour

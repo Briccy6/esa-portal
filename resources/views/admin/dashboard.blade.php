@@ -143,6 +143,23 @@
         </div>
     </div>
 
+    <div class="col-xl-4 col-md-6 mb-4">
+            <div class="card border-left-teal shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-teal text-uppercase mb-1">Subscription Revenue</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($subscriptionRevenue ?? 0) }} Rwf</div>
+                            <div class="text-xs text-muted">This month: {{ number_format($monthlySubscriptionRevenue ?? 0) }} Rwf</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-users fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     <!-- Report Cards Quick Access -->
     <div class="row mb-4">
         <div class="col-12">
@@ -193,6 +210,58 @@
                                 </a>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Blog Management Section -->
+    <div class="row mb-4">
+        <div class="col-xl-12 col-lg-12 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-info">Blog Management</h6>
+                    <div class="btn-group">
+                        <a href="{{ route('admin.blogs.index') }}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-list me-2"></i>All Blogs
+                        </a>
+                        <a href="{{ route('admin.blogs.create') }}" class="btn btn-success btn-sm">
+                            <i class="fas fa-plus me-2"></i>Create New Blog
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h3 class="text-primary">{{ \App\Models\Blog::count() }}</h3>
+                                <p class="text-muted">Total Blogs</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h3 class="text-success">{{ \App\Models\Blog::where('status', 'published')->count() }}</h3>
+                                <p class="text-muted">Published</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h3 class="text-warning">{{ \App\Models\Blog::where('status', 'draft')->count() }}</h3>
+                                <p class="text-muted">Drafts</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h3 class="text-info">{{ \App\Models\Blog::where('status', 'archived')->count() }}</h3>
+                                <p class="text-muted">Archived</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-3 text-center">
+                        <a href="{{ route('admin.blogs.index') }}" class="btn btn-primary">
+                            <i class="fas fa-cog me-2"></i>Manage All Blogs
+                        </a>
                     </div>
                 </div>
             </div>

@@ -1,6 +1,6 @@
-@extends('layouts.app')
+@extends('admin.layout')
 
-@section('title', $blog->title)
+@section('title', $blog->title . ' - ' . $systemName)
 
 @section('styles')
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
