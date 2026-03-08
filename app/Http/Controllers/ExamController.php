@@ -131,7 +131,46 @@ class ExamController extends Controller
             'academicYears', 'terms', 'questionBanks', 'examPassword'
         ));
     }
+public function storeQuestionFromBank(Request $request)
+{
+    $request->validate([
+        'exam_id'          => 'required|exists:exams,id',
+        'bank_question_id' => 'required|exists:questions,id',
+    ]);
 
+    $bankQuestion = \App\Models\Question::findOrFail($request->bank_question_id);
+
+    // Check if question already exists in this exam
+    $alreadyExists = \App\Models\Question::where('exam_id', $request->exam_id)
+        ->where('question_bank_id', $bankQuestion->question_bank_id)
+        ->where('text', $bankQuestion->text)
+        ->exists();
+
+    if ($alreadyExists) {
+        return response()->json([
+            'success' => false,
+            'message' => 'This question already exists in the exam.'
+        ], 422);
+    }
+
+    \App\Models\Question::create([
+        'exam_id'          => $request->exam_id,
+        'question_bank_id' => $bankQuestion->question_bank_id,
+        'text'             => $bankQuestion->text,
+        'question_type'    => $bankQuestion->question_type,
+        'option_a'         => $bankQuestion->option_a,
+        'option_b'         => $bankQuestion->option_b,
+        'option_c'         => $bankQuestion->option_c,
+        'option_d'         => $bankQuestion->option_d,
+        'correct_answer'   => $bankQuestion->correct_answer,
+        'marks'            => $bankQuestion->marks,
+        'weight'           => $bankQuestion->weight ?? 1,
+        'difficulty_level' => $bankQuestion->difficulty_level ?? 1,
+        'explanation'      => $bankQuestion->explanation,
+    ]);
+
+    return response()->json(['success' => true, 'message' => 'Question added to exam successfully.']);
+}
     /**
      * Store a newly created resource in storage.
      */
@@ -710,25 +749,75 @@ class ExamController extends Controller
     /**
      * Make exam public
      */
-    public function makePublic(Request $request, Exam $exam)
+    public function makePublic(Request $request, $examId)
     {
         $request->validate([
-            'public_price' => 'required|numeric|min:0.01',
-            'token_cost' => 'required|integer|min:0',
+            'public_price' => 'nullable|numeric|min:0',
+            'token_cost' => 'nullable|integer|min:0',
         ]);
 
         try {
-            $exam->update([
+            // Find the exam manually
+            $exam = \App\Models\Exam::find($examId);
+            
+            if (!$exam) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Exam not found.'
+                ], 404);
+            }
+
+            // Set defaults for empty values
+            $publicPrice = $request->public_price ?? 0;
+            $tokenCost = $request->token_cost ?? 0;
+
+            // Log the attempt
+            \Log::info('Attempting to make exam public', [
+                'exam_id' => $exam->id,
+                'exam_title' => $exam->title,
+                'public_price' => $publicPrice,
+                'token_cost' => $tokenCost
+            ]);
+
+            // Update the exam
+            $updateData = [
                 'is_public' => true,
-                'public_price' => $request->public_price,
-                'token_cost' => $request->token_cost,
+                'public_price' => $publicPrice,
+                'token_cost' => $tokenCost,
+            ];
+
+            $updated = $exam->update($updateData);
+
+            if (!$updated) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to update exam. Please try again.'
+                ], 500);
+            }
+
+            \Log::info('Exam made public successfully', [
+                'exam_id' => $exam->id,
+                'public_price' => $exam->public_price,
+                'token_cost' => $exam->token_cost
             ]);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Exam is now public and available for students to purchase.'
             ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed: ' . implode(', ', $e->errors())
+            ], 422);
         } catch (\Exception $e) {
+            \Log::error('Error making exam public', [
+                'exam_id' => $examId ?? null,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to make exam public: ' . $e->getMessage()

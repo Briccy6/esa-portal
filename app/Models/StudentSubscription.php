@@ -92,6 +92,6 @@ class StudentSubscription extends Model
 
     public function getFormattedPaidAmountAttribute()
     {
-        return '$' . number_format($this->paid_amount, 2);
+        return number_format($this->paid_amount, 2) . ' RWF';
     }
 }

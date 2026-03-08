@@ -645,6 +645,32 @@ Route::get('/exams/{exam}/questions/create', [\App\Http\Controllers\ExamQuestion
 Route::post('/exams/{exam}/questions', [\App\Http\Controllers\ExamQuestionController::class, 'store'])->name('exams.questions.store');
 Route::post('/exams/{exam}/questions/import', [\App\Http\Controllers\ExamQuestionController::class, 'import'])->name('exams.questions.import');
 
+// API route for fetching questions from bank
+Route::get('/api/question-bank/questions', function (Illuminate\Http\Request $request) {
+    $courseId = $request->get('course_id');
+    $search = $request->get('search');
+    
+    $query = \App\Models\Question::with('questionBank')
+        ->select('id', 'question_bank_id', 'question_type', 'text', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer', 'marks')
+        ->whereHas('questionBank');
+    
+    if ($courseId) {
+        $query->whereHas('questionBank', function ($q) use ($courseId) {
+            $q->where('course_id', $courseId);
+        });
+    }
+    
+    if ($search) {
+        $query->where('text', 'like', '%' . $search . '%');
+    }
+    
+    $questions = $query->orderBy('created_at', 'desc')
+        ->take(50)
+        ->get();
+    
+    return response()->json($questions);
+});
+
 Route::middleware('auth:teacher')->prefix('teacher')->name('teacher.')->group(function () {
     Route::resource('marks', \App\Http\Controllers\MarksController::class);
 });
@@ -850,12 +876,11 @@ Route::prefix('public-subscriptions')->name('public.subscriptions.')->group(func
 });
 
 // Public Token Routes
-Route::prefix('tokens')->name('public.tokens.')->group(function () {
+Route::prefix('public/tokens')->name('public.tokens.')->group(function () {
+    Route::get('/', [App\Http\Controllers\PublicTokenController::class, 'index'])->name('index')->middleware('auth:client');
     Route::get('/purchase', [App\Http\Controllers\PublicTokenController::class, 'purchase'])->name('purchase')->middleware('auth:client');
     Route::post('/purchase', [App\Http\Controllers\PublicTokenController::class, 'processPurchase'])->name('purchase.process')->middleware('auth:client');
     Route::get('/callback', [App\Http\Controllers\PublicTokenController::class, 'handleCallback'])->name('callback');
-    Route::get('/', [App\Http\Controllers\PublicTokenController::class, 'index'])->name('index')->middleware('auth:client');
-    Route::post('/logout', [App\Http\Controllers\PublicTokenController::class, 'logout'])->name('logout');
 });
 
 // Student Request Routes
@@ -1019,8 +1044,9 @@ Route::middleware(['auth:admin'])->prefix('admin/exams')->name('admin.exams.')->
     Route::get('/{exam}/edit', [ExamController::class, 'edit'])->name('edit');
     Route::put('/{exam}', [ExamController::class, 'update'])->name('update');
     Route::delete('/{exam}', [ExamController::class, 'destroy'])->name('destroy');
-    Route::post('/{exam}/make-public', [ExamController::class, 'makePublic'])->name('make-public');
+    Route::post('/{examId}/make-public', [ExamController::class, 'makePublic'])->name('make-public');
     Route::post('/{exam}/make-private', [ExamController::class, 'makePrivate'])->name('make-private');
+    Route::post('/questions/store', [ExamController::class, 'storeQuestionFromBank'])->name('questions.store');
 });
 
 // Teacher-specific exam routes

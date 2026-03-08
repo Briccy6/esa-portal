@@ -214,11 +214,11 @@
             </div>
             <div class="detail-item">
                 <span class="detail-label">Teacher:</span>
-                <span class="detail-value">{{ $exam->teacher->first_name . ' ' . $exam->teacher->last_name ?? 'Not assigned' }}</span>
+                <span class="detail-value">{{ $exam->teacher ? $exam->teacher->first_name . ' ' . $exam->teacher->last_name : 'Not assigned' }}</span>
             </div>
             <div class="detail-item">
                 <span class="detail-label">Branch:</span>
-                <span class="detail-value">{{ $exam->branch->name ?? 'Not specified' }}</span>
+                <span class="detail-value">{{ $exam->branch ? $exam->branch->name : 'Not specified' }}</span>
             </div>
         </div>
 

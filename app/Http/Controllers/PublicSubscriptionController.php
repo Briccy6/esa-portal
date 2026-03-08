@@ -10,8 +10,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Flutterwavedev\Flutterwave\Flutterwave;
+use Flutterwave\Flutterwave;
 
 class PublicSubscriptionController extends Controller
 {
@@ -173,11 +174,49 @@ class PublicSubscriptionController extends Controller
         ];
 
         try {
-            // Initialize Flutterwave payment
-            $flutterwave = new Flutterwave();
-            $payment = $flutterwave->initializePayment($paymentData);
+            // Bootstrap Flutterwave
+            Flutterwave::bootstrap();
+            
+            // Create a standard modal for payment link generation
+            $modal = new \Flutterwave\Library\Modal(
+                \Flutterwave\Library\Modal::STANDARD,
+                [
+                    'amount' => $subscription->price,
+                    'currency' => 'RWF',
+                    'tx_ref' => $tx_ref,
+                    'redirect_url' => route('public.subscriptions.payment.callback'),
+                ],
+                new \Flutterwave\EventHandlers\ModalEventHandler(),
+                \Flutterwave\Config\ForkConfig::setUp(
+                    config('services.flutterwave.secret_key'),
+                    config('services.flutterwave.public_key'),
+                    config('services.flutterwave.encryption_key'),
+                    config('services.flutterwave.env', 'sandbox')
+                )
+            );
 
-            if (isset($payment['status']) && $payment['status'] === 'success') {
+            // Configure the modal with payment details
+            $paymentLink = $modal->with([
+                'email' => $client->email,
+                'first_name' => $client->first_name,
+                'last_name' => $client->last_name,
+                'phone_number' => $client->phone ?? '',
+                'payment_method' => 'card,bank_transfer,ussd,mobile_money',
+                'meta' => [
+                    'client_id' => $client->id,
+                    'subscription_id' => $subscription->id,
+                    'client_subscription_id' => $clientSubscription->id,
+                    'tokens_included' => $subscription->tokens_included,
+                    'type' => 'client_subscription'
+                ],
+                'customization' => [
+                    'title' => "Subscription: {$subscription->name}",
+                    'description' => "Purchase {$subscription->name} - {$subscription->tokens_included} tokens",
+                    'logo' => asset('images/logo.png')
+                ]
+            ])->getUrl();
+
+            if ($paymentLink) {
                 // Update client subscription with transaction reference
                 $clientSubscription->update(['payment_reference' => $tx_ref]);
 
@@ -199,7 +238,7 @@ class PublicSubscriptionController extends Controller
 
                 return response()->json([
                     'success' => true,
-                    'redirect_url' => $payment['data']['link'],
+                    'redirect_url' => $paymentLink,
                     'tx_ref' => $tx_ref
                 ]);
             } else {
@@ -257,9 +296,12 @@ class PublicSubscriptionController extends Controller
                     ->with('error', 'Subscription not found.');
             }
 
-            // Verify transaction with Flutterwave
-            $flutterwave = new Flutterwave();
-            $flutterwaveTransaction = $flutterwave->verifyTransaction($tx_ref);
+            // Bootstrap Flutterwave and verify transaction
+            Flutterwave::bootstrap();
+            
+            // Use the service to verify transaction
+            $transactionService = new \Flutterwave\Service\Transactions();
+            $flutterwaveTransaction = $transactionService->verify($tx_ref);
 
             if ($flutterwaveTransaction['status'] === 'success') {
                 $txData = $flutterwaveTransaction['data'];

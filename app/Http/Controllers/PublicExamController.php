@@ -10,7 +10,7 @@ use App\Models\ClientTransaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Flutterwavedev\Flutterwave\Flutterwave;
+use Flutterwave\Flutterwave;
 
 class PublicExamController extends Controller
 {
@@ -513,28 +513,58 @@ class PublicExamController extends Controller
      */
     private function initializeFlutterwavePayment($data)
     {
-        $curl = curl_init();
-        
-        curl_setopt_array($curl, [
-            CURLOPT_URL => $this->flutterwaveBaseUrl . '/payments',
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => json_encode($data),
-            CURLOPT_HTTPHEADER => [
-                'Content-Type: application/json',
-                'Authorization: Bearer ' . $this->flutterwaveSecretKey,
-            ],
-        ]);
+        try {
+            // Bootstrap Flutterwave
+            Flutterwave::bootstrap();
+            
+            // Create a standard modal for payment link generation
+            $modal = new \Flutterwave\Library\Modal(
+                \Flutterwave\Library\Modal::STANDARD,
+                [
+                    'amount' => $data['amount'],
+                    'currency' => $data['currency'],
+                    'tx_ref' => $data['tx_ref'],
+                    'redirect_url' => $data['redirect_url'],
+                ],
+                new \Flutterwave\EventHandlers\ModalEventHandler(),
+                \Flutterwave\Config\ForkConfig::setUp(
+                    config('services.flutterwave.secret_key'),
+                    config('services.flutterwave.public_key'),
+                    config('services.flutterwave.encryption_key'),
+                    config('services.flutterwave.env', 'sandbox')
+                )
+            );
 
-        $response = curl_exec($curl);
-        $err = curl_error($curl);
-        curl_close($curl);
-
-        if ($err) {
-            throw new \Exception('cURL Error: ' . $err);
+            // Configure the modal with payment details
+            $paymentLink = $modal->with([
+                'email' => $data['customer']['email'],
+                'first_name' => explode(' ', $data['customer']['name'])[0] ?? '',
+                'last_name' => explode(' ', $data['customer']['name'])[1] ?? '',
+                'phone_number' => $data['customer']['phone'] ?? '',
+                'payment_method' => $data['payment_options'],
+                'meta' => $data['meta'],
+                'customization' => $data['customizations']
+            ])->getUrl();
+            
+            if ($paymentLink) {
+                return [
+                    'status' => true,
+                    'data' => ['link' => $paymentLink]
+                ];
+            } else {
+                return [
+                    'status' => false,
+                    'message' => 'Failed to generate payment link'
+                ];
+            }
+            
+        } catch (\Exception $e) {
+            Log::error('Flutterwave payment initialization failed: ' . $e->getMessage());
+            return [
+                'status' => false,
+                'message' => $e->getMessage()
+            ];
         }
-
-        return json_decode($response, true);
     }
 
     /**
@@ -542,25 +572,25 @@ class PublicExamController extends Controller
      */
     private function verifyFlutterwaveTransaction($transactionId)
     {
-        $curl = curl_init();
-        
-        curl_setopt_array($curl, [
-            CURLOPT_URL => $this->flutterwaveBaseUrl . '/transactions/' . $transactionId . '/verify',
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HTTPHEADER => [
-                'Content-Type: application/json',
-                'Authorization: Bearer ' . $this->flutterwaveSecretKey,
-            ],
-        ]);
-
-        $response = curl_exec($curl);
-        $err = curl_error($curl);
-        curl_close($curl);
-
-        if ($err) {
-            throw new \Exception('cURL Error: ' . $err);
+        try {
+            // Bootstrap Flutterwave
+            Flutterwave::bootstrap();
+            
+            // Use the service to verify transaction
+            $transactionService = new \Flutterwave\Service\Transactions();
+            $transaction = $transactionService->verify($transactionId);
+            
+            return [
+                'status' => true,
+                'data' => $transaction
+            ];
+            
+        } catch (\Exception $e) {
+            Log::error('Flutterwave transaction verification failed: ' . $e->getMessage());
+            return [
+                'status' => false,
+                'message' => $e->getMessage()
+            ];
         }
-
-        return json_decode($response, true);
     }
 }

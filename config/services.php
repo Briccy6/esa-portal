@@ -50,6 +50,7 @@ return [
         'secret_key' => env('FLW_SECRET_KEY'),
         'public_key' => env('FLW_PUBLIC_KEY'),
         'encryption_key' => env('FLW_ENCRYPTION_KEY'),
+        'env' => env('FLW_ENV', 'sandbox'),
         'redirect_url' => env('APP_URL') . '/payment/callback',
     ],
 

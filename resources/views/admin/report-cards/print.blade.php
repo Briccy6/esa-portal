@@ -1,45 +1,10 @@
-@extends('admin.layout')
-
-@section('content')
-<div class="container-fluid px-4 py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1 class="h3 mb-1">
-                <i class="fas fa-id-card me-2 text-primary"></i>
-                Report Card - {{ $reportCard->student->full_name }}
-            </h1>
-            <p class="text-muted mb-0">
-                {{ $reportCard->course->course_name }} - {{ $reportCard->academicYear->year }}
-            </p>
-        </div>
-        <div class="d-flex gap-2">
-            <a href="{{ route('admin.report-cards.index') }}" class="btn btn-secondary">
-                <i class="fas fa-arrow-left me-1"></i> Back to Report Cards
-            </a>
-            <button onclick="window.print()" class="btn btn-primary">
-                <i class="fas fa-print me-1"></i> Print Report Card
-            </button>
-        </div>
-    </div>
-
-    <!-- Report Card Content -->
-    <div class="card shadow-sm border-0">
-        <div class="card-body p-0">
-            <div class="print-area">
-<style>
-    @media print {
-        .no-print { display: none !important; }
-        .card { border: none !important; box-shadow: none !important; }
-        .container-fluid { padding: 0 !important; }
-        .d-flex { display: block !important; }
-        .btn { display: none !important; }
-        .print-area { 
-            border: 1px solid black !important; 
-            margin: 0 !important; 
-            padding: 0 !important;
-        }
-        
-        /* Force A4 layout */
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trainee Assessment Report - {{ $reportCard->student->full_name }}</title>
+    <style>
         @page {
             size: A4;
             margin: 0.5cm;
@@ -53,6 +18,10 @@
             background: white;
             margin: 0;
             padding: 0;
+        }
+        
+        .print-area {
+            border: 1px solid black;
         }
         
         .header-section {
@@ -81,13 +50,13 @@
         }
         
         .student-photo {
-            height: 50px;
-            width: 50px;
+            height: 100px;
+            width: 100px;
             object-fit: cover;
         }
         
         .school-logo {
-            height: 35px;
+            height: 100px;
             width: auto;
             max-width: 100px;
             object-fit: contain;
@@ -212,88 +181,98 @@
             width: 16px;
             height: 16px;
         }
-    }
-</style>
+        
+        @media print {
+            body {
+                margin: 0;
+                padding: 0;
+            }
+            
+            .print-area {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="print-area">
         <!-- Header Section -->
-        <div class="header-section" style="display: flex; width: 100%; height: 140px;">
-            <!-- Left Column - Student Info -->
-            <div style="width: 50%; background: #f8f9fa; border-right: 2px solid black; padding: 8px; box-sizing: border-box;">
-                <div style="font-size: 11px; font-weight: bold; margin-bottom: 5px; text-align: center;">STUDENT INFORMATION</div>
-                
-                <div style="display: flex; height: 100px;">
-                    <!-- Student Details -->
-                    <div style="flex: 1; padding-right: 5px;">
-                        <div style="font-size: 9px; margin-bottom: 2px;"><strong>NAME:</strong> {{ $reportCard->student->full_name }}</div>
-                        <div style="font-size: 9px; margin-bottom: 2px;"><strong>REG NO:</strong> {{ $reportCard->student->reg_number ?? 'ESAHEG022025-2026' }}</div>
-                        <div style="font-size: 9px; margin-bottom: 2px;"><strong>CLASS:</strong> {{ $reportCard->course->course_name }}</div>
-                        <div style="font-size: 9px; margin-bottom: 2px;"><strong>YEAR:</strong> {{ $reportCard->academicYear->year }}</div>
-                        <div style="font-size: 8px; color: #666; margin-top: 5px;">Student Photo</div>
-                    </div>
-                    
-                    <!-- Student Photo -->
-                    <div style="width: 60px; display: flex; align-items: center; justify-content: center;">
-                        @if(isset($studentPhotoBase64) && $studentPhotoBase64)
-                            <img src="data:{{ $studentPhotoMime ?? 'image/jpeg' }};base64,{{ $studentPhotoBase64 }}" alt="Student Photo" style="height: 50px; width: 50px; object-fit: cover; border: 1px solid #000;">
-                        @elseif($reportCard->student->passport_photo)
-                            @php
-                                $photoPath = $reportCard->student->passport_photo;
-                                // Add extension if missing
-                                if (!str_contains($photoPath, '.') && str_contains($photoPath, 'wzwnc4T6aiZMyuxDMySNfg17XGDd3ChdouadyuT3')) {
-                                    $photoPath .= '.png';
-                                } elseif (!str_contains($photoPath, '.') && str_contains($photoPath, 'aKc2vKdlKFsMyFJ3m2N39HFU1uVIV6GJZMTuWsbj')) {
-                                    $photoPath .= '.jpg';
-                                }
-                            @endphp
-                            @if(str_contains($photoPath, 'http'))
-                                <img src="{{ $photoPath }}" alt="Student Photo" style="height: 50px; width: 50px; object-fit: cover; border: 1px solid #000;">
-                            @else
-                                <img src="{{ asset($photoPath) }}" alt="Student Photo" style="height: 50px; width: 50px; object-fit: cover; border: 1px solid #000;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                                <div style="display: none; width: 50px; height: 50px; background: #fff; border: 1px solid #000; align-items: center; justify-content: center;">
-                                    <div style="text-align: center;">
-                                        <div style="color: #000; font-size: 6px; font-weight: bold;">STUDENT<br>PHOTO</div>
-                                    </div>
-                                </div>
-                            @endif
-                        @else
-                            <div style="width: 50px; height: 50px; background: #fff; border: 1px solid #000; display: flex; align-items: center; justify-content: center;">
-                                <div style="text-align: center;">
-                                    <div style="color: #000; font-size: 6px; font-weight: bold;">STUDENT<br>PHOTO</div>
-                                </div>
+        <div class="header-section">
+            <div class="header-cell">
+                <!-- Student Information -->
+                <div style="text-align: center; font-size: 9px;">
+                    <div><span class="font-bold">NAME:</span> {{ $reportCard->student->full_name }}</div>
+                    <div><span class="font-bold">REG NO:</span> {{ $reportCard->student->reg_number ?? 'N/A' }}</div>
+                    <div><span class="font-bold">CLASS:</span> {{ $reportCard->course->course_name }}</div>
+                    <div><span class="font-bold">YEAR:</span> {{ $reportCard->academicYear->year }}</div>
+                </div>
+                <div class="logo-container" style="margin-top: 8px;">
+                    @if($reportCard->student->passport_photo)
+                        <img src="data:image/jpeg;base64,{{ base64_encode($reportCard->student->passport_photo) }}" alt="Student Photo" class="student-photo">
+                    @else
+                        <div style="width: 100px; height: 100px; background: #ecf0f1; border: 2px dashed #bdc3c7; display: flex; align-items: center; justify-content: center;">
+                            <div style="text-align: center;">
+                                <div style="color: #7f8c8d; font-size: 8px; font-weight: bold;">STUDENT<br>PHOTO</div>
                             </div>
-                        @endif
-                    </div>
+                        </div>
+                    @endif
                 </div>
             </div>
             
-            <!-- Right Column - School Info -->
-            <div style="width: 50%; padding: 8px; box-sizing: border-box;">
-                <!-- School Header -->
-                <div style="display: flex; align-items: center; margin-bottom: 5px;">
-                    <div style="margin-right: 10px; flex-shrink: 0;">
-                        @if($schoolInfo && $schoolInfo->logo)
-                            <img src="data:image/jpeg;base64,{{ base64_encode($schoolInfo->logo) }}" alt="School Logo" style="height: 35px; width: auto;">
-                        @elseif($schoolInfo && $schoolInfo->logo_url)
-                            <img src="{{ $schoolInfo->logo_url }}" alt="School Logo" style="height: 35px; width: auto;">
-                        @else
-                            <div style="width: 35px; height: 35px; background: #fff; border: 1px solid #000; display: flex; align-items: center; justify-content: center;">
-                                <div style="text-align: center;">
-                                    <div style="color: #000; font-size: 6px; font-weight: bold;">SCHOOL<br>LOGO</div>
-                                </div>
+            <div class="header-cell">
+                <div class="logo-container">
+                    @if($schoolInfo && $schoolInfo->logo)
+                        <img src="data:image/jpeg;base64,{{ base64_encode($schoolInfo->logo) }}" alt="School Logo" class="school-logo">
+                    @elseif($schoolInfo && $schoolInfo->logo_url)
+                        <img src="{{ $schoolInfo->logo_url }}" alt="School Logo" class="school-logo">
+                    @else
+                        <div style="width: 100px; height: 100px; background: #ecf0f1; border: 2px dashed #bdc3c7; display: flex; align-items: center; justify-content: center;">
+                            <div style="text-align: center;">
+                                <div style="color: #7f8c8d; font-size: 8px; font-weight: bold;">SCHOOL<br>LOGO</div>
                             </div>
-                        @endif
-                    </div>
-                    <div style="flex: 1;">
-                        <div style="font-size: 14px; font-weight: bold; color: #000; margin-bottom: 1px;">Excellent Servant Academy</div>
-                        <div style="font-size: 9px; color: #333;">TRAINEE'S ASSESSMENT REPORT</div>
-                    </div>
+                        </div>
+                    @endif
                 </div>
-                
-                <!-- School Information -->
-                <div style="font-size: 10px; font-weight: bold; margin-bottom: 3px; text-align: center;">SCHOOL INFORMATION</div>
-                <div style="font-size: 8px; margin-bottom: 2px;"><strong>Address:</strong> Kigali City, Down Town, Ndamage House 2nd Floor</div>
-                <div style="font-size: 8px; margin-bottom: 2px;"><strong>Phone:</strong> 0788525247</div>
-                <div style="font-size: 8px; margin-bottom: 2px;"><strong>E-mail:</strong> excellentservantacademy@gmail.com</div>
-                <div style="font-size: 8px;"><strong>Website:</strong> https://excellentservantacademy.com</div>
+            </div>
+            
+            <div class="header-cell">
+                @if($schoolInfo)
+                    <div class="font-bold">{{ $schoolInfo->school_name ?? 'SCHOOL NAME' }}</div>
+                    @if($schoolInfo->address)
+                        <div style="margin-top: 2px;">
+                            <span class="font-bold">Address:</span> {{ $schoolInfo->address }}
+                        </div>
+                    @endif
+                    @if($schoolInfo->phone)
+                        <div style="margin-top: 2px;">
+                            <span class="font-bold">Phone:</span> {{ $schoolInfo->phone }}
+                        </div>
+                    @endif
+                    @if($schoolInfo->email)
+                        <div style="margin-top: 2px;">
+                            <span class="font-bold">E-mail:</span> {{ $schoolInfo->email }}
+                        </div>
+                    @endif
+                    @if($schoolInfo->website)
+                        <div style="margin-top: 2px;">
+                            <span class="font-bold">Website:</span> {{ $schoolInfo->website }}
+                        </div>
+                    @endif
+                @else
+                    <div class="font-bold">SCHOOL NAME</div>
+                    <div style="margin-top: 2px;">
+                        <span class="font-bold">Phone:</span> School Phone
+                    </div>
+                    <div>
+                        <span class="font-bold">E-mail:</span> school@email.com
+                    </div>
+                    <div>
+                        <span class="font-bold">Website:</span> www.schoolwebsite.rw
+                    </div>
+                @endif
             </div>
         </div>
 
@@ -498,5 +477,5 @@
             @endif
         </div>
     </div>
-</div>
-@endsection
+</body>
+</html>

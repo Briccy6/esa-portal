@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Flutterwavedev\Flutterwave\Flutterwave;
+use Illuminate\Support\Facades\Http;
 
 class FlutterwavePaymentController extends Controller
 {
@@ -75,10 +75,19 @@ class FlutterwavePaymentController extends Controller
         ];
 
         try {
-            // Initialize Flutterwave payment
-            $payment = Flutterwave::initializePayment($paymentData);
+            // Flutterwave API configuration
+            $secretKey = config('services.flutterwave.secret_key');
+            $baseUrl = 'https://api.flutterwave.com/v3';
 
-            if (isset($payment['status']) && $payment['status'] === 'success') {
+            // Make API request to Flutterwave
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $secretKey,
+                'Content-Type' => 'application/json',
+            ])->post($baseUrl . '/payments', $paymentData);
+
+            if ($response->successful() && $response->json('status') === 'success') {
+                $payment = $response->json();
+                
                 // Update student subscription with transaction reference
                 $studentSubscription->update(['payment_reference' => $tx_ref]);
 
@@ -171,10 +180,18 @@ class FlutterwavePaymentController extends Controller
         ];
 
         try {
-            // Initialize Flutterwave payment
-            $payment = Flutterwave::initializePayment($paymentData);
+            // Flutterwave API configuration
+            $secretKey = config('services.flutterwave.secret_key');
+            $baseUrl = 'https://api.flutterwave.com/v3';
 
-            if (isset($payment['status']) && $payment['status'] === 'success') {
+            // Make API request to Flutterwave
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $secretKey,
+                'Content-Type' => 'application/json',
+            ])->post($baseUrl . '/payments', $paymentData);
+
+            if ($response->successful() && $response->json('status') === 'success') {
+                $payment = $response->json();
                 // Create pending transaction record
                 StudentTransaction::create([
                     'student_id' => $student->id,
@@ -229,10 +246,18 @@ class FlutterwavePaymentController extends Controller
         }
 
         try {
-            // Verify transaction with Flutterwave
-            $transaction = Flutterwave::verifyTransaction($tx_ref);
+            // Flutterwave API configuration
+            $secretKey = config('services.flutterwave.secret_key');
+            $baseUrl = 'https://api.flutterwave.com/v3';
 
-            if ($transaction['status'] === 'success') {
+            // Verify transaction with Flutterwave API
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $secretKey,
+                'Content-Type' => 'application/json',
+            ])->get($baseUrl . '/transactions/' . $tx_ref . '/verify');
+
+            if ($response->successful() && $response->json('status') === 'success') {
+                $transaction = $response->json();
                 $txData = $transaction['data'];
                 $meta = $txData['meta'] ?? [];
                 $paymentType = $meta['type'] ?? '';

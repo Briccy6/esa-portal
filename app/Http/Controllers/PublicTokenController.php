@@ -7,7 +7,7 @@ use App\Models\ClientTransaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Flutterwavedev\Flutterwave\Flutterwave;
+use Illuminate\Support\Facades\Http;
 
 class PublicTokenController extends Controller
 {
@@ -123,7 +123,11 @@ class PublicTokenController extends Controller
                 ]),
             ]);
 
-            // Prepare Flutterwave payment data
+            // Flutterwave API configuration
+            $secretKey = config('services.flutterwave.secret_key');
+            $baseUrl = 'https://api.flutterwave.com/v3';
+
+            // Prepare payment data for Flutterwave API
             $paymentData = [
                 'tx_ref' => $tx_ref,
                 'amount' => $amount,
@@ -147,21 +151,25 @@ class PublicTokenController extends Controller
                 ]
             ];
 
-            // Initialize Flutterwave payment
-            $flutterwave = new Flutterwave();
-            $payment = $flutterwave->initializePayment($paymentData);
+            // Make API request to Flutterwave
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $secretKey,
+                'Content-Type' => 'application/json',
+            ])->post($baseUrl . '/payments', $paymentData);
 
-            if (isset($payment['status']) && $payment['status'] === 'success') {
+            if ($response->successful() && $response->json('status') === 'success') {
+                $paymentData = $response->json();
+                
                 return response()->json([
                     'success' => true,
-                    'redirect_url' => $payment['data']['link'],
+                    'redirect_url' => $paymentData['data']['link'],
                     'tx_ref' => $tx_ref
                 ]);
             } else {
                 // Update transaction as failed
                 $transaction->update([
                     'status' => 'failed',
-                    'gateway_response' => $payment
+                    'gateway_response' => $response->json()
                 ]);
 
                 return response()->json([
@@ -204,12 +212,18 @@ class PublicTokenController extends Controller
                     ->with('error', 'Transaction not found.');
             }
 
-            // Verify transaction with Flutterwave
-            $flutterwave = new Flutterwave();
-            $flutterwaveTransaction = $flutterwave->verifyTransaction($tx_ref);
+            // Flutterwave API configuration
+            $secretKey = config('services.flutterwave.secret_key');
+            $baseUrl = 'https://api.flutterwave.com/v3';
 
-            if ($flutterwaveTransaction['status'] === 'success') {
-                $txData = $flutterwaveTransaction['data'];
+            // Verify transaction with Flutterwave API
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $secretKey,
+                'Content-Type' => 'application/json',
+            ])->get($baseUrl . '/transactions/' . $tx_ref . '/verify');
+
+            if ($response->successful() && $response->json('status') === 'success') {
+                $txData = $response->json()['data'];
                 $meta = json_decode($transaction->meta, true);
                 
                 // Update transaction record
@@ -229,7 +243,7 @@ class PublicTokenController extends Controller
             } else {
                 $transaction->update([
                     'status' => 'failed',
-                    'gateway_response' => $flutterwaveTransaction
+                    'gateway_response' => $response->json()
                 ]);
 
                 return redirect()->route('public.tokens.index')

@@ -109,6 +109,138 @@ class AdminAuthController extends Controller
                 ->whereYear('created_at', Carbon::now()->year)
                 ->sum('price');
 
+            // Calculate total revenue from all sources
+            $totalRevenue = $tokenRevenue + $liveClassRevenue + $resourceRevenue + $subscriptionRevenue;
+            
+            // Calculate total expenses (if Expense model exists)
+            $totalExpenses = class_exists(Expense::class) ? Expense::sum('amount') : 0;
+            
+            // Get recent expenses for display
+            $recentExpenses = class_exists(Expense::class) ? Expense::with('paid_by_staff.branch')->latest('expense_date')->take(10)->get() : collect([]);
+            
+            // Students by gender data
+            $studentsByGender = Student::select('sex', DB::raw('count(*) as total'))
+                ->groupBy('sex')
+                ->get();
+            
+            // Recent students for display
+            $recentStudents = Student::with(['branch', 'course'])
+                ->latest()
+                ->take(10)
+                ->get();
+            
+            // Expenses by branch data
+            $expensesByBranch = class_exists(Expense::class) ? Expense::with('paid_by_staff.branch')
+                ->selectRaw('branches.name as branch, SUM(expenses.amount) as total')
+                ->leftJoin('staff', 'expenses.paid_by', '=', 'staff.id')
+                ->leftJoin('branches', 'staff.branch_id', '=', 'branches.id')
+                ->groupBy('branches.id', 'branches.name')
+                ->get() : collect([]);
+            
+            // Expenses by type data
+            $expensesByType = class_exists(Expense::class) ? Expense::selectRaw('expense_type, SUM(amount) as total')
+                ->groupBy('expense_type')
+                ->get() : collect([]);
+            
+            // Branch financial health data (revenue vs expenses by branch)
+            $branchFinancialHealth = class_exists(Expense::class) ? 
+                DB::table('branches as b')
+                    ->leftJoin('students as s', 'b.id', '=', 's.branch_id')
+                    ->leftJoin('student_transactions as st', 's.id', '=', 'st.student_id')
+                    ->leftJoin('staff as staff', 'b.id', '=', 'staff.branch_id')
+                    ->leftJoin('expenses as e', 'staff.id', '=', 'e.paid_by')
+                    ->selectRaw('
+                        b.name,
+                        COALESCE(SUM(CASE WHEN st.status = "paid" THEN st.amount ELSE 0 END), 0) as revenue,
+                        COALESCE(SUM(e.amount), 0) as expenses
+                    ')
+                    ->groupBy('b.id', 'b.name')
+                    ->get() : collect([]);
+            
+            // 6-month expense trend data
+            $expenseTrend = class_exists(Expense::class) ? Expense::selectRaw('
+                    DATE_FORMAT(expense_date, "%M %Y") as month,
+                    SUM(amount) as amount
+                ')
+                ->where('expense_date', '>=', Carbon::now()->subMonths(6))
+                ->groupBy('month')
+                ->orderBy('expense_date')
+                ->get()
+                ->map(function ($item) {
+                    return [
+                        'month' => $item->month,
+                        'amount' => (float) $item->amount
+                    ];
+                })
+                ->toArray() : [];
+            
+            // Students by course and gender data
+            try {
+                $studentsByCourseGender = DB::table('students as s')
+                    ->leftJoin('courses as c', 's.course_id', '=', 'c.id')
+                    ->selectRaw('
+                        c.course_name as course_name,
+                        c.abbreviation as course_abbreviation,
+                        s.sex,
+                        COUNT(*) as total
+                    ')
+                    ->groupBy('c.id', 'c.course_name', 'c.abbreviation', 's.sex')
+                    ->get()
+                    ->map(function ($item) {
+                        return [
+                            'course' => [
+                                'name' => $item->course_name ?: 'Unknown',
+                                'abbreviation' => $item->course_abbreviation ?: 'N/A'
+                            ],
+                            'sex' => $item->sex,
+                            'total' => (int) $item->total
+                        ];
+                    })
+                    ->toArray();
+            } catch (\Exception $e) {
+                $studentsByCourseGender = [];
+            }
+
+            // Tuition fee data by branch
+            try {
+                $tuitionByBranch = DB::table('branches as b')
+                    ->leftJoin('students as s', 'b.id', '=', 's.branch_id')
+                    ->leftJoin('courses as c', 's.course_id', '=', 'c.id')
+                    ->selectRaw('
+                        b.name as branch,
+                        COALESCE(SUM(c.tuition_fee), 0) as expected,
+                        COUNT(s.id) as student_count
+                    ')
+                    ->groupBy('b.id', 'b.name')
+                    ->get();
+            } catch (\Exception $e) {
+                $tuitionByBranch = collect([]);
+            }
+            
+            // Paid tuition by branch
+            try {
+                $tuitionPaidByBranch = DB::table('branches as b')
+                    ->leftJoin('students as s', 'b.id', '=', 's.branch_id')
+                    ->leftJoin('student_transactions as st', 's.id', '=', 'st.student_id')
+                    ->selectRaw('
+                        b.name as branch,
+                        COALESCE(SUM(CASE WHEN st.status = "paid" THEN st.amount ELSE 0 END), 0) as paid
+                    ')
+                    ->groupBy('b.id', 'b.name')
+                    ->get();
+            } catch (\Exception $e) {
+                $tuitionPaidByBranch = collect([]);
+            }
+            
+            // Fee payment percentages (based on student transactions)
+            $totalStudents = Student::count();
+            $registrationPaidPercent = 0; // Default to 0 since we don't have direct registration fee tracking
+            $tuitionPaidPercent = $totalStudents > 0 ? round((StudentTransaction::where('status', 'paid')->distinct('student_id')->count() / $totalStudents) * 100, 2) : 0;
+            
+            // Calculate net profit and profit margin
+            $netProfit = $totalRevenue - $totalExpenses;
+            $profitMargin = $totalRevenue > 0 ? round(($netProfit / $totalRevenue) * 100, 2) : 0;
+
             // Cache the results for 1 hour
             $dashboardData = compact(
                 'totalStudents',
@@ -122,7 +254,23 @@ class AdminAuthController extends Controller
                 'monthlyTokenRevenue',
                 'monthlyLiveClassRevenue',
                 'monthlyResourceRevenue',
-                'monthlySubscriptionRevenue'
+                'monthlySubscriptionRevenue',
+                'totalRevenue',
+                'totalExpenses',
+                'netProfit',
+                'profitMargin',
+                'recentExpenses',
+                'studentsByGender',
+                'recentStudents',
+                'expensesByBranch',
+                'expensesByType',
+                'branchFinancialHealth',
+                'expenseTrend',
+                'tuitionByBranch',
+                'tuitionPaidByBranch',
+                'studentsByCourseGender',
+                'registrationPaidPercent',
+                'tuitionPaidPercent'
             );
             
             return view('admin.dashboard', $dashboardData);
