@@ -18,7 +18,7 @@
             <!-- Form Card -->
             <div class="card border-0 shadow-lg rounded-4">
                 <div class="card-body p-4 p-md-5">
-                    <form action="{{ route('teachers.store') }}" method="POST" enctype="multipart/form-data" id="teacherForm">
+                    <form action="{{ route('admin.teachers.store') }}" method="POST" enctype="multipart/form-data" id="teacherForm">
                         @csrf
                         
                         <div class="row">
@@ -336,7 +336,7 @@
                             <button type="submit" class="btn btn-primary btn-lg px-5 rounded-pill shadow-sm">
                                 <i class="fas fa-save me-2"></i>Save Teacher
                             </button>
-                            <a href="{{ route('teachers.index') }}" class="btn btn-outline-secondary btn-lg px-5 rounded-pill">
+                            <a href="{{ route('admin.teachers.index') }}" class="btn btn-outline-secondary btn-lg px-5 rounded-pill">
                                 <i class="fas fa-times me-2"></i>Cancel
                             </a>
                         </div>

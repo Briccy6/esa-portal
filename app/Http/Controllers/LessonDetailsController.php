@@ -26,7 +26,7 @@ public function index() {
     public function create(Request $request, $lessonId)
     {
         $lesson = Lesson::with('course')->findOrFail($lessonId);
-        $terms = Term::all();
+        $terms = Term::with('academicYear')->get();
         return view('details.create', compact('lesson', 'terms'));
     }
 
@@ -43,19 +43,18 @@ public function index() {
         'units.*.hours' => 'required|integer|min:1',
     ]);
 
-    foreach ($request->terms as $termId) {
-        foreach ($request->units as $unit) {
-            LessonUnit::create([
-                'lesson_id' => $lessonId,
-                'term_id' => $termId,
-                'unit_name' => $unit['name'],
-                'hours' => $unit['hours'],
-                'course_level' => $request->course_level,
-            ]);
-        }
+    // Create each unit only once, associated with the lesson
+    foreach ($request->units as $unit) {
+        LessonUnit::create([
+            'lesson_id' => $lessonId,
+            'term_id' => $request->terms[0], // Associate with the first selected term
+            'unit_name' => $unit['name'],
+            'hours' => $unit['hours'],
+            'course_level' => $request->course_level,
+        ]);
     }
 
-    return redirect()->route('lessons.show', $lessonId)
+    return redirect()->route('staff.lessons.show', $lessonId)
                      ->with('success', 'Lesson details saved successfully.');
 }
 

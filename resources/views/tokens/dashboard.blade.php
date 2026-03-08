@@ -1,229 +1,398 @@
 @extends('students.app')
 
 @section('content')
-<div class="container mx-auto px-4 py-8">
-    <div class="max-w-6xl mx-auto">
-        <!-- Header -->
-        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-            <div class="flex justify-between items-center">
-                <div>
-                    <h1 class="text-3xl font-bold text-gray-800">Token Dashboard</h1>
-                    <p class="text-gray-600 mt-2">Manage your tokens and view transaction history</p>
-                </div>
-                <div class="flex space-x-4">
-                    <a href="{{ route('tokens.index') }}" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition duration-200">
-                        View All Transactions
-                    </a>
-                    <button onclick="showPurchaseModal()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition duration-200">
+<div class="container-fluid">
+    <!-- Token Dashboard Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="content-wrapper">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2 class="h4 mb-0">
+                        <i class="bi bi-coin text-warning me-2"></i>
+                        Token Dashboard
+                    </h2>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#purchaseModal">
+                        <i class="bi bi-plus-circle me-1"></i>
                         Purchase Tokens
                     </button>
                 </div>
+
+                <!-- Token Balance Cards -->
+                <div class="row">
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="card border-0 bg-primary text-white">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        <h6 class="card-title mb-1">Current Balance</h6>
+                                        <h3 class="mb-0">{{ number_format($studentToken->balance ?? 0) }}</h3>
+                                        <small class="opacity-75">tokens available</small>
+                                    </div>
+                                    <div class="ms-3">
+                                        <i class="bi bi-wallet2" style="font-size: 2rem;"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="card border-0 bg-success text-white">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        <h6 class="card-title mb-1">Total Earned</h6>
+                                        <h3 class="mb-0">{{ number_format($studentToken->total_earned ?? 0) }}</h3>
+                                        <small class="opacity-75">tokens earned</small>
+                                    </div>
+                                    <div class="ms-3">
+                                        <i class="bi bi-graph-up" style="font-size: 2rem;"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="card border-0 bg-danger text-white">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        <h6 class="card-title mb-1">Total Spent</h6>
+                                        <h3 class="mb-0">{{ number_format($studentToken->total_spent ?? 0) }}</h3>
+                                        <small class="opacity-75">tokens spent</small>
+                                    </div>
+                                    <div class="ms-3">
+                                        <i class="bi bi-graph-down" style="font-size: 2rem;"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="card border-0 bg-info text-white">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        <h6 class="card-title mb-1">Need More Tokens?</h6>
+                                        <div class="mt-2">
+                                            <button class="btn btn-light btn-sm w-100" data-bs-toggle="modal" data-bs-target="#purchaseModal">
+                                                <i class="bi bi-cart-plus me-1"></i>
+                                                Buy Tokens Now
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="ms-3">
+                                        <i class="bi bi-shop" style="font-size: 2rem;"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
+    </div>
 
-        <!-- Token Stats Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <!-- Current Balance -->
-            <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow-lg p-6 text-white">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-blue-100 text-sm font-medium">Current Balance</p>
-                        <p class="text-3xl font-bold mt-2">{{ number_format($stats['total_tokens']) }}</p>
-                        <p class="text-blue-100 text-sm mt-1">tokens available</p>
-                    </div>
-                    <div class="bg-white bg-opacity-20 rounded-full p-3">
-                        <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clip-rule="evenodd"/>
-                        </svg>
-                    </div>
+    <!-- Recent Transactions -->
+    <div class="row">
+        <div class="col-12">
+            <div class="content-wrapper">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h3 class="h5 mb-0">
+                        <i class="bi bi-clock-history me-2"></i>
+                        Recent Transactions
+                    </h3>
+                    <a href="{{ route('tokens.index') }}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-list-ul me-1"></i>
+                        View All Transactions
+                    </a>
                 </div>
-            </div>
 
-            <!-- Total Earned -->
-            <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-lg shadow-lg p-6 text-white">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-green-100 text-sm font-medium">Total Earned</p>
-                        <p class="text-3xl font-bold mt-2">{{ number_format($stats['total_earned']) }}</p>
-                        <p class="text-green-100 text-sm mt-1">tokens earned</p>
-                    </div>
-                    <div class="bg-white bg-opacity-20 rounded-full p-3">
-                        <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clip-rule="evenodd"/>
-                        </svg>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Total Spent -->
-            <div class="bg-gradient-to-r from-red-500 to-red-600 rounded-lg shadow-lg p-6 text-white">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-red-100 text-sm font-medium">Total Spent</p>
-                        <p class="text-3xl font-bold mt-2">{{ number_format($stats['total_spent']) }}</p>
-                        <p class="text-red-100 text-sm mt-1">tokens spent</p>
-                    </div>
-                    <div class="bg-white bg-opacity-20 rounded-full p-3">
-                        <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M12 13a1 1 0 100 2h5a1 1 0 001-1V9a1 1 0 10-2 0v2.586l-4.293-4.293a1 1 0 00-1.414 0L8 9.586 3.707 5.293a1 1 0 00-1.414 1.414l5 5a1 1 0 001.414 0L11 9.414 14.586 13H12z" clip-rule="evenodd"/>
-                        </svg>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Recent Transactions -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-gray-800">Recent Transactions</h2>
-                <a href="{{ route('tokens.index') }}" class="text-blue-500 hover:text-blue-600 font-medium">
-                    View All →
-                </a>
-            </div>
-
-            @if($stats['recent_transactions']->count() > 0)
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
+                @if($transactions && $transactions->count() > 0)
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Date
-                                </th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Description
-                                </th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Type
-                                </th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Amount
-                                </th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Balance
-                                </th>
+                                <th>Date</th>
+                                <th>Description</th>
+                                <th>Type</th>
+                                <th>Amount</th>
+                                <th>Balance</th>
                             </tr>
                         </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            @foreach($stats['recent_transactions'] as $transaction)
-                                <tr class="hover:bg-gray-50">
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        {{ $transaction->created_at->format('M j, Y g:i A') }}
-                                    </td>
-                                    <td class="px-6 py-4 text-sm text-gray-900">
-                                        {{ $transaction->description }}
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        @if($transaction->type === 'purchase' || $transaction->type === 'earned')
-                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                                {{ ucfirst($transaction->type) }}
-                                            </span>
-                                        @else
-                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                                                {{ ucfirst($transaction->type) }}
-                                            </span>
-                                        @endif
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-medium">
-                                        @if($transaction->type === 'purchase' || $transaction->type === 'earned')
-                                            <span class="text-green-600">+{{ number_format($transaction->amount) }}</span>
-                                        @else
-                                            <span class="text-red-600">-{{ number_format($transaction->amount) }}</span>
-                                        @endif
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        {{ number_format($transaction->balance_after) }}
-                                    </td>
-                                </tr>
+                        <tbody>
+                            @foreach($transactions->take(10) as $transaction)
+                            <tr>
+                                <td>
+                                    <span class="badge bg-light text-dark">
+                                        {{ $transaction->created_at->format('M j, Y H:i') }}
+                                    </span>
+                                </td>
+                                <td>{{ $transaction->description }}</td>
+                                <td>
+                                    @if($transaction->type === 'credit')
+                                        <span class="badge bg-success text-white">Credit</span>
+                                    @else
+                                        <span class="badge bg-danger text-white">Debit</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($transaction->type === 'credit')
+                                        <span class="text-success">+{{ number_format($transaction->amount) }}</span>
+                                    @else
+                                        <span class="text-danger">-{{ number_format($transaction->amount) }}</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    <strong>{{ number_format($transaction->balance_after) }}</strong>
+                                </td>
+                            </tr>
                             @endforeach
                         </tbody>
                     </table>
                 </div>
-            @else
-                <div class="text-center py-12">
-                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                    </svg>
-                    <h3 class="mt-2 text-sm font-medium text-gray-900">No transactions</h3>
-                    <p class="mt-1 text-sm text-gray-500">Get started by purchasing some tokens.</p>
-                    <div class="mt-6">
-                        <a href="javascript:void(0)" onclick="showPurchaseModal()" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                            Purchase Tokens
-                        </a>
-                    </div>
-                </div>
-            @endif
-        </div>
-
-        <!-- Quick Actions -->
-        <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="bg-white rounded-lg shadow-md p-6">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">Need More Tokens?</h3>
-                <p class="text-gray-600 mb-4">Purchase tokens to access premium features and services.</p>
-                <a href="javascript:void(0)" onclick="showPurchaseModal()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition duration-200 inline-block">
-                    Buy Tokens Now
-                </a>
-            </div>
-
-            <div class="bg-white rounded-lg shadow-md p-6">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">Token History</h3>
-                <p class="text-gray-600 mb-4">View your complete transaction history and track your token usage.</p>
-                <a href="{{ route('tokens.index') }}" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition duration-200 inline-block">
-                    View History
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <!-- Purchase Token Modal -->
-    <div id="purchaseModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
-        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div class="mt-3">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-medium text-gray-900">Purchase Tokens</h3>
-                    <button onclick="hidePurchaseModal()" class="text-gray-400 hover:text-gray-600">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
+                @else
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox" style="font-size: 3rem; color: #6c757d;"></i>
+                    <h5 class="mt-3 text-muted">No transactions yet</h5>
+                    <p class="text-muted">Purchase tokens to access premium features and services</p>
+                    <button class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#purchaseModal">
+                        <i class="bi bi-plus-circle me-2"></i>
+                        Purchase Your First Tokens
                     </button>
                 </div>
-                <form action="{{ route('tokens.purchase') }}" method="POST">
-                    @csrf
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Amount</label>
-                        <input type="number" name="amount" min="1" max="1000" required
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                               placeholder="Enter token amount">
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Payment Reference (Optional)</label>
-                        <input type="text" name="payment_reference"
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                               placeholder="Transaction ID or reference">
-                    </div>
-                    <div class="flex justify-end space-x-3">
-                        <button type="button" onclick="hidePurchaseModal()"
-                                class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition duration-200">
-                            Cancel
-                        </button>
-                        <button type="submit"
-                                class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition duration-200">
-                            Purchase
-                        </button>
-                    </div>
-                </form>
+                @endif
             </div>
         </div>
     </div>
 
-    <script>
-        function showPurchaseModal() {
-            document.getElementById('purchaseModal').classList.remove('hidden');
-        }
-        
-        function hidePurchaseModal() {
-            document.getElementById('purchaseModal').classList.add('hidden');
-        }
-    </script>
+    <!-- Purchase Modal -->
+    <div class="modal fade" id="purchaseModal" tabindex="-1" aria-labelledby="purchaseModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="purchaseModalLabel">
+                        <i class="bi bi-cart-plus me-2"></i>
+                        Purchase Tokens
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <!-- Subscription Plans -->
+                        <div class="col-md-6">
+                            <h6 class="mb-3">Subscription Plans</h6>
+                            <div class="row g-2">
+                                @foreach($subscriptions as $subscription)
+                                <div class="col-12 mb-2">
+                                    <div class="card h-100 @if($subscription->is_recommended) border-primary @else border-secondary">
+                                        @if($subscription->is_recommended)
+                                        <div class="card-header bg-primary text-white text-center py-1">
+                                            <small class="fw-bold">RECOMMENDED</small>
+                                        </div>
+                                        @endif
+                                        <div class="card-body text-center">
+                                            <h6 class="card-title">{{ $subscription->name }}</h6>
+                                            <div class="h4 mb-2">RWF {{ number_format($subscription->tokens_included * 500) }}</div>
+                                            <small class="text-muted">{{ $subscription->formatted_tokens }}</small>
+                                            <button onclick="purchaseSubscription({{ $subscription->id }})" 
+                                                    class="btn @if($subscription->is_recommended) btn-primary @else btn-outline-primary @endif btn-sm w-100 mt-2">
+                                                Select Plan
+                                            </button>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        <!-- Custom Purchase -->
+                        <div class="col-md-6">
+                            <h6 class="mb-3">Custom Amount</h6>
+                            <div class="card">
+                                <div class="card-body">
+                                    <form id="customTokenForm">
+                                        <div class="mb-3">
+                                            <label class="form-label">Amount</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">Tokens</span>
+                                                <input type="number" 
+                                                       id="tokenAmount" 
+                                                       class="form-control" 
+                                                       min="1" 
+                                                       max="1000" 
+                                                       value="50"
+                                                       oninput="updateTotal()">
+                                            </div>
+                                            <div class="form-text">1-1000 tokens • 1 token = RWF 500</div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label">Payment Reference (Optional)</label>
+                                            <input type="text" 
+                                                   id="paymentReference" 
+                                                   class="form-control" 
+                                                   placeholder="Transaction ID or reference">
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <div class="card bg-light">
+                                                <div class="card-body">
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <span class="fw-bold">Total Amount:</span>
+                                                        <span id="totalAmount" class="h4 mb-0 text-primary">RWF 25,000</span>
+                                                    </div>
+                                                    <div id="discountInfo" class="text-success small mt-2 hidden">
+                                                        <i class="bi bi-check-circle me-1"></i>
+                                                        You saved RWF <span id="discountAmount">0</span> with bulk discount!
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="d-grid gap-2">
+                                            <button type="button" onclick="purchaseCustomTokens()" class="btn btn-success">
+                                                <i class="bi bi-credit-card me-2"></i>
+                                                Purchase Now
+                                            </button>
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+<script>
+// Update total amount with bulk discounts
+function updateTotal() {
+    const amount = parseInt(document.getElementById('tokenAmount').value) || 0;
+    const basePrice = 500;
+    let discount = 0;
+    let bulkDiscount = false;
+    
+    if (amount >= 100) {
+        discount = 0.10;
+        bulkDiscount = true;
+    } else if (amount >= 50) {
+        discount = 0.05;
+        bulkDiscount = true;
+    }
+    
+    const totalPrice = amount * basePrice;
+    const discountAmount = totalPrice * discount;
+    const finalPrice = totalPrice - discountAmount;
+    
+    document.getElementById('totalAmount').textContent = `RWF ${finalPrice.toLocaleString()}`;
+    
+    const discountInfo = document.getElementById('discountInfo');
+    const discountAmountEl = document.getElementById('discountAmount');
+    
+    if (bulkDiscount) {
+        discountInfo.classList.remove('hidden');
+        discountAmountEl.textContent = discountAmount.toLocaleString();
+    } else {
+        discountInfo.classList.add('hidden');
+    }
+}
+
+// Purchase custom tokens
+function purchaseCustomTokens() {
+    const amount = parseInt(document.getElementById('tokenAmount').value);
+    const reference = document.getElementById('paymentReference').value;
+    
+    if (amount < 1 || amount > 1000) {
+        alert('Please enter a valid amount between 1 and 1000 tokens');
+        return;
+    }
+    
+    const btn = event.target;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Processing...';
+    
+    fetch('/tokens/purchase', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({
+            amount: amount,
+            payment_reference: reference
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Tokens purchased successfully! ' + data.message);
+            location.reload();
+        } else {
+            alert('Purchase failed: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred. Please try again.');
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-credit-card me-2"></i>Purchase Now';
+    });
+}
+
+// Purchase subscription
+function purchaseSubscription(subscriptionId) {
+    const btn = event.target;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Processing...';
+    
+    fetch('/tokens/purchase-subscription', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({
+            subscription_id: subscriptionId,
+            payment_method: 'flutterwave'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            if (data.redirect_url) {
+                window.location.href = data.redirect_url;
+            } else {
+                alert('Subscription purchased successfully!');
+                location.reload();
+            }
+        } else {
+            alert('Purchase failed: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred. Please try again.');
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = 'Select Plan';
+    });
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    updateTotal();
+});
+</script>
 @endsection

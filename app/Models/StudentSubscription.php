@@ -12,6 +12,13 @@ class StudentSubscription extends Model
     protected $fillable = [
         'student_id',
         'subscription_id',
+        'amount',
+        'tokens_included',
+        'payment_method',
+        'status',
+        'transaction_id',
+        'started_at',
+        'expires_at',
         'paid_amount',
         'payment_reference',
         'payment_status',
@@ -21,7 +28,10 @@ class StudentSubscription extends Model
     ];
 
     protected $casts = [
+        'amount' => 'decimal:2',
         'paid_amount' => 'decimal:2',
+        'started_at' => 'datetime',
+        'expires_at' => 'datetime',
         'starts_at' => 'datetime',
         'ends_at' => 'datetime',
         'is_active' => 'boolean',

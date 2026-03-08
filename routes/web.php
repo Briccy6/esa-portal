@@ -46,6 +46,7 @@ use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\QuestionBankController;
 use App\Http\Controllers\ExamTakingController;
 use App\Http\Controllers\ExamResultsController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\TokenController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\SecretaryAuthController;
@@ -174,9 +175,7 @@ Route::prefix('student')->name('student.')->group(function () {
 
 // Authenticated user routes
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 });
 
 // Profile routes
@@ -379,9 +378,12 @@ Route::middleware(['auth:staff'])->prefix('secretary')->name('secretary.')->grou
 
 // API helpers
 Route::get('/api/course/{course}/exams', function($courseId) {
-    $exams = \App\Models\Exam::whereHas('courses', function($q) use ($courseId) {
-        $q->where('courses.id', $courseId);
-    })->get(['id', 'title']);
+    $exams = \App\Models\Exam::where('is_active', true)
+        ->whereHas('courses', function($query) use ($courseId) {
+            $query->where('courses.id', $courseId);
+        })
+        ->orderBy('title')
+        ->get(['id', 'title']);
     return response()->json($exams);
 });
 
@@ -471,8 +473,16 @@ Route::prefix('staff')->name('staff.')->group(function () {
         })->name('profile');
         Route::put('profile/update', [\App\Http\Controllers\StaffProfileController::class, 'update'])->name('profile.update');
 
+        // Subscription Management Routes
+        Route::get('/subscriptions', [SubscriptionController::class, 'staffIndex'])->name('subscriptions.index');
+        Route::get('/subscriptions/create', [SubscriptionController::class, 'staffCreate'])->name('subscriptions.create');
+        Route::post('/subscriptions', [SubscriptionController::class, 'staffStore'])->name('subscriptions.store');
+        Route::get('/subscriptions/{studentSubscription}', [SubscriptionController::class, 'staffShow'])->name('subscriptions.show');
+        Route::get('/subscriptions/reports', [SubscriptionController::class, 'staffReports'])->name('subscriptions.reports');
+
         // Lesson Management
         Route::resource('lessons', LessonController::class);
+        Route::get('/lessons/get-teachers/{courseId}', [LessonController::class, 'getTeachers'])->name('lessons.get-teachers');
         Route::get('/lesson-units', [LessonDetailsController::class, 'index'])->name('lesson-units.index');
         Route::get('/lessons/{lesson}/units/create', [LessonDetailsController::class, 'create'])->name('lesson-units.create');
         Route::post('/lessons/{lesson}/units', [LessonDetailsController::class, 'store'])->name('lesson-units.store');
@@ -886,6 +896,17 @@ Route::middleware(['auth:admin,staff,teacher'])->prefix('exams')->name('exams.')
     Route::post('{exam}/bulk-grade', [ExamResultsController::class, 'bulkGrade'])->name('bulk-grade');
 });
 
+// DOS-specific exam routes
+Route::middleware(['auth:staff'])->prefix('dos/exams')->name('dos.exams.')->group(function () {
+    Route::get('/', [ExamController::class, 'index'])->name('index');
+    Route::get('/create', [ExamController::class, 'create'])->name('create');
+    Route::post('/', [ExamController::class, 'store'])->name('store');
+    Route::get('/{exam}', [ExamController::class, 'show'])->name('show');
+    Route::get('/{exam}/edit', [ExamController::class, 'edit'])->name('edit');
+    Route::put('/{exam}', [ExamController::class, 'update'])->name('update');
+    Route::delete('/{exam}', [ExamController::class, 'destroy'])->name('destroy');
+});
+
 // Admin-specific exam routes
 Route::middleware(['auth:admin'])->prefix('admin/exams')->name('admin.exams.')->group(function () {
     Route::get('/', [ExamController::class, 'index'])->name('index');
@@ -921,6 +942,10 @@ Route::middleware('auth:student')->prefix('tokens')->name('tokens.')->group(func
     Route::get('/', [TokenController::class, 'index'])->name('index');
     Route::get('/dashboard', [TokenController::class, 'dashboard'])->name('dashboard');
     Route::post('/purchase', [TokenController::class, 'purchase'])->name('purchase');
+    Route::post('/purchase-subscription', [TokenController::class, 'purchaseSubscription'])->name('purchase-subscription');
+    Route::get('/payment/callback/{gateway}', [TokenController::class, 'paymentCallback'])->name('payment.callback');
+    Route::get('/mobile-money/form/{subscriptionId}', [TokenController::class, 'showMobileMoneyForm'])->name('mobile-money.form');
+    Route::post('/mobile-money/process/{subscriptionId}', [TokenController::class, 'processMobileMoney'])->name('mobile-money.process');
 });
 
 // Subscription Routes

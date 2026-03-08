@@ -286,10 +286,10 @@ class SubscriptionController extends Controller
             ]);
 
             // Initialize tokens for student if not already done
-            $student->initializeTokens();
+            $token = $student->initializeTokens();
             
             // Add tokens from subscription
-            $student->token->addTokens(
+            $token->addTokens(
                 $subscription->tokens_included,
                 "Tokens from {$subscription->name} subscription",
                 'subscription'

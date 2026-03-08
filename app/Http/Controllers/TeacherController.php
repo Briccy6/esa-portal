@@ -198,7 +198,7 @@ class TeacherController extends Controller
 
         $teacher->courses()->sync($request->input('course_ids', []));
 
-        return redirect()->route('teachers.index')->with('success', 'Courses assigned successfully!');
+        return redirect()->route('admin.teachers.index')->with('success', 'Courses assigned successfully!');
     }
 
     public function removeCourseAssignment(Teacher $teacher, Course $course)

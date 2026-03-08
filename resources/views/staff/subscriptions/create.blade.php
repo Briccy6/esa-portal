@@ -1,4 +1,4 @@
-@extends('layouts.staff')
+@extends('staff.partials.sidebar_sec')
 
 @section('title', 'Record Subscription Payment')
 

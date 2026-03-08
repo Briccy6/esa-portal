@@ -1,0 +1,1218 @@
+@php
+    $systemName = \Illuminate\Support\Facades\Cache::get('esa_system_name', 'ESA-Parnel');
+    $systemLogo = \App\Helpers\LogoHelper::getSystemLogo();
+
+        $courses = $courses ?? (Auth::guard('teacher')->check() ? Auth::guard('teacher')->user()->courses()->with('lessons.units')->get() : collect());
+    
+@endphp
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ $systemName ?? 'Teacher Dashboard' }}</title>
+            <link rel="icon" type="image/png" href="{{ \App\Helpers\LogoHelper::getFaviconUrl() }}">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Bootstrap & Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary-color: #64748b;
+            --success-color: #059669;
+            --warning-color: #d97706;
+            --danger-color: #dc2626;
+            --info-color: #0891b2;
+            --light-bg: #f8fafc;
+            --sidebar-bg: #ffffff;
+            --sidebar-border: #e2e8f0;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --hover-bg: #f1f5f9;
+            --active-bg: #dbeafe;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--light-bg);
+            color: var(--text-primary);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Professional Navbar */
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            box-shadow: var(--shadow-md);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding: 1rem 0;
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.25rem;
+            letter-spacing: -0.025em;
+            color: white !important;
+        }
+
+        /* Enhanced Sidebar */
+        .sidebar {
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--sidebar-border);
+            min-height: 100vh;
+            padding: 1.5rem 0;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 280px;
+            z-index: 1000;
+            box-shadow: var(--shadow-lg);
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--secondary-color) transparent;
+        }
+
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: var(--secondary-color);
+            border-radius: 3px;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb:hover {
+            background: var(--text-primary);
+        }
+
+        .sidebar-header {
+            padding: 1rem 1.5rem 2rem;
+            border-bottom: 1px solid var(--sidebar-border);
+            margin-bottom: 1rem;
+        }
+
+        .sidebar-header h4 {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+            font-size: 1.1rem;
+        }
+
+        .sidebar .nav-link {
+            color: var(--text-secondary);
+            font-weight: 500;
+            font-size: 0.95rem;
+            border-radius: 0.75rem;
+            margin: 0.25rem 1rem;
+            padding: 0.875rem 1.25rem;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            position: relative;
+        }
+
+        .sidebar .nav-link:hover {
+            background: var(--hover-bg);
+            color: var(--text-primary);
+            transform: translateX(4px);
+        }
+
+        .sidebar .nav-link.active {
+            background: var(--active-bg);
+            color: var(--primary-color);
+            font-weight: 600;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .sidebar .nav-link.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 24px;
+            background: var(--primary-color);
+            border-radius: 0 2px 2px 0;
+        }
+
+        .sidebar .nav-link i {
+            margin-right: 0.875rem;
+            font-size: 1.1rem;
+            width: 20px;
+            text-align: center;
+        }
+
+        .sidebar .nav-link .badge {
+            margin-left: auto;
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+        }
+
+        /* Color-coded nav links */
+        .nav-link.text-warning:hover { background: #fef3c7; color: var(--warning-color) !important; }
+        .nav-link.text-info:hover { background: #cffafe; color: var(--info-color) !important; }
+        .nav-link.text-success:hover { background: #d1fae5; color: var(--success-color) !important; }
+        .nav-link.text-primary:hover { background: var(--active-bg); color: var(--primary-color) !important; }
+        .nav-link.text-secondary:hover { background: #f1f5f9; color: var(--secondary-color) !important; }
+
+        /* Main content area */
+        .main-content {
+            margin-left: 280px;
+            padding: 2rem;
+            min-height: 100vh;
+            transition: margin-left 0.3s ease;
+        }
+
+        /* User dropdown styling */
+        .user-dropdown {
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 50px;
+            padding: 0.25rem;
+            transition: all 0.2s ease;
+        }
+
+        .user-dropdown:hover {
+            border-color: rgba(255,255,255,0.4);
+            background: rgba(255,255,255,0.1);
+        }
+
+        .user-dropdown img {
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+
+        .dropdown-menu {
+            border: none;
+            box-shadow: var(--shadow-lg);
+            border-radius: 0.75rem;
+            padding: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .dropdown-item {
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .dropdown-item:hover {
+            background: var(--hover-bg);
+            transform: translateX(4px);
+        }
+
+        /* Quick action button */
+        .quick-action-btn {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            font-weight: 500;
+            border-radius: 0.75rem;
+            padding: 0.5rem 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .quick-action-btn:hover {
+            background: rgba(255,255,255,0.3);
+            border-color: rgba(255,255,255,0.5);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+            color: white;
+        }
+
+        /* Modal enhancements */
+        .modal-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            color: white;
+            border-radius: 0.75rem 0.75rem 0 0;
+            padding: 1.5rem;
+        }
+
+        .modal-title {
+            font-weight: 600;
+            font-size: 1.25rem;
+        }
+
+        .modal-content {
+            border: none;
+            border-radius: 0.75rem;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .modal-body {
+            padding: 2rem;
+        }
+
+        .modal-footer {
+            background: #f8fafc;
+            border-radius: 0 0 0.75rem 0.75rem;
+            padding: 1.5rem;
+        }
+
+        /* Form styling */
+        .form-label {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .form-control, .form-select {
+            border: 2px solid #e2e8f0;
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        /* Button enhancements */
+        .btn {
+            border-radius: 0.5rem;
+            font-weight: 500;
+            padding: 0.75rem 1.5rem;
+            transition: all 0.2s ease;
+            border: none;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+        }
+
+        /* Responsive design */
+        @media (max-width: 991.98px) {
+            .sidebar {
+                display: none;
+            }
+            
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+            
+            .offcanvas {
+                width: 280px !important;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 0.75rem 0;
+            }
+            
+            .main-content {
+                padding: 1rem 0.5rem;
+            }
+        }
+
+        /* Smooth scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Loading animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Notification badge */
+        .notification-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: var(--danger-color);
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Enhanced mobile menu */
+        .mobile-menu-toggle {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            border-radius: 0.5rem;
+            padding: 0.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .mobile-menu-toggle:hover {
+            background: rgba(255,255,255,0.3);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+@php
+    // Redirect to login if not authenticated
+    if (!Auth::guard('teacher')->check()) {
+        header('Location: ' . route('teacher.login'));
+        exit;
+    }
+    $teacher = Auth::guard('teacher')->user();
+@endphp
+
+<!-- Enhanced Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark">
+    <div class="container-fluid px-4">
+        <button class="mobile-menu-toggle d-lg-none me-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas" aria-controls="sidebarOffcanvas">
+            <i class="bi bi-list fs-5"></i>
+        </button>
+        
+        <span class="navbar-brand">
+            <i class="bi bi-mortarboard me-2"></i>
+            {{ $systemName ?? config('app.name', 'ESA Portal') }}
+        </span>
+        
+        <div class="ms-auto d-flex align-items-center">
+            <!-- Message Icon Dropdown -->
+            <div class="dropdown me-3">
+                <a href="#" class="text-white position-relative" id="messagesDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 1.5rem;">
+                    <i class="bi bi-envelope"></i>
+                  
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="messagesDropdown">
+                    <li>
+                        <a class="dropdown-item" href="{{ route('teacher.messages.inbox') }}">
+                            <i class="bi bi-inbox me-2 text-primary"></i>Inbox
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{{ route('teacher.messages.sent') }}">
+                            <i class="bi bi-send me-2 text-success"></i>Sent Messages
+                        </a>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <a class="dropdown-item" href="{{ route('teacher.messages.create') }}">
+                            <i class="bi bi-pencil-square me-2 text-secondary"></i>New Message
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            <!-- Quick Action Button -->
+            <button class="quick-action-btn me-3 d-none d-lg-inline-flex align-items-center" data-bs-toggle="modal" data-bs-target="#classDailyModal">
+                <i class="bi bi-journal-text me-2"></i>
+                <span>Class Daily</span>
+            </button>
+            
+            <!-- User Dropdown -->
+            <div class="dropdown">
+                <a href="#" class="user-dropdown d-flex align-items-center text-white text-decoration-none dropdown-toggle" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    @if($teacher->photo)
+                        <img src="data:image/jpeg;base64,{{ $teacher->photo }}" alt="Profile" class="rounded-circle me-2" width="40" height="40" style="object-fit:cover;">
+                    @else
+                        <img src="{{ asset('default-user.png') }}" alt="Profile" class="rounded-circle me-2" width="40" height="40" style="object-fit:cover;">
+                    @endif
+                    <div class="d-none d-md-block text-start">
+                        <div class="fw-semibold">{{ $teacher->teacher_name ?? 'Teacher' }}</div>
+                        <small class="opacity-75"><b>Department:</b>{{$teacher->department}}</small><br>
+                        <small class="opacity-70">{{ $teacher->branches->pluck('name')->join(', ') }}</small>
+                    </div>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                    <li>
+                        <a class="dropdown-item" href="{{ route('teacher.profile.edit') }}">
+                            <i class="bi bi-person-lines-fill me-2 text-primary"></i>Update Profile
+                        </a>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <form action="{{ route('teacher.logout') }}" method="POST" class="d-inline">
+                            @csrf
+                            <button type="submit" class="dropdown-item text-danger">
+                                <i class="bi bi-box-arrow-right me-2"></i>Logout
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<div class="d-flex">
+    <!-- Enhanced Sidebar (Desktop) -->
+    <nav class="sidebar d-none d-lg-block">
+        <div class="sidebar-header">
+            <h4><i class="bi bi-speedometer2 me-2"></i>Dashboard</h4>
+        </div>
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a href="{{ route('teacher.dashboard') }}" class="nav-link {{ request()->routeIs('teacher.dashboard') ? 'active' : '' }}">
+                    <i class="bi bi-house-door"></i>
+                    <span>Dashboard</span>
+                    <span class="badge bg-primary ms-auto">Home</span>
+                </a>
+            </li>
+            
+            <li class="nav-item">
+                <a href="#" class="nav-link text-warning" data-bs-toggle="modal" data-bs-target="#classDailyModal">
+                    <i class="bi bi-journal-text"></i>
+                    <span>Class Daily</span>
+                </a>
+            </li>
+            
+            <li class="nav-item">
+                <a href="{{ route('teacher.courses.details') }}" class="nav-link text-info">
+                    <i class="bi bi-info-circle"></i>
+                    <span>Course Details</span>
+                </a>
+            </li>
+            
+            <li class="nav-item">
+                <a href="{{ route('exams.index') }}" class="nav-link text-primary">
+                    <i class="bi bi-clipboard-data"></i>
+                    <span>Exams</span>
+                </a>
+            </li>
+            
+            <li class="nav-item">
+                <a href="{{ route('teacher.marks.index') }}" class="nav-link text-success">
+                    <i class="bi bi-clipboard-check"></i>
+                    <span>Marks</span>
+                </a>
+            </li>
+            
+            <li class="nav-item">
+                <a href="{{ route('teacher.resources.create') }}" class="nav-link text-secondary">
+                    <i class="bi bi-upload"></i>
+                    <span>Upload Resources</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('teacher.dailies.index') }}" class="nav-link text-primary">
+                    <i class="bi bi-calendar-check"></i>
+                    <span>My Dailies</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Enhanced Offcanvas Sidebar (Mobile) -->
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="sidebarOffcanvas" aria-labelledby="sidebarOffcanvasLabel">
+        <div class="offcanvas-header bg-primary text-white">
+            <h5 class="offcanvas-title fw-bold" id="sidebarOffcanvasLabel">
+                <i class="bi bi-mortarboard me-2"></i>
+                {{ $systemName ?? config('app.name', 'ESA Portal') }}
+            </h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body p-0">
+            <ul class="nav flex-column py-3">
+                <li class="nav-item">
+                    <a href="{{ route('teacher.dashboard') }}" class="nav-link {{ request()->routeIs('teacher.dashboard') ? 'active' : '' }}">
+                        <i class="bi bi-house-door"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                
+                <li class="nav-item">
+                    <a href="#" class="nav-link text-warning" data-bs-toggle="modal" data-bs-target="#classDailyModal">
+                        <i class="bi bi-journal-text"></i>
+                        <span>Class Daily</span>
+                    </a>
+                </li>
+                
+                <li class="nav-item">
+                    <a href="{{ route('teacher.courses.details') }}" class="nav-link text-info">
+                        <i class="bi bi-info-circle"></i>
+                        <span>Course Details</span>
+                    </a>
+                </li>
+                
+                <li class="nav-item">
+                    <a href="{{ route('exams.index') }}" class="nav-link text-primary">
+                        <i class="bi bi-clipboard-data"></i>
+                        <span>Exams</span>
+                    </a>
+                </li>
+                
+                <li class="nav-item">
+                    <a href="{{ route('teacher.marks.index') }}" class="nav-link text-success">
+                        <i class="bi bi-clipboard-check"></i>
+                        <span>Marks</span>
+                    </a>
+                </li>
+                
+                <li class="nav-item">
+                    <a href="{{ route('teacher.resources.create') }}" class="nav-link text-secondary">
+                        <i class="bi bi-upload"></i>
+                        <span>Upload Resources</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ route('teacher.dailies.index') }}" class="nav-link text-primary">
+                        <i class="bi bi-calendar-check"></i>
+                        <span>My Dailies</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+        @yield('content')
+        
+        <!-- Notice Board Card -->
+        <div class="col-md-12">
+            <div class="card shadow-sm mt-4">
+                <div class="card-body">
+                    <i class="bi bi-megaphone fs-4 text-danger"></i>
+                    <h5 class="card-title d-inline ms-2">Announcements</h5>
+                    <ul class="mt-3">
+                        @forelse($announcements as $announcement)
+                            <li>
+                                <a href="#"
+                                   class="announcement-link"
+                                   data-bs-toggle="modal"
+                                   data-bs-target="#announcementModal"
+                                   data-title="{{ $announcement->title }}"
+                                   data-content="{{ htmlspecialchars($announcement->content, ENT_QUOTES) }}"
+                                   data-date="{{ $announcement->created_at->format('M d, Y H:i') }}"
+                                   data-sender="{{ $announcement->sender ?? 'Admin' }}"
+                                   @if($announcement->attachment)
+                                       data-attachment="{{ asset('storage/' . $announcement->attachment) }}"
+                                   @endif
+                                >
+                                    {{ $announcement->title }}
+                                </a>
+                            </li>
+                        @empty
+                            <li>No announcements at this time.</li>
+                        @endforelse
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Enhanced Class Daily Modal -->
+<div class="modal fade" id="classDailyModal" tabindex="-1" aria-labelledby="classDailyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <form class="modal-content" method="POST" action="{{ route('teacher.daily.store') }}">
+            @csrf
+            <div class="modal-header">
+                <h5 class="modal-title" id="classDailyModalLabel">
+                    <i class="bi bi-journal-text me-2"></i>Class Daily Activity
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <div class="modal-body">
+                <!-- Daily Activities Done (Multiple) -->
+                <div class="mb-4">
+                    <label class="form-label">
+                        <i class="bi bi-list-check me-1"></i>Daily Activities Done
+                    </label>
+                    <div id="activitiesList">
+                        <div class="input-group mb-2">
+                            <input type="text" class="form-control" name="activities[]" required placeholder="Enter activity description">
+                            <button type="button" class="btn btn-outline-danger remove-activity" style="display:none;">
+                                <i class="bi bi-x"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-outline-success btn-sm" id="addActivityBtn">
+                        <i class="bi bi-plus-circle me-1"></i>Add Another Activity
+                    </button>
+                </div>
+
+                <!-- Course Selection -->
+                <div class="mb-3">
+                    <label for="course" class="form-label">
+                        <i class="bi bi-book me-1"></i>Course Taught
+                    </label>
+                    <select class="form-select" id="course" name="course" required>
+                        <option value="">Select course</option>
+                        @foreach($courses as $course)
+                            <option value="{{ $course->id }}">{{ $course->course_name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <!-- Lesson Selection -->
+                <div class="mb-3">
+                    <label for="lesson" class="form-label">
+                        <i class="bi bi-journal-bookmark me-1"></i>Lesson
+                    </label>
+                    <select class="form-select" id="lesson" name="lesson" required>
+                        <option value="">Select lesson</option>
+                    </select>
+                </div>
+
+                <!-- Unit Selection -->
+                <div class="mb-3">
+                    <label for="unit" class="form-label">
+                        <i class="bi bi-diagram-3 me-1"></i>Unit
+                    </label>
+                    <select class="form-select" id="unit" name="unit" required>
+                        <option value="">Select unit</option>
+                    </select>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <!-- Total Students Studied -->
+                        <div class="mb-3">
+                            <label for="total_students" class="form-label">
+                                <i class="bi bi-people me-1"></i>Total Students Present
+                            </label>
+                            <input type="number" class="form-control" id="total_students" name="total_students" min="1" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <!-- Hours Studied -->
+                        <div class="mb-3">
+                            <label for="hours_studied" class="form-label">
+                                <i class="bi bi-clock me-1"></i>Hours Studied
+                            </label>
+                            <input type="number" class="form-control" id="hours_studied" name="hours_studied" min="0.5" step="0.5" required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quiz/Test Section -->
+                <div class="mb-3">
+                    <button type="button" class="btn btn-info" id="showQuizSection">
+                        <i class="bi bi-question-circle me-2"></i>Add Quiz/Test Details
+                    </button>
+                </div>
+                <div id="quizSection" style="display:none;" class="border rounded p-3 mb-3 bg-light">
+                    <h6 class="text-info mb-3"><i class="bi bi-clipboard-check me-2"></i>Quiz/Test Information</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="quiz_link" class="form-label">Quiz/Test Link</label>
+                                <input type="url" class="form-control" id="quiz_link" name="quiz_link" placeholder="https://...">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="total_marks" class="form-label">Total Marks</label>
+                                <input type="number" class="form-control" id="total_marks" name="total_marks" min="0">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="marking_guide" class="form-label">Marking Guide</label>
+                        <input type="text" class="form-control" id="marking_guide" name="marking_guide" placeholder="Describe marking criteria">
+                    </div>
+                </div>
+
+                <!-- Challenges Section -->
+                <div class="mb-3">
+                    <button type="button" class="btn btn-secondary" id="showChallengesSection">
+                        <i class="bi bi-exclamation-triangle me-2"></i>Add Challenges Faced
+                    </button>
+                </div>
+                <div id="challengesSection" style="display:none;" class="border rounded p-3 mb-3 bg-light">
+                    <div class="mb-3">
+                        <label for="challenges" class="form-label">
+                            <i class="bi bi-flag me-1"></i>Challenges Encountered
+                        </label>
+                        <textarea class="form-control" id="challenges" name="challenges" rows="3" placeholder="Describe any challenges faced during the lesson..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Comment Section -->
+                <div class="mb-3">
+                    <button type="button" class="btn btn-success" id="showCommentSection">
+                        <i class="bi bi-chat-text me-2"></i>Add Comments
+                    </button>
+                </div>
+                <div id="commentSection" style="display:none;" class="border rounded p-3 mb-3 bg-light">
+                    <div class="mb-3">
+                        <label for="comment" class="form-label">
+                            Comments <span class="text-danger">*</span>
+                        </label>
+                        <textarea class="form-control" id="comment" name="comment" rows="4" required placeholder="Add your comments about the lesson, student engagement, etc..."></textarea>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-circle me-2"></i>Submit Activity
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-2"></i>Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Announcement Modal -->
+<div class="modal fade" id="announcementModal" tabindex="-1" aria-labelledby="announcementModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-gradient" style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: #fff;">
+        <i class="bi bi-megaphone fs-2 me-2 text-warning"></i>
+        <div>
+          <h5 class="modal-title mb-0" id="announcementModalLabel"></h5>
+          <div id="announcementDate" class="small text-light opacity-75"></div>
+          <div id="announcementSender" class="small text-light opacity-75"></div>
+        </div>
+        <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body py-4 px-4">
+        <div id="announcementContent" class="mb-3" style="font-size:1.1rem; color:#1e293b;"></div>
+        <div id="announcementAttachment" class="mt-3"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Enhanced JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Modal section toggles with smooth animations
+    const toggleSection = (buttonId, sectionId, required = false) => {
+        document.getElementById(buttonId).onclick = function() {
+            const section = document.getElementById(sectionId);
+            section.style.display = 'block';
+            section.style.opacity = '0';
+            section.style.transform = 'translateY(-10px)';
+            
+            requestAnimationFrame(() => {
+                section.style.transition = 'all 0.3s ease';
+                section.style.opacity = '1';
+                section.style.transform = 'translateY(0)';
+            });
+            
+            if (required) {
+                const textarea = section.querySelector('textarea');
+                if (textarea) textarea.required = true;
+            }
+            
+            this.style.display = 'none';
+        };
+    };
+
+    toggleSection('showQuizSection', 'quizSection');
+    toggleSection('showChallengesSection', 'challengesSection');
+    toggleSection('showCommentSection', 'commentSection', true);
+
+    // Dynamic selects with loading states
+    const courseSelect = document.getElementById('course');
+    const lessonSelect = document.getElementById('lesson');
+    const unitSelect = document.getElementById('unit');
+    let courseStudentCount = 0;
+
+    const setLoading = (element, isLoading) => {
+        if (isLoading) {
+            element.innerHTML = '<option value="">Loading...</option>';
+            element.disabled = true;
+        } else {
+            element.disabled = false;
+        }
+    };
+
+    courseSelect.addEventListener('change', function() {
+        const courseId = this.value;
+        setLoading(lessonSelect, true);
+        unitSelect.innerHTML = '<option value="">Select unit</option>';
+        
+        if (this.value) {
+            // Fetch student count
+            fetch(`/teacher/course/${this.value}/student-count`)
+                .then(res => res.json())
+                .then(data => {
+                    courseStudentCount = data.count;
+                })
+                .catch(err => {
+                    console.error('Error fetching student count:', err);
+                    courseStudentCount = 0;
+                });
+        } else {
+            courseStudentCount = 0;
+        }
+        
+        if (courseId) {
+            fetch(`/teacher/course/${courseId}/lessons`)
+                .then(res => res.json())
+                .then(data => {
+                    let options = '<option value="">Select lesson</option>';
+                    data.forEach(lesson => {
+                        options += `<option value="${lesson.id}">${lesson.title}</option>`;
+                    });
+                    lessonSelect.innerHTML = options;
+                    setLoading(lessonSelect, false);
+                })
+                .catch(err => {
+                    console.error('Error fetching lessons:', err);
+                    lessonSelect.innerHTML = '<option value="">Error loading lessons</option>';
+                    setLoading(lessonSelect, false);
+                });
+        } else {
+            lessonSelect.innerHTML = '<option value="">Select lesson</option>';
+            setLoading(lessonSelect, false);
+        }
+    });
+
+    lessonSelect.addEventListener('change', function() {
+        const lessonId = this.value;
+        setLoading(unitSelect, true);
+
+        if (lessonId) {
+            fetch(`/teacher/lesson/${lessonId}/units`)
+                .then(res => res.json())
+                .then(data => {
+                    let options = '<option value="">Select unit</option>';
+                    data.forEach(unit => {
+                        options += `<option value="${unit.id}">${unit.unit_name}</option>`;
+                    });
+                    unitSelect.innerHTML = options;
+                    setLoading(unitSelect, false);
+                })
+                .catch(err => {
+                    console.error('Error fetching units:', err);
+                    unitSelect.innerHTML = '<option value="">Error loading units</option>';
+                    setLoading(unitSelect, false);
+                });
+        } else {
+            unitSelect.innerHTML = '<option value="">Select unit</option>';
+            setLoading(unitSelect, false);
+        }
+    });
+
+    // Student attendance validation
+    document.getElementById('total_students').addEventListener('blur', function() {
+        const entered = parseInt(this.value, 10);
+        if (courseStudentCount > 0 && entered < courseStudentCount) {
+            // Show attendance table for manual marking
+            const courseId = courseSelect.value;
+            fetch(`/teacher/course/${courseId}/students`)
+                .then(res => res.json())
+                .then(students => {
+                    let html = `<div id="attendanceSection" class="border rounded p-3 mt-3 bg-warning bg-opacity-10">
+                        <h6 class="text-warning mb-3">
+                            <i class="bi bi-exclamation-triangle me-2"></i>Attendance List
+                        </h6>
+                        <p class="small text-muted mb-3">
+                            Mark attendance for each student:
+                        </p>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>P</th>
+                                        <th>A</th>
+                                        <th>AR</th>
+                                        <th>L</th>
+                                    </tr>
+                                </thead>
+                                <tbody>`;
+                    students.forEach(student => {
+                        html += `<tr>
+                            <td>${student.name}</td>
+                            <td><input type="radio" name="attendance[${student.id}]" value="P" checked></td>
+                            <td><input type="radio" name="attendance[${student.id}]" value="A"></td>
+                            <td><input type="radio" name="attendance[${student.id}]" value="AR"></td>
+                            <td><input type="radio" name="attendance[${student.id}]" value="L"></td>
+                        </tr>`;
+                    });
+                    html += `</tbody></table></div></div>`;
+                    const oldSection = document.getElementById('attendanceSection');
+                    if (oldSection) oldSection.remove();
+                    this.parentNode.parentNode.insertAdjacentHTML('afterend', html);
+                })
+                .catch(() => {
+                    alert('Could not load students for attendance.');
+                });
+        } else {
+            // Remove attendance section if present
+            const attendanceDiv = document.getElementById('attendanceSection');
+            if (attendanceDiv) attendanceDiv.remove();
+        }
+        // Alert if entered > assigned
+        if (courseStudentCount > 0 && entered > courseStudentCount) {
+            alert('Number of present students cannot exceed total assigned students!');
+            this.value = courseStudentCount;
+            this.focus();
+        }
+    });
+
+    // Dynamic Activities Management
+    const activitiesList = document.getElementById('activitiesList');
+    const addActivityBtn = document.getElementById('addActivityBtn');
+
+    addActivityBtn.addEventListener('click', function() {
+        const group = document.createElement('div');
+        group.className = 'input-group mb-2';
+        group.innerHTML = `
+            <input type="text" class="form-control" name="activities[]" required placeholder="Enter activity description">
+            <button type="button" class="btn btn-outline-danger remove-activity">
+                <i class="bi bi-x"></i>
+            </button>
+        `;
+        
+        // Add with animation
+        group.style.opacity = '0';
+        group.style.transform = 'translateX(-10px)';
+        activitiesList.appendChild(group);
+        
+        requestAnimationFrame(() => {
+            group.style.transition = 'all 0.3s ease';
+            group.style.opacity = '1';
+            group.style.transform = 'translateX(0)';
+        });
+        
+        // Update remove button visibility
+        updateRemoveButtons();
+    });
+
+    activitiesList.addEventListener('click', function(e) {
+        if (e.target.closest('.remove-activity')) {
+            const group = e.target.closest('.input-group');
+            group.style.transition = 'all 0.3s ease';
+            group.style.opacity = '0';
+            group.style.transform = 'translateX(-10px)';
+            setTimeout(() => {
+                group.remove();
+                updateRemoveButtons();
+            }, 300);
+        }
+    });
+
+    function updateRemoveButtons() {
+        const removeButtons = activitiesList.querySelectorAll('.remove-activity');
+        removeButtons.forEach((btn, index) => {
+            // Show remove button only if there are multiple activities
+            btn.style.display = removeButtons.length > 1 ? 'block' : 'none';
+        });
+    }
+
+    // Form validation enhancements
+    const form = document.querySelector('#classDailyModal form');
+    form.addEventListener('submit', function(e) {
+        const requiredFields = form.querySelectorAll('[required]');
+        let isValid = true;
+        
+        requiredFields.forEach(field => {
+            if (!field.value.trim()) {
+                field.classList.add('is-invalid');
+                isValid = false;
+            } else {
+                field.classList.remove('is-invalid');
+            }
+        });
+        
+        if (!isValid) {
+            e.preventDefault();
+            // Scroll to first invalid field
+            const firstInvalid = form.querySelector('.is-invalid');
+            if (firstInvalid) {
+                firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                firstInvalid.focus();
+            }
+        }
+    });
+
+    // Real-time field validation
+    form.addEventListener('input', function(e) {
+        if (e.target.hasAttribute('required') && e.target.value.trim()) {
+            e.target.classList.remove('is-invalid');
+        }
+    });
+
+    // Auto-save draft functionality (optional)
+    const draftKey = 'class_daily_draft';
+    
+    // Load draft on modal open
+    document.getElementById('classDailyModal').addEventListener('shown.bs.modal', function() {
+        const draft = localStorage.getItem(draftKey);
+        if (draft) {
+            try {
+                const data = JSON.parse(draft);
+                // Restore form data
+                Object.keys(data).forEach(key => {
+                    const field = form.querySelector(`[name="${key}"]`);
+                    if (field && field.type !== 'file') {
+                        field.value = data[key];
+                    }
+                });
+            } catch (e) {
+                console.error('Error loading draft:', e);
+            }
+        }
+    });
+
+    // Save draft on input
+    form.addEventListener('input', debounce(function() {
+        const formData = new FormData(form);
+        const data = {};
+        for (let [key, value] of formData.entries()) {
+            data[key] = value;
+        }
+        localStorage.setItem(draftKey, JSON.stringify(data));
+    }, 1000));
+
+    // Clear draft on successful submit
+    form.addEventListener('submit', function() {
+        localStorage.removeItem(draftKey);
+    });
+
+    // Utility function for debouncing
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        }
+    }
+
+    // Initialize tooltips if Bootstrap is available
+    if (typeof bootstrap !== 'undefined') {
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    }
+
+    // Initialize on page load
+    updateRemoveButtons();
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    // Ctrl/Cmd + Shift + D to open Class Daily modal
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'D') {
+        e.preventDefault();
+        const modal = new bootstrap.Modal(document.getElementById('classDailyModal'));
+        modal.show();
+    }
+});
+
+// Add smooth scrolling to all internal links
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+            target.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }
+    });
+});
+
+
+
+
+// Show notifications for form submissions
+@if(session('success'))
+    document.addEventListener('DOMContentLoaded', function() {
+        showNotification('{{ session("success") }}', 'success');
+    });
+@endif
+
+@if(session('error'))
+    document.addEventListener('DOMContentLoaded', function() {
+        showNotification('{{ session("error") }}', 'error');
+    });
+@endif
+
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show position-fixed`;
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    notification.innerHTML = `
+        <i class="bi bi-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.classList.remove('show');
+            setTimeout(() => notification.remove(), 300);
+        }
+    }, 5000);
+}
+
+// Announcement modal script
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.announcement-link').forEach(link => {
+        link.addEventListener('click', function() {
+            document.getElementById('announcementModalLabel').textContent = this.dataset.title;
+            document.getElementById('announcementDate').textContent = "Date: " + this.dataset.date;
+            document.getElementById('announcementSender').textContent = "Sender: " + this.dataset.sender;
+            document.getElementById('announcementContent').innerHTML = this.dataset.content.replace(/\n/g, '<br>');
+            if (this.dataset.attachment) {
+                document.getElementById('announcementAttachment').innerHTML =
+                    `<a href="${this.dataset.attachment}" target="_blank" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-paperclip"></i> View Attachment
+                    </a>`;
+            } else {
+                document.getElementById('announcementAttachment').innerHTML = '';
+            }
+        });
+    });
+});
+</script>
+<script>
+    window.__lc = window.__lc || {};
+    window.__lc.license = 19254904;
+    window.__lc.integration_name = "manual_onboarding";
+    window.__lc.product_name = "livechat";
+    ;(function(n,t,c){function i(n){return e._h?e._h.apply(null,n):e._q.push(n)}var e={_q:[],_h:null,_v:"2.0",on:function(){i(["on",c.call(arguments)])},once:function(){i(["once",c.call(arguments)])},off:function(){i(["off",c.call(arguments)])},get:function(){if(!e._h)throw new Error("[LiveChatWidget] You can't use getters before load.");return i(["get",c.call(arguments)])},call:function(){i(["call",c.call(arguments)])},init:function(){var n=t.createElement("script");n.async=!0,n.type="text/javascript",n.src="https://cdn.livechatinc.com/tracking.js",t.head.appendChild(n)}};!n.__lc.asyncInit&&e.init(),n.LiveChatWidget=n.LiveChatWidget||e}(window,document,[].slice))
+</script>
+<noscript><a href="https://www.livechat.com/chat-with/19254904/" rel="nofollow">Chat with us</a></noscript>
+</body>
+</html>

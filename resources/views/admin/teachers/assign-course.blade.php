@@ -76,7 +76,7 @@
                             <button type="submit" class="btn btn-success">
                                 <i class="fas fa-save me-2"></i>Assign Courses
                             </button>
-                            <a href="{{ route('teachers.index') }}" class="btn btn-secondary">
+                            <a href="{{ route('admin.teachers.index') }}" class="btn btn-secondary">
                                 <i class="fas fa-arrow-left me-2"></i>Back to Teachers List
                             </a>
                         </div>

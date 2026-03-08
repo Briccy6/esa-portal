@@ -475,6 +475,86 @@ class StudentController extends Controller
         }
     }
 
+    public function report(Request $request)
+    {
+        $staff = auth('staff')->user();
+        
+        if (!$staff) {
+            abort(403, 'Unauthorized');
+        }
+
+        $branchIds = $staff->branches()->pluck('branches.id')->toArray();
+        
+        $query = Student::whereIn('branch_id', $branchIds)
+            ->with(['course', 'branch', 'academicYear']);
+
+        // Filter by search parameters
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('full_name', 'like', '%' . $search . '%')
+                  ->orWhere('reg_number', 'like', '%' . $search . '%')
+                  ->orWhere('email', 'like', '%' . $search . '%')
+                  ->orWhere('phone', 'like', '%' . $search . '%');
+            });
+        }
+
+        if ($request->filled('course_id')) {
+            $query->where('course_id', $request->course_id);
+        }
+
+        if ($request->filled('branch_id')) {
+            $query->where('branch_id', $request->branch_id);
+        }
+
+        if ($request->filled('academic_year_id')) {
+            $query->where('academic_year_id', $request->academic_year_id);
+        }
+
+        if ($request->filled('status')) {
+            if ($request->status === 'active') {
+                $query->where('payed_registration_fees', 1);
+            } elseif ($request->status === 'inactive') {
+                $query->where('payed_registration_fees', 0);
+            }
+        }
+
+        $students = $query->orderBy('created_at', 'desc')->get();
+        
+        // Get filter data
+        $courses = Course::whereIn('id', function($q) use ($branchIds) {
+            $q->select('course_id')
+              ->from('branch_course')
+              ->whereIn('branch_id', $branchIds);
+        })->get();
+        
+        $branches = Branch::whereIn('id', $branchIds)->get();
+        $academicYears = AcademicYear::whereIn('id', function($q) use ($branchIds) {
+            $q->select('academic_year_id')
+              ->from('courses')
+              ->whereIn('id', function($subQ) use ($branchIds) {
+                  $subQ->select('course_id')
+                        ->from('branch_course')
+                        ->whereIn('branch_id', $branchIds);
+              });
+        })->get();
+
+        // Calculate statistics
+        $totalStudents = $students->count();
+        $activeStudents = $students->where('payed_registration_fees', 1)->count();
+        $inactiveStudents = $totalStudents - $activeStudents;
+
+        return view('staff.students.report', compact(
+            'students', 
+            'courses', 
+            'branches', 
+            'academicYears',
+            'totalStudents',
+            'activeStudents',
+            'inactiveStudents'
+        ));
+    }
+
     public function confirmRegistrationFee(Request $request, $studentId)
     {
         $student = Student::findOrFail($studentId);

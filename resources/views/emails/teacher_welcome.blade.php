@@ -346,7 +346,7 @@
             
             <!-- Action Button -->
             <div style="text-align: center;">
-                <a href="{{ route('teacher.login.form') }}" class="action-button">
+                <a href="{{ route('teacher.login') }}" class="action-button">
                     <i class="fas fa-sign-in-alt"></i> Access Your Account
                 </a>
             </div>

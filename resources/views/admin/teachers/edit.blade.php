@@ -364,7 +364,7 @@
 
                 <!-- Form Section -->
                 <div class="form-section">
-                    <form method="POST" action="{{ route('teachers.update', $teacher->id) }}" id="editTeacherForm" enctype="multipart/form-data">
+                    <form method="POST" action="{{ route('admin.teachers.update', $teacher->id) }}" id="editTeacherForm" enctype="multipart/form-data">
                         @csrf
                         @method('PUT')
 
@@ -568,7 +568,7 @@
 
                         <!-- Action Buttons -->
                         <div class="action-buttons">
-                            <a href="{{ route('teachers.index') }}" class="btn btn-secondary">
+                            <a href="{{ route('admin.teachers.index') }}" class="btn btn-secondary">
                                 <i class="fas fa-times"></i>
                                 Cancel
                             </a>

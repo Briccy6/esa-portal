@@ -10,10 +10,13 @@ class Mark extends Model
         'student_id',
         'course_id',
         'branch_id',
+        'lesson_id',
         'exam_id',
         'value',
         'grade_id',
-        'status'
+        'status',
+        'assessment_type',
+        'marks_out_of'
     ];
 
     public function grade()
@@ -39,6 +42,11 @@ class Mark extends Model
     public function exam()
     {
         return $this->belongsTo(\App\Models\Exam::class);
+    }
+
+    public function lesson()
+    {
+        return $this->belongsTo(\App\Models\Lesson::class);
     }
 
     // Optional accessors

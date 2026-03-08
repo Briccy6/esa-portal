@@ -192,6 +192,12 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('staff.subscriptions.index') ? 'active' : '' }}" href="{{ route('staff.subscriptions.index') }}">
+                            <span class="nav-icon"><i class="fas fa-crown"></i></span>
+                            <span class="nav-text">Subscriptions</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <button type="button" class="nav-link w-100 text-start" data-bs-toggle="modal" data-bs-target="#addStudentModal">
                             <span class="nav-icon"><i class="fas fa-user-plus"></i></span>
                             <span class="nav-text">Add Student</span>

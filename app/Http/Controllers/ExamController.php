@@ -39,7 +39,17 @@ class ExamController extends Controller
                 ->latest()
                 ->paginate(10);
         } elseif (auth('staff')->check()) {
-            // Staff (including accountants) can see all exams
+            $staff = auth('staff')->user();
+            if ($staff->role === 'DOS') {
+                // DOS can see all exams
+                $exams = Exam::with(['courses', 'lessons'])->latest()->paginate(10);
+                $courses = Course::all();
+                return view('exams.dos_index', compact('exams', 'courses'));
+            } else {
+                // Other staff can see all exams
+                $exams = Exam::with(['courses', 'lessons'])->latest()->paginate(10);
+            }
+        } elseif (auth('admin')->check()) {
             $exams = Exam::with(['courses', 'lessons'])->latest()->paginate(10);
         } else {
             $exams = Exam::with(['courses', 'lessons'])->latest()->paginate(10);
@@ -75,13 +85,32 @@ class ExamController extends Controller
             $terms = \App\Models\Term::all();
         } elseif (auth('staff')->check()) {
             $user = auth('staff')->user();
-            // Staff (including accountants) can access all courses, lessons, and branches
-            $courses = Course::all();
-            $lessons = Lesson::all();
-            $branches = \App\Models\Branch::all();
-            $teachers = \App\Models\Teacher::all();
-            $academicYears = \App\Models\AcademicYear::orderBy('year', 'desc')->get();
-            $terms = \App\Models\Term::all();
+            if ($user->role === 'DOS') {
+                // DOS can access all courses, lessons, and branches
+                $courses = Course::all();
+                $lessons = Lesson::all();
+                $branches = \App\Models\Branch::all();
+                $teachers = \App\Models\Teacher::all();
+                $academicYears = \App\Models\AcademicYear::orderBy('year', 'desc')->get();
+                $terms = \App\Models\Term::all();
+                $examPassword = \Illuminate\Support\Str::random(8);
+                
+                // Get question banks for DOS (can see all)
+                $questionBanks = \App\Models\QuestionBank::all();
+                
+                return view('exams.dos_create', compact(
+                    'courses', 'lessons', 'branches', 'teachers', 
+                    'academicYears', 'terms', 'questionBanks', 'examPassword'
+                ));
+            } else {
+                // Other staff can access all courses, lessons, and branches
+                $courses = Course::all();
+                $lessons = Lesson::all();
+                $branches = \App\Models\Branch::all();
+                $teachers = \App\Models\Teacher::all();
+                $academicYears = \App\Models\AcademicYear::orderBy('year', 'desc')->get();
+                $terms = \App\Models\Term::all();
+            }
         } else {
             abort(403, 'Unauthorized');
         }
@@ -189,6 +218,12 @@ class ExamController extends Controller
             // Redirect based on authentication
             if (auth('admin')->check()) {
                 return redirect()->route('admin.exams.index')->with('success', 'Exam created successfully.');
+            } elseif (auth('staff')->check()) {
+                $staff = auth('staff')->user();
+                if ($staff->role === 'DOS') {
+                    return redirect()->route('dos.exams.index')->with('success', 'Exam created successfully.');
+                }
+                return redirect()->route('exams.index')->with('success', 'Exam created successfully.');
             } else {
                 return redirect()->route('exams.index')->with('success', 'Exam created successfully.');
             }
@@ -218,6 +253,18 @@ class ExamController extends Controller
      */
     public function edit(Exam $exam)
     {
+        if (auth('staff')->check() && auth('staff')->user()->role === 'DOS') {
+            $courses = Course::all();
+            $lessons = Lesson::all();
+            $branches = \App\Models\Branch::all();
+            $teachers = \App\Models\Teacher::all();
+            $academicYears = \App\Models\AcademicYear::orderBy('year', 'desc')->get();
+            $terms = \App\Models\Term::all();
+            $exam->load(['courses', 'lessons', 'academic_year', 'term', 'teacher', 'branch']);
+            
+            return view('exams.dos_edit', compact('exam', 'courses', 'lessons', 'branches', 'teachers', 'academicYears', 'terms'));
+        }
+        
         $courses = Course::all();
         $lessons = Lesson::all();
         $exam->load(['courses', 'lessons']);
@@ -229,9 +276,14 @@ class ExamController extends Controller
      */
     public function update(Request $request, Exam $exam)
     {
+        // Set default token cost to 10 if not provided or empty
+        if (!$request->has('token_cost') || $request->token_cost === '' || $request->token_cost === null) {
+            $request->merge(['token_cost' => 10]);
+        }
+
         $request->validate([
             'title' => 'required|string|max:255',
-            'date' => 'required|date',
+            'class_date' => 'required|date',
             'course_ids' => 'required|array|min:1',
             'course_ids.*' => 'exists:courses,id',
             'lesson_ids' => 'required|array|min:1',
@@ -241,22 +293,69 @@ class ExamController extends Controller
             'description' => 'nullable|string',
             'instructions' => 'nullable|string',
             'token_cost' => 'required|integer|min:0',
+            'exam_type' => 'required|string',
+            'branch_id' => 'required|exists:branches,id',
+            'academic_year_id' => 'required|exists:academic_years,id',
+            'teacher_id' => 'required|exists:teachers,id',
+            'term_id' => 'required|exists:terms,id',
+            'notes' => 'nullable|string',
+            'exam_password' => 'nullable|string|max:255',
         ]);
 
-        $exam->update([
+        $examData = [
             'title' => $request->title,
-            'date' => $request->date,
+            'class_date' => $request->class_date,
             'total_marks' => $request->total_marks,
             'exam_weight' => $request->exam_weight,
             'description' => $request->description,
             'instructions' => $request->instructions,
             'token_cost' => $request->token_cost,
-        ]);
+            'exam_type' => $request->exam_type,
+            'branch_id' => $request->branch_id,
+            'academic_year_id' => $request->academic_year_id,
+            'teacher_id' => $request->teacher_id,
+            'term_id' => $request->term_id,
+            'notes' => $request->notes,
+            'exam_password' => $request->exam_password,
+        ];
+
+        // Add optional fields if they exist in the database
+        if (Schema::hasColumn('exams', 'branch_id')) {
+            $examData['branch_id'] = $request->branch_id;
+        }
+        if (Schema::hasColumn('exams', 'academic_year_id')) {
+            $examData['academic_year_id'] = $request->academic_year_id;
+        }
+        if (Schema::hasColumn('exams', 'teacher_id')) {
+            $examData['teacher_id'] = $request->teacher_id;
+        }
+        if (Schema::hasColumn('exams', 'term_id')) {
+            $examData['term_id'] = $request->term_id;
+        }
+        if (Schema::hasColumn('exams', 'notes')) {
+            $examData['notes'] = $request->notes;
+        }
+        if (Schema::hasColumn('exams', 'exam_password')) {
+            $examData['exam_password'] = $request->exam_password;
+        }
+
+        $exam->update($examData);
 
         $exam->courses()->sync($request->course_ids);
         $exam->lessons()->sync($request->lesson_ids);
 
-        return redirect()->route('exams.index')->with('success', 'Exam updated successfully.');
+        // Redirect based on authentication
+        if (auth('admin')->check()) {
+            return redirect()->route('admin.exams.index')->with('success', 'Exam updated successfully.');
+        } elseif (auth('staff')->check()) {
+            $staff = auth('staff')->user();
+            if ($staff->role === 'DOS') {
+                return redirect()->route('dos.exams.index')->with('success', 'Exam updated successfully.');
+            }
+            return redirect()->route('exams.index')->with('success', 'Exam updated successfully.');
+        } else {
+            return redirect()->route('exams.index')->with('success', 'Exam updated successfully.');
+        }
     }
 
     /**
@@ -267,7 +366,18 @@ class ExamController extends Controller
         $exam->courses()->detach();
         $exam->lessons()->detach();
         $exam->delete();
-        return redirect()->route('exams.index')->with('success', 'Exam deleted successfully.');
+        // Redirect based on authentication
+        if (auth('admin')->check()) {
+            return redirect()->route('admin.exams.index')->with('success', 'Exam deleted successfully.');
+        } elseif (auth('staff')->check()) {
+            $staff = auth('staff')->user();
+            if ($staff->role === 'DOS') {
+                return redirect()->route('dos.exams.index')->with('success', 'Exam deleted successfully.');
+            }
+            return redirect()->route('exams.index')->with('success', 'Exam deleted successfully.');
+        } else {
+            return redirect()->route('exams.index')->with('success', 'Exam deleted successfully.');
+        }
     }
 
     /**

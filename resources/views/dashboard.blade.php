@@ -7,7 +7,16 @@
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="flex flex-wrap gap-6">
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                
+                <!-- Token Management Sidebar -->
+                <div class="lg:col-span-1">
+                    <x-token-management :student-token="$studentToken" :subscriptions="$subscriptions" />
+                </div>
+                
+                <!-- Main Content Area -->
+                <div class="lg:col-span-3">
+                    <div class="flex flex-wrap gap-6">
 
     {{-- 💰 Payment Card --}}
     <div x-data="{ show: false }"
@@ -57,6 +66,9 @@
     </div>
 
 </div>
+
+                </div>
+            </div>
 
         </div>
     </div>

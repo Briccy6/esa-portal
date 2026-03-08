@@ -608,7 +608,7 @@
         </li>
 
         <li class="nav-item">
-          <a href="{{ route('teacher.exams.create') }}" class="nav-link text-white d-flex align-items-center gap-2">
+          <a href="{{ route('dos.exams.index') }}" class="nav-link text-white d-flex align-items-center gap-2">
             <i class="nav-icon bi bi-clipboard-data-fill"></i>
             <span class="nav-text">Exams</span>
           </a>

@@ -112,17 +112,20 @@ class MarksController extends Controller
         $validator = \Validator::make($request->all(), [
             'course_id'       => 'required|exists:courses,id',
             'branch_id'       => 'required|exists:branches,id',
-            'exam_id'         => 'required|exists:exams,id',
+            'lesson_id'       => 'required|exists:lessons,id',
             'assessment_type' => 'required|in:test,exam',
+            'exam_id'         => 'required_if:assessment_type,exam|exists:exams,id',
+            'marks_out_of'    => 'required_if:assessment_type,test|numeric|min:1',
             'students'        => 'required|array',
             'students.*'      => 'exists:students,id',
             'marks'           => 'required|array',
-            'marks.*.value'   => 'required|numeric|min:0|max:100',
+            'marks.*.value'   => 'required|numeric|min:0',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
+                'message' => 'Validation failed',
                 'errors' => $validator->errors()
             ], 422);
         }
@@ -131,17 +134,36 @@ class MarksController extends Controller
             foreach ($request->students as $studentId) {
                 $value = $request->marks[$studentId]['value'] ?? null;
                 if ($value !== null) {
+                    $createData = [
+                        'student_id' => $studentId,
+                        'course_id'  => $request->course_id,
+                        'branch_id'  => $request->branch_id,
+                        'lesson_id'  => $request->lesson_id,
+                        'assessment_type' => $request->assessment_type,
+                        'value' => $value,
+                        'status' => 'recorded'
+                    ];
+
+                    // Only add exam_id if assessment_type is exam
+                    if ($request->assessment_type === 'exam') {
+                        $createData['exam_id'] = $request->exam_id;
+                    }
+
+                    // Only add marks_out_of if assessment_type is test
+                    if ($request->assessment_type === 'test') {
+                        $createData['marks_out_of'] = $request->marks_out_of;
+                    }
+
                     Mark::updateOrCreate(
                         [
                             'student_id' => $studentId,
                             'course_id'  => $request->course_id,
                             'branch_id'  => $request->branch_id,
-                            'exam_id'    => $request->exam_id,
+                            'lesson_id'  => $request->lesson_id,
+                            'assessment_type' => $request->assessment_type,
+                            'exam_id'    => $request->assessment_type === 'exam' ? $request->exam_id : null,
                         ],
-                        [
-                            'value' => $value,
-                            'status' => 'recorded'
-                        ]
+                        $createData
                     );
                 }
             }
@@ -153,6 +175,7 @@ class MarksController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
+                'message' => 'Failed to save marks: ' . $e->getMessage(),
                 'errors' => ['server' => [$e->getMessage()]]
             ], 500);
         }

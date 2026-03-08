@@ -15,7 +15,7 @@
                 <p class="page-subtitle">Manage your teaching staff and course assignments</p>
             </div>
             <div class="header-actions">
-                <a href="{{ route('teachers.create') }}" class="btn btn-primary">
+                <a href="{{ route('admin.teachers.create') }}" class="btn btn-primary">
                     <i class="fas fa-user-plus me-2"></i>
                     Add Teacher
                 </a>
@@ -159,7 +159,7 @@
                                            data-bs-toggle="tooltip">
                                             <i class="fas fa-book"></i>
                                         </a>
-                                        <a href="{{ route('teachers.edit', $teacher) }}" 
+                                        <a href="{{ route('admin.teachers.edit', $teacher) }}" 
                                            class="btn btn-sm btn-warning" 
                                            title="Edit Teacher"
                                            data-bs-toggle="tooltip">
@@ -199,7 +199,7 @@
                 </div>
                 <h3 class="empty-title">No Teachers Found</h3>
                 <p class="empty-description">Start by adding your first teacher to the system.</p>
-                <a href="{{ route('teachers.create') }}" class="btn btn-primary btn-lg">
+                <a href="{{ route('admin.teachers.create') }}" class="btn btn-primary btn-lg">
                     <i class="fas fa-user-plus me-2"></i>
                     Add Your First Teacher
                 </a>

@@ -2,6 +2,23 @@
 
 @section('title', 'Admin Dashboard')
 
+@push('styles')
+<style>
+.border-left-purple {
+    border-left: 0.25rem solid #6f42c1 !important;
+}
+.border-left-teal {
+    border-left: 0.25rem solid #20c997 !important;
+}
+.text-purple {
+    color: #6f42c1 !important;
+}
+.text-teal {
+    color: #20c997 !important;
+}
+</style>
+@endpush
+
 @section('content')
 <div class="container-fluid">
 
@@ -65,6 +82,60 @@
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-percentage fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Revenue Source Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-4 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Token Purchase Revenue</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($tokenRevenue ?? 0) }} Rwf</div>
+                            <div class="text-xs text-muted">This month: {{ number_format($monthlyTokenRevenue ?? 0) }} Rwf</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-coins fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4 col-md-6 mb-4">
+            <div class="card border-left-purple shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-purple text-uppercase mb-1">Live Class Revenue</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($liveClassRevenue ?? 0) }} Rwf</div>
+                            <div class="text-xs text-muted">This month: {{ number_format($monthlyLiveClassRevenue ?? 0) }} Rwf</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-video fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4 col-md-6 mb-4">
+            <div class="card border-left-teal shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-teal text-uppercase mb-1">Resource Upload Revenue</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($resourceRevenue ?? 0) }} Rwf</div>
+                            <div class="text-xs text-muted">This month: {{ number_format($monthlyResourceRevenue ?? 0) }} Rwf</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-file-upload fa-2x text-gray-300"></i>
                         </div>
                     </div>
                 </div>

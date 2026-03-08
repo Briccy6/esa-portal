@@ -10,6 +10,9 @@ use App\Models\Branch;
 use App\Models\Teacher;
 use App\Models\Staff;
 use App\Models\Expense;
+use App\Models\TokenTransaction;
+use App\Models\LiveClassPayment;
+use App\Models\Resource;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -187,6 +190,52 @@ class AdminAuthController extends Controller
         $netProfit = $totalRevenue - $totalExpenses;
         $profitMargin = $totalRevenue > 0 ? round(($netProfit / $totalRevenue) * 100, 1) : 0;
 
+        // REVENUE SOURCE ANALYTICS
+        // Token Purchase Revenue (from credit transactions)
+        $tokenRevenue = TokenTransaction::where('type', 'credit')
+            ->where('source', 'purchase')
+            ->sum('amount');
+
+        // Live Class Revenue (from completed payments)
+        $liveClassRevenue = LiveClassPayment::where('status', 'completed')
+            ->sum('amount');
+
+        // Resource Upload Revenue (from paid resources)
+        $resourceRevenue = Resource::where('is_free', false)
+            ->where('price', '>', 0)
+            ->sum('price');
+
+        // Monthly breakdown for each revenue source
+        $monthlyTokenRevenue = TokenTransaction::where('type', 'credit')
+            ->where('source', 'purchase')
+            ->whereMonth('created_at', Carbon::now()->month)
+            ->whereYear('created_at', Carbon::now()->year)
+            ->sum('amount');
+
+        $monthlyLiveClassRevenue = LiveClassPayment::where('status', 'completed')
+            ->whereMonth('paid_at', Carbon::now()->month)
+            ->whereYear('paid_at', Carbon::now()->year)
+            ->sum('amount');
+
+        $monthlyResourceRevenue = Resource::where('is_free', false)
+            ->where('price', '>', 0)
+            ->whereMonth('created_at', Carbon::now()->month)
+            ->whereYear('created_at', Carbon::now()->year)
+            ->sum('price');
+
+        // Update total revenue to include all sources
+        $totalRevenue = $registrationPaidAmount + 
+            StudentTransaction::where('type', 'school_fee')
+                ->where('status', 'successful')
+                ->sum('amount') +
+            $tokenRevenue + 
+            $liveClassRevenue + 
+            $resourceRevenue;
+
+        // Recalculate profit and margin
+        $netProfit = $totalRevenue - $totalExpenses;
+        $profitMargin = $totalRevenue > 0 ? round(($netProfit / $totalRevenue) * 100, 1) : 0;
+
         // Recent expenses (last 10) - simplified without relationship
         $recentExpenses = Expense::orderBy('expense_date', 'desc')
             ->take(10)
@@ -224,11 +273,7 @@ class AdminAuthController extends Controller
         // Students by gender (for demographic analysis)
         $studentsByGender = Student::select('sex', DB::raw('count(*) as total'))
             ->groupBy('sex')
-            ->get()
-            ->map(function($item) {
-                $item->sex = 'Male'; // Default since sex column doesn't exist
-                return $item;
-            });
+            ->get();
 
         // Students by course and gender (cross-analysis)
         $studentsByCourseGender = Student::select('course_id', 'sex', DB::raw('count(*) as total'))
@@ -275,7 +320,13 @@ class AdminAuthController extends Controller
             'branchFinancialHealth',
             'studentsByGender',
             'studentsByCourseGender',
-            'recentStudents'
+            'recentStudents',
+            'tokenRevenue',
+            'liveClassRevenue',
+            'resourceRevenue',
+            'monthlyTokenRevenue',
+            'monthlyLiveClassRevenue',
+            'monthlyResourceRevenue'
         ));
     }
 }

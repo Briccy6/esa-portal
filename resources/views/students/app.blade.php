@@ -310,6 +310,13 @@
                     <div class="nav-group-title">Financial</div>
                     <ul class="nav flex-column">
                         <li class="nav-item">
+                            <a href="{{ route('tokens.index') }}" 
+                               class="nav-link {{ request()->routeIs('tokens.index') ? 'active' : '' }}">
+                                <i class="bi bi-coin"></i>
+                                Token Management
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a href="{{ route('student.payment') }}" 
                                class="nav-link {{ request()->routeIs('student.payment') ? 'active' : '' }}">
                                 <i class="bi bi-credit-card"></i>
