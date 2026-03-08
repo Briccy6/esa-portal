@@ -12,7 +12,7 @@
                         Class Academic Report
                     </h2>
                     <p class="text-muted mb-0">
-                        {{ $course->course_name }} - {{ $branch->branch_name }}
+                        {{ $course->course_name }} - {{ $branch->name }}
                     </p>
                 </div>
                 <div class="d-flex gap-2">
@@ -37,7 +37,7 @@
                         <div class="col-md-6">
                             <div class="bg-info bg-opacity-10 rounded p-3">
                                 <h6 class="fw-bold text-info">{{ $course->course_name }}</h6>
-                                <p class="mb-1"><strong>Branch:</strong> {{ $branch->branch_name }}</p>
+                                <p class="mb-1"><strong>Branch:</strong> {{ $branch->name }}</p>
                                 <p class="mb-0"><strong>Total Students:</strong> {{ $stats['total_students'] }}</p>
                             </div>
                         </div>

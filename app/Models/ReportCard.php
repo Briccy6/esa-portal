@@ -118,10 +118,11 @@ class ReportCard extends Model
 
     public function calculateClassPosition()
     {
+        // Get all students in the same course, academic year, and term
+        // Include all report cards regardless of status to get accurate positioning
         $classmates = static::where('academic_year_id', $this->academic_year_id)
             ->where('term_id', $this->term_id)
             ->where('course_id', $this->course_id)
-            ->where('status', 'approved')
             ->orderByDesc('average_marks')
             ->get();
 

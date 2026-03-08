@@ -45,11 +45,11 @@
                                         </div>
                                     </div>
                                     <div class="col-md-8">
-                                        <p class="mb-2"><strong>Name:</strong> {{ $mark->student->name ?? 'Unknown' }}</p>
+                                        <p class="mb-2"><strong>Name:</strong> {{ $mark->student->full_name ?? 'Unknown' }}</p>
                                         <p class="mb-2"><strong>Student ID:</strong> {{ $mark->student_id }}</p>
                                         <p class="mb-2"><strong>Course:</strong> {{ $mark->student->course->course_name ?? 'N/A' }}</p>
-                                        <p class="mb-2"><strong>Branch:</strong> {{ $mark->student->branch->branch_name ?? 'N/A' }}</p>
-                                        <p class="mb-0"><strong>Class:</strong> {{ $mark->student->class ?? 'N/A' }}</p>
+                                        <p class="mb-2"><strong>Branch:</strong> {{ $mark->student->branch->name ?? 'N/A' }}</p>
+                                        <p class="mb-0"><strong>Academic Year:</strong> {{ $mark->student->academicYear->year ?? 'N/A' }}</p>
                                     </div>
                                 </div>
                             </div>
@@ -74,7 +74,7 @@
                                             </span>
                                         </p>
                                         <p class="mb-2"><strong>Course:</strong> {{ $mark->course->course_name ?? 'N/A' }}</p>
-                                        <p class="mb-2"><strong>Branch:</strong> {{ $mark->branch->branch_name ?? 'N/A' }}</p>
+                                        <p class="mb-2"><strong>Branch:</strong> {{ $mark->branch->name ?? 'N/A' }}</p>
                                         @if($mark->exam)
                                             <p class="mb-2"><strong>Exam:</strong> {{ $mark->exam->exam_name }}</p>
                                         @endif

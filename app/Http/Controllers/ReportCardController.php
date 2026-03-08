@@ -154,25 +154,74 @@ class ReportCardController extends Controller
             ->with('success', "Generated {$generated} report cards. Skipped {$skipped} that already exist.");
     }
 
-    public function printReport(ReportCard $reportCard)
-    {
-        $reportCard->load([
-            'student',
-            'course',
-            'academicYear',
-            'term',
-            'subjects.lesson',
-            'subjects.testMarks.exam'
+   public function printReport(ReportCard $reportCard)
+{
+    $reportCard->load([
+        'student',
+        'course',
+        'academicYear',
+        'term',
+        'subjects.lesson',
+        'subjects.testMarks.exam'
+    ]);
+
+    $schoolInfo = SchoolInformation::getActive();
+
+    // Resolve student passport photo to base64 for DomPDF
+    $studentPhotoBase64 = null;
+    $studentPhotoMime   = 'image/jpeg';
+
+    if ($reportCard->student->passport_photo) {
+        $photoPath = $reportCard->student->passport_photo;
+
+        // If it's already a full URL (e.g. stored on S3 / external)
+        if (filter_var($photoPath, FILTER_VALIDATE_URL)) {
+            try {
+                $imageData = file_get_contents($photoPath);
+                if ($imageData !== false) {
+                    $studentPhotoMime   = mime_content_type('data://application/octet-stream;base64,' . base64_encode($imageData)) ?? 'image/jpeg';
+                    $studentPhotoBase64 = base64_encode($imageData);
+                }
+            } catch (\Exception $e) {
+                \Log::warning('Could not load remote student photo: ' . $e->getMessage());
+            }
+        } else {
+            // Local file — resolve absolute path
+            // Strip leading slash if present, then resolve via storage or public
+            $localPath = public_path($photoPath);
+
+            if (!file_exists($localPath)) {
+                // Try storage path
+                $localPath = storage_path('app/public/' . ltrim($photoPath, '/'));
+            }
+
+            if (file_exists($localPath)) {
+                $imageData = file_get_contents($localPath);
+                $ext = strtolower(pathinfo($localPath, PATHINFO_EXTENSION));
+                $studentPhotoMime   = match($ext) {
+                    'png'  => 'image/png',
+                    'gif'  => 'image/gif',
+                    'webp' => 'image/webp',
+                    default => 'image/jpeg',
+                };
+                $studentPhotoBase64 = base64_encode($imageData);
+            }
+        }
+    }
+
+    $pdf = Pdf::loadView('admin.report-cards.print', compact(
+            'reportCard', 'schoolInfo', 'studentPhotoBase64', 'studentPhotoMime'
+        ))
+        ->setPaper('a4')
+        ->setOption([
+            'margin-top'        => 10,
+            'margin-bottom'     => 10,
+            'isRemoteEnabled'   => true,   // fallback safety
+            'isHtml5ParserEnabled' => true,
         ]);
 
-        $schoolInfo = SchoolInformation::getActive();
-
-        $pdf = Pdf::loadView('admin.report-cards.print', compact('reportCard', 'schoolInfo'))
-            ->setPaper('a4')
-            ->setOption(['margin-top' => 10, 'margin-bottom' => 10]);
-
-        return $pdf->stream("report-card-{$reportCard->student->full_name}-{$reportCard->academicYear->year}-term-{$reportCard->term->term}.pdf");
-    }
+    return $pdf->stream("report-card-{$reportCard->student->full_name}-{$reportCard->academicYear->year}-term-{$reportCard->term->term}.pdf");
+}
 
     public function printClassReports(Request $request)
     {
@@ -212,7 +261,7 @@ class ReportCardController extends Controller
         return $pdf->stream("class-reports-{$course->course_name}-{$academicYear->year}-term-{$term->term}.pdf");
     }
 
-    private function generateReportCardData(ReportCard $reportCard)
+    public function generateReportCardData(ReportCard $reportCard)
     {
         // Get lessons for this course
         $lessons = Lesson::where('course_id', $reportCard->course_id)->get();
@@ -235,14 +284,8 @@ class ReportCardController extends Controller
 
             // Get exam marks for this lesson and normalize to 100
             $examMarks = Mark::where('student_id', $reportCard->student_id)
-                ->whereHas('exam', function ($query) use ($lesson, $reportCard) {
-                    $query->where('exam_type', 'exam')
-                        ->where('academic_year_id', $reportCard->academic_year_id)
-                        ->where('term_id', $reportCard->term_id);
-                })
-                ->whereHas('exam.lessons', function ($query) use ($lesson) {
-                    $query->where('lessons.id', $lesson->id);
-                })
+                ->where('lesson_id', $lesson->id)
+                ->where('assessment_type', 'exam')
                 ->with('exam')
                 ->get();
 
@@ -250,31 +293,30 @@ class ReportCardController extends Controller
             $examMark = 0;
             if ($examMarks->isNotEmpty()) {
                 $totalExamMark = $examMarks->sum('value');
-                $totalExamMax = $examMarks->sum(function($mark) {
-                    return $mark->exam->total_marks ?? 100;
-                });
+                $totalExamMax = $examMarks->sum('marks_out_of');
                 
                 if ($totalExamMax > 0) {
                     $examMark = ($totalExamMark / $totalExamMax) * 100;
                 }
+                
+                \Log::info('Exam marks found: ' . json_encode([
+                    'lesson_id' => $lesson->id,
+                    'exam_marks_count' => $examMarks->count(),
+                    'total_exam_mark' => $totalExamMark,
+                    'total_exam_max' => $totalExamMax,
+                    'normalized_exam_mark' => $examMark
+                ]));
             }
 
             // Get test marks for this lesson
             $testMarks = Mark::where('student_id', $reportCard->student_id)
-                ->whereHas('exam', function ($query) use ($lesson, $reportCard) {
-                    $query->where('exam_type', 'test')
-                        ->where('academic_year_id', $reportCard->academic_year_id)
-                        ->where('term_id', $reportCard->term_id);
-                })
-                ->whereHas('exam.lessons', function ($query) use ($lesson) {
-                    $query->where('lessons.id', $lesson->id);
-                })
+                ->where('lesson_id', $lesson->id)
+                ->where('assessment_type', 'test')
                 ->with('exam')
                 ->get();
 
             // Create report card subject
             if ($lesson) {
-                // Debug: Log lesson information
                 \Log::info('Processing lesson: ' . json_encode([
                     'lesson_id' => $lesson->id,
                     'lesson_title' => $lesson->title,
@@ -291,7 +333,7 @@ class ReportCardController extends Controller
 
                 // Process test marks
                 foreach ($testMarks as $mark) {
-                    $maxMark = $mark->exam->total_marks ?? 100;
+                    $maxMark = $mark->marks_out_of ?? 100;
                     $normalizedMark = $maxMark > 0 ? ($mark->value / $maxMark) * 100 : 0;
                     
                     ReportCardTestMark::create([
@@ -319,6 +361,9 @@ class ReportCardController extends Controller
             $reportCard->total_marks = $totalMarks;
             $reportCard->average_marks = $totalMarks / $subjectCount;
             $reportCard->save();
+            
+            // Calculate class position based on average marks
+            $reportCard->calculateClassPosition();
         }
     }
 }

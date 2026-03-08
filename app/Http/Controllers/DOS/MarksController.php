@@ -29,7 +29,7 @@ class MarksController extends Controller
             ->when($request->assessment_type, fn($q) => $q->where('assessment_type', $request->assessment_type))
             ->when($request->student_search, function($q) use ($request) {
                 $q->whereHas('student', function($q2) use ($request) {
-                    $q2->where('name', 'like', '%'.$request->student_search.'%')
+                    $q2->where('full_name', 'like', '%'.$request->student_search.'%')
                        ->orWhere('id', $request->student_search);
                 });
             })
@@ -52,42 +52,79 @@ class MarksController extends Controller
 
     public function show($id)
     {
-        $mark = Mark::with(['student', 'course', 'branch', 'exam', 'lesson', 'grade'])->findOrFail($id);
+        $mark = Mark::with(['student.course', 'student.branch', 'student.academicYear', 'course', 'branch', 'exam', 'lesson', 'grade'])->findOrFail($id);
         return view('staff.marks.show', compact('mark'));
     }
 
     public function studentReport(Request $request)
     {
-        $request->validate([
-            'student_id' => 'required|exists:students,id',
-            'course_id' => 'nullable|exists:courses,id',
-            'term' => 'nullable|string',
-        ]);
+        try {
+            // Handle both GET and POST requests
+            $studentId = $request->input('student_id');
+            
+            if (!$studentId) {
+                return back()->with('error', 'Student ID is required');
+            }
 
-        $student = Student::findOrFail($request->student_id);
-        
-        $query = Mark::with(['course', 'exam', 'lesson', 'grade'])
-            ->where('student_id', $student->id)
-            ->when($request->course_id, fn($q) => $q->where('course_id', $request->course_id))
-            ->when($request->term, fn($q) => $q->where('term', $request->term))
-            ->orderBy('created_at', 'desc');
+            $request->merge(['student_id' => $studentId]);
+            
+            $request->validate([
+                'student_id' => 'required|exists:students,id',
+                'course_id' => 'nullable|exists:courses,id',
+                'term' => 'nullable|string',
+            ]);
 
-        $marks = $query->get();
-        
-        // Calculate statistics
-        $stats = [
-            'total_assessments' => $marks->count(),
-            'average_score' => $marks->whereNotNull('value')->avg('value'),
-            'highest_score' => $marks->max('value'),
-            'lowest_score' => $marks->min('value'),
-            'exam_count' => $marks->where('assessment_type', 'exam')->count(),
-            'test_count' => $marks->where('assessment_type', 'test')->count(),
-        ];
+            \Log::info('Student Report Request:', [
+                'student_id' => $request->student_id,
+                'course_id' => $request->course_id,
+                'term' => $request->term,
+                'method' => $request->method(),
+            ]);
 
-        // Group by course for better organization
-        $marksByCourse = $marks->groupBy('course_id');
+            $student = Student::with(['course', 'branch', 'academicYear'])->findOrFail($request->student_id);
+            
+            \Log::info('Student found:', [
+                'student_id' => $student->id,
+                'student_name' => $student->full_name,
+                'course_id' => $student->course_id,
+                'branch_id' => $student->branch_id,
+            ]);
+            
+            $query = Mark::with(['course', 'exam', 'lesson', 'grade'])
+                ->where('student_id', $student->id)
+                ->when($request->course_id, fn($q) => $q->where('course_id', $request->course_id))
+                ->when($request->term, fn($q) => $q->where('term', $request->term))
+                ->orderBy('created_at', 'desc');
 
-        return view('staff.marks.student-report', compact('student', 'marks', 'marksByCourse', 'stats'));
+            $marks = $query->get();
+            
+            \Log::info('Marks found:', [
+                'marks_count' => $marks->count(),
+            ]);
+            
+            // Calculate statistics
+            $stats = [
+                'total_assessments' => $marks->count(),
+                'average_score' => $marks->whereNotNull('value')->avg('value'),
+                'highest_score' => $marks->max('value'),
+                'lowest_score' => $marks->min('value'),
+                'exam_count' => $marks->where('assessment_type', 'exam')->count(),
+                'test_count' => $marks->where('assessment_type', 'test')->count(),
+            ];
+
+            // Group by course for better organization
+            $marksByCourse = $marks->groupBy('course_id');
+
+            return view('staff.marks.student-report', compact('student', 'marks', 'marksByCourse', 'stats'));
+            
+        } catch (\Exception $e) {
+            \Log::error('Student Report Error:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            
+            return back()->with('error', 'Failed to generate student report: ' . $e->getMessage());
+        }
     }
 
     public function classReport(Request $request)
@@ -112,7 +149,7 @@ class MarksController extends Controller
         // Get all students in this course and branch
         $students = Student::where('course_id', $course->id)
                           ->where('branch_id', $branch->id)
-                          ->orderBy('name')
+                          ->orderBy('full_name')
                           ->get();
 
         // Class statistics

@@ -638,7 +638,7 @@ Route::post('/dos/dailies/{daily}/mark-attendance', [App\Http\Controllers\DosDai
 Route::middleware(['auth:staff'])->prefix('dos/marks')->name('dos.marks.')->group(function () {
     Route::get('/', [App\Http\Controllers\DOS\MarksController::class, 'index'])->name('index');
     Route::get('/{mark}', [App\Http\Controllers\DOS\MarksController::class, 'show'])->name('show');
-    Route::post('/student-report', [App\Http\Controllers\DOS\MarksController::class, 'studentReport'])->name('student-report');
+    Route::match(['get', 'post'], '/student-report', [App\Http\Controllers\DOS\MarksController::class, 'studentReport'])->name('student-report');
     Route::post('/class-report', [App\Http\Controllers\DOS\MarksController::class, 'classReport'])->name('class-report');
     Route::post('/report-card', [App\Http\Controllers\DOS\MarksController::class, 'reportCard'])->name('report-card');
 });

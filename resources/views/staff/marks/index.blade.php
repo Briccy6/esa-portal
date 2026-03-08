@@ -116,7 +116,7 @@
                                     <option value="">All Branches</option>
                                     @foreach($branches as $branch)
                                         <option value="{{ $branch->id }}" {{ request('branch_id') == $branch->id ? 'selected' : '' }}>
-                                            {{ $branch->branch_name }}
+                                            {{ $branch->name }}
                                         </option>
                                     @endforeach
                                 </select>
@@ -230,7 +230,7 @@
                                                     <i class="fas fa-user text-primary"></i>
                                                 </div>
                                                 <div>
-                                                    <span class="fw-semibold student-name">{{ $mark->student->name ?? '-' }}</span>
+                                                    <span class="fw-semibold student-name">{{ $mark->student->full_name ?? '-' }}</span>
                                                     <br><small class="text-muted">ID: {{ $mark->student_id }}</small>
                                                 </div>
                                             </div>
@@ -252,7 +252,7 @@
                                                 <div class="bg-success bg-opacity-10 rounded p-2 me-3">
                                                     <i class="fas fa-map-marker-alt text-success"></i>
                                                 </div>
-                                                <span class="branch-name">{{ $mark->branch->branch_name ?? '-' }}</span>
+                                                <span class="branch-name">{{ $mark->branch->name ?? '-' }}</span>
                                             </div>
                                         </td>
 
@@ -359,8 +359,8 @@
                             <label class="form-label">Student *</label>
                             <select name="student_id" class="form-select" required>
                                 <option value="">Select Student</option>
-                                @foreach(\App\Models\Student::orderBy('name')->get() as $student)
-                                    <option value="{{ $student->id }}">{{ $student->name }} (ID: {{ $student->id }})</option>
+                                @foreach(\App\Models\Student::orderBy('full_name')->get() as $student)
+                                    <option value="{{ $student->id }}">{{ $student->full_name }} (ID: {{ $student->id }})</option>
                                 @endforeach
                             </select>
                         </div>
@@ -420,7 +420,7 @@
                             <select name="branch_id" class="form-select" required>
                                 <option value="">Select Branch</option>
                                 @foreach($branches as $branch)
-                                    <option value="{{ $branch->id }}">{{ $branch->branch_name }}</option>
+                                    <option value="{{ $branch->id }}">{{ $branch->name }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -466,8 +466,8 @@
                             <label class="form-label">Student *</label>
                             <select name="student_id" class="form-select" required>
                                 <option value="">Select Student</option>
-                                @foreach(\App\Models\Student::orderBy('name')->get() as $student)
-                                    <option value="{{ $student->id }}">{{ $student->name }} (ID: {{ $student->id }})</option>
+                                @foreach(\App\Models\Student::orderBy('full_name')->get() as $student)
+                                    <option value="{{ $student->id }}">{{ $student->full_name }} (ID: {{ $student->id }})</option>
                                 @endforeach
                             </select>
                         </div>

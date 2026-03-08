@@ -51,8 +51,8 @@
                             <div class="bg-success bg-opacity-10 rounded p-3">
                                 <h6 class="text-muted">CLASS INFORMATION</h6>
                                 <p class="mb-1"><strong>Course:</strong> {{ $student->course->course_name ?? 'N/A' }}</p>
-                                <p class="mb-1"><strong>Branch:</strong> {{ $student->branch->branch_name ?? 'N/A' }}</p>
-                                <p class="mb-0"><strong>Class:</strong> {{ $student->class ?? 'N/A' }}</p>
+                                <p class="mb-1"><strong>Branch:</strong> {{ $student->branch->name ?? 'N/A' }}</p>
+                                <p class="mb-0"><strong>Academic Year:</strong> {{ $student->academicYear->year ?? 'N/A' }}</p>
                             </div>
                         </div>
                     </div>
