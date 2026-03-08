@@ -172,6 +172,13 @@ class MarksController extends Controller
 
     public function reportCard(Request $request)
     {
+        // Handle GET request - show the form
+        if ($request->isMethod('get')) {
+            $students = Student::with(['course', 'branch'])->get();
+            return view('staff.marks.tvet-report-form', compact('students'));
+        }
+        
+        // Handle POST request - generate the report card
         $request->validate([
             'student_id' => 'required|exists:students,id',
             'term' => 'nullable|string',
@@ -180,29 +187,71 @@ class MarksController extends Controller
 
         $student = Student::with(['course', 'branch'])->findOrFail($request->student_id);
         
-        $query = Mark::with(['course', 'exam', 'lesson', 'grade'])
+        // Create a mock report card object for TVET template
+        $reportCard = new \stdClass();
+        $reportCard->student = $student;
+        $reportCard->course = $student->course;
+        $reportCard->academicYear = (object)['year' => $request->academic_year ?? date('Y') . '-' . (date('Y') + 1)];
+        $reportCard->term = (object)['term' => $request->term ?? 'Current Term'];
+        
+        // Get marks and group by lesson
+        $marks = Mark::with(['course', 'exam', 'lesson', 'grade'])
             ->where('student_id', $student->id)
             ->when($request->term, fn($q) => $q->where('term', $request->term))
             ->when($request->academic_year, fn($q) => $q->where('academic_year', $request->academic_year))
-            ->orderBy('created_at', 'asc');
+            ->orderBy('created_at', 'asc')
+            ->get();
 
-        $marks = $query->get();
+        // Group marks by lesson and create subjects structure
+        $subjects = collect();
+        $lessons = $marks->groupBy('lesson_id');
         
-        // Group marks by assessment type and course
-        $examMarks = $marks->where('assessment_type', 'exam')->groupBy('course_id');
-        $testMarks = $marks->where('assessment_type', 'test')->groupBy('course_id');
+        foreach ($lessons as $lessonId => $lessonMarks) {
+            $lesson = $lessonMarks->first()->lesson;
+            if ($lesson) {
+                $subject = new \stdClass();
+                $subject->subject_name = $lesson->title;
+                $subject->subject_code = $lesson->code ?? strtoupper(substr($lesson->title, 0, 3));
+                $subject->credits = 3;
+                
+                // Calculate test average
+                $testMarks = $lessonMarks->where('assessment_type', 'test');
+                $subject->test_average = $testMarks->isNotEmpty() ? $testMarks->avg('value') : 0;
+                
+                // Get exam mark
+                $examMark = $lessonMarks->where('assessment_type', 'exam')->first();
+                $subject->exam_mark = $examMark ? $examMark->value : 0;
+                
+                // Calculate total mark
+                $subject->total_mark = ($subject->test_average * 0.4) + ($subject->exam_mark * 0.6);
+                
+                // Determine grade
+                if ($subject->total_mark >= 80) {
+                    $subject->grade = 'A';
+                } elseif ($subject->total_mark >= 70) {
+                    $subject->grade = 'B';
+                } elseif ($subject->total_mark >= 60) {
+                    $subject->grade = 'C';
+                } else {
+                    $subject->grade = 'NYC';
+                }
+                
+                $subjects->push($subject);
+            }
+        }
         
-        // Calculate overall performance
-        $overallStats = [
-            'total_assessments' => $marks->count(),
-            'average_score' => $marks->whereNotNull('value')->avg('value'),
-            'total_exams' => $marks->where('assessment_type', 'exam')->count(),
-            'total_tests' => $marks->where('assessment_type', 'test')->count(),
-            'best_subject' => $this->getBestSubject($marks),
-            'needs_improvement' => $this->getNeedsImprovement($marks),
-        ];
+        $reportCard->subjects = $subjects;
+        
+        // Calculate totals
+        $reportCard->total_marks = $subjects->sum('total_mark');
+        $reportCard->average_marks = $subjects->isNotEmpty() ? $subjects->avg('total_mark') : 0;
+        $reportCard->class_position = 1; // Mock position
+        $reportCard->total_students = 1; // Mock total students
+        
+        // Get school information
+        $schoolInfo = \App\Models\SchoolInformation::getActive();
 
-        return view('staff.marks.report-card', compact('student', 'marks', 'examMarks', 'testMarks', 'overallStats'));
+        return view('staff.marks.tvet-report', compact('reportCard', 'schoolInfo'));
     }
 
     private function calculatePassRate($marks)

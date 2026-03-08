@@ -665,6 +665,13 @@
         </li>
 
         <li class="nav-item">
+          <a href="{{ route('dos.marks.report-card') }}" class="nav-link text-white d-flex align-items-center gap-2">
+            <i class="nav-icon bi bi-file-earmark-text-fill"></i>
+            <span class="nav-text">TVET Report Cards</span>
+          </a>
+        </li>
+
+        <li class="nav-item">
           <a href="{{ route('dos.dailies.index') }}" class="nav-link text-white d-flex align-items-center gap-2">
             <i class="nav-icon bi bi-calendar-check"></i>
             <span class="nav-text">Teacher Dailies Approval</span>
