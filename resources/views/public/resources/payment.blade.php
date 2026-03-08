@@ -181,7 +181,7 @@
         </div>
 
         <!-- Payment Form -->
-        <div class="bg-white rounded-lg shadow-lg p-6">
+        <div class="bg-white rounded-lg shadow-lg p-6" x-data="paymentForm">
             <h3 class="text-xl font-semibold text-gray-900 mb-6">Complete Your Payment</h3>
             
             <form id="payment-form" @submit.prevent="processPayment">
@@ -326,7 +326,7 @@
         }
 
         document.addEventListener('alpine:init', () => {
-            return {
+            Alpine.data('paymentForm', () => ({
                 selectedMethod: 'mobile_money',
                 processing: false,
                 
@@ -391,7 +391,7 @@
                         alert('Payment initialization failed. Please try again.');
                     });
                 }
-            }
+            }));
         });
     </script>
 </body>

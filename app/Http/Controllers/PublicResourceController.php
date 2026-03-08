@@ -191,11 +191,21 @@ class PublicResourceController extends Controller
             // Initialize Flutterwave payment
             $response = $this->initializeFlutterwavePayment($paymentData);
 
-            if (!$response['status']) {
-                return back()->with('error', 'Payment initialization failed: ' . $response['message']);
+            if (!$response || !isset($response['status']) || $response['status'] !== 'success') {
+                $errorMessage = 'Payment initialization failed';
+                if (isset($response['message'])) {
+                    $errorMessage .= ': ' . $response['message'];
+                } elseif (isset($response['error'])) {
+                    $errorMessage .= ': ' . $response['error'];
+                }
+                
+                return response()->json([
+                    'status' => false,
+                    'message' => $errorMessage
+                ]);
             }
 
-            // Store pending payment record in session or database
+            // Store pending payment record in session
             session([
                 'resource_payment' => [
                     'resource_id' => $resource->id,
@@ -208,12 +218,19 @@ class PublicResourceController extends Controller
                 ]
             ]);
 
-            // Redirect to Flutterwave payment page
-            return redirect($response['data']['link']);
+            // Return success response with payment link
+            return response()->json([
+                'status' => true,
+                'message' => 'Payment initialized successfully',
+                'data' => $response['data']
+            ]);
 
         } catch (\Exception $e) {
             Log::error('Resource payment initialization failed: ' . $e->getMessage());
-            return back()->with('error', 'Payment initialization failed. Please try again.');
+            return response()->json([
+                'status' => false,
+                'message' => 'Payment initialization failed: ' . $e->getMessage()
+            ]);
         }
     }
 
@@ -267,7 +284,7 @@ class PublicResourceController extends Controller
         $curl = curl_init();
         
         curl_setopt_array($curl, [
-            CURLOPT_URL => $this->flutterwaveBaseUrl . '/payments',
+            CURLOPT_URL => 'https://api.flutterwave.com/v3/payments',
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_POST => true,
             CURLOPT_POSTFIELDS => json_encode($data),
@@ -275,17 +292,31 @@ class PublicResourceController extends Controller
                 'Content-Type: application/json',
                 'Authorization: Bearer ' . $this->flutterwaveSecretKey,
             ],
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_TIMEOUT => 30,
         ]);
 
         $response = curl_exec($curl);
         $err = curl_error($curl);
+        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
         curl_close($curl);
 
         if ($err) {
+            Log::error('Flutterwave cURL Error: ' . $err);
             throw new \Exception('cURL Error: ' . $err);
         }
 
-        return json_decode($response, true);
+        Log::info('Flutterwave Response HTTP Code: ' . $httpCode);
+        Log::info('Flutterwave Response: ' . $response);
+
+        $decodedResponse = json_decode($response, true);
+        
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            Log::error('Flutterwave JSON Decode Error: ' . json_last_error_msg());
+            throw new \Exception('Invalid JSON response from Flutterwave');
+        }
+
+        return $decodedResponse;
     }
 
     /**
