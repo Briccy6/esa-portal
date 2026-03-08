@@ -364,17 +364,6 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::get('documents/{id}/download', [\App\Http\Controllers\Admin\DocumentManagementController::class, 'downloadDocument'])->name('documents.download');
     Route::get('documents/{id}/preview', [\App\Http\Controllers\Admin\DocumentManagementController::class, 'previewDocument'])->name('documents.preview');
 
-    // Resource Management
-    Route::get('resources', [\App\Http\Controllers\Admin\ResourceController::class, 'index'])->name('resources.index');
-    Route::get('resources/create', [\App\Http\Controllers\Admin\ResourceController::class, 'create'])->name('resources.create');
-    Route::post('resources', [\App\Http\Controllers\Admin\ResourceController::class, 'store'])->name('resources.store');
-    Route::get('resources/{id}/edit', [\App\Http\Controllers\Admin\ResourceController::class, 'edit'])->name('resources.edit');
-    Route::put('resources/{id}', [\App\Http\Controllers\Admin\ResourceController::class, 'update'])->name('resources.update');
-    Route::delete('resources/{id}', [\App\Http\Controllers\Admin\ResourceController::class, 'destroy'])->name('resources.destroy');
-    Route::get('resources/{id}/download', [\App\Http\Controllers\Admin\ResourceController::class, 'downloadDocument'])->name('resources.download');
-    Route::get('resources/{id}/preview', [\App\Http\Controllers\Admin\ResourceController::class, 'previewDocument'])->name('resources.preview');
-    Route::get('resources/get-lessons/{courseId}', [\App\Http\Controllers\Admin\ResourceController::class, 'getLessons'])->name('resources.get-lessons');
-
     // Report Cards
     Route::get('report-cards', [ReportCardController::class, 'index'])->name('report-cards.index');
     Route::get('report-cards/create', [ReportCardController::class, 'create'])->name('report-cards.create');
@@ -390,6 +379,17 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     // School Information
     Route::get('school-information', [\App\Http\Controllers\SchoolInformationController::class, 'edit'])->name('school-information.edit');
     Route::put('school-information', [\App\Http\Controllers\SchoolInformationController::class, 'update'])->name('school-information.update');
+
+    // Resource Management
+    Route::get('resources', [\App\Http\Controllers\Admin\ResourceController::class, 'index'])->name('resources.index');
+    Route::get('resources/create', [\App\Http\Controllers\Admin\ResourceController::class, 'create'])->name('resources.create');
+    Route::post('resources', [\App\Http\Controllers\Admin\ResourceController::class, 'store'])->name('resources.store');
+    Route::get('resources/{id}/edit', [\App\Http\Controllers\Admin\ResourceController::class, 'edit'])->name('resources.edit');
+    Route::put('resources/{id}', [\App\Http\Controllers\Admin\ResourceController::class, 'update'])->name('resources.update');
+    Route::delete('resources/{id}', [\App\Http\Controllers\Admin\ResourceController::class, 'destroy'])->name('resources.destroy');
+    Route::get('resources/{id}/download', [\App\Http\Controllers\Admin\ResourceController::class, 'downloadDocument'])->name('resources.download');
+    Route::get('resources/{id}/preview', [\App\Http\Controllers\Admin\ResourceController::class, 'previewDocument'])->name('resources.preview');
+    Route::get('resources/get-lessons/{courseId}', [\App\Http\Controllers\Admin\ResourceController::class, 'getLessons'])->name('resources.get-lessons');
 
     Route::get('chat-test', function() {
         return view('admin.profile.test');
@@ -812,6 +812,7 @@ Route::get('/live-classes/{liveClass}/public-join', [LiveClassController::class,
 Route::get('/live-classes/{liveClass}/payment', [LiveClassController::class, 'showPaymentForm'])->name('live-classes.payment');
 Route::post('/live-classes/{liveClass}/payment', [LiveClassController::class, 'processPayment'])->name('live-classes.payment.process');
 Route::get('/live-classes/{liveClass}/payment/callback', [LiveClassController::class, 'handlePaymentCallback'])->name('live-classes.payment.callback');
+Route::get('/live-classes/{liveClass}/payment/verification', [LiveClassController::class, 'paymentVerification'])->name('live-classes.payment-verification');
 Route::post('/webhooks/flutterwave/live-classes', [LiveClassController::class, 'handleWebhook'])->name('webhooks.flutterwave.live-classes');
 
 // Client Authentication Routes

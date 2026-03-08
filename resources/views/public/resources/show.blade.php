@@ -109,7 +109,7 @@
                         <span class="badge-free text-lg px-4 py-2 rounded-full">FREE</span>
                     @else
                         <span class="badge-paid text-lg px-4 py-2 rounded-full">
-                            ${{ number_format($resource->price, 2) }}
+                            RWF {{ number_format($resource->price, 0) }}
                         </span>
                     @endif
                 </div>
@@ -183,7 +183,7 @@
                                             </div>
                                         </div>
                                         <div class="flex space-x-2">
-                                            @if($resource->is_free || $resource->price == 0)
+                                            @if($resource->is_free)
                                                 <a href="{{ route('public.resources.preview', $resource->id) }}" 
                                                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
                                                     <i class="fas fa-eye mr-1"></i>Preview
@@ -193,9 +193,10 @@
                                                     <i class="fas fa-download mr-1"></i>Download
                                                 </a>
                                             @else
-                                                <button class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm" disabled>
-                                                    <i class="fas fa-lock mr-1"></i>Paid Resource
-                                                </button>
+                                                <a href="{{ route('public.resources.payment', $resource->id) }}" 
+                                                   class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm">
+                                                    <i class="fas fa-shopping-cart mr-1"></i>Purchase (RWF {{ number_format($resource->price, 0) }})
+                                                </a>
                                             @endif
                                         </div>
                                     </div>
@@ -213,14 +214,15 @@
                                             </div>
                                         </div>
                                         <div class="flex space-x-2">
-                                            @if($resource->is_free || $resource->price == 0)
+                                            @if($resource->is_free)
                                                 <button class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm">
                                                     <i class="fas fa-play mr-1"></i>Play Video
                                                 </button>
                                             @else
-                                                <button class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm" disabled>
-                                                    <i class="fas fa-lock mr-1"></i>Paid Resource
-                                                </button>
+                                                <a href="{{ route('public.resources.payment', $resource->id) }}" 
+                                                   class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm">
+                                                    <i class="fas fa-shopping-cart mr-1"></i>Purchase (RWF {{ number_format($resource->price, 0) }})
+                                                </a>
                                             @endif
                                         </div>
                                     </div>
@@ -299,9 +301,10 @@
                         </a>
                         
                         @if(!$resource->is_free && $resource->price > 0)
-                            <button class="w-full bg-orange-600 text-white py-2 rounded-lg font-medium hover:bg-orange-700">
-                                <i class="fas fa-shopping-cart mr-2"></i>Purchase (${{ number_format($resource->price, 2) }})
-                            </button>
+                            <a href="{{ route('public.resources.payment', $resource->id) }}" 
+                               class="w-full bg-orange-600 text-white py-2 rounded-lg font-medium hover:bg-orange-700">
+                                <i class="fas fa-shopping-cart mr-2"></i>Purchase (RWF {{ number_format($resource->price, 0) }})
+                            </a>
                         @endif
                     </div>
                 </div>

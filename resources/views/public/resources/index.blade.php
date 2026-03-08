@@ -176,7 +176,7 @@
                                     <span class="badge-free text-xs px-2 py-1 rounded-full">FREE</span>
                                 @else
                                     <span class="badge-paid text-xs px-2 py-1 rounded-full">
-                                        ${{ number_format($resource->price, 2) }}
+                                        RWF {{ number_format($resource->price, 0) }}
                                     </span>
                                 @endif
                             </div>
@@ -230,10 +230,10 @@
                                     <i class="fas fa-eye mr-1"></i>View Details
                                 </a>
                                 
-                                @if($resource->document_blob && ($resource->is_free || $resource->price == 0))
-                                    <a href="{{ route('public.resources.download', $resource->id) }}" 
-                                       class="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm">
-                                        <i class="fas fa-download"></i>
+                                @if($resource->document_blob)
+                                    <a href="{{ $resource->is_free ? route('public.resources.download', $resource->id) : route('public.resources.payment', $resource->id) }}" 
+                                       class="flex-1 btn-primary text-center py-2 rounded-lg text-sm font-medium">
+                                        <i class="fas fa-{{ $resource->is_free ? 'download' : 'shopping-cart' }} mr-1"></i>{{ $resource->is_free ? 'Download' : 'Purchase' }}
                                     </a>
                                 @endif
                             </div>

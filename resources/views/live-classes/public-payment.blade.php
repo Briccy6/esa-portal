@@ -85,32 +85,119 @@
                         <p class="text-xs text-gray-500 mt-1">Required for mobile money payments</p>
                     </div>
 
-                    <!-- Payment Method -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Payment Method <span class="text-red-500">*</span></label>
-                        <select name="payment_method" id="paymentMethod" required
-                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
-                            <option value="">Select payment method</option>
-                            @if(in_array(strtoupper($liveClass->currency), ['RWF','GHS','UGX','XAF','ZMW','TZS']))
-                                <option value="mobile_money" {{ old('payment_method') === 'mobile_money' ? 'selected' : '' }}>
-                                    Mobile Money
-                                </option>
-                                <option value="bank_transfer" {{ old('payment_method') === 'bank_transfer' ? 'selected' : '' }}>
-                                    Bank Transfer
-                                </option>
-                            @else
-                                <option value="card" {{ old('payment_method') === 'card' ? 'selected' : '' }}>
-                                    Credit / Debit Card
-                                </option>
-                                <option value="mobile_money" {{ old('payment_method') === 'mobile_money' ? 'selected' : '' }}>
-                                    Mobile Money
-                                </option>
-                                <option value="bank_transfer" {{ old('payment_method') === 'bank_transfer' ? 'selected' : '' }}>
-                                    Bank Transfer
-                                </option>
-                            @endif
-                        </select>
-                    </div>
+                    @if($liveClass->public_fee > 0)
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                Payment Method <span class="text-red-500">*</span>
+                            </label>
+                            <select name="payment_method" id="paymentMethodSelect"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                                    onchange="togglePaymentFields()">
+                                <option value="">Select payment method</option>
+                                
+                                {{-- Online Payment Options --}}
+                                <optgroup label="Online Payment (Recommended)">
+                                    <option value="card" {{ old('payment_method') === 'card' ? 'selected' : '' }}>
+                                        Credit / Debit Card
+                                    </option>
+                                    <option value="mobile_money" {{ old('payment_method') === 'mobile_money' ? 'selected' : '' }}>
+                                        Mobile Money (WhatsApp/Internet Required)
+                                    </option>
+                                    <option value="bank_transfer" {{ old('payment_method') === 'bank_transfer' ? 'selected' : '' }}>
+                                        Bank Transfer
+                                    </option>
+                                </optgroup>
+                                
+                                {{-- Offline Payment Options --}}
+                                <optgroup label="Offline Payment (No Internet Required)">
+                                    <option value="ussd" {{ old('payment_method') === 'ussd' ? 'selected' : '' }}>
+                                        USSD Code (No Internet)
+                                    </option>
+                                    <option value="agent_payment" {{ old('payment_method') === 'agent_payment' ? 'selected' : '' }}>
+                                        Pay at ESA Center
+                                    </option>
+                                    <option value="voucher" {{ old('payment_method') === 'voucher' ? 'selected' : '' }}>
+                                        Voucher Code
+                                    </option>
+                                </optgroup>
+                            </select>
+                        </div>
+
+                        {{-- USSD Payment Instructions --}}
+                        <div id="ussdField" class="hidden mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <h4 class="font-semibold text-blue-800 mb-2">
+                                <i class="fas fa-phone"></i> USSD Payment Instructions
+                            </h4>
+                            <div class="text-sm text-blue-700 space-y-2">
+                                <p><strong>Dial:</strong> *123*456#</p>
+                                <p><strong>Option:</strong> 2 (Live Class Payment)</p>
+                                <p><strong>Enter Amount:</strong> {{ $liveClass->public_fee }} {{ $liveClass->currency }}</p>
+                                <p><strong>Reference:</strong> {{ session('payment_reference') ?? 'LIVE-' . $liveClass->id . '-' . time() }}</p>
+                                <p class="mt-2 p-2 bg-yellow-100 rounded text-yellow-800">
+                                    <i class="fas fa-info-circle"></i>
+                                    Save the transaction ID and enter it below after payment
+                                </p>
+                            </div>
+                            <div class="mt-3">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    USSD Transaction ID <span class="text-red-500">*</span>
+                                </label>
+                                <input type="text" name="ussd_transaction_id" 
+                                       placeholder="Enter USSD transaction ID"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                            </div>
+                        </div>
+
+                        {{-- Agent Payment Instructions --}}
+                        <div id="agentField" class="hidden mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                            <h4 class="font-semibold text-green-800 mb-2">
+                                <i class="fas fa-building"></i> Pay at ESA Center
+                            </h4>
+                            <div class="text-sm text-green-700 space-y-2">
+                                <p><strong>Visit any ESA Center</strong> with the following details:</p>
+                                <ul class="list-disc list-inside ml-4 space-y-1">
+                                    <li>Class: {{ $liveClass->title }}</li>
+                                    <li>Amount: {{ $liveClass->public_fee }} {{ $liveClass->currency }}</li>
+                                    <li>Reference: LIVE-{{ $liveClass->id }}-{{ date('Ymd') }}</li>
+                                </ul>
+                                <p class="mt-2 p-2 bg-yellow-100 rounded text-yellow-800">
+                                    <i class="fas fa-info-circle"></i>
+                                    You will receive a receipt with verification code
+                                </p>
+                            </div>
+                            <div class="mt-3">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Receipt/Verification Code <span class="text-red-500">*</span>
+                                </label>
+                                <input type="text" name="agent_receipt_code" 
+                                       placeholder="Enter receipt code from ESA center"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                            </div>
+                        </div>
+
+                        {{-- Voucher Payment --}}
+                        <div id="voucherField" class="hidden mb-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                            <h4 class="font-semibold text-purple-800 mb-2">
+                                <i class="fas fa-ticket-alt"></i> Voucher Payment
+                            </h4>
+                            <div class="text-sm text-purple-700 space-y-2">
+                                <p>Enter your voucher code to access this live class:</p>
+                                <p class="mt-2 p-2 bg-yellow-100 rounded text-yellow-800">
+                                    <i class="fas fa-info-circle"></i>
+                                    Vouchers can be purchased at ESA centers or authorized agents
+                                </p>
+                            </div>
+                            <div class="mt-3">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Voucher Code <span class="text-red-500">*</span>
+                                </label>
+                                <input type="text" name="voucher_code" 
+                                       placeholder="Enter voucher code"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                            </div>
+                        </div>
+
+                    @endif
 
                     <!-- Mobile Money Network (hidden until mobile_money selected) -->
                     <div id="networkField" class="hidden">
@@ -196,19 +283,44 @@ document.addEventListener('DOMContentLoaded', function () {
     const submitBtn    = document.getElementById('paymentSubmitBtn');
     const btnText      = document.getElementById('paymentBtnText');
     const spinner      = document.getElementById('paymentSpinner');
-    const methodSelect = document.getElementById('paymentMethod');
+    const methodSelect = document.getElementById('paymentMethodSelect');
     const networkField = document.getElementById('networkField');
     const networkSelect = document.getElementById('networkSelect');
+    const ussdField    = document.getElementById('ussdField');
+    const agentField   = document.getElementById('agentField');
+    const voucherField  = document.getElementById('voucherField');
     const errorBox     = document.getElementById('paymentError');
 
-    // ── Show / hide network selector ────────────────────────────────
-    function toggleNetwork() {
-        const show = methodSelect.value === 'mobile_money';
-        networkField.classList.toggle('hidden', !show);
-        networkSelect.required = show;
+    // ── Show / hide payment method fields ────────────────────────
+    function togglePaymentFields() {
+        const method = methodSelect.value;
+        
+        // Hide all fields first
+        networkField.classList.add('hidden');
+        ussdField.classList.add('hidden');
+        agentField.classList.add('hidden');
+        voucherField.classList.add('hidden');
+        
+        // Show relevant field
+        switch(method) {
+            case 'mobile_money':
+                networkField.classList.remove('hidden');
+                networkSelect.required = true;
+                break;
+            case 'ussd':
+                ussdField.classList.remove('hidden');
+                break;
+            case 'agent_payment':
+                agentField.classList.remove('hidden');
+                break;
+            case 'voucher':
+                voucherField.classList.remove('hidden');
+                break;
+        }
     }
-    methodSelect.addEventListener('change', toggleNetwork);
-    toggleNetwork(); // run on load in case old() repopulated the field
+    
+    methodSelect.addEventListener('change', togglePaymentFields);
+    togglePaymentFields(); // run on load in case old() repopulated field
 
     // ── Helpers ──────────────────────────────────────────────────────
     function showError(msg) {

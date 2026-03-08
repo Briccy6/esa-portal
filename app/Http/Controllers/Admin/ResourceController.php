@@ -50,12 +50,12 @@ class ResourceController extends Controller
             'course_id' => 'required|exists:courses,id',
             'lesson_id' => 'required|exists:lessons,id',
             'youtube_link' => 'nullable|url',
-            'document' => 'nullable|file|mimes:pdf,doc,docx,ppt,ppt,xls,xlsx,txt|max:10240',
+            'document' => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,txt|max:10240',
             'video' => 'nullable|file|mimes:mp4,avi,mov,wmv,flv|max:51200',
             'document_link' => 'nullable|url',
             'price' => 'required|numeric|min:0',
-            'is_public' => 'boolean',
-            'is_free' => 'boolean',
+            'is_public' => 'sometimes|in:0,1,true,false',
+            'is_free' => 'sometimes|in:0,1,true,false',
             'admin_notes' => 'nullable|string|max:1000',
         ]);
         
@@ -145,12 +145,12 @@ class ResourceController extends Controller
             'course_id' => 'required|exists:courses,id',
             'lesson_id' => 'required|exists:lessons,id',
             'youtube_link' => 'nullable|url',
-            'document' => 'nullable|file|mimes:pdf,doc,docx,ppt,ppt,xls,xlsx,txt|max:10240',
+            'document' => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,txt|max:10240',
             'video' => 'nullable|file|mimes:mp4,avi,mov,wmv,flv|max:51200',
             'document_link' => 'nullable|url',
             'price' => 'required|numeric|min:0',
-            'is_public' => 'boolean',
-            'is_free' => 'boolean',
+            'is_public' => 'sometimes|in:0,1,true,false',
+            'is_free' => 'sometimes|in:0,1,true,false',
             'admin_notes' => 'nullable|string|max:1000',
         ]);
         
@@ -362,26 +362,27 @@ class ResourceController extends Controller
     private function applyImageWatermark(Resource $resource, $logoPath)
     {
         try {
-            $image = \Intervention\Image\Facades\Image::make($resource->document_blob);
+            $image = new \Intervention\Image\ImageManager('gd');
+            $imageData = $image->make($resource->document_blob);
             
             // Get logo dimensions
-            $logo = \Intervention\Image\Facades\Image::make($logoPath);
+            $logo = $image->make($logoPath);
             
             // Calculate watermark size (20% of image width, max 200px)
-            $watermarkWidth = min($image->width() * 0.2, 200);
+            $watermarkWidth = min($imageData->width() * 0.2, 200);
             $logo->resize($watermarkWidth, null, function ($constraint) {
                 $constraint->aspectRatio();
             });
             
             // Apply watermark with transparency at bottom right corner
             $logo->opacity(50); // 50% transparency
-            $image->insert($logo, 'bottom-right', 20, 20);
+            $imageData->insert($logo, 'bottom-right', 20, 20);
             
             // Add school name text watermark
             $schoolInfo = \App\Models\SchoolInformation::first();
             $schoolName = $schoolInfo->school_name ?? 'ESA School';
             
-            $image->text($schoolName, $image->width() / 2, $image->height() - 30, function($font) {
+            $imageData->text($schoolName, $imageData->width() / 2, $imageData->height() - 30, function($font) {
                 $font->file(public_path('fonts/arial.ttf')); // Use system font if available
                 $font->size(24);
                 $font->color([255, 255, 255, 0.7]); // White with transparency
@@ -393,7 +394,7 @@ class ResourceController extends Controller
             $resource->update([
                 'watermark_path' => 'watermarked_documents/resource_' . $resource->id . '.png',
                 'watermark_applied' => true,
-                'document_blob' => $image->encode('png'), // Update with watermarked version
+                'document_blob' => $imageData->encode('png'), // Update with watermarked version
             ]);
             
             return true;
@@ -406,13 +407,14 @@ class ResourceController extends Controller
     private function createDefaultWatermark($path)
     {
         // Create a simple text watermark as fallback
-        $image = \Intervention\Image\Facades\Image::canvas(200, 100, '#ffffff');
-        $image->text('ESA SCHOOL', 100, 50, function($font) {
+        $image = new \Intervention\Image\ImageManager('gd');
+        $canvas = $image->canvas(200, 100, '#ffffff');
+        $canvas->text('ESA SCHOOL', 100, 50, function($font) {
             $font->size(24);
             $font->color('#000000');
             $font->align('center');
             $font->valign('middle');
         });
-        $image->save($path);
+        $canvas->save($path);
     }
 }

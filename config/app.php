@@ -155,6 +155,7 @@ return [
         'View' => Illuminate\Support\Facades\View::class,
         'QrCode' => SimpleSoftwareIO\QrCode\Facades\QrCode::class,
         'PDF' => Barryvdh\DomPDF\Facade\Pdf::class,
+        'Image' => Intervention\Image\Facades\Image::class,
     ],
 
     'school_email' => env('SCHOOL_EMAIL', 'excellentservantacademy@gmail.com'),

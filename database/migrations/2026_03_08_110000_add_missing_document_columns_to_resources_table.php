@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::table('resources', function (Blueprint $table) {
             // Add missing document blob columns
             if (!Schema::hasColumn('resources', 'document_blob')) {
-                $table->binary('document_blob')->nullable();
+                $table->longBlob('document_blob')->nullable();
             }
             if (!Schema::hasColumn('resources', 'document_name')) {
                 $table->string('document_name')->nullable();
@@ -25,7 +25,7 @@ return new class extends Migration
             
             // Add missing video blob columns
             if (!Schema::hasColumn('resources', 'video_blob')) {
-                $table->binary('video_blob')->nullable();
+                $table->longBlob('video_blob')->nullable();
             }
             if (!Schema::hasColumn('resources', 'video_name')) {
                 $table->string('video_name')->nullable();

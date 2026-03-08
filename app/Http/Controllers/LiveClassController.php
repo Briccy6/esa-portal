@@ -232,11 +232,24 @@ class LiveClassController extends Controller
             'name'           => 'required|string|max:255',
             'email'          => 'required|email|max:255',
             'phone'          => 'nullable|string|max:20',
-            'payment_method' => 'required|string|in:card,mobile_money,bank_transfer,ussd',
+            'payment_method' => 'required|string|in:card,mobile_money,bank_transfer,ussd,agent_payment,voucher',
             'network'        => 'required_if:payment_method,mobile_money|nullable|string',
         ]);
 
-        $tx_ref   = 'LC_' . $liveClass->id . '_' . time() . '_' . Str::random(8);
+        // Handle offline payment methods first
+        if ($request->filled('payment_method')) {
+            switch($request->payment_method) {
+                case 'ussd':
+                    return $this->processUSSDPayment($request, $liveClass);
+                case 'agent_payment':
+                    return $this->processAgentPayment($request, $liveClass);
+                case 'voucher':
+                    return $this->processVoucherPayment($request, $liveClass);
+            }
+        }
+
+        // Continue with online payment processing (Flutterwave)
+        $tx_ref = 'LIVE-' . $liveClass->id . '-' . time() . '-' . rand(1000, 9999);
         $currency = strtoupper(trim($liveClass->currency)); // normalise e.g. 'Rwf' → 'RWF'
 
         $payment = \App\Models\LiveClassPayment::create([
@@ -1123,5 +1136,142 @@ class LiveClassController extends Controller
 
         return redirect()->route('admin.live-classes.index')
             ->with('success', 'Live class ended successfully!');
+    }
+
+    /**
+     * Process USSD Payment (No Internet Required)
+     */
+    private function processUSSDPayment(Request $request, LiveClass $liveClass)
+    {
+        $request->validate([
+            'ussd_transaction_id' => 'required|string|max:100',
+        ]);
+
+        // Create payment record
+        $payment = \App\Models\LiveClassPayment::create([
+            'live_class_id'   => $liveClass->id,
+            'user_type'       => 'public',
+            'email'           => $request->email,
+            'name'            => $request->name,
+            'phone'           => $request->phone,
+            'amount'          => $liveClass->public_fee,
+            'currency'        => strtoupper($liveClass->currency),
+            'transaction_id'  => $request->ussd_transaction_id,
+            'payment_method'  => 'ussd',
+            'payment_gateway' => 'ussd',
+            'status'          => 'completed', // Auto-complete all payments
+            'paid_at'          => now(),
+        ]);
+
+        // Create session and redirect to room immediately
+        session(['live_class_payment_' . $liveClass->id => [
+            'email'      => $request->email,
+            'name'       => $request->name,
+            'phone'      => $request->phone,
+            'payment_id' => $payment->id,
+        ]]);
+
+        return redirect()->route('live-classes.room', $liveClass)
+            ->with('success', 'USSD payment successful! You can now join the live class.');
+    }
+
+    /**
+     * Process Agent Payment (Pay at ESA Center)
+     */
+    private function processAgentPayment(Request $request, LiveClass $liveClass)
+    {
+        $request->validate([
+            'agent_receipt_code' => 'required|string|max:50',
+        ]);
+
+        // Create payment record
+        $payment = \App\Models\LiveClassPayment::create([
+            'live_class_id'   => $liveClass->id,
+            'user_type'       => 'public',
+            'email'           => $request->email,
+            'name'            => $request->name,
+            'phone'           => $request->phone,
+            'amount'          => $liveClass->public_fee,
+            'currency'        => strtoupper($liveClass->currency),
+            'transaction_id'  => $request->agent_receipt_code,
+            'payment_method'  => 'agent_payment',
+            'payment_gateway' => 'agent',
+            'status'          => 'completed', // Auto-complete all payments
+            'paid_at'          => now(),
+        ]);
+
+        // Create session and redirect to room immediately
+        session(['live_class_payment_' . $liveClass->id => [
+            'email'      => $request->email,
+            'name'       => $request->name,
+            'phone'      => $request->phone,
+            'payment_id' => $payment->id,
+        ]]);
+
+        return redirect()->route('live-classes.room', $liveClass)
+            ->with('success', 'Agent payment successful! You can now join the live class.');
+    }
+
+    /**
+     * Process Voucher Payment
+     */
+    private function processVoucherPayment(Request $request, LiveClass $liveClass)
+    {
+        $request->validate([
+            'voucher_code' => 'required|string|max:50',
+        ]);
+
+        // For demo purposes, accept any voucher code longer than 4 characters
+        // In production, this would validate against a vouchers table
+        if (strlen($request->voucher_code) < 5) {
+            return redirect()->back()
+                ->with('error', 'Invalid voucher code.');
+        }
+
+        // Create payment record
+        $payment = \App\Models\LiveClassPayment::create([
+            'live_class_id'   => $liveClass->id,
+            'user_type'       => 'public',
+            'email'           => $request->email,
+            'name'            => $request->name,
+            'phone'           => $request->phone,
+            'amount'          => 0, // Voucher covers the cost
+            'currency'        => strtoupper($liveClass->currency),
+            'transaction_id'  => $request->voucher_code,
+            'payment_method'  => 'voucher',
+            'payment_gateway' => 'voucher',
+            'status'          => 'completed', // Voucher payments are immediately complete
+        ]);
+
+        // Create session and redirect to room
+        session(['live_class_payment_' . $liveClass->id => [
+            'email'      => $request->email,
+            'name'       => $request->name,
+            'phone'      => $request->phone,
+            'payment_id' => $payment->id,
+        ]]);
+
+        return redirect()->route('live-classes.room', $liveClass)
+            ->with('success', 'Voucher payment successful! You can now join the live class.');
+    }
+
+    /**
+     * Show payment verification page for offline payments
+     */
+    public function paymentVerification(LiveClass $liveClass)
+    {
+        $paymentId = session('payment_id');
+        if (!$paymentId) {
+            return redirect()->route('live-classes.public-join', $liveClass)
+                ->with('error', 'Payment verification session expired.');
+        }
+
+        $payment = \App\Models\LiveClassPayment::find($paymentId);
+        if (!$payment || $payment->live_class_id !== $liveClass->id) {
+            return redirect()->route('live-classes.public-join', $liveClass)
+                ->with('error', 'Invalid payment record.');
+        }
+
+        return view('live-classes.payment-verification', compact('liveClass', 'payment'));
     }
 }

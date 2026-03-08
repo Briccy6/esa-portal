@@ -34,6 +34,23 @@
                     </div>
                 @endif
                 
+                @if($errors->any())
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <h5 class="alert-heading">
+                            <i class="fas fa-exclamation-triangle"></i> 
+                            There were errors with your submission:
+                        </h5>
+                        <ul class="mb-0">
+                            @foreach($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                        <button type="button" class="close" data-dismiss="alert">
+                            <span>&times;</span>
+                        </button>
+                    </div>
+                @endif
+                
                 <div class="card-body">
                     <form method="POST" action="{{ route('admin.resources.update', $resource->id) }}" enctype="multipart/form-data">
                         @csrf
@@ -186,8 +203,9 @@
                                     
                                     <div class="col-md-4">
                                         <div class="form-group">
+                                            <input type="hidden" name="is_public" value="0">
                                             <div class="custom-control custom-switch mt-4">
-                                                <input type="checkbox" name="is_public" id="is_public" class="custom-control-input" 
+                                                <input type="checkbox" name="is_public" id="is_public" class="custom-control-input" value="1" 
                                                        {{ $resource->is_public ? 'checked' : '' }}>
                                                 <label class="custom-control-label" for="is_public">
                                                     Make Public
@@ -201,8 +219,9 @@
                                     
                                     <div class="col-md-4">
                                         <div class="form-group">
+                                            <input type="hidden" name="is_free" value="0">
                                             <div class="custom-control custom-switch mt-4">
-                                                <input type="checkbox" name="is_free" id="is_free" class="custom-control-input" 
+                                                <input type="checkbox" name="is_free" id="is_free" class="custom-control-input" value="1" 
                                                        {{ $resource->is_free ? 'checked' : '' }}>
                                                 <label class="custom-control-label" for="is_free">
                                                     Free Resource
