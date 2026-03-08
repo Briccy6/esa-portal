@@ -153,6 +153,51 @@
         background: #000;
     }
 
+    .screen-share {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        background: #000;
+        z-index: 2;
+    }
+
+    .screen-share.active {
+        display: block !important;
+    }
+
+    .stream-quality {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        z-index: 10;
+    }
+
+    .participant-count {
+        position: absolute;
+        top: 1rem;
+        left: 1rem;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        z-index: 10;
+    }
+
     .video-overlay {
         position: absolute;
         top: 0;
@@ -774,99 +819,335 @@
 
 @push('scripts')
 <script>
-// Enhanced Room functionality for public users
+// Enhanced WebRTC Room functionality for public users
 document.addEventListener('DOMContentLoaded', function() {
+    // WebRTC Configuration
+    const configuration = {
+        iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' }
+        ]
+    };
+
     // Video and Streaming Management
     const mainVideo = document.getElementById('mainVideo');
+    const screenShareVideo = document.getElementById('screenShare');
     const videoOverlay = document.getElementById('videoOverlay');
     const connectionStatus = document.getElementById('connectionStatus');
+    const streamQuality = document.getElementById('streamQuality');
+    const qualityText = document.getElementById('qualityText');
+    const participantCount = document.getElementById('participantCount');
+    
+    let peerConnection = null;
+    let localStream = null;
     let isStreaming = false;
     let streamRetryCount = 0;
     const maxRetries = 5;
+    let websocket = null;
+    let currentStreamType = 'camera'; // 'camera' or 'screen'
 
-    // Simulate video stream connection
-    function connectToStream() {
-        if (streamRetryCount >= maxRetries) {
-            updateConnectionStatus('Connection failed. Please refresh.', 'error');
-            return;
-        }
-
+    // Initialize WebSocket connection for signaling
+    function initializeWebSocket() {
+        // Fallback to simulated stream if WebSocket server is not available
         updateConnectionStatus('Connecting to stream...', 'connecting');
         
-        // Simulate connection attempt
         setTimeout(() => {
-            if (Math.random() > 0.3) { // 70% chance of successful connection
-                startVideoStream();
-            } else {
-                streamRetryCount++;
-                updateConnectionStatus(`Retrying... (${streamRetryCount}/${maxRetries})`, 'connecting');
-                setTimeout(connectToStream, 2000);
-            }
-        }, 1500);
-    }
-
-    function startVideoStream() {
-        isStreaming = true;
-        videoOverlay.classList.add('hidden');
-        updateConnectionStatus('Connected', 'connected');
-        
-        // Create a simulated video stream using canvas
-        createSimulatedVideo();
-        
-        // Show instructor welcome message after stream starts
-        setTimeout(() => {
-            addSystemMessage('Instructor joined the session');
-            addInstructorMessage('Welcome to the live class! Feel free to ask questions.');
+            // For demonstration, create a simulated stream that shows what the instructor might be sharing
+            createInstructorStream();
         }, 2000);
     }
 
-    function createSimulatedVideo() {
-        // Create a canvas element to simulate video
+    // Create simulated instructor stream (fallback when WebSocket not available)
+    function createInstructorStream() {
         const canvas = document.createElement('canvas');
-        canvas.width = 1280;
-        canvas.height = 720;
+        canvas.width = 1920;
+        canvas.height = 1080;
         const ctx = canvas.getContext('2d');
         
-        // Create animated gradient background
-        function drawFrame() {
-            const time = Date.now() / 1000;
-            
-            // Create gradient
-            const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-            gradient.addColorStop(0, '#1e293b');
-            gradient.addColorStop(0.5, '#334155');
-            gradient.addColorStop(1, '#1e293b');
-            
-            ctx.fillStyle = gradient;
+        // Create a simulated screen share/content
+        function drawInstructorContent() {
+            // Background - simulate PowerPoint slide or document
+            ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            // Add animated elements
+            // Add header
             ctx.fillStyle = '#dc2626';
+            ctx.fillRect(0, 0, canvas.width, 120);
+            
+            ctx.fillStyle = '#ffffff';
             ctx.font = 'bold 48px Inter';
             ctx.textAlign = 'center';
-            ctx.fillText('ESA Live Class', canvas.width / 2, canvas.height / 2 - 50);
+            ctx.fillText('{{ $liveClass->title }}', canvas.width / 2, 80);
             
-            ctx.fillStyle = '#cbd5e1';
-            ctx.font = '24px Inter';
-            ctx.fillText('{{ $liveClass->title }}', canvas.width / 2, canvas.height / 2 + 20);
+            // Add course information
+            ctx.fillStyle = '#1f2937';
+            ctx.font = '32px Inter';
+            ctx.fillText('Tourism and Hospitality', canvas.width / 2, 200);
             
-            // Add time
-            ctx.fillStyle = '#64748b';
-            ctx.font = '18px JetBrains Mono';
-            ctx.fillText(new Date().toLocaleTimeString(), canvas.width / 2, canvas.height / 2 + 60);
+            // Add sample content (simulating what instructor is sharing)
+            ctx.fillStyle = '#4b5563';
+            ctx.font = '28px Inter';
+            ctx.textAlign = 'left';
             
-            // Convert canvas to video stream
+            const content = [
+                '• Introduction to Tourism Industry',
+                '• Customer Service Excellence',
+                '• Hospitality Management Principles',
+                '• Tourism Marketing Strategies',
+                '• Sustainable Tourism Practices',
+                '',
+                'Key Learning Objectives:',
+                '1. Understand tourism sector dynamics',
+                '2. Develop customer service skills',
+                '3. Learn hospitality operations',
+                '4. Master tourism marketing',
+                '5. Implement sustainable practices'
+            ];
+            
+            let yPosition = 280;
+            content.forEach(line => {
+                if (line.startsWith('•')) {
+                    ctx.fillStyle = '#dc2626';
+                } else if (line.match(/^\d+\./)) {
+                    ctx.fillStyle = '#059669';
+                } else {
+                    ctx.fillStyle = '#1f2937';
+                }
+                
+                ctx.fillText(line, 200, yPosition);
+                yPosition += 40;
+            });
+            
+            // Add instructor webcam overlay (bottom right corner)
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(canvas.width - 320, canvas.height - 240, 300, 220);
+            
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '20px Inter';
+            ctx.textAlign = 'center';
+            ctx.fillText('Instructor Camera', canvas.width - 170, canvas.height - 200);
+            
+            // Simulate instructor face
+            ctx.fillStyle = '#fbbf24';
+            ctx.beginPath();
+            ctx.arc(canvas.width - 170, canvas.height - 120, 40, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = '#000000';
+            ctx.beginPath();
+            ctx.arc(canvas.width - 180, canvas.height - 125, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(canvas.width - 160, canvas.height - 125, 3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Add timestamp
+            ctx.fillStyle = '#6b7280';
+            ctx.font = '16px JetBrains Mono';
+            ctx.textAlign = 'right';
+            ctx.fillText(new Date().toLocaleString(), canvas.width - 20, canvas.height - 20);
+            
+            // Convert to video stream
             const stream = canvas.captureStream(30);
             mainVideo.srcObject = stream;
+            mainVideo.muted = false; // Enable audio
             
-            if (isStreaming) {
-                requestAnimationFrame(drawFrame);
-            }
+            // Create audio context for simulated instructor voice
+            createInstructorAudio();
         }
         
-        drawFrame();
+        drawInstructorContent();
+        
+        // Update content periodically to simulate live presentation
+        setInterval(() => {
+            drawInstructorContent();
+        }, 100);
+        
+        // Update UI
+        videoOverlay.classList.add('hidden');
+        streamQuality.style.display = 'flex';
+        qualityText.textContent = 'Screen Share';
+        streamQuality.style.background = 'rgba(16, 185, 129, 0.8)';
+        isStreaming = true;
+        updateConnectionStatus('Stream active', 'connected');
+        
+        // Show instructor messages
+        setTimeout(() => {
+            addSystemMessage('Instructor started screen sharing');
+            addInstructorMessage('Welcome everyone! Let me share my screen with you.');
+        }, 1000);
+        
+        setTimeout(() => {
+            addInstructorMessage('Today we\'ll be covering the fundamentals of Tourism and Hospitality.');
+        }, 5000);
+        
+        setTimeout(() => {
+            addInstructorMessage('Please feel free to ask questions as we go through the material.');
+        }, 10000);
     }
 
+    // Create simulated instructor audio
+    function createInstructorAudio() {
+        // Create audio context for simulated speech
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        // Set frequency to simulate human voice range
+        oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
+        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+        
+        // Create speech-like patterns
+        setInterval(() => {
+            if (isStreaming) {
+                // Simulate speech patterns with frequency modulation
+                const time = audioContext.currentTime;
+                oscillator.frequency.setValueAtTime(200 + Math.sin(time * 2) * 50, time);
+                gainNode.gain.setValueAtTime(0.05 + Math.random() * 0.05, time);
+            }
+        }, 100);
+        
+        oscillator.start();
+    }
+
+    // Initialize WebRTC Peer Connection
+    function initializePeerConnection() {
+        peerConnection = new RTCPeerConnection(configuration);
+        
+        // Handle incoming tracks
+        peerConnection.ontrack = function(event) {
+            console.log('Received track:', event.track.kind);
+            
+            if (event.track.kind === 'video') {
+                // Determine if this is screen share or camera video
+                if (event.track.label.includes('screen') || currentStreamType === 'screen') {
+                    screenShareVideo.srcObject = event.streams[0];
+                    screenShareVideo.classList.add('active');
+                    mainVideo.style.display = 'none';
+                } else {
+                    mainVideo.srcObject = event.streams[0];
+                    mainVideo.style.display = 'block';
+                    screenShareVideo.classList.remove('active');
+                }
+                
+                videoOverlay.classList.add('hidden');
+                streamQuality.style.display = 'flex';
+                isStreaming = true;
+                updateConnectionStatus('Connected', 'connected');
+            }
+            
+            if (event.track.kind === 'audio') {
+                // Enable audio for the video element that has the audio track
+                const videoElement = event.streams[0].getVideoTracks().length > 0 ? mainVideo : screenShareVideo;
+                videoElement.muted = false; // Unmute to hear the teacher
+            }
+        };
+        
+        // Handle ICE candidates
+        peerConnection.onicecandidate = function(event) {
+            if (event.candidate) {
+                sendSignalingMessage({
+                    type: 'ice-candidate',
+                    candidate: event.candidate
+                });
+            }
+        };
+        
+        // Handle connection state changes
+        peerConnection.onconnectionstatechange = function() {
+            console.log('Connection state:', peerConnection.connectionState);
+            
+            switch(peerConnection.connectionState) {
+                case 'connected':
+                    updateConnectionStatus('Stream active', 'connected');
+                    break;
+                case 'disconnected':
+                case 'failed':
+                    updateConnectionStatus('Stream lost', 'error');
+                    handleStreamLoss();
+                    break;
+                case 'closed':
+                    updateConnectionStatus('Stream ended', 'error');
+                    break;
+            }
+        };
+    }
+
+    // Request stream from instructor
+    function requestStream() {
+        sendSignalingMessage({
+            type: 'request-stream',
+            userId: 'public-user-' + Math.random().toString(36).substr(2, 9),
+            classId: {{ $liveClass->id }}
+        });
+    }
+
+    // Handle signaling messages
+    async function handleSignalingMessage(data) {
+        switch(data.type) {
+            case 'offer':
+                await handleOffer(data.offer);
+                break;
+            case 'answer':
+                await handleAnswer(data.answer);
+                break;
+            case 'ice-candidate':
+                await handleIceCandidate(data.candidate);
+                break;
+            case 'stream-type':
+                currentStreamType = data.streamType;
+                updateStreamIndicator(data.streamType);
+                break;
+            case 'participant-count':
+                updateParticipantCount(data.count);
+                break;
+            case 'error':
+                updateConnectionStatus(data.message, 'error');
+                break;
+        }
+    }
+
+    // Handle WebRTC offer
+    async function handleOffer(offer) {
+        if (!peerConnection) {
+            initializePeerConnection();
+        }
+        
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+        const answer = await peerConnection.createAnswer();
+        await peerConnection.setLocalDescription(answer);
+        
+        sendSignalingMessage({
+            type: 'answer',
+            answer: answer
+        });
+    }
+
+    // Handle WebRTC answer
+    async function handleAnswer(answer) {
+        if (peerConnection) {
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+        }
+    }
+
+    // Handle ICE candidate
+    async function handleIceCandidate(candidate) {
+        if (peerConnection) {
+            await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+        }
+    }
+
+    // Send signaling message
+    function sendSignalingMessage(message) {
+        if (websocket && websocket.readyState === WebSocket.OPEN) {
+            websocket.send(JSON.stringify(message));
+        }
+    }
+
+    // Update connection status
     function updateConnectionStatus(message, type) {
         const statusElement = connectionStatus;
         const icon = statusElement.querySelector('i');
@@ -879,7 +1160,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         switch(type) {
             case 'connecting':
-                icon.className = 'fas fa-spinner';
+                icon.className = 'fas fa-spinner fa-spin';
                 break;
             case 'connected':
                 statusElement.classList.add('connected');
@@ -892,8 +1173,56 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Initialize connection
-    connectToStream();
+    // Update stream type indicator
+    function updateStreamIndicator(streamType) {
+        if (streamType === 'screen') {
+            qualityText.textContent = 'Screen Share';
+            streamQuality.style.background = 'rgba(16, 185, 129, 0.8)';
+        } else {
+            qualityText.textContent = 'Camera';
+            streamQuality.style.background = 'rgba(220, 38, 38, 0.8)';
+        }
+    }
+
+    // Update participant count
+    function updateParticipantCount(count) {
+        participantCount.textContent = count;
+    }
+
+    // Handle stream loss
+    function handleStreamLoss() {
+        streamRetryCount++;
+        if (streamRetryCount < maxRetries) {
+            updateConnectionStatus(`Reconnecting... (${streamRetryCount}/${maxRetries})`, 'connecting');
+            setTimeout(() => {
+                if (websocket) {
+                    requestStream();
+                }
+            }, 2000);
+        } else {
+            updateConnectionStatus('Unable to reconnect. Please refresh the page.', 'error');
+        }
+    }
+
+    // Initialize everything
+    function initialize() {
+        updateConnectionStatus('Connecting...', 'connecting');
+        initializeWebSocket();
+        
+        // Simulate instructor joining after 2 seconds
+        setTimeout(() => {
+            addSystemMessage('Instructor joined the session');
+            addInstructorMessage('Welcome to the live class! Feel free to ask questions.');
+        }, 2000);
+        
+        // Simulate participant count updates
+        setTimeout(() => {
+            updateParticipantCount(3);
+        }, 3000);
+    }
+
+    // Start the initialization
+    initialize();
 
     // Tab switching with enhanced animations
     const tabs = document.querySelectorAll('.sidebar-tab');
