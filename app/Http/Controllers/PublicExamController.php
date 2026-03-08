@@ -236,56 +236,242 @@ class PublicExamController extends Controller
             abort(404, 'Exam not available for public access');
         }
 
-        // Check if user needs to pay
+        // For free exams, allow direct access without authentication
+        if (!$exam->requiresPayment()) {
+            // Create a guest session and redirect to public exam taking
+            return redirect()->route('public.exams.take', $exam);
+        }
+
+        // For paid exams, check authentication
+        if (!Auth::guard('client')->check() && !Auth::guard('student')->check()) {
+            // No user logged in, redirect to client login
+            return redirect()->route('client.auth.login')
+                ->with('intent', 'exam_attempt')
+                ->with('exam_id', $exam->id)
+                ->with('info', 'Please login to access this paid exam');
+        }
+
+        // Check if user has already paid
+        $hasPaid = false;
+        if (Auth::guard('student')->check()) {
+            $student = Auth::guard('student')->user();
+            $hasPaid = $exam->examTokens()
+                ->where('student_id', $student->id)
+                ->where('payment_status', 'paid')
+                ->exists();
+        } elseif (Auth::guard('client')->check()) {
+            $client = Auth::guard('client')->user();
+            $hasPaid = $exam->examTokens()
+                ->where('client_id', $client->id)
+                ->where('payment_status', 'paid')
+                ->exists();
+        }
+
+        if (!$hasPaid) {
+            // Check if user has active subscription
+            $hasSubscription = false;
+            if (Auth::guard('student')->check()) {
+                $student = Auth::guard('student')->user();
+                $hasSubscription = $student->subscriptions()
+                    ->where('status', 'active')
+                    ->where('end_date', '>', now())
+                    ->exists();
+            } elseif (Auth::guard('client')->check()) {
+                $client = Auth::guard('client')->user();
+                $hasSubscription = $client->hasActiveSubscription();
+            }
+
+            if ($hasSubscription) {
+                // User has subscription, allow access
+                if (Auth::guard('student')->check()) {
+                    return redirect()->route('exams.start', $exam);
+                } else {
+                    return redirect()->route('public.exams.take', $exam);
+                }
+            } else {
+                // No subscription and no payment, redirect to payment
+                return redirect()->route('public.exams.payment', $exam)
+                    ->with('error', 'Payment or subscription required to attempt this exam');
+            }
+        }
+
+        // User has paid, redirect to appropriate exam taking route
+        if (Auth::guard('student')->check()) {
+            return redirect()->route('exams.start', $exam);
+        } else {
+            return redirect()->route('public.exams.take', $exam);
+        }
+    }
+
+    /**
+     * Take exam for public users (including guests)
+     */
+    public function takeExam(Exam $exam)
+    {
+        if (!$exam->isPubliclyAccessible()) {
+            abort(404, 'Exam not available for public access');
+        }
+
+        // For paid exams, ensure user is authenticated and has paid
         if ($exam->requiresPayment()) {
-            // Check if user has already paid
+            if (!Auth::guard('client')->check() && !Auth::guard('student')->check()) {
+                return redirect()->route('client.auth.login')
+                    ->with('intent', 'exam_attempt')
+                    ->with('exam_id', $exam->id)
+                    ->with('error', 'Authentication required for paid exams');
+            }
+
+            // Check payment status (similar logic as startExam)
             $hasPaid = false;
+            $hasSubscription = false;
+
             if (Auth::guard('student')->check()) {
                 $student = Auth::guard('student')->user();
                 $hasPaid = $exam->examTokens()
                     ->where('student_id', $student->id)
                     ->where('payment_status', 'paid')
                     ->exists();
+                $hasSubscription = $student->subscriptions()
+                    ->where('status', 'active')
+                    ->where('end_date', '>', now())
+                    ->exists();
+            } elseif (Auth::guard('client')->check()) {
+                $client = Auth::guard('client')->user();
+                $hasPaid = $exam->examTokens()
+                    ->where('client_id', $client->id)
+                    ->where('payment_status', 'paid')
+                    ->exists();
+                $hasSubscription = $client->hasActiveSubscription();
             }
 
-            if (!$hasPaid) {
-                // Check if user has active subscription
-                $hasSubscription = false;
-                if (Auth::guard('student')->check()) {
-                    $student = Auth::guard('student')->user();
-                    $hasSubscription = $student->subscriptions()
-                        ->where('status', 'active')
-                        ->where('end_date', '>', now())
-                        ->exists();
-                }
-
-                if ($hasSubscription) {
-                    // User has subscription, allow access
-                    if (Auth::guard('student')->check()) {
-                        return redirect()->route('exams.start', $exam);
-                    } else {
-                        return redirect()->route('students.create')
-                            ->with('intent', 'exam_attempt')
-                            ->with('exam_id', $exam->id)
-                            ->with('info', 'Your subscription will be applied after login');
-                    }
-                } else {
-                    // No subscription and no payment, redirect to payment
-                    return redirect()->route('public.exams.payment', $exam)
-                        ->with('error', 'Payment or subscription required to attempt this exam');
-                }
+            if (!$hasPaid && !$hasSubscription) {
+                return redirect()->route('public.exams.payment', $exam)
+                    ->with('error', 'Payment or subscription required to attempt this exam');
             }
         }
 
-        // Redirect to actual exam taking route
-        if (Auth::guard('student')->check()) {
-            return redirect()->route('exams.start', $exam);
-        } else {
-            // Redirect to registration/login with exam intent
-            return redirect()->route('students.create')
-                ->with('intent', 'exam_attempt')
-                ->with('exam_id', $exam->id);
+        // Create or get exam session
+        $sessionId = $this->createGuestSession($exam);
+        
+        return redirect()->route('public.exams.take.question', [$exam, $sessionId, 1]);
+    }
+
+    /**
+     * Create guest session for exam taking
+     */
+    private function createGuestSession(Exam $exam)
+    {
+        $sessionId = 'guest_' . uniqid() . '_' . time();
+        
+        // Store session data in cache or session
+        session([
+            "exam_session_{$sessionId}" => [
+                'exam_id' => $exam->id,
+                'start_time' => now(),
+                'user_type' => Auth::guard('student')->check() ? 'student' : 
+                              (Auth::guard('client')->check() ? 'client' : 'guest'),
+                'user_id' => Auth::guard('student')->check() ? Auth::guard('student')->id() : 
+                         (Auth::guard('client')->check() ? Auth::guard('client')->id() : null),
+                'answers' => [],
+                'current_question' => 1,
+                'completed' => false
+            ]
+        ]);
+        
+        return $sessionId;
+    }
+
+    /**
+     * Show specific question for public exam taking
+     */
+    public function takeQuestion(Exam $exam, $sessionId, $questionNumber = 1)
+    {
+        if (!$exam->isPubliclyAccessible()) {
+            abort(404, 'Exam not available for public access');
         }
+
+        // Get session data
+        $sessionData = session("exam_session_{$sessionId}");
+        if (!$sessionData || $sessionData['exam_id'] != $exam->id) {
+            return redirect()->route('public.exams.start', $exam)
+                ->with('error', 'Invalid session. Please start the exam again.');
+        }
+
+        // Get questions
+        $questions = $exam->questions()->orderBy('id')->get();
+        $totalQuestions = $questions->count();
+        
+        if ($questionNumber > $totalQuestions) {
+            return redirect()->route('public.exams.submit', [$exam, $sessionId]);
+        }
+
+        $currentQuestion = $questions[$questionNumber - 1];
+        
+        return view('public.exams.take', compact('exam', 'currentQuestion', 'questionNumber', 'totalQuestions', 'sessionId', 'sessionData'));
+    }
+
+    /**
+     * Save answer for public exam taking
+     */
+    public function saveAnswer(Request $request, Exam $exam, $sessionId, $questionNumber)
+    {
+        if (!$exam->isPubliclyAccessible()) {
+            abort(404, 'Exam not available for public access');
+        }
+
+        $request->validate([
+            'answer' => 'required|string',
+        ]);
+
+        // Get and update session data
+        $sessionData = session("exam_session_{$sessionId}");
+        if (!$sessionData || $sessionData['exam_id'] != $exam->id) {
+            return response()->json(['error' => 'Invalid session'], 400);
+        }
+
+        $sessionData['answers'][$questionNumber] = $request->answer;
+        session(["exam_session_{$sessionId}" => $sessionData]);
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Submit public exam
+     */
+    public function submitExam(Request $request, Exam $exam, $sessionId)
+    {
+        if (!$exam->isPubliclyAccessible()) {
+            abort(404, 'Exam not available for public access');
+        }
+
+        // Get session data
+        $sessionData = session("exam_session_{$sessionId}");
+        if (!$sessionData || $sessionData['exam_id'] != $exam->id) {
+            return redirect()->route('public.exams.start', $exam)
+                ->with('error', 'Invalid session. Please start the exam again.');
+        }
+
+        // Mark as completed
+        $sessionData['completed'] = true;
+        $sessionData['end_time'] = now();
+        session(["exam_session_{$sessionId}" => $sessionData]);
+
+        // Calculate results
+        $questions = $exam->questions()->orderBy('id')->get();
+        $correctAnswers = 0;
+        $totalQuestions = $questions->count();
+
+        foreach ($questions as $index => $question) {
+            $questionNumber = $index + 1;
+            if (isset($sessionData['answers'][$questionNumber]) && 
+                $sessionData['answers'][$questionNumber] === $question->correct_answer) {
+                $correctAnswers++;
+            }
+        }
+
+        $score = ($correctAnswers / $totalQuestions) * 100;
+
+        return view('public.exams.results', compact('exam', 'score', 'correctAnswers', 'totalQuestions', 'sessionData'));
     }
 
     /**

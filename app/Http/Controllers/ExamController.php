@@ -267,8 +267,13 @@ class ExamController extends Controller
         
         $courses = Course::all();
         $lessons = Lesson::all();
-        $exam->load(['courses', 'lessons']);
-        return view('exams.edit', compact('exam', 'courses', 'lessons'));
+        $branches = \App\Models\Branch::all();
+        $teachers = \App\Models\Teacher::all();
+        $academicYears = \App\Models\AcademicYear::orderBy('year', 'desc')->get();
+        $terms = \App\Models\Term::all();
+        $exam->load(['courses', 'lessons', 'academic_year', 'term', 'teacher', 'branch']);
+        
+        return view('exams.edit', compact('exam', 'courses', 'lessons', 'branches', 'teachers', 'academicYears', 'terms'));
     }
 
     /**
@@ -289,7 +294,8 @@ class ExamController extends Controller
             $request->merge(['token_cost' => 10]);
         }
 
-        $request->validate([
+        // Only include exam_password in validation if it's being changed
+        $rules = [
             'title' => 'required|string|max:255',
             'class_date' => 'required|date',
             'course_ids' => 'required|array|min:1',
@@ -307,10 +313,16 @@ class ExamController extends Controller
             'teacher_id' => 'required|exists:teachers,id',
             'term_id' => 'required|exists:terms,id',
             'notes' => 'nullable|string',
-            'exam_password' => 'nullable|string|max:255',
             'is_public' => 'nullable|boolean',
             'public_price' => 'nullable|numeric|min:0',
-        ]);
+        ];
+
+        // Add exam_password validation only if it's provided in the request
+        if ($request->has('exam_password')) {
+            $rules['exam_password'] = 'nullable|string|max:255';
+        }
+
+        $request->validate($rules);
 
         $examData = [
             'title' => $request->title,
@@ -321,17 +333,8 @@ class ExamController extends Controller
             'instructions' => $request->instructions,
             'token_cost' => $request->token_cost,
             'exam_type' => $request->exam_type,
-            'branch_id' => $request->branch_id,
-            'academic_year_id' => $request->academic_year_id,
-            'teacher_id' => $request->teacher_id,
-            'term_id' => $request->term_id,
-            'notes' => $request->notes,
-            'exam_password' => $request->exam_password,
-            'is_public' => $request->boolean('is_public'),
-            'public_price' => $request->public_price ?? 0,
         ];
 
-        // Add optional fields if they exist in the database
         if (Schema::hasColumn('exams', 'branch_id')) {
             $examData['branch_id'] = $request->branch_id;
         }
@@ -348,7 +351,7 @@ class ExamController extends Controller
             $examData['notes'] = $request->notes;
         }
         if (Schema::hasColumn('exams', 'exam_password')) {
-            $examData['exam_password'] = $request->exam_password;
+            $examData['exam_password'] = $request->exam_password ?? $exam->exam_password;
         }
         if (Schema::hasColumn('exams', 'is_public')) {
             $examData['is_public'] = $request->boolean('is_public');
@@ -702,5 +705,57 @@ class ExamController extends Controller
         if ($question->option_d) $options[] = $question->option_d;
         
         return implode(' | ', $options);
+    }
+
+    /**
+     * Make exam public
+     */
+    public function makePublic(Request $request, Exam $exam)
+    {
+        $request->validate([
+            'public_price' => 'required|numeric|min:0.01',
+            'token_cost' => 'required|integer|min:0',
+        ]);
+
+        try {
+            $exam->update([
+                'is_public' => true,
+                'public_price' => $request->public_price,
+                'token_cost' => $request->token_cost,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Exam is now public and available for students to purchase.'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to make exam public: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Make exam private
+     */
+    public function makePrivate(Exam $exam)
+    {
+        try {
+            $exam->update([
+                'is_public' => false,
+                'public_price' => 0,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Exam is now private and not available for public access.'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to make exam private: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

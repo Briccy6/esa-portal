@@ -422,7 +422,7 @@ body {
                                        placeholder="Enter exam title" value="{{ old('title') }}" required>
                             </div>
                             @error('title')
-                                <div class="lc-error">{{ $message }}</div>
+                                <div class="lc-error">{{ $errors->first('title') }}</div>
                             @enderror
                         </div>
 
@@ -456,7 +456,7 @@ body {
                                        value="{{ old('class_date') }}" required>
                             </div>
                             @error('class_date')
-                                <div class="lc-error">{{ $message }}</div>
+                                <div class="lc-error">{{ $errors->first('class_date') }}</div>
                             @enderror
                         </div>
 
@@ -470,7 +470,7 @@ body {
                                        placeholder="e.g., 20" min="1" max="100" value="{{ old('exam_weight') }}" required>
                             </div>
                             @error('exam_weight')
-                                <div class="lc-error">{{ $message }}</div>
+                                <div class="lc-error">{{ $errors->first('exam_weight') }}</div>
                             @enderror
                         </div>
                     </div>
@@ -483,7 +483,7 @@ body {
                                       placeholder="Enter exam description and instructions">{{ old('description') }}</textarea>
                         </div>
                         @error('description')
-                            <div class="lc-error">{{ $message }}</div>
+                            <div class="lc-error">{{ $errors->first('description') }}</div>
                         @enderror
                     </div>
                 </div>
@@ -613,7 +613,7 @@ body {
                                     <option value=""></option>
                                     @foreach($terms as $term)
                                         <option value="{{ $term->id }}" {{ old('term_id') == $term->id ? 'selected' : '' }}>
-                                            {{ $term->term }}
+                                            {{ $term->name }}
                                         </option>
                                     @endforeach
                                 </select>
@@ -643,7 +643,7 @@ body {
                                        placeholder="e.g., 100" min="1" value="{{ old('total_marks') }}" required>
                             </div>
                             @error('total_marks')
-                                <div class="lc-error">{{ $message }}</div>
+                                <div class="lc-error">{{ $errors->first('total_marks') }}</div>
                             @enderror
                         </div>
 
@@ -684,17 +684,18 @@ body {
                     <div class="lc-grid">
                         <div class="lc-field">
                             <label class="lc-label">Select Question Banks</label>
-                            <div class="lc-select-wrapper">
-                                <select name="question_bank_ids[]" id="question_bank_ids" class="lc-select" multiple>
+                            <div class="lc-input-wrap">
+                                <i class="fas fa-question-circle lc-input-icon"></i>
+                                <select name="question_bank_ids[]" id="question_bank_ids" class="lc-select lc-select2-multi" multiple
+                                        data-placeholder="Select question banks">
                                     @foreach($questionBanks as $questionBank)
                                         <option value="{{ $questionBank->id }}">
                                             {{ $questionBank->name }} ({{ $questionBank->questions->count() }} questions)
                                         </option>
                                     @endforeach
                                 </select>
-                                <i class="fas fa-chevron-down lc-select-icon"></i>
                             </div>
-                            <small class="lc-help">Ctrl+click to select multiple question banks</small>
+                            <p class="lc-hint">Select one or more question banks to import questions from</p>
                         </div>
                         
                         <div class="lc-field">
@@ -865,8 +866,11 @@ $(document).ready(function() {
             success: function(response) {
                 displayQuestionsPreview(response.questions);
             },
-            error: function() {
-                $('#questionsList').html('<div class="alert alert-danger">Error loading questions. Please try again.</div>');
+            error: function(xhr, status, error) {
+                console.error('AJAX Error:', error);
+                console.error('Status:', status);
+                console.error('Response:', xhr.responseText);
+                $('#questionsList').html('<div class="alert alert-danger">Error loading questions. Please try again. (Check console for details)</div>');
             }
         });
     });

@@ -134,7 +134,7 @@
                                         <option value="">Select Term</option>
                                         @foreach($terms as $term)
                                             <option value="{{ $term->id }}" {{ old('term_id') == $term->id ? 'selected' : '' }}>
-                                                {{ $term->term_name }}
+                                                {{ $term->name }}
                                             </option>
                                         @endforeach
                                     </select>

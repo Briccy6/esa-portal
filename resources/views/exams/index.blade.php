@@ -395,7 +395,19 @@
                         <a href="{{ route('exams.questions', $exam) }}" class="btn btn-info btn-exam">
                             <i class="fas fa-question-circle"></i> Questions
                         </a>
-                        <a href="#" class="btn btn-success btn-exam" onclick="alert('Results not yet implemented')">
+                        @if($exam->is_public)
+                            <span class="btn btn-success btn-exam">
+                                <i class="fas fa-globe"></i> Public ({{ number_format($exam->public_price, 2) }} RWF)
+                            </span>
+                            <button class="btn btn-warning btn-exam" onclick="makePrivate({{ $exam->id }})">
+                                <i class="fas fa-lock"></i> Make Private
+                            </button>
+                        @else
+                            <button class="btn btn-success btn-exam" onclick="showMakePublicModal({{ $exam->id }}, {{ json_encode($exam->title) }})">
+                                <i class="fas fa-globe"></i> Make Public
+                            </button>
+                        @endif
+                        <a href="#" class="btn btn-info btn-exam" onclick="alert('Results not yet implemented')">
                             <i class="fas fa-chart-bar"></i> Results
                         </a>
                         <a href="#" class="btn btn-warning btn-exam" onclick="alert('Analytics not yet implemented')">
@@ -550,5 +562,226 @@ document.addEventListener('DOMContentLoaded', function() {
         observer.observe(card);
     });
 });
+
+// Make Exam Public Modal Functions
+function showMakePublicModal(examId, examTitle) {
+    const modal = document.getElementById('publicPriceModal');
+    const examIdInput = document.getElementById('examId');
+    const examTitleSpan = document.getElementById('examTitleModal');
+    
+    if (!modal || !examIdInput || !examTitleSpan) {
+        alert('Error: Required modal elements not found');
+        return;
+    }
+    
+    examIdInput.value = examId;
+    examTitleSpan.textContent = examTitle;
+    
+    // Show modal using traditional approach
+    modal.style.display = 'block';
+    document.body.style.overflow = 'hidden'; // Prevent background scrolling
+}
+
+function hideMakePublicModal() {
+    const modal = document.getElementById('publicPriceModal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto'; // Restore background scrolling
+    }
+}
+
+// Close modal when clicking on backdrop
+document.addEventListener('click', function(event) {
+    const modal = document.getElementById('publicPriceModal');
+    if (event.target === modal) {
+        hideMakePublicModal();
+    }
+});
+
+function makePrivate(examId) {
+    if (confirm('Are you sure you want to make this exam private? Students will no longer be able to access it publicly.')) {
+        fetch(`/admin/exams/${examId}/make-private`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while making the exam private.');
+        });
+    }
+}
+
+function confirmMakePublic() {
+    const examId = document.getElementById('examId').value;
+    const publicPrice = document.getElementById('publicPrice').value;
+    const tokenCost = document.getElementById('tokenCost').value;
+    
+    if (!publicPrice || publicPrice <= 0) {
+        alert('Please enter a valid price greater than 0.');
+        return;
+    }
+    
+    if (!tokenCost || tokenCost < 0) {
+        alert('Please enter a valid token cost (0 or greater).');
+        return;
+    }
+    
+    fetch(`/admin/exams/${examId}/make-public`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({
+            public_price: publicPrice,
+            token_cost: tokenCost
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while making the exam public.');
+    });
+}
 </script>
+
+<!-- Make Exam Public Modal -->
+<div id="publicPriceModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title">
+                <i class="fas fa-globe"></i> Make Exam Public
+            </h5>
+            <button type="button" class="btn-close" onclick="hideMakePublicModal()"></button>
+        </div>
+        <div class="modal-body">
+            <p>Set the pricing for "<span id="examTitleModal"></span>" to make it publicly available.</p>
+            
+            <input type="hidden" id="examId" name="examId">
+            
+            <div class="mb-3">
+                <label for="publicPrice" class="form-label">
+                    <i class="fas fa-money-bill"></i> Public Price (RWF)
+                </label>
+                <input type="number" id="publicPrice" name="publicPrice" class="form-control" 
+                       placeholder="Enter price in RWF" min="1" step="0.01" required>
+                <small class="form-text text-muted">Price that students will pay to access this exam</small>
+            </div>
+            
+            <div class="mb-3">
+                <label for="tokenCost" class="form-label">
+                    <i class="fas fa-coins"></i> Token Cost
+                </label>
+                <input type="number" id="tokenCost" name="tokenCost" class="form-control" 
+                       placeholder="Enter token cost" min="0" value="10">
+                <small class="form-text text-muted">Number of tokens required to take this exam</small>
+            </div>
+            
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                <strong>Important:</strong> Once public, students can access this exam by paying the specified price. 
+                Tokens will be automatically deducted from their account when they attempt the exam.
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="hideMakePublicModal()">
+                <i class="fas fa-times"></i> Cancel
+            </button>
+            <button type="button" class="btn btn-success" onclick="confirmMakePublic()">
+                <i class="fas fa-globe"></i> Make Public
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1050;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: 8px 8px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.btn-close {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-close:hover {
+    opacity: 1;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #dee2e6;
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+</style>
 @endsection

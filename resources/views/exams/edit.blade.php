@@ -393,7 +393,7 @@ body {
             <h2 class="lc-card-title">Exam Information</h2>
         </div>
         <div class="lc-card-body">
-            <form action="{{ route('exams.update', $exam->id) }}" method="POST">
+            <form action="{{ route('admin.exams.update', $exam->id) }}" method="POST">
                 @csrf
                 @method('PUT')
 
@@ -413,8 +413,8 @@ body {
                         <label class="lc-label">
                             Exam Date <span class="required">*</span>
                         </label>
-                        <input type="date" name="date" class="lc-input" value="{{ old('date', $exam->class_date->format('Y-m-d')) }}" required>
-                        @error('date')
+                        <input type="date" name="class_date" class="lc-input" value="{{ old('class_date', $exam->class_date->format('Y-m-d')) }}" required>
+                        @error('class_date')
                             <small style="color: var(--danger); margin-top: 4px; display: block;">{{ $message }}</small>
                         @enderror
                     </div>
@@ -435,6 +435,94 @@ body {
                         </label>
                         <input type="number" name="exam_weight" class="lc-input" value="{{ old('exam_weight', $exam->exam_weight) }}" min="1" max="100" required>
                         @error('exam_weight')
+                            <small style="color: var(--danger); margin-top: 4px; display: block;">{{ $message }}</small>
+                        @enderror
+                    </div>
+                </div>
+
+                <!-- Additional Information -->
+                <div class="lc-form-grid">
+                    <div class="lc-form-group">
+                        <label class="lc-label">
+                            Exam Type <span class="required">*</span>
+                        </label>
+                        <select name="exam_type" class="lc-select" required>
+                            <option value="">Select Exam Type</option>
+                            <option value="quiz" {{ old('exam_type', $exam->exam_type) == 'quiz' ? 'selected' : '' }}>Quiz</option>
+                            <option value="test" {{ old('exam_type', $exam->exam_type) == 'test' ? 'selected' : '' }}>Test</option>
+                            <option value="midterm" {{ old('exam_type', $exam->exam_type) == 'midterm' ? 'selected' : '' }}>Midterm</option>
+                            <option value="final" {{ old('exam_type', $exam->exam_type) == 'final' ? 'selected' : '' }}>Final Exam</option>
+                            <option value="assignment" {{ old('exam_type', $exam->exam_type) == 'assignment' ? 'selected' : '' }}>Assignment</option>
+                        </select>
+                        @error('exam_type')
+                            <small style="color: var(--danger); margin-top: 4px; display: block;">{{ $message }}</small>
+                        @enderror
+                    </div>
+
+                    <div class="lc-form-group">
+                        <label class="lc-label">
+                            Branch <span class="required">*</span>
+                        </label>
+                        <select name="branch_id" class="lc-select" required>
+                            <option value="">Select Branch</option>
+                            @foreach($branches as $branch)
+                                <option value="{{ $branch->id }}" {{ old('branch_id', $exam->branch_id) == $branch->id ? 'selected' : '' }}>
+                                    {{ $branch->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('branch_id')
+                            <small style="color: var(--danger); margin-top: 4px; display: block;">{{ $message }}</small>
+                        @enderror
+                    </div>
+
+                    <div class="lc-form-group">
+                        <label class="lc-label">
+                            Academic Year <span class="required">*</span>
+                        </label>
+                        <select name="academic_year_id" class="lc-select" required>
+                            <option value="">Select Academic Year</option>
+                            @foreach($academicYears as $academicYear)
+                                <option value="{{ $academicYear->id }}" {{ old('academic_year_id', $exam->academic_year_id) == $academicYear->id ? 'selected' : '' }}>
+                                    {{ $academicYear->year }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('academic_year_id')
+                            <small style="color: var(--danger); margin-top: 4px; display: block;">{{ $message }}</small>
+                        @enderror
+                    </div>
+
+                    <div class="lc-form-group">
+                        <label class="lc-label">
+                            Teacher <span class="required">*</span>
+                        </label>
+                        <select name="teacher_id" class="lc-select" required>
+                            <option value="">Select Teacher</option>
+                            @foreach($teachers as $teacher)
+                                <option value="{{ $teacher->id }}" {{ old('teacher_id', $exam->teacher_id) == $teacher->id ? 'selected' : '' }}>
+                                    {{ $teacher->teacher_name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('teacher_id')
+                            <small style="color: var(--danger); margin-top: 4px; display: block;">{{ $message }}</small>
+                        @enderror
+                    </div>
+
+                    <div class="lc-form-group">
+                        <label class="lc-label">
+                            Term <span class="required">*</span>
+                        </label>
+                        <select name="term_id" class="lc-select" required>
+                            <option value="">Select Term</option>
+                            @foreach($terms as $term)
+                                <option value="{{ $term->id }}" {{ old('term_id', $exam->term_id) == $term->id ? 'selected' : '' }}>
+                                    {{ $term->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('term_id')
                             <small style="color: var(--danger); margin-top: 4px; display: block;">{{ $message }}</small>
                         @enderror
                     </div>
@@ -482,7 +570,7 @@ body {
                         <select name="course_ids[]" class="lc-select" multiple="multiple" required>
                             @foreach($courses as $course)
                                 <option value="{{ $course->id }}" {{ in_array($course->id, $exam->courses->pluck('id')->toArray()) ? 'selected' : '' }}>
-                                    {{ $course->name }}
+                                    {{ $course->course_name }}
                                 </option>
                             @endforeach
                         </select>

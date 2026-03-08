@@ -136,6 +136,10 @@ Route::prefix('public')->name('public.')->group(function () {
     Route::post('/exams/{exam}/payment', [PublicExamController::class, 'processPayment'])->name('exams.payment.process');
     Route::get('/exams/{exam}/payment/success', [PublicExamController::class, 'paymentSuccess'])->name('exams.payment.success');
     Route::get('/exams/{exam}/start', [PublicExamController::class, 'startExam'])->name('exams.start');
+    Route::get('/exams/{exam}/take', [PublicExamController::class, 'takeExam'])->name('exams.take');
+    Route::get('/exams/{exam}/take/{session}/{questionNumber?}', [PublicExamController::class, 'takeQuestion'])->name('exams.take.question');
+    Route::post('/exams/{exam}/save-answer/{session}/{questionNumber}', [PublicExamController::class, 'saveAnswer'])->name('exams.save-answer');
+    Route::post('/exams/{exam}/submit/{session}', [PublicExamController::class, 'submitExam'])->name('exams.submit');
     Route::get('/api/exams/{exam}/check-access', [PublicExamController::class, 'checkAccess'])->name('exams.check-access');
 });
 
@@ -1015,6 +1019,8 @@ Route::middleware(['auth:admin'])->prefix('admin/exams')->name('admin.exams.')->
     Route::get('/{exam}/edit', [ExamController::class, 'edit'])->name('edit');
     Route::put('/{exam}', [ExamController::class, 'update'])->name('update');
     Route::delete('/{exam}', [ExamController::class, 'destroy'])->name('destroy');
+    Route::post('/{exam}/make-public', [ExamController::class, 'makePublic'])->name('make-public');
+    Route::post('/{exam}/make-private', [ExamController::class, 'makePrivate'])->name('make-private');
 });
 
 // Teacher-specific exam routes
