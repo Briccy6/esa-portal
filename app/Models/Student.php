@@ -254,4 +254,15 @@ class Student extends Authenticatable
 
         return $studentSubscription;
     }
+
+    /**
+     * Check if student has an active subscription
+     */
+    public function hasActiveSubscription()
+    {
+        return $this->subscriptions()
+            ->where('status', 'active')
+            ->where('end_date', '>', now())
+            ->exists();
+    }
 }

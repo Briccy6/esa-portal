@@ -238,11 +238,27 @@
             
             <div class="header-cell">
                 <div class="logo-container">
-                    @if($reportCard->student->passport_photo)
-                        @if(str_contains($reportCard->student->passport_photo, 'http'))
-                            <img src="{{ $reportCard->student->passport_photo }}" alt="Student Photo" class="student-photo">
+                    @if(isset($studentPhotoBase64) && $studentPhotoBase64)
+                        <img src="data:{{ $studentPhotoMime ?? 'image/jpeg' }};base64,{{ $studentPhotoBase64 }}" alt="Student Photo" class="student-photo">
+                    @elseif($reportCard->student->passport_photo)
+                        @php
+                            $photoPath = $reportCard->student->passport_photo;
+                            // Add extension if missing (same logic as admin template)
+                            if (!str_contains($photoPath, '.') && str_contains($photoPath, 'wzwnc4T6aiZMyuxDMySNfg17XGDd3ChdouadyuT3')) {
+                                $photoPath .= '.png';
+                            } elseif (!str_contains($photoPath, '.') && str_contains($photoPath, 'aKc2vKdlKFsMyFJ3m2N39HFU1uVIV6GJZMTuWsbj')) {
+                                $photoPath .= '.jpg';
+                            }
+                        @endphp
+                        @if(str_contains($photoPath, 'http'))
+                            <img src="{{ $photoPath }}" alt="Student Photo" class="student-photo">
                         @else
-                            <img src="{{ asset($reportCard->student->passport_photo) }}" alt="Student Photo" class="student-photo">
+                            <img src="{{ asset($photoPath) }}" alt="Student Photo" class="student-photo" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                            <div style="display: none; width: 160px; height: 160px; background: #fff; border: 1px solid #000; align-items: center; justify-content: center;">
+                                <div style="text-align: center;">
+                                    <div style="color: #000; font-size: 12px; font-weight: bold;">STUDENT<br>PHOTO</div>
+                                </div>
+                            </div>
                         @endif
                     @else
                         <div style="width: 160px; height: 160px; background: #fff; border: 1px solid #000; display: flex; align-items: center; justify-content: center;">

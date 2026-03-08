@@ -236,6 +236,9 @@ class LiveClassController extends Controller
             'payment_method' => 'required|string',
         ]);
 
+        // Generate unique transaction reference
+        $tx_ref = 'LC_' . $liveClass->id . '_' . time() . '_' . Str::random(8);
+
         // Create payment record
         $payment = \App\Models\LiveClassPayment::create([
             'live_class_id' => $liveClass->id,
@@ -246,25 +249,201 @@ class LiveClassController extends Controller
             'amount' => $liveClass->public_fee,
             'currency' => $liveClass->currency,
             'payment_method' => $request->payment_method,
-            'transaction_id' => 'LC_' . Str::random(20),
+            'transaction_id' => $tx_ref,
             'status' => 'pending',
+            'payment_gateway' => 'flutterwave',
         ]);
 
-        // Here you would integrate with your payment gateway (Flutterwave, etc.)
-        // For now, we'll simulate successful payment
-        $payment->update([
-            'status' => 'completed',
-            'paid_at' => now(),
-            'gateway_response' => ['simulated' => true],
-        ]);
+        // Prepare Flutterwave payment data
+        $paymentData = [
+            'tx_ref' => $tx_ref,
+            'amount' => $liveClass->public_fee,
+            'currency' => $liveClass->currency,
+            'payment_options' => 'card,bank_transfer,ussd,mobile_money',
+            'redirect_url' => route('live-classes.payment.callback', $liveClass),
+            'customer' => [
+                'email' => $request->email,
+                'name' => $request->name,
+                'phone' => $request->phone ?? '',
+            ],
+            'meta' => [
+                'live_class_id' => $liveClass->id,
+                'payment_id' => $payment->id,
+                'user_type' => 'public',
+                'type' => 'live_class_payment'
+            ],
+            'customizations' => [
+                'title' => "Live Class: {$liveClass->title}",
+                'description' => "Payment for access to live class - {$liveClass->title}",
+                'logo' => asset('images/logo.png')
+            ]
+        ];
 
-        return redirect()->route('live-classes.room', $liveClass)
-            ->with('success', 'Payment successful! You can now join the live class.');
+        try {
+            // Initialize Flutterwave payment
+            $flutterwave = new \Flutterwavedev\Flutterwave\Flutterwave();
+            $payment = $flutterwave->initializePayment($paymentData);
+
+            if (isset($payment['status']) && $payment['status'] === 'success') {
+                // Update payment record with Flutterwave reference
+                $payment->update([
+                    'gateway_response' => $payment
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'redirect_url' => $payment['data']['link'],
+                    'tx_ref' => $tx_ref
+                ]);
+            } else {
+                $payment->update([
+                    'status' => 'failed',
+                    'gateway_response' => $payment
+                ]);
+                
+                return redirect()->back()->with('error', 'Failed to initialize payment. Please try again.');
+            }
+        } catch (\Exception $e) {
+            \Log::error('Flutterwave payment initialization failed for live class', [
+                'error' => $e->getMessage(),
+                'live_class_id' => $liveClass->id,
+                'payment_id' => $payment->id
+            ]);
+
+            $payment->update([
+                'status' => 'failed',
+                'gateway_response' => ['error' => $e->getMessage()]
+            ]);
+
+            return redirect()->back()->with('error', 'Payment initialization failed: ' . $e->getMessage());
+        }
     }
 
     public function showPaymentForm(LiveClass $liveClass)
     {
         return view('live-classes.public-payment', compact('liveClass'));
+    }
+
+    /**
+     * Handle Flutterwave payment callback for live class payments
+     */
+    public function handlePaymentCallback(Request $request, LiveClass $liveClass)
+    {
+        $tx_ref = $request->query('transaction_id') ?? $request->query('tx_ref');
+        
+        if (!$tx_ref) {
+            return redirect()->route('live-classes.public-join', $liveClass)
+                ->with('error', 'Payment verification failed. No transaction reference found.');
+        }
+
+        try {
+            // Find payment record
+            $payment = \App\Models\LiveClassPayment::where('transaction_id', $tx_ref)->first();
+            
+            if (!$payment) {
+                return redirect()->route('live-classes.public-join', $liveClass)
+                    ->with('error', 'Payment record not found.');
+            }
+
+            // Verify transaction with Flutterwave
+            $flutterwave = new \Flutterwavedev\Flutterwave\Flutterwave();
+            $transaction = $flutterwave->verifyTransaction($tx_ref);
+
+            if ($transaction['status'] === 'success') {
+                $txData = $transaction['data'];
+                
+                // Update payment record
+                $payment->update([
+                    'status' => 'completed',
+                    'paid_at' => now(),
+                    'gateway_response' => $txData
+                ]);
+
+                // Store user session for direct room access
+                session(['live_class_payment_' . $liveClass->id => [
+                    'email' => $payment->email,
+                    'name' => $payment->name,
+                    'phone' => $payment->phone,
+                    'payment_id' => $payment->id
+                ]]);
+
+                return redirect()->route('live-classes.room', $liveClass)
+                    ->with('success', 'Payment successful! You can now join the live class.');
+            } else {
+                $payment->update([
+                    'status' => 'failed',
+                    'gateway_response' => $transaction
+                ]);
+
+                return redirect()->route('live-classes.public-join', $liveClass)
+                    ->with('error', 'Payment failed or was cancelled.');
+            }
+        } catch (\Exception $e) {
+            \Log::error('Flutterwave payment callback processing failed for live class', [
+                'error' => $e->getMessage(),
+                'tx_ref' => $tx_ref,
+                'live_class_id' => $liveClass->id
+            ]);
+
+            return redirect()->route('live-classes.public-join', $liveClass)
+                ->with('error', 'Payment verification failed. Please contact support.');
+        }
+    }
+
+    /**
+     * Handle Flutterwave webhook for live class payments
+     */
+    public function handleWebhook(Request $request)
+    {
+        $payload = $request->getContent();
+        $signature = $request->header('verif-hash');
+
+        // Verify webhook signature
+        $webhookHash = config('services.flutterwave.webhook_hash');
+        if ($signature !== $webhookHash) {
+            \Log::warning('Invalid Flutterwave webhook signature received for live class');
+            return response()->json(['status' => 'error'], 400);
+        }
+
+        $data = json_decode($payload, true);
+
+        if ($data['event'] === 'charge.completed') {
+            $txData = $data['data'];
+            $tx_ref = $txData['tx_ref'];
+
+            try {
+                // Only process if transaction is successful and not already processed
+                if ($txData['status'] === 'successful') {
+                    $payment = \App\Models\LiveClassPayment::where('transaction_id', $tx_ref)
+                        ->where('status', '!=', 'completed')
+                        ->first();
+
+                    if ($payment) {
+                        // Update payment record
+                        $payment->update([
+                            'status' => 'completed',
+                            'paid_at' => now(),
+                            'gateway_response' => $txData
+                        ]);
+
+                        \Log::info('Live class payment processed via webhook', [
+                            'payment_id' => $payment->id,
+                            'live_class_id' => $payment->live_class_id,
+                            'tx_ref' => $tx_ref,
+                            'amount' => $txData['amount']
+                        ]);
+                    }
+                }
+            } catch (\Exception $e) {
+                \Log::error('Flutterwave webhook processing failed for live class', [
+                    'error' => $e->getMessage(),
+                    'tx_ref' => $tx_ref
+                ]);
+                return response()->json(['status' => 'error'], 500);
+            }
+        }
+
+        return response()->json(['status' => 'success']);
     }
 
     /**
@@ -678,6 +857,40 @@ class LiveClassController extends Controller
                     'user_type' => 'student',
                     'email' => $student->email,
                     'name' => $student->full_name,
+                    'joined_at' => now(),
+                    'is_active' => true,
+                    'ip_address' => request()->ip(),
+                    'browser_info' => request()->userAgent(),
+                ]);
+            }
+            
+            $isTeacher = false;
+        } elseif (session('live_class_payment_' . $liveClass->id)) {
+            // Public user with valid payment session
+            $paymentSession = session('live_class_payment_' . $liveClass->id);
+            
+            // Verify payment is actually completed
+            $payment = \App\Models\LiveClassPayment::where('id', $paymentSession['payment_id'])
+                ->where('status', 'completed')
+                ->first();
+                
+            if (!$payment || $liveClass->status !== 'active') {
+                abort(403, 'You cannot join this class');
+            }
+            
+            // Create participant record if not exists
+            $existingParticipant = $liveClass->participants()
+                ->where('email', $paymentSession['email'])
+                ->where('user_type', 'public')
+                ->where('is_active', true)
+                ->whereNull('left_at')
+                ->first();
+                
+            if (!$existingParticipant) {
+                $liveClass->participants()->create([
+                    'email' => $paymentSession['email'],
+                    'name' => $paymentSession['name'],
+                    'user_type' => 'public',
                     'joined_at' => now(),
                     'is_active' => true,
                     'ip_address' => request()->ip(),

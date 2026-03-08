@@ -31,7 +31,11 @@
             No questions found for this exam.
         </div>
     @endif
-    <a href="{{ route('exams.index') }}" class="btn btn-secondary">Back to Exams</a>
+    <a href="{{ 
+        auth('admin')->check() ? route('admin.exams.index') :
+        (auth('teacher')->check() ? route('teacher.exams.index') :
+        (auth('staff')->check() ? route('dos.exams.index') : route('public.exams.index'))
+    ) }}" class="btn btn-secondary">Back to Exams</a>
 </div>
 
 <!-- Import Modal -->

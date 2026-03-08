@@ -187,6 +187,48 @@ class MarksController extends Controller
 
         $student = Student::with(['course', 'branch'])->findOrFail($request->student_id);
         
+        // Resolve student passport photo to base64 for consistency with admin template
+        $studentPhotoBase64 = null;
+        $studentPhotoMime   = 'image/jpeg';
+
+        if ($student->passport_photo) {
+            $photoPath = $student->passport_photo;
+
+            // If it's already a full URL (e.g. stored on S3 / external)
+            if (filter_var($photoPath, FILTER_VALIDATE_URL)) {
+                try {
+                    $imageData = file_get_contents($photoPath);
+                    if ($imageData !== false) {
+                        $studentPhotoMime   = mime_content_type('data://application/octet-stream;base64,' . base64_encode($imageData)) ?? 'image/jpeg';
+                        $studentPhotoBase64 = base64_encode($imageData);
+                    }
+                } catch (\Exception $e) {
+                    \Log::warning('Could not load remote student photo: ' . $e->getMessage());
+                }
+            } else {
+                // Local file — resolve absolute path
+                // Strip leading slash if present, then resolve via storage or public
+                $localPath = public_path($photoPath);
+
+                if (!file_exists($localPath)) {
+                    // Try storage path
+                    $localPath = storage_path('app/public/' . ltrim($photoPath, '/'));
+                }
+
+                if (file_exists($localPath)) {
+                    $imageData = file_get_contents($localPath);
+                    $ext = strtolower(pathinfo($localPath, PATHINFO_EXTENSION));
+                    $studentPhotoMime   = match($ext) {
+                        'png'  => 'image/png',
+                        'gif'  => 'image/gif',
+                        'webp' => 'image/webp',
+                        default => 'image/jpeg',
+                    };
+                    $studentPhotoBase64 = base64_encode($imageData);
+                }
+            }
+        }
+
         // Create a mock report card object for TVET template
         $reportCard = new \stdClass();
         $reportCard->student = $student;
@@ -251,7 +293,7 @@ class MarksController extends Controller
         // Get school information
         $schoolInfo = \App\Models\SchoolInformation::getActive();
 
-        return view('staff.marks.tvet-report', compact('reportCard', 'schoolInfo'));
+        return view('staff.marks.tvet-report', compact('reportCard', 'schoolInfo', 'studentPhotoBase64', 'studentPhotoMime'));
     }
 
     private function calculatePassRate($marks)

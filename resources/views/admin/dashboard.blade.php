@@ -193,6 +193,86 @@
                                 </a>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resources Management Section -->
+    <div class="row mb-4">
+        <div class="col-xl-12 col-lg-12 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-info">Resources Management</h6>
+                    <a href="{{ route('admin.resources.index') }}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-arrow-right"></i> Manage All Resources
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-2">
+                            <div class="text-center">
+                                <h4 class="text-info">{{ App\Models\Resource::count() }}</h4>
+                                <p class="text-muted">Total Resources</p>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="text-center">
+                                <h4 class="text-success">{{ App\Models\Resource::where('is_public', true)->count() }}</h4>
+                                <p class="text-muted">Public</p>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="text-center">
+                                <h4 class="text-warning">{{ App\Models\Resource::where('is_free', true)->count() }}</h4>
+                                <p class="text-muted">Free</p>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="text-center">
+                                <h4 class="text-danger">{{ App\Models\Resource::where('is_free', false)->where('price', '>', 0)->count() }}</h4>
+                                <p class="text-muted">Paid</p>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="text-center">
+                                <h4 class="text-primary">{{ App\Models\Resource::whereNotNull('document_blob')->count() }}</h4>
+                                <p class="text-muted">Documents</p>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="text-center">
+                                <h4 class="text-secondary">{{ App\Models\Resource::whereNotNull('video_blob')->count() }}</h4>
+                                <p class="text-muted">Videos</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <a href="{{ route('admin.resources.create') }}" class="btn btn-success btn-block">
+                                    <i class="fas fa-plus"></i> Upload New Resource
+                                </a>
+                            </div>
+                            <div class="col-md-4">
+                                <a href="{{ route('admin.resources.index') }}?filter=public" class="btn btn-info btn-block">
+                                    <i class="fas fa-eye"></i> View Public Resources
+                                </a>
+                            </div>
+                            <div class="col-md-4">
+                                <a href="{{ route('public.resources.index') }}" target="_blank" class="btn btn-warning btn-block">
+                                    <i class="fas fa-external-link-alt"></i> Public Resource Page
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
         <div class="col-xl-8 col-lg-7 mb-4">
             <div class="card shadow h-100">
                 <div class="card-header py-3 d-flex justify-content-between align-items-center">

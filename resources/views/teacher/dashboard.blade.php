@@ -23,7 +23,7 @@
                     <i class="bi bi-clipboard-data fs-1 text-primary"></i>
                     <h5 class="card-title mt-2">Exams</h5>
                     <p class="card-text">View and manage exams.</p>
-                    <a href="{{ route('exams.index') }}" class="btn btn-outline-primary btn-sm">Go to Exams</a>
+                    <a href="{{ route('teacher.exams.index') }}" class="btn btn-outline-primary btn-sm">Go to Exams</a>
                 </div>
             </div>
         </div>
@@ -35,6 +35,17 @@
                     <h5 class="card-title mt-2">Study Resources</h5>
                     <p class="card-text">Upload YouTube links or documents for students.</p>
                     <a href="{{ route('teacher.resources.index') }}" class="btn btn-outline-secondary btn-sm">Upload Resource</a>
+                </div>
+            </div>
+        </div>
+        <!-- Live Classes Card -->
+        <div class="col-md-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-camera-video fs-1 text-danger"></i>
+                    <h5 class="card-title mt-2">Live Classes</h5>
+                    <p class="card-text">Manage and start your assigned live classes.</p>
+                    <a href="{{ route('teacher.live-classes.index') }}" class="btn btn-outline-danger btn-sm">Manage Classes</a>
                 </div>
             </div>
         </div>

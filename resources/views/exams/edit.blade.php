@@ -265,7 +265,7 @@ body {
     border: 1px solid #cbd5e1;
     border-radius: var(--radius-md);
     padding: 20px;
-    margin-bottom: 20px;
+    margin-bottom: 24px;
 }
 
 .lc-token-title {
@@ -302,6 +302,34 @@ body {
     border-radius: 6px;
     font-size: 12px;
     font-weight: 500;
+}
+
+/* ============================================
+   PUBLIC SECTION
+============================================ */
+.lc-public-section {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border: 1px solid #7dd3fc;
+    border-radius: var(--radius-md);
+    padding: 20px;
+    margin-bottom: 24px;
+}
+
+.lc-public-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.lc-public-description {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+    line-height: 1.5;
 }
 
 /* ============================================
@@ -499,12 +527,52 @@ body {
                     </div>
                 </div>
 
+                <!-- Public Access Settings -->
+                <div class="lc-public-section">
+                    <h3 class="lc-public-title">
+                        🌐 Public Access Settings
+                    </h3>
+                    <p class="lc-public-description">
+                        Configure public access for this exam. When enabled, external users can access and attempt this exam.
+                    </p>
+                    <div class="lc-form-grid">
+                        <div class="lc-form-group">
+                            <label class="lc-label">
+                                <input type="checkbox" name="is_public" value="1" {{ old('is_public', $exam->is_public) ? 'checked' : '' }} class="mr-2">
+                                Enable Public Access
+                            </label>
+                            <p class="text-sm text-gray-600 mt-1">Allow external users to access this exam</p>
+                        </div>
+                        
+                        <div class="lc-form-group">
+                            <label class="lc-label">
+                                Public Price (RWF)
+                            </label>
+                            <input type="number" name="public_price" class="lc-input" value="{{ old('public_price', $exam->public_price ?? 0) }}" min="0" step="0.01">
+                            <p class="text-sm text-gray-600 mt-1">Price for public access (0 = free)</p>
+                            @error('public_price')
+                                <small style="color: var(--danger); margin-top: 4px; display: block;">{{ $message }}</small>
+                            @enderror
+                        </div>
+                    </div>
+                    
+                    @if($exam->is_public)
+                        <div style="margin-top: 12px; padding: 8px 12px; background: #ecfdf5; border: 1px solid #34d399; border-radius: 6px; font-size: 13px; color: #065f46;">
+                            <strong>Current Status:</strong> This exam is publicly accessible at {{ route('public.exams.show', $exam) }}
+                        </div>
+                    @else
+                        <div style="margin-top: 12px; padding: 8px 12px; background: #fef3c7; border: 1px solid #fcd34d; border-radius: 6px; font-size: 13px; color: #92400e;">
+                            <strong>Current Status:</strong> This exam is only accessible to registered students.
+                        </div>
+                    @endif
+                </div>
+
                 <!-- Form Actions -->
                 <div class="lc-btn-group">
                     <button type="submit" class="lc-btn lc-btn-primary">
                         💾 Update Exam
                     </button>
-                    <a href="{{ route('exams.index') }}" class="lc-btn lc-btn-secondary">
+                    <a href="{{ route('admin.exams.index') }}" class="lc-btn lc-btn-secondary">
                         ← Cancel
                     </a>
                 </div>

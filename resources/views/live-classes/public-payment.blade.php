@@ -83,9 +83,12 @@
                     </div>
 
                     <!-- Submit Button -->
-                    <button type="submit" 
+                    <button type="submit" id="paymentSubmitBtn"
                             class="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors">
-                        Proceed to Payment
+                        <span id="paymentBtnText">Proceed to Payment</span>
+                        <span id="paymentSpinner" class="hidden">
+                            <i class="fas fa-spinner fa-spin mr-2"></i>Processing...
+                        </span>
                     </button>
                 </form>
 
@@ -104,3 +107,56 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const paymentForm = document.querySelector('form[action*="payment/process"]');
+    const submitBtn = document.getElementById('paymentSubmitBtn');
+    const btnText = document.getElementById('paymentBtnText');
+    const spinner = document.getElementById('paymentSpinner');
+
+    if (paymentForm) {
+        paymentForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Show loading state
+            submitBtn.disabled = true;
+            btnText.classList.add('hidden');
+            spinner.classList.remove('hidden');
+
+            const formData = new FormData(paymentForm);
+            
+            fetch(paymentForm.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Redirect to Flutterwave payment page
+                    window.location.href = data.redirect_url;
+                } else {
+                    // Show error and reset form
+                    alert(data.message || 'Payment initialization failed');
+                    submitBtn.disabled = false;
+                    btnText.classList.remove('hidden');
+                    spinner.classList.add('hidden');
+                }
+            })
+            .catch(error => {
+                console.error('Payment error:', error);
+                alert('Payment initialization failed. Please try again.');
+                submitBtn.disabled = false;
+                btnText.classList.remove('hidden');
+                spinner.classList.add('hidden');
+            });
+        });
+    }
+});
+</script>
+@endpush

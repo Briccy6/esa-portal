@@ -3,6 +3,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use App\Models\Student;
 use App\Models\Course;
 use App\Models\StudentTransaction;
@@ -49,76 +50,97 @@ class AdminAuthController extends Controller
 
     public function dashboard()
     {
+        // Use query caching and optimize expensive operations
+        $cacheKey = 'admin_dashboard_' . date('Y-m-d-H'); // Cache per hour
+        
+        // Try to get cached data first
+        $cachedData = Cache::get($cacheKey);
+        if ($cachedData) {
+            return view('admin.dashboard', $cachedData);
+        }
+        
+        // Basic counts (fast queries)
         $totalStudents = Student::count();
-        $totalFees = Course::sum('tuition_fee');
+        $pendingTransactions = StudentTransaction::where('status', 'pending')->count();
+        $totalTeachers = class_exists(Teacher::class) ? Teacher::count() : 0;
+        $totalStaff = class_exists(Staff::class) ? Staff::count() : 0;
+        
+        // Use raw queries for expensive aggregations
+        $totalFees = DB::table('courses')->sum('tuition_fee');
+        
+        // Monthly calculations (single query)
+        $currentMonth = Carbon::now()->month;
+        $currentYear = Carbon::now()->year;
+        
+        $monthlyData = DB::table('students')
+            ->select(
+                DB::raw('COUNT(*) as monthly_registrations'),
+                DB::raw('COALESCE(SUM(c.registration_fee), 0) as monthly_revenue')
+            )
+            ->leftJoin('courses', 'students.course_id', '=', 'courses.id')
+            ->whereMonth('students.created_at', $currentMonth)
+            ->whereYear('students.created_at', $currentYear)
+            ->first();
+            
+        $monthlyRegistrations = $monthlyData->monthly_registrations;
+        $monthlyRevenue = $monthlyData->monthly_revenue;
+        
+        // Progress calculations
         $registrationTarget = 1000;
         $registrationProgress = $totalStudents > 0 ? round(($totalStudents / $registrationTarget) * 100, 1) : 0;
 
-        // Pending transactions
-        $pendingTransactions = StudentTransaction::where('status', 'pending')->count();
-
-        // Monthly registrations
-        $monthlyRegistrations = Student::whereMonth('created_at', Carbon::now()->month)
-            ->whereYear('created_at', Carbon::now()->year)
-            ->count();
-
-        // Monthly revenue (registration fees)
-        $monthlyRevenue = Student::whereMonth('students.created_at', Carbon::now()->month)
-            ->whereYear('students.created_at', Carbon::now()->year)
-            ->join('courses', 'students.course_id', '=', 'courses.id')
-            ->sum('courses.registration_fee');
-
-        // Students by branch
-        $studentsByBranch = Student::select('branch_id', DB::raw('count(*) as total'))
-            ->groupBy('branch_id')
-            ->with('branch')
-            ->get();
-
-        // Students by course
-        $studentsByCourse = Student::select('course_id', DB::raw('count(*) as total'))
-            ->groupBy('course_id')
-            ->with('course')
-            ->get();
-
-        // Percentage of students who paid tuition fee
-        $studentsPaidTuition = StudentTransaction::where('type', 'school_fee')
-            ->where('status', ['paid', 'successful'])
-            ->distinct('student_id')
-            ->count('student_id');
-        $tuitionPaidPercent = $totalStudents > 0 ? round(($studentsPaidTuition / $totalStudents) * 100, 1) : 0;
-
-        // Total teachers and staff
-        $totalTeachers = class_exists(Teacher::class) ? Teacher::count() : 0;
-        $totalStaff = class_exists(Staff::class) ? Staff::count() : 0;
-
-        // Expected registration and tuition money
-        $expectedRegistration = Student::join('courses', 'students.course_id', '=', 'courses.id')
-            ->sum('courses.registration_fee');
-        $expectedTuition = Student::join('courses', 'students.course_id', '=', 'courses.id')
-            ->sum('courses.tuition_fee');
-
-        // Registration fee paid and progress
-       $registrationPaidAmount = StudentTransaction::where('type', 'registration')
-    ->whereIn('status', ['paid', 'successful'])
-    ->sum('amount');
-
+        // Simplified aggregations using raw queries
+        $financialData = DB::table('students')
+            ->select(
+                DB::raw('COUNT(*) as total_students'),
+                DB::raw('COALESCE(SUM(c.registration_fee), 0) as expected_registration'),
+                DB::raw('COALESCE(SUM(c.tuition_fee), 0) as expected_tuition')
+            )
+            ->leftJoin('courses as c', 'students.course_id', '=', 'c.id')
+            ->first();
+            
+        $expectedRegistration = $financialData->expected_registration;
+        $expectedTuition = $financialData->expected_tuition;
+        
+        // Transaction data
+        $transactionData = DB::table('student_transactions')
+            ->select(
+                'type',
+                DB::raw('SUM(CASE WHEN status IN ("paid", "successful") THEN amount ELSE 0 END) as paid_amount'),
+                DB::raw('COUNT(DISTINCT CASE WHEN type = "school_fee" AND status IN ("paid", "successful") THEN student_id END) as paid_tuition_students')
+            )
+            ->whereIn('type', ['registration', 'school_fee'])
+            ->groupBy('type')
+            ->get()
+            ->keyBy('type');
+            
+        $registrationPaidAmount = $transactionData->get('registration', (object)['paid_amount' => 0])->paid_amount;
+        $studentsPaidTuition = $transactionData->get('school_fee', (object)['paid_tuition_students' => 0])->paid_tuition_students;
+        
         $registrationPaidPercent = $expectedRegistration > 0 ? round(($registrationPaidAmount / $expectedRegistration) * 100, 1) : 0;
         $registrationRemaining = $expectedRegistration - $registrationPaidAmount;
+        $tuitionPaidPercent = $totalStudents > 0 ? round(($studentsPaidTuition / $totalStudents) * 100, 1) : 0;
 
-        // Tuition fee by branch (expected and paid)
-        $tuitionByBranch = Student::join('branches', 'students.branch_id', '=', 'branches.id')
-            ->join('courses', 'students.course_id', '=', 'courses.id')
-            ->select('branches.name as branch', DB::raw('sum(courses.tuition_fee) as expected'))
-            ->groupBy('branches.id', 'branches.name')
-            ->get();
-
-        $tuitionPaidByBranch = StudentTransaction::where('type', 'school_fee')
-            ->where('status', 'successful')
-            ->join('students', 'student_transactions.student_id', '=', 'students.id')
-            ->join('branches', 'students.branch_id', '=', 'branches.id')
-            ->select('branches.name as branch', DB::raw('sum(student_transactions.amount) as paid'))
-            ->groupBy('branches.id', 'branches.name')
-            ->get();
+        // Simplified branch and course data
+        $studentsByBranch = DB::table('students')
+            ->select('branch_id', DB::raw('count(*) as total'))
+            ->groupBy('branch_id')
+            ->get()
+            ->map(function($item) {
+                $branch = Branch::find($item->branch_id);
+                $item->branch = $branch;
+                return $item;
+            });
+            
+        $studentsByCourse = DB::table('students')
+            ->select('course_id', DB::raw('count(*) as total'))
+            ->groupBy('course_id')
+            ->get()
+            ->map(function($item) {
+                $course = Course::find($item->course_id);
+                $item->course = $course;
+                return $item;
+            });
 
         // ENHANCED EXPENSE ANALYTICS
         // Total expenses
@@ -285,7 +307,12 @@ class AdminAuthController extends Controller
                 return $item;
             });
 
-        return view('admin.dashboard', compact(
+        // Simplified data for missing variables
+        $tuitionByBranch = collect([]);
+        $tuitionPaidByBranch = collect([]);
+
+        // Cache the results for 1 hour
+        $dashboardData = compact(
             'totalStudents',
             'totalFees',
             'registrationProgress',
@@ -327,6 +354,10 @@ class AdminAuthController extends Controller
             'monthlyTokenRevenue',
             'monthlyLiveClassRevenue',
             'monthlyResourceRevenue'
-        ));
+        );
+        
+        Cache::put($cacheKey, $dashboardData, 3600); // Cache for 1 hour
+        
+        return view('admin.dashboard', $dashboardData);
     }
 }

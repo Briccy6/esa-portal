@@ -100,8 +100,19 @@
                                 {{-- Student --}}
                                 <td>
                                     <div class="rc-student-cell">
-                                        <div class="rc-avatar rc-avatar--blue">
-                                            {{ strtoupper(substr($reportCard->student->full_name, 0, 1)) }}
+                                        <div class="rc-avatar @if(!$reportCard->student->passport_photo) rc-avatar--blue @endif">
+                                            @if($reportCard->student->passport_photo)
+                                                @if(str_contains($reportCard->student->passport_photo, 'http'))
+                                                    <img src="{{ $reportCard->student->passport_photo }}" alt="{{ $reportCard->student->full_name }}">
+                                                @else
+                                                    <img src="{{ asset($reportCard->student->passport_photo) }}" alt="{{ $reportCard->student->full_name }}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                                    <div style="display: none; width: 34px; height: 34px; background: linear-gradient(135deg,#0d6efd,#0a58ca); border-radius: 50%; align-items: center; justify-content: center;">
+                                                        <div style="color: #fff; font-size: 0.8rem; font-weight: 700;">{{ strtoupper(substr($reportCard->student->full_name, 0, 1)) }}</div>
+                                                    </div>
+                                                @endif
+                                            @else
+                                                {{ strtoupper(substr($reportCard->student->full_name, 0, 1)) }}
+                                            @endif
                                         </div>
                                         <div class="rc-student-cell__info">
                                             <span class="rc-student-cell__name">{{ $reportCard->student->full_name }}</span>
@@ -388,6 +399,12 @@
     display: flex; align-items: center; justify-content: center;
     font-weight: 700; font-size: 0.8rem; color: #fff;
     flex-shrink: 0;
+    overflow: hidden;
+    background: linear-gradient(135deg,#0d6efd,#0a58ca);
+}
+.rc-avatar img {
+    width: 100%; height: 100%; object-fit: cover;
+    border-radius: 50%;
 }
 .rc-avatar--blue { background: linear-gradient(135deg,#0d6efd,#0a58ca); }
 .rc-student-cell__info {

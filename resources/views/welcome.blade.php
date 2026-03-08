@@ -392,6 +392,7 @@
                 <!-- Desktop Navigation -->
                 <nav class="hidden md:flex items-center space-x-6">
                     <a href="#home" class="text-text-light hover:text-accent-color font-medium transition duration-300">Home</a>
+                    <a href="{{ route('public.exams.index') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300">Exams</a>
                     <a href="#announcements" class="text-text-light hover:text-accent-color font-medium transition duration-300">Announcements</a>
                     <a href="{{ route('blogs.index') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300">Blog</a>
                     <a href="#quick-access" class="text-text-light hover:text-accent-color font-medium transition duration-300">Portals</a>
@@ -420,7 +421,7 @@
                             </a>
                         </div>
                     </div>
-                    <a href="{{ route('students.create') }}" class="btn-primary px-6 py-2 rounded-lg font-medium shadow-md">
+                    <a href="{{ route('register.choice') }}" class="btn-primary px-6 py-2 rounded-lg font-medium shadow-md">
                         Register
                     </a>
                 </div>
@@ -436,6 +437,7 @@
     <div class="md:hidden bg-white shadow-lg py-4" x-data="{ open: false }" x-show="open" @click.away="open = false" x-transition.origin.top>
         <nav class="flex flex-col items-center space-y-4">
             <a href="#home" class="text-text-light hover:text-accent-color font-medium transition duration-300" @click="open = false">Home</a>
+            <a href="{{ route('public.exams.index') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300" @click="open = false">Exams</a>
             <a href="#announcements" class="text-text-light hover:text-accent-color font-medium transition duration-300" @click="open = false">Announcements</a>
             <a href="{{ route('blogs.index') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300" @click="open = false">Blog</a>
             <a href="#quick-access" class="text-text-light hover:text-accent-color font-medium transition duration-300" @click="open = false">Portals</a>
@@ -462,7 +464,7 @@
                     </a>
                 </div>
             </div>
-            <a href="{{ route('students.create') }}" class="btn-primary w-full px-6 py-2 rounded-lg font-medium shadow-md">
+            <a href="{{ route('register.choice') }}" class="btn-primary w-full px-6 py-2 rounded-lg font-medium shadow-md">
                 Register
             </a>
         </nav>
@@ -505,6 +507,114 @@
         <!-- Carousel Controls -->
         <div class="carousel-control left" onclick="plusSlides(-1)">&#10094;</div>
         <div class="carousel-control right" onclick="plusSlides(1)">&#10095;</div>
+    </section>
+
+    <!-- Public Exams Section -->
+    <section id="public-exams" class="py-16 bg-bg-light">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-10">
+                <h2 class="text-4xl font-extrabold section-heading mb-4">
+                    Test Your <span class="text-accent-color">Skills</span>
+                </h2>
+                <p class="text-lg text-text-light">Practice and prepare for your exams with our comprehensive skill assessments. Build confidence before the real exam.</p>
+            </div>
+            
+            <div class="max-w-4xl mx-auto">
+                <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-8 border border-purple-100 shadow-lg">
+                    <div class="flex items-center mb-6">
+                        <div class="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center mr-4 shadow-md">
+                            <i class="fas fa-brain text-white text-xl"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold section-heading">Skill Assessment Platform</h3>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div class="text-center">
+                            <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-dumbbell text-purple-600 text-2xl"></i>
+                            </div>
+                            <h4 class="font-semibold text-lg mb-2">Practice Tests</h4>
+                            <p class="text-gray-600 text-sm">Build confidence through repeated practice</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-chart-line text-green-600 text-2xl"></i>
+                            </div>
+                            <h4 class="font-semibold text-lg mb-2">Track Progress</h4>
+                            <p class="text-gray-600 text-sm">Monitor improvement over time</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-graduation-cap text-blue-600 text-2xl"></i>
+                            </div>
+                            <h4 class="font-semibold text-lg mb-2">Exam Ready</h4>
+                            <p class="text-gray-600 text-sm">Be prepared for real assessments</p>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <a href="{{ route('public.exams.index') }}" class="bg-purple-600 text-white px-8 py-3 rounded-full text-lg font-semibold shadow-xl hover:scale-105 transition-all">
+                            <i class="fas fa-dumbbell mr-2"></i>Start Skill Testing
+                        </a>
+                        <p class="text-sm text-gray-600 mt-3">Multiple subjects • Affordable pricing • Build confidence • Get exam-ready</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Resources Section -->
+    <section id="resources" class="py-16 bg-white">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-10">
+                <h2 class="text-4xl font-extrabold section-heading mb-4">
+                    Educational <span class="text-accent-color">Resources</span>
+                </h2>
+                <p class="text-lg text-text-light">Access quality learning materials, notes, and videos from our expert teachers.</p>
+            </div>
+            
+            <div class="max-w-4xl mx-auto">
+                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-8 border border-blue-100 shadow-lg">
+                    <div class="flex items-center mb-6">
+                        <div class="w-12 h-12 bg-secondary-color rounded-lg flex items-center justify-center mr-4 shadow-md">
+                            <i class="fas fa-book text-white text-xl"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold section-heading">Public Learning Resources</h3>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div class="text-center">
+                            <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-file-alt text-blue-600 text-2xl"></i>
+                            </div>
+                            <h4 class="font-semibold text-lg mb-2">Documents</h4>
+                            <p class="text-gray-600 text-sm">PDF notes, worksheets, and study guides</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-video text-red-600 text-2xl"></i>
+                            </div>
+                            <h4 class="font-semibold text-lg mb-2">Videos</h4>
+                            <p class="text-gray-600 text-sm">Educational videos and recorded lessons</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-download text-green-600 text-2xl"></i>
+                            </div>
+                            <h4 class="font-semibold text-lg mb-2">Free Access</h4>
+                            <p class="text-gray-600 text-sm">Many resources available for free download</p>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <a href="{{ route('public.resources.index') }}" class="btn-primary px-8 py-3 rounded-full text-lg font-semibold shadow-xl hover:scale-105">
+                            <i class="fas fa-external-link-alt mr-2"></i>Browse Resources
+                        </a>
+                        <p class="text-sm text-gray-600 mt-3">Search and filter by course, teacher, or topic</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </section>
 
     <!-- Announcements Section -->

@@ -51,6 +51,7 @@ use App\Http\Controllers\TokenController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\SecretaryAuthController;
 use App\Http\Controllers\ReportCardController;
+use App\Http\Controllers\PublicExamController;
 
 /*
 |--------------------------------------------------------------------------
@@ -127,6 +128,17 @@ Route::get('/', function () {
     return view('welcome', compact('systemName', 'systemLogo', 'publicAnnouncements'));
 })->name('welcome');
 
+// Public Exam Routes
+Route::prefix('public')->name('public.')->group(function () {
+    Route::get('/exams', [PublicExamController::class, 'index'])->name('exams.index');
+    Route::get('/exams/{exam}', [PublicExamController::class, 'show'])->name('exams.show');
+    Route::get('/exams/{exam}/payment', [PublicExamController::class, 'showPayment'])->name('exams.payment');
+    Route::post('/exams/{exam}/payment', [PublicExamController::class, 'processPayment'])->name('exams.payment.process');
+    Route::get('/exams/{exam}/payment/success', [PublicExamController::class, 'paymentSuccess'])->name('exams.payment.success');
+    Route::get('/exams/{exam}/start', [PublicExamController::class, 'startExam'])->name('exams.start');
+    Route::get('/api/exams/{exam}/check-access', [PublicExamController::class, 'checkAccess'])->name('exams.check-access');
+});
+
 // Course AJAX
 Route::get('/branches-by-course', [CourseController::class, 'getBranchesByCourse']);
 // Marks AJAX endpoint
@@ -153,6 +165,11 @@ Route::prefix('api')->group(function () {
 
 // admin expenses export
 Route::get('admin/expenses/export', [\App\Http\Controllers\Admin\ReportController::class, 'exportExpenses'])->name('admin.expenses.export');
+
+// Registration choice page
+Route::get('/register', function () {
+    return view('auth.register-choice');
+})->name('register.choice');
 
 // Student registration
 Route::get('/students/create', [StudentController::class, 'create'])->name('students.create');
@@ -196,7 +213,20 @@ Route::prefix('admin')->group(function () {
 if (! Route::has('admin.teachers.index')) {
     Route::middleware('auth:admin')->get('/admin/teachers', [TeacherController::class, 'index'])->name('admin.teachers.index');
 }
-// -----------------------------------------------------------------------------
+
+// Teacher protected routes
+Route::middleware('auth:teacher')->prefix('teacher')->name('teacher.')->group(function () {
+    Route::get('dashboard', [\App\Http\Controllers\TeacherAuthController::class, 'dashboard'])->name('dashboard');
+    
+    // Teacher Live Classes
+    Route::get('live-classes', [\App\Http\Controllers\TeacherLiveClassController::class, 'index'])->name('live-classes.index');
+    Route::get('live-classes/{liveClass}', [\App\Http\Controllers\TeacherLiveClassController::class, 'show'])->name('live-classes.show');
+    Route::post('live-classes/{liveClass}/start', [\App\Http\Controllers\TeacherLiveClassController::class, 'start'])->name('live-classes.start');
+    Route::post('live-classes/{liveClass}/end', [\App\Http\Controllers\TeacherLiveClassController::class, 'end'])->name('live-classes.end');
+    Route::get('live-classes/{liveClass}/requests', [\App\Http\Controllers\TeacherLiveClassController::class, 'manageRequests'])->name('live-classes.requests');
+    Route::post('live-classes/{liveClass}/requests/{requestId}/approve', [\App\Http\Controllers\TeacherLiveClassController::class, 'approveRequest'])->name('live-classes.requests.approve');
+    Route::post('live-classes/{liveClass}/requests/{requestId}/reject', [\App\Http\Controllers\TeacherLiveClassController::class, 'rejectRequest'])->name('live-classes.requests.reject');
+});
 
 // Admin protected routes
 Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -769,6 +799,47 @@ Route::get('/live-classes/{liveClass}/room', [LiveClassController::class, 'room'
 Route::get('/live-classes/{liveClass}/public-join', [LiveClassController::class, 'publicJoin'])->name('live-classes.public-join');
 Route::get('/live-classes/{liveClass}/payment', [LiveClassController::class, 'showPaymentForm'])->name('live-classes.payment');
 Route::post('/live-classes/{liveClass}/payment', [LiveClassController::class, 'processPayment'])->name('live-classes.payment.process');
+Route::get('/live-classes/{liveClass}/payment/callback', [LiveClassController::class, 'handlePaymentCallback'])->name('live-classes.payment.callback');
+Route::post('/webhooks/flutterwave/live-classes', [LiveClassController::class, 'handleWebhook'])->name('webhooks.flutterwave.live-classes');
+
+// Client Authentication Routes
+Route::prefix('auth/client')->name('client.auth.')->group(function () {
+    Route::get('/register', [App\Http\Controllers\Auth\Client\ClientAuthController::class, 'showRegistrationForm'])->name('register');
+    Route::post('/register', [App\Http\Controllers\Auth\Client\ClientAuthController::class, 'register']);
+    Route::get('/login', [App\Http\Controllers\Auth\Client\ClientAuthController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [App\Http\Controllers\Auth\Client\ClientAuthController::class, 'login']);
+    Route::post('/logout', [App\Http\Controllers\Auth\Client\ClientAuthController::class, 'logout'])->name('logout');
+    
+    // Google OAuth Routes
+    Route::get('/google', [App\Http\Controllers\Auth\Client\ClientAuthController::class, 'redirectToGoogle'])->name('google');
+    Route::get('/google/callback', [App\Http\Controllers\Auth\Client\ClientAuthController::class, 'handleGoogleCallback'])->name('google.callback');
+});
+
+// Client Dashboard Route
+Route::middleware('auth:client')->prefix('client')->name('client.')->group(function () {
+    Route::get('/dashboard', [App\Http\Controllers\Auth\Client\ClientAuthController::class, 'showDashboard'])->name('dashboard');
+});
+Route::prefix('public-subscriptions')->name('public.subscriptions.')->group(function () {
+    Route::get('/', [App\Http\Controllers\PublicSubscriptionController::class, 'index'])->name('index');
+    Route::get('/register', [App\Http\Controllers\PublicSubscriptionController::class, 'showRegistration'])->name('register');
+    Route::post('/register', [App\Http\Controllers\PublicSubscriptionController::class, 'register'])->name('register.submit');
+    Route::get('/login', [App\Http\Controllers\PublicSubscriptionController::class, 'showLogin'])->name('login');
+    Route::post('/login', [App\Http\Controllers\PublicSubscriptionController::class, 'login'])->name('login.submit');
+    Route::post('/logout', [App\Http\Controllers\PublicSubscriptionController::class, 'logout'])->name('logout');
+    Route::get('/dashboard', [App\Http\Controllers\PublicSubscriptionController::class, 'dashboard'])->name('dashboard')->middleware('auth:client');
+    Route::get('/purchase/{subscription}', [App\Http\Controllers\PublicSubscriptionController::class, 'showPurchase'])->name('purchase')->middleware('auth:client');
+    Route::post('/purchase/{subscription}/initialize', [App\Http\Controllers\PublicSubscriptionController::class, 'initializePayment'])->name('payment.initialize')->middleware('auth:client');
+    Route::get('/payment/callback', [App\Http\Controllers\PublicSubscriptionController::class, 'handlePaymentCallback'])->name('payment.callback');
+});
+
+// Public Token Routes
+Route::prefix('tokens')->name('public.tokens.')->group(function () {
+    Route::get('/purchase', [App\Http\Controllers\PublicTokenController::class, 'purchase'])->name('purchase')->middleware('auth:client');
+    Route::post('/purchase', [App\Http\Controllers\PublicTokenController::class, 'processPurchase'])->name('purchase.process')->middleware('auth:client');
+    Route::get('/callback', [App\Http\Controllers\PublicTokenController::class, 'handleCallback'])->name('callback');
+    Route::get('/', [App\Http\Controllers\PublicTokenController::class, 'index'])->name('index')->middleware('auth:client');
+    Route::post('/logout', [App\Http\Controllers\PublicTokenController::class, 'logout'])->name('logout');
+});
 
 // Student Request Routes
 Route::middleware('auth:student')->group(function () {
@@ -869,6 +940,18 @@ Route::get('teacher/resources/{resource}/view-document', [\App\Http\Controllers\
 // Blog Routes
 Route::get('/blogs', [BlogController::class, 'publicIndex'])->name('blogs.index');
 Route::get('/blogs/{blog:slug}', [BlogController::class, 'show'])->name('blogs.show');
+
+// Public Exam Routes
+Route::prefix('exams')->name('public.exams.')->group(function () {
+    Route::get('/', [App\Http\Controllers\PublicExamController::class, 'index'])->name('index');
+    Route::get('/{exam}', [App\Http\Controllers\PublicExamController::class, 'show'])->name('show');
+    Route::get('/{exam}/payment', [App\Http\Controllers\PublicExamController::class, 'showPayment'])->name('payment');
+    Route::post('/{exam}/payment', [App\Http\Controllers\PublicExamController::class, 'processPayment'])->name('payment.process');
+    Route::get('/{exam}/payment/callback', [App\Http\Controllers\PublicExamController::class, 'handlePaymentCallback'])->name('payment.callback');
+    Route::get('/{exam}/payment/success', [App\Http\Controllers\PublicExamController::class, 'paymentSuccess'])->name('payment.success');
+    Route::get('/{exam}/start', [App\Http\Controllers\PublicExamController::class, 'startExam'])->name('start');
+    Route::get('/{exam}/check-access', [App\Http\Controllers\PublicExamController::class, 'checkAccess'])->name('check-access');
+});
 
 // Admin Blog Routes
 Route::middleware('auth:admin')->prefix('admin')->name('admin.')->group(function () {
@@ -992,6 +1075,19 @@ Route::middleware(['auth:admin'])->prefix('admin/subscriptions')->name('subscrip
     Route::delete('/{subscription}', [SubscriptionController::class, 'adminDestroy'])->name('admin-destroy');
     Route::get('/student-subscriptions', [SubscriptionController::class, 'studentSubscriptions'])->name('student-subscriptions');
     Route::post('/extend/{studentSubscription}', [SubscriptionController::class, 'extendSubscription'])->name('extend');
+});
+
+// Public Resource Routes
+// Public Resources Routes
+Route::prefix('resources')->name('public.resources.')->group(function () {
+    Route::get('/', [App\Http\Controllers\PublicResourceController::class, 'index'])->name('index');
+    Route::get('/{resource}', [App\Http\Controllers\PublicResourceController::class, 'show'])->name('show');
+    Route::get('/{resource}/download', [App\Http\Controllers\PublicResourceController::class, 'downloadDocument'])->name('download');
+    Route::get('/{resource}/preview', [App\Http\Controllers\PublicResourceController::class, 'previewDocument'])->name('preview');
+    Route::get('/{resource}/payment', [App\Http\Controllers\PublicResourceController::class, 'showPayment'])->name('payment');
+    Route::post('/{resource}/payment', [App\Http\Controllers\PublicResourceController::class, 'processPayment'])->name('payment.process');
+    Route::get('/{resource}/payment/callback', [App\Http\Controllers\PublicResourceController::class, 'handlePaymentCallback'])->name('payment.callback');
+    Route::get('/{resource}/payment/success', [App\Http\Controllers\PublicResourceController::class, 'paymentSuccess'])->name('payment.success');
 });
 
 // Public Exam Access Routes

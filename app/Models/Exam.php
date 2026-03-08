@@ -199,6 +199,77 @@ class Exam extends Model
         return $this->is_public && $this->public_price > 0;
     }
 
+    public function canBeAttemptedByClient($client)
+    {
+        if (!$this->isAccessible()) {
+            return [
+                'allowed' => false,
+                'reason' => 'Exam is not currently accessible',
+                'action' => 'wait'
+            ];
+        }
+
+        // If client has active subscription that covers this exam
+        if ($client && $client->hasActiveSubscription()) {
+            $activeSubscription = $client->activeSubscription;
+            if ($activeSubscription && $activeSubscription->subscription->tokens_included >= $this->getCalculatedTokenCost()) {
+                return [
+                    'allowed' => true,
+                    'reason' => 'Covered by subscription',
+                    'action' => 'attempt'
+                ];
+            }
+        }
+
+        // If exam is public and free
+        if ($this->is_public && !$this->requiresPayment()) {
+            return [
+                'allowed' => true,
+                'reason' => 'Public free exam',
+                'action' => 'attempt'
+            ];
+        }
+
+        // If exam is public but requires payment
+        if ($this->is_public && $this->requiresPayment()) {
+            return [
+                'allowed' => false,
+                'reason' => 'Payment required',
+                'action' => 'pay',
+                'amount' => $this->public_price
+            ];
+        }
+
+        // If client exists but doesn't have enough tokens
+        if ($client && $this->requiresTokens()) {
+            $currentTokens = $client->getCurrentTokens();
+            $requiredTokens = $this->getCalculatedTokenCost();
+            
+            if ($currentTokens >= $requiredTokens) {
+                return [
+                    'allowed' => true,
+                    'reason' => 'Sufficient tokens',
+                    'action' => 'attempt'
+                ];
+            } else {
+                return [
+                    'allowed' => false,
+                    'reason' => 'Insufficient tokens',
+                    'action' => 'buy_tokens',
+                    'required' => $requiredTokens,
+                    'has' => $currentTokens
+                ];
+            }
+        }
+
+        // Default: not allowed
+        return [
+            'allowed' => false,
+            'reason' => 'Access not granted',
+            'action' => 'subscribe'
+        ];
+    }
+
     public function canBeAttemptedByStudent($student)
     {
         if (!$this->isAccessible()) {

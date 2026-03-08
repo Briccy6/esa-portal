@@ -46,6 +46,10 @@ public function academicYear()
     {
         return $this->hasMany(Mark::class);
     }
+    public function resources()
+    {
+        return $this->hasMany(Resource::class);
+    }
 
     // Accessor for total cost (excluding registration fee, applying discount as %)
     public function getTotalCostAttribute()

@@ -276,6 +276,14 @@ class ExamController extends Controller
      */
     public function update(Request $request, Exam $exam)
     {
+        // Debug: Log the incoming request data
+        \Log::info('Exam update request data:', [
+            'is_public' => $request->has('is_public'),
+            'is_public_value' => $request->input('is_public'),
+            'public_price' => $request->input('public_price'),
+            'all_request_data' => $request->all()
+        ]);
+
         // Set default token cost to 10 if not provided or empty
         if (!$request->has('token_cost') || $request->token_cost === '' || $request->token_cost === null) {
             $request->merge(['token_cost' => 10]);
@@ -300,6 +308,8 @@ class ExamController extends Controller
             'term_id' => 'required|exists:terms,id',
             'notes' => 'nullable|string',
             'exam_password' => 'nullable|string|max:255',
+            'is_public' => 'nullable|boolean',
+            'public_price' => 'nullable|numeric|min:0',
         ]);
 
         $examData = [
@@ -317,6 +327,8 @@ class ExamController extends Controller
             'term_id' => $request->term_id,
             'notes' => $request->notes,
             'exam_password' => $request->exam_password,
+            'is_public' => $request->boolean('is_public'),
+            'public_price' => $request->public_price ?? 0,
         ];
 
         // Add optional fields if they exist in the database
@@ -338,8 +350,22 @@ class ExamController extends Controller
         if (Schema::hasColumn('exams', 'exam_password')) {
             $examData['exam_password'] = $request->exam_password;
         }
+        if (Schema::hasColumn('exams', 'is_public')) {
+            $examData['is_public'] = $request->boolean('is_public');
+        }
+        if (Schema::hasColumn('exams', 'public_price')) {
+            $examData['public_price'] = $request->public_price ?? 0;
+        }
 
         $exam->update($examData);
+
+        // Debug: Log what was actually saved
+        \Log::info('Exam data after update:', [
+            'exam_id' => $exam->id,
+            'is_public_after' => $exam->fresh()->is_public,
+            'public_price_after' => $exam->fresh()->public_price,
+            'exam_data_saved' => $examData
+        ]);
 
         $exam->courses()->sync($request->course_ids);
         $exam->lessons()->sync($request->lesson_ids);

@@ -1,10 +1,45 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trainee Assessment Report - {{ $reportCard->student->full_name }}</title>
-    <style>
+@extends('admin.layout')
+
+@section('content')
+<div class="container-fluid px-4 py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">
+                <i class="fas fa-id-card me-2 text-primary"></i>
+                Report Card - {{ $reportCard->student->full_name }}
+            </h1>
+            <p class="text-muted mb-0">
+                {{ $reportCard->course->course_name }} - {{ $reportCard->academicYear->year }}
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ route('admin.report-cards.index') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-1"></i> Back to Report Cards
+            </a>
+            <button onclick="window.print()" class="btn btn-primary">
+                <i class="fas fa-print me-1"></i> Print Report Card
+            </button>
+        </div>
+    </div>
+
+    <!-- Report Card Content -->
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="print-area">
+<style>
+    @media print {
+        .no-print { display: none !important; }
+        .card { border: none !important; box-shadow: none !important; }
+        .container-fluid { padding: 0 !important; }
+        .d-flex { display: block !important; }
+        .btn { display: none !important; }
+        .print-area { 
+            border: 1px solid black !important; 
+            margin: 0 !important; 
+            padding: 0 !important;
+        }
+        
+        /* Force A4 layout */
         @page {
             size: A4;
             margin: 0.5cm;
@@ -18,10 +53,6 @@
             background: white;
             margin: 0;
             padding: 0;
-        }
-        
-        .print-area {
-            border: 1px solid black;
         }
         
         .header-section {
@@ -50,13 +81,13 @@
         }
         
         .student-photo {
-            height: 100px;
-            width: 100px;
+            height: 50px;
+            width: 50px;
             object-fit: cover;
         }
         
         .school-logo {
-            height: 100px;
+            height: 35px;
             width: auto;
             max-width: 100px;
             object-fit: contain;
@@ -181,24 +212,8 @@
             width: 16px;
             height: 16px;
         }
-        
-        @media print {
-            body {
-                margin: 0;
-                padding: 0;
-            }
-            
-            .print-area {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="print-area">
+    }
+</style>
         <!-- Header Section -->
         <div class="header-section" style="display: flex; width: 100%; height: 140px;">
             <!-- Left Column - Student Info -->
@@ -217,7 +232,9 @@
                     
                     <!-- Student Photo -->
                     <div style="width: 60px; display: flex; align-items: center; justify-content: center;">
-                        @if($reportCard->student->passport_photo)
+                        @if(isset($studentPhotoBase64) && $studentPhotoBase64)
+                            <img src="data:{{ $studentPhotoMime ?? 'image/jpeg' }};base64,{{ $studentPhotoBase64 }}" alt="Student Photo" style="height: 50px; width: 50px; object-fit: cover; border: 1px solid #000;">
+                        @elseif($reportCard->student->passport_photo)
                             @php
                                 $photoPath = $reportCard->student->passport_photo;
                                 // Add extension if missing
@@ -481,5 +498,5 @@
             @endif
         </div>
     </div>
-</body>
-</html>
+</div>
+@endsection

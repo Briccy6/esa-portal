@@ -502,7 +502,7 @@
             </li>
             
             <li class="nav-item">
-                <a href="{{ route('exams.index') }}" class="nav-link text-primary">
+                <a href="{{ route('teacher.exams.index') }}" class="nav-link text-primary">
                     <i class="bi bi-clipboard-data"></i>
                     <span>Exams</span>
                 </a>
@@ -563,7 +563,7 @@
                 </li>
                 
                 <li class="nav-item">
-                    <a href="{{ route('exams.index') }}" class="nav-link text-primary">
+                    <a href="{{ route('teacher.exams.index') }}" class="nav-link text-primary">
                         <i class="bi bi-clipboard-data"></i>
                         <span>Exams</span>
                     </a>
