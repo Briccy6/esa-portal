@@ -591,12 +591,26 @@
             <i class="nav-icon bi bi-google"></i>
             <span class="nav-text">Google Meet</span>
           </a>
-</li>
+        </li>
         
         <li class="nav-item">
           <a href="{{ route('staff.lessons.create') }}" class="nav-link text-white d-flex align-items-center gap-2">
             <i class="nav-icon bi bi-plus-circle-fill"></i>
             <span class="nav-text">Create Lesson</span>
+          </a>
+        </li>
+        
+        <li class="nav-item">
+          <a href="{{ route('staff.lessons.index') }}" class="nav-link text-white d-flex align-items-center gap-2">
+            <i class="nav-icon bi bi-list-ul"></i>
+            <span class="nav-text">Manage Lessons</span>
+          </a>
+        </li>
+        
+        <li class="nav-item">
+          <a href="{{ route('staff.lesson-units.index') }}" class="nav-link text-white d-flex align-items-center gap-2">
+            <i class="nav-icon bi bi-diagram-3-fill"></i>
+            <span class="nav-text">Manage Units</span>
           </a>
         </li>
         
@@ -644,9 +658,9 @@
         </li>
 
         <li class="nav-item">
-          <a href="{{ route('marks.index') }}" class="nav-link text-white d-flex align-items-center gap-2">
+          <a href="{{ route('dos.marks.index') }}" class="nav-link text-white d-flex align-items-center gap-2">
             <i class="nav-icon bi bi-clipboard-check-fill"></i>
-            <span class="nav-text">Marks</span>
+            <span class="nav-text">Marks Management</span>
           </a>
         </li>
 

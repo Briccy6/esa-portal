@@ -49,33 +49,63 @@ class TeacherDailyController extends Controller
                 'date'          => $request->date ?? now()->toDateString(),
             ]);
 
-            // Get all students for the course
-            $students = Course::find($request->course)->students()->get();
+            // Validate course and lesson exist
+            $course = Course::find($request->course);
+            $lesson = Lesson::find($request->lesson);
+            
+            if (!$course) {
+                return back()->with('error', 'Selected course not found. Please try again.');
+            }
+            
+            if (!$lesson) {
+                return back()->with('error', 'Selected lesson not found. Please try again.');
+            }
 
-            // If attendance array is present, use it (manual marking)
-            if ($request->has('attendance')) {
-                foreach ($request->attendance as $studentId => $status) {
-                    \App\Models\Attendance::create([
-                        'student_id'   => $studentId,
-                        'course_id'    => $request->course,
-                        'lesson_id'    => $request->lesson,
-                        'timetable_id' => null,
-                        'date'         => $daily->date,
-                        'status'       => $status, // 'P', 'A', etc.
-                        'marked_by'    => $teacher->id,
-                        'marked_at'    => now(),
-                        'approved'     => false,
-                    ]);
-                }
+            // Get all students for the course
+            $students = $course->students()->get();
+            
+            if ($students->isEmpty()) {
+                \Log::warning("No students found for course {$request->course}");
+                // Continue without attendance if no students
             } else {
-                // All present by default
-                foreach ($students as $student) {
-                    \App\Models\Attendance::create([
-                        'student_id'   => $student->id,
-                        'timetable_id' => null,
-                        'date'         => $daily->date,
-                        'status'       => 'P',
-                    ]);
+                // If attendance array is present, use it (manual marking)
+                if ($request->has('attendance')) {
+                    foreach ($request->attendance as $studentId => $status) {
+                        try {
+                            \App\Models\Attendance::create([
+                                'student_id'   => $studentId,
+                                'course_id'    => $request->course,
+                                'lesson_id'    => $request->lesson,
+                                'date'         => $daily->date,
+                                'status'       => $status, // 'P', 'A', etc.
+                                'marked_by'    => $teacher->id,
+                                'marked_at'    => now(),
+                                'approved'     => false,
+                            ]);
+                        } catch (\Exception $e) {
+                            \Log::error("Failed to create attendance for student {$studentId}: " . $e->getMessage());
+                            // Continue with other students, don't fail the entire submission
+                        }
+                    }
+                } else {
+                    // All present by default
+                    foreach ($students as $student) {
+                        try {
+                            \App\Models\Attendance::create([
+                                'student_id'   => $student->id,
+                                'course_id'    => $request->course,
+                                'lesson_id'    => $request->lesson,
+                                'date'         => $daily->date,
+                                'status'       => 'P',
+                                'marked_by'    => $teacher->id,
+                                'marked_at'    => now(),
+                                'approved'     => false,
+                            ]);
+                        } catch (\Exception $e) {
+                            \Log::error("Failed to create default attendance for student {$student->id}: " . $e->getMessage());
+                            // Continue with other students, don't fail the entire submission
+                        }
+                    }
                 }
             }
 

@@ -224,62 +224,79 @@
                                     </tr>
                                 </thead>
                                 <tbody id="attendanceTableBody">
-                                    @foreach($attendances as $attendance)
-                                        <tr class="attendance-row" data-status="{{ $attendance->status }}">
-                                            <td class="align-middle py-3">
-                                                <div class="d-flex align-items-center">
-                                                    <div class="student-avatar bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
-                                                        <i class="fas fa-user text-primary"></i>
+                                    @if($attendances->count() > 0)
+                                        @foreach($attendances as $attendance)
+                                            <tr class="attendance-row" data-status="{{ $attendance->status }}">
+                                                <td class="align-middle py-3">
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="student-avatar bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                                            <i class="fas fa-user text-primary"></i>
+                                                        </div>
+                                                        <div>
+                                                            <span class="fw-medium student-name">{{ $attendance->student->full_name ?? 'Unknown Student' }}</span>
+                                                            <br>
+                                                            <small class="text-muted">ID: {{ $attendance->student_id }}</small>
+                                                        </div>
                                                     </div>
-                                                    <div>
-                                                        <span class="fw-medium student-name">{{ $attendance->student->full_name }}</span>
-                                                        <br>
-                                                        <small class="text-muted">ID: {{ $attendance->student->id }}</small>
-                                                    </div>
+                                                </td>
+                                                <td class="align-middle py-3 text-center">
+                                                    @switch($attendance->status)
+                                                        @case('P')
+                                                            <span class="badge bg-success bg-opacity-15 text-success px-3 py-2">
+                                                                <i class="fas fa-check-circle me-1"></i>Present
+                                                            </span>
+                                                            @break
+                                                        @case('A')
+                                                            <span class="badge bg-danger bg-opacity-15 text-danger px-3 py-2">
+                                                                <i class="fas fa-times-circle me-1"></i>Absent
+                                                            </span>
+                                                            @break
+                                                        @case('AR')
+                                                            <span class="badge bg-warning bg-opacity-15 text-warning px-3 py-2">
+                                                                <i class="fas fa-exclamation-circle me-1"></i>Absent with Reason
+                                                            </span>
+                                                            @break
+                                                        @case('L')
+                                                            <span class="badge bg-info bg-opacity-15 text-info px-3 py-2">
+                                                                <i class="fas fa-clock me-1"></i>Late
+                                                            </span>
+                                                            @break
+                                                        @default
+                                                            <span class="badge bg-secondary bg-opacity-15 text-secondary px-3 py-2">
+                                                                <i class="fas fa-question-circle me-1"></i>Unknown
+                                                            </span>
+                                                    @endswitch
+                                                </td>
+                                                <td class="align-middle py-3 text-center">
+                                                    <select name="attendance[{{ $attendance->id }}]" class="form-select form-select-sm attendance-select" style="max-width: 200px; margin: 0 auto;">
+                                                        <option value="P" {{ $attendance->status == 'P' ? 'selected' : '' }}>
+                                                            ✓ Present
+                                                        </option>
+                                                        <option value="A" {{ $attendance->status == 'A' ? 'selected' : '' }}>
+                                                            ✗ Absent
+                                                        </option>
+                                                        <option value="AR" {{ $attendance->status == 'AR' ? 'selected' : '' }}>
+                                                            ⚠ Absent with Reason
+                                                        </option>
+                                                        <option value="L" {{ $attendance->status == 'L' ? 'selected' : '' }}>
+                                                            ⏰ Late
+                                                        </option>
+                                                    </select>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    @else
+                                        <tr>
+                                            <td colspan="3" class="text-center py-5">
+                                                <div class="text-muted">
+                                                    <i class="fas fa-users-slash fs-1 mb-3 d-block"></i>
+                                                    <h5>No Attendance Records Found</h5>
+                                                    <p class="mb-0">No attendance records were found for this daily report.</p>
+                                                    <p class="mb-0 small">This might be because no students are assigned to this course or attendance wasn't marked.</p>
                                                 </div>
                                             </td>
-                                            <td class="align-middle py-3 text-center">
-                                                @switch($attendance->status)
-                                                    @case('P')
-                                                        <span class="badge bg-success bg-opacity-15 text-success px-3 py-2">
-                                                            <i class="fas fa-check-circle me-1"></i>Present
-                                                        </span>
-                                                        @break
-                                                    @case('A')
-                                                        <span class="badge bg-danger bg-opacity-15 text-danger px-3 py-2">
-                                                            <i class="fas fa-times-circle me-1"></i>Absent
-                                                        </span>
-                                                        @break
-                                                    @case('AR')
-                                                        <span class="badge bg-warning bg-opacity-15 text-warning px-3 py-2">
-                                                            <i class="fas fa-exclamation-circle me-1"></i>Absent with Reason
-                                                        </span>
-                                                        @break
-                                                    @case('L')
-                                                        <span class="badge bg-info bg-opacity-15 text-info px-3 py-2">
-                                                            <i class="fas fa-clock me-1"></i>Late
-                                                        </span>
-                                                        @break
-                                                @endswitch
-                                            </td>
-                                            <td class="align-middle py-3 text-center">
-                                                <select name="attendance[{{ $attendance->id }}]" class="form-select form-select-sm attendance-select" style="max-width: 200px; margin: 0 auto;">
-                                                    <option value="P" {{ $attendance->status == 'P' ? 'selected' : '' }}>
-                                                        ✓ Present
-                                                    </option>
-                                                    <option value="A" {{ $attendance->status == 'A' ? 'selected' : '' }}>
-                                                        ✗ Absent
-                                                    </option>
-                                                    <option value="AR" {{ $attendance->status == 'AR' ? 'selected' : '' }}>
-                                                        ⚠ Absent with Reason
-                                                    </option>
-                                                    <option value="L" {{ $attendance->status == 'L' ? 'selected' : '' }}>
-                                                        ⏰ Late
-                                                    </option>
-                                                </select>
-                                            </td>
                                         </tr>
-                                    @endforeach
+                                    @endif
                                 </tbody>
                             </table>
                         </div>
@@ -292,45 +309,44 @@
                         </div>
 
                         <div class="mt-4 text-center">
-                            <button type="submit" class="btn btn-warning btn-lg px-4" id="updateAttendanceBtn">
-                                <i class="fas fa-save me-2"></i>Update Attendance
-                            </button>
+                            @if($attendances->count() > 0)
+                                <button type="submit" class="btn btn-warning btn-lg px-4" id="updateAttendanceBtn">
+                                    <i class="fas fa-save me-2"></i>Update Attendance
+                                </button>
+                            @else
+                                <div class="text-center">
+                                    <p class="text-muted mb-3">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        No attendance records available to update
+                                    </p>
+                                    <button type="button" class="btn btn-primary btn-lg px-4" data-bs-toggle="modal" data-bs-target="#markAttendanceModal">
+                                        <i class="fas fa-user-check me-2"></i>Mark Attendance Now
+                                    </button>
+                                </div>
+                            @endif
                         </div>
                     </form>
                 </div>
             </div>
 
             <!-- Approval Section -->
-            @if(!$daily->approved)
-                <div class="card shadow-sm border-success">
-                    <div class="card-header bg-gradient-success text-white py-3">
-                        <h5 class="mb-0 fw-semibold">
-                            <i class="fas fa-check-double me-2"></i>
-                            Approve Daily Report
-                        </h5>
-                    </div>
-                    <div class="card-body text-center py-4">
-                        <p class="text-muted mb-4 fs-5">Review all information above and approve this daily report when ready.</p>
-                        <form method="POST" action="{{ route('dos.dailies.approve', $daily->id) }}" id="approvalForm">
-                            @csrf
-                            <button type="submit" class="btn btn-success btn-lg px-5" id="approveBtn">
-                                <i class="fas fa-check-circle me-2"></i>Approve Daily Report
-                            </button>
-                        </form>
-                    </div>
+            <div class="card shadow-sm border-success">
+                <div class="card-header bg-gradient-success text-white py-3">
+                    <h5 class="mb-0 fw-semibold">
+                        <i class="fas fa-check-double me-2"></i>
+                        Attendance Management
+                    </h5>
                 </div>
-            @else
-                <div class="card shadow-sm border-success">
-                    <div class="card-body text-center py-4">
-                        <div class="text-success mb-3">
-                            <i class="fas fa-check-circle fs-1"></i>
-                        </div>
-                        <h4 class="text-success fw-bold">Daily Report Approved</h4>
-                        <p class="text-muted mb-0">This daily report has been successfully approved.</p>
-                        <small class="text-muted">Approved on {{ $daily->updated_at ? $daily->updated_at->format('F d, Y \a\t H:i A') : 'Unknown' }}</small>
-                    </div>
+                <div class="card-body text-center py-4">
+                    <p class="text-muted mb-4 fs-5">Review attendance records and approve when ready.</p>
+                    <form method="POST" action="{{ route('dos.dailies.approve', $daily->id) }}" id="approvalForm">
+                        @csrf
+                        <button type="submit" class="btn btn-success btn-lg px-5" id="approveBtn">
+                            <i class="fas fa-check-circle me-2"></i>Approve Attendance
+                        </button>
+                    </form>
                 </div>
-            @endif
+            </div>
         </div>
     </div>
 </div>
@@ -525,4 +541,106 @@ document.addEventListener('DOMContentLoaded', function() {
     */
 });
 </script>
+
+<!-- Mark Attendance Modal -->
+<div class="modal fade" id="markAttendanceModal" tabindex="-1" aria-labelledby="markAttendanceModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-gradient-primary text-white">
+                <h5 class="modal-title" id="markAttendanceModalLabel">
+                    <i class="fas fa-user-check me-2"></i>Mark Student Attendance
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ route('dos.dailies.mark-attendance', $daily->id) }}">
+                @csrf
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Mark attendance for all students in this course. You can mark individual students as Present, Absent, Absent with Reason, or Late.
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Student Name</th>
+                                    <th class="text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @php
+                                    // Get all students for this course
+                                    $courseStudents = \App\Models\Student::where('course_id', $daily->course_id)->get();
+                                @endphp
+                                
+                                @if($courseStudents->count() > 0)
+                                    @foreach($courseStudents as $student)
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 35px; height: 35px;">
+                                                        <i class="fas fa-user text-primary"></i>
+                                                    </div>
+                                                    <div>
+                                                        <span class="fw-medium">{{ $student->full_name ?? 'Unknown Student' }}</span>
+                                                        <br>
+                                                        <small class="text-muted">ID: {{ $student->id }}</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="text-center">
+                                                <div class="btn-group" role="group">
+                                                    <input type="radio" class="btn-check" name="attendance[{{ $student->id }}]" id="present_{{ $student->id }}" value="P" checked>
+                                                    <label class="btn btn-outline-success" for="present_{{ $student->id }}">
+                                                        <i class="fas fa-check"></i> Present
+                                                    </label>
+                                                    
+                                                    <input type="radio" class="btn-check" name="attendance[{{ $student->id }}]" id="absent_{{ $student->id }}" value="A">
+                                                    <label class="btn btn-outline-danger" for="absent_{{ $student->id }}">
+                                                        <i class="fas fa-times"></i> Absent
+                                                    </label>
+                                                    
+                                                    <input type="radio" class="btn-check" name="attendance[{{ $student->id }}]" id="absent_reason_{{ $student->id }}" value="AR">
+                                                    <label class="btn btn-outline-warning" for="absent_reason_{{ $student->id }}">
+                                                        <i class="fas fa-exclamation"></i> A. Reason
+                                                    </label>
+                                                    
+                                                    <input type="radio" class="btn-check" name="attendance[{{ $student->id }}]" id="late_{{ $student->id }}" value="L">
+                                                    <label class="btn btn-outline-info" for="late_{{ $student->id }}">
+                                                        <i class="fas fa-clock"></i> Late
+                                                    </label>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                @else
+                                    <tr>
+                                        <td colspan="2" class="text-center py-4">
+                                            <div class="text-muted">
+                                                <i class="fas fa-users-slash fs-2 mb-3 d-block"></i>
+                                                <h5>No Students Found</h5>
+                                                <p class="mb-0">No students are assigned to this course.</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endif
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>Cancel
+                    </button>
+                    @if($courseStudents->count() > 0)
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Save Attendance
+                        </button>
+                    @endif
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 @endsection

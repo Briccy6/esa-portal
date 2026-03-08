@@ -9,18 +9,14 @@
                 <div>
                     <h2 class="text-dark fw-bold mb-1">
                         <i class="fas fa-calendar-check me-2 text-warning"></i>
-                        Teacher Dailies Approval
+                        Teacher Dailies Management
                     </h2>
-                    <p class="text-muted mb-0">Review and approve daily teaching reports</p>
+                    <p class="text-muted mb-0">Review and manage daily teaching reports</p>
                 </div>
                 <div class="d-flex gap-3">
                     <div class="badge bg-light text-dark fs-6">
-                        <i class="fas fa-clock me-1 text-warning"></i>
-                        {{ $dailies->where('approved', false)->count() }} Pending
-                    </div>
-                    <div class="badge bg-light text-dark fs-6">
-                        <i class="fas fa-check-circle me-1 text-success"></i>
-                        {{ $dailies->where('approved', true)->count() }} Approved
+                        <i class="fas fa-list-alt me-1 text-primary"></i>
+                        {{ $dailies->total() }} Total Reports
                     </div>
                 </div>
             </div>
@@ -46,7 +42,7 @@
             <div class="card shadow-sm mb-4">
                 <div class="card-body py-3">
                     <div class="row align-items-center">
-                        <div class="col-md-6">
+                        <div class="col-md-9">
                             <div class="input-group">
                                 <span class="input-group-text bg-light border-end-0">
                                     <i class="fas fa-search text-muted"></i>
@@ -57,13 +53,6 @@
                                        placeholder="Search by teacher, course, lesson, or date..."
                                        autocomplete="off">
                             </div>
-                        </div>
-                        <div class="col-md-3">
-                            <select id="statusFilter" class="form-select">
-                                <option value="">All Status</option>
-                                <option value="pending">Pending Only</option>
-                                <option value="approved">Approved Only</option>
-                            </select>
                         </div>
                         <div class="col-md-3 text-end mt-2 mt-md-0">
                             <small class="text-muted">
@@ -110,7 +99,7 @@
                             </thead>
                             <tbody id="tableBody">
                                 @foreach($dailies as $daily)
-                                    <tr class="daily-row" data-status="{{ $daily->approved ? 'approved' : 'pending' }}">
+                                    <tr class="daily-row">
                                         <!-- Date Column -->
                                         <td class="align-middle py-3">
                                             <div class="d-flex align-items-center">
@@ -163,27 +152,15 @@
                                         <!-- Status Column -->
                                         <td class="align-middle py-3 text-center">
                                             <div class="status-container">
-                                                @if($daily->approved)
-                                                    <span class="badge bg-success bg-opacity-15 text-success px-3 py-2 fs-6">
-                                                        <i class="fas fa-check-circle me-1"></i>
-                                                        Approved
-                                                    </span>
-                                                    <br>
-                                                    <small class="text-muted mt-1 d-block">
-                                                        <i class="fas fa-clock me-1"></i>
-                                                        {{ $daily->updated_at ? $daily->updated_at->diffForHumans() : '-' }}
-                                                    </small>
-                                                @else
-                                                    <span class="badge bg-warning bg-opacity-15 text-warning px-3 py-2 fs-6">
-                                                        <i class="fas fa-hourglass-half me-1"></i>
-                                                        Pending
-                                                    </span>
-                                                    <br>
-                                                    <small class="text-muted mt-1 d-block">
-                                                        <i class="fas fa-calendar-plus me-1"></i>
-                                                        {{ $daily->created_at ? $daily->created_at->diffForHumans() : '-' }}
-                                                    </small>
-                                                @endif
+                                                <span class="badge bg-info bg-opacity-15 text-info px-3 py-2 fs-6">
+                                                    <i class="fas fa-info-circle me-1"></i>
+                                                    Available
+                                                </span>
+                                                <br>
+                                                <small class="text-muted mt-1 d-block">
+                                                    <i class="fas fa-calendar-plus me-1"></i>
+                                                    {{ $daily->created_at ? $daily->created_at->diffForHumans() : '-' }}
+                                                </small>
                                             </div>
                                         </td>
 
@@ -194,14 +171,6 @@
                                                 <i class="fas fa-eye me-1"></i>
                                                 Review
                                             </a>
-                                            @if(!$daily->approved)
-                                                <div class="mt-2">
-                                                    <span class="badge bg-light text-dark">
-                                                        <i class="fas fa-exclamation-triangle me-1"></i>
-                                                        Action Required
-                                                    </span>
-                                                </div>
-                                            @endif
                                         </td>
                                     </tr>
                                 @endforeach
@@ -225,7 +194,7 @@
 
             <!-- Quick Stats Card -->
             <div class="row mt-4">
-                <div class="col-md-3">
+                <div class="col-md-4">
                     <div class="card border-0 bg-gradient-primary text-white">
                         <div class="card-body text-center">
                             <i class="fas fa-list-alt fs-2 mb-2"></i>
@@ -234,30 +203,21 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="card border-0 bg-gradient-warning text-dark">
-                        <div class="card-body text-center">
-                            <i class="fas fa-hourglass-half fs-2 mb-2"></i>
-                            <h4 class="fw-bold">{{ $dailies->where('approved', false)->count() }}</h4>
-                            <small>Pending Approval</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card border-0 bg-gradient-success text-white">
-                        <div class="card-body text-center">
-                            <i class="fas fa-check-circle fs-2 mb-2"></i>
-                            <h4 class="fw-bold">{{ $dailies->where('approved', true)->count() }}</h4>
-                            <small>Approved</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
+                <div class="col-md-4">
                     <div class="card border-0 bg-gradient-info text-white">
                         <div class="card-body text-center">
-                            <i class="fas fa-percentage fs-2 mb-2"></i>
-                            <h4 class="fw-bold">{{ $dailies->count() > 0 ? round(($dailies->where('approved', true)->count() / $dailies->count()) * 100) : 0 }}%</h4>
-                            <small>Approval Rate</small>
+                            <i class="fas fa-calendar-day fs-2 mb-2"></i>
+                            <h4 class="fw-bold">{{ $dailies->where('date', '>=', now()->subDays(7))->count() }}</h4>
+                            <small>Last 7 Days</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-0 bg-gradient-success text-white">
+                        <div class="card-body text-center">
+                            <i class="fas fa-users fs-2 mb-2"></i>
+                            <h4 class="fw-bold">{{ $dailies->sum('total_students') }}</h4>
+                            <small>Total Students</small>
                         </div>
                     </div>
                 </div>
@@ -343,7 +303,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function filterRows() {
         const searchTerm = searchInput.value.toLowerCase().trim();
-        const statusValue = statusFilter.value.toLowerCase();
         let visibleRows = 0;
 
         rows.forEach(function(row) {
@@ -355,16 +314,10 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const rowText = dateText + ' ' + teacherText + ' ' + courseText + ' ' + lessonText;
             
-            // Get status for filtering
-            const rowStatus = row.getAttribute('data-status');
-            
             // Check search term match
             const matchesSearch = searchTerm === '' || rowText.includes(searchTerm);
             
-            // Check status filter match
-            const matchesStatus = statusValue === '' || rowStatus === statusValue;
-            
-            if (matchesSearch && matchesStatus) {
+            if (matchesSearch) {
                 row.style.display = '';
                 visibleRows++;
             } else {
@@ -385,7 +338,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Event listeners
     searchInput.addEventListener('input', filterRows);
-    statusFilter.addEventListener('change', filterRows);
 
     // Add loading state to review buttons
     const reviewButtons = document.querySelectorAll('.review-btn');

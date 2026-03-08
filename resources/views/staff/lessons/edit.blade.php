@@ -282,15 +282,18 @@
                 </div>
 
                 <!-- Action Buttons -->
-                <div class="d-flex justify-content-between">
-                    <a href="{{ route('staff.lessons.show', $lesson->id) }}" class="btn-back">
-                        <i class="fas fa-arrow-left"></i> Back to Lesson
-                    </a>
+                <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <button type="submit" class="btn btn-submit">
-                            <i class="fas fa-save"></i> Update Lesson
-                        </button>
+                        <a href="{{ route('staff.lessons.index') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Lessons
+                        </a>
+                        <a href="{{ route('staff.lesson-units.create', $lesson->id) }}" class="btn btn-outline-success ms-2">
+                            <i class="bi bi-diagram-3"></i> Manage Units
+                        </a>
                     </div>
+                    <button type="submit" class="btn btn-submit">
+                        <i class="fas fa-save"></i> Update Lesson
+                    </button>
                 </div>
             </form>
         </div>

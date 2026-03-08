@@ -41,9 +41,10 @@ return [
         'redirect'     => env('YOUTUBE_REDIRECT_URI'),
     ],
     'flutterwave' => [
-    'secret_key' => env('FLW_SECRET_KEY'),
-    'public_key' => env('FLW_PUBLIC_KEY'),
-    'redirect_url' => env('APP_URL') . '/payment/callback',
-],
+        'secret_key' => env('FLW_SECRET_KEY'),
+        'public_key' => env('FLW_PUBLIC_KEY'),
+        'encryption_key' => env('FLW_ENCRYPTION_KEY'),
+        'redirect_url' => env('APP_URL') . '/payment/callback',
+    ],
 
 ];

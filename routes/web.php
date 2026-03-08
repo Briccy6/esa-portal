@@ -632,6 +632,16 @@ Route::get('/dos/dailies', [App\Http\Controllers\DosDailyController::class, 'ind
 Route::get('/dos/dailies/{daily}', [App\Http\Controllers\DosDailyController::class, 'show'])->name('dos.dailies.show');
 Route::post('/dos/dailies/{daily}/approve', [App\Http\Controllers\DosDailyController::class, 'approve'])->name('dos.dailies.approve');
 Route::post('/dos/dailies/{daily}/attendance', [App\Http\Controllers\DosDailyController::class, 'updateAttendance'])->name('dos.dailies.attendance');
+Route::post('/dos/dailies/{daily}/mark-attendance', [App\Http\Controllers\DosDailyController::class, 'markAttendance'])->name('dos.dailies.mark-attendance');
+
+// DOS Marks Management Routes
+Route::middleware(['auth:staff'])->prefix('dos/marks')->name('dos.marks.')->group(function () {
+    Route::get('/', [App\Http\Controllers\DOS\MarksController::class, 'index'])->name('index');
+    Route::get('/{mark}', [App\Http\Controllers\DOS\MarksController::class, 'show'])->name('show');
+    Route::post('/student-report', [App\Http\Controllers\DOS\MarksController::class, 'studentReport'])->name('student-report');
+    Route::post('/class-report', [App\Http\Controllers\DOS\MarksController::class, 'classReport'])->name('class-report');
+    Route::post('/report-card', [App\Http\Controllers\DOS\MarksController::class, 'reportCard'])->name('report-card');
+});
 
 Route::get('/api/lessons/{lesson}/course', function($lessonId) {
     $lesson = \App\Models\Lesson::with('course')->find($lessonId);
@@ -935,6 +945,14 @@ Route::middleware('auth:student')->prefix('exams')->name('exams.')->group(functi
     Route::get('{exam}/take/{session}/{questionNumber?}', [ExamTakingController::class, 'takeQuestion'])->name('take-question');
     Route::post('{exam}/save-answer/{session}/{questionNumber}', [ExamTakingController::class, 'saveAnswer'])->name('save-answer');
     Route::post('{exam}/submit/{session}', [ExamTakingController::class, 'submitExam'])->name('submit');
+});
+
+// Flutterwave Payment Routes
+Route::middleware('auth:student')->prefix('flutterwave')->name('flutterwave.')->group(function () {
+    Route::post('/payment/initialize-subscription', [App\Http\Controllers\FlutterwavePaymentController::class, 'initializeSubscriptionPayment'])->name('payment.initialize-subscription');
+    Route::post('/payment/initialize-tokens', [App\Http\Controllers\FlutterwavePaymentController::class, 'initializeTokenPayment'])->name('payment.initialize-tokens');
+    Route::get('/payment/callback', [App\Http\Controllers\FlutterwavePaymentController::class, 'handlePaymentCallback'])->name('payment.callback');
+    Route::post('/webhook', [App\Http\Controllers\FlutterwavePaymentController::class, 'handleWebhook'])->name('webhook');
 });
 
 // Token Management Routes

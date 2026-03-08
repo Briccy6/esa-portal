@@ -16,7 +16,18 @@ class LessonController extends Controller
     {
         $lessonDetails = Lesson::with(['course', 'teacher', 'units'])->get();
 
-        return view('admin.lessons.index', compact('lessonDetails'));
+        // Check if user is staff (DOS) and return appropriate view
+        if (auth('staff')->check()) {
+            return view('staff.lessons.index', compact('lessonDetails'));
+        }
+
+        // If admin view doesn't exist, fallback to staff view or show error
+        if (view()->exists('admin.lessons.index')) {
+            return view('admin.lessons.index', compact('lessonDetails'));
+        } else {
+            // Fallback to staff view if admin view doesn't exist
+            return view('staff.lessons.index', compact('lessonDetails'));
+        }
     }
 
     public function create(Request $request)

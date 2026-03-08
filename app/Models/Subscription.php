@@ -50,7 +50,7 @@ class Subscription extends Model
 
     public function getFormattedPriceAttribute()
     {
-        return '$' . number_format($this->price, 2);
+        return 'RWF ' . number_format($this->price, 2);
     }
 
     public function getFormattedTokensAttribute()
@@ -61,6 +61,6 @@ class Subscription extends Model
     public function getMonthlyEquivalentAttribute()
     {
         $monthlyPrice = $this->duration_days > 0 ? ($this->price / $this->duration_days) * 30 : $this->price;
-        return '$' . number_format($monthlyPrice, 2) . '/month';
+        return 'RWF ' . number_format($monthlyPrice, 2) . '/month';
     }
 }

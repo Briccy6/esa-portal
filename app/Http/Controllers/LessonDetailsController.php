@@ -16,7 +16,7 @@ public function index() {
     $lessonDetails = LessonUnit::with('lesson.course', 'lesson.teacher', 'term')
                                ->whereHas('lesson') // Only get units with valid lessons
                                ->get();
-    return view('details.create', compact('lessonDetails'));
+    return view('details.index', compact('lessonDetails'));
 }
 
 

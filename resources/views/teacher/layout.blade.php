@@ -759,18 +759,11 @@
                 </div>
 
                 <!-- Comment Section -->
-                <div class="mb-3">
-                    <button type="button" class="btn btn-success" id="showCommentSection">
-                        <i class="bi bi-chat-text me-2"></i>Add Comments
-                    </button>
-                </div>
-                <div id="commentSection" style="display:none;" class="border rounded p-3 mb-3 bg-light">
-                    <div class="mb-3">
-                        <label for="comment" class="form-label">
-                            Comments <span class="text-danger">*</span>
-                        </label>
-                        <textarea class="form-control" id="comment" name="comment" rows="4" required placeholder="Add your comments about the lesson, student engagement, etc..."></textarea>
-                    </div>
+                <div class="mb-3" style="display:block;">
+                    <label for="comment" class="form-label">
+                        Comments <span class="text-danger">*</span>
+                    </label>
+                    <textarea class="form-control" id="comment" name="comment" rows="4" required placeholder="Add your comments about the lesson, student engagement, etc..."></textarea>
                 </div>
             </div>
             
@@ -837,7 +830,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     toggleSection('showQuizSection', 'quizSection');
     toggleSection('showChallengesSection', 'challengesSection');
-    toggleSection('showCommentSection', 'commentSection', true);
+    // Comment section is now always visible, no toggle needed
 
     // Dynamic selects with loading states
     const courseSelect = document.getElementById('course');
@@ -1206,13 +1199,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-<script>
-    window.__lc = window.__lc || {};
-    window.__lc.license = 19254904;
-    window.__lc.integration_name = "manual_onboarding";
-    window.__lc.product_name = "livechat";
-    ;(function(n,t,c){function i(n){return e._h?e._h.apply(null,n):e._q.push(n)}var e={_q:[],_h:null,_v:"2.0",on:function(){i(["on",c.call(arguments)])},once:function(){i(["once",c.call(arguments)])},off:function(){i(["off",c.call(arguments)])},get:function(){if(!e._h)throw new Error("[LiveChatWidget] You can't use getters before load.");return i(["get",c.call(arguments)])},call:function(){i(["call",c.call(arguments)])},init:function(){var n=t.createElement("script");n.async=!0,n.type="text/javascript",n.src="https://cdn.livechatinc.com/tracking.js",t.head.appendChild(n)}};!n.__lc.asyncInit&&e.init(),n.LiveChatWidget=n.LiveChatWidget||e}(window,document,[].slice))
-</script>
-<noscript><a href="https://www.livechat.com/chat-with/19254904/" rel="nofollow">Chat with us</a></noscript>
+<!-- LiveChat script removed due to expired license -->
 </body>
 </html>

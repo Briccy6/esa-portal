@@ -356,6 +356,9 @@ class TokenController extends Controller
             'recent_transactions' => $token ? $token->transactions()->latest()->take(5)->get() : collect(),
         ];
 
-        return view('tokens.dashboard', compact('student', 'stats'));
+        // Get active subscriptions for the purchase modal
+        $subscriptions = Subscription::active()->orderBy('price')->get();
+
+        return view('tokens.dashboard', compact('student', 'stats', 'subscriptions'));
     }
 }

@@ -25,7 +25,7 @@
                                 <div class="d-flex align-items-center">
                                     <div class="flex-grow-1">
                                         <h6 class="card-title mb-1">Current Balance</h6>
-                                        <h3 class="mb-0">{{ number_format($studentToken->balance ?? 0) }}</h3>
+                                        <h3 class="mb-0">{{ number_format($stats['total_tokens']) }}</h3>
                                         <small class="opacity-75">tokens available</small>
                                     </div>
                                     <div class="ms-3">
@@ -42,7 +42,7 @@
                                 <div class="d-flex align-items-center">
                                     <div class="flex-grow-1">
                                         <h6 class="card-title mb-1">Total Earned</h6>
-                                        <h3 class="mb-0">{{ number_format($studentToken->total_earned ?? 0) }}</h3>
+                                        <h3 class="mb-0">{{ number_format($stats['total_earned']) }}</h3>
                                         <small class="opacity-75">tokens earned</small>
                                     </div>
                                     <div class="ms-3">
@@ -59,7 +59,7 @@
                                 <div class="d-flex align-items-center">
                                     <div class="flex-grow-1">
                                         <h6 class="card-title mb-1">Total Spent</h6>
-                                        <h3 class="mb-0">{{ number_format($studentToken->total_spent ?? 0) }}</h3>
+                                        <h3 class="mb-0">{{ number_format($stats['total_spent']) }}</h3>
                                         <small class="opacity-75">tokens spent</small>
                                     </div>
                                     <div class="ms-3">
@@ -110,7 +110,7 @@
                     </a>
                 </div>
 
-                @if($transactions && $transactions->count() > 0)
+                @if($stats['recent_transactions'] && $stats['recent_transactions']->count() > 0)
                 <div class="table-responsive">
                     <table class="table table-hover">
                         <thead class="table-light">
@@ -123,7 +123,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($transactions->take(10) as $transaction)
+                            @foreach($stats['recent_transactions']->take(10) as $transaction)
                             <tr>
                                 <td>
                                     <span class="badge bg-light text-dark">
@@ -197,7 +197,7 @@
                                         @endif
                                         <div class="card-body text-center">
                                             <h6 class="card-title">{{ $subscription->name }}</h6>
-                                            <div class="h4 mb-2">RWF {{ number_format($subscription->tokens_included * 500) }}</div>
+                                            <div class="h4 mb-2">{{ $subscription->formatted_price }}</div>
                                             <small class="text-muted">{{ $subscription->formatted_tokens }}</small>
                                             <button onclick="purchaseSubscription({{ $subscription->id }})" 
                                                     class="btn @if($subscription->is_recommended) btn-primary @else btn-outline-primary @endif btn-sm w-100 mt-2">
@@ -320,7 +320,7 @@ function purchaseCustomTokens() {
     btn.disabled = true;
     btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Processing...';
     
-    fetch('/tokens/purchase', {
+    fetch('/flutterwave/payment/initialize-tokens', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -334,8 +334,12 @@ function purchaseCustomTokens() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert('Tokens purchased successfully! ' + data.message);
-            location.reload();
+            if (data.redirect_url) {
+                window.location.href = data.redirect_url;
+            } else {
+                alert('Token purchase initiated successfully!');
+                location.reload();
+            }
         } else {
             alert('Purchase failed: ' + data.message);
         }
@@ -356,15 +360,14 @@ function purchaseSubscription(subscriptionId) {
     btn.disabled = true;
     btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Processing...';
     
-    fetch('/tokens/purchase-subscription', {
+    fetch('/flutterwave/payment/initialize-subscription', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
         },
         body: JSON.stringify({
-            subscription_id: subscriptionId,
-            payment_method: 'flutterwave'
+            subscription_id: subscriptionId
         })
     })
     .then(response => response.json())
@@ -373,7 +376,7 @@ function purchaseSubscription(subscriptionId) {
             if (data.redirect_url) {
                 window.location.href = data.redirect_url;
             } else {
-                alert('Subscription purchased successfully!');
+                alert('Subscription purchase initiated successfully!');
                 location.reload();
             }
         } else {
