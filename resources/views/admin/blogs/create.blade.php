@@ -3,8 +3,6 @@
 @section('title', 'Create Blog Post')
 
 @section('styles')
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
 <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
 <link href="https://cdn.quilljs.com/1.3.6/quill.bubble.css" rel="stylesheet">
 <style>
@@ -81,13 +79,14 @@
     background: #e3f2fd;
 }
 .form-section {
-    background: #f8f9fa;
+    background: white;
     border-radius: 12px;
     padding: 20px;
     margin-bottom: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
 }
 .form-section h5 {
-    color: #495057;
+    color: var(--primary-blue);
     font-weight: 600;
     margin-bottom: 15px;
 }
@@ -95,14 +94,14 @@
 @endsection
 
 @section('content')
-<div class="container-fluid">
+<div class="container-fluid p-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h1 class="h3 mb-0">Create Blog Post</h1>
+            <h4 class="mb-1">Create Blog Post</h4>
             <p class="text-muted mb-0">Write and publish your blog content</p>
         </div>
         <a href="{{ route('admin.blogs.index') }}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left me-2"></i>Back to Blogs
+            <i class="fas fa-arrow-left me-2"></i>Back to Blogs
         </a>
     </div>
 
@@ -111,7 +110,7 @@
 
         <!-- Basic Information -->
         <div class="form-section">
-            <h5><i class="bi bi-info-circle me-2"></i>Basic Information</h5>
+            <h5><i class="fas fa-info-circle me-2"></i>Basic Information</h5>
             <div class="row">
                 <div class="col-md-8">
                     <div class="mb-3">
@@ -174,7 +173,7 @@
 
         <!-- Featured Image -->
         <div class="form-section">
-            <h5><i class="bi bi-image me-2"></i>Featured Image</h5>
+            <h5><i class="fas fa-image me-2"></i>Featured Image</h5>
             <div class="mb-3">
                 <label for="featured_image" class="form-label fw-bold">Upload Featured Image</label>
                 <input type="file" class="form-control" id="featured_image" name="featured_image" 
@@ -189,7 +188,7 @@
 
         <!-- Content Editor -->
         <div class="form-section">
-            <h5><i class="bi bi-pencil-square me-2"></i>Blog Content *</h5>
+            <h5><i class="fas fa-pencil-alt me-2"></i>Blog Content *</h5>
             <div class="mb-3">
                 <input type="hidden" name="content" id="content">
                 <div id="editor"></div>
@@ -201,12 +200,12 @@
 
         <!-- Additional Images -->
         <div class="form-section">
-            <h5><i class="bi bi-images me-2"></i>Additional Images</h5>
+            <h5><i class="fas fa-images me-2"></i>Additional Images</h5>
             <div class="mb-3">
                 <div class="upload-area" onclick="document.getElementById('images').click()" 
                      ondrop="handleDrop(event)" ondragover="handleDragOver(event)" 
                      ondragleave="handleDragLeave(event)">
-                    <i class="bi bi-cloud-upload display-4 text-muted"></i>
+                    <i class="fas fa-cloud-upload-alt display-4 text-muted"></i>
                     <p class="mt-2 mb-0">Click to upload or drag and drop images here</p>
                     <small class="text-muted">Multiple images allowed (JPG, PNG, GIF - Max 2MB each)</small>
                 </div>
@@ -218,12 +217,12 @@
 
         <!-- Documents -->
         <div class="form-section">
-            <h5><i class="bi bi-file-earmark-text me-2"></i>Documents</h5>
+            <h5><i class="fas fa-file-alt me-2"></i>Documents</h5>
             <div class="mb-3">
                 <div class="upload-area" onclick="document.getElementById('documents').click()" 
                      ondrop="handleDocumentDrop(event)" ondragover="handleDragOver(event)" 
                      ondragleave="handleDragLeave(event)">
-                    <i class="bi bi-file-earmark-arrow-up display-4 text-muted"></i>
+                    <i class="fas fa-file-upload display-4 text-muted"></i>
                     <p class="mt-2 mb-0">Click to upload or drag and drop documents here</p>
                     <small class="text-muted">PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX (Max 5MB each)</small>
                 </div>
@@ -236,7 +235,7 @@
 
         <!-- SEO Settings -->
         <div class="form-section">
-            <h5><i class="bi bi-search me-2"></i>SEO Settings</h5>
+            <h5><i class="fas fa-search me-2"></i>SEO Settings</h5>
             <div class="row">
                 <div class="col-md-6">
                     <div class="mb-3">
@@ -264,16 +263,16 @@
         </div>
 
         <!-- Form Actions -->
-        <div class="d-flex justify-content-between">
+        <div class="d-flex justify-content-between mt-4">
             <a href="{{ route('admin.blogs.index') }}" class="btn btn-outline-secondary">
-                <i class="bi bi-x-circle me-2"></i>Cancel
+                <i class="fas fa-times me-2"></i>Cancel
             </a>
             <div>
                 <button type="submit" name="save_draft" class="btn btn-outline-primary me-2">
-                    <i class="bi bi-save me-2"></i>Save Draft
+                    <i class="fas fa-save me-2"></i>Save Draft
                 </button>
                 <button type="submit" name="publish" class="btn btn-primary">
-                    <i class="bi bi-send me-2"></i>Publish Blog
+                    <i class="fas fa-paper-plane me-2"></i>Publish Blog
                 </button>
             </div>
         </div>
@@ -378,7 +377,7 @@ function previewDocuments(input) {
         const documentDiv = document.createElement('div');
         documentDiv.className = 'document-item';
         documentDiv.innerHTML = `
-            <i class="bi bi-file-earmark-text me-2"></i>
+            <i class="fas fa-file-alt me-2"></i>
             <span>${file.name}</span>
             <small class="text-muted ms-2">(${formatFileSize(file.size)})</small>
             <button type="button" class="remove-btn" onclick="this.parentElement.remove()">×</button>

@@ -1369,4 +1369,7 @@ body {
     color: #0d6efd;
 }
 </style>
+
+@include('admin.students.partials.students_scripts')
+
 @endsection

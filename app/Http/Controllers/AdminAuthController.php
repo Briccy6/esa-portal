@@ -29,7 +29,11 @@ class AdminAuthController extends Controller
         $credentials = $request->only('email', 'password');
 
         if (auth()->guard('admin')->attempt($credentials)) {
-            return redirect()->route('admin.dashboard');
+            $request->session()->regenerate();
+            
+            // Redirect to intended URL or dashboard
+            $intendedUrl = session()->pull('admin_intended', route('admin.dashboard'));
+            return redirect()->to($intendedUrl);
         }
 
         return back()->withErrors([
@@ -75,7 +79,7 @@ class AdminAuthController extends Controller
         $monthlyData = DB::table('students')
             ->select(
                 DB::raw('COUNT(*) as monthly_registrations'),
-                DB::raw('COALESCE(SUM(c.registration_fee), 0) as monthly_revenue')
+                DB::raw('COALESCE(SUM(courses.registration_fee), 0) as monthly_revenue')
             )
             ->leftJoin('courses', 'students.course_id', '=', 'courses.id')
             ->whereMonth('students.created_at', $currentMonth)

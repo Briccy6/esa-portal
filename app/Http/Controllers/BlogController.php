@@ -15,6 +15,12 @@ class BlogController extends Controller
 {
     public function index(Request $request)
     {
+        // Check if admin is authenticated
+        if (!Auth::guard('admin')->check()) {
+            return redirect()->route('admin.login.form')
+                ->with('error', 'You must be logged in to access blog management.');
+        }
+
         $blogs = Blog::with(['author', 'images', 'documents'])
             ->when($request->status, function($query, $status) {
                 $query->where('status', $status);
@@ -45,11 +51,23 @@ class BlogController extends Controller
 
     public function create()
     {
+        // Check if admin is authenticated
+        if (!Auth::guard('admin')->check()) {
+            return redirect()->route('admin.login.form')
+                ->with('error', 'You must be logged in to create blog posts.');
+        }
+
         return view('admin.blogs.create');
     }
 
     public function store(Request $request)
     {
+        // Check if admin is authenticated
+        if (!Auth::guard('admin')->check()) {
+            return redirect()->route('admin.login.form')
+                ->with('error', 'You must be logged in to create blog posts.');
+        }
+
         $request->validate([
             'title' => 'required|string|max:255',
             'excerpt' => 'nullable|string|max:500',

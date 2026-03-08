@@ -216,6 +216,71 @@
             background: white;
             transform: scale(1.1);
         }
+        
+        .btn-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #6b7280;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-close:hover {
+            background: #f8f9fa;
+            color: #495057;
+        }
+        
+        .share-option {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            border: 1px solid #e9ecef;
+            border-radius: 0.5rem;
+            background: white;
+            color: #495057;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .share-option:hover {
+            background: #f8f9fa;
+            border-color: #dee2e6;
+            transform: translateY(-2px);
+        }
+        
+        .share-option.facebook {
+            color: #1877f2;
+        }
+        
+        .share-option.twitter {
+            color: #1da1f2;
+        }
+        
+        .share-option.linkedin {
+            color: #0077b5;
+        }
+        
+        .share-option.whatsapp {
+            color: #25d366;
+        }
+        
+        .share-option.email {
+            color: #6c757d;
+        }
+        
+        .share-option.copy {
+            color: #28a745;
+        }
+        
+        .share-option i {
+            margin-right: 0.5rem;
+            font-size: 1.1rem;
+        }
 
         /* Navigation styles matching welcome page */
         .nav-item {
@@ -457,6 +522,11 @@
                                         <a href="{{ route('blogs.show', $blog) }}" class="btn btn-light btn-sm">
                                             Read More <i class="fas fa-arrow-right ms-1"></i>
                                         </a>
+                                        <div class="share-buttons">
+                                            <button class="share-btn" onclick="shareBlog('{{ route('blogs.show', $blog) }}', '{{ $blog->title }}')" title="Share blog">
+                                                <i class="fas fa-share-alt"></i>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -527,9 +597,16 @@
                                             <span class="ms-3"><i class="fas fa-clock"></i> {{ $blog->reading_time }} min read</span>
                                         </div>
                                     </div>
-                                    <a href="{{ route('blogs.show', $blog) }}" class="btn-primary">
-                                        Read More <i class="fas fa-arrow-right ms-1"></i>
-                                    </a>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <a href="{{ route('blogs.show', $blog) }}" class="btn-primary">
+                                            Read More <i class="fas fa-arrow-right ms-1"></i>
+                                        </a>
+                                        <div class="share-buttons">
+                                            <button class="share-btn" onclick="shareBlog('{{ route('blogs.show', $blog) }}', '{{ $blog->title }}')" title="Share blog">
+                                                <i class="fas fa-share-alt"></i>
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         @endforeach
@@ -572,20 +649,86 @@
         if (navigator.share) {
             navigator.share({
                 title: title,
-                url: url
+                url: url,
+                text: `Check out this article: ${title}`
             }).catch(err => console.log('Error sharing:', err));
         } else {
-            // Fallback - copy to clipboard
-            const dummy = document.createElement('input');
-            document.body.appendChild(dummy);
-            dummy.value = url;
-            dummy.select();
-            document.execCommand('copy');
-            document.body.removeChild(dummy);
-            
-            // Show toast notification
-            showToast('Link copied to clipboard!');
+            // Fallback - show share modal with multiple options
+            showShareModal(url, title);
         }
+    }
+
+    function showShareModal(url, title) {
+        const modal = document.createElement('div');
+        modal.className = 'position-fixed inset-0 bg-black bg-opacity-50 d-flex align-items-center justify-content-center z-50';
+        modal.innerHTML = `
+            <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h3 class="text-xl font-bold mb-0">Share Article</h3>
+                    <button onclick="this.closest('.position-fixed').remove()" class="btn-close">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="mb-4">
+                    <p class="text-gray-600 mb-2">${title}</p>
+                    <div class="bg-gray-100 p-3 rounded">
+                        <small class="text-gray-500">${url}</small>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="shareToFacebook('${url}', '${title}')" class="share-option facebook">
+                        <i class="fab fa-facebook-f"></i> Facebook
+                    </button>
+                    <button onclick="shareToTwitter('${url}', '${title}')" class="share-option twitter">
+                        <i class="fab fa-twitter"></i> Twitter
+                    </button>
+                    <button onclick="shareToLinkedIn('${url}', '${title}')" class="share-option linkedin">
+                        <i class="fab fa-linkedin-in"></i> LinkedIn
+                    </button>
+                    <button onclick="shareToWhatsApp('${url}', '${title}')" class="share-option whatsapp">
+                        <i class="fab fa-whatsapp"></i> WhatsApp
+                    </button>
+                    <button onclick="copyToClipboard('${url}')" class="share-option copy">
+                        <i class="fas fa-link"></i> Copy Link
+                    </button>
+                    <button onclick="shareToEmail('${url}', '${title}')" class="share-option email">
+                        <i class="fas fa-envelope"></i> Email
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    function shareToFacebook(url, title) {
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(title)}`, '_blank');
+    }
+
+    function shareToTwitter(url, title) {
+        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}`, '_blank');
+    }
+
+    function shareToLinkedIn(url, title) {
+        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}`, '_blank');
+    }
+
+    function shareToWhatsApp(url, title) {
+        window.open(`https://wa.me/?text=${encodeURIComponent(title + ' ' + url)}`, '_blank');
+    }
+
+    function copyToClipboard(url) {
+        const dummy = document.createElement('input');
+        document.body.appendChild(dummy);
+        dummy.value = url;
+        dummy.select();
+        document.execCommand('copy');
+        document.body.removeChild(dummy);
+        showToast('Link copied to clipboard!');
+        document.querySelector('.position-fixed').remove();
+    }
+
+    function shareToEmail(url, title) {
+        window.location.href = `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent('Check out this article: ' + url)}`;
     }
 
     function showToast(message) {

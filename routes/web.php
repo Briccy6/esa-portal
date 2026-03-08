@@ -954,7 +954,7 @@ Route::prefix('exams')->name('public.exams.')->group(function () {
 });
 
 // Admin Blog Routes
-Route::middleware('auth:admin')->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth:admin', 'admin.ensure'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/blogs', [BlogController::class, 'index'])->name('blogs.index');
     Route::get('/blogs/create', [BlogController::class, 'create'])->name('blogs.create');
     Route::post('/blogs', [BlogController::class, 'store'])->name('blogs.store');
