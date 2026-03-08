@@ -77,8 +77,8 @@ class ExamController extends Controller
         } elseif (auth('teacher')->check()) {
             $user = auth('teacher')->user();
             // Teacher can only access their assigned courses and lessons
-            $courses = $user->courses;
-            $lessons = $user->lessons;
+            $courses = $user->courses ?? collect();
+            $lessons = $user->lessons ?? collect();
             $branches = $user->branches ?? collect();
             $teachers = collect([$user]);
             $academicYears = \App\Models\AcademicYear::orderBy('year', 'desc')->get();
@@ -115,14 +115,20 @@ class ExamController extends Controller
             abort(403, 'Unauthorized');
         }
         
-        $questionBanks = \App\Models\QuestionBank::where(function($query) use ($user) {
-            if (auth('admin')->check()) {
-                // Admin can see all question banks
-                return $query;
-            } elseif (auth('teacher')->check()) {
-                return $query->where('teacher_id', $user->id);
-            }
-        })->get();
+        // Try to get question banks, but handle if table doesn't exist
+        try {
+            $questionBanks = \App\Models\QuestionBank::where(function($query) use ($user) {
+                if (auth('admin')->check()) {
+                    // Admin can see all question banks
+                    return $query;
+                } elseif (auth('teacher')->check()) {
+                    return $query->where('teacher_id', $user->id);
+                }
+            })->get();
+        } catch (\Exception $e) {
+            $questionBanks = collect();
+            \Log::error('Question banks table not available: ' . $e->getMessage());
+        }
 
         $examPassword = \Illuminate\Support\Str::random(8);
 

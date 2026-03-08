@@ -123,7 +123,13 @@ Route::middleware('auth:student')->get('/student/exams/{exam}/marks', [\App\Http
 Route::get('/', function () {
     $systemName = Cache::get('esa_system_name', 'ESA-Parnel');
     $systemLogo = Cache::get('esa_system_logo');
-    $publicAnnouncements = Announcement::where('audience', 'public')->latest()->take(10)->get();
+    
+    // Handle missing announcements table gracefully
+    try {
+        $publicAnnouncements = Announcement::where('audience', 'public')->latest()->take(10)->get();
+    } catch (\Exception $e) {
+        $publicAnnouncements = collect(); // Return empty collection if table doesn't exist
+    }
 
     return view('welcome', compact('systemName', 'systemLogo', 'publicAnnouncements'));
 })->name('welcome');

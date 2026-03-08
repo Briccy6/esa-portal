@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             AdminSeeder::class,
             SchoolInformationSeeder::class,
             KigaliTourismMarksSeeder::class,
+            BasicDataSeeder::class,
         ]);
 
     }
