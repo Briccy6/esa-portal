@@ -863,10 +863,10 @@ Route::prefix('public-subscriptions')->name('public.subscriptions.')->group(func
 
 // Public Token Routes
 Route::prefix('tokens')->name('public.tokens.')->group(function () {
+    Route::get('/', [App\Http\Controllers\PublicTokenController::class, 'index'])->name('index')->middleware('auth:client');
     Route::get('/purchase', [App\Http\Controllers\PublicTokenController::class, 'purchase'])->name('purchase')->middleware('auth:client');
     Route::post('/purchase', [App\Http\Controllers\PublicTokenController::class, 'processPurchase'])->name('purchase.process')->middleware('auth:client');
     Route::get('/callback', [App\Http\Controllers\PublicTokenController::class, 'handleCallback'])->name('callback');
-    Route::get('/', [App\Http\Controllers\PublicTokenController::class, 'index'])->name('index')->middleware('auth:client');
     Route::post('/logout', [App\Http\Controllers\PublicTokenController::class, 'logout'])->name('logout');
 });
 
