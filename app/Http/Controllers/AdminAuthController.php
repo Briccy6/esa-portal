@@ -119,6 +119,44 @@ class AdminAuthController extends Controller
             $recentStudents = Student::with(['branch', 'course'])->latest()->take(10)->get();
             $recentExpenses = Expense::with(['paid_by_staff.branch'])->latest()->get();
 
+            // Chart data variables
+            $studentsByGender = Student::select('sex', DB::raw('count(*) as total'))
+                ->groupBy('sex')
+                ->get();
+
+            $registrationPaidPercent = Student::where('registration_fee_status', 'paid')->count() > 0 
+                ? round((Student::where('registration_fee_status', 'paid')->count() / Student::count()) * 100, 1)
+                : 0;
+
+            $tuitionPaidPercent = Student::where('tuition_fee_status', 'paid')->count() > 0
+                ? round((Student::where('tuition_fee_status', 'paid')->count() / Student::count()) * 100, 1)
+                : 0;
+
+            $expensesByBranch = Expense::join('staff', 'expenses.paid_by_staff_id', '=', 'staff.id')
+                ->join('branches', 'staff.branch_id', '=', 'branches.id')
+                ->select('branches.name as branch', DB::raw('sum(expenses.amount) as total'))
+                ->groupBy('branches.name')
+                ->get();
+
+            $expensesByType = Expense::select('expense_type', DB::raw('sum(amount) as total'))
+                ->groupBy('expense_type')
+                ->get();
+
+            $branchFinancialHealth = Branch::select('branches.name',
+                    DB::raw('(SELECT COALESCE(sum(paid_amount), 0) FROM student_subscriptions WHERE branch_id = branches.id AND payment_status = "paid" AND is_active = 1) as revenue'),
+                    DB::raw('(SELECT COALESCE(sum(e.amount), 0) FROM expenses e JOIN staff s ON e.paid_by_staff_id = s.id WHERE s.branch_id = branches.id) as expenses'))
+                ->get();
+
+            $expenseTrend = Expense::select(
+                    DB::raw('DATE_FORMAT(expense_date, "%b %Y") as month'),
+                    DB::raw('sum(amount) as amount')
+                )
+                ->where('expense_date', '>=', Carbon::now()->subMonths(6))
+                ->groupBy('month')
+                ->orderBy('expense_date')
+                ->get()
+                ->toArray();
+
             // Cache the results for 1 hour
             $dashboardData = compact(
                 'totalStudents',
@@ -135,6 +173,13 @@ class AdminAuthController extends Controller
                 'profitMargin',
                 'recentStudents',
                 'recentExpenses',
+                'studentsByGender',
+                'registrationPaidPercent',
+                'tuitionPaidPercent',
+                'expensesByBranch',
+                'expensesByType',
+                'branchFinancialHealth',
+                'expenseTrend',
                 'monthlyTokenRevenue',
                 'monthlyLiveClassRevenue',
                 'monthlyResourceRevenue',
