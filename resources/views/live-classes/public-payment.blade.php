@@ -1,6 +1,6 @@
-@extends('admin.layout')
+@extends('layouts.app')
 
-@section('title', 'Payment for Live Class')
+@section('title', 'Payment for Live Class - {{ $liveClass->title }}')
 
 @section('content')
 <div class="container mx-auto px-4 py-8">
@@ -66,11 +66,56 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
                         <select name="payment_method" required
-                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                                id="paymentMethod">
                             <option value="">Select payment method</option>
-                            <option value="card">Credit/Debit Card</option>
-                            <option value="mobile_money">Mobile Money</option>
-                            <option value="bank_transfer">Bank Transfer</option>
+                            @if($liveClass->currency === 'RWF')
+                                <option value="mobile_money">Mobile Money (MTN, Airtel, Tigo)</option>
+                                <option value="ussd">USSD</option>
+                                <option value="bank_transfer">Bank Transfer</option>
+                            @else
+                                <option value="card">Credit/Debit Card</option>
+                                <option value="mobile_money">Mobile Money</option>
+                                <option value="bank_transfer">Bank Transfer</option>
+                                <option value="ussd">USSD</option>
+                            @endif
+                        </select>
+                        @if($liveClass->currency === 'RWF')
+                            <p class="text-xs text-gray-500 mt-1">For RWF payments: Mobile Money, USSD, and Bank Transfer are supported</p>
+                        @else
+                            <p class="text-xs text-gray-500 mt-1">All payment methods available</p>
+                        @endif
+                    </div>
+
+                    <!-- Mobile Money Network (shown only when mobile money is selected) -->
+                    <div id="networkField" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Mobile Money Network *</label>
+                        <select name="network" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                            @if($liveClass->currency === 'RWF')
+                                <option value="">Select network</option>
+                                <option value="MTN">MTN Mobile Money</option>
+                                <option value="AIRTEL">Airtel Money</option>
+                                <option value="TIGO">Tigo Cash</option>
+                            @elseif($liveClass->currency === 'GHS')
+                                <option value="">Select network</option>
+                                <option value="MTN">MTN Mobile Money</option>
+                                <option value="VODAFONE">Vodafone Cash</option>
+                                <option value="TIGO">Tigo Cash</option>
+                            @elseif($liveClass->currency === 'UGX')
+                                <option value="">Select network</option>
+                                <option value="MTN">MTN Mobile Money</option>
+                                <option value="AIRTEL">Airtel Money</option>
+                            @elseif($liveClass->currency === 'TZS')
+                                <option value="">Select network</option>
+                                <option value="AIRTEL">Airtel Money</option>
+                                <option value="TIGO">Tigo Pesa</option>
+                                <option value="HALOPESA">Halopesa</option>
+                                <option value="VODAFONE">Vodacom M-Pesa</option>
+                            @else
+                                <option value="">Select network</option>
+                                <option value="MTN">MTN Mobile Money</option>
+                            @endif
                         </select>
                     </div>
 
@@ -115,6 +160,19 @@ document.addEventListener('DOMContentLoaded', function() {
     const submitBtn = document.getElementById('paymentSubmitBtn');
     const btnText = document.getElementById('paymentBtnText');
     const spinner = document.getElementById('paymentSpinner');
+    const paymentMethodSelect = document.getElementById('paymentMethod');
+    const networkField = document.getElementById('networkField');
+
+    // Show/hide network field based on payment method
+    if (paymentMethodSelect) {
+        paymentMethodSelect.addEventListener('change', function() {
+            if (this.value === 'mobile_money') {
+                networkField.classList.remove('hidden');
+            } else {
+                networkField.classList.add('hidden');
+            }
+        });
+    }
 
     if (paymentForm) {
         paymentForm.addEventListener('submit', function(e) {

@@ -242,7 +242,7 @@
                                     ⏹️ End Class
                                 </button>
                             </form>
-                            <a href="{{ route('live-classes.room', $liveClass) }}" class="lc-btn lc-btn-secondary">
+                            <a href="{{ route('teacher.live-classes.room', $liveClass) }}" class="lc-btn lc-btn-secondary">
                                 🎥 Enter Room
                             </a>
                         @endif
@@ -322,10 +322,22 @@
                 </div>
             @endif
 
-            <!-- Access Settings -->
+            <!-- Meeting Details -->
             <div class="lc-section">
-                <h2 class="lc-section-title">🔐 Access Settings</h2>
+                <h2 class="lc-section-title">🔗 Meeting Details</h2>
                 <div class="lc-info-grid">
+                    <div class="lc-info-item">
+                        <span class="lc-info-label">Teacher</span>
+                        <span class="lc-info-value">{{ $liveClass->teacher ? $liveClass->teacher->name : 'Not assigned' }}</span>
+                    </div>
+                    <div class="lc-info-item">
+                        <span class="lc-info-label">Meeting ID</span>
+                        <span class="lc-info-value">{{ $liveClass->meeting_id }}</span>
+                    </div>
+                    <div class="lc-info-item">
+                        <span class="lc-info-label">Password</span>
+                        <span class="lc-info-value">{{ $liveClass->password }}</span>
+                    </div>
                     <div class="lc-info-item">
                         <span class="lc-info-label">Access Type</span>
                         <span class="lc-info-value">{{ ucfirst(str_replace('_', ' ', $liveClass->access_type)) }}</span>

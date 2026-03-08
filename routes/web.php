@@ -231,6 +231,7 @@ Route::middleware('auth:teacher')->prefix('teacher')->name('teacher.')->group(fu
     // Teacher Live Classes
     Route::get('live-classes', [\App\Http\Controllers\TeacherLiveClassController::class, 'index'])->name('live-classes.index');
     Route::get('live-classes/{liveClass}', [\App\Http\Controllers\TeacherLiveClassController::class, 'show'])->name('live-classes.show');
+    Route::get('live-classes/{liveClass}/room', [\App\Http\Controllers\TeacherLiveClassController::class, 'room'])->name('live-classes.room');
     Route::post('live-classes/{liveClass}/start', [\App\Http\Controllers\TeacherLiveClassController::class, 'start'])->name('live-classes.start');
     Route::post('live-classes/{liveClass}/end', [\App\Http\Controllers\TeacherLiveClassController::class, 'end'])->name('live-classes.end');
     Route::get('live-classes/{liveClass}/requests', [\App\Http\Controllers\TeacherLiveClassController::class, 'manageRequests'])->name('live-classes.requests');
@@ -306,6 +307,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
 
     // Live Classes
     Route::resource('live-classes', LiveClassController::class);
+    Route::get('live-classes/{liveClass}/room', [LiveClassController::class, 'adminRoom'])->name('live-classes.room');
     Route::post('live-classes/{liveClass}/start', [LiveClassController::class, 'start'])->name('live-classes.start');
     Route::post('live-classes/{liveClass}/end', [LiveClassController::class, 'end'])->name('live-classes.end');
     
@@ -868,13 +870,6 @@ Route::middleware('auth:student')->prefix('student')->name('student.')->group(fu
     Route::get('/live-classes/{liveClass}/room', [LiveClassController::class, 'room'])->name('live-classes.room');
 });
 
-// Teacher Live Class Routes
-Route::middleware('auth:teacher')->prefix('teacher')->name('teacher.')->group(function () {
-    Route::get('/live-classes', [LiveClassController::class, 'index'])->name('live-classes.index');
-    Route::get('/live-classes/{liveClass}/room', [LiveClassController::class, 'room'])->name('live-classes.room');
-    Route::post('/live-classes/{liveClass}/start', [LiveClassController::class, 'start'])->name('live-classes.start');
-    Route::post('/live-classes/{liveClass}/end', [LiveClassController::class, 'end'])->name('live-classes.end');
-});
 
 // Live Class Request Management (accessible from room)
 Route::middleware(['auth:admin,staff,teacher'])->group(function () {

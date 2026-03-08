@@ -3,7 +3,6 @@
 @section('title', 'My Live Classes')
 
 @section('content')
-
 <style>
 .lc-wrap { padding: 24px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
 
@@ -97,7 +96,6 @@
     text-decoration: none;
     border: 1px solid;
     cursor: pointer;
-    transition: all 0.2s;
 }
 .lc-btn-start {
     background: #10b981;
@@ -126,6 +124,7 @@
 }
 .lc-btn-view:hover {
     background: #e5e7eb;
+    border-color: #e5e7eb;
     color: #111827;
 }
 
@@ -149,6 +148,13 @@
 .lc-empty-text {
     font-size: 0.9rem;
     line-height: 1.5;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .lc-table { font-size: 0.875rem; }
+    .lc-btn { padding: 0.375rem 0.5rem; font-size: 0.75rem; }
+    .badge { font-size: 0.75rem !important; padding: 0.375rem 0.5rem !important; }
 }
 </style>
 
@@ -247,10 +253,6 @@
                         @endforeach
                     </tbody>
                 </table>
-
-                <div style="margin-top: 24px; display: flex; justify-content: center;">
-                    {{ $liveClasses->links() }}
-                </div>
             </div>
         @else
             <div class="lc-empty">

@@ -51,8 +51,32 @@ class TeacherLiveClassController extends Controller
             'start_time' => now(),
         ]);
 
-        return redirect()->route('live-classes.room', $liveClass)
+        return redirect()->route('teacher.live-classes.room', $liveClass)
             ->with('success', 'Live class started successfully!');
+    }
+
+    public function room(LiveClass $liveClass)
+    {
+        $teacher = Auth::guard('teacher')->user();
+        
+        // Ensure teacher is assigned to this class
+        if ($liveClass->teacher_id !== $teacher->id) {
+            abort(403, 'You are not authorized to access this live class room');
+        }
+
+        $liveClass->load(['branches', 'courses', 'lessons', 'teacher']);
+        
+        // Load student requests for teachers
+        $studentRequests = $liveClass->requests()
+            ->with(['user' => function($query) {
+                $query->select('id', 'full_name', 'course_id');
+            }])
+            ->where('user_type', 'student')
+            ->where('status', 'pending')
+            ->latest()
+            ->get();
+        
+        return view('teacher.live-classes.room', compact('liveClass', 'studentRequests'));
     }
 
     public function end(LiveClass $liveClass)
