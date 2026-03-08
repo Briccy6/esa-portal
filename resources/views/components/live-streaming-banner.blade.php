@@ -166,9 +166,43 @@
                         <p class="text-2xl font-bold text-gray-900 mb-4">
                             <span x-text="accessModal.data.currency"></span> <span x-text="accessModal.data.paymentAmount"></span>
                         </p>
+                        
+                        <!-- Email Input for Payment Verification -->
+                        <div x-show="!accessModal.emailVerified" class="mb-4">
+                            <p class="text-sm text-gray-600 mb-2">Enter your email to check if you've already paid:</p>
+                            <div class="flex gap-2">
+                                <input type="email" 
+                                       x-model="accessModal.email" 
+                                       placeholder="Enter your email address"
+                                       class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                                       @keyup.enter="verifyPayment()">
+                                <button @click="verifyPayment()" 
+                                        :disabled="!accessModal.email || accessModal.verifying"
+                                        class="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50">
+                                    <span x-show="!accessModal.verifying">Check</span>
+                                    <span x-show="accessModal.verifying">Checking...</span>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Already Paid Message -->
+                        <div x-show="accessModal.emailVerified && accessModal.data.canJoin" class="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                            <p class="text-green-800 text-sm">
+                                <i class="fas fa-check-circle mr-1"></i>
+                                Payment verified! You can join the class.
+                            </p>
+                        </div>
+                        
                         <button @click="processPayment(accessModal.selectedClass)" 
+                                x-show="!accessModal.emailVerified || !accessModal.data.canJoin"
                                 class="w-full bg-yellow-600 text-white py-2 rounded-lg font-semibold hover:bg-yellow-700 transition-colors">
                             Proceed to Payment
+                        </button>
+                        
+                        <button @click="joinClass(accessModal.selectedClass)" 
+                                x-show="accessModal.emailVerified && accessModal.data.canJoin"
+                                class="w-full bg-green-600 text-white py-2 rounded-lg font-semibold hover:bg-green-700 transition-colors">
+                            Enter Live Class
                         </button>
                     </div>
                 </div>
@@ -199,7 +233,10 @@
                 accessModal: {
                     show: false,
                     data: {},
-                    selectedClass: null
+                    selectedClass: null,
+                    email: '',
+                    emailVerified: false,
+                    verifying: false
                 },
                 liveClasses: [],
 
@@ -226,6 +263,10 @@
                 async checkAccess(liveClass) {
                     this.checkingAccess = true;
                     this.accessModal.selectedClass = liveClass;
+                    // Reset email verification state
+                    this.accessModal.email = '';
+                    this.accessModal.emailVerified = false;
+                    this.accessModal.verifying = false;
                     
                     try {
                         const response = await fetch(`/api/live-classes/${liveClass.id}/check-access`);
@@ -246,7 +287,7 @@
                         }
                         
                         if (data.requiresPayment) {
-                            // Show payment modal
+                            // Show payment modal with email verification
                             this.accessModal.show = true;
                             return;
                         }
@@ -262,6 +303,34 @@
                     }
                 },
 
+                async verifyPayment() {
+                    if (!this.accessModal.email) {
+                        return;
+                    }
+                    
+                    this.accessModal.verifying = true;
+                    
+                    try {
+                        const response = await fetch(`/api/live-classes/${this.accessModal.selectedClass.id}/check-access?email=${encodeURIComponent(this.accessModal.email)}`);
+                        const data = await response.json();
+                        
+                        if (data.canJoin) {
+                            // Payment verified - update UI
+                            this.accessModal.data = data;
+                            this.accessModal.emailVerified = true;
+                        } else {
+                            // No payment found - show message
+                            this.accessModal.emailVerified = false;
+                            alert('No payment found for this email. Please proceed with payment.');
+                        }
+                    } catch (error) {
+                        console.error('Error verifying payment:', error);
+                        alert('Error verifying payment. Please try again.');
+                    } finally {
+                        this.accessModal.verifying = false;
+                    }
+                },
+
                 joinClass(liveClass) {
                     // Check for existing session
                     if (this.checkExistingSession()) {
@@ -269,8 +338,11 @@
                         return;
                     }
 
-                    // Open live class in new window
-                    const roomUrl = `/live-classes/${liveClass.id}/room`;
+                    // Open live class in new window with email parameter if verified
+                    let roomUrl = `/live-classes/${liveClass.id}/room`;
+                    if (this.accessModal.emailVerified && this.accessModal.email) {
+                        roomUrl += `?email=${encodeURIComponent(this.accessModal.email)}`;
+                    }
                     window.open(roomUrl, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
                     
                     // Track session

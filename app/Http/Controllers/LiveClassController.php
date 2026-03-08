@@ -86,10 +86,36 @@ class LiveClassController extends Controller
                 return response()->json($response);
             }
             
-            $response['requiresPayment'] = $liveClass->access_type === 'public' || $liveClass->access_type === 'both';
-            $response['paymentAmount'] = $liveClass->public_fee;
-            $response['currency'] = $liveClass->currency;
-            $response['reason'] = $response['requiresPayment'] ? 'Payment required for public access' : 'Please login to access this class';
+            // Check if this is a public class that requires payment
+            if ($liveClass->access_type === 'public' || $liveClass->access_type === 'both') {
+                // Check if user has already paid (via email parameter if provided)
+                $email = request()->get('email');
+                if ($email && $liveClass->public_fee > 0) {
+                    $previousPayment = \App\Models\LiveClassPayment::where('live_class_id', $liveClass->id)
+                        ->where('email', $email)
+                        ->where('status', 'completed')
+                        ->first();
+                    
+                    if ($previousPayment) {
+                        // User has already paid - allow access
+                        $response['canJoin'] = true;
+                        $response['reason'] = 'Access granted - payment verified';
+                        $response['requiresPayment'] = false;
+                        $response['paymentAmount'] = 0;
+                        return response()->json($response);
+                    }
+                }
+                
+                // No payment found or no email provided - payment required
+                $response['requiresPayment'] = true;
+                $response['paymentAmount'] = $liveClass->public_fee;
+                $response['currency'] = $liveClass->currency;
+                $response['reason'] = 'Payment required for public access';
+                return response()->json($response);
+            }
+            
+            // Not a public class
+            $response['reason'] = 'Please login to access this class';
             return response()->json($response);
         }
 
@@ -210,10 +236,8 @@ class LiveClassController extends Controller
             'network'        => 'required_if:payment_method,mobile_money|nullable|string',
         ]);
 
-        $tx_ref = 'LC_' . $liveClass->id . '_' . time() . '_' . Str::random(8);
-
-        // Normalise currency to uppercase (db may store 'Rwf' instead of 'RWF')
-        $currency = strtoupper(trim($liveClass->currency));
+        $tx_ref   = 'LC_' . $liveClass->id . '_' . time() . '_' . Str::random(8);
+        $currency = strtoupper(trim($liveClass->currency)); // normalise e.g. 'Rwf' → 'RWF'
 
         $payment = \App\Models\LiveClassPayment::create([
             'live_class_id'   => $liveClass->id,
@@ -230,78 +254,65 @@ class LiveClassController extends Controller
         ]);
 
         try {
-            // Bootstrap MUST be called first – it binds the config into the
-            // service container that every SDK service class depends on.
-            \Flutterwave\Flutterwave::bootstrap();
+            // ------------------------------------------------------------------
+            // We call the Flutterwave Standard (Hosted) payment page directly
+            // via their REST API instead of using the PHP SDK's broken factory.
+            // This is the most reliable approach and works for ALL payment types.
+            // Docs: https://developer.flutterwave.com/docs/collecting-payments/standard
+            // ------------------------------------------------------------------
+            $secretKey = config('services.flutterwave.secret_key')
+                      ?? env('FLW_SECRET_KEY');
 
-            // ----------------------------------------------------------------
-            // Map the user's selected method → the SDK factory key that
-            // Flutterwave::create() understands.
-            // ----------------------------------------------------------------
-            $selectedMethod        = $request->payment_method;
-            $mobileMoneyCurrencies = ['RWF', 'GHS', 'UGX', 'XAF', 'ZMW', 'TZS', 'KES'];
-            $cardCurrencies        = ['USD', 'EUR', 'GBP', 'NGN'];
-
-            if ($selectedMethod === 'card') {
-                // Fall back to mobile money when currency doesn't support cards
-                $sdkKey         = in_array($currency, $cardCurrencies) ? 'card' : 'mobilemoney';
-                $paymentOptions = in_array($currency, $cardCurrencies) ? 'card' : 'mobilemoney';
-            } elseif ($selectedMethod === 'mobile_money') {
-                $sdkKey         = 'mobilemoney';
-                $paymentOptions = 'mobilemoney';
-            } elseif ($selectedMethod === 'bank_transfer') {
-                $sdkKey         = 'banktransfer';
-                $paymentOptions = 'banktransfer';
-            } elseif ($selectedMethod === 'ussd') {
-                $sdkKey         = 'ussd';
-                $paymentOptions = 'ussd';
-            } else {
-                $sdkKey         = in_array($currency, $mobileMoneyCurrencies) ? 'mobilemoney' : 'card';
-                $paymentOptions = $sdkKey;
+            if (empty($secretKey)) {
+                throw new \Exception('Flutterwave secret key is not configured in services.flutterwave.secret_key or FLW_SECRET_KEY env.');
             }
 
-            \Log::info('Flutterwave payment init', [
-                'selected_method' => $selectedMethod,
-                'currency'        => $currency,
-                'sdk_key'         => $sdkKey,
-                'payment_options' => $paymentOptions,
+            // Map currency → correct payment_options string for the hosted page
+            $mobileMoneyCurrencies = ['RWF', 'GHS', 'UGX', 'XAF', 'ZMW', 'TZS', 'KES'];
+
+            $selectedMethod = $request->payment_method;
+
+            if ($selectedMethod === 'mobile_money') {
+                $paymentOptions = 'mobilemoney';
+            } elseif ($selectedMethod === 'card') {
+                // RWF does not support card; silently fall back to mobile money
+                $paymentOptions = in_array($currency, $mobileMoneyCurrencies) ? 'mobilemoney' : 'card';
+            } elseif ($selectedMethod === 'bank_transfer') {
+                $paymentOptions = 'banktransfer';
+            } elseif ($selectedMethod === 'ussd') {
+                $paymentOptions = 'ussd';
+            } else {
+                $paymentOptions = in_array($currency, $mobileMoneyCurrencies) ? 'mobilemoney' : 'card';
+            }
+
+            // Build the standard hosted-page payload
+            $body = [
                 'tx_ref'          => $tx_ref,
-            ]);
-
-            // ----------------------------------------------------------------
-            // Build the payload
-            // ----------------------------------------------------------------
-            $payload = new \Flutterwave\Entities\Payload();
-            $payload->txref           = $tx_ref;
-            $payload->amount          = $liveClass->public_fee;
-            $payload->currency        = $currency;
-            $payload->payment_options = $paymentOptions;
-            $payload->redirect_url    = route('live-classes.payment.callback', $liveClass);
-
-            $payload->customer = [
-                'email' => $request->email,
-                'name'  => $request->name,
-                'phone' => $request->phone ?? '',
+                'amount'          => (float) $liveClass->public_fee,
+                'currency'        => $currency,
+                'payment_options' => $paymentOptions,
+                'redirect_url'    => route('live-classes.payment.callback', $liveClass),
+                'customer'        => [
+                    'email'        => $request->email,
+                    'name'         => $request->name,
+                    'phonenumber'  => $request->phone ?? '',
+                ],
+                'meta' => [
+                    'live_class_id' => $liveClass->id,
+                    'payment_id'    => $payment->id,
+                    'user_type'     => 'public',
+                    'type'          => 'live_class_payment',
+                ],
+                'customizations' => [
+                    'title'       => 'Live Class: ' . $liveClass->title,
+                    'description' => 'Payment for live class - ' . $liveClass->title,
+                    'logo'        => asset('images/logo.png'),
+                ],
             ];
 
-            $payload->meta = [
-                'live_class_id' => $liveClass->id,
-                'payment_id'    => $payment->id,
-                'user_type'     => 'public',
-                'type'          => 'live_class_payment',
-            ];
-
-            $payload->customizations = [
-                'title'       => "Live Class: {$liveClass->title}",
-                'description' => "Payment for live class - {$liveClass->title}",
-                'logo'        => asset('images/logo.png'),
-            ];
-
-            // ----------------------------------------------------------------
-            // Mobile Money extras
-            // ----------------------------------------------------------------
-            if ($sdkKey === 'mobilemoney') {
-                $networkMap = [
+            // For RWF mobile money add network so Flutterwave pre-selects it
+            if ($paymentOptions === 'mobilemoney' && $request->filled('network')) {
+                $networkMap        = [
                     'RWF' => ['MTN', 'AIRTEL', 'TIGO'],
                     'GHS' => ['MTN', 'VODAFONE', 'TIGO'],
                     'UGX' => ['MTN', 'AIRTEL'],
@@ -310,44 +321,35 @@ class LiveClassController extends Controller
                     'TZS' => ['AIRTEL', 'TIGO', 'HALOPESA', 'VODAFONE'],
                     'KES' => ['MPESA'],
                 ];
-
                 $availableNetworks = $networkMap[$currency] ?? ['MTN'];
-                $selectedNetwork   = strtoupper($request->network ?? $availableNetworks[0]);
-
+                $selectedNetwork   = strtoupper($request->network);
                 if (!in_array($selectedNetwork, $availableNetworks)) {
                     $selectedNetwork = $availableNetworks[0];
                 }
-
-                $payload->network     = $selectedNetwork;
-                $payload->phonenumber = $request->phone ?? '';
-
-                \Log::info('Mobile Money details', [
-                    'network' => $selectedNetwork,
-                    'phone'   => $request->phone ?? 'none',
-                ]);
+                $body['meta']['network'] = $selectedNetwork; // informational only on hosted page
             }
 
-            // ----------------------------------------------------------------
-            // USSD extras
-            // ----------------------------------------------------------------
-            if ($sdkKey === 'ussd') {
-                $payload->account_bank = $request->bank_code ?? '058';
-                $payload->phonenumber  = $request->phone ?? '';
-            }
+            \Log::info('Flutterwave hosted payment request', [
+                'tx_ref'          => $tx_ref,
+                'currency'        => $currency,
+                'payment_options' => $paymentOptions,
+                'amount'          => $body['amount'],
+            ]);
 
-            // ----------------------------------------------------------------
-            // Use the SDK factory AFTER bootstrap so the IoC container has the
-            // config bound and every service gets it injected correctly.
-            // ----------------------------------------------------------------
-            $paymentService = \Flutterwave\Flutterwave::create($sdkKey);
+            // Call the Flutterwave Standard Payments endpoint
+            // SSL verify disabled on non-production (localhost has no CA certs installed)
+            $sslVerify = app()->environment('production');
 
-            \Log::info('Flutterwave service created: ' . get_class($paymentService));
+            $response = \Illuminate\Support\Facades\Http::withToken($secretKey)
+                ->withHeaders(['Content-Type' => 'application/json'])
+                ->withOptions(['verify' => $sslVerify])
+                ->post('https://api.flutterwave.com/v3/payments', $body);
 
-            $result = $paymentService->initiate($payload);
+            $result = $response->json();
 
-            \Log::info('Flutterwave initiate response', ['result' => $result]);
+            \Log::info('Flutterwave API response', ['result' => $result]);
 
-            if (isset($result['status']) && $result['status'] === 'success') {
+            if (isset($result['status']) && $result['status'] === 'success' && isset($result['data']['link'])) {
                 $payment->update(['gateway_response' => $result]);
 
                 return response()->json([
@@ -424,8 +426,6 @@ class LiveClassController extends Controller
         }
 
         try {
-            \Flutterwave\Flutterwave::bootstrap();
-
             $payment = \App\Models\LiveClassPayment::where('transaction_id', $tx_ref)->first();
 
             if (!$payment) {
@@ -433,13 +433,21 @@ class LiveClassController extends Controller
                     ->with('error', 'Payment record not found.');
             }
 
+            $secretKey = config('services.flutterwave.secret_key') ?? env('FLW_SECRET_KEY');
+
             // ----------------------------------------------------------------
-            // Use the SDK factory to get a Transactions service – bootstrap()
-            // must be called first so the config is bound in the container.
-            // The 'transactions' key works for ALL payment types.
+            // Verify using the Flutterwave REST API directly — no SDK needed.
+            // Works for ALL payment types: card, mobile money, bank transfer etc.
             // ----------------------------------------------------------------
-            $transactionService = \Flutterwave\Flutterwave::create('transactions');
-            $transaction        = $transactionService->verify($tx_ref);
+            $sslVerify = app()->environment('production');
+
+            $verifyResponse = \Illuminate\Support\Facades\Http::withToken($secretKey)
+                ->withOptions(['verify' => $sslVerify])
+                ->get("https://api.flutterwave.com/v3/transactions/verify_by_reference", [
+                    'tx_ref' => $tx_ref,
+                ]);
+
+            $transaction = $verifyResponse->json();
 
             \Log::info('Payment verification response', ['transaction' => $transaction]);
 
@@ -819,6 +827,23 @@ class LiveClassController extends Controller
             return back()->with('error', $canJoin['reason']);
         }
 
+        // Check device restriction if enabled
+        if ($liveClass->device_restriction) {
+            $activeParticipant = $liveClass->participants()
+                ->where('email', $request->email)
+                ->where('user_type', 'public')
+                ->where('is_active', true)
+                ->whereNull('left_at')
+                ->where('ip_address', '!=', request()->ip())
+                ->first();
+            
+            if ($activeParticipant) {
+                return redirect()->route('live-classes.public-join', $liveClass)
+                    ->with('error', 'This email is already being used on another device. For security reasons, only one device per email is allowed. Please close the other session first.')
+                    ->withInput();
+            }
+        }
+
         $this->recordPublicParticipant($liveClass, $request->email, $request->name, $request->phone);
 
         return redirect()->route('live-classes.room', $liveClass);
@@ -910,6 +935,13 @@ class LiveClassController extends Controller
 
     public function room(LiveClass $liveClass)
     {
+        // Handle email parameter for direct room access (returning users)
+        $userEmail = request()->get('email');
+        if ($userEmail) {
+            // Store email in session for consistency
+            session(['public_user_email' => $userEmail]);
+        }
+        
         if (Auth::guard('student')->check()) {
             $student = Auth::guard('student')->user();
             
@@ -979,8 +1011,70 @@ class LiveClassController extends Controller
             
             $isTeacher = false;
         } else {
-            $isTeacher = Auth::guard('teacher')->check() && 
-                         Auth::guard('teacher')->user()->id == $liveClass->teacher_id;
+            // Check if user has previously paid for this class (even without session)
+            // This handles returning users who cleared their session or are on a different device
+            $userEmail = $userEmail ?? session('public_user_email') ?? request()->get('email');
+            if ($userEmail && $liveClass->public_fee > 0) {
+                $previousPayment = \App\Models\LiveClassPayment::where('live_class_id', $liveClass->id)
+                    ->where('email', $userEmail)
+                    ->where('status', 'completed')
+                    ->first();
+                
+                if ($previousPayment) {
+                    // Check device restriction if enabled
+                    if ($liveClass->device_restriction) {
+                        $activeParticipant = $liveClass->participants()
+                            ->where('email', $previousPayment->email)
+                            ->where('user_type', 'public')
+                            ->where('is_active', true)
+                            ->whereNull('left_at')
+                            ->where('ip_address', '!=', request()->ip())
+                            ->first();
+                        
+                        if ($activeParticipant) {
+                            return redirect()->route('live-classes.public-join', $liveClass)
+                                ->with('error', 'This email is already being used on another device. For security reasons, only one device per email is allowed. Please close the other session first.');
+                        }
+                    }
+                    
+                    // User has paid before, recreate session and allow access
+                    session(['live_class_payment_' . $liveClass->id => [
+                        'email'      => $previousPayment->email,
+                        'name'       => $previousPayment->name,
+                        'phone'      => $previousPayment->phone,
+                        'payment_id' => $previousPayment->id,
+                    ]]);
+                    
+                    $existingParticipant = $liveClass->participants()
+                        ->where('email', $previousPayment->email)
+                        ->where('user_type', 'public')
+                        ->where('is_active', true)
+                        ->whereNull('left_at')
+                        ->first();
+                        
+                    if (!$existingParticipant) {
+                        $liveClass->participants()->create([
+                            'email'        => $previousPayment->email,
+                            'name'         => $previousPayment->name,
+                            'user_type'    => 'public',
+                            'joined_at'    => now(),
+                            'is_active'    => true,
+                            'ip_address'   => request()->ip(),
+                            'browser_info' => request()->userAgent(),
+                        ]);
+                    }
+                    
+                    $isTeacher = false;
+                } else {
+                    // No payment found, check if teacher
+                    $isTeacher = Auth::guard('teacher')->check() && 
+                                 Auth::guard('teacher')->user()->id == $liveClass->teacher_id;
+                }
+            } else {
+                // No email provided or free class, check if teacher
+                $isTeacher = Auth::guard('teacher')->check() && 
+                             Auth::guard('teacher')->user()->id == $liveClass->teacher_id;
+            }
         }
 
         $liveClass->load(['branches', 'courses', 'lessons', 'teacher']);
@@ -997,9 +1091,19 @@ class LiveClassController extends Controller
                 ->get();
         }
         
-        $viewName = session('live_class_payment_' . $liveClass->id)
-            ? 'live-classes.public-room'
-            : 'live-classes.room';
+        // Determine which view to show based on user type
+        $isPublicUser = false;
+        
+        // Check if user is public (non-authenticated)
+        if (!Auth::guard('student')->check() && 
+            !Auth::guard('admin')->check() && 
+            !Auth::guard('teacher')->check() && 
+            !Auth::guard('staff')->check()) {
+            $isPublicUser = true;
+        }
+        
+        // For public users, always show the public room view
+        $viewName = $isPublicUser ? 'live-classes.public-room' : 'live-classes.room';
         
         return view($viewName, compact('liveClass', 'isTeacher', 'studentRequests'));
     }

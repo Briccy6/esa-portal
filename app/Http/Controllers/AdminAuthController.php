@@ -14,6 +14,7 @@ use App\Models\Expense;
 use App\Models\TokenTransaction;
 use App\Models\LiveClassPayment;
 use App\Models\Resource;
+use App\Models\StudentSubscription;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -248,32 +249,17 @@ class AdminAuthController extends Controller
             ->whereYear('paid_at', Carbon::now()->year)
             ->sum('amount');
 
+        $monthlySubscriptionRevenue = StudentSubscription::where('payment_status', 'paid')
+            ->where('is_active', true)
+            ->whereMonth('created_at', Carbon::now()->month)
+            ->whereYear('created_at', Carbon::now()->year)
+            ->sum('paid_amount');
+
         $monthlyResourceRevenue = Resource::where('is_free', false)
             ->where('price', '>', 0)
             ->whereMonth('created_at', Carbon::now()->month)
             ->whereYear('created_at', Carbon::now()->year)
             ->sum('price');
-
-        // Monthly subscription revenue
-        $monthlySubscriptionRevenue = StudentSubscription::where('payment_status', 'paid')
-            ->where('is_active', true)
-            ->whereMonth('paid_at', Carbon::now()->month)
-            ->whereYear('paid_at', Carbon::now()->year)
-            ->sum('paid_amount');
-
-        // Update total revenue to include all sources
-        $totalRevenue = $registrationPaidAmount + 
-            StudentTransaction::where('type', 'school_fee')
-                ->where('status', 'successful')
-                ->sum('amount') +
-            $tokenRevenue + 
-            $liveClassRevenue + 
-            $resourceRevenue + 
-            $subscriptionRevenue;
-
-        // Recalculate profit and margin
-        $netProfit = $totalRevenue - $totalExpenses;
-        $profitMargin = $totalRevenue > 0 ? round(($netProfit / $totalRevenue) * 100, 1) : 0;
 
         // Recent expenses (last 10) - simplified without relationship
         $recentExpenses = Expense::orderBy('expense_date', 'desc')

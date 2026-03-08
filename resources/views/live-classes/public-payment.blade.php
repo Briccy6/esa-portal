@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Payment for Live Class - {{ $liveClass->title }}')
+@section('title', 'Payment for Live Class - ' . $liveClass->title)
 
 @section('content')
 <div class="container mx-auto px-4 py-8">
@@ -12,6 +12,19 @@
             </div>
 
             <div class="p-6">
+
+                {{-- Success / Error flash messages --}}
+                @if(session('success'))
+                    <div class="mb-4 p-4 bg-green-100 border border-green-300 text-green-800 rounded-lg">
+                        {{ session('success') }}
+                    </div>
+                @endif
+                @if(session('error'))
+                    <div class="mb-4 p-4 bg-red-100 border border-red-300 text-red-800 rounded-lg">
+                        {{ session('error') }}
+                    </div>
+                @endif
+
                 <!-- Class Details -->
                 <div class="mb-6 p-4 bg-gray-50 rounded-lg">
                     <h3 class="font-semibold text-lg mb-2">{{ $liveClass->title }}</h3>
@@ -19,117 +32,128 @@
                     <div class="flex flex-wrap gap-2 mt-3">
                         <span class="text-sm text-gray-500">
                             <i class="fas fa-clock mr-1"></i>
-                            {{ \Carbon\Carbon::parse($liveClass->start_time)->format('M j, Y H:i') }} - 
+                            {{ \Carbon\Carbon::parse($liveClass->start_time)->format('M j, Y H:i') }} -
                             {{ \Carbon\Carbon::parse($liveClass->end_time)->format('H:i') }}
                         </span>
                     </div>
                 </div>
 
-                <!-- Payment Form -->
-                <form action="{{ route('live-classes.payment.process', $liveClass) }}" method="POST" class="space-y-4">
-                    @csrf
-
-                    <!-- Amount Display -->
-                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                        <div class="flex justify-between items-center">
-                            <span class="text-lg font-semibold">Amount Due:</span>
-                            <span class="text-2xl font-bold text-yellow-600">
-                                {{ $liveClass->currency }} {{ number_format($liveClass->public_fee, 2) }}
-                            </span>
-                        </div>
+                <!-- Amount -->
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                    <div class="flex justify-between items-center">
+                        <span class="text-lg font-semibold">Amount Due:</span>
+                        <span class="text-2xl font-bold text-yellow-600">
+                            {{ strtoupper($liveClass->currency) }} {{ number_format($liveClass->public_fee, 2) }}
+                        </span>
                     </div>
+                </div>
+
+                {{-- =====================================================
+                     IMPORTANT: id="paymentForm" is required by the JS
+                     below. Do NOT remove it.
+                     ===================================================== --}}
+                <form id="paymentForm"
+                      action="{{ route('live-classes.payment.process', $liveClass) }}"
+                      method="POST"
+                      class="space-y-4">
+                    @csrf
 
                     <!-- Personal Information -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Full Name <span class="text-red-500">*</span></label>
                             <input type="text" name="name" required
+                                   value="{{ old('name') }}"
                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                                    placeholder="John Doe">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Email Address <span class="text-red-500">*</span></label>
                             <input type="email" name="email" required
+                                   value="{{ old('email') }}"
                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                                    placeholder="john@example.com">
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number (Optional)</label>
-                        <input type="tel" name="phone"
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number <span class="text-red-500">*</span></label>
+                        <input type="tel" name="phone" required
+                               value="{{ old('phone') }}"
                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                                placeholder="+250 788 123 456">
+                        <p class="text-xs text-gray-500 mt-1">Required for mobile money payments</p>
                     </div>
 
                     <!-- Payment Method -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
-                        <select name="payment_method" required
-                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                                id="paymentMethod">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Payment Method <span class="text-red-500">*</span></label>
+                        <select name="payment_method" id="paymentMethod" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
                             <option value="">Select payment method</option>
-                            @if($liveClass->currency === 'RWF')
-                                <option value="mobile_money">Mobile Money (MTN, Airtel, Tigo)</option>
-                                <option value="ussd">USSD</option>
-                                <option value="bank_transfer">Bank Transfer</option>
+                            @if(in_array(strtoupper($liveClass->currency), ['RWF','GHS','UGX','XAF','ZMW','TZS']))
+                                <option value="mobile_money" {{ old('payment_method') === 'mobile_money' ? 'selected' : '' }}>
+                                    Mobile Money
+                                </option>
+                                <option value="bank_transfer" {{ old('payment_method') === 'bank_transfer' ? 'selected' : '' }}>
+                                    Bank Transfer
+                                </option>
                             @else
-                                <option value="card">Credit/Debit Card</option>
-                                <option value="mobile_money">Mobile Money</option>
-                                <option value="bank_transfer">Bank Transfer</option>
-                                <option value="ussd">USSD</option>
+                                <option value="card" {{ old('payment_method') === 'card' ? 'selected' : '' }}>
+                                    Credit / Debit Card
+                                </option>
+                                <option value="mobile_money" {{ old('payment_method') === 'mobile_money' ? 'selected' : '' }}>
+                                    Mobile Money
+                                </option>
+                                <option value="bank_transfer" {{ old('payment_method') === 'bank_transfer' ? 'selected' : '' }}>
+                                    Bank Transfer
+                                </option>
                             @endif
                         </select>
-                        @if($liveClass->currency === 'RWF')
-                            <p class="text-xs text-gray-500 mt-1">For RWF payments: Mobile Money, USSD, and Bank Transfer are supported</p>
-                        @else
-                            <p class="text-xs text-gray-500 mt-1">All payment methods available</p>
-                        @endif
                     </div>
 
-                    <!-- Mobile Money Network (shown only when mobile money is selected) -->
+                    <!-- Mobile Money Network (hidden until mobile_money selected) -->
                     <div id="networkField" class="hidden">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Mobile Money Network *</label>
-                        <select name="network" required
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Mobile Money Network <span class="text-red-500">*</span>
+                        </label>
+                        <select name="network" id="networkSelect"
                                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
-                            @if($liveClass->currency === 'RWF')
-                                <option value="">Select network</option>
-                                <option value="MTN">MTN Mobile Money</option>
-                                <option value="AIRTEL">Airtel Money</option>
-                                <option value="TIGO">Tigo Cash</option>
-                            @elseif($liveClass->currency === 'GHS')
-                                <option value="">Select network</option>
-                                <option value="MTN">MTN Mobile Money</option>
-                                <option value="VODAFONE">Vodafone Cash</option>
-                                <option value="TIGO">Tigo Cash</option>
-                            @elseif($liveClass->currency === 'UGX')
-                                <option value="">Select network</option>
-                                <option value="MTN">MTN Mobile Money</option>
-                                <option value="AIRTEL">Airtel Money</option>
-                            @elseif($liveClass->currency === 'TZS')
-                                <option value="">Select network</option>
-                                <option value="AIRTEL">Airtel Money</option>
-                                <option value="TIGO">Tigo Pesa</option>
-                                <option value="HALOPESA">Halopesa</option>
-                                <option value="VODAFONE">Vodacom M-Pesa</option>
-                            @else
-                                <option value="">Select network</option>
-                                <option value="MTN">MTN Mobile Money</option>
-                            @endif
+                            <option value="">Select network</option>
+                            @php
+                                $currency = strtoupper($liveClass->currency);
+                                $networks = [
+                                    'RWF' => ['MTN' => 'MTN Mobile Money', 'AIRTEL' => 'Airtel Money', 'TIGO' => 'Tigo Cash'],
+                                    'GHS' => ['MTN' => 'MTN Mobile Money', 'VODOFONE' => 'Vodafone Cash', 'TIGO' => 'Tigo Cash'],
+                                    'UGX' => ['MTN' => 'MTN Mobile Money', 'AIRTEL' => 'Airtel Money'],
+                                    'XAF' => ['MTN' => 'MTN Mobile Money', 'ORANGE' => 'Orange Money'],
+                                    'ZMW' => ['MTN' => 'MTN Mobile Money', 'ZAMTEL' => 'Zamtel Kwacha'],
+                                    'TZS' => ['AIRTEL' => 'Airtel Money', 'TIGO' => 'Tigo Pesa', 'HALOPESA' => 'Halopesa', 'VODOFONE' => 'Vodacom M-Pesa'],
+                                ];
+                                $currencyNetworks = $networks[$currency] ?? ['MTN' => 'MTN Mobile Money'];
+                            @endphp
+                            @foreach($currencyNetworks as $value => $label)
+                                <option value="{{ $value }}" {{ old('network') === $value ? 'selected' : '' }}>
+                                    {{ $label }}
+                                </option>
+                            @endforeach
                         </select>
                     </div>
 
                     <!-- Terms -->
-                    <div class="flex items-center">
-                        <input type="checkbox" id="terms" name="terms" required class="mr-2">
+                    <div class="flex items-start gap-2">
+                        <input type="checkbox" id="terms" name="terms" required class="mt-1">
                         <label for="terms" class="text-sm text-gray-600">
                             I agree to the terms and conditions for accessing this live class
                         </label>
                     </div>
 
+                    <!-- Error message area -->
+                    <div id="paymentError" class="hidden p-3 bg-red-100 border border-red-300 text-red-700 rounded-lg text-sm"></div>
+
                     <!-- Submit Button -->
                     <button type="submit" id="paymentSubmitBtn"
-                            class="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors">
+                            class="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
                         <span id="paymentBtnText">Proceed to Payment</span>
                         <span id="paymentSpinner" class="hidden">
                             <i class="fas fa-spinner fa-spin mr-2"></i>Processing...
@@ -143,7 +167,7 @@
                         <i class="fas fa-shield-alt text-blue-600 mt-1 mr-3"></i>
                         <div class="text-sm text-blue-800">
                             <p class="font-semibold mb-1">Secure Payment</p>
-                            <p>Your payment information is encrypted and secure. You will receive a confirmation email after successful payment.</p>
+                            <p>Your payment is processed securely by Flutterwave. You will be redirected to complete payment.</p>
                         </div>
                     </div>
                 </div>
@@ -155,66 +179,104 @@
 
 @push('scripts')
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const paymentForm = document.querySelector('form[action*="payment/process"]');
-    const submitBtn = document.getElementById('paymentSubmitBtn');
-    const btnText = document.getElementById('paymentBtnText');
-    const spinner = document.getElementById('paymentSpinner');
-    const paymentMethodSelect = document.getElementById('paymentMethod');
-    const networkField = document.getElementById('networkField');
+/**
+ * Payment form handler.
+ *
+ * The form action returns JSON with { success, redirect_url }.
+ * We must intercept the submit with JS, call the endpoint via fetch,
+ * then do window.location.href = redirect_url to send the user to
+ * Flutterwave's hosted checkout page.
+ *
+ * WITHOUT this intercept the browser does a native POST and just
+ * displays the raw JSON on screen — which is the bug we are fixing.
+ */
+document.addEventListener('DOMContentLoaded', function () {
 
-    // Show/hide network field based on payment method
-    if (paymentMethodSelect) {
-        paymentMethodSelect.addEventListener('change', function() {
-            if (this.value === 'mobile_money') {
-                networkField.classList.remove('hidden');
-            } else {
-                networkField.classList.add('hidden');
-            }
-        });
+    const form         = document.getElementById('paymentForm');
+    const submitBtn    = document.getElementById('paymentSubmitBtn');
+    const btnText      = document.getElementById('paymentBtnText');
+    const spinner      = document.getElementById('paymentSpinner');
+    const methodSelect = document.getElementById('paymentMethod');
+    const networkField = document.getElementById('networkField');
+    const networkSelect = document.getElementById('networkSelect');
+    const errorBox     = document.getElementById('paymentError');
+
+    // ── Show / hide network selector ────────────────────────────────
+    function toggleNetwork() {
+        const show = methodSelect.value === 'mobile_money';
+        networkField.classList.toggle('hidden', !show);
+        networkSelect.required = show;
+    }
+    methodSelect.addEventListener('change', toggleNetwork);
+    toggleNetwork(); // run on load in case old() repopulated the field
+
+    // ── Helpers ──────────────────────────────────────────────────────
+    function showError(msg) {
+        errorBox.textContent = msg;
+        errorBox.classList.remove('hidden');
+        window.scrollTo({ top: errorBox.offsetTop - 20, behavior: 'smooth' });
     }
 
-    if (paymentForm) {
-        paymentForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            // Show loading state
-            submitBtn.disabled = true;
-            btnText.classList.add('hidden');
-            spinner.classList.remove('hidden');
+    function resetBtn() {
+        submitBtn.disabled = false;
+        btnText.classList.remove('hidden');
+        spinner.classList.add('hidden');
+    }
 
-            const formData = new FormData(paymentForm);
-            
-            fetch(paymentForm.action, {
+    function setBusy() {
+        errorBox.classList.add('hidden');
+        submitBtn.disabled = true;
+        btnText.classList.add('hidden');
+        spinner.classList.remove('hidden');
+    }
+
+    // ── Form submit intercept ────────────────────────────────────────
+    form.addEventListener('submit', async function (e) {
+        e.preventDefault(); // stop the browser doing a native POST
+
+        setBusy();
+
+        try {
+            const formData = new FormData(form);
+
+            const response = await fetch(form.action, {
                 method: 'POST',
                 body: formData,
+                // NOTE: do NOT manually set Content-Type here.
+                // The browser sets it automatically with the correct
+                // multipart boundary when using FormData.
                 headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    'Accept': 'application/json'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Redirect to Flutterwave payment page
-                    window.location.href = data.redirect_url;
-                } else {
-                    // Show error and reset form
-                    alert(data.message || 'Payment initialization failed');
-                    submitBtn.disabled = false;
-                    btnText.classList.remove('hidden');
-                    spinner.classList.add('hidden');
-                }
-            })
-            .catch(error => {
-                console.error('Payment error:', error);
-                alert('Payment initialization failed. Please try again.');
-                submitBtn.disabled = false;
-                btnText.classList.remove('hidden');
-                spinner.classList.add('hidden');
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json',
+                },
             });
-        });
-    }
+
+            let data;
+            try {
+                data = await response.json();
+            } catch (parseErr) {
+                showError('Unexpected server response. Please try again.');
+                resetBtn();
+                return;
+            }
+
+            if (data.success && data.redirect_url) {
+                // ✅ Redirect the user to Flutterwave's hosted checkout page
+                // This is where they enter their mobile money PIN / card details
+                window.location.href = data.redirect_url;
+                // Keep button disabled during redirect
+            } else {
+                showError(data.message || 'Payment initialization failed. Please try again.');
+                resetBtn();
+            }
+
+        } catch (networkErr) {
+            console.error('Payment fetch error:', networkErr);
+            showError('Network error. Please check your connection and try again.');
+            resetBtn();
+        }
+    });
+
 });
 </script>
 @endpush
