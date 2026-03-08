@@ -160,6 +160,17 @@ class AdminAuthController extends Controller
 
             $tuitionPaidByBranch = collect(); // Empty collection since we don't have tuition payment tracking
 
+            // Students by course and gender data
+            $studentsByCourseGender = Student::select('sex', 'courses.course_name as course_name', 'courses.id as course_id', DB::raw('count(*) as total'))
+                ->join('courses', 'students.course_id', '=', 'courses.id')
+                ->groupBy('sex', 'courses.id', 'courses.course_name')
+                ->get()
+                ->map(function($item) {
+                    $item->course = (object)['name' => $item->course_name, 'id' => $item->course_id];
+                    $item->sex = strtoupper(substr($item->sex, 0, 1)); // Convert to M/F format
+                    return $item;
+                });
+
             // Cache the results for 1 hour
             $dashboardData = compact(
                 'totalStudents',
@@ -177,6 +188,7 @@ class AdminAuthController extends Controller
                 'recentStudents',
                 'recentExpenses',
                 'studentsByGender',
+                'studentsByCourseGender',
                 'registrationPaidPercent',
                 'tuitionPaidPercent',
                 'expensesByBranch',
