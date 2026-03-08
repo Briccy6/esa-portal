@@ -109,6 +109,11 @@ class AdminAuthController extends Controller
                 ->whereYear('created_at', Carbon::now()->year)
                 ->sum('price');
 
+            // Calculate total revenue and profit metrics
+            $totalRevenue = $tokenRevenue + $liveClassRevenue + $resourceRevenue + $subscriptionRevenue;
+            $totalExpenses = Expense::sum('amount') ?? 0;
+            $netProfit = $totalRevenue - $totalExpenses;
+
             // Cache the results for 1 hour
             $dashboardData = compact(
                 'totalStudents',
@@ -119,6 +124,9 @@ class AdminAuthController extends Controller
                 'liveClassRevenue',
                 'resourceRevenue',
                 'subscriptionRevenue',
+                'totalRevenue',
+                'totalExpenses',
+                'netProfit',
                 'monthlyTokenRevenue',
                 'monthlyLiveClassRevenue',
                 'monthlyResourceRevenue',
