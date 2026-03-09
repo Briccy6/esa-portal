@@ -361,21 +361,29 @@ class PublicExamController extends Controller
      */
     private function createGuestSession(Exam $exam)
     {
+        // Generate unique session ID for guest users
         $sessionId = 'guest_' . uniqid() . '_' . time();
         
-        // Store session data in cache or session
-        session([
-            "exam_session_{$sessionId}" => [
-                'exam_id' => $exam->id,
-                'start_time' => now(),
-                'user_type' => Auth::guard('student')->check() ? 'student' : 
-                              (Auth::guard('client')->check() ? 'client' : 'guest'),
-                'user_id' => Auth::guard('student')->check() ? Auth::guard('student')->id() : 
-                         (Auth::guard('client')->check() ? Auth::guard('client')->id() : null),
-                'answers' => [],
-                'current_question' => 1,
-                'completed' => false
-            ]
+        // Initialize session data
+        $sessionData = [
+            'exam_id' => $exam->id,
+            'start_time' => now()->toISOString(),
+            'user_type' => 'guest',
+            'user_id' => null,
+            'answers' => [],
+            'flagged' => [],
+            'current_question' => 1,
+            'total_questions' => $exam->questions()->count()
+        ];
+        
+        // Store session data with proper key
+        session(["exam_session_{$sessionId}" => $sessionData]);
+        
+        // Log session creation for debugging
+        \Log::info('Guest exam session created', [
+            'session_id' => $sessionId,
+            'exam_id' => $exam->id,
+            'session_key' => "exam_session_{$sessionId}"
         ]);
         
         return $sessionId;
@@ -390,28 +398,78 @@ class PublicExamController extends Controller
             abort(404, 'Exam not available for public access');
         }
 
-        // Get session data
-        $sessionData = session("exam_session_{$sessionId}");
-        if (!$sessionData || $sessionData['exam_id'] != $exam->id) {
+        // Get session key and data
+        $sessionKey = "exam_session_{$sessionId}";
+        $sessionData = session($sessionKey);
+        
+        // Enhanced session validation with logging
+        if (!$sessionData) {
+            \Log::error('Session data not found', [
+                'session_id' => $sessionId,
+                'session_key' => $sessionKey,
+                'all_sessions' => array_keys(session()->all())
+            ]);
+            
+            if (request()->ajax()) {
+                return response()->json(['error' => 'Session expired'], 419);
+            }
+            return redirect()->route('public.exams.start', $exam)
+                ->with('error', 'Session expired. Please start the exam again.');
+        }
+        
+        if ($sessionData['exam_id'] != $exam->id) {
+            \Log::error('Session exam ID mismatch', [
+                'session_exam_id' => $sessionData['exam_id'],
+                'requested_exam_id' => $exam->id,
+                'session_id' => $sessionId
+            ]);
+            
+            if (request()->ajax()) {
+                return response()->json(['error' => 'Invalid session'], 419);
+            }
             return redirect()->route('public.exams.start', $exam)
                 ->with('error', 'Invalid session. Please start the exam again.');
         }
 
-        // Get questions
+        // Validate question number
         $questions = $exam->questions()->orderBy('id')->get();
         $totalQuestions = $questions->count();
         
-        if ($questionNumber > $totalQuestions) {
+        if ($questionNumber < 1 || $questionNumber > $totalQuestions) {
+            \Log::error('Invalid question number', [
+                'question_number' => $questionNumber,
+                'total_questions' => $totalQuestions,
+                'session_id' => $sessionId
+            ]);
+            
+            if (request()->ajax()) {
+                return response()->json(['redirect' => route('public.exams.submit', [$exam, $sessionId])]);
+            }
             return redirect()->route('public.exams.submit', [$exam, $sessionId]);
         }
 
         $currentQuestion = $questions[$questionNumber - 1];
         
+        // Update current question in session
+        $sessionData['current_question'] = $questionNumber;
+        session([$sessionKey => $sessionData]);
+        
+        // Handle AJAX requests
+        if (request()->ajax()) {
+            return response()->json([
+                'success' => true,
+                'question' => $currentQuestion,
+                'currentQuestion' => $questionNumber,
+                'totalQuestions' => $totalQuestions,
+                'sessionData' => $sessionData
+            ]);
+        }
+        
         return view('public.exams.take', compact('exam', 'currentQuestion', 'questionNumber', 'totalQuestions', 'sessionId', 'sessionData'));
     }
 
     /**
-     * Save answer for public exam taking
+     * Save answer for public exam
      */
     public function saveAnswer(Request $request, Exam $exam, $sessionId, $questionNumber)
     {
@@ -424,13 +482,28 @@ class PublicExamController extends Controller
         ]);
 
         // Get and update session data
-        $sessionData = session("exam_session_{$sessionId}");
+        $sessionKey = "exam_session_{$sessionId}";
+        $sessionData = session($sessionKey);
+        
+        // Debug logging
+        \Log::info("Save Answer Debug", [
+            'sessionKey' => $sessionKey,
+            'sessionId' => $sessionId,
+            'questionNumber' => $questionNumber,
+            'answer' => $request->answer,
+            'sessionData' => $sessionData,
+            'hasSessionData' => !empty($sessionData)
+        ]);
+        
         if (!$sessionData || $sessionData['exam_id'] != $exam->id) {
+            \Log::error("Invalid session for saveAnswer", ['sessionData' => $sessionData]);
             return response()->json(['error' => 'Invalid session'], 400);
         }
 
         $sessionData['answers'][$questionNumber] = $request->answer;
-        session(["exam_session_{$sessionId}" => $sessionData]);
+        session([$sessionKey => $sessionData]);
+        
+        \Log::info("Answer saved successfully", ['answers' => $sessionData['answers']]);
 
         return response()->json(['success' => true]);
     }
@@ -472,6 +545,40 @@ class PublicExamController extends Controller
         $score = ($correctAnswers / $totalQuestions) * 100;
 
         return view('public.exams.results', compact('exam', 'score', 'correctAnswers', 'totalQuestions', 'sessionData'));
+    }
+
+    /**
+     * Save session data (for flagged questions)
+     */
+    public function saveSession(Request $request, Exam $exam, $sessionId)
+    {
+        $sessionData = session("exam_session_{$sessionId}");
+        if (!$sessionData || $sessionData['exam_id'] != $exam->id) {
+            return response()->json(['error' => 'Invalid session'], 400);
+        }
+
+        $action = $request->input('action');
+        $key = $request->input('key');
+        $value = $request->input('value');
+
+        if ($action === 'add') {
+            if (!isset($sessionData[$key])) {
+                $sessionData[$key] = [];
+            }
+            if (!in_array($value, $sessionData[$key])) {
+                $sessionData[$key][] = $value;
+            }
+        } elseif ($action === 'remove') {
+            if (isset($sessionData[$key])) {
+                $sessionData[$key] = array_values(array_filter($sessionData[$key], function($item) use ($value) {
+                    return $item != $value;
+                }));
+            }
+        }
+
+        session(["exam_session_{$sessionId}" => $sessionData]);
+
+        return response()->json(['success' => true]);
     }
 
     /**

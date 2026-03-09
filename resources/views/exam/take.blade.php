@@ -1,167 +1,708 @@
 @extends('layouts.app')
 
+@section('title', 'Exam - ' . $exam->title)
+
+@push('styles')
+<style>
+/* Modern Moodle-inspired Exam Interface */
+.exam-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Exam Header */
+.exam-header {
+    background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+    color: white;
+    border-radius: 16px;
+    padding: 32px;
+    margin-bottom: 24px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.exam-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 200px;
+    height: 200px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    transform: translate(50%, -50%);
+}
+
+.exam-title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    position: relative;
+    z-index: 1;
+}
+
+.exam-subtitle {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1.1rem;
+    margin-bottom: 24px;
+    position: relative;
+    z-index: 1;
+}
+
+.exam-stats {
+    display: flex;
+    gap: 32px;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    display: block;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.8);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.progress-bar {
+    background: rgba(255, 255, 255, 0.2);
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 16px;
+}
+
+.progress-fill {
+    background: #10b981;
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+/* Main Content Area */
+.exam-content {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 24px;
+    align-items: start;
+}
+
+/* Question Card */
+.question-card {
+    background: white;
+    border-radius: 16px;
+    padding: 32px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+    border: 1px solid #e5e7eb;
+    position: relative;
+}
+
+.question-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid #f3f4f6;
+}
+
+.question-number {
+    background: #3b82f6;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.question-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.marks-badge {
+    background: #fef3c7;
+    color: #92400e;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.question-text {
+    font-size: 1.25rem;
+    line-height: 1.7;
+    color: #1f2937;
+    margin-bottom: 32px;
+    font-weight: 500;
+}
+
+/* Answer Options */
+.answer-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.answer-option {
+    background: #f9fafb;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.answer-option:hover {
+    border-color: #3b82f6;
+    background: #eff6ff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+.answer-option.selected {
+    border-color: #3b82f6;
+    background: #dbeafe;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.option-indicator {
+    width: 24px;
+    height: 24px;
+    border: 2px solid #d1d5db;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.answer-option.selected .option-indicator {
+    border-color: #3b82f6;
+    background: #3b82f6;
+}
+
+.option-dot {
+    width: 8px;
+    height: 8px;
+    background: white;
+    border-radius: 50%;
+    opacity: 0;
+    transform: scale(0);
+    transition: all 0.2s ease;
+}
+
+.answer-option.selected .option-dot {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.option-text {
+    flex: 1;
+    font-size: 1.1rem;
+    color: #374151;
+    font-weight: 500;
+}
+
+.option-letter {
+    background: #e5e7eb;
+    color: #6b7280;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-right: 12px;
+}
+
+.answer-option.selected .option-letter {
+    background: #3b82f6;
+    color: white;
+}
+
+/* Navigation */
+.navigation {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.nav-btn {
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.nav-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.nav-btn.primary {
+    background: #3b82f6;
+    color: white;
+}
+
+.nav-btn.primary:hover {
+    background: #2563eb;
+}
+
+.nav-btn.secondary {
+    background: #f3f4f6;
+    color: #6b7280;
+    border: 1px solid #d1d5db;
+}
+
+.nav-btn.secondary:hover {
+    background: #e5e7eb;
+}
+
+.nav-btn.success {
+    background: #10b981;
+    color: white;
+}
+
+.nav-btn.success:hover {
+    background: #059669;
+}
+
+.nav-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Sidebar */
+.sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.sidebar-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+    border: 1px solid #e5e7eb;
+}
+
+.sidebar-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sidebar-icon {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Timer */
+.timer-display {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1f2937;
+    text-align: center;
+    font-family: 'Monaco', 'Courier New', monospace;
+}
+
+.timer-label {
+    font-size: 0.875rem;
+    color: #6b7280;
+    text-align: center;
+    margin-top: 4px;
+}
+
+/* Question Navigation */
+.question-nav {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+}
+
+.question-btn {
+    aspect-ratio: 1;
+    border: 2px solid #e5e7eb;
+    background: white;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.question-btn:hover {
+    border-color: #3b82f6;
+    color: #3b82f6;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+}
+
+.question-btn.current {
+    background: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.question-btn.answered {
+    background: #10b981;
+    color: white;
+    border-color: #10b981;
+}
+
+.question-btn.flagged {
+    background: #f59e0b;
+    color: white;
+    border-color: #f59e0b;
+}
+
+.question-btn.answered.flagged {
+    background: linear-gradient(135deg, #10b981 50%, #f59e0b 50%);
+    border-color: #10b981;
+}
+
+.question-btn.current.flagged {
+    background: linear-gradient(135deg, #3b82f6 50%, #f59e0b 50%);
+    border-color: #3b82f6;
+}
+
+/* Flag indicator */
+.flag-indicator {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: #f59e0b;
+    color: white;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: bold;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Question Status Legend */
+.status-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #f3f4f6;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    color: #6b7280;
+}
+
+.legend-box {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    border: 2px solid;
+}
+
+.legend-box.current {
+    background: #3b82f6;
+    border-color: #3b82f6;
+}
+
+.legend-box.answered {
+    background: #10b981;
+    border-color: #10b981;
+}
+
+.legend-box.flagged {
+    background: #f59e0b;
+    border-color: #f59e0b;
+}
+
+.legend-box.unanswered {
+    background: white;
+    border-color: #e5e7eb;
+}
+
+/* Flag Button */
+.flag-btn {
+    background: #fef3c7;
+    border: 1px solid #f59e0b;
+    color: #92400e;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.flag-btn:hover {
+    background: #fde68a;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2);
+}
+
+.flag-btn.flagged {
+    background: #f59e0b;
+    color: white;
+    border-color: #d97706;
+}
+
+.flag-btn.flagged:hover {
+    background: #d97706;
+}
+
+/* Info Lists */
+.info-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.info-list li {
+    display: flex;
+    align-items: start;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid #f3f4f6;
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+.info-list li:last-child {
+    border-bottom: none;
+}
+
+.info-list strong {
+    color: #1f2937;
+    font-weight: 600;
+}
+
+.info-icon {
+    color: #3b82f6;
+    margin-top: 2px;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .exam-content {
+        grid-template-columns: 1fr;
+    }
+    
+    .sidebar {
+        order: -1;
+    }
+    
+    .question-nav {
+        grid-template-columns: repeat(8, 1fr);
+    }
+}
+
+@media (max-width: 640px) {
+    .exam-container {
+        padding: 12px;
+    }
+    
+    .exam-header {
+        padding: 20px;
+    }
+    
+    .exam-title {
+        font-size: 1.5rem;
+    }
+    
+    .exam-stats {
+        flex-direction: column;
+        gap: 16px;
+    }
+    
+    .question-card {
+        padding: 20px;
+    }
+    
+    .question-text {
+        font-size: 1.1rem;
+    }
+    
+    .question-nav {
+        grid-template-columns: repeat(6, 1fr);
+    }
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.question-card {
+    animation: fadeIn 0.3s ease;
+}
+
+/* Focus States */
+.answer-option:focus-within {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+/* Loading States */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* Success States */
+.success-message {
+    background: #10b981;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+</style>
+@endpush
+
 @section('content')
-<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-    <!-- Header -->
-    <div class="bg-white shadow-sm border-b">
-        <div class="container mx-auto px-4 py-4">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-4">
-                    <h1 class="text-2xl font-bold text-gray-900">{{$exam->title}}</h1>
-                    <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-semibold">
-                        In Progress
-                    </span>
-                </div>
-                <div class="flex items-center space-x-6">
-                    <div class="text-center">
-                        <div class="text-2xl font-bold text-blue-600" id="timer">00:00:00</div>
-                        <div class="text-sm text-gray-500">Time Remaining</div>
-                    </div>
-                    <div class="text-center">
-                        <div class="text-2xl font-bold text-purple-600">
-                            {{isset($currentQuestion) ? $currentQuestionNumber : 0}} / {{isset($questions) ? $questions->count() : 0}}
-                        </div>
-                        <div class="text-sm text-gray-500">Questions</div>
-                    </div>
-                </div>
+<div class="exam-container">
+    <!-- Exam Header -->
+    <div class="exam-header">
+        <div>
+            <h1 class="exam-title">{{ $exam->title }}</h1>
+            <p class="exam-subtitle">{{ $exam->description ?? 'Excellent Servant Academy Examination' }}</p>
+        </div>
+        <div class="exam-stats">
+            <div class="stat-item">
+                <span class="stat-value">{{ $currentQuestionNumber ?? 1 }}</span>
+                <span class="stat-label">Question</span>
             </div>
+            <div class="stat-item">
+                <span class="stat-value">{{ $questions->count() ?? 0 }}</span>
+                <span class="stat-label">Total</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value">{{ $questions->count() > 0 ? round(($currentQuestionNumber / $questions->count()) * 100) : 0 }}%</span>
+                <span class="stat-label">Progress</span>
+            </div>
+        </div>
+        <div class="progress-bar">
+            <div class="progress-fill" style="width: {{ $questions->count() > 0 ? round(($currentQuestionNumber / $questions->count()) * 100) : 0 }}%"></div>
         </div>
     </div>
 
-    <!-- Main Content -->
-    <div class="container mx-auto px-4 py-8">
-        <div class="grid lg:grid-cols-4 gap-8">
-            <!-- Question Panel -->
-            <div class="lg:col-span-3">
-                <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
-                    <!-- Question Header -->
-                    <div class="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <h2 class="text-xl font-semibold">Question {{$currentQuestionNumber ?? 1}}</h2>
-                                <p class="text-blue-100">Select the best answer</p>
-                            </div>
-                            <div class="flex items-center space-x-2">
-                                @if(isset($currentQuestion) && $currentQuestion->points)
-                                <span class="bg-white bg-opacity-20 px-3 py-1 rounded-full text-sm">
-                                    {{$currentQuestion->points}} points
-                                </span>
-                                @endif
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Question Content -->
-                    <div class="p-8">
-                        @if(isset($currentQuestion))
-                        <div class="mb-8">
-                            <div class="prose max-w-none">
-                                <p class="text-lg text-gray-800 leading-relaxed">
-                                    {!! $currentQuestion->question_text !!}
-                                </p>
-                            </div>
-                            
-                            @if($currentQuestion->question_image)
-                            <div class="mt-6 text-center">
-                                <img src="{{asset('storage/' . $currentQuestion->question_image)}}" 
-                                     alt="Question Image" 
-                                     class="max-w-full h-auto rounded-lg shadow-md">
-                            </div>
-                            @endif
-                        </div>
-
-                        <!-- Answer Options -->
-                        <div class="space-y-4" id="answerOptions">
-                            @foreach($currentQuestion->options ?? [] as $index => $option)
-                            <div class="answer-option border-2 border-gray-200 rounded-lg p-4 hover:border-blue-400 transition cursor-pointer"
-                                 onclick="selectAnswer({{$index}})">
-                                <div class="flex items-center">
-                                    <div class="w-6 h-6 rounded-full border-2 border-gray-400 mr-4 flex items-center justify-center"
-                                         id="option-{{$index}}">
-                                        <div class="w-3 h-3 rounded-full bg-blue-600 hidden" id="option-dot-{{$index}}"></div>
-                                    </div>
-                                    <div class="flex-1">
-                                        <p class="text-gray-800">
-                                            {{chr(65 + $index)}}. {!! $option !!}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                            @endforeach
-                        </div>
-                        @else
-                        <div class="text-center py-12">
-                            <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
-                            </svg>
-                            <p class="text-gray-500">No question available</p>
-                        </div>
-                        @endif
-                    </div>
-
-                    <!-- Navigation Buttons -->
-                    <div class="bg-gray-50 px-8 py-6 border-t">
-                        <div class="flex items-center justify-between">
-                            <button onclick="previousQuestion()" 
-                                    class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition disabled:opacity-50"
-                                    id="prevBtn" {{($currentQuestionNumber ?? 1) <= 1 ? 'disabled' : ''}}>
-                                <svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                                </svg>
-                                Previous
-                            </button>
-
-                            <div class="flex space-x-3">
-                                <button onclick="markForReview()" 
-                                        class="px-6 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition">
-                                    <svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
-                                    </svg>
-                                    Mark for Review
-                                </button>
-
-                                @if(($currentQuestionNumber ?? 1) >= (isset($questions) ? $questions->count() : 1))
-                                <button onclick="submitExam()" 
-                                        class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
-                                    <svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                                    </svg>
-                                    Submit Exam
-                                </button>
-                                @else
-                                <button onclick="nextQuestion()" 
-                                        class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-                                    Next
-                                    <svg class="w-5 h-5 inline ml-2" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
-                                    </svg>
-                                </button>
-                                @endif
-                            </div>
-                        </div>
-                    </div>
+    <div class="exam-content">
+        <!-- Main Question Area -->
+        <div class="question-card">
+            <div class="question-header">
+                <div class="question-number">Question {{ $currentQuestionNumber ?? 1 }}</div>
+                <div class="question-meta">
+                    <div class="marks-badge">{{ $currentQuestion->points ?? $currentQuestion->marks ?? 5 }} marks</div>
                 </div>
             </div>
+            
+            <div class="question-text">
+                @if(isset($currentQuestion))
+                    {{ $currentQuestion->text }}
+                @else
+                    No question available
+                @endif
+            </div>
 
-            <!-- Sidebar -->
-            <div class="lg:col-span-1">
-                <!-- Question Navigator -->
-                <div class="bg-white rounded-2xl shadow-xl p-6 mb-6">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Question Navigator</h3>
-                    <div class="grid grid-cols-5 gap-2" id="questionGrid">
-                        @if(isset($questions))
-                        @foreach($questions as $index => $question)
-                        <button onclick="jumpToQuestion({{$index + 1}})" 
-                                class="w-10 h-10 rounded-lg border-2 border-gray-300 text-sm font-medium hover:border-blue-500 transition"
-                                id="nav-question-{{$index + 1}}">
-                            {{$index + 1}}
+            @if(isset($currentQuestion))
+            <!-- Answer Options -->
+            <form method="POST" action="{{ route('exams.save-answer', [$exam, $session, $currentQuestionNumber]) }}">
+                @csrf
+                <div class="answer-options">
+                    @foreach($currentQuestion->options ?? [] as $index => $option)
+                        <label class="answer-option">
+                            <input type="radio" name="answer" value="{{ $index }}" class="sr-only"
+                                   {{ isset($existingAnswer) && $existingAnswer->answer == $index ? 'checked' : '' }}>
+                            <div class="option-indicator">
+                                <div class="option-dot"></div>
+                            </div>
+                            <div class="option-text">
+                                <span class="option-letter">{{ chr(65 + $index) }}</span>
+                                {{ $option }}
+                            </div>
+                        </label>
+                    @endforeach
+                </div>
+
+                <!-- Navigation -->
+                <div class="navigation">
+                    @if($currentQuestionNumber > 1)
+                        <button type="submit" name="action" value="previous" class="nav-btn secondary">
+                            <i class="fas fa-arrow-left"></i>
+                            Previous
                         </button>
-                        @endforeach
-                        @endif
-                    </div>
+                    @else
+                        <div></div>
+                    @endif
                     
-                    <div class="mt-4 space-y-2">
-                        <div class="flex items-center text-sm">
+                    <div class="d-flex gap-2">
+                        @if($currentQuestionNumber < $questions->count())
+                            <button type="submit" name="action" value="next" class="nav-btn primary">
+                                Next
+                                <i class="fas fa-arrow-right"></i>
+                            </button>
+                        @else
+                            <button type="submit" name="action" value="submit" class="nav-btn success">
+                                <i class="fas fa-check-circle"></i>
+                                Submit Exam
+                            </button>
+                        @endif
                             <div class="w-4 h-4 bg-blue-600 rounded mr-2"></div>
                             <span>Current</span>
                         </div>

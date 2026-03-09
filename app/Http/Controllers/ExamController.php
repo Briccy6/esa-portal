@@ -914,7 +914,7 @@ class ExamController extends Controller
     public function makePublic(Request $request, Exam $exam)
     {
         $request->validate([
-            'public_price' => 'required|numeric|min:0.01',
+            'public_price' => 'required|numeric|min:0',
             'token_cost' => 'required|integer|min:0',
         ]);
 
@@ -925,9 +925,13 @@ class ExamController extends Controller
                 'token_cost' => $request->token_cost,
             ]);
 
+            $message = $request->public_price > 0 
+                ? 'Exam is now public and available for students to purchase.'
+                : 'Exam is now public and available for students to take for free.';
+
             return response()->json([
                 'success' => true,
-                'message' => 'Exam is now public and available for students to purchase.'
+                'message' => $message
             ]);
         } catch (\Exception $e) {
             return response()->json([

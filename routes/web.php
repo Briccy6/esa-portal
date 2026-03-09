@@ -145,6 +145,7 @@ Route::prefix('public')->name('public.')->group(function () {
     Route::get('/exams/{exam}/take', [PublicExamController::class, 'takeExam'])->name('exams.take');
     Route::get('/exams/{exam}/take/{session}/{questionNumber?}', [PublicExamController::class, 'takeQuestion'])->name('exams.take.question');
     Route::post('/exams/{exam}/save-answer/{session}/{questionNumber}', [PublicExamController::class, 'saveAnswer'])->name('exams.save-answer');
+    Route::post('/exams/{exam}/save-session/{session}', [PublicExamController::class, 'saveSession'])->name('exams.save.session');
     Route::post('/exams/{exam}/submit/{session}', [PublicExamController::class, 'submitExam'])->name('exams.submit');
     Route::get('/api/exams/{exam}/check-access', [PublicExamController::class, 'checkAccess'])->name('exams.check-access');
 });
@@ -973,6 +974,11 @@ Route::prefix('exams')->name('public.exams.')->group(function () {
     Route::get('/{exam}/payment/callback', [App\Http\Controllers\PublicExamController::class, 'handlePaymentCallback'])->name('payment.callback');
     Route::get('/{exam}/payment/success', [App\Http\Controllers\PublicExamController::class, 'paymentSuccess'])->name('payment.success');
     Route::get('/{exam}/start', [App\Http\Controllers\PublicExamController::class, 'startExam'])->name('start');
+    Route::get('/{exam}/take', [App\Http\Controllers\PublicExamController::class, 'takeExam'])->name('take');
+    Route::get('/{exam}/take/{session}/{questionNumber?}', [App\Http\Controllers\PublicExamController::class, 'takeQuestion'])->name('take.question');
+    Route::post('/{exam}/save-answer/{session}/{questionNumber}', [App\Http\Controllers\PublicExamController::class, 'saveAnswer'])->name('save-answer');
+    Route::post('/{exam}/save-session/{session}', [App\Http\Controllers\PublicExamController::class, 'saveSession'])->name('save.session');
+    Route::post('/{exam}/submit/{session}', [App\Http\Controllers\PublicExamController::class, 'submitExam'])->name('submit');
     Route::get('/{exam}/check-access', [App\Http\Controllers\PublicExamController::class, 'checkAccess'])->name('check-access');
 });
 

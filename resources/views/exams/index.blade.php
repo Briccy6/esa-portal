@@ -673,13 +673,25 @@ function confirmMakePublic() {
     const publicPrice = document.getElementById('publicPrice').value;
     const tokenCost = document.getElementById('tokenCost').value;
     
-    if (!publicPrice || publicPrice <= 0) {
-        alert('Please enter a valid price greater than 0.');
+    // Convert to numbers for proper validation
+    const price = parseFloat(publicPrice);
+    const tokens = parseInt(tokenCost);
+    
+    if (isNaN(price) || price < 0) {
+        alert('Please enter a valid price (0 or greater).');
         return;
     }
     
-    if (!tokenCost || tokenCost < 0) {
+    if (isNaN(tokens) || tokens < 0) {
         alert('Please enter a valid token cost (0 or greater).');
+        return;
+    }
+    
+    const confirmMessage = price > 0 
+        ? `Are you sure you want to make this exam public for $${price}?`
+        : 'Are you sure you want to make this exam public for free?';
+    
+    if (!confirm(confirmMessage)) {
         return;
     }
     
@@ -690,8 +702,8 @@ function confirmMakePublic() {
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
         },
         body: JSON.stringify({
-            public_price: publicPrice,
-            token_cost: tokenCost
+            public_price: price,
+            token_cost: tokens
         })
     })
     .then(response => response.json())
@@ -728,8 +740,8 @@ function confirmMakePublic() {
                     <i class="fas fa-money-bill"></i> Public Price (RWF)
                 </label>
                 <input type="number" id="publicPrice" name="publicPrice" class="form-control" 
-                       placeholder="Enter price in RWF" min="1" step="0.01" required>
-                <small class="form-text text-muted">Price that students will pay to access this exam</small>
+                       placeholder="Enter 0 for free exam" min="0" step="0.01" required>
+                <small class="form-text text-muted">Enter 0 to make the exam free, or set a price for paid access</small>
             </div>
             
             <div class="mb-3">
