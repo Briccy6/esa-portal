@@ -134,7 +134,7 @@
                                         </div>
                                     </div>
                                     <div class="col-md-4 text-right">
-                                        <h4 id="previewPrice" class="text-primary">$0.00</h4>
+                                        <h4 id="previewPrice" class="text-primary">RWF 0.00</h4>
                                         <p class="text-muted"><span id="previewTokens">0</span> tokens</p>
                                         <p class="text-muted"><span id="previewDuration">0</span> days</p>
                                         <span id="previewTier" class="badge badge-secondary">Tier</span>
@@ -189,7 +189,7 @@ function updatePreview() {
     document.getElementById('previewName').textContent = name;
     document.getElementById('previewDescription').textContent = description;
     document.getElementById('previewTokens').textContent = tokens;
-    document.getElementById('previewPrice').textContent = '$' + parseFloat(price).toFixed(2);
+    document.getElementById('previewPrice').textContent = 'RWF ' + parseFloat(price).toFixed(2);
     document.getElementById('previewDuration').textContent = duration;
     
     // Update tier badge

@@ -17,18 +17,177 @@
     <meta name="google-site-verification" content="ysodRmOEgSFFmQNcCcXAbjP2xSW5XbpJNtWrJ9ffgxs" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        /* Custom Styles for Academic & Professional Look */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-
-        :root {
-            --primary-color: #2c3e50; /* Darker Slate Blue - Academic feel */
-            --secondary-color: #3498db; /* Professional Blue */
-            --accent-color: #e74c3c; /* Red for highlights */
-            --text-dark: #263238; /* Very dark grey-blue */
-            --text-light: #455a64; /* Medium grey-blue */
-            --bg-light: #ecf0f1; /* Light Gray for sections */
-            --bg-white: #ffffff;
-            --border-color: #cfd8dc; /* Light Blue Grey */
+        /* ALX Africa Inspired Card Styles */
+        .alx-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+            transition: all 0.3s ease;
+            border: 1px solid #e5e7eb;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .alx-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        .alx-card-header {
+            padding: 2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            position: relative;
+        }
+        
+        .alx-card-header.exams {
+            background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+        }
+        
+        .alx-card-header.resources {
+            background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);
+        }
+        
+        .alx-card-body {
+            padding: 2rem;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .alx-card-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            line-height: 1.4;
+        }
+        
+        .alx-card-subtitle {
+            font-size: 0.875rem;
+            opacity: 0.9;
+            margin-bottom: 1rem;
+        }
+        
+        .alx-card-duration {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #6b7280;
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .alx-card-price {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+        }
+        
+        .alx-card-price.free {
+            color: #10b981;
+        }
+        
+        .alx-card-price.paid {
+            color: #f59e0b;
+        }
+        
+        .alx-card-actions {
+            margin-top: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .alx-btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            text-align: center;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        
+        .alx-btn-primary {
+            background: #6366f1;
+            color: white;
+        }
+        
+        .alx-btn-primary:hover {
+            background: #4f46e5;
+            transform: translateY(-1px);
+        }
+        
+        .alx-btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .alx-btn-secondary:hover {
+            background: #e5e7eb;
+            transform: translateY(-1px);
+        }
+        
+        .alx-btn-success {
+            background: #10b981;
+            color: white;
+        }
+        
+        .alx-btn-success:hover {
+            background: #059669;
+            transform: translateY(-1px);
+        }
+        
+        .alx-meta-info {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .alx-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+        
+        .alx-type-badges {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .alx-type-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .alx-share-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 0.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .alx-share-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
         }
 
         body {
@@ -54,13 +213,191 @@
             color: var(--primary-color);
         }
 
-        .card-shadow-hover {
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            border: 1px solid var(--border-color);
+        /* Custom Styles for Academic & Professional Look */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        :root {
+            --primary-color: #2c3e50; /* Darker Slate Blue - Academic feel */
+            --secondary-color: #3498db; /* Professional Blue */
+            --accent-color: #e74c3c; /* Red for highlights */
+            --text-dark: #263238; /* Very dark grey-blue */
+            --text-light: #455a64; /* Medium grey-blue */
+            --bg-light: #ecf0f1; /* Light Gray for sections */
+            --bg-white: #ffffff;
+            --border-color: #cfd8dc; /* Light Blue Grey */
         }
-        .card-shadow-hover:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.1);
+
+        /* ALX Africa Inspired Card Styles */
+        .alx-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+            transition: all 0.3s ease;
+            border: 1px solid #e5e7eb;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .alx-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        .alx-card-header {
+            padding: 2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            position: relative;
+        }
+        
+        .alx-card-header.exams {
+            background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+        }
+        
+        .alx-card-header.resources {
+            background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);
+        }
+        
+        .alx-card-body {
+            padding: 2rem;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .alx-card-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            line-height: 1.4;
+        }
+        
+        .alx-card-subtitle {
+            font-size: 0.875rem;
+            opacity: 0.9;
+            margin-bottom: 1rem;
+        }
+        
+        .alx-card-duration {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #6b7280;
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .alx-card-price {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+        }
+        
+        .alx-card-price.free {
+            color: #10b981;
+        }
+        
+        .alx-card-price.paid {
+            color: #f59e0b;
+        }
+        
+        .alx-card-actions {
+            margin-top: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .alx-btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            text-align: center;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        
+        .alx-btn-primary {
+            background: #6366f1;
+            color: white;
+        }
+        
+        .alx-btn-primary:hover {
+            background: #4f46e5;
+            transform: translateY(-1px);
+        }
+        
+        .alx-btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .alx-btn-secondary:hover {
+            background: #e5e7eb;
+            transform: translateY(-1px);
+        }
+        
+        .alx-btn-success {
+            background: #10b981;
+            color: white;
+        }
+        
+        .alx-btn-success:hover {
+            background: #059669;
+            transform: translateY(-1px);
+        }
+        
+        .alx-meta-info {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .alx-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+        
+        .alx-type-badges {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .alx-type-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .alx-share-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 0.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .alx-share-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
         }
 
         /* Hero Section Specifics */
@@ -529,20 +866,17 @@
                 @endphp
                 
                 @forelse($featuredExams as $exam)
-                    <div class="card-shadow-hover bg-white rounded-xl overflow-hidden shadow-md">
+                    <div class="alx-card">
                         <!-- Exam Header -->
-                        <div class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-6">
-                            <div class="flex items-center justify-between mb-3">
-                                <h3 class="text-xl font-bold">{{ Str::limit($exam->title, 50) }}</h3>
-                                <button onclick="shareExam({{ $exam->id }}, '{{ Str::limit($exam->title, 30) }}')" 
-                                        class="bg-white bg-opacity-20 hover:bg-opacity-30 p-2 rounded-lg transition-all duration-200"
-                                        title="Share this exam">
-                                    <i class="fas fa-share-alt text-white"></i>
-                                </button>
-                            </div>
-                            
+                        <div class="alx-card-header exams">
+                            <button onclick="shareExam({{ $exam->id }}, '{{ Str::limit($exam->title, 30) }}')" 
+                                    class="alx-share-btn"
+                                    title="Share this exam">
+                                <i class="fas fa-share-alt"></i>
+                            </button>
+                            <h3 class="alx-card-title">{{ Str::limit($exam->title, 50) }}</h3>
                             @if($exam->courses->count() > 0)
-                                <div class="text-sm text-purple-100">
+                                <div class="alx-card-subtitle">
                                     <i class="fas fa-graduation-cap mr-2"></i>
                                     {{ $exam->courses->pluck('name')->implode(', ') }}
                                 </div>
@@ -550,38 +884,45 @@
                         </div>
 
                         <!-- Exam Body -->
-                        <div class="p-6">
-                            <p class="text-gray-600 mb-4 text-sm">{{ Str::limit($exam->description ?? 'Practice your skills with this comprehensive assessment.', 80) }}</p>
-                            
-                            <!-- Exam Stats -->
-                            <div class="grid grid-cols-2 gap-4 mb-4">
-                                <div class="text-center p-3 bg-purple-50 rounded-lg">
-                                    <div class="text-2xl font-bold text-purple-600">{{ $exam->questions->count() }}</div>
-                                    <div class="text-xs text-gray-600">Questions</div>
+                        <div class="alx-card-body">
+                            <!-- Duration Info -->
+                            <div class="alx-card-duration">
+                                <i class="fas fa-clock mr-2"></i>
+                                {{ $exam->duration ?? '60' }} minutes
+                            </div>
+
+                            <!-- Price Display -->
+                            <div class="alx-card-price {{ $exam->requiresPayment() ? 'paid' : 'free' }}">
+                                @if($exam->requiresPayment())
+                                    RWF {{ number_format($exam->public_price, 0) }}
+                                @else
+                                    FREE
+                                @endif
+                            </div>
+
+                            <!-- Meta Info -->
+                            <div class="alx-meta-info">
+                                <div class="alx-meta-item">
+                                    <i class="fas fa-question-circle text-purple-600"></i>
+                                    <span>{{ $exam->questions->count() }} Questions</span>
                                 </div>
-                                <div class="text-center p-3 bg-green-50 rounded-lg">
-                                    <div class="text-2xl font-bold text-green-600">
-                                        @if($exam->requiresPayment())
-                                            RWF {{ number_format($exam->public_price, 0) }}
-                                        @else
-                                            FREE
-                                        @endif
-                                    </div>
-                                    <div class="text-xs text-gray-600">Price</div>
+                                <div class="alx-meta-item">
+                                    <i class="fas fa-trophy text-yellow-500"></i>
+                                    <span>Certificate</span>
                                 </div>
                             </div>
 
                             <!-- Action Buttons -->
-                            <div class="space-y-2">
+                            <div class="alx-card-actions">
                                 <a href="{{ route('public.exams.show', $exam) }}" 
-                                   class="w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors text-center block font-medium">
-                                    <i class="fas fa-eye mr-2"></i>View Details
+                                   class="alx-btn alx-btn-secondary">
+                                    <i class="fas fa-eye"></i>View Details
                                 </a>
                                 
                                 @if($exam->isAccessible())
                                     <a href="{{ route('public.exams.start', $exam) }}" 
-                                       class="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors text-center block font-medium">
-                                        <i class="fas fa-play mr-2"></i>Start Practice
+                                       class="alx-btn alx-btn-primary">
+                                        <i class="fas fa-play"></i>Start Practice
                                     </a>
                                 @endif
                             </div>
@@ -625,81 +966,74 @@
                 @endphp
                 
                 @forelse($featuredResources as $resource)
-                    <div class="card-shadow-hover bg-white rounded-xl overflow-hidden shadow-md">
+                    <div class="alx-card">
                         <!-- Resource Header -->
-                        <div class="bg-gradient-to-r from-blue-600 to-cyan-600 text-white p-6">
-                            <div class="flex items-center justify-between mb-3">
-                                <h3 class="text-xl font-bold">{{ Str::limit($resource->document_name ?: $resource->video_name ?: 'Resource', 40) }}</h3>
-                                <button onclick="shareResource({{ $resource->id }}, '{{ Str::limit($resource->document_name ?: $resource->video_name ?: 'Resource', 30) }}')" 
-                                        class="bg-white bg-opacity-20 hover:bg-opacity-30 p-2 rounded-lg transition-all duration-200"
-                                        title="Share this resource">
-                                    <i class="fas fa-share-alt text-white"></i>
-                                </button>
-                            </div>
-                            
-                            <div class="text-sm text-blue-100">
+                        <div class="alx-card-header resources">
+                            <button onclick="shareResource({{ $resource->id }}, '{{ Str::limit($resource->document_name ?: $resource->video_name ?: 'Resource', 30) }}')" 
+                                    class="alx-share-btn"
+                                    title="Share this resource">
+                                <i class="fas fa-share-alt"></i>
+                            </button>
+                            <h3 class="alx-card-title">{{ Str::limit($resource->document_name ?: $resource->video_name ?: 'Educational Resource', 40) }}</h3>
+                            <div class="alx-card-subtitle">
                                 <i class="fas fa-graduation-cap mr-2"></i>
-                                {{ $resource->course->course_name ?? 'General' }}
+                                {{ $resource->course->course_name ?? 'General Course' }}
                             </div>
                         </div>
 
                         <!-- Resource Body -->
-                        <div class="p-6">
-                            <!-- Resource Info -->
-                            <div class="space-y-2 mb-4 text-sm text-gray-600">
-                                <div>
-                                    <i class="fas fa-user-tie mr-2 text-blue-600"></i>
+                        <div class="alx-card-body">
+                            <!-- Teacher & Branch Info -->
+                            <div class="alx-meta-info">
+                                <div class="alx-meta-item">
+                                    <i class="fas fa-user-tie text-blue-600"></i>
                                     <span>{{ $resource->teacher->teacher_name ?? 'Expert Teacher' }}</span>
                                 </div>
-                                <div>
-                                    <i class="fas fa-map-marker-alt mr-2 text-blue-600"></i>
+                                <div class="alx-meta-item">
+                                    <i class="fas fa-map-marker-alt text-blue-600"></i>
                                     <span>{{ $resource->branch->name ?? 'Main Campus' }}</span>
                                 </div>
                             </div>
 
-                            <!-- Resource Type Icons -->
-                            <div class="flex space-x-3 mb-4">
+                            <!-- Resource Type Badges -->
+                            <div class="alx-type-badges">
                                 @if($resource->document_blob)
-                                    <span class="text-blue-600" title="Document Available">
-                                        <i class="fas fa-file-alt text-lg"></i>
+                                    <span class="alx-type-badge bg-blue-100 text-blue-800">
+                                        <i class="fas fa-file-alt mr-1"></i>Document
                                     </span>
                                 @endif
                                 @if($resource->video_blob)
-                                    <span class="text-red-600" title="Video Available">
-                                        <i class="fas fa-video text-lg"></i>
+                                    <span class="alx-type-badge bg-red-100 text-red-800">
+                                        <i class="fas fa-video mr-1"></i>Video
                                     </span>
                                 @endif
                                 @if($resource->youtube_link)
-                                    <span class="text-red-600" title="YouTube Video">
-                                        <i class="fab fa-youtube text-lg"></i>
+                                    <span class="alx-type-badge bg-red-100 text-red-800">
+                                        <i class="fab fa-youtube mr-1"></i>YouTube
                                     </span>
                                 @endif
                             </div>
 
-                            <!-- Price Badge -->
-                            <div class="mb-4">
+                            <!-- Price Display -->
+                            <div class="alx-card-price {{ $resource->is_free ? 'free' : 'paid' }}">
                                 @if($resource->is_free)
-                                    <span class="bg-green-100 text-green-800 text-xs font-semibold px-3 py-1 rounded-full">
-                                        <i class="fas fa-gift mr-1"></i>FREE
-                                    </span>
+                                    <i class="fas fa-gift mr-2"></i>FREE
                                 @else
-                                    <span class="bg-orange-100 text-orange-800 text-xs font-semibold px-3 py-1 rounded-full">
-                                        <i class="fas fa-tag mr-1"></i>RWF {{ number_format($resource->price, 0) }}
-                                    </span>
+                                    <i class="fas fa-tag mr-2"></i>RWF {{ number_format($resource->price, 0) }}
                                 @endif
                             </div>
 
                             <!-- Action Buttons -->
-                            <div class="space-y-2">
+                            <div class="alx-card-actions">
                                 <a href="{{ route('public.resources.show', $resource->id) }}" 
-                                   class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors text-center block font-medium">
-                                    <i class="fas fa-eye mr-2"></i>View Details
+                                   class="alx-btn alx-btn-secondary">
+                                    <i class="fas fa-eye"></i>View Details
                                 </a>
                                 
                                 @if($resource->document_blob || $resource->video_blob)
                                     <a href="{{ $resource->is_free ? route('public.resources.download', $resource->id) : route('public.resources.payment', $resource->id) }}" 
-                                       class="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors text-center block font-medium">
-                                        <i class="fas fa-{{ $resource->is_free ? 'download' : 'shopping-cart' }} mr-2"></i>{{ $resource->is_free ? 'Download' : 'Purchase' }}
+                                       class="alx-btn alx-btn-success">
+                                        <i class="fas fa-{{ $resource->is_free ? 'download' : 'shopping-cart' }} mr-2"></i>{{ $resource->is_free ? 'Download Now' : 'Purchase Access' }}
                                     </a>
                                 @endif
                             </div>

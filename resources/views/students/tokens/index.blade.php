@@ -43,25 +43,25 @@
                                 <div class="col-6 col-md-3">
                                     <button type="button" onclick="setTokenAmount(10)" class="btn btn-outline-primary w-100 token-amount-btn">
                                         <div class="h5 mb-1">10</div>
-                                        <small>$5.00</small>
+                                        <small>RWF 5.00</small>
                                     </button>
                                 </div>
                                 <div class="col-6 col-md-3">
                                     <button type="button" onclick="setTokenAmount(25)" class="btn btn-outline-primary w-100 token-amount-btn">
                                         <div class="h5 mb-1">25</div>
-                                        <small>$10.00</small>
+                                        <small>RWF 10.00</small>
                                     </button>
                                 </div>
                                 <div class="col-6 col-md-3">
                                     <button type="button" onclick="setTokenAmount(50)" class="btn btn-outline-primary w-100 token-amount-btn">
                                         <div class="h5 mb-1">50</div>
-                                        <small>$18.00</small>
+                                        <small>RWF 18.00</small>
                                     </button>
                                 </div>
                                 <div class="col-6 col-md-3">
                                     <button type="button" onclick="setTokenAmount(100)" class="btn btn-outline-primary w-100 token-amount-btn">
                                         <div class="h5 mb-1">100</div>
-                                        <small>$30.00</small>
+                                        <small>RWF 30.00</small>
                                     </button>
                                 </div>
                             </div>
@@ -76,7 +76,7 @@
                         </div>
 
                         <div class="alert alert-info">
-                            <i class="bi bi-info-circle"></i> Token pricing: 1 token = $0.50 (bulk purchases get discounts)
+                            <i class="bi bi-info-circle"></i> Token pricing: 1 token = RWF 0.50 (bulk purchases get discounts)
                         </div>
 
                         <button type="submit" class="btn btn-primary w-100">
