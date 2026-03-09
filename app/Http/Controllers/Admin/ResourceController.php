@@ -102,7 +102,7 @@ class ResourceController extends Controller
                 if ($video->isValid()) {
                     $resourceData['video_name'] = $video->getClientOriginalName();
                     $resourceData['video_mime'] = $video->getMimeType();
-                     = file_get_contents($video->getRealPath());
+                    $videoContent = file_get_contents($video->getRealPath());
                     $resourceData['video_blob'] = base64_encode($videoContent);
                 } else {
                     return back()
@@ -182,7 +182,7 @@ class ResourceController extends Controller
                 if ($document->isValid()) {
                     $resourceData['document_name'] = $document->getClientOriginalName();
                     $resourceData['document_mime'] = $document->getMimeType();
-                     = file_get_contents($document->getRealPath());
+                    $documentContent = file_get_contents($document->getRealPath());
                     $resourceData['document_blob'] = base64_encode($documentContent);
                     $resourceData['watermark_applied'] = false; // Reset watermark status
                 } else {
@@ -203,7 +203,7 @@ class ResourceController extends Controller
                 if ($video->isValid()) {
                     $resourceData['video_name'] = $video->getClientOriginalName();
                     $resourceData['video_mime'] = $video->getMimeType();
-                     = file_get_contents($video->getRealPath());
+                    $videoContent = file_get_contents($video->getRealPath());
                     $resourceData['video_blob'] = base64_encode($videoContent);
                 } else {
                     return back()
