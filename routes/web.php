@@ -625,8 +625,7 @@ Route::middleware('auth:teacher')->prefix('teacher')->name('teacher.')->group(fu
     Route::get('courses/details', [\App\Http\Controllers\TeacherAuthController::class, 'courseDetails'])->name('courses.details');
 });
 
-// Exams
-Route::resource('exams', \App\Http\Controllers\ExamController::class);
+// Exams - Resource route removed (conflicts with exams. prefix group below)
 Route::get('/api/courses/{course}/lessons', function($courseId) {
     $lessons = \App\Models\Lesson::where('course_id', $courseId)->get(['id', 'title']);
     return response()->json(['lessons' => $lessons]);
@@ -690,9 +689,7 @@ Route::get('/api/lessons/{lesson}/course', function($lessonId) {
     return response()->json(['course_id' => $lesson?->course?->id]);
 });
 
-Route::middleware(['auth:admin,staff,teacher'])->group(function () {
-    Route::resource('marks', \App\Http\Controllers\MarksController::class);
-});
+// Marks resource route removed (duplicate - already defined in teacher group above)
 
 Route::get('/teacher/dailies', [TeacherDailyController::class, 'index'])->name('teacher.dailies.index');
 
@@ -953,22 +950,7 @@ Route::get('teacher/resources/{resource}/view-document', [\App\Http\Controllers\
 Route::get('/blogs', [BlogController::class, 'publicIndex'])->name('blogs.index');
 Route::get('/blogs/{blog:slug}', [BlogController::class, 'show'])->name('blogs.show');
 
-// Public Exam Routes
-Route::prefix('exams')->name('public.exams.')->group(function () {
-    Route::get('/', [App\Http\Controllers\PublicExamController::class, 'index'])->name('index');
-    Route::get('/{exam}', [App\Http\Controllers\PublicExamController::class, 'show'])->name('show');
-    Route::get('/{exam}/payment', [App\Http\Controllers\PublicExamController::class, 'showPayment'])->name('payment');
-    Route::post('/{exam}/payment', [App\Http\Controllers\PublicExamController::class, 'processPayment'])->name('payment.process');
-    Route::get('/{exam}/payment/callback', [App\Http\Controllers\PublicExamController::class, 'handlePaymentCallback'])->name('payment.callback');
-    Route::get('/{exam}/payment/success', [App\Http\Controllers\PublicExamController::class, 'paymentSuccess'])->name('payment.success');
-    Route::get('/{exam}/start', [App\Http\Controllers\PublicExamController::class, 'startExam'])->name('start');
-    Route::get('/{exam}/take', [App\Http\Controllers\PublicExamController::class, 'takeExam'])->name('take');
-    Route::get('/{exam}/take/{session}/{questionNumber?}', [App\Http\Controllers\PublicExamController::class, 'takeQuestion'])->name('take.question');
-    Route::post('/{exam}/save-answer/{session}/{questionNumber}', [App\Http\Controllers\PublicExamController::class, 'saveAnswer'])->name('save-answer');
-    Route::post('/{exam}/save-session/{session}', [App\Http\Controllers\PublicExamController::class, 'saveSession'])->name('save.session');
-    Route::post('/{exam}/submit/{session}', [App\Http\Controllers\PublicExamController::class, 'submitExam'])->name('submit');
-    Route::get('/{exam}/check-access', [App\Http\Controllers\PublicExamController::class, 'checkAccess'])->name('check-access');
-});
+// Public Exam Routes - REMOVED DUPLICATE (already defined above with public. prefix)
 
 // Admin Blog Routes
 Route::middleware('auth:admin')->prefix('admin')->name('admin.')->group(function () {
