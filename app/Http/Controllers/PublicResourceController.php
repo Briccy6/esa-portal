@@ -18,6 +18,7 @@ class PublicResourceController extends Controller
         $this->flutterwaveSecretKey = config('services.flutterwave.secret_key');
         $this->flutterwaveBaseUrl = 'https://api.flutterwave.com/v3';
     }
+
     public function index(Request $request)
     {
         $query = Resource::with(['teacher', 'course', 'branch', 'lesson'])
@@ -32,7 +33,6 @@ class PublicResourceController extends Controller
                   ->orWhereNotNull('youtube_link');
             });
 
-        // Search functionality
         if ($request->filled('search')) {
             $searchTerm = $request->search;
             $query->where(function($q) use ($searchTerm) {
@@ -50,12 +50,10 @@ class PublicResourceController extends Controller
             });
         }
 
-        // Filter by course
         if ($request->filled('course_id')) {
             $query->where('course_id', $request->course_id);
         }
 
-        // Filter by price (free vs paid)
         if ($request->filled('price_type')) {
             if ($request->price_type === 'free') {
                 $query->where('is_free', true);
@@ -65,8 +63,7 @@ class PublicResourceController extends Controller
         }
 
         $resources = $query->latest()->paginate(12);
-        
-        // Get courses for filter dropdown
+
         $courses = \App\Models\Course::select('id', 'course_name')
             ->whereHas('resources', function($q) {
                 $q->where('is_public', true);
@@ -89,17 +86,16 @@ class PublicResourceController extends Controller
     public function downloadDocument($id)
     {
         $resource = Resource::where('is_public', true)->findOrFail($id);
-        
+
         if (!$resource->document_blob) {
             return back()->with('error', 'Document not available for download');
         }
-        
-        // If it's a paid resource, redirect to payment
+
         if (!$resource->is_free && $resource->price > 0) {
             return redirect()->route('public.resources.payment', $resource)
                 ->with('error', 'This is a paid resource. Please complete the payment to download.');
         }
-        
+
         return response($resource->document_blob)
             ->header('Content-Type', $resource->document_mime)
             ->header('Content-Disposition', 'attachment; filename="'.$resource->document_name.'"');
@@ -108,17 +104,16 @@ class PublicResourceController extends Controller
     public function previewDocument($id)
     {
         $resource = Resource::where('is_public', true)->findOrFail($id);
-        
+
         if (!$resource->document_blob) {
             return back()->with('error', 'Document not available for preview');
         }
-        
-        // If it's a paid resource, redirect to payment
+
         if (!$resource->is_free && $resource->price > 0) {
             return redirect()->route('public.resources.payment', $resource)
                 ->with('error', 'This is a paid resource. Please complete the payment to preview.');
         }
-        
+
         return response($resource->document_blob)
             ->header('Content-Type', $resource->document_mime)
             ->header('Content-Disposition', 'inline; filename="'.$resource->document_name.'"');
@@ -138,10 +133,11 @@ class PublicResourceController extends Controller
             abort(404, 'Resource not available for public access');
         }
 
-        // Get Flutterwave public key for frontend
         $flutterwavePublicKey = $this->flutterwavePublicKey;
+        $resourceName         = $resource->document_name ?? $resource->video_name ?? $resource->title ?? 'Resource';
+        $systemName           = config('app.name', 'ESA E-Learning');
 
-        return view('public.resources.payment', compact('resource', 'flutterwavePublicKey'));
+        return view('public.resources.payment', compact('resource', 'flutterwavePublicKey', 'resourceName', 'systemName'));
     }
 
     /**
@@ -150,10 +146,10 @@ class PublicResourceController extends Controller
     public function processPayment(Request $request, Resource $resource)
     {
         $request->validate([
-            'email' => 'required|email',
-            'phone_number' => 'required|string',
+            'email'          => 'required|email',
+            'phone_number'   => 'required|string',
             'payment_method' => 'required|in:card,mobile_money,bank_transfer',
-            'name' => 'required|string|max:255',
+            'name'           => 'required|string|max:255',
         ]);
 
         if ($resource->is_free || $resource->price <= 0) {
@@ -162,33 +158,30 @@ class PublicResourceController extends Controller
         }
 
         try {
-            // Generate unique transaction reference
             $txRef = 'RESOURCE_' . $resource->id . '_' . uniqid() . '_' . time();
-            
-            // Prepare payment data for Flutterwave
+
             $paymentData = [
-                'tx_ref' => $txRef,
-                'amount' => $resource->price,
-                'currency' => 'RWF', // Rwandan Francs
+                'tx_ref'          => $txRef,
+                'amount'          => $resource->price,
+                'currency'        => 'RWF',
                 'payment_options' => $request->payment_method === 'mobile_money' ? 'mobilemoneyrwanda' : $request->payment_method,
-                'redirect_url' => route('public.resources.payment.callback', $resource),
-                'customer' => [
-                    'email' => $request->email,
-                    'name' => $request->name,
+                'redirect_url'    => route('public.resources.payment.callback', $resource),
+                'customer'        => [
+                    'email'        => $request->email,
+                    'name'         => $request->name,
                     'phone_number' => $request->phone_number,
                 ],
                 'customizations' => [
-                    'title' => 'Resource Access: ' . ($resource->document_name ?: $resource->video_name ?: 'Resource'),
+                    'title'       => 'Resource Access: ' . ($resource->document_name ?: $resource->video_name ?: 'Resource'),
                     'description' => 'Payment for resource: ' . ($resource->document_name ?: $resource->video_name ?: 'Resource'),
                 ],
                 'meta' => [
-                    'resource_id' => $resource->id,
+                    'resource_id'   => $resource->id,
                     'resource_type' => $resource->document_blob ? 'document' : 'video',
-                    'payment_type' => 'resource_access',
+                    'payment_type'  => 'resource_access',
                 ],
             ];
 
-            // Initialize Flutterwave payment
             $response = $this->initializeFlutterwavePayment($paymentData);
 
             if (!$response || !isset($response['status']) || $response['status'] !== 'success') {
@@ -198,38 +191,36 @@ class PublicResourceController extends Controller
                 } elseif (isset($response['error'])) {
                     $errorMessage .= ': ' . $response['error'];
                 }
-                
+
                 return response()->json([
-                    'status' => false,
-                    'message' => $errorMessage
+                    'status'  => false,
+                    'message' => $errorMessage,
                 ]);
             }
 
-            // Store pending payment record in session
             session([
                 'resource_payment' => [
-                    'resource_id' => $resource->id,
-                    'payment_reference' => $txRef,
-                    'customer_email' => $request->email,
-                    'customer_phone' => $request->phone_number,
-                    'customer_name' => $request->name,
-                    'payment_amount' => $resource->price,
-                    'payment_status' => 'pending',
-                ]
+                    'resource_id'      => $resource->id,
+                    'payment_reference'=> $txRef,
+                    'customer_email'   => $request->email,
+                    'customer_phone'   => $request->phone_number,
+                    'customer_name'    => $request->name,
+                    'payment_amount'   => $resource->price,
+                    'payment_status'   => 'pending',
+                ],
             ]);
 
-            // Return success response with payment link
             return response()->json([
-                'status' => true,
+                'status'  => true,
                 'message' => 'Payment initialized successfully',
-                'data' => $response['data']
+                'data'    => $response['data'],
             ]);
 
         } catch (\Exception $e) {
             Log::error('Resource payment initialization failed: ' . $e->getMessage());
             return response()->json([
-                'status' => false,
-                'message' => 'Payment initialization failed: ' . $e->getMessage()
+                'status'  => false,
+                'message' => 'Payment initialization failed: ' . $e->getMessage(),
             ]);
         }
     }
@@ -239,22 +230,20 @@ class PublicResourceController extends Controller
      */
     public function handlePaymentCallback(Request $request, Resource $resource)
     {
-        $txRef = $request->query('tx_ref');
+        $txRef         = $request->query('tx_ref');
         $transactionId = $request->query('transaction_id');
-        $status = $request->query('status');
+        $status        = $request->query('status');
 
         if ($status === 'successful' || $status === 'completed') {
-            // Verify transaction with Flutterwave
             $verification = $this->verifyFlutterwaveTransaction($transactionId);
 
             if ($verification['status'] === 'successful') {
-                // Update session payment record
                 session([
                     'resource_payment' => array_merge(session('resource_payment', []), [
-                        'payment_status' => 'paid',
+                        'payment_status'             => 'paid',
                         'flutterwave_transaction_id' => $transactionId,
-                        'paid_at' => now(),
-                    ])
+                        'paid_at'                    => now(),
+                    ]),
                 ]);
 
                 return redirect()->route('public.resources.payment.success', [$resource, 'reference' => $txRef])
@@ -272,7 +261,7 @@ class PublicResourceController extends Controller
     public function paymentSuccess(Resource $resource, Request $request)
     {
         $reference = $request->query('reference');
-        
+
         return view('public.resources.payment-success', compact('resource', 'reference'));
     }
 
@@ -282,22 +271,22 @@ class PublicResourceController extends Controller
     private function initializeFlutterwavePayment($data)
     {
         $curl = curl_init();
-        
+
         curl_setopt_array($curl, [
-            CURLOPT_URL => 'https://api.flutterwave.com/v3/payments',
+            CURLOPT_URL            => 'https://api.flutterwave.com/v3/payments',
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => json_encode($data),
-            CURLOPT_HTTPHEADER => [
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => json_encode($data),
+            CURLOPT_HTTPHEADER     => [
                 'Content-Type: application/json',
                 'Authorization: Bearer ' . $this->flutterwaveSecretKey,
             ],
             CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_TIMEOUT => 30,
+            CURLOPT_TIMEOUT        => 30,
         ]);
 
         $response = curl_exec($curl);
-        $err = curl_error($curl);
+        $err      = curl_error($curl);
         $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
         curl_close($curl);
 
@@ -310,7 +299,7 @@ class PublicResourceController extends Controller
         Log::info('Flutterwave Response: ' . $response);
 
         $decodedResponse = json_decode($response, true);
-        
+
         if (json_last_error() !== JSON_ERROR_NONE) {
             Log::error('Flutterwave JSON Decode Error: ' . json_last_error_msg());
             throw new \Exception('Invalid JSON response from Flutterwave');
@@ -325,18 +314,18 @@ class PublicResourceController extends Controller
     private function verifyFlutterwaveTransaction($transactionId)
     {
         $curl = curl_init();
-        
+
         curl_setopt_array($curl, [
-            CURLOPT_URL => $this->flutterwaveBaseUrl . '/transactions/' . $transactionId . '/verify',
+            CURLOPT_URL            => $this->flutterwaveBaseUrl . '/transactions/' . $transactionId . '/verify',
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HTTPHEADER => [
+            CURLOPT_HTTPHEADER     => [
                 'Content-Type: application/json',
                 'Authorization: Bearer ' . $this->flutterwaveSecretKey,
             ],
         ]);
 
         $response = curl_exec($curl);
-        $err = curl_error($curl);
+        $err      = curl_error($curl);
         curl_close($curl);
 
         if ($err) {
