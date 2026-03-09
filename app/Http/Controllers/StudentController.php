@@ -1114,46 +1114,19 @@ class StudentController extends Controller
             ->whereIn('status', ['successful', 'paid'])
             ->sum('amount');
 
-        $totalPaid   = $paidRegistration + $paidTrip + $paidTuition + $paidPractical;
-        $outstanding = $totalFees - $totalPaid;
+        $paidTrip = StudentTransaction::where('student_id', $student->id)
+            ->where('type', 'trip_fee')
+            ->whereIn('status', ['successful', 'paid'])
+            ->sum('amount');
 
-        return view('students.dashboard', compact(
-            'student',
-            'approvedAttendances',
-            'totalDays',
-            'attendedDays',
-            'attendancePercent',
-            'registrationFee',
-            'tripFee',
-            'tuitionFee',
-            'praticalFee',
-            'discount',
-            'studentCardFee',
-            'discountAmount',
-            'totalFees',
-            'paidRegistration',
-            'paidTrip',
-            'paidTuition',
-            'paidPractical',
-            'totalPaid',
-            'outstanding'
-        ));
-    }
+        $paidStudentCard = StudentTransaction::where('student_id', $student->id)
+            ->where('type', 'student_card')
+            ->whereIn('status', ['successful', 'paid'])
+            ->sum('amount');
 
-    // =========================================================================
-    // RECORD CASH PAYMENT
-    // Route: POST /staff/students/{studentId}/pay
-    // =========================================================================
-    public function recordCashPayment(Request $request, $studentId)
-    {
-        $isAjax = $request->ajax() || $request->wantsJson();
-
-        try {
-            $incomingFeeType = $request->input('fee_type');
-
-            $feeTypeMap = [
-                'tuition_fee'   => 'school_fee',
-                'tuition'       => 'school_fee',
+        $remainingAmount = 0;
+        $feeTypeName     = '';
+        $totalFeeAmount  = 0;
                 'school fee'    => 'school_fee',
                 'school-fee'    => 'school_fee',
                 'registration'  => 'registration_fee',
