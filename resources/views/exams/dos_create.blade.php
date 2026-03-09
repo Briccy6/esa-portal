@@ -227,6 +227,54 @@
                             @enderror
                         </div>
 
+                        <!-- Question Bank Selection -->
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-question-circle"></i>
+                                    Questions from Question Banks
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                @if($questionBanks->count() > 0)
+                                    <div class="row">
+                                        <div class="col-md-8">
+                                            <label for="question_bank_ids" class="form-label">Select Question Banks</label>
+                                            <select name="question_bank_ids[]" id="question_bank_ids" class="form-select" multiple>
+                                                @foreach($questionBanks as $questionBank)
+                                                    <option value="{{ $questionBank->id }}">
+                                                        {{ $questionBank->name }} ({{ $questionBank->questions->count() }} questions)
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                            <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple banks</small>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="questions_per_bank" class="form-label">Questions per Bank</label>
+                                            <input type="number" name="questions_per_bank" id="questions_per_bank" class="form-control" 
+                                                   min="1" max="50" value="10">
+                                            <small class="form-text text-muted">Random questions per bank</small>
+                                        </div>
+                                    </div>
+                                    <div class="mt-3">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="previewQuestions()">
+                                            <i class="bi bi-eye"></i> Preview Questions
+                                        </button>
+                                        <div id="questionsPreview" class="mt-3" style="display: none;">
+                                            <h6>Questions Preview:</h6>
+                                            <div id="questionsList"></div>
+                                        </div>
+                                    </div>
+                                @else
+                                    <div class="alert alert-warning">
+                                        <i class="bi bi-exclamation-triangle"></i>
+                                        <strong>No Question Banks Available</strong>
+                                        <p class="mb-0">There are no question banks in the system. You need to create question banks first.</p>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+
                         <div class="d-flex justify-content-between">
                             <a href="{{ route('dos.exams.index') }}" class="btn btn-outline-secondary">Cancel</a>
                             <button type="submit" class="btn btn-primary">
@@ -248,6 +296,66 @@ function generatePassword() {
         password += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     document.getElementById('exam_password').value = password;
+}
+
+function previewQuestions() {
+    const selectedBanks = Array.from(document.getElementById('question_bank_ids').selectedOptions).map(option => option.value);
+    const questionsPerBank = document.getElementById('questions_per_bank').value;
+    
+    if (!selectedBanks || selectedBanks.length === 0) {
+        alert('Please select at least one question bank');
+        return;
+    }
+    
+    if (!questionsPerBank || questionsPerBank < 1) {
+        alert('Please enter a valid number of questions per bank');
+        return;
+    }
+    
+    fetch('/exams/preview-questions', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({
+            question_bank_ids: selectedBanks,
+            questions_per_bank: parseInt(questionsPerBank)
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        const previewDiv = document.getElementById('questionsPreview');
+        const questionsList = document.getElementById('questionsList');
+        
+        if (data.questions && data.questions.length > 0) {
+            let html = '<div class="row">';
+            data.questions.forEach((question, index) => {
+                html += `
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="card-title">Question ${index + 1}</h6>
+                                <p class="card-text">${question.text}</p>
+                                ${question.options ? '<small class="text-muted"><strong>Options:</strong> ' + question.options + '</small>' : ''}
+                                <br><small class="text-muted"><strong>Bank:</strong> ${question.question_bank_name}</small>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            questionsList.innerHTML = html;
+            previewDiv.style.display = 'block';
+        } else {
+            questionsList.innerHTML = '<p class="text-muted">No questions found in the selected question banks.</p>';
+            previewDiv.style.display = 'block';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while previewing questions');
+    });
 }
 </script>
 @endsection

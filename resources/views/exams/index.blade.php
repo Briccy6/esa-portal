@@ -385,6 +385,45 @@
                                 <div class="exam-stat-value text-warning">{{ $pendingGrading }}</div>
                                 <div class="exam-stat-label">To Grade</div>
                             </div>
+                            <div class="btn-group" role="group">
+                                <a href="{{ route('admin.exams.show', $exam->id) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i> View
+                                </a>
+                                <a href="{{ route('exams.questions.index', $exam->id) }}" class="btn btn-sm btn-outline-info">
+                                    <i class="bi bi-question-circle"></i> Questions
+                                </a>
+                                <a href="{{ route('admin.exams.preview', $exam->id) }}" class="btn btn-sm btn-outline-success" target="_blank">
+                                    <i class="bi bi-play-circle"></i> Preview
+                                </a>
+                                @if($exam->is_public)
+                                    <form action="{{ route('admin.exams.makePrivate', $exam->id) }}" method="POST" class="d-inline">
+                                        @csrf
+                                        <button type="submit" class="btn btn-sm btn-outline-warning">
+                                            <i class="bi bi-lock"></i> Make Private
+                                        </button>
+                                    </form>
+                                @else
+                                    <form action="{{ route('admin.exams.makePublic', $exam->id) }}" method="POST" class="d-inline">
+                                        @csrf
+                                        <button type="submit" class="btn btn-sm btn-outline-success">
+                                            <i class="bi bi-unlock"></i> Make Public
+                                        </button>
+                                    </form>
+                                @endif
+                                <a href="{{ route('admin.exams.results', $exam->id) }}" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-graph-up"></i> Results
+                                </a>
+                                <a href="{{ route('admin.exams.edit', $exam->id) }}" class="btn btn-sm btn-outline-warning">
+                                    <i class="bi bi-pencil"></i> Edit
+                                </a>
+                                <form action="{{ route('admin.exams.destroy', $exam->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this exam? This action cannot be undone and will remove all associated questions, results, and data.')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-trash"></i> Delete
+                                    </button>
+                                </form>
+                            </div>
                         @endif
                     </div>
 
@@ -416,6 +455,13 @@
                         <a href="{{ route('admin.exams.edit', $exam) }}" class="btn btn-secondary btn-exam">
                             <i class="fas fa-edit"></i> Edit
                         </a>
+                        <form action="{{ route('admin.exams.destroy', $exam) }}" method="POST" style="display: inline;">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-danger btn-exam" onclick="return confirm('Are you sure you want to delete this exam? This action cannot be undone and will delete all related data including questions, marks, attempts, and analytics.')">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </form>
                     </div>
                 </div>
             @empty

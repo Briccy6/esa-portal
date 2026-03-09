@@ -294,6 +294,16 @@
         <a href="{{ route('admin.exams.edit', $exam->id) }}" class="btn-custom btn-primary-custom">
             <i class="fas fa-edit"></i> Edit Exam
         </a>
+        <a href="{{ route('admin.exams.preview', $exam->id) }}" class="btn-custom btn-success-custom" target="_blank">
+            <i class="fas fa-play"></i> Preview Exam
+        </a>
+        <form action="{{ route('admin.exams.destroy', $exam) }}" method="POST" style="display: inline;">
+            @csrf
+            @method('DELETE')
+            <button type="submit" class="btn-custom" style="background: #dc3545; color: white;" onclick="return confirm('Are you sure you want to delete this exam? This action cannot be undone and will delete all related data including questions, marks, attempts, and analytics.')">
+                <i class="fas fa-trash"></i> Delete Exam
+            </button>
+        </form>
         <a href="{{ route('admin.exams.index') }}" class="btn-custom btn-secondary-custom">
             <i class="fas fa-arrow-left"></i> Back to Exams
         </a>

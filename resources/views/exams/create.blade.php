@@ -681,41 +681,53 @@ body {
                         Questions from Question Banks
                     </h2>
                     
-                    <div class="lc-grid">
-                        <div class="lc-field">
-                            <label class="lc-label">Select Question Banks</label>
-                            <div class="lc-input-wrap">
-                                <i class="fas fa-question-circle lc-input-icon"></i>
-                                <select name="question_bank_ids[]" id="question_bank_ids" class="lc-select lc-select2-multi" multiple
-                                        data-placeholder="Select question banks">
-                                    @foreach($questionBanks as $questionBank)
-                                        <option value="{{ $questionBank->id }}">
-                                            {{ $questionBank->name }} ({{ $questionBank->questions->count() }} questions)
-                                        </option>
-                                    @endforeach
-                                </select>
+                    @if($questionBanks->count() > 0)
+                        <div class="lc-grid">
+                            <div class="lc-field">
+                                <label class="lc-label">Select Question Banks</label>
+                                <div class="lc-input-wrap">
+                                    <i class="fas fa-question-circle lc-input-icon"></i>
+                                    <select name="question_bank_ids[]" id="question_bank_ids" class="lc-select lc-select2-multi" multiple
+                                            data-placeholder="Select question banks">
+                                        @foreach($questionBanks as $questionBank)
+                                            <option value="{{ $questionBank->id }}">
+                                                {{ $questionBank->name }} ({{ $questionBank->questions->count() }} questions)
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <p class="lc-hint">Select one or more question banks to import questions from</p>
                             </div>
-                            <p class="lc-hint">Select one or more question banks to import questions from</p>
+                            
+                            <div class="lc-field">
+                                <label class="lc-label">Number of Questions per Bank</label>
+                                <input type="number" name="questions_per_bank" id="questions_per_bank" class="lc-input" 
+                                       min="1" max="50" value="10" placeholder="e.g., 10">
+                                <small class="lc-help">How many questions to randomly select from each bank</small>
+                            </div>
                         </div>
                         
                         <div class="lc-field">
-                            <label class="lc-label">Number of Questions per Bank</label>
-                            <input type="number" name="questions_per_bank" id="questions_per_bank" class="lc-input" 
-                                   min="1" max="50" value="10" placeholder="e.g., 10">
-                            <small class="lc-help">How many questions to randomly select from each bank</small>
+                            <button type="button" id="previewQuestions" class="lc-btn lc-btn-secondary">
+                                <i class="fas fa-eye"></i>
+                                Preview Selected Questions
+                            </button>
+                            <div id="questionsPreview" class="mt-3" style="display: none;">
+                                <h4>Questions Preview:</h4>
+                                <div id="questionsList"></div>
+                            </div>
                         </div>
-                    </div>
-                    
-                    <div class="lc-field">
-                        <button type="button" id="previewQuestions" class="lc-btn lc-btn-secondary">
-                            <i class="fas fa-eye"></i>
-                            Preview Selected Questions
-                        </button>
-                        <div id="questionsPreview" class="mt-3" style="display: none;">
-                            <h4>Questions Preview:</h4>
-                            <div id="questionsList"></div>
+                    @else
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>No Question Banks Available</strong>
+                            <p class="mb-0">There are no question banks in the system. You need to create question banks first before you can import questions from them.</p>
+                            <hr>
+                            <a href="#" class="btn btn-primary" onclick="alert('Question bank creation not yet implemented')">
+                                <i class="fas fa-plus"></i> Create Question Bank
+                            </a>
                         </div>
-                    </div>
+                    @endif
                 </div>
 
                 <!-- Form Actions -->

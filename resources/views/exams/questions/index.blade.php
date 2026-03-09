@@ -6,36 +6,186 @@
 
 @section('content')
 <div class="container-fluid px-2 px-md-3 py-4">
-    <h2 class="mb-4">Questions for Exam: {{ $exam->title ?? 'Exam' }}</h2>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Questions for Exam: {{ $exam->title ?? 'Exam' }}</h2>
+        <div class="badge bg-info">Total: {{ $exam->questions->count() }} questions</div>
+    </div>
+
+    <!-- Exam Info -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <strong>Exam Type:</strong> {{ $exam->exam_type ?? 'N/A' }}<br>
+                    <strong>Total Marks:</strong> {{ $exam->total_marks ?? 'N/A' }}<br>
+                    <strong>Exam Date:</strong> {{ $exam->class_date ? $exam->class_date->format('M d, Y') : 'N/A' }}
+                </div>
+                <div class="col-md-6">
+                    <strong>Questions from Banks:</strong> {{ $exam->questions->whereNotNull('question_bank_id')->count() }}<br>
+                    <strong>Manually Added:</strong> {{ $exam->questions->whereNull('question_bank_id')->count() }}<br>
+                    <strong>Status:</strong> <span class="badge bg-{{ $exam->is_active ? 'success' : 'secondary' }}">{{ $exam->is_active ? 'Active' : 'Inactive' }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Add & Import Buttons -->
     <div class="mb-3 d-flex gap-2">
         <a href="{{ route('exams.questions.create', $exam->id) }}" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> Add Question
+            <i class="bi bi-plus-circle"></i> Add Question Manually
         </a>
         <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#importModal">
-            <i class="bi bi-upload"></i> Import Questions
+            <i class="bi bi-upload"></i> Import Questions (CSV)
         </button>
+        <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#questionBankImportModal">
+            <i class="bi bi-database"></i> Import from Question Banks
+        </button>
+        @if($exam->questions->count() > 0)
+            <button class="btn btn-info" onclick="window.print()">
+                <i class="bi bi-printer"></i> Print Questions
+            </button>
+        @endif
     </div>
 
-    @if($exam->questions->count())
-        <ul class="list-group mb-4">
-            @foreach($exam->questions as $question)
-                <li class="list-group-item">
-                    {{ $question->text ?? $question->question }}
-                </li>
+    @if($exam->questions->count() > 0)
+        <div class="row">
+            @foreach($exam->questions as $index => $question)
+                <div class="col-lg-6 mb-4">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">Question #{{ $index + 1 }}</h6>
+                            <div>
+                                @if($question->question_bank_id)
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="bi bi-database"></i> From Bank
+                                    </span>
+                                @else
+                                    <span class="badge bg-primary">
+                                        <i class="bi bi-pencil"></i> Manual
+                                    </span>
+                                @endif
+                                <span class="badge bg-secondary">{{ $question->marks }} marks</span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-3">{{ $question->text }}</p>
+                            
+                            @if($question->option_a || $question->option_b || $question->option_c || $question->option_d)
+                                <div class="options-container mb-3">
+                                    @if($question->option_a)
+                                        <div class="form-check {{ $question->correct_answer === 'A' ? 'text-success fw-bold' : '' }}">
+                                            <label class="form-check-label">
+                                                A. {{ $question->option_a }}
+                                                @if($question->correct_answer === 'A') <i class="bi bi-check-circle-fill ms-2"></i> @endif
+                                            </label>
+                                        </div>
+                                    @endif
+                                    @if($question->option_b)
+                                        <div class="form-check {{ $question->correct_answer === 'B' ? 'text-success fw-bold' : '' }}">
+                                            <label class="form-check-label">
+                                                B. {{ $question->option_b }}
+                                                @if($question->correct_answer === 'B') <i class="bi bi-check-circle-fill ms-2"></i> @endif
+                                            </label>
+                                        </div>
+                                    @endif
+                                    @if($question->option_c)
+                                        <div class="form-check {{ $question->correct_answer === 'C' ? 'text-success fw-bold' : '' }}">
+                                            <label class="form-check-label">
+                                                C. {{ $question->option_c }}
+                                                @if($question->correct_answer === 'C') <i class="bi bi-check-circle-fill ms-2"></i> @endif
+                                            </label>
+                                        </div>
+                                    @endif
+                                    @if($question->option_d)
+                                        <div class="form-check {{ $question->correct_answer === 'D' ? 'text-success fw-bold' : '' }}">
+                                            <label class="form-check-label">
+                                                D. {{ $question->option_d }}
+                                                @if($question->correct_answer === 'D') <i class="bi bi-check-circle-fill ms-2"></i> @endif
+                                            </label>
+                                        </div>
+                                    @endif
+                                </div>
+                            @endif
+                            
+                            @if($question->question_bank_id && $question->questionBank)
+                                <div class="mt-2 pt-2 border-top">
+                                    <small class="text-muted">
+                                        <i class="bi bi-database"></i> 
+                                        Source: {{ $question->questionBank->name }}
+                                    </small>
+                                </div>
+                            @endif
+                            
+                            <div class="mt-3 d-flex gap-2">
+                                <button class="btn btn-sm btn-outline-primary" onclick="editQuestion({{ $question->id }})">
+                                    <i class="bi bi-pencil"></i> Edit
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteQuestion({{ $question->id }})">
+                                    <i class="bi bi-trash"></i> Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             @endforeach
-        </ul>
+        </div>
+        
+        <!-- Summary Section -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">Questions Summary</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <h4 class="text-primary">{{ $exam->questions->count() }}</h4>
+                        <p class="mb-0">Total Questions</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h4 class="text-success">{{ $exam->questions->sum('marks') }}</h4>
+                        <p class="mb-0">Total Marks</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h4 class="text-warning">{{ $exam->questions->whereNotNull('question_bank_id')->count() }}</h4>
+                        <p class="mb-0">From Banks</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h4 class="text-info">{{ $exam->questions->whereNull('question_bank_id')->count() }}</h4>
+                        <p class="mb-0">Manual</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     @else
         <div class="alert alert-info">
-            No questions found for this exam.
+            <div class="text-center">
+                <i class="bi bi-inbox fa-3x text-muted mb-3"></i>
+                <h5>No Questions Found</h5>
+                <p class="mb-3">This exam doesn't have any questions yet. You can:</p>
+                <div class="d-flex justify-content-center gap-2">
+                    <a href="{{ route('exams.questions.create', $exam->id) }}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> Add Question Manually
+                    </a>
+                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#importModal">
+                        <i class="bi bi-upload"></i> Import from CSV
+                    </button>
+                    <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#questionBankImportModal">
+                        <i class="bi bi-database"></i> Import from Question Banks
+                    </button>
+                </div>
+            </div>
         </div>
     @endif
-    <a href="{{ 
-        auth('admin')->check() ? route('admin.exams.index') :
-        (auth('teacher')->check() ? route('teacher.exams.index') :
-        (auth('staff')->check() ? route('dos.exams.index') : route('public.exams.index'))
-    ) }}" class="btn btn-secondary">Back to Exams</a>
+    
+    <div class="mt-4">
+        <a href="{{ 
+            auth('admin')->check() ? route('admin.exams.index') :
+            (auth('teacher')->check() ? route('teacher.exams.index') :
+            (auth('staff')->check() ? route('dos.exams.index') : route('public.exams.index'))
+        ) }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Exams
+        </a>
+    </div>
 </div>
 
 <!-- Import Modal -->
@@ -62,4 +212,252 @@
     </form>
   </div>
 </div>
+
+<!-- Question Bank Import Modal -->
+<div class="modal fade" id="questionBankImportModal" tabindex="-1" aria-labelledby="questionBankImportModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="questionBankImportModalLabel">
+            <i class="bi bi-database"></i> Import Questions from Question Banks
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+            <div class="col-md-8">
+                <label for="questionBankSelect" class="form-label">Select Question Banks</label>
+                <select id="questionBankSelect" class="form-select" multiple size="6">
+                    @php
+                        $questionBanks = \App\Models\QuestionBank::with('questions')->get();
+                    @endphp
+                    @foreach($questionBanks as $bank)
+                        <option value="{{ $bank->id }}">
+                            {{ $bank->name }} ({{ $bank->questions->count() }} questions)
+                        </option>
+                    @endforeach
+                </select>
+                <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple banks</small>
+            </div>
+            <div class="col-md-4">
+                <label for="questionsPerBank" class="form-label">Questions per Bank</label>
+                <input type="number" id="questionsPerBank" class="form-control" min="1" max="50" value="5">
+                <small class="form-text text-muted">Random questions per bank</small>
+                
+                <div class="mt-2">
+                    <label class="form-label">
+                        <input type="radio" name="importType" value="perBank" checked> Per Bank
+                    </label>
+                    <label class="form-label">
+                        <input type="radio" name="importType" value="total"> Total Questions
+                    </label>
+                </div>
+                
+                <div class="mt-3">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="previewQuestionBankQuestions()">
+                        <i class="bi bi-eye"></i> Preview
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="questionBankPreview" class="mt-3" style="display: none;">
+            <h6>Questions Preview:</h6>
+            <div id="questionBankPreviewList" style="max-height: 300px; overflow-y: auto;"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-warning" onclick="importFromQuestionBanks()">
+            <i class="bi bi-database"></i> Import Questions
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.options-container .form-check {
+    margin-bottom: 0.5rem;
+}
+@media print {
+    .no-print { display: none !important; }
+    .card { break-inside: avoid; }
+}
+</style>
+
+<script>
+function editQuestion(questionId) {
+    // Implement edit functionality or redirect to edit page
+    alert('Edit functionality not yet implemented for question ID: ' + questionId);
+}
+
+function deleteQuestion(questionId) {
+    if (confirm('Are you sure you want to delete this question?')) {
+        // Implement delete functionality
+        fetch('/exams/questions/' + questionId, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error deleting question: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while deleting the question');
+        });
+    }
+}
+
+function previewQuestionBankQuestions() {
+    const selectedBanks = Array.from(document.getElementById('questionBankSelect').selectedOptions).map(option => option.value);
+    const questionsPerBank = document.getElementById('questionsPerBank').value;
+    const importType = document.querySelector('input[name="importType"]:checked').value;
+    
+    if (!selectedBanks || selectedBanks.length === 0) {
+        alert('Please select at least one question bank');
+        return;
+    }
+    
+    if (!questionsPerBank || questionsPerBank < 1) {
+        alert('Please enter a valid number of questions');
+        return;
+    }
+    
+    // Calculate expected total
+    const expectedTotal = importType === 'perBank' ? questionsPerBank * selectedBanks.length : parseInt(questionsPerBank);
+    
+    // Show loading state
+    const previewBtn = document.querySelector('button[onclick="previewQuestionBankQuestions()"]');
+    const originalText = previewBtn.innerHTML;
+    previewBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Loading...';
+    previewBtn.disabled = true;
+    
+    fetch('/exams/question-banks/preview-questions', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({
+            question_bank_ids: selectedBanks,
+            questions_per_bank: parseInt(questionsPerBank),
+            import_type: importType
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        const previewDiv = document.getElementById('questionBankPreview');
+        const previewList = document.getElementById('questionBankPreviewList');
+        
+        if (data.error) {
+            previewList.innerHTML = '<div class="alert alert-danger"><strong>Error:</strong> ' + data.error + '</div>';
+            previewDiv.style.display = 'block';
+        } else if (data.questions && data.questions.length > 0) {
+            let html = '<div class="alert alert-info"><strong>Preview:</strong> ' + data.questions.length + ' questions will be imported (expected: ' + expectedTotal + ')</div>';
+            data.questions.forEach((question, index) => {
+                html += `
+                    <div class="card mb-2">
+                        <div class="card-body p-3">
+                            <h6 class="card-title mb-2">Question ${index + 1}</h6>
+                            <p class="card-text mb-2">${question.text}</p>
+                            ${question.options ? '<small class="text-muted"><strong>Options:</strong> ' + question.options + '</small><br>' : ''}
+                            <small class="text-muted"><strong>Bank:</strong> ${question.question_bank_name}</small>
+                        </div>
+                    </div>
+                `;
+            });
+            previewList.innerHTML = html;
+            previewDiv.style.display = 'block';
+        } else {
+            previewList.innerHTML = '<p class="text-muted">No questions found in the selected question banks.</p>';
+            previewDiv.style.display = 'block';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        const previewDiv = document.getElementById('questionBankPreview');
+        const previewList = document.getElementById('questionBankPreviewList');
+        previewList.innerHTML = '<div class="alert alert-danger"><strong>Error:</strong> ' + error.message + '</div>';
+        previewDiv.style.display = 'block';
+        alert('An error occurred while previewing questions: ' + error.message);
+    })
+    .finally(() => {
+        // Restore button state
+        previewBtn.innerHTML = originalText;
+        previewBtn.disabled = false;
+    });
+}
+
+function importFromQuestionBanks() {
+    const selectedBanks = Array.from(document.getElementById('questionBankSelect').selectedOptions).map(option => option.value);
+    const questionsPerBank = document.getElementById('questionsPerBank').value;
+    const importType = document.querySelector('input[name="importType"]:checked').value;
+    
+    if (!selectedBanks || selectedBanks.length === 0) {
+        alert('Please select at least one question bank');
+        return;
+    }
+    
+    if (!questionsPerBank || questionsPerBank < 1) {
+        alert('Please enter a valid number of questions');
+        return;
+    }
+    
+    // Calculate expected total
+    const expectedTotal = importType === 'perBank' ? questionsPerBank * selectedBanks.length : parseInt(questionsPerBank);
+    
+    if (!confirm('Are you sure you want to import ' + expectedTotal + ' questions? (' + importType + ' mode)')) {
+        return;
+    }
+    
+    // Show loading state
+    const importBtn = event.target;
+    const originalText = importBtn.innerHTML;
+    importBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Importing...';
+    importBtn.disabled = true;
+    
+    fetch('/exams/' + {{ $exam->id }} + '/import-from-banks', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({
+            question_bank_ids: selectedBanks,
+            questions_per_bank: parseInt(questionsPerBank),
+            import_type: importType
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Successfully imported ' + data.imported_count + ' questions!');
+            location.reload();
+        } else {
+            alert('Error importing questions: ' + data.message);
+            importBtn.innerHTML = originalText;
+            importBtn.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while importing questions');
+        importBtn.innerHTML = originalText;
+        importBtn.disabled = false;
+    });
+}
+</script>
 @endsection

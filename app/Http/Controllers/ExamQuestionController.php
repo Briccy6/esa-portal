@@ -8,8 +8,8 @@ class ExamQuestionController extends Controller
 {
     public function index($examId)
     {
-        // Fetch exam and its questions (adjust model/relations as needed)
-        $exam = \App\Models\Exam::with('questions')->findOrFail($examId);
+        // Fetch exam and its questions with question bank relationships
+        $exam = \App\Models\Exam::with(['questions.questionBank'])->findOrFail($examId);
         $courses = \App\Models\Course::all(); // Or filter as needed
 
         return view('exams.questions.index', compact('exam', 'courses'));

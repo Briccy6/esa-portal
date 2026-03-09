@@ -117,14 +117,17 @@ class ExamController extends Controller
         
         // Try to get question banks, but handle if table doesn't exist
         try {
-            $questionBanks = \App\Models\QuestionBank::where(function($query) use ($user) {
-                if (auth('admin')->check()) {
-                    // Admin can see all question banks
-                    return $query;
-                } elseif (auth('teacher')->check()) {
-                    return $query->where('teacher_id', $user->id);
-                }
-            })->get();
+            if (auth('admin')->check()) {
+                // Admin can see all question banks
+                $questionBanks = \App\Models\QuestionBank::with(['questions', 'teacher', 'course'])->get();
+            } elseif (auth('teacher')->check()) {
+                // Teacher can only see their own question banks
+                $questionBanks = \App\Models\QuestionBank::where('teacher_id', $user->id)
+                    ->with(['questions', 'teacher', 'course'])->get();
+            } else {
+                // Other users (staff) can see all question banks
+                $questionBanks = \App\Models\QuestionBank::with(['questions', 'teacher', 'course'])->get();
+            }
         } catch (\Exception $e) {
             $questionBanks = collect();
             \Log::error('Question banks table not available: ' . $e->getMessage());
@@ -398,20 +401,98 @@ class ExamController extends Controller
      */
     public function destroy(Exam $exam)
     {
-        $exam->courses()->detach();
-        $exam->lessons()->detach();
-        $exam->delete();
-        // Redirect based on authentication
-        if (auth('admin')->check()) {
-            return redirect()->route('admin.exams.index')->with('success', 'Exam deleted successfully.');
-        } elseif (auth('staff')->check()) {
-            $staff = auth('staff')->user();
-            if ($staff->role === 'DOS') {
-                return redirect()->route('dos.exams.index')->with('success', 'Exam deleted successfully.');
+        try {
+            // Begin transaction to ensure data integrity
+            \DB::beginTransaction();
+            
+            // Delete related records in proper order to avoid foreign key constraint violations
+            // 1. Delete exam analytics (depends on questions and exams)
+            try {
+                $exam->analytics()->delete();
+            } catch (\Exception $e) {
+                \Log::warning('Could not delete exam analytics: ' . $e->getMessage());
             }
-            return redirect()->route('exams.index')->with('success', 'Exam deleted successfully.');
-        } else {
-            return redirect()->route('exams.index')->with('success', 'Exam deleted successfully.');
+            
+            // 2. Delete exam settings
+            try {
+                $exam->settings()->delete();
+            } catch (\Exception $e) {
+                \Log::warning('Could not delete exam settings: ' . $e->getMessage());
+            }
+            
+            // 3. Delete exam sessions (depends on attempts)
+            try {
+                $exam->sessions()->delete();
+            } catch (\Exception $e) {
+                \Log::warning('Could not delete exam sessions: ' . $e->getMessage());
+            }
+            
+            // 4. Delete exam attempts
+            try {
+                $exam->attempts()->delete();
+            } catch (\Exception $e) {
+                \Log::warning('Could not delete exam attempts: ' . $e->getMessage());
+            }
+            
+            // 5. Delete questions (will cascade delete student answers)
+            try {
+                $exam->questions()->delete();
+            } catch (\Exception $e) {
+                \Log::warning('Could not delete exam questions: ' . $e->getMessage());
+            }
+            
+            // 6. Delete marks
+            try {
+                $exam->marks()->delete();
+            } catch (\Exception $e) {
+                \Log::warning('Could not delete exam marks: ' . $e->getMessage());
+            }
+            
+            // 7. Delete exam tokens (if table exists)
+            try {
+                $exam->examTokens()->delete();
+            } catch (\Exception $e) {
+                \Log::warning('Could not delete exam tokens: ' . $e->getMessage());
+            }
+            
+            // 8. Delete report card test marks (if table exists)
+            try {
+                \DB::table('report_card_test_marks')->where('exam_id', $exam->id)->delete();
+            } catch (\Exception $e) {
+                \Log::warning('Could not delete report card test marks: ' . $e->getMessage());
+            }
+            
+            // 9. Detach many-to-many relationships
+            $exam->courses()->detach();
+            $exam->lessons()->detach();
+            
+            // 10. Finally delete the exam
+            $exam->delete();
+            
+            \DB::commit();
+            
+            // Redirect based on authentication
+            if (auth('admin')->check()) {
+                return redirect()->route('admin.exams.index')->with('success', 'Exam deleted successfully.');
+            } elseif (auth('staff')->check()) {
+                $staff = auth('staff')->user();
+                if ($staff->role === 'DOS') {
+                    return redirect()->route('dos.exams.index')->with('success', 'Exam deleted successfully.');
+                }
+                return redirect()->route('exams.index')->with('success', 'Exam deleted successfully.');
+            } else {
+                return redirect()->route('exams.index')->with('success', 'Exam deleted successfully.');
+            }
+            
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            
+            // Log the error for debugging
+            \Log::error('Failed to delete exam: ' . $e->getMessage());
+            \Log::error('Stack trace: ' . $e->getTraceAsString());
+            
+            // Return with error message
+            return redirect()->back()->with('error', 'Failed to delete exam: ' . $e->getMessage());
         }
     }
 
@@ -628,18 +709,68 @@ class ExamController extends Controller
     }
 
     /**
+     * Import questions from question banks to an existing exam
+     */
+    public function importFromBanks(Request $request, Exam $exam)
+    {
+        try {
+            $request->validate([
+                'question_bank_ids' => 'required|array',
+                'question_bank_ids.*' => 'exists:question_banks,id',
+                'questions_per_bank' => 'required|integer|min:1|max:50',
+                'import_type' => 'sometimes|in:perBank,total',
+            ]);
+            
+            $importType = $request->import_type ?? 'perBank'; // Default to perBank for backward compatibility
+            $importedCount = $this->addQuestionsFromBanks($exam, $request->question_bank_ids, $request->questions_per_bank, $importType);
+            
+            return response()->json([
+                'success' => true,
+                'imported_count' => $importedCount,
+                'message' => "Successfully imported {$importedCount} questions to the exam."
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Failed to import questions from banks: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to import questions: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    /**
      * Add questions from question banks to an exam
      */
-    private function addQuestionsFromBanks(Exam $exam, array $questionBankIds, int $questionsPerBank)
+    private function addQuestionsFromBanks(Exam $exam, array $questionBankIds, int $questionsPerBank, string $importType = 'perBank')
     {
         $allQuestions = collect();
         
-        foreach ($questionBankIds as $bankId) {
-            $bank = \App\Models\QuestionBank::find($bankId);
-            if ($bank) {
-                // Get random questions from this bank
-                $questions = $bank->questions()->inRandomOrder()->limit($questionsPerBank)->get();
-                $allQuestions = $allQuestions->concat($questions);
+        if ($importType === 'total') {
+            // Total questions mode - distribute across selected banks
+            $totalQuestionsNeeded = $questionsPerBank;
+            
+            // Get all available questions from selected banks
+            $availableQuestions = collect();
+            foreach ($questionBankIds as $bankId) {
+                $bank = \App\Models\QuestionBank::find($bankId);
+                if ($bank) {
+                    $questions = $bank->questions()->get();
+                    $availableQuestions = $availableQuestions->concat($questions);
+                }
+            }
+            
+            // Randomly select the required number of questions
+            $allQuestions = $availableQuestions->shuffle()->take($totalQuestionsNeeded);
+            
+        } else {
+            // Per bank mode (original behavior)
+            foreach ($questionBankIds as $bankId) {
+                $bank = \App\Models\QuestionBank::find($bankId);
+                if ($bank) {
+                    // Get random questions from this bank
+                    $questions = $bank->questions()->inRandomOrder()->limit($questionsPerBank)->get();
+                    $allQuestions = $allQuestions->concat($questions);
+                }
             }
         }
         
@@ -664,7 +795,8 @@ class ExamController extends Controller
             ]);
         }
         
-        Log::info('Added ' . $allQuestions->count() . ' questions from question banks to exam ' . $exam->id);
+        Log::info('Added ' . $allQuestions->count() . ' questions from question banks to exam ' . $exam->id . ' (' . $importType . ' mode)');
+        return $allQuestions->count();
     }
 
     /**
@@ -672,34 +804,65 @@ class ExamController extends Controller
      */
     public function previewQuestions(Request $request)
     {
-        $request->validate([
-            'question_bank_ids' => 'required|array',
-            'question_bank_ids.*' => 'exists:question_banks,id',
-            'questions_per_bank' => 'required|integer|min:1|max:50',
-        ]);
-        
-        $allQuestions = collect();
-        
-        foreach ($request->question_bank_ids as $bankId) {
-            $bank = \App\Models\QuestionBank::find($bankId);
-            if ($bank) {
-                $questions = $bank->questions()->inRandomOrder()->limit($request->questions_per_bank)->get();
-                $allQuestions = $allQuestions->concat($questions);
+        try {
+            $request->validate([
+                'question_bank_ids' => 'required|array',
+                'question_bank_ids.*' => 'exists:question_banks,id',
+                'questions_per_bank' => 'required|integer|min:1|max:50',
+                'import_type' => 'sometimes|in:perBank,total',
+            ]);
+            
+            $allQuestions = collect();
+            $importType = $request->import_type ?? 'perBank'; // Default to perBank for backward compatibility
+            
+            if ($importType === 'total') {
+                // Total questions mode - distribute across selected banks
+                $totalQuestionsNeeded = $request->questions_per_bank;
+                $selectedBanks = $request->question_bank_ids;
+                
+                // Get all available questions from selected banks
+                $availableQuestions = collect();
+                foreach ($selectedBanks as $bankId) {
+                    $bank = \App\Models\QuestionBank::find($bankId);
+                    if ($bank) {
+                        $questions = $bank->questions()->with('questionBank')->get();
+                        $availableQuestions = $availableQuestions->concat($questions);
+                    }
+                }
+                
+                // Randomly select the required number of questions
+                $allQuestions = $availableQuestions->shuffle()->take($totalQuestionsNeeded);
+                
+            } else {
+                // Per bank mode (original behavior)
+                foreach ($request->question_bank_ids as $bankId) {
+                    $bank = \App\Models\QuestionBank::find($bankId);
+                    if ($bank) {
+                        $questions = $bank->questions()->with('questionBank')->inRandomOrder()->limit($request->questions_per_bank)->get();
+                        $allQuestions = $allQuestions->concat($questions);
+                    }
+                }
             }
+            
+            // Format questions for preview
+            $formattedQuestions = $allQuestions->map(function($question) {
+                return [
+                    'text' => $question->text,
+                    'question_type' => $question->question_type,
+                    'marks' => $question->marks,
+                    'options' => $this->formatOptions($question),
+                    'question_bank_name' => $question->questionBank ? $question->questionBank->name : 'Unknown',
+                ];
+            });
+            
+            return response()->json(['questions' => $formattedQuestions]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Preview questions error: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Failed to preview questions: ' . $e->getMessage()
+            ], 500);
         }
-        
-        // Format questions for preview
-        $formattedQuestions = $allQuestions->map(function($question) {
-            return [
-                'text' => $question->text,
-                'question_type' => $question->question_type,
-                'marks' => $question->marks,
-                'options' => $this->formatOptions($question),
-                'question_bank_name' => $question->questionBank->name ?? 'Unknown',
-            ];
-        });
-        
-        return response()->json(['questions' => $formattedQuestions]);
     }
 
     private function formatOptions($question)
@@ -714,8 +877,40 @@ class ExamController extends Controller
     }
 
     /**
-     * Make exam public
+     * Preview exam as it will appear to students
      */
+    public function preview(Exam $exam)
+    {
+        // Load exam with questions and their relationships
+        $exam->load(['questions.questionBank', 'settings']);
+        
+        // Get questions in random order (similar to actual exam taking)
+        $questions = $exam->questions->shuffle();
+        
+        // Prepare questions with options (similar to ExamTakingController)
+        $preparedQuestions = $questions->map(function($question) {
+            // Prepare options based on question data
+            $options = [];
+            
+            if ($question->option_a) $options[] = $question->option_a;
+            if ($question->option_b) $options[] = $question->option_b;
+            if ($question->option_c) $options[] = $question->option_c;
+            if ($question->option_d) $options[] = $question->option_d;
+            
+            return [
+                'id' => $question->id,
+                'question_text' => $question->text,
+                'question_image' => $question->question_image ?? null,
+                'question_type' => $question->question_type,
+                'points' => $question->marks,
+                'options' => $options,
+                'correct_answer' => $question->correct_answer,
+                'question_bank_name' => $question->questionBank ? $question->questionBank->name : 'Manual',
+            ];
+        });
+        
+        return view('admin.exams.preview', compact('exam', 'preparedQuestions'));
+    }
     public function makePublic(Request $request, Exam $exam)
     {
         $request->validate([

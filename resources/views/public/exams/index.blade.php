@@ -93,9 +93,6 @@
                             <div class="relative z-10">
                                 <div class="flex items-start justify-between mb-3">
                                     <h3 class="text-xl font-bold leading-tight">{{ Str::limit($exam->title, 60) }}</h3>
-                                    <span class="bg-white bg-opacity-20 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium">
-                                        {{ $exam->questions->count() }} Questions
-                                    </span>
                                 </div>
                                 
                                 @if($exam->courses->count() > 0)
@@ -129,7 +126,7 @@
                                         </div>
                                         <span class="font-medium">Duration</span>
                                     </div>
-                                    <span class="text-sm font-semibold text-gray-900">{{ $exam->questions->count() * 2 }} minutes</span>
+                                    <span class="text-sm font-semibold text-gray-900">Self-paced</span>
                                 </div>
                                 
                                 <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">

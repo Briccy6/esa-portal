@@ -650,6 +650,7 @@ Route::get('/exams/{exam}/questions', [\App\Http\Controllers\ExamQuestionControl
 Route::get('/exams/{exam}/questions/create', [\App\Http\Controllers\ExamQuestionController::class, 'create'])->name('exams.questions.create');
 Route::post('/exams/{exam}/questions', [\App\Http\Controllers\ExamQuestionController::class, 'store'])->name('exams.questions.store');
 Route::post('/exams/{exam}/questions/import', [\App\Http\Controllers\ExamQuestionController::class, 'import'])->name('exams.questions.import');
+Route::post('/exams/{exam}/import-from-banks', [\App\Http\Controllers\ExamController::class, 'importFromBanks'])->name('exams.import-from-banks');
 
 Route::middleware('auth:teacher')->prefix('teacher')->name('teacher.')->group(function () {
     Route::resource('marks', \App\Http\Controllers\MarksController::class);
@@ -999,6 +1000,7 @@ Route::middleware(['auth:admin,staff,teacher'])->prefix('exams')->name('exams.')
     Route::post('question-banks/{questionBank}/questions', [QuestionBankController::class, 'storeQuestion'])->name('question-banks.store-question');
     Route::post('question-banks/{questionBank}/import', [QuestionBankController::class, 'importQuestions'])->name('question-banks.import');
     Route::get('question-banks/{questionBank}/export', [QuestionBankController::class, 'exportQuestions'])->name('question-banks.export');
+    Route::post('question-banks/preview-questions', [ExamController::class, 'previewQuestions'])->name('question-banks.preview-questions');
     
     // Enhanced Exam Management
     Route::get('{exam}/results', [ExamResultsController::class, 'index'])->name('results');
@@ -1052,6 +1054,11 @@ Route::middleware('auth:student')->prefix('exams')->name('exams.')->group(functi
     Route::get('{exam}/take/{session}/{questionNumber?}', [ExamTakingController::class, 'takeQuestion'])->name('take-question');
     Route::post('{exam}/save-answer/{session}/{questionNumber}', [ExamTakingController::class, 'saveAnswer'])->name('save-answer');
     Route::post('{exam}/submit/{session}', [ExamTakingController::class, 'submitExam'])->name('submit');
+});
+
+// Admin Exam Preview Routes
+Route::middleware('auth:admin')->prefix('admin/exams')->name('admin.exams.')->group(function () {
+    Route::get('{exam}/preview', [ExamController::class, 'preview'])->name('preview');
 });
 
 // Flutterwave Payment Routes

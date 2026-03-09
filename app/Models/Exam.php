@@ -328,7 +328,7 @@ class Exam extends Model
 
     public function getFormattedPublicPriceAttribute()
     {
-        return '$' . number_format($this->public_price, 2);
+        return 'RWF ' . number_format($this->public_price, 2);
     }
 
     public function getStatusAttribute()
