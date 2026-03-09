@@ -1124,9 +1124,63 @@ class StudentController extends Controller
             ->whereIn('status', ['successful', 'paid'])
             ->sum('amount');
 
-        $remainingAmount = 0;
-        $feeTypeName     = '';
-        $totalFeeAmount  = 0;
+        $totalPaid   = $paidRegistration + $paidTrip + $paidTuition + $paidPractical;
+        $outstanding = $totalFees - $totalPaid;
+
+        // Get resources for the student's course and branch
+        $resources = \App\Models\Resource::where(function($query) use ($student) {
+            $query->where('is_public', true)
+                  ->orWhere('course_id', $student->course_id)
+                  ->orWhere('branch_id', $student->branch_id);
+        })
+        ->with(['teacher', 'course', 'branch'])
+        ->orderByDesc('created_at')
+        ->take(6) // Limit to 6 resources for dashboard display
+        ->get();
+
+        return view('students.dashboard', compact(
+            'student',
+            'approvedAttendances',
+            'totalDays',
+            'attendedDays',
+            'attendancePercent',
+            'registrationFee',
+            'tripFee',
+            'tuitionFee',
+            'praticalFee',
+            'discount',
+            'studentCardFee',
+            'discountAmount',
+            'totalFees',
+            'paidRegistration',
+            'paidTrip',
+            'paidTuition',
+            'paidPractical',
+            'totalPaid',
+            'outstanding',
+            'resources'
+        ));
+    }
+
+    // =========================================================================
+    // RECORD CASH PAYMENT
+    // Route: POST /staff/students/{studentId}/pay
+    // =========================================================================
+    public function recordCashPayment(Request $request, $studentId)
+    {
+        $isAjax = $request->ajax() || $request->wantsJson();
+
+        try {
+            $incomingFeeType = $request->input('fee_type');
+
+            $feeTypeMap = [
+                'tuition_fee'   => 'school_fee',
+                'tuition'       => 'school_fee',
+                'pratical'      => 'practical_fee',
+                'practical'     => 'practical_fee',
+                'trip'          => 'trip_fee',
+                'studentcard'   => 'student_card',
+                'student-card'  => 'student_card',
                 'school fee'    => 'school_fee',
                 'school-fee'    => 'school_fee',
                 'registration'  => 'registration_fee',

@@ -1548,26 +1548,45 @@
     </a>
 
     <script>
-        // Carousel JavaScript
+        // Enhanced Carousel JavaScript
         let slideIndex = 0;
         const slides = document.querySelectorAll('.carousel-item');
         const totalSlides = slides.length;
         let autoSlideInterval;
+        let isTransitioning = false;
 
         function showSlides(n) {
+            if (isTransitioning) return;
+            isTransitioning = true;
+            
             // Reset index if out of bounds
             if (n >= totalSlides) { slideIndex = 0; }
             if (n < 0) { slideIndex = totalSlides - 1; }
 
-            // Hide all slides
-            slides.forEach(slide => slide.classList.remove('active'));
+            // Hide all slides with fade effect
+            slides.forEach((slide, index) => {
+                slide.classList.remove('active');
+                if (index === slideIndex) {
+                    setTimeout(() => {
+                        slide.classList.add('active');
+                        isTransitioning = false;
+                    }, 50);
+                }
+            });
 
-            // Show current slide
-            slides[slideIndex].classList.add('active');
+            // Reset carousel text animation
+            const activeSlide = slides[slideIndex];
+            const carouselText = activeSlide.querySelector('.carousel-text');
+            if (carouselText) {
+                carouselText.style.animation = 'none';
+                setTimeout(() => {
+                    carouselText.style.animation = 'fadeInUp 1s ease-out';
+                }, 100);
+            }
         }
 
         function plusSlides(n) {
-            resetAutoSlide(); // Reset auto-slide when manual navigation occurs
+            resetAutoSlide();
             slideIndex += n;
             showSlides(slideIndex);
         }
@@ -1578,7 +1597,7 @@
         }
 
         function startAutoSlide() {
-            autoSlideInterval = setInterval(autoSlides, 5000); // Change image every 5 seconds
+            autoSlideInterval = setInterval(autoSlides, 6000);
         }
 
         function resetAutoSlide() {
@@ -1586,17 +1605,59 @@
             startAutoSlide();
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            showSlides(slideIndex); // Initial display
-            startAutoSlide(); // Start auto-sliding
+        // Enhanced keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') {
+                plusSlides(-1);
+            } else if (e.key === 'ArrowRight') {
+                plusSlides(1);
+            }
         });
 
-        // Alpine.js setup for mobile menu (already configured, but adding a note)
-        // The mobile menu button's @click="open = !open" handles showing/hiding
-        // and @click.away="open = false" closes it when clicking outside.
-        // The mobile navigation links also close the menu on click for better UX.
+        // Touch/swipe support for mobile
+        let touchStartX = 0;
+        let touchEndX = 0;
+        
+        const carousel = document.querySelector('.hero-carousel');
+        if (carousel) {
+            carousel.addEventListener('touchstart', (e) => {
+                touchStartX = e.changedTouches[0].screenX;
+            });
+            
+            carousel.addEventListener('touchend', (e) => {
+                touchEndX = e.changedTouches[0].screenX;
+                handleSwipe();
+            });
+        }
+        
+        function handleSwipe() {
+            if (touchEndX < touchStartX - 50) {
+                plusSlides(1); // Swipe left - next slide
+            }
+            if (touchEndX > touchStartX + 50) {
+                plusSlides(-1); // Swipe right - previous slide
+            }
+        }
 
-        // Share Functions
+        // Initialize carousel
+        document.addEventListener('DOMContentLoaded', () => {
+            showSlides(slideIndex);
+            startAutoSlide();
+            
+            // Pause on hover
+            const carousel = document.querySelector('.hero-carousel');
+            if (carousel) {
+                carousel.addEventListener('mouseenter', () => {
+                    clearInterval(autoSlideInterval);
+                });
+                
+                carousel.addEventListener('mouseleave', () => {
+                    startAutoSlide();
+                });
+            }
+        });
+
+        // Enhanced Share Functions
         function shareExam(examId, examTitle) {
             const url = window.location.origin + '/public/exams/' + examId;
             const text = `Check out this practice test: ${examTitle}`;
@@ -1611,7 +1672,7 @@
                 // Fallback - copy to clipboard
                 const shareText = `${text} - ${url}`;
                 navigator.clipboard.writeText(shareText).then(() => {
-                    showNotification('Link copied to clipboard!');
+                    showNotification('Link copied to clipboard!', 'success');
                 }).catch(() => {
                     // Last resort - open in new window
                     window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
@@ -1633,7 +1694,7 @@
                 // Fallback - copy to clipboard
                 const shareText = `${text} - ${url}`;
                 navigator.clipboard.writeText(shareText).then(() => {
-                    showNotification('Link copied to clipboard!');
+                    showNotification('Link copied to clipboard!', 'success');
                 }).catch(() => {
                     // Last resort - open in new window
                     window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
@@ -1641,18 +1702,93 @@
             }
         }
 
-        function showNotification(message) {
+        // Enhanced Notification System
+        function showNotification(message, type = 'success') {
+            // Remove existing notifications
+            const existingNotifications = document.querySelectorAll('.notification-toast');
+            existingNotifications.forEach(notif => notif.remove());
+            
             // Create notification element
             const notification = document.createElement('div');
-            notification.className = 'fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300';
-            notification.textContent = message;
+            notification.className = `notification-toast fixed top-4 right-4 px-6 py-4 rounded-xl shadow-xl z-50 transition-all duration-500 flex items-center gap-3`;
+            
+            // Set colors based on type
+            const colors = {
+                success: 'bg-green-600 text-white',
+                error: 'bg-red-600 text-white',
+                warning: 'bg-yellow-600 text-white',
+                info: 'bg-blue-600 text-white'
+            };
+            
+            notification.className += ` ${colors[type] || colors.success}`;
+            
+            // Add icon
+            const icons = {
+                success: 'fas fa-check-circle',
+                error: 'fas fa-exclamation-circle',
+                warning: 'fas fa-exclamation-triangle',
+                info: 'fas fa-info-circle'
+            };
+            
+            notification.innerHTML = `
+                <i class="${icons[type] || icons.success} text-xl"></i>
+                <span class="font-medium">${message}</span>
+            `;
+            
             document.body.appendChild(notification);
             
-            // Remove after 3 seconds
+            // Animate in
             setTimeout(() => {
-                notification.remove();
-            }, 3000);
+                notification.style.transform = 'translateX(0)';
+                notification.style.opacity = '1';
+            }, 100);
+            
+            // Remove after 4 seconds
+            setTimeout(() => {
+                notification.style.transform = 'translateX(400px)';
+                notification.style.opacity = '0';
+                setTimeout(() => {
+                    notification.remove();
+                }, 500);
+            }, 4000);
         }
+
+        // Smooth scroll for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Add scroll animations for sections
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+        
+        // Observe all sections
+        document.querySelectorAll('section').forEach(section => {
+            section.style.opacity = '0';
+            section.style.transform = 'translateY(30px)';
+            section.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            observer.observe(section);
+        });
     </script>
  
 
