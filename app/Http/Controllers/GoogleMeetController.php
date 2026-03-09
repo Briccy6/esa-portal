@@ -19,6 +19,14 @@ class GoogleMeetController extends Controller
         $client->addScope(Google_Service_Calendar::CALENDAR);
         $client->setAccessType('offline');
         $client->setPrompt('select_account consent');
+        
+        // Fix SSL certificate issue for local development
+        if (app()->environment('local')) {
+            $client->setHttpClient(new \GuzzleHttp\Client([
+                'verify' => false
+            ]));
+        }
+        
         return redirect($client->createAuthUrl());
     }
 
@@ -29,6 +37,13 @@ class GoogleMeetController extends Controller
         $client->setClientSecret(env('GOOGLE_CLIENT_SECRET'));
         $client->setRedirectUri(env('GOOGLE_REDIRECT_URI'));
         $client->addScope(Google_Service_Calendar::CALENDAR);
+        
+        // Fix SSL certificate issue for local development
+        if (app()->environment('local')) {
+            $client->setHttpClient(new \GuzzleHttp\Client([
+                'verify' => false
+            ]));
+        }
 
        $token = $client->fetchAccessTokenWithAuthCode($request->code);
 session(['google_token' => $token]); // This is fine as long as $token is an array
@@ -43,6 +58,13 @@ session(['google_token' => $token]); // This is fine as long as $token is an arr
     $client->setClientSecret(env('GOOGLE_CLIENT_SECRET'));
     $client->setRedirectUri(env('GOOGLE_REDIRECT_URI'));
     $client->addScope(Google_Service_Calendar::CALENDAR);
+    
+    // Fix SSL certificate issue for local development
+    if (app()->environment('local')) {
+        $client->setHttpClient(new \GuzzleHttp\Client([
+            'verify' => false
+        ]));
+    }
 
     $googleToken = session('google_token');
 

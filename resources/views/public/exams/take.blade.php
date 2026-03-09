@@ -893,6 +893,9 @@ function updateTimer() {
 // EMERGENCY FIX: Remove all problematic JavaScript to stop infinite loading
 console.log('EMERGENCY: All JavaScript functionality reset to stop infinite loading');
 
+// Store original fetch before overriding
+const originalFetch = window.fetch;
+
 // Restore original fetch but with proper error handling
 window.fetch = function(url, options) {
     console.log('Fetch request to:', url);
@@ -1412,7 +1415,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Update question navigator to show flag states
-    updateQuestionNavigatorStates({{ $questionNumber }}, {{ $totalQuestions }}, {{ json($sessionData) }});
+    updateQuestionNavigatorStates({{ $questionNumber }}, {{ $totalQuestions }}, @json($sessionData));
     
     // Enable buttons if there's an existing answer
     if (hasExistingAnswer) {
