@@ -81,7 +81,7 @@
                                     </a>
                                 @endif
                                 
-                                <a href="{{ route('public.subscriptions.register') }}" 
+                                <a href="{{ route('client.auth.register') }}" 
                                    class="w-full block text-center border-2 border-blue-600 text-blue-600 py-3 px-6 rounded-lg font-semibold hover:bg-blue-50 transition-colors">
                                     Create Account
                                 </a>
