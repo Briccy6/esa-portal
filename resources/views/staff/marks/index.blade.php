@@ -346,25 +346,15 @@
                 </div>
             </div>
 
-            <!-- Pagination -->
-            @if($marks->hasPages())
-                <div class="d-flex justify-content-center mt-4">
-                    {{ $marks->links() }}
-                </div>
-            @endif
-        </div>
-    </div>
-</div>
-
-<!-- Student Report Modal -->
-<div class="modal fade" id="studentReportModal" tabindex="-1" aria-labelledby="studentReportModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="studentReportModalLabel">
-                    <i class="fas fa-user-graduate me-2"></i>Generate Student Report
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            <!-- Student Report Modal -->
+            <div class="modal fade" id="studentReportModal" tabindex="-1" aria-labelledby="studentReportModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header bg-primary text-white">
+                            <h5 class="modal-title" id="studentReportModalLabel">
+                                <i class="fas fa-user-graduate me-2"></i>Generate Student Report
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form method="POST" action="{{ route('dos.marks.student-report') }}">
                 @csrf
