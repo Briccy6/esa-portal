@@ -36,6 +36,24 @@
                         </div>
 
                         <div class="mb-3">
+                            <label>Lesson</label>
+                            <select name="lesson_id" id="lesson_id" class="form-select" required>
+                                <option value="">Select Lesson</option>
+                                @if(auth('teacher')->check() && isset($teacherLessons))
+                                    @foreach($teacherLessons as $lesson)
+                                        <option value="{{ $lesson->id }}" data-course-id="{{ $lesson->course_id }}">{{ $lesson->title }}</option>
+                                    @endforeach
+                                @else
+                                    @isset($lessons)
+                                        @foreach($lessons as $lesson)
+                                            <option value="{{ $lesson->id }}" data-course-id="{{ $lesson->course_id }}">{{ $lesson->title }}</option>
+                                        @endforeach
+                                    @endisset
+                                @endif
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
                             <label>Assessment Type</label>
                             <select name="assessment_type" id="assessment_type" class="form-select" required>
                                 <option value="">Select Type</option>
@@ -82,9 +100,20 @@ document.addEventListener('DOMContentLoaded', function() {
     const courseSelect = document.getElementById('course_id');
     const examSelect = document.getElementById('exam_id');
     const assessmentType = document.getElementById('assessment_type');
+    const lessonSelect = document.getElementById('lesson_id');
     const studentsTableContainer = document.getElementById('students-table-container');
     const saveButton = document.getElementById('save-marks');
     const alertContainer = document.getElementById('alert-container');
+
+    // Auto-select course when lesson is selected (for teachers)
+    lessonSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const courseId = selectedOption.getAttribute('data-course-id');
+        if (courseId) {
+            courseSelect.value = courseId;
+            populateExamDropdown();
+        }
+    });
 
     // Populate Exam/Test Dropdown based on type
     function populateExamDropdown() {
@@ -112,8 +141,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const type = assessmentType.value;
         const examId = examSelect.value;
 
-        if (!courseId || !branchId || !type || !examId) {
-            alert('Select course, branch, type, and exam/test.');
+        if (!courseId || !branchId || !type || !examId || !lessonSelect.value) {
+            alert('Select course, branch, lesson, type, and exam/test.');
             return;
         }
 

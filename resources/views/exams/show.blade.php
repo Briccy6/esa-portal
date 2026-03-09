@@ -238,6 +238,83 @@
                 <span class="detail-value">{{ \Carbon\Carbon::parse($exam->updated_at)->format('d M Y H:i') }}</span>
             </div>
         </div>
+
+        <!-- Marks Information -->
+        <div class="detail-card">
+            <h3><i class="fas fa-chart-bar"></i> Marks Information</h3>
+            
+            @if(isset($marks) && $marks->count() > 0)
+                <div class="table-responsive mb-4">
+                    <h5>Exam Marks</h5>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Course</th>
+                                <th>Mark</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($marks as $studentMarks)
+                                @foreach($studentMarks as $mark)
+                                    <tr>
+                                        <td>{{ $mark->student->full_name ?? 'N/A' }}</td>
+                                        <td>{{ $mark->course->course_name ?? 'N/A' }}</td>
+                                        <td>{{ $mark->value }}/100</td>
+                                        <td>
+                                            <span class="badge bg-{{ $mark->status === 'recorded' ? 'success' : 'warning' }}">
+                                                {{ $mark->status }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @else
+                <p class="text-muted">No exam marks recorded yet.</p>
+            @endif
+            
+            @if(isset($testMarks) && $testMarks->count() > 0)
+                <div class="table-responsive">
+                    <h5>Test Marks (Normalized to 100%)</h5>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Lesson</th>
+                                <th>Original Mark</th>
+                                <th>Normalized (100%)</th>
+                                <th>Test Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($testMarks as $studentMarks)
+                                @foreach($studentMarks as $mark)
+                                    <tr>
+                                        <td>{{ $mark->student->full_name ?? 'N/A' }}</td>
+                                        <td>{{ $mark->lesson->title ?? 'N/A' }}</td>
+                                        <td>{{ $mark->value }}/{{ $mark->marks_out_of }}</td>
+                                        <td><strong>{{ $mark->normalized_percentage }}</strong></td>
+                                        <td>{{ $mark->test_date ? \Carbon\Carbon::parse($mark->test_date)->format('M d, Y') : 'N/A' }}</td>
+                                        <td>
+                                            <span class="badge bg-{{ $mark->status === 'recorded' ? 'success' : 'warning' }}">
+                                                {{ $mark->status }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @else
+                <p class="text-muted">No test marks recorded yet.</p>
+            @endif
+        </div>
     </div>
 
     <!-- Related Courses and Lessons -->

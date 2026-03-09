@@ -56,22 +56,33 @@
                         </div>
 
                         <div class="row g-3 mb-4" id="testMarksOutOfRow" style="display:none;">
-                            <div class="col-md-3">
+                            <div class="col-md-2">
                                 <label for="marks_out_of" class="form-label fw-bold">Marks Out Of</label>
                                 <input type="number" name="marks_out_of" id="marks_out_of" class="form-control" min="1" placeholder="e.g. 20">
+                            </div>
+                            <div class="col-md-2">
+                                <label for="test_date" class="form-label fw-bold">Test Date</label>
+                                <input type="date" name="test_date" id="test_date" class="form-control" required>
                             </div>
                         </div>
 
                         <div class="row g-3 mb-4" id="examSelectRow" style="display:none;">
-                            <div class="col-md-3">
+                            <div class="col-md-2">
                                 <label for="exam_id" class="form-label fw-bold">Select Exam</label>
                                 <select name="exam_id" id="exam_id" class="form-select">
                                     <option value="">Select Exam</option>
                                 </select>
                             </div>
+                            <div class="col-md-2">
+                                <label for="exam_date" class="form-label fw-bold">Exam Date</label>
+                                <input type="date" name="exam_date" id="exam_date" class="form-control" required>
+                            </div>
                         </div>
 
-                        <div class="d-flex justify-content-end align-items-center mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <a href="{{ route('teacher.marks.view') }}" class="btn btn-outline-info">
+                                <i class="bi bi-eye"></i> View Recorded Marks
+                            </a>
                             <button type="button" class="btn btn-info px-4" id="showStudentsBtn" data-bs-toggle="modal" data-bs-target="#studentsModal">
                                 <i class="bi bi-people"></i> Show Students
                             </button>
@@ -200,13 +211,15 @@
         var lessonId = document.getElementById('lesson_id').value;
         var assessmentType = document.getElementById('assessment_type').value;
         var examId = document.getElementById('exam_id').value;
+        var examDate = document.getElementById('exam_date').value;
         var marksOutOf = document.getElementById('marks_out_of').value;
+        var testDate = document.getElementById('test_date').value;
         var modalTbody = document.getElementById('students-modal-list');
         var modalMsg = document.getElementById('modal-message');
         modalTbody.innerHTML = '';
         modalMsg.innerHTML = '';
 
-        if (!branchId || !courseId || !lessonId || !assessmentType || (assessmentType === 'exam' && !examId) || (assessmentType === 'test' && !marksOutOf)) {
+        if (!branchId || !courseId || !lessonId || !assessmentType || (assessmentType === 'exam' && (!examId || !examDate)) || (assessmentType === 'test' && (!marksOutOf || !testDate))) {
             modalMsg.innerHTML = '<div class="text-warning">Please select all required fields.</div>';
             return;
         }
@@ -274,9 +287,11 @@
         formData.append('assessment_type', document.getElementById('assessment_type').value);
         if (document.getElementById('assessment_type').value === 'exam') {
             formData.append('exam_id', document.getElementById('exam_id').value);
+            formData.append('exam_date', document.getElementById('exam_date').value);
         }
         if (document.getElementById('assessment_type').value === 'test') {
             formData.append('marks_out_of', document.getElementById('marks_out_of').value);
+            formData.append('test_date', document.getElementById('test_date').value);
         }
 
         fetch('{{ route('teacher.marks.store') }}', {
@@ -306,17 +321,18 @@
         var lessonId = document.getElementById('lesson_id').value;
         var assessmentType = document.getElementById('assessment_type').value;
         var examId = document.getElementById('exam_id').value;
+        var examDate = document.getElementById('exam_date').value;
         var marksOutOf = document.getElementById('marks_out_of').value;
         var btn = document.getElementById('showStudentsBtn');
         if (!branchId || !courseId || !lessonId || !assessmentType ||
-            (assessmentType === 'exam' && !examId) ||
+            (assessmentType === 'exam' && (!examId || !examDate)) ||
             (assessmentType === 'test' && !marksOutOf)) {
             btn.disabled = true;
         } else {
             btn.disabled = false;
         }
     }
-    ['branch_id', 'course_id', 'lesson_id', 'assessment_type', 'exam_id', 'marks_out_of'].forEach(function(id) {
+    ['branch_id', 'course_id', 'lesson_id', 'assessment_type', 'exam_id', 'marks_out_of', 'exam_date'].forEach(function(id) {
         var el = document.getElementById(id);
         if (el) el.addEventListener('change', updateShowStudentsBtn);
     });

@@ -66,6 +66,7 @@ class ExamController extends Controller
     {
         // Check if admin is authenticated
         if (auth('admin')->check()) {
+            \Log::info('Admin user detected, returning admin create view');
             $user = auth('admin')->user();
             // Admin can access all courses, lessons, and branches
             $courses = Course::all();
@@ -74,7 +75,22 @@ class ExamController extends Controller
             $teachers = \App\Models\Teacher::all();
             $academicYears = \App\Models\AcademicYear::orderBy('year', 'desc')->get();
             $terms = \App\Models\Term::all();
+            $examPassword = \Illuminate\Support\Str::random(8);
+            
+            // Get question banks for admin (can see all)
+            try {
+                $questionBanks = \App\Models\QuestionBank::with(['questions', 'teacher', 'course'])->get();
+            } catch (\Exception $e) {
+                $questionBanks = collect();
+                \Log::error('Question banks table not available: ' . $e->getMessage());
+            }
+            
+            return view('exams.create', compact(
+                'courses', 'lessons', 'branches', 'teachers', 
+                'academicYears', 'terms', 'questionBanks', 'examPassword'
+            ));
         } elseif (auth('teacher')->check()) {
+            \Log::info('Teacher user detected, returning teacher create view');
             $user = auth('teacher')->user();
             // Teacher can only access their assigned courses and lessons
             $courses = $user->courses ?? collect();
@@ -83,9 +99,26 @@ class ExamController extends Controller
             $teachers = collect([$user]);
             $academicYears = \App\Models\AcademicYear::orderBy('year', 'desc')->get();
             $terms = \App\Models\Term::all();
+            $examPassword = \Illuminate\Support\Str::random(8);
+            
+            // Get question banks for teacher (can only see their own)
+            try {
+                $questionBanks = \App\Models\QuestionBank::where('teacher_id', $user->id)
+                    ->with(['questions', 'teacher', 'course'])->get();
+            } catch (\Exception $e) {
+                $questionBanks = collect();
+                \Log::error('Question banks table not available: ' . $e->getMessage());
+            }
+            
+            return view('exams.create', compact(
+                'courses', 'lessons', 'branches', 'teachers', 
+                'academicYears', 'terms', 'questionBanks', 'examPassword'
+            ));
         } elseif (auth('staff')->check()) {
             $user = auth('staff')->user();
+            \Log::info('Staff user detected, role: ' . $user->role);
             if ($user->role === 'DOS') {
+                \Log::info('DOS user detected, returning dos_create view');
                 // DOS can access all courses, lessons, and branches
                 $courses = Course::all();
                 $lessons = Lesson::all();
@@ -96,7 +129,12 @@ class ExamController extends Controller
                 $examPassword = \Illuminate\Support\Str::random(8);
                 
                 // Get question banks for DOS (can see all)
-                $questionBanks = \App\Models\QuestionBank::all();
+                try {
+                    $questionBanks = \App\Models\QuestionBank::with(['questions', 'teacher', 'course'])->get();
+                } catch (\Exception $e) {
+                    $questionBanks = collect();
+                    \Log::error('Question banks table not available: ' . $e->getMessage());
+                }
                 
                 return view('exams.dos_create', compact(
                     'courses', 'lessons', 'branches', 'teachers', 
@@ -110,35 +148,24 @@ class ExamController extends Controller
                 $teachers = \App\Models\Teacher::all();
                 $academicYears = \App\Models\AcademicYear::orderBy('year', 'desc')->get();
                 $terms = \App\Models\Term::all();
+                $examPassword = \Illuminate\Support\Str::random(8);
+                
+                // Get question banks for other staff (can see all)
+                try {
+                    $questionBanks = \App\Models\QuestionBank::with(['questions', 'teacher', 'course'])->get();
+                } catch (\Exception $e) {
+                    $questionBanks = collect();
+                    \Log::error('Question banks table not available: ' . $e->getMessage());
+                }
+                
+                return view('exams.create', compact(
+                    'courses', 'lessons', 'branches', 'teachers', 
+                    'academicYears', 'terms', 'questionBanks', 'examPassword'
+                ));
             }
         } else {
             abort(403, 'Unauthorized');
         }
-        
-        // Try to get question banks, but handle if table doesn't exist
-        try {
-            if (auth('admin')->check()) {
-                // Admin can see all question banks
-                $questionBanks = \App\Models\QuestionBank::with(['questions', 'teacher', 'course'])->get();
-            } elseif (auth('teacher')->check()) {
-                // Teacher can only see their own question banks
-                $questionBanks = \App\Models\QuestionBank::where('teacher_id', $user->id)
-                    ->with(['questions', 'teacher', 'course'])->get();
-            } else {
-                // Other users (staff) can see all question banks
-                $questionBanks = \App\Models\QuestionBank::with(['questions', 'teacher', 'course'])->get();
-            }
-        } catch (\Exception $e) {
-            $questionBanks = collect();
-            \Log::error('Question banks table not available: ' . $e->getMessage());
-        }
-
-        $examPassword = \Illuminate\Support\Str::random(8);
-
-        return view('exams.create', compact(
-            'courses', 'lessons', 'branches', 'teachers', 
-            'academicYears', 'terms', 'questionBanks', 'examPassword'
-        ));
     }
 
     /**
@@ -254,7 +281,22 @@ class ExamController extends Controller
     public function show(Exam $exam)
     {
         $exam->load(['courses', 'lessons', 'academic_year', 'term', 'teacher', 'branch']);
-        return view('exams.show', compact('exam'));
+        
+        // Load marks for this exam (both exam and test marks related to this exam)
+        $marks = \App\Models\Mark::where('exam_id', $exam->id)
+            ->with(['student', 'course', 'branch', 'lesson'])
+            ->get()
+            ->groupBy('student_id');
+            
+        // Also load test marks from lessons related to this exam
+        $lessonIds = $exam->lessons->pluck('id');
+        $testMarks = \App\Models\Mark::whereIn('lesson_id', $lessonIds)
+            ->where('assessment_type', 'test')
+            ->with(['student', 'course', 'branch', 'lesson'])
+            ->get()
+            ->groupBy('student_id');
+        
+        return view('exams.show', compact('exam', 'marks', 'testMarks'));
     }
 
     /**

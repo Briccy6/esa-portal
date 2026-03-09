@@ -21,11 +21,14 @@ class MarksController extends Controller
         $courses = Course::all();
         $branches = Branch::all();
         $exams = Exam::all();
+        $lessons = Lesson::all();
         
+        // Get marks and group them by lesson and date
         $query = Mark::with(['student', 'course', 'branch', 'exam', 'lesson', 'grade'])
             ->when($request->course_id, fn($q) => $q->where('course_id', $request->course_id))
             ->when($request->branch_id, fn($q) => $q->where('branch_id', $request->branch_id))
             ->when($request->exam_id, fn($q) => $q->where('exam_id', $request->exam_id))
+            ->when($request->lesson_id, fn($q) => $q->where('lesson_id', $request->lesson_id))
             ->when($request->assessment_type, fn($q) => $q->where('assessment_type', $request->assessment_type))
             ->when($request->student_search, function($q) use ($request) {
                 $q->whereHas('student', function($q2) use ($request) {
@@ -33,10 +36,80 @@ class MarksController extends Controller
                        ->orWhere('id', $request->student_search);
                 });
             })
-            ->orderBy('created_at', 'desc');
+            ->orderBy('lesson_id')
+            ->orderBy('test_date')
+            ->orderBy('student_id');
 
-        $marks = $query->paginate(20);
+        $allMarks = $query->get();
         
+        // Group marks by lesson, then by test date (same as teacher)
+        $groupedMarks = [];
+        $students = [];
+        
+        foreach ($allMarks as $mark) {
+            $lessonId = $mark->lesson_id;
+            $lessonTitle = $mark->lesson->title;
+            $testDate = $mark->test_date ?: 'no-date'; // Handle empty dates
+            $studentId = $mark->student_id;
+            
+            // Collect unique students
+            if (!isset($students[$studentId])) {
+                $students[$studentId] = [
+                    'name' => $mark->student->full_name ?? 'Unknown',
+                    'course' => $mark->course->course_name ?? 'Unknown',
+                    'branch' => $mark->branch->name ?? 'Unknown',
+                    'reg_number' => $mark->student->reg_number ?? 'Unknown'
+                ];
+            }
+            
+            // Group by lesson
+            if (!isset($groupedMarks[$lessonId])) {
+                $groupedMarks[$lessonId] = [
+                    'title' => $lessonTitle,
+                    'dates' => [],
+                    'students' => []
+                ];
+            }
+            
+            // Collect unique dates for this lesson
+            if (!isset($groupedMarks[$lessonId]['dates'][$testDate])) {
+                $groupedMarks[$lessonId]['dates'][$testDate] = [];
+            }
+            
+            // Store marks by student for this lesson and date
+            if (!isset($groupedMarks[$lessonId]['students'][$studentId])) {
+                $groupedMarks[$lessonId]['students'][$studentId] = [];
+            }
+            
+            $groupedMarks[$lessonId]['students'][$studentId][$testDate] = $mark;
+        }
+
+        // Sort dates within each lesson (put no-date at the end)
+        foreach ($groupedMarks as $lessonId => &$lessonData) {
+            // Separate no-date from actual dates
+            $noDate = [];
+            $actualDates = [];
+            
+            foreach ($lessonData['dates'] as $date => $dateMarks) {
+                if ($date === 'no-date') {
+                    $noDate[$date] = $dateMarks;
+                } else {
+                    $actualDates[$date] = $dateMarks;
+                }
+            }
+            
+            // Sort actual dates
+            ksort($actualDates);
+            
+            // Combine: actual dates first, then no-date
+            $lessonData['dates'] = $actualDates + $noDate;
+        }
+        
+        // Sort students by name
+        uasort($students, function($a, $b) {
+            return strcasecmp($a['name'], $b['name']);
+        });
+
         // Statistics
         $stats = [
             'total_marks' => Mark::count(),
@@ -47,13 +120,54 @@ class MarksController extends Controller
             'lowest_score' => Mark::min('value'),
         ];
 
-        return view('staff.marks.index', compact('courses', 'branches', 'exams', 'marks', 'stats'));
+        return view('staff.marks.index', compact('groupedMarks', 'students', 'courses', 'branches', 'exams', 'lessons', 'stats'));
     }
 
     public function show($id)
     {
         $mark = Mark::with(['student.course', 'student.branch', 'student.academicYear', 'course', 'branch', 'exam', 'lesson', 'grade'])->findOrFail($id);
         return view('staff.marks.show', compact('mark'));
+    }
+
+    public function destroy($id)
+    {
+        try {
+            $mark = Mark::findOrFail($id);
+            
+            // Log the deletion for audit purposes
+            \Log::info('Mark deleted by DOS', [
+                'mark_id' => $mark->id,
+                'student_id' => $mark->student_id,
+                'student_name' => $mark->student->full_name ?? 'Unknown',
+                'course_id' => $mark->course_id,
+                'course_name' => $mark->course->course_name ?? 'Unknown',
+                'lesson_id' => $mark->lesson_id,
+                'lesson_title' => $mark->lesson->title ?? 'Unknown',
+                'assessment_type' => $mark->assessment_type,
+                'value' => $mark->value,
+                'deleted_by' => auth('staff')->user()->id,
+                'deleted_by_name' => auth('staff')->user()->name,
+                'deleted_at' => now()
+            ]);
+            
+            $mark->delete();
+            
+            return redirect()->route('dos.marks.index')
+                ->with('success', 'Mark deleted successfully. Student: ' . ($mark->student->full_name ?? 'Unknown') . 
+                    ', Course: ' . ($mark->course->course_name ?? 'Unknown') . 
+                    ', Value: ' . $mark->value . 
+                    ($mark->assessment_type === 'test' ? '/' . $mark->marks_out_of : ''));
+                    
+        } catch (\Exception $e) {
+            \Log::error('Failed to delete mark', [
+                'mark_id' => $id,
+                'error' => $e->getMessage(),
+                'deleted_by' => auth('staff')->user()->id
+            ]);
+            
+            return redirect()->route('dos.marks.index')
+                ->with('error', 'Failed to delete mark: ' . $e->getMessage());
+        }
     }
 
     public function studentReport(Request $request)

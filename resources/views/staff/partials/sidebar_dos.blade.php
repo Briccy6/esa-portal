@@ -505,30 +505,6 @@
     to { transform: translateX(0); opacity: 1; }
   }
 
-  /* Floating Community Spaces Chat Button */
-.floating-space-chat-btn {
-    position: fixed;
-    bottom: 32px;
-    right: 32px;
-    z-index: 9999;
-    background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
-    color: #fff;
-    border: none;
-    border-radius: 50%;
-    width: 64px;
-    height: 64px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.18);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2.2rem;
-    cursor: pointer;
-    transition: background 0.2s, box-shadow 0.2s;
-}
-.floating-space-chat-btn:hover {
-    background: linear-gradient(135deg, #075e54 0%, #25d366 100%);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.22);
-}
 </style>
 </head>
 <body>
@@ -763,7 +739,6 @@
 <script>
   let sidebarCollapsed = false;
   let userDropdownOpen = false;
-  let chatPolling = null;
 
   // Toggle sidebar collapse
   function toggleCollapse() {
@@ -852,168 +827,12 @@
       item.classList.add('slide-in');
     });
   });
-
-  let selectedSpaceId = null;
-
-  // Fetch and show spaces when modal opens
-  document.getElementById('communitySpacesChatModal').addEventListener('show.bs.modal', function () {
-      fetch('/admin/api/spaces')
-          .then(res => res.json())
-          .then(spaces => {
-              const ul = document.getElementById('spacesListUl');
-              ul.innerHTML = '';
-              spaces.forEach(space => {
-                  const li = document.createElement('li');
-                  li.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center';
-                  li.textContent = space.name;
-                  li.onclick = () => selectSpace(space.id, space.name);
-                  // Add unread badge if there are unread messages
-                  if (space.unread_count && space.unread_count > 0) {
-                      const badge = document.createElement('span');
-                      badge.className = 'badge bg-danger rounded-pill ms-2';
-                      badge.textContent = space.unread_count;
-                      li.appendChild(badge);
-                  }
-                  ul.appendChild(li);
-              });
-          });
-      document.getElementById('chatMessages').innerHTML = '<div class="text-muted text-center mt-5">Select a space to start chatting.</div>';
-      selectedSpaceId = null;
-  });
-
-  function selectSpace(spaceId, spaceName) {
-      selectedSpaceId = spaceId;
-      loadMessages();
-      if (chatPolling) clearInterval(chatPolling);
-      chatPolling = setInterval(loadMessages, 3000); // every 3 seconds
-  }
-
-  function loadMessages() {
-      if (!selectedSpaceId) return;
-      document.getElementById('chatMessages').innerHTML = '<div class="text-muted text-center mt-5">Loading messages...</div>';
-      fetch(`/admin/api/spaces/${selectedSpaceId}/messages`)
-          .then(res => res.json())
-          .then(messages => {
-              const chatDiv = document.getElementById('chatMessages');
-              chatDiv.innerHTML = '';
-              if (!messages.length) {
-                  chatDiv.innerHTML = '<div class="text-muted text-center mt-5">No messages yet.</div>';
-                  return;
-              }
-              messages.forEach(msg => {
-                  const msgDiv = document.createElement('div');
-                  msgDiv.className = 'mb-2';
-                  msgDiv.innerHTML = `<span class="fw-bold">${msg.sender_type.split('\\').pop()}:</span> ${msg.message} <span class="text-muted small">${msg.created_at}</span>`;
-                  chatDiv.appendChild(msgDiv);
-              });
-              chatDiv.scrollTop = chatDiv.scrollHeight;
-          });
-      // Mark as read
-      fetch(`/admin/api/spaces/${selectedSpaceId}/mark-as-read`, { method: 'POST', headers: {'X-CSRF-TOKEN': '{{ csrf_token() }}'} });
-      // Optionally, refresh spaces list to update unread counts
-      fetchSpacesList();
-  }
-
-  function fetchSpacesList() {
-    fetch('/admin/api/spaces')
-        .then(res => res.json())
-        .then(spaces => {
-            const ul = document.getElementById('spacesListUl');
-            ul.innerHTML = '';
-            spaces.forEach(space => {
-                const li = document.createElement('li');
-                li.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center';
-                li.textContent = space.name;
-                li.onclick = () => selectSpace(space.id, space.name);
-                if (space.unread_count && space.unread_count > 0) {
-                    const badge = document.createElement('span');
-                    badge.className = 'badge bg-danger rounded-pill ms-2';
-                    badge.textContent = space.unread_count;
-                    li.appendChild(badge);
-                }
-                ul.appendChild(li);
-            });
-        });
-}
-
-  // Handle sending messages
-  document.getElementById('chatForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-      const errorDiv = document.getElementById('chatError');
-      errorDiv.textContent = '';
-      const input = document.getElementById('chatInput');
-      if (!selectedSpaceId) {
-          errorDiv.textContent = 'Please select a space first.';
-          return;
-      }
-      if (!input.value.trim()) {
-          errorDiv.textContent = 'Type a message first.';
-          return;
-      }
-      fetch(`/admin/api/spaces/${selectedSpaceId}/messages`, {
-          method: 'POST',
-          headers: {'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json'},
-          body: new URLSearchParams({message: input.value.trim()})
-      })
-      .then(async res => {
-          let data;
-          try { data = await res.json(); } catch { data = {}; }
-          if (!res.ok || data.error) {
-              errorDiv.textContent = (data.details ? Object.values(data.details).flat().join(' ') : (data.error || 'Failed to send message.'));
-              return;
-          }
-          input.value = '';
-          loadMessages();
-          fetchSpacesList();
-      })
-      .catch(err => {
-          errorDiv.textContent = 'Network error: ' + (err.message || err);
-      });
-  });
 </script>
 
 <!-- Alpine.js for dropdown -->
 <script src="//unpkg.com/alpinejs" defer></script>
 <!-- Bootstrap JS Bundle (includes Popper) -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-<!-- Floating Community Spaces Chat Button -->
-<button class="floating-space-chat-btn" title="Community Spaces Chat"
-    type="button"
-    data-bs-toggle="modal"
-    data-bs-target="#communitySpacesChatModal">
-    <i class="bi bi-whatsapp"></i>
-</button>
-
-<!-- Community Spaces Chat Modal -->
-<div class="modal fade" id="communitySpacesChatModal" tabindex="-1" aria-labelledby="communitySpacesChatModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-scrollable">
-    <div class="modal-content" style="height: 80vh;">
-      <div class="modal-header bg-success text-white">
-        <h5 class="modal-title" id="communitySpacesChatModalLabel">
-          <i class="bi bi-whatsapp me-2"></i>Community Spaces Chat
-        </h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body d-flex" style="height: 100%;">
-        <!-- Spaces List -->
-        <div id="spacesList" style="width: 250px; border-right: 1px solid #eee; overflow-y: auto;">
-          <div class="fw-bold mb-2">Spaces</div>
-          <ul class="list-group" id="spacesListUl" style="cursor:pointer;"></ul>
-        </div>
-        <!-- Chat Area -->
-        <div class="flex-grow-1 d-flex flex-column" style="min-width:0;">
-          <div id="chatMessages" class="flex-grow-1 overflow-auto p-2" style="background:#f8f9fa; border-radius:8px; min-height:200px;"></div>
-          <form id="chatForm" class="d-flex gap-2 mt-2">
-            <input type="text" id="chatInput" class="form-control" placeholder="Type a message..." autocomplete="off" />
-            <button type="submit" class="btn btn-success"><i class="bi bi-send"></i></button>
-          </form>
-          <div id="chatError" class="text-danger mt-1" style="min-height:22px;"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
 
 </body>
 </html>

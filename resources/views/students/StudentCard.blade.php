@@ -75,8 +75,8 @@
             <tr>
                 <th width="5%">#</th>
                 <th width="8%">Photo</th>
-                <th width="20%">Student Name</th>
-                <th width="15%">Reg Number</th>
+                <th width="20%">Student Reg No</th>
+                <th width="15%">Student Name</th>
                 <th width="15%">Course</th>
                 <th width="10%">Branch</th>
                 <th width="10%">Year</th>
@@ -111,11 +111,11 @@
                         </div>
                     </td>
                     <td>
-                        <div class="fw-bold">{{ $card->student->full_name ?? '-' }}</div>
-                        <small class="text-muted">{{ $card->card_generated_by }}</small>
+                        <span class="badge bg-info text-dark fw-bold">{{ $card->reg_number }}</span>
                     </td>
                     <td>
-                        <span class="badge bg-info text-dark">{{ $card->reg_number }}</span>
+                        <div class="fw-bold">{{ $card->student->full_name ?? '-' }}</div>
+                        <small class="text-muted">{{ $card->card_generated_by }}</small>
                     </td>
                     <td>{{ $card->course }}</td>
                     <td>

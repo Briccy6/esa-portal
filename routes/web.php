@@ -641,7 +641,12 @@ Route::post('/exams/{exam}/questions/import', [\App\Http\Controllers\ExamQuestio
 Route::post('/exams/{exam}/import-from-banks', [\App\Http\Controllers\ExamController::class, 'importFromBanks'])->name('exams.import-from-banks');
 
 Route::middleware('auth:teacher')->prefix('teacher')->name('teacher.')->group(function () {
-    Route::resource('marks', \App\Http\Controllers\MarksController::class);
+    Route::get('marks', [\App\Http\Controllers\MarksController::class, 'index'])->name('marks.index');
+    Route::get('marks/create', [\App\Http\Controllers\MarksController::class, 'create'])->name('marks.create');
+    Route::post('marks', [\App\Http\Controllers\MarksController::class, 'store'])->name('marks.store');
+    Route::get('marks/view', [\App\Http\Controllers\Teacher\MarksController::class, 'viewMarks'])->name('marks.view');
+    Route::get('marks/edit/{lessonId}/{testDate}', [\App\Http\Controllers\Teacher\MarksController::class, 'editMarks'])->name('marks.edit');
+    Route::put('marks/update/{lessonId}/{testDate}', [\App\Http\Controllers\Teacher\MarksController::class, 'updateMarks'])->name('marks.update');
 });
 
 Route::get('/api/courses/{course}/students', function($courseId) {
@@ -679,6 +684,7 @@ Route::post('/dos/dailies/{daily}/mark-attendance', [App\Http\Controllers\DosDai
 Route::middleware(['auth:staff'])->prefix('dos/marks')->name('dos.marks.')->group(function () {
     Route::get('/', [App\Http\Controllers\DOS\MarksController::class, 'index'])->name('index');
     Route::get('/{mark}', [App\Http\Controllers\DOS\MarksController::class, 'show'])->name('show');
+    Route::delete('/{mark}', [App\Http\Controllers\DOS\MarksController::class, 'destroy'])->name('destroy');
     Route::match(['get', 'post'], '/student-report', [App\Http\Controllers\DOS\MarksController::class, 'studentReport'])->name('student-report');
     Route::post('/class-report', [App\Http\Controllers\DOS\MarksController::class, 'classReport'])->name('class-report');
     Route::match(['get', 'post'], '/report-card', [App\Http\Controllers\DOS\MarksController::class, 'reportCard'])->name('report-card');

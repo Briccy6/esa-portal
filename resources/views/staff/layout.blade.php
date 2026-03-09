@@ -185,8 +185,6 @@
     
     @yield('scripts')
 
-    <!-- Include the floating chat component -->
-    <!--@include('components.floating-chat')-->
     <!-- Start of LiveChat (www.livechat.com) code -->
 <script>
     window.__lc = window.__lc || {};

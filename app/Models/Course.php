@@ -77,4 +77,8 @@ public function academicYear()
             'teacher_id'                   // Local key on lessons table
         );
     }
+    public function teachersManyToMany()
+    {
+        return $this->belongsToMany(\App\Models\Teacher::class, 'teacher_course');
+    }
 }

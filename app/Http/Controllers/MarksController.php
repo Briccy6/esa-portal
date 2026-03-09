@@ -46,10 +46,34 @@ class MarksController extends Controller
     }
     public function create(Request $request)
     {
-        $courses = Course::all();
-        $branches = Branch::all();
+        // Check if user is teacher and filter their assigned courses/lessons
+        if (auth('teacher')->check()) {
+            $teacher = auth('teacher')->user();
+            
+            // Get courses assigned to this teacher
+            $teacherCourses = \App\Models\Course::whereHas('teachers', function($query) use ($teacher) {
+                $query->where('teachers.id', $teacher->id);
+            })->get();
+            
+            // Get lessons assigned to this teacher
+            $teacherLessons = Lesson::where('teacher_id', $teacher->id)->get();
+            
+            // Get branches where teacher has courses
+            $branches = Branch::whereIn('id', $teacherCourses->pluck('branch_id'))->get();
+            
+            // Get exams for teacher's courses
+            $examsByCourse = Exam::whereIn('course_id', $teacherCourses->pluck('id'))->get()->groupBy('course_id');
+            
+            $courses = $teacherCourses;
+        } else {
+            // Staff/Admin get all courses
+            $courses = Course::all();
+            $branches = Branch::all();
+            $examsByCourse = Exam::all()->groupBy('course_id');
+            $teacherLessons = collect(); // Empty collection for non-teachers
+        }
+        
         $students = collect();
-        $examsByCourse = Exam::all()->groupBy('course_id');
 
         // If course & branch selected, fetch students
         if ($request->course_id && $request->branch_id) {
@@ -58,7 +82,7 @@ class MarksController extends Controller
                                ->get();
         }
 
-        return view('marks.create', compact('courses', 'branches', 'students', 'examsByCourse'));
+        return view('marks.create', compact('courses', 'branches', 'students', 'examsByCourse', 'teacherLessons'));
     }
 
    public function ajaxStudents(Request $request)
@@ -116,6 +140,8 @@ class MarksController extends Controller
             'assessment_type' => 'required|in:test,exam',
             'exam_id'         => 'required_if:assessment_type,exam|exists:exams,id',
             'marks_out_of'    => 'required_if:assessment_type,test|numeric|min:1',
+            'test_date'       => 'required_if:assessment_type,test|date',
+            'exam_date'       => 'required_if:assessment_type,exam|date',
             'students'        => 'required|array',
             'students.*'      => 'exists:students,id',
             'marks'           => 'required|array',
@@ -144,27 +170,35 @@ class MarksController extends Controller
                         'status' => 'recorded'
                     ];
 
-                    // Only add exam_id if assessment_type is exam
+                    // Only add exam_id and exam_date if assessment_type is exam
                     if ($request->assessment_type === 'exam') {
                         $createData['exam_id'] = $request->exam_id;
+                        $createData['exam_date'] = $request->exam_date;
                     }
 
-                    // Only add marks_out_of if assessment_type is test
+                    // Only add marks_out_of and test_date if assessment_type is test
                     if ($request->assessment_type === 'test') {
                         $createData['marks_out_of'] = $request->marks_out_of;
+                        $createData['test_date'] = $request->test_date;
                     }
 
-                    Mark::updateOrCreate(
-                        [
-                            'student_id' => $studentId,
-                            'course_id'  => $request->course_id,
-                            'branch_id'  => $request->branch_id,
-                            'lesson_id'  => $request->lesson_id,
-                            'assessment_type' => $request->assessment_type,
-                            'exam_id'    => $request->assessment_type === 'exam' ? $request->exam_id : null,
-                        ],
-                        $createData
-                    );
+                    // For tests, create new records instead of updating existing ones
+                    if ($request->assessment_type === 'test') {
+                        Mark::create($createData);
+                    } else {
+                        // For exams, use updateOrCreate to prevent duplicates
+                        Mark::updateOrCreate(
+                            [
+                                'student_id' => $studentId,
+                                'course_id'  => $request->course_id,
+                                'branch_id'  => $request->branch_id,
+                                'lesson_id'  => $request->lesson_id,
+                                'assessment_type' => $request->assessment_type,
+                                'exam_id'    => $request->exam_id,
+                            ],
+                            $createData
+                        );
+                    }
                 }
             }
 

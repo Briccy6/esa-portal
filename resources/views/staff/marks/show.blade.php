@@ -19,7 +19,17 @@
                     </a>
                     <button onclick="window.print()" class="btn btn-primary">
                         <i class="fas fa-print me-1"></i> Print
-                    </button>
+                    </a>
+                    <form action="{{ route('dos.marks.destroy', $mark->id) }}" 
+                          method="POST" 
+                          style="display: inline;"
+                          onsubmit="return confirm('Are you sure you want to delete this mark?\n\nStudent: {{ $mark->student->full_name ?? 'Unknown' }}\nCourse: {{ $mark->course->course_name ?? 'Unknown' }}\n{{ ucfirst($mark->assessment_type) }}: {{ $mark->value }}{{ $mark->assessment_type === 'test' ? '/' . $mark->marks_out_of : '' }}\n\nThis action cannot be undone!')">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash me-1"></i> Delete Mark
+                        </button>
+                    </form>
                 </div>
             </div>
 

@@ -101,7 +101,7 @@
                 <div class="card-body py-3">
                     <form method="GET" action="{{ route('dos.marks.index') }}">
                         <div class="row align-items-center">
-                            <div class="col-md-3">
+                            <div class="col-md-2">
                                 <select name="course_id" class="form-select" id="courseFilter">
                                     <option value="">All Courses</option>
                                     @foreach($courses as $course)
@@ -111,7 +111,17 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-2">
+                                <select name="lesson_id" class="form-select" id="lessonFilter">
+                                    <option value="">All Lessons</option>
+                                    @foreach($lessons as $lesson)
+                                        <option value="{{ $lesson->id }}" {{ request('lesson_id') == $lesson->id ? 'selected' : '' }}>
+                                            {{ $lesson->title ?? $lesson->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-2">
                                 <select name="branch_id" class="form-select" id="branchFilter">
                                     <option value="">All Branches</option>
                                     @foreach($branches as $branch)
@@ -193,135 +203,140 @@
                     </h5>
                 </div>
                 <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0" id="marksTable">
-                            <thead class="table-light">
-                                <tr>
-                                    <th class="border-0 fw-semibold py-3">
-                                        <i class="fas fa-user text-primary me-2"></i>Student
-                                    </th>
-                                    <th class="border-0 fw-semibold py-3">
-                                        <i class="fas fa-book text-info me-2"></i>Course
-                                    </th>
-                                    <th class="border-0 fw-semibold py-3">
-                                        <i class="fas fa-code-branch text-success me-2"></i>Branch
-                                    </th>
-                                    <th class="border-0 fw-semibold py-3">
-                                        <i class="fas fa-clipboard text-warning me-2"></i>Type
-                                    </th>
-                                    <th class="border-0 fw-semibold py-3 text-center">
-                                        <i class="fas fa-star text-warning me-2"></i>Score
-                                    </th>
-                                    <th class="border-0 fw-semibold py-3">
-                                        <i class="fas fa-medal text-secondary me-2"></i>Grade
-                                    </th>
-                                    <th class="border-0 fw-semibold py-3 text-center">
-                                        <i class="fas fa-cogs text-dark me-2"></i>Action
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody id="tableBody">
-                                @foreach($marks as $mark)
-                                    <tr class="mark-row">
-                                        <!-- Student Column -->
-                                        <td class="align-middle py-3">
-                                            <div class="d-flex align-items-center">
-                                                <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-3">
-                                                    <i class="fas fa-user text-primary"></i>
-                                                </div>
-                                                <div>
-                                                    <span class="fw-semibold student-name">{{ $mark->student->full_name ?? '-' }}</span>
-                                                    <br><small class="text-muted">ID: {{ $mark->student_id }}</small>
-                                                </div>
-                                            </div>
-                                        </td>
-
-                                        <!-- Course Column -->
-                                        <td class="align-middle py-3">
-                                            <div class="d-flex align-items-center">
-                                                <div class="bg-info bg-opacity-10 rounded p-2 me-3">
-                                                    <i class="fas fa-graduation-cap text-info"></i>
-                                                </div>
-                                                <span class="course-name">{{ $mark->course->course_name ?? '-' }}</span>
-                                            </div>
-                                        </td>
-
-                                        <!-- Branch Column -->
-                                        <td class="align-middle py-3">
-                                            <div class="d-flex align-items-center">
-                                                <div class="bg-success bg-opacity-10 rounded p-2 me-3">
-                                                    <i class="fas fa-map-marker-alt text-success"></i>
-                                                </div>
-                                                <span class="branch-name">{{ $mark->branch->name ?? '-' }}</span>
-                                            </div>
-                                        </td>
-
-                                        <!-- Type Column -->
-                                        <td class="align-middle py-3">
-                                            <div class="d-flex align-items-center">
-                                                <div class="bg-warning bg-opacity-10 rounded p-2 me-3">
-                                                    <i class="fas fa-tag text-warning"></i>
-                                                </div>
-                                                <div>
-                                                    <span class="badge bg-{{ $mark->assessment_type == 'exam' ? 'primary' : 'secondary' }} text-white px-2 py-1">
-                                                        {{ ucfirst($mark->assessment_type) }}
-                                                    </span>
-                                                    @if($mark->exam)
-                                                        <br><small class="text-muted">{{ $mark->exam->exam_name }}</small>
-                                                    @endif
-                                                </div>
-                                            </div>
-                                        </td>
-
-                                        <!-- Score Column -->
-                                        <td class="align-middle py-3 text-center">
-                                            <div class="score-container">
-                                                <span class="fw-bold score-value {{ $mark->value >= ($mark->marks_out_of * 0.5) ? 'text-success' : 'text-danger' }}">
-                                                    {{ $mark->value ?? '-' }}
-                                                </span>
-                                                @if($mark->marks_out_of)
-                                                    <br><small class="text-muted">/ {{ $mark->marks_out_of }}</small>
-                                                @endif
-                                            </div>
-                                        </td>
-
-                                        <!-- Grade Column -->
-                                        <td class="align-middle py-3">
-                                            <div class="grade-container">
-                                                @if($mark->grade)
-                                                    <span class="badge bg-light text-dark px-2 py-1">
-                                                        {{ $mark->grade->name }}
-                                                    </span>
-                                                @else
-                                                    <span class="text-muted">-</span>
-                                                @endif
-                                            </div>
-                                        </td>
-
-                                        <!-- Action Column -->
-                                        <td class="align-middle py-3 text-center">
-                                            <div class="btn-group" role="group">
-                                                <a href="{{ route('dos.marks.show', $mark->id) }}" 
-                                                   class="btn btn-sm btn-outline-primary" 
-                                                   title="View Details">
-                                                    <i class="fas fa-eye"></i>
-                                                </a>
-                                                <button type="button" 
-                                                        class="btn btn-sm btn-outline-info" 
-                                                        onclick="generateStudentReport({{ $mark->student_id }})"
-                                                        title="Student Report">
-                                                    <i class="fas fa-user-graduate"></i>
-                                                </button>
-                                            </div>
-                                        </td>
+                    @if(count($groupedMarks) > 0 && count($students) > 0)
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th rowspan="2" class="align-middle">Student Reg No</th>
+                                        <th rowspan="2" class="align-middle">Course</th>
+                                        <th rowspan="2" class="align-middle">Branch</th>
+                                        @foreach($groupedMarks as $lessonId => $lessonData)
+                                            <th colspan="{{ count($lessonData['dates']) }}" class="text-center">
+                                                {{ $lessonData['title'] }}
+                                            </th>
+                                        @endforeach
                                     </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
+                                    <tr>
+                                        @foreach($groupedMarks as $lessonId => $lessonData)
+                                            @foreach($lessonData['dates'] as $date => $dateMarks)
+                                                <th class="text-center" style="min-width: 120px;">
+                                                    @if($date === 'no-date')
+                                                        <small>No Date</small>
+                                                    @else
+                                                        <small>{{ \Carbon\Carbon::parse($date)->format('M d, Y') }}</small>
+                                                    @endif
+                                                </th>
+                                            @endforeach
+                                        @endforeach
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($students as $studentId => $studentInfo)
+                                        <tr>
+                                            <td class="align-middle">
+                                                <strong>{{ $studentInfo['reg_number'] ?? $studentId }}</strong>
+                                            </td>
+                                            <td class="align-middle">{{ $studentInfo['course'] }}</td>
+                                            <td class="align-middle">{{ $studentInfo['branch'] }}</td>
+                                            
+                                            @foreach($groupedMarks as $lessonId => $lessonData)
+                                                @foreach($lessonData['dates'] as $date => $dateMarks)
+                                                    <td class="text-center align-middle">
+                                                        @if(isset($lessonData['students'][$studentId][$date]))
+                                                            @php
+                                                                $mark = $lessonData['students'][$studentId][$date];
+                                                                $originalMark = $mark->value . '/' . ($mark->marks_out_of ?? 100);
+                                                                $percentage = $mark->assessment_type === 'test' 
+                                                                    ? round(($mark->value / ($mark->marks_out_of ?? 100)) * 100, 1)
+                                                                    : $mark->value;
+                                                                $status = $mark->status;
+                                                            @endphp
+                                                            
+                                                            <div class="mark-display">
+                                                                <div class="fw-bold {{ $percentage >= 50 ? 'text-success' : 'text-danger' }}">
+                                                                    {{ $percentage }}%
+                                                                </div>
+                                                                <small class="text-muted">{{ $originalMark }}</small>
+                                                                <div>
+                                                                    <span class="badge bg-{{ $status === 'recorded' ? 'success' : ($status === 'updated' ? 'info' : 'warning') }} badge-sm">
+                                                                {{ ucfirst($status) }}
+                                                            </span>
+                                                                </div>
+                                                            </div>
+                                                        @else
+                                                            <span class="text-muted">-</span>
+                                                        @endif
+                                                    </td>
+                                                @endforeach
+                                            @endforeach
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Summary Statistics -->
+                        <div class="row mt-4">
+                            <div class="col-md-12">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6 class="card-title mb-3">Summary Statistics</h6>
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <div class="text-center">
+                                                    <h5 class="text-primary">{{ count($students) }}</h5>
+                                                    <small class="text-muted">Total Students</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="text-center">
+                                                    <h5 class="text-info">{{ count($groupedMarks) }}</h5>
+                                                    <small class="text-muted">Total Lessons</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="text-center">
+                                                    <h5 class="text-success">
+                                                        @php
+                                                            $totalDates = 0;
+                                                            foreach($groupedMarks as $lessonData) {
+                                                                $totalDates += count($lessonData['dates']);
+                                                            }
+                                                        @endphp
+                                                        {{ $totalDates }}
+                                                    </h5>
+                                                    <small class="text-muted">Total Test Dates</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="text-center">
+                                                    <h5 class="text-warning">
+                                                        @php
+                                                            $totalMarks = 0;
+                                                            foreach($students as $studentId => $studentInfo) {
+                                                                foreach($groupedMarks as $lessonId => $lessonData) {
+                                                                    foreach($lessonData['dates'] as $date => $dateMarks) {
+                                                                        if(isset($lessonData['students'][$studentId][$date])) {
+                                                                            $totalMarks++;
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        @endphp
+                                                        {{ $totalMarks }}
+                                                    </h5>
+                                                    <small class="text-muted">Total Marks Recorded</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     
                     <!-- No Results Message -->
-                    @if($marks->isEmpty())
+                    @else
                         <div class="text-center py-5">
                             <i class="fas fa-search fs-1 text-muted mb-3"></i>
                             <h5 class="text-muted">No marks found</h5>
@@ -583,3 +598,40 @@ function generateStudentReport(studentId) {
 }
 </script>
 @endsection
+
+<style>
+.mark-display {
+    font-size: 0.85rem;
+}
+
+.badge-sm {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+}
+
+.table th {
+    vertical-align: middle;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.table-bordered {
+    border: 1px solid #dee2e6;
+}
+
+.table-bordered th,
+.table-bordered td {
+    border: 1px solid #dee2e6;
+}
+
+.table-dark {
+    background-color: #343a40 !important;
+}
+
+.table-dark th {
+    border-color: #454d55 !important;
+    color: #fff;
+}
+</style>

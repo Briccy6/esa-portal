@@ -70,47 +70,6 @@
     </div>
 </div>
 
-<!-- Floating Message Icon -->
-<a href="#" 
-   class="btn btn-primary rounded-circle shadow"
-   style="position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; z-index: 1050;"
-   title="Create Message"
-   data-bs-toggle="modal" data-bs-target="#messageModal">
-    <i class="bi bi-chat-dots fs-2"></i>
-</a>
-
-<!-- Message Modal -->
-<div class="modal fade" id="messageModal" tabindex="-1" aria-labelledby="messageModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <form method="POST" action="{{ route('teacher.messages.store') }}">
-      @csrf
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="messageModalLabel">New Message</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <div class="mb-3">
-            <label for="recipient" class="form-label">To</label>
-            <input type="text" class="form-control" id="recipient" name="recipient" required placeholder="Recipient (e.g. student name or ID)">
-          </div>
-          <div class="mb-3">
-            <label for="subject" class="form-label">Subject</label>
-            <input type="text" class="form-control" id="subject" name="subject" required>
-          </div>
-          <div class="mb-3">
-            <label for="body" class="form-label">Message</label>
-            <textarea class="form-control" id="body" name="body" rows="4" required></textarea>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="submit" class="btn btn-primary">Send Message</button>
-        </div>
-      </div>
-    </form>
-  </div>
-</div>
-
 <script>
 document.getElementById('showSalaryIcon').addEventListener('click', function() {
     document.getElementById('salaryAmount').style.display = 'inline';

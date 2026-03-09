@@ -1636,11 +1636,6 @@
         </div>
     </div>
 
-    <!-- Floating WhatsApp Chat Button -->
-    <a href="https://wa.me/250788525247" target="_blank" class="whatsapp-float" title="Chat with us on WhatsApp">
-        <i class="fab fa-whatsapp"></i>
-    </a>
-
     <script>
         // Enhanced Carousel JavaScript
         let slideIndex = 0;

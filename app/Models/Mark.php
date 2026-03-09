@@ -16,7 +16,9 @@ class Mark extends Model
         'grade_id',
         'status',
         'assessment_type',
-        'marks_out_of'
+        'marks_out_of',
+        'test_date',
+        'exam_date'
     ];
 
     public function grade()
@@ -63,5 +65,20 @@ class Mark extends Model
     public function setValueAttribute($value)
     {
         $this->attributes['value'] = $value !== null ? (int)$value : null;
+    }
+
+    // Accessor for normalized marks (always out of 100)
+    public function getNormalizedValueAttribute()
+    {
+        if ($this->assessment_type === 'test' && $this->marks_out_of > 0) {
+            return round(($this->value / $this->marks_out_of) * 100, 2);
+        }
+        return $this->value; // Exams are already out of 100
+    }
+
+    // Accessor for normalized percentage with % symbol
+    public function getNormalizedPercentageAttribute()
+    {
+        return $this->normalized_value . '%';
     }
 }
