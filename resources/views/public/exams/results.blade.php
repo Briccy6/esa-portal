@@ -100,6 +100,100 @@
                 </div>
             </div>
         </div>
+        
+        <!-- Detailed Answer Review -->
+        <div class="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
+            <div class="flex items-center mb-6">
+                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mr-4">
+                    <i class="fas fa-list-check text-purple-600 text-xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900">Answer Review</h3>
+            </div>
+            
+            <div class="space-y-6">
+                @php
+                    $questions = $exam->questions()->orderBy('id')->get();
+                    $sessionAnswers = $sessionData['answers'] ?? [];
+                @endphp
+                
+                @foreach($questions as $index => $question)
+                    @php
+                        $questionNumber = $index + 1;
+                        $studentAnswer = $sessionAnswers[$questionNumber] ?? null;
+                        $correctAnswer = $question->correct_answer;
+                        $isCorrect = $studentAnswer === $correctAnswer;
+                    @endphp
+                
+                <div class="border rounded-lg p-4 {{ $isCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200' }}">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex items-center">
+                            <span class="inline-flex items-center justify-center w-8 h-8 rounded-full {{ $isCorrect ? 'bg-green-600' : 'bg-red-600' }} text-white font-bold mr-3">
+                                {{ $questionNumber }}
+                            </span>
+                            <h4 class="text-lg font-semibold {{ $isCorrect ? 'text-green-800' : 'text-red-800' }}">
+                                Question {{ $questionNumber }}
+                            </h4>
+                        </div>
+                        @if($isCorrect)
+                            <div class="flex items-center text-green-600">
+                                <i class="fas fa-check-circle mr-2"></i>
+                                <span class="font-medium">Correct</span>
+                            </div>
+                        @else
+                            <div class="flex items-center text-red-600">
+                                <i class="fas fa-times-circle mr-2"></i>
+                                <span class="font-medium">Incorrect</span>
+                            </div>
+                        @endif
+                    </div>
+                    
+                    <!-- Question Text -->
+                    <div class="mb-4">
+                        <p class="text-gray-900 font-medium">{{ $question->text }}</p>
+                    </div>
+                    
+                    <!-- Answer Options -->
+                    <div class="grid grid-cols-1 gap-3 mb-4">
+                        @php
+                            $options = [
+                                'A' => $question->option_a,
+                                'B' => $question->option_b, 
+                                'C' => $question->option_c,
+                                'D' => $question->option_d
+                            ];
+                        @endphp
+                        
+                        @foreach($options as $option => $text)
+                        <div class="flex items-start p-3 rounded-lg border {{ $option === $correctAnswer ? 'border-green-300 bg-green-50' : 'border-gray-300 bg-white' }}">
+                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-sm font-bold {{ $option === $correctAnswer ? 'bg-green-600 text-white' : 'bg-gray-600 text-white' }} mr-3">
+                                {{ $option }}
+                            </span>
+                            <span class="flex-1 text-gray-900">{{ $text }}</span>
+                            
+                            @if($studentAnswer === $option)
+                                <div class="ml-auto">
+                                    <span class="inline-flex items-center px-3 py-1 bg-blue-600 text-white text-sm rounded-full">
+                                        <i class="fas fa-user mr-1"></i>
+                                        Your Answer
+                                    </span>
+                                </div>
+                            @endif
+                        </div>
+                        @endforeach
+                    </div>
+                    
+                    <!-- Correct Answer Highlight -->
+                    <div class="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                        <div class="flex items-center text-blue-800">
+                            <i class="fas fa-lightbulb mr-2"></i>
+                            <span class="font-semibold">Correct Answer: {{ $correctAnswer }}</span>
+                        </div>
+                    </div>
+                </div>
+                @endforeach
+            </div>
+            </div>
+        </div>
 
         <div class="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
             <div class="flex items-center mb-6">

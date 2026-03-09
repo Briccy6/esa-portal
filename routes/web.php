@@ -918,8 +918,8 @@ Route::get('/staff/google-meet', function () {
     return view('staff.google_meet', compact('branchCourses'));
 })->middleware('auth:staff');
 
-Route::get('/google/redirect', [App\Http\Controllers\GoogleMeetController::class, 'redirectToGoogle'])->name('google.redirect');
-Route::get('/google/callback', [App\Http\Controllers\GoogleMeetController::class, 'handleGoogleCallback'])->name('google.callback');
+Route::get('/google/redirect', [App\Http\Controllers\GoogleMeetController::class, 'redirectToGoogle'])->name('google.meet.redirect');
+Route::get('/google/callback', [App\Http\Controllers\GoogleMeetController::class, 'handleGoogleCallback'])->name('google.meet.callback');
 Route::post('/google/create-meet', [App\Http\Controllers\GoogleMeetController::class, 'createMeet'])->name('google.create-meet');
 
 Route::get('/student/payment', [StudentController::class, 'showPaymentPage'])->name('student.payment');
