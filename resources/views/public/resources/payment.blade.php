@@ -126,7 +126,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="text-center md:text-right">
                         <p class="text-sm text-gray-600 mb-2">Access Fee</p>
                         <p class="text-4xl font-bold text-green-600">{{ number_format($resource->price) }} RWF</p>
@@ -139,36 +139,36 @@
         <!-- Payment Form -->
         <div class="bg-white rounded-lg shadow-lg p-6" x-data="paymentForm">
             <h3 class="text-xl font-semibold text-gray-900 mb-6">Complete Your Payment</h3>
-            
+
             <form id="payment-form" @submit.prevent="processPayment">
                 @csrf
-                
+
                 <!-- Customer Information -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
-                        <input type="text" 
-                               name="name" 
-                               required 
+                        <input type="text"
+                               name="name"
+                               required
                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                placeholder="John Doe">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
-                        <input type="email" 
-                               name="email" 
-                               required 
+                        <input type="email"
+                               name="email"
+                               required
                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                placeholder="john@example.com">
                     </div>
                 </div>
 
-                <!-- Phone Number (for Mobile Money) -->
+                <!-- Phone Number -->
                 <div class="mb-6">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
-                    <input type="tel" 
-                           name="phone_number" 
-                           required 
+                    <input type="tel"
+                           name="phone_number"
+                           required
                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                            placeholder="+250 788 123 456">
                 </div>
@@ -203,16 +203,14 @@
 
                 <!-- Payment Button -->
                 <div class="text-center">
-                    <button type="submit" 
+                    <button type="submit"
                             :disabled="processing"
                             class="btn-primary px-8 py-3 rounded-lg font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed">
                         <template x-if="!processing">
-                            <i class="fas fa-lock mr-2"></i>
-                            Pay {{ number_format($resource->price) }} RWF
+                            <span><i class="fas fa-lock mr-2"></i>Pay {{ number_format($resource->price) }} RWF</span>
                         </template>
                         <template x-if="processing">
-                            <i class="fas fa-spinner fa-spin mr-2"></i>
-                            Processing Payment...
+                            <span><i class="fas fa-spinner fa-spin mr-2"></i>Processing Payment...</span>
                         </template>
                     </button>
                 </div>
@@ -257,171 +255,92 @@
         </div>
     </footer>
 
-    <script>
-        function makeFlutterwavePayment(paymentData) {
-            return FlutterwaveCheckout({
-                public_key: '{{ $flutterwavePublicKey }}',
-                tx_ref: paymentData.tx_ref,
-                amount: paymentData.amount,
-                currency: paymentData.currency,
-                payment_options: paymentData.payment_options,
-                customer: paymentData.customer,
-                customizations: paymentData.customizations,
-                callback: function(response) {
-                    // Redirect to success page
-                    window.location.href = response.data.redirect_url || '{{ route("public.resources.payment.success", $resource) }}?reference=' + paymentData.tx_ref;
-                },
-                onclose: function() {
-                    // Payment modal closed
-                    console.log('Payment modal closed');
-                },
-                callbackContext: {
-                    resourceId: {{ $resource->id }}
-                }
-            });
-        }
-
-        document.addEventListener('alpine:init', () => {
-            Alpine.data('paymentForm', () => ({
-                selectedMethod: 'mobile_money',
-                processing: false,
-                
-                processPayment() {
-                    this.processing = true;
-                    
-                    const form = document.getElementById('payment-form');
-                    const formData = new FormData(form);
-                    
-                    // Generate unique transaction reference
-                    const txRef = 'RESOURCE_{{ $resource->id }}_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-                    
-                    const paymentData = {
-                        tx_ref: txRef,
-                        amount: {{ $resource->price }},
-                        currency: 'RWF',
-                        payment_options: this.selectedMethod === 'mobile_money' ? 'mobilemoneyrwanda' : this.selectedMethod,
-                        customer: {
-                            email: formData.get('email'),
-                            name: formData.get('name'),
-                            phone_number: formData.get('phone_number'),
-                        },
-                        customizations: {
-                            title: 'Resource Access: {{ $resourceName }}',
-                            description: 'Payment for resource: {{ $resourceName }}',
-                        },
-                        meta: {
-                            resource_id: {{ $resource->id }},
-                            resource_type: '{{ $resource->document_blob ? 'document' : 'video' }}',
-                            payment_type: 'resource_access',
-                        },
-                    };
-
-                    // Submit form data to server first to create pending payment record
-                    fetch('{{ route("public.resources.payment.process", $resource) }}', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        },
-                        body: JSON.stringify({
-                            name: formData.get('name'),
-                            email: formData.get('email'),
-                            phone_number: formData.get('phone_number'),
-                            payment_method: this.selectedMethod,
-                            tx_ref: txRef
-                        })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.status) {
-                            // Open Flutterwave payment modal
-                            makeFlutterwavePayment(paymentData);
-                        } else {
-                            this.processing = false;
-                            alert('Payment initialization failed: ' + (data.message || 'Unknown error'));
-                        }
-                    })
-                    .catch(error => {
-                        this.processing = false;
-                        console.error('Error:', error);
-                        alert('Payment initialization failed. Please try again.');
-                    });
-                }
-            }));
-        });
-    </script>
 @endsection
 
 @push('scripts')
 <script src="https://checkout.flutterwave.com/v3.js"></script>
 <script>
+    function makeFlutterwavePayment(paymentData) {
+        return FlutterwaveCheckout({
+            public_key: '{{ $flutterwavePublicKey }}',
+            tx_ref: paymentData.tx_ref,
+            amount: paymentData.amount,
+            currency: paymentData.currency,
+            payment_options: paymentData.payment_options,
+            customer: paymentData.customer,
+            customizations: paymentData.customizations,
+            callback: function(response) {
+                window.location.href = response.data?.redirect_url
+                    || '{{ route("public.resources.payment.success", $resource) }}?reference=' + paymentData.tx_ref;
+            },
+            onclose: function() {
+                console.log('Payment modal closed');
+            }
+        });
+    }
+
     document.addEventListener('alpine:init', () => {
         Alpine.data('paymentForm', () => ({
-            selectedMethod: 'flutterwave',
+            selectedMethod: 'mobile_money',
             processing: false,
-            
-            selectPaymentMethod(method) {
-                this.selectedMethod = method;
-            },
-            
-            async makePayment() {
-                if (this.processing) return;
-                
+
+            processPayment() {
                 this.processing = true;
-                
-                const formData = new FormData(document.getElementById('payment-form'));
-                
-                try {
-                    const response = await fetch('{{ route('public.resources.payment.process', $resource->id) }}', {
-                        method: 'POST',
-                        body: formData,
-                        headers: {
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        }
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (data.success) {
-                        if (data.payment_url) {
-                            window.location.href = data.payment_url;
-                        } else if (data.reference) {
-                            this.initiateFlutterwavePayment(data);
-                        }
+
+                const form = document.getElementById('payment-form');
+                const formData = new FormData(form);
+
+                const txRef = 'RESOURCE_{{ $resource->id }}_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+
+                const paymentData = {
+                    tx_ref: txRef,
+                    amount: {{ $resource->price }},
+                    currency: 'RWF',
+                    payment_options: this.selectedMethod === 'mobile_money' ? 'mobilemoneyrwanda' : this.selectedMethod,
+                    customer: {
+                        email: formData.get('email'),
+                        name: formData.get('name'),
+                        phone_number: formData.get('phone_number'),
+                    },
+                    customizations: {
+                        title: 'Resource Access: {{ addslashes($resourceName) }}',
+                        description: 'Payment for resource: {{ addslashes($resourceName) }}',
+                        logo: '{{ \App\Helpers\LogoHelper::getLogoUrl() ?: asset("images/default-logo.png") }}'
+                    },
+                    meta: {
+                        resource_id: {{ $resource->id }},
+                        resource_type: '{{ $resource->document_blob ? "document" : "video" }}',
+                        payment_type: 'resource_access',
+                    },
+                };
+
+                fetch('{{ route("public.resources.payment.process", $resource) }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({
+                        name: formData.get('name'),
+                        email: formData.get('email'),
+                        phone_number: formData.get('phone_number'),
+                        payment_method: this.selectedMethod,
+                        tx_ref: txRef
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status) {
+                        makeFlutterwavePayment(paymentData);
                     } else {
                         this.processing = false;
                         alert('Payment initialization failed: ' + (data.message || 'Unknown error'));
                     }
-                }
+                })
                 .catch(error => {
                     this.processing = false;
                     console.error('Error:', error);
                     alert('Payment initialization failed. Please try again.');
-                });
-            },
-            
-            initiateFlutterwavePayment(data) {
-                FlutterwaveCheckout({
-                    public_key: '{{ config("services.flutterwave.public_key") }}',
-                    tx_ref: data.reference,
-                    amount: data.amount,
-                    currency: data.currency,
-                    payment_options: 'card, mobilemoney, ussd',
-                    customer: {
-                        email: data.customer_email,
-                        name: data.customer_name
-                    },
-                    callback: function(response) {
-                        window.location.href = '{{ route("public.resources.payment.success") }}?reference=' + response.tx_ref;
-                    },
-                    onclose: function() {
-                        // Payment modal closed
-                    },
-                    customizations: {
-                        title: 'Payment for Resource',
-                        description: '{{ $resource->document_name ?: $resource->video_name ?: "Resource" }}',
-                        logo: '{{ \App\Helpers\LogoHelper::getLogoUrl() ?: asset("images/default-logo.png") }}'
-                    }
                 });
             }
         }));
