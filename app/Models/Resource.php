@@ -20,6 +20,17 @@ class Resource extends Model
         'watermark_applied' => 'boolean',
     ];
     
+    // Accessors to decode base64 blob data
+    public function getDocumentBlobAttribute($value)
+    {
+        return $value ? base64_decode($value) : $value;
+    }
+    
+    public function getVideoBlobAttribute($value)
+    {
+        return $value ? base64_decode($value) : $value;
+    }
+    
 
     public function teacher()
     {

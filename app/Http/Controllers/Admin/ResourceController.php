@@ -81,8 +81,9 @@ class ResourceController extends Controller
                     $resourceData['document_name'] = $document->getClientOriginalName();
                     $resourceData['document_mime'] = $document->getMimeType();
                     
-                    // Store document content in blob
-                    $resourceData['document_blob'] = file_get_contents($document->getRealPath());
+                    // Store document content in blob (base64 encoded for longtext storage)
+                    $documentContent = file_get_contents($document->getRealPath());
+                    $resourceData['document_blob'] = base64_encode($documentContent);
                 } else {
                     return back()
                         ->withInput()
@@ -101,7 +102,8 @@ class ResourceController extends Controller
                 if ($video->isValid()) {
                     $resourceData['video_name'] = $video->getClientOriginalName();
                     $resourceData['video_mime'] = $video->getMimeType();
-                    $resourceData['video_blob'] = file_get_contents($video->getRealPath());
+                     = file_get_contents($video->getRealPath());
+                    $resourceData['video_blob'] = base64_encode($videoContent);
                 } else {
                     return back()
                         ->withInput()
@@ -180,7 +182,8 @@ class ResourceController extends Controller
                 if ($document->isValid()) {
                     $resourceData['document_name'] = $document->getClientOriginalName();
                     $resourceData['document_mime'] = $document->getMimeType();
-                    $resourceData['document_blob'] = file_get_contents($document->getRealPath());
+                     = file_get_contents($document->getRealPath());
+                    $resourceData['document_blob'] = base64_encode($documentContent);
                     $resourceData['watermark_applied'] = false; // Reset watermark status
                 } else {
                     return back()
@@ -200,7 +203,8 @@ class ResourceController extends Controller
                 if ($video->isValid()) {
                     $resourceData['video_name'] = $video->getClientOriginalName();
                     $resourceData['video_mime'] = $video->getMimeType();
-                    $resourceData['video_blob'] = file_get_contents($video->getRealPath());
+                     = file_get_contents($video->getRealPath());
+                    $resourceData['video_blob'] = base64_encode($videoContent);
                 } else {
                     return back()
                         ->withInput()
