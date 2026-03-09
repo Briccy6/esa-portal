@@ -80,6 +80,9 @@ class ResourceController extends Controller
             'document_name' => $request->document_name, // Store the link here
             'document_blob' => null,
             'document_mime' => null,
+            'video_blob' => null, // Add missing field
+            'video_name' => null, // Add missing field
+            'video_mime' => null, // Add missing field
         ]);
 
         return redirect()->route('teacher.resources.index')->with('success', 'Resource uploaded successfully!');
