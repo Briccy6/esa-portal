@@ -691,6 +691,8 @@ class StudentController extends Controller
                 'full_name'       => 'required|string|max:255',
                 'email'           => 'required|email|unique:students,email',
                 'phone'           => 'required|string',
+                'sex'             => 'required|in:Male,Female',
+                'academic_year_id'=> 'required|exists:academic_years,id',|string',
                 'academic_year_id'=> 'required|exists:academic_years,id',
                 'branch_id'       => 'required|exists:branches,id',
                 'course_id'       => 'required|exists:courses,id',

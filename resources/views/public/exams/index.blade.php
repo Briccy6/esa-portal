@@ -93,6 +93,11 @@
                             <div class="relative z-10">
                                 <div class="flex items-start justify-between mb-3">
                                     <h3 class="text-xl font-bold leading-tight">{{ Str::limit($exam->title, 60) }}</h3>
+                                    <button onclick="shareExam({{ $exam->id }}, '{{ Str::limit($exam->title, 40) }}')" 
+                                            class="bg-white bg-opacity-20 hover:bg-opacity-30 p-2 rounded-lg transition-all duration-200"
+                                            title="Share this exam">
+                                        <i class="fas fa-share-alt text-white"></i>
+                                    </button>
                                 </div>
                                 
                                 @if($exam->courses->count() > 0)
@@ -290,5 +295,41 @@ document.addEventListener('DOMContentLoaded', function() {
     priceFilter.addEventListener('change', filterExams);
     sortSelect.addEventListener('change', filterExams);
 });
+
+// Share Function
+function shareExam(examId, examTitle) {
+    const url = window.location.origin + '/public/exams/' + examId;
+    const text = `Check out this practice test: ${examTitle}`;
+    
+    if (navigator.share) {
+        navigator.share({
+            title: examTitle,
+            text: text,
+            url: url
+        }).catch(err => console.log('Error sharing:', err));
+    } else {
+        // Fallback - copy to clipboard
+        const shareText = `${text} - ${url}`;
+        navigator.clipboard.writeText(shareText).then(() => {
+            showNotification('Link copied to clipboard!');
+        }).catch(() => {
+            // Last resort - open in new window
+            window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
+        });
+    }
+}
+
+function showNotification(message) {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = 'fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300';
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
 </script>
 @endsection

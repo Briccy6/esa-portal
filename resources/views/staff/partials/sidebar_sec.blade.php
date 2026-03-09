@@ -278,6 +278,14 @@
             <input type="email" name="email" id="email" class="form-control">
           </div>
           <div class="mb-3">
+            <label for="sex" class="form-label">Sex</label>
+            <select name="sex" id="sex" class="form-select" required>
+              <option value="" disabled selected>Select sex</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </select>
+          </div>
+          <div class="mb-3">
             <label for="branch_id" class="form-label">Branch</label>
             <select name="branch_id" id="branch_id" class="form-select" required>
               <option value="" disabled selected>Select branch</option>

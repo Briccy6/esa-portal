@@ -519,46 +519,89 @@
                 <p class="text-lg text-text-light">Practice and prepare for your exams with our comprehensive skill assessments. Build confidence before the real exam.</p>
             </div>
             
-            <div class="max-w-4xl mx-auto">
-                <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-8 border border-purple-100 shadow-lg">
-                    <div class="flex items-center mb-6">
-                        <div class="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center mr-4 shadow-md">
-                            <i class="fas fa-brain text-white text-xl"></i>
-                        </div>
-                        <h3 class="text-2xl font-bold section-heading">Skill Assessment Platform</h3>
-                    </div>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                        <div class="text-center">
-                            <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <i class="fas fa-dumbbell text-purple-600 text-2xl"></i>
+            <!-- Featured Exams Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
+                @php
+                    $featuredExams = \App\Models\Exam::where('is_public', true)
+                        ->with(['courses', 'questions'])
+                        ->take(6)
+                        ->get();
+                @endphp
+                
+                @forelse($featuredExams as $exam)
+                    <div class="card-shadow-hover bg-white rounded-xl overflow-hidden shadow-md">
+                        <!-- Exam Header -->
+                        <div class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-6">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="text-xl font-bold">{{ Str::limit($exam->title, 50) }}</h3>
+                                <button onclick="shareExam({{ $exam->id }}, '{{ Str::limit($exam->title, 30) }}')" 
+                                        class="bg-white bg-opacity-20 hover:bg-opacity-30 p-2 rounded-lg transition-all duration-200"
+                                        title="Share this exam">
+                                    <i class="fas fa-share-alt text-white"></i>
+                                </button>
                             </div>
-                            <h4 class="font-semibold text-lg mb-2">Practice Tests</h4>
-                            <p class="text-gray-600 text-sm">Build confidence through repeated practice</p>
+                            
+                            @if($exam->courses->count() > 0)
+                                <div class="text-sm text-purple-100">
+                                    <i class="fas fa-graduation-cap mr-2"></i>
+                                    {{ $exam->courses->pluck('name')->implode(', ') }}
+                                </div>
+                            @endif
                         </div>
-                        <div class="text-center">
-                            <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <i class="fas fa-chart-line text-green-600 text-2xl"></i>
+
+                        <!-- Exam Body -->
+                        <div class="p-6">
+                            <p class="text-gray-600 mb-4 text-sm">{{ Str::limit($exam->description ?? 'Practice your skills with this comprehensive assessment.', 80) }}</p>
+                            
+                            <!-- Exam Stats -->
+                            <div class="grid grid-cols-2 gap-4 mb-4">
+                                <div class="text-center p-3 bg-purple-50 rounded-lg">
+                                    <div class="text-2xl font-bold text-purple-600">{{ $exam->questions->count() }}</div>
+                                    <div class="text-xs text-gray-600">Questions</div>
+                                </div>
+                                <div class="text-center p-3 bg-green-50 rounded-lg">
+                                    <div class="text-2xl font-bold text-green-600">
+                                        @if($exam->requiresPayment())
+                                            ${{ number_format($exam->public_price, 0) }}
+                                        @else
+                                            FREE
+                                        @endif
+                                    </div>
+                                    <div class="text-xs text-gray-600">Price</div>
+                                </div>
                             </div>
-                            <h4 class="font-semibold text-lg mb-2">Track Progress</h4>
-                            <p class="text-gray-600 text-sm">Monitor improvement over time</p>
-                        </div>
-                        <div class="text-center">
-                            <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <i class="fas fa-graduation-cap text-blue-600 text-2xl"></i>
+
+                            <!-- Action Buttons -->
+                            <div class="space-y-2">
+                                <a href="{{ route('public.exams.show', $exam) }}" 
+                                   class="w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors text-center block font-medium">
+                                    <i class="fas fa-eye mr-2"></i>View Details
+                                </a>
+                                
+                                @if($exam->isAccessible())
+                                    <a href="{{ route('public.exams.start', $exam) }}" 
+                                       class="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors text-center block font-medium">
+                                        <i class="fas fa-play mr-2"></i>Start Practice
+                                    </a>
+                                @endif
                             </div>
-                            <h4 class="font-semibold text-lg mb-2">Exam Ready</h4>
-                            <p class="text-gray-600 text-sm">Be prepared for real assessments</p>
                         </div>
                     </div>
-                    
-                    <div class="text-center">
-                        <a href="{{ route('public.exams.index') }}" class="bg-purple-600 text-white px-8 py-3 rounded-full text-lg font-semibold shadow-xl hover:scale-105 transition-all">
-                            <i class="fas fa-dumbbell mr-2"></i>Start Skill Testing
-                        </a>
-                        <p class="text-sm text-gray-600 mt-3">Multiple subjects • Affordable pricing • Build confidence • Get exam-ready</p>
+                @empty
+                    <div class="col-span-full text-center py-12">
+                        <div class="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-brain text-purple-400 text-3xl"></i>
+                        </div>
+                        <p class="text-gray-600 text-lg">No practice tests available at the moment. Check back soon!</p>
                     </div>
-                </div>
+                @endforelse
+            </div>
+            
+            <!-- View All Button -->
+            <div class="text-center">
+                <a href="{{ route('public.exams.index') }}" class="btn-primary px-8 py-3 rounded-full text-lg font-semibold shadow-xl hover:scale-105 transition-all">
+                    <i class="fas fa-dumbbell mr-2"></i>View All Practice Tests
+                </a>
             </div>
         </div>
     </section>
@@ -573,46 +616,110 @@
                 <p class="text-lg text-text-light">Access quality learning materials, notes, and videos from our expert teachers.</p>
             </div>
             
-            <div class="max-w-4xl mx-auto">
-                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-8 border border-blue-100 shadow-lg">
-                    <div class="flex items-center mb-6">
-                        <div class="w-12 h-12 bg-secondary-color rounded-lg flex items-center justify-center mr-4 shadow-md">
-                            <i class="fas fa-book text-white text-xl"></i>
-                        </div>
-                        <h3 class="text-2xl font-bold section-heading">Public Learning Resources</h3>
-                    </div>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                        <div class="text-center">
-                            <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <i class="fas fa-file-alt text-blue-600 text-2xl"></i>
+            <!-- Featured Resources Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
+                @php
+                    $featuredResources = \App\Models\Resource::with(['course', 'teacher', 'branch'])
+                        ->take(6)
+                        ->get();
+                @endphp
+                
+                @forelse($featuredResources as $resource)
+                    <div class="card-shadow-hover bg-white rounded-xl overflow-hidden shadow-md">
+                        <!-- Resource Header -->
+                        <div class="bg-gradient-to-r from-blue-600 to-cyan-600 text-white p-6">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="text-xl font-bold">{{ Str::limit($resource->document_name ?: $resource->video_name ?: 'Resource', 40) }}</h3>
+                                <button onclick="shareResource({{ $resource->id }}, '{{ Str::limit($resource->document_name ?: $resource->video_name ?: 'Resource', 30) }}')" 
+                                        class="bg-white bg-opacity-20 hover:bg-opacity-30 p-2 rounded-lg transition-all duration-200"
+                                        title="Share this resource">
+                                    <i class="fas fa-share-alt text-white"></i>
+                                </button>
                             </div>
-                            <h4 class="font-semibold text-lg mb-2">Documents</h4>
-                            <p class="text-gray-600 text-sm">PDF notes, worksheets, and study guides</p>
-                        </div>
-                        <div class="text-center">
-                            <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <i class="fas fa-video text-red-600 text-2xl"></i>
+                            
+                            <div class="text-sm text-blue-100">
+                                <i class="fas fa-graduation-cap mr-2"></i>
+                                {{ $resource->course->course_name ?? 'General' }}
                             </div>
-                            <h4 class="font-semibold text-lg mb-2">Videos</h4>
-                            <p class="text-gray-600 text-sm">Educational videos and recorded lessons</p>
                         </div>
-                        <div class="text-center">
-                            <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <i class="fas fa-download text-green-600 text-2xl"></i>
+
+                        <!-- Resource Body -->
+                        <div class="p-6">
+                            <!-- Resource Info -->
+                            <div class="space-y-2 mb-4 text-sm text-gray-600">
+                                <div>
+                                    <i class="fas fa-user-tie mr-2 text-blue-600"></i>
+                                    <span>{{ $resource->teacher->teacher_name ?? 'Expert Teacher' }}</span>
+                                </div>
+                                <div>
+                                    <i class="fas fa-map-marker-alt mr-2 text-blue-600"></i>
+                                    <span>{{ $resource->branch->name ?? 'Main Campus' }}</span>
+                                </div>
                             </div>
-                            <h4 class="font-semibold text-lg mb-2">Free Access</h4>
-                            <p class="text-gray-600 text-sm">Many resources available for free download</p>
+
+                            <!-- Resource Type Icons -->
+                            <div class="flex space-x-3 mb-4">
+                                @if($resource->document_blob)
+                                    <span class="text-blue-600" title="Document Available">
+                                        <i class="fas fa-file-alt text-lg"></i>
+                                    </span>
+                                @endif
+                                @if($resource->video_blob)
+                                    <span class="text-red-600" title="Video Available">
+                                        <i class="fas fa-video text-lg"></i>
+                                    </span>
+                                @endif
+                                @if($resource->youtube_link)
+                                    <span class="text-red-600" title="YouTube Video">
+                                        <i class="fab fa-youtube text-lg"></i>
+                                    </span>
+                                @endif
+                            </div>
+
+                            <!-- Price Badge -->
+                            <div class="mb-4">
+                                @if($resource->is_free)
+                                    <span class="bg-green-100 text-green-800 text-xs font-semibold px-3 py-1 rounded-full">
+                                        <i class="fas fa-gift mr-1"></i>FREE
+                                    </span>
+                                @else
+                                    <span class="bg-orange-100 text-orange-800 text-xs font-semibold px-3 py-1 rounded-full">
+                                        <i class="fas fa-tag mr-1"></i>RWF {{ number_format($resource->price, 0) }}
+                                    </span>
+                                @endif
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="space-y-2">
+                                <a href="{{ route('public.resources.show', $resource->id) }}" 
+                                   class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors text-center block font-medium">
+                                    <i class="fas fa-eye mr-2"></i>View Details
+                                </a>
+                                
+                                @if($resource->document_blob || $resource->video_blob)
+                                    <a href="{{ $resource->is_free ? route('public.resources.download', $resource->id) : route('public.resources.payment', $resource->id) }}" 
+                                       class="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors text-center block font-medium">
+                                        <i class="fas fa-{{ $resource->is_free ? 'download' : 'shopping-cart' }} mr-2"></i>{{ $resource->is_free ? 'Download' : 'Purchase' }}
+                                    </a>
+                                @endif
+                            </div>
                         </div>
                     </div>
-                    
-                    <div class="text-center">
-                        <a href="{{ route('public.resources.index') }}" class="btn-primary px-8 py-3 rounded-full text-lg font-semibold shadow-xl hover:scale-105">
-                            <i class="fas fa-external-link-alt mr-2"></i>Browse Resources
-                        </a>
-                        <p class="text-sm text-gray-600 mt-3">Search and filter by course, teacher, or topic</p>
+                @empty
+                    <div class="col-span-full text-center py-12">
+                        <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-book text-blue-400 text-3xl"></i>
+                        </div>
+                        <p class="text-gray-600 text-lg">No resources available at the moment. Check back soon!</p>
                     </div>
-                </div>
+                @endforelse
+            </div>
+            
+            <!-- View All Button -->
+            <div class="text-center">
+                <a href="{{ route('public.resources.index') }}" class="btn-primary px-8 py-3 rounded-full text-lg font-semibold shadow-xl hover:scale-105 transition-all">
+                    <i class="fas fa-external-link-alt mr-2"></i>Browse All Resources
+                </a>
             </div>
         </div>
     </section>
@@ -845,6 +952,64 @@
         // The mobile menu button's @click="open = !open" handles showing/hiding
         // and @click.away="open = false" closes it when clicking outside.
         // The mobile navigation links also close the menu on click for better UX.
+
+        // Share Functions
+        function shareExam(examId, examTitle) {
+            const url = window.location.origin + '/public/exams/' + examId;
+            const text = `Check out this practice test: ${examTitle}`;
+            
+            if (navigator.share) {
+                navigator.share({
+                    title: examTitle,
+                    text: text,
+                    url: url
+                }).catch(err => console.log('Error sharing:', err));
+            } else {
+                // Fallback - copy to clipboard
+                const shareText = `${text} - ${url}`;
+                navigator.clipboard.writeText(shareText).then(() => {
+                    showNotification('Link copied to clipboard!');
+                }).catch(() => {
+                    // Last resort - open in new window
+                    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
+                });
+            }
+        }
+
+        function shareResource(resourceId, resourceTitle) {
+            const url = window.location.origin + '/public/resources/' + resourceId;
+            const text = `Check out this educational resource: ${resourceTitle}`;
+            
+            if (navigator.share) {
+                navigator.share({
+                    title: resourceTitle,
+                    text: text,
+                    url: url
+                }).catch(err => console.log('Error sharing:', err));
+            } else {
+                // Fallback - copy to clipboard
+                const shareText = `${text} - ${url}`;
+                navigator.clipboard.writeText(shareText).then(() => {
+                    showNotification('Link copied to clipboard!');
+                }).catch(() => {
+                    // Last resort - open in new window
+                    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
+                });
+            }
+        }
+
+        function showNotification(message) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300';
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
     </script>
  
 

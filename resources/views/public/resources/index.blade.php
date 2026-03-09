@@ -172,16 +172,21 @@
                                 <h3 class="font-semibold text-lg line-clamp-2">
                                     {{ $resource->document_name ?: $resource->video_name ?: 'Resource' }}
                                 </h3>
-                                @if($resource->is_free)
-                                    <span class="badge-free text-xs px-2 py-1 rounded-full">FREE</span>
-                                @else
-                                    <span class="badge-paid text-xs px-2 py-1 rounded-full">
-                                        RWF {{ number_format($resource->price, 0) }}
-                                    </span>
-                                @endif
+                                <button onclick="shareResource({{ $resource->id }}, '{{ Str::limit($resource->document_name ?: $resource->video_name ?: 'Resource', 30) }}')" 
+                                        class="bg-white bg-opacity-20 hover:bg-opacity-30 p-2 rounded-lg transition-all duration-200"
+                                        title="Share this resource">
+                                    <i class="fas fa-share-alt text-white"></i>
+                                </button>
                             </div>
                             <div class="text-sm opacity-90">
                                 <i class="fas fa-graduation-cap mr-1"></i> {{ $resource->course->course_name ?? 'N/A' }}
+                                @if($resource->is_free)
+                                    <span class="badge-free text-xs px-2 py-1 rounded-full ml-2">FREE</span>
+                                @else
+                                    <span class="badge-paid text-xs px-2 py-1 rounded-full ml-2">
+                                        RWF {{ number_format($resource->price, 0) }}
+                                    </span>
+                                @endif
                             </div>
                         </div>
 
@@ -267,5 +272,43 @@
             </div>
         </div>
     </footer>
+    
+    <script>
+        // Share Function
+        function shareResource(resourceId, resourceTitle) {
+            const url = window.location.origin + '/public/resources/' + resourceId;
+            const text = `Check out this educational resource: ${resourceTitle}`;
+            
+            if (navigator.share) {
+                navigator.share({
+                    title: resourceTitle,
+                    text: text,
+                    url: url
+                }).catch(err => console.log('Error sharing:', err));
+            } else {
+                // Fallback - copy to clipboard
+                const shareText = `${text} - ${url}`;
+                navigator.clipboard.writeText(shareText).then(() => {
+                    showNotification('Link copied to clipboard!');
+                }).catch(() => {
+                    // Last resort - open in new window
+                    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
+                });
+            }
+        }
+
+        function showNotification(message) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300';
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+    </script>
 </body>
 </html>
