@@ -562,7 +562,7 @@
                                 <div class="text-center p-3 bg-green-50 rounded-lg">
                                     <div class="text-2xl font-bold text-green-600">
                                         @if($exam->requiresPayment())
-                                            ${{ number_format($exam->public_price, 0) }}
+                                            RWF {{ number_format($exam->public_price, 0) }}
                                         @else
                                             FREE
                                         @endif
