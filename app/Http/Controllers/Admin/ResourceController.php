@@ -107,6 +107,11 @@ class ResourceController extends Controller
                         ->withInput()
                         ->with('error', 'Invalid video file: ' . $video->getErrorMessage());
                 }
+            } else {
+                // Ensure video fields are set when no video is uploaded
+                $resourceData['video_name'] = null;
+                $resourceData['video_mime'] = null;
+                $resourceData['video_blob'] = null;
             }
             
             $resource = Resource::create($resourceData);
