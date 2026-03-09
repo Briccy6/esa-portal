@@ -496,6 +496,117 @@
         </div>
     </div>
 
+    <!-- Study Reference Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h3 class="section-title">
+                <i class="bi bi-book me-2"></i>
+                Study Reference
+            </h3>
+        </div>
+        <div class="col-12">
+            <div class="info-card">
+                <div class="info-card-header">
+                    <h4>
+                        <i class="bi bi-journal-text me-2"></i>
+                        Educational Resources
+                    </h4>
+                    <a href="{{ route('student.resources.index') }}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-grid"></i> View All
+                    </a>
+                </div>
+                <div class="info-card-body">
+                    <div class="row">
+                        @forelse($resources as $resource)
+                            <div class="col-lg-6 col-xl-4 mb-4">
+                                <div class="alx-card">
+                                    <!-- Resource Header -->
+                                    <div class="alx-card-header resources">
+                                        <button onclick="shareResource({{ $resource->id }}, '{{ Str::limit($resource->document_name ?: $resource->video_name ?: 'Resource', 30) }}')" 
+                                                class="alx-share-btn"
+                                                title="Share this resource">
+                                            <i class="fas fa-share-alt"></i>
+                                        </button>
+                                        <h6 class="alx-card-title">{{ Str::limit($resource->document_name ?: $resource->video_name ?: 'Educational Resource', 40) }}</h6>
+                                        <div class="alx-card-subtitle">
+                                            <i class="fas fa-graduation-cap mr-2"></i>
+                                            {{ $resource->course->course_name ?? 'General Course' }}
+                                        </div>
+                                    </div>
+
+                                    <!-- Resource Body -->
+                                    <div class="alx-card-body">
+                                        <!-- Teacher & Branch Info -->
+                                        <div class="alx-meta-info">
+                                            <div class="alx-meta-item">
+                                                <i class="fas fa-user-tie text-blue-600"></i>
+                                                <span>{{ $resource->teacher->teacher_name ?? 'Expert Teacher' }}</span>
+                                            </div>
+                                            <div class="alx-meta-item">
+                                                <i class="fas fa-map-marker-alt text-blue-600"></i>
+                                                <span>{{ $resource->branch->name ?? 'Main Campus' }}</span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Resource Type Badges -->
+                                        <div class="alx-type-badges">
+                                            @if($resource->document_blob)
+                                                <span class="alx-type-badge bg-blue-100 text-blue-800">
+                                                    <i class="fas fa-file-alt mr-1"></i>Document
+                                                </span>
+                                            @endif
+                                            @if($resource->video_blob)
+                                                <span class="alx-type-badge bg-red-100 text-red-800">
+                                                    <i class="fas fa-video mr-1"></i>Video
+                                                </span>
+                                            @endif
+                                            @if($resource->youtube_link)
+                                                <span class="alx-type-badge bg-red-100 text-red-800">
+                                                    <i class="fab fa-youtube mr-1"></i>YouTube
+                                                </span>
+                                            @endif
+                                        </div>
+
+                                        <!-- Price Display -->
+                                        <div class="alx-card-price {{ $resource->is_free ? 'free' : 'paid' }}">
+                                            @if($resource->is_free)
+                                                <i class="fas fa-gift mr-2"></i>FREE
+                                            @else
+                                                <i class="fas fa-tag mr-2"></i>RWF {{ number_format($resource->price, 0) }}
+                                            @endif
+                                        </div>
+
+                                        <!-- Action Buttons -->
+                                        <div class="alx-card-actions">
+                                            <a href="{{ route('student.resources.show', $resource->id) }}" 
+                                               class="alx-btn alx-btn-secondary">
+                                                <i class="fas fa-eye"></i>View Details
+                                            </a>
+                                            
+                                            @if($resource->document_blob || $resource->video_blob)
+                                                <a href="{{ $resource->is_free ? route('student.resources.download', $resource->id) : route('student.resources.payment', $resource->id) }}" 
+                                                   class="alx-btn alx-btn-success">
+                                                    <i class="fas fa-{{ $resource->is_free ? 'download' : 'shopping-cart' }} mr-2"></i>{{ $resource->is_free ? 'Download Now' : 'Purchase Access' }}
+                                                </a>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="col-12 text-center py-12">
+                                <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <i class="fas fa-book text-blue-400 text-3xl"></i>
+                                </div>
+                                <p class="text-gray-600 text-lg">No study resources available at the moment. Check back soon!</p>
+                            </div>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Exams Section -->
     <div class="row mb-4">
         <div class="col-12">
@@ -973,6 +1084,171 @@
     }
 
     .announcement-date {
+        color: #64748b;
+        font-size: 0.875rem;
+    }
+
+    /* ALX Africa Inspired Card Styles */
+    .alx-card {
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+        transition: all 0.3s ease;
+        border: 1px solid #e5e7eb;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .alx-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+    
+    .alx-card-header {
+        padding: 1.5rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        position: relative;
+    }
+    
+    .alx-card-header.resources {
+        background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);
+    }
+    
+    .alx-card-body {
+        padding: 1.5rem;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .alx-card-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        line-height: 1.4;
+    }
+    
+    .alx-card-subtitle {
+        font-size: 0.875rem;
+        opacity: 0.9;
+        margin-bottom: 1rem;
+    }
+    
+    .alx-card-price {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+    }
+    
+    .alx-card-price.free {
+        color: #10b981;
+    }
+    
+    .alx-card-price.paid {
+        color: #f59e0b;
+    }
+    
+    .alx-card-actions {
+        margin-top: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .alx-btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        text-align: center;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    .alx-btn-primary {
+        background: #6366f1;
+        color: white;
+    }
+    
+    .alx-btn-primary:hover {
+        background: #4f46e5;
+        transform: translateY(-1px);
+    }
+    
+    .alx-btn-secondary {
+        background: #f3f4f6;
+        color: #374151;
+        border: 1px solid #e5e7eb;
+    }
+    
+    .alx-btn-secondary:hover {
+        background: #e5e7eb;
+        transform: translateY(-1px);
+    }
+    
+    .alx-btn-success {
+        background: #10b981;
+        color: white;
+    }
+    
+    .alx-btn-success:hover {
+        background: #059669;
+        transform: translateY(-1px);
+    }
+    
+    .alx-meta-info {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .alx-meta-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+        color: #6b7280;
+    }
+    
+    .alx-type-badges {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+    }
+    
+    .alx-type-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .alx-share-btn {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: none;
+        padding: 0.5rem;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .alx-share-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: scale(1.05);
+    }
         color: #94a3b8;
         font-size: 0.875rem;
     }
@@ -1568,6 +1844,29 @@ function loadLiveClasses() {
 // Join Live Class
 function joinLiveClass(classId) {
     window.location.href = `/student/live-classes/${classId}/join`;
+}
+
+// Share Resource Function
+function shareResource(resourceId, resourceName) {
+    if (navigator.share) {
+        navigator.share({
+            title: 'Educational Resource',
+            text: `Check out this resource: ${resourceName}`,
+            url: `${window.location.origin}/student/resources/${resourceId}`
+        }).then(() => {
+            console.log('Resource shared successfully');
+        }).catch((error) => {
+            console.log('Error sharing resource:', error);
+        });
+    } else {
+        // Fallback - copy to clipboard
+        const url = `${window.location.origin}/student/resources/${resourceId}`;
+        navigator.clipboard.writeText(url).then(() => {
+            alert('Resource link copied to clipboard!');
+        }).catch((error) => {
+            console.error('Failed to copy link:', error);
+        });
+    }
 }
 
 // Load live classes when page loads

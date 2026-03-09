@@ -128,32 +128,40 @@ class ClientAuthController extends Controller
         try {
             $googleUser = Socialite::driver('google')->user();
             
-            // Find or create client
-            $client = Client::firstOrCreate(
-                ['email' => $googleUser->getEmail()],
-                [
+            // Check if client already exists
+            $existingClient = Client::where('email', $googleUser->getEmail())->first();
+            
+            if ($existingClient) {
+                // Update Google ID if not already set
+                if (!$existingClient->google_id) {
+                    $existingClient->update(['google_id' => $googleUser->getId()]);
+                }
+                
+                // Login existing client
+                Auth::guard('client')->login($existingClient);
+                
+                return redirect()->route('client.dashboard');
+            } else {
+                // Create new client
+                $client = Client::create([
                     'name' => $googleUser->getName(),
+                    'email' => $googleUser->getEmail(),
+                    'phone' => '', // Empty since Google doesn't provide phone
                     'google_id' => $googleUser->getId(),
                     'password' => Hash::make(uniqid()), // Random password for OAuth users
                     'is_active' => true,
                     'verification_status' => 'verified',
-                ]
-            );
+                ]);
 
-            // Update Google ID if client exists but doesn't have it
-            if (!$client->google_id) {
-                $client->update(['google_id' => $googleUser->getId()]);
-            }
-
-            // Send welcome email only for new clients
-            if ($client->wasRecentlyCreated) {
+                // Send welcome email for new clients
                 $this->sendWelcomeEmail($client);
+
+                Auth::guard('client')->login($client);
+
+                return redirect()->route('client.dashboard');
             }
-
-            Auth::guard('client')->login($client);
-
-            return redirect()->route('client.dashboard');
         } catch (\Exception $e) {
+            \Log::error('Google OAuth error: ' . $e->getMessage());
             return redirect()->route('client.auth.login')
                 ->with('error', 'Unable to login with Google. Please try again.');
         }
