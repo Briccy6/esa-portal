@@ -10,9 +10,17 @@ use App\Models\Course;
 use App\Models\Branch;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Facades\Image;
+use App\Services\WatermarkService;
 
 class DocumentManagementController extends Controller
 {
+    private $watermarkService;
+    
+    public function __construct(WatermarkService $watermarkService)
+    {
+        $this->watermarkService = $watermarkService;
+    }
+    
     public function index(Request $request)
     {
         $query = Resource::with(['teacher', 'course', 'branch', 'lesson']);
@@ -81,7 +89,7 @@ class DocumentManagementController extends Controller
         
         // If document is being made public and has a file, apply watermark
         if ($request->is_public && !$resource->watermark_applied && $resource->document_blob) {
-            $this->applyWatermark($resource);
+            $this->watermarkService->applyWatermark($resource);
         }
         
         $resource->update([
@@ -93,64 +101,6 @@ class DocumentManagementController extends Controller
         
         return redirect()->route('admin.documents.index')
             ->with('success', 'Document updated successfully!');
-    }
-    
-    public function applyWatermark(Resource $resource)
-    {
-        try {
-            // Get the logo from storage (assuming logo is stored at public/logo.png)
-            $logoPath = public_path('logo.png');
-            
-            if (!file_exists($logoPath)) {
-                // Create a default watermark if logo doesn't exist
-                $this->createDefaultWatermark($logoPath);
-            }
-            
-            // Create image from document blob
-            $image = Image::make($resource->document_blob);
-            
-            // Get logo dimensions
-            $logo = Image::make($logoPath);
-            $logoWidth = $logo->width();
-            $logoHeight = $logo->height();
-            
-            // Calculate watermark position (bottom right corner)
-            $watermarkX = $image->width() - $logoWidth - 20;
-            $watermarkY = $image->height() - $logoHeight - 20;
-            
-            // Apply watermark with transparency
-            $logo->opacity(50); // 50% transparency
-            $image->insert($logo, 'bottom-right', 20, 20);
-            
-            // Save the watermarked image
-            $watermarkedPath = 'watermarked_documents/resource_' . $resource->id . '.png';
-            Storage::put($watermarkedPath, $image->encode());
-            
-            // Update resource record
-            $resource->update([
-                'watermark_path' => $watermarkedPath,
-                'watermark_applied' => true,
-                'document_blob' => $image->encode('png'), // Update with watermarked version
-            ]);
-            
-            return true;
-        } catch (\Exception $e) {
-            \Log::error('Watermark application failed: ' . $e->getMessage());
-            return false;
-        }
-    }
-    
-    private function createDefaultWatermark($path)
-    {
-        // Create a simple text watermark as fallback
-        $image = Image::canvas(200, 100, '#ffffff');
-        $image->text('ESA SCHOOL', 100, 50, function($font) {
-            $font->size(24);
-            $font->color('#000000');
-            $font->align('center');
-            $font->valign('middle');
-        });
-        $image->save($path);
     }
     
     public function bulkUpdate(Request $request)
@@ -170,7 +120,7 @@ class DocumentManagementController extends Controller
                 // Apply watermark to documents with files
                 foreach ($resources->get() as $resource) {
                     if ($resource->document_blob && !$resource->watermark_applied) {
-                        $this->applyWatermark($resource);
+                        $this->watermarkService->applyWatermark($resource);
                     }
                 }
                 break;
@@ -190,7 +140,7 @@ class DocumentManagementController extends Controller
             case 'apply_watermark':
                 foreach ($resources->get() as $resource) {
                     if ($resource->document_blob && !$resource->watermark_applied) {
-                        $this->applyWatermark($resource);
+                        $this->watermarkService->applyWatermark($resource);
                     }
                 }
                 break;

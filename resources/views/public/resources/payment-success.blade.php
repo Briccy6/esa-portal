@@ -1,22 +1,32 @@
-@php
-    $systemName = \Illuminate\Support\Facades\Cache::get('esa_system_name', 'ESA Portal');
-    $logoUrl = \App\Helpers\LogoHelper::getLogoUrl();
-    $resourceName = $resource->document_name ?: $resource->video_name ?: 'Resource';
-@endphp
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payment Successful - {{ $systemName }}</title>
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <link rel="icon" type="image/png" href="{{ \App\Helpers\LogoHelper::getFaviconUrl() }}">
+@extends('layouts.app')
+
+@section('title', 'Payment Successful - ESA Portal')
+
+@push('styles')
+<style>
+    .success-animation {
+        animation: successPulse 2s ease-in-out infinite;
+    }
     
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    @keyframes successPulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
     
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    .btn-primary {
+        background-color: #10b981;
+        color: white;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+        background-color: #059669;
+        transform: translateY(-2px);
+    }
+</style>
+@endpush
+
+@section('content')
         
         :root {
             --primary-color: #6f42c1;
@@ -239,14 +249,4 @@
         </div>
     </div>
 
-    <!-- Footer -->
-    <footer class="bg-gray-800 text-white py-8 mt-16">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center">
-                <p>&copy; {{ date('Y') }} {{ $systemName }}. All rights reserved.</p>
-                <p class="mt-2 text-gray-400">Thank you for supporting our educational resources</p>
-            </div>
-        </div>
-    </footer>
-</body>
-</html>
+    @endsection

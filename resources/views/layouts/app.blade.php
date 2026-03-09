@@ -59,104 +59,157 @@
 </head>
 <body class="bg-gray-50 min-h-screen">
     <!-- Navigation -->
-    <nav class="bg-white shadow-lg sticky top-0 z-50">
-        <div class="container mx-auto px-4">
-            <div class="flex justify-between items-center h-16">
-                <!-- Logo -->
-                <div class="flex items-center">
-                    @if(\App\Helpers\LogoHelper::hasLogo())
-                        <img src="{{ \App\Helpers\LogoHelper::getLogoUrl() }}" alt="ESA Logo" class="h-10 w-auto mr-3">
-                    @endif
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center shadow-sm">
+                        @if(\App\Helpers\LogoHelper::hasLogo())
+                            <img src="{{ \App\Helpers\LogoHelper::getLogoUrl() }}" alt="Logo" class="h-10 w-10 object-contain">
+                        @endif
+                    </div>
                     <div>
-                        <h1 class="text-xl font-bold text-gray-900">ESA Portal</h1>
-                        <p class="text-xs text-gray-600">Excellent Servant Academy</p>
+                        <h1 class="text-2xl font-bold text-blue-900">E-Learning Portal</h1>
+                        <p class="text-sm text-gray-600">Excellent Servant Academy</p>
                     </div>
                 </div>
-
                 <!-- Desktop Navigation -->
-                <div class="hidden md:flex items-center space-x-6">
-                    <a href="{{ route('welcome') }}" class="text-gray-700 hover:text-blue-600 font-medium transition-colors">Home</a>
-                    <a href="{{ route('public.exams.index') }}" class="text-gray-700 hover:text-blue-600 font-medium transition-colors">Exams</a>
-                    <a href="{{ route('blogs.index') }}" class="text-gray-700 hover:text-blue-600 font-medium transition-colors">Blog</a>
-                    <a href="#contact" class="text-gray-700 hover:text-blue-600 font-medium transition-colors">Contact</a>
-                    
+                <nav class="hidden md:flex items-center space-x-6">
+                    <a href="{{ route('welcome') }}" class="text-gray-600 hover:text-blue-600 font-medium transition duration-300">Home</a>
+                    <a href="{{ route('public.exams.index') }}" class="text-gray-600 hover:text-blue-600 font-medium transition duration-300">Exams</a>
+                    <a href="#announcements" class="text-gray-600 hover:text-blue-600 font-medium transition duration-300">Announcements</a>
+                    <a href="{{ route('blogs.index') }}" class="text-gray-600 hover:text-blue-600 font-medium transition duration-300">Blog</a>
+                    <a href="#quick-access" class="text-gray-600 hover:text-blue-600 font-medium transition duration-300">Portals</a>
+                    <a href="#about" class="text-gray-600 hover:text-blue-600 font-medium transition duration-300">About</a>
+                    <a href="#contact" class="text-gray-600 hover:text-blue-600 font-medium transition duration-300">Contact</a>
+                </nav>
+                <!-- Login Buttons -->
+                <div class="hidden md:flex items-center space-x-3">
                     @if(auth()->guard('student')->check())
                         <div class="relative" x-data="{ open: false }">
-                            <button @click="open = !open" class="flex items-center space-x-2 text-gray-700 hover:text-blue-600 font-medium">
-                                <i class="fas fa-user-circle"></i>
-                                <span>{{ auth()->guard('student')->user()->full_name }}</span>
-                                <i class="fas fa-chevron-down text-xs"></i>
+                            <button @click="open = !open" class="flex items-center space-x-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition duration-300 shadow-sm">
+                                <i class="fas fa-user-circle text-gray-700"></i>
+                                <span class="text-gray-700 font-medium">{{ auth()->guard('student')->user()->full_name }}</span>
+                                <i class="fas fa-chevron-down text-gray-500 text-sm"></i>
                             </button>
-                            <div x-show="open" @click.away="open = false" x-transition class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 border border-gray-200">
-                                <a href="{{ route('student.dashboard') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-50">
-                                    <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+                            <div x-show="open" @click.away="open = false" x-transition class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-10">
+                                <a href="{{ route('student.dashboard') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition duration-150">
+                                    <i class="fas fa-tachometer-alt mr-2 text-purple-600"></i>Dashboard
                                 </a>
-                                <a href="{{ route('subscriptions.index') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-50">
-                                    <i class="fas fa-crown mr-2"></i>Subscriptions
+                                <a href="{{ route('subscriptions.index') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition duration-150">
+                                    <i class="fas fa-crown mr-2 text-yellow-600"></i>Subscriptions
                                 </a>
-                                <a href="{{ route('tokens.index') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-50">
-                                    <i class="fas fa-coins mr-2"></i>Tokens
+                                <a href="{{ route('tokens.index') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition duration-150">
+                                    <i class="fas fa-coins mr-2 text-green-600"></i>Tokens
                                 </a>
-                                <hr class="my-2">
+                                <hr class="my-2 border-gray-200">
                                 <form method="POST" action="{{ route('student.logout') }}">
                                     @csrf
-                                    <button type="submit" class="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50">
-                                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                                    <button type="submit" class="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 transition duration-150">
+                                        <i class="fas fa-sign-out-alt mr-2 text-red-600"></i>Logout
                                     </button>
                                 </form>
                             </div>
                         </div>
                     @else
-                        <a href="{{ route('student.login') }}" class="text-gray-700 hover:text-blue-600 font-medium transition-colors">Login</a>
-                        <a href="{{ route('students.create') }}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                        <div class="relative" x-data="{ open: false }">
+                            <button @click="open = !open" class="flex items-center space-x-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition duration-300 shadow-sm">
+                                <span class="text-gray-700 font-medium">Login</span>
+                                <i class="fas fa-chevron-down text-gray-500 text-sm"></i>
+                            </button>
+                            <div x-show="open" @click.away="open = false" x-transition class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-10">
+                                <a href="{{ route('admin.login.form') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition duration-150">
+                                    <i class="fas fa-user-shield mr-2 text-red-600"></i>Admin Login
+                                </a>
+                                <a href="{{ route('staff.login') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition duration-150">
+                                    <i class="fas fa-users mr-2 text-blue-600"></i>Staff Login
+                                </a>
+                                <a href="{{ route('teacher.login') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition duration-150">
+                                    <i class="fas fa-chalkboard-teacher mr-2 text-green-600"></i>Teacher Login
+                                </a>
+                                <a href="{{ route('student.login') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition duration-150">
+                                    <i class="fas fa-user-graduate mr-2 text-purple-600"></i>Student Login
+                                </a>
+                            </div>
+                        </div>
+                        <a href="{{ route('students.create') }}" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium shadow-md hover:bg-blue-700 transition duration-300">
                             Register
                         </a>
                     @endif
                 </div>
-
                 <!-- Mobile menu button -->
-                <div class="md:hidden" x-data="{ open: false }">
-                    <button @click="open = !open" class="text-gray-700 hover:text-blue-600 focus:outline-none">
-                        <i class="fas fa-bars text-xl"></i>
+                <button class="md:hidden text-gray-700" x-data="{ open: false }" @click="open = !open">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mobile Navigation (hidden by default, shown by Alpine.js) -->
+    <div class="md:hidden bg-white shadow-lg py-4" x-data="{ open: false }" x-show="open" @click.away="open = false" x-transition.origin.top>
+        <nav class="flex flex-col items-center space-y-4">
+            <a href="{{ route('welcome') }}" class="text-gray-600 hover:text-blue-600 font-medium transition duration-300" @click="open = false">Home</a>
+            <a href="{{ route('public.exams.index') }}" class="text-gray-600 hover:text-blue-600 font-medium transition duration-300" @click="open = false">Exams</a>
+            <a href="#announcements" class="text-gray-600 hover:text-blue-600 font-medium transition duration-300" @click="open = false">Announcements</a>
+            <a href="{{ route('blogs.index') }}" class="text-gray-600 hover:text-blue-600 font-medium transition duration-300" @click="open = false">Blog</a>
+            <a href="#quick-access" class="text-gray-600 hover:text-blue-600 font-medium transition duration-300" @click="open = false">Portals</a>
+            <a href="#about" class="text-gray-600 hover:text-blue-600 font-medium transition duration-300" @click="open = false">About</a>
+            <a href="#contact" class="text-gray-600 hover:text-blue-600 font-medium transition duration-300" @click="open = false">Contact</a>
+            <div class="w-full border-t border-gray-200 pt-4 mt-4"></div>
+            @if(auth()->guard('student')->check())
+                <div class="relative w-full text-center" x-data="{ loginOpen: false }">
+                    <button @click="loginOpen = !loginOpen" class="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition duration-300">
+                        <i class="fas fa-user-circle text-gray-700"></i>
+                        <span class="text-gray-700 font-medium">{{ auth()->guard('student')->user()->full_name }}</span>
+                        <i class="fas fa-chevron-down text-gray-500 text-sm"></i>
                     </button>
+                    <div x-show="loginOpen" @click.away="loginOpen = false" x-transition class="mt-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 py-2">
+                        <a href="{{ route('student.dashboard') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition duration-150">
+                            <i class="fas fa-tachometer-alt mr-2 text-purple-600"></i>Dashboard
+                        </a>
+                        <a href="{{ route('subscriptions.index') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition duration-150">
+                            <i class="fas fa-crown mr-2 text-yellow-600"></i>Subscriptions
+                        </a>
+                        <a href="{{ route('tokens.index') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition duration-150">
+                            <i class="fas fa-coins mr-2 text-green-600"></i>Tokens
+                        </a>
+                        <hr class="my-2 border-gray-200">
+                        <form method="POST" action="{{ route('student.logout') }}">
+                            @csrf
+                            <button type="submit" class="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 transition duration-150">
+                                <i class="fas fa-sign-out-alt mr-2 text-red-600"></i>Logout
+                            </button>
+                        </form>
+                    </div>
                 </div>
-            </div>
-        </div>
-
-        <!-- Mobile Navigation -->
-        <div x-show="open" @click.away="open = false" x-transition class="md:hidden bg-white border-t border-gray-200">
-            <div class="px-4 py-2 space-y-1">
-                <a href="{{ route('welcome') }}" class="block px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-md">Home</a>
-                <a href="{{ route('public.exams.index') }}" class="block px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-md">Exams</a>
-                <a href="{{ route('blogs.index') }}" class="block px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-md">Blog</a>
-                <a href="#contact" class="block px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-md">Contact</a>
+            @else
+                <div class="relative w-full text-center" x-data="{ loginOpen: false }">
+                    <button @click="loginOpen = !loginOpen" class="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition duration-300">
+                        <span class="text-gray-700 font-medium">Login</span>
+                        <i class="fas fa-chevron-down text-gray-500 text-sm"></i>
+                    </button>
+                    <div x-show="loginOpen" @click.away="loginOpen = false" x-transition class="mt-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 py-2">
+                        <a href="{{ route('admin.login.form') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition duration-150">
+                            <i class="fas fa-user-shield mr-2 text-red-600"></i>Admin Login
+                        </a>
+                        <a href="{{ route('staff.login') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition duration-150">
+                            <i class="fas fa-users mr-2 text-blue-600"></i>Staff Login
+                        </a>
+                        <a href="{{ route('teacher.login') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition duration-150">
+                            <i class="fas fa-chalkboard-teacher mr-2 text-green-600"></i>Teacher Login
+                        </a>
+                        <a href="{{ route('student.login') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition duration-150">
+                            <i class="fas fa-user-graduate mr-2 text-purple-600"></i>Student Login
+                        </a>
+                    </div>
+                </div>
+                <a href="{{ route('students.create') }}" class="bg-blue-600 text-white w-full px-6 py-2 rounded-lg font-medium shadow-md hover:bg-blue-700 transition duration-300">
+                    Register
+                </a>
+            @endif
+        </nav>
+    </div>
                 
-                @if(auth()->guard('student')->check())
-                    <hr class="my-2">
-                    <a href="{{ route('student.dashboard') }}" class="block px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-md">
-                        <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
-                    </a>
-                    <a href="{{ route('subscriptions.index') }}" class="block px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-md">
-                        <i class="fas fa-crown mr-2"></i>Subscriptions
-                    </a>
-                    <a href="{{ route('tokens.index') }}" class="block px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-md">
-                        <i class="fas fa-coins mr-2"></i>Tokens
-                    </a>
-                    <form method="POST" action="{{ route('student.logout') }}">
-                        @csrf
-                        <button type="submit" class="w-full text-left px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-md">
-                            <i class="fas fa-sign-out-alt mr-2"></i>Logout
-                        </button>
-                    </form>
-                @else
-                    <hr class="my-2">
-                    <a href="{{ route('student.login') }}" class="block px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-md">Login</a>
-                    <a href="{{ route('students.create') }}" class="block px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Register</a>
-                @endif
-            </div>
-        </div>
-    </nav>
-
     <!-- Flash Messages -->
     @if(session('success'))
         <div class="bg-green-50 border-b border-green-200">

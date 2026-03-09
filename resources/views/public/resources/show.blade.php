@@ -1,32 +1,43 @@
-@php
-    $systemName = \Illuminate\Support\Facades\Cache::get('esa_system_name', 'ESA Portal');
-    $logoUrl = \App\Helpers\LogoHelper::getLogoUrl();
-@endphp
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $resource->document_name ?: $resource->video_name ?: 'Resource' }} - {{ $systemName }}</title>
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <link rel="icon" type="image/png" href="{{ \App\Helpers\LogoHelper::getFaviconUrl() }}">
-    
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        
-        :root {
-            --primary-color: #2c3e50;
-            --secondary-color: #3498db;
-            --accent-color: #e74c3c;
-            --text-dark: #263238;
-            --text-light: #455a64;
-            --bg-light: #ecf0f1;
-            --bg-white: #ffffff;
-            --border-color: #cfd8dc;
-        }
+@extends('layouts.app')
+
+@section('title', ($resource->document_name ?: $resource->video_name ?: 'Resource') . ' - ESA Portal')
+
+@push('styles')
+<style>
+    :root {
+        --primary-color: #2c3e50;
+        --secondary-color: #3498db;
+        --accent-color: #e74c3c;
+        --text-dark: #263238;
+        --text-light: #455a64;
+        --bg-light: #ecf0f1;
+        --bg-white: #ffffff;
+        --border-color: #cfd8dc;
+    }
+
+    .resource-header {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    }
+
+    .btn-primary {
+        background-color: var(--secondary-color);
+        color: white;
+        transition: all 0.3s ease;
+    }
+
+    .btn-primary:hover {
+        background-color: #2980b9;
+        transform: translateY(-2px);
+    }
+
+    .resource-meta {
+        background-color: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+    }
+</style>
+@endpush
+
+@section('content')
 
         body {
             font-family: 'Inter', sans-serif;
@@ -312,14 +323,4 @@
         </div>
     </div>
 
-    <!-- Footer -->
-    <footer class="bg-gray-800 text-white py-8 mt-16">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center">
-                <p>&copy; {{ date('Y') }} {{ $systemName }}. All rights reserved.</p>
-                <p class="mt-2 text-gray-400">Empowering education through quality resources</p>
-            </div>
-        </div>
-    </footer>
-</body>
-</html>
+    @endsection

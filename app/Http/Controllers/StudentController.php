@@ -478,17 +478,16 @@ class StudentController extends Controller
     public function report(Request $request)
     {
         $staff = auth('staff')->user();
-        
+
         if (!$staff) {
             abort(403, 'Unauthorized');
         }
 
         $branchIds = $staff->branches()->pluck('branches.id')->toArray();
-        
+
         $query = Student::whereIn('branch_id', $branchIds)
             ->with(['course', 'branch', 'academicYear']);
 
-        // Filter by search parameters
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
@@ -520,34 +519,32 @@ class StudentController extends Controller
         }
 
         $students = $query->orderBy('created_at', 'desc')->get();
-        
-        // Get filter data
-        $courses = Course::whereIn('id', function($q) use ($branchIds) {
+
+        $courses = Course::whereIn('id', function ($q) use ($branchIds) {
             $q->select('course_id')
               ->from('branch_course')
               ->whereIn('branch_id', $branchIds);
         })->get();
-        
+
         $branches = Branch::whereIn('id', $branchIds)->get();
-        $academicYears = AcademicYear::whereIn('id', function($q) use ($branchIds) {
+        $academicYears = AcademicYear::whereIn('id', function ($q) use ($branchIds) {
             $q->select('academic_year_id')
               ->from('courses')
-              ->whereIn('id', function($subQ) use ($branchIds) {
+              ->whereIn('id', function ($subQ) use ($branchIds) {
                   $subQ->select('course_id')
                         ->from('branch_course')
                         ->whereIn('branch_id', $branchIds);
               });
         })->get();
 
-        // Calculate statistics
-        $totalStudents = $students->count();
-        $activeStudents = $students->where('payed_registration_fees', 1)->count();
+        $totalStudents    = $students->count();
+        $activeStudents   = $students->where('payed_registration_fees', 1)->count();
         $inactiveStudents = $totalStudents - $activeStudents;
 
         return view('staff.students.report', compact(
-            'students', 
-            'courses', 
-            'branches', 
+            'students',
+            'courses',
+            'branches',
             'academicYears',
             'totalStudents',
             'activeStudents',
@@ -688,25 +685,25 @@ class StudentController extends Controller
         // Case 1: Manual registration (Secretary, cash)
         if ($request->filled('amount_paid') && $request->filled('fee_type')) {
             $request->validate([
-                'full_name'       => 'required|string|max:255',
-                'email'           => 'required|email|unique:students,email',
-                'phone'           => 'required|string',
-                'sex'             => 'required|in:Male,Female',
-                'academic_year_id'=> 'required|exists:academic_years,id',
-                'branch_id'       => 'required|exists:branches,id',
-                'course_id'       => 'required|exists:courses,id',
-                'fee_type'        => 'required|string',
-                'amount_paid'     => 'required|numeric|min:1',
+                'full_name'        => 'required|string|max:255',
+                'email'            => 'required|email|unique:students,email',
+                'phone'            => 'required|string',
+                'sex'              => 'required|in:Male,Female',
+                'academic_year_id' => 'required|exists:academic_years,id',
+                'branch_id'        => 'required|exists:branches,id',
+                'course_id'        => 'required|exists:courses,id',
+                'fee_type'         => 'required|string',
+                'amount_paid'      => 'required|numeric|min:1',
             ]);
 
             DB::beginTransaction();
             try {
-                $course = Course::findOrFail($request->course_id);
+                $course       = Course::findOrFail($request->course_id);
                 $academicYear = AcademicYear::findOrFail($request->academic_year_id);
                 $plainPassword = Str::random(8);
 
                 $maxAttempts = 5;
-                $student = null;
+                $student     = null;
 
                 for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
                     try {
@@ -740,8 +737,7 @@ class StudentController extends Controller
                     throw new \Exception('Failed to create student record.');
                 }
 
-                // Initialize tokens for new student
-                $student->initializeTokens(10); // Give 10 default tokens for exams
+                $student->initializeTokens(10);
 
                 StudentTransaction::create([
                     'student_id' => $student->id,
@@ -800,14 +796,14 @@ class StudentController extends Controller
         }
 
         $registrationData = [
-            'full_name'       => $request->full_name,
-            'email'           => $request->email,
-            'phone'           => $request->phone,
-            'branch_id'       => $request->branch_id,
-            'course_id'       => $request->course_id,
-            'academic_year_id'=> $request->academic_year_id,
-            'education_level' => $request->education_level,
-            'files'           => $fileData,
+            'full_name'        => $request->full_name,
+            'email'            => $request->email,
+            'phone'            => $request->phone,
+            'branch_id'        => $request->branch_id,
+            'course_id'        => $request->course_id,
+            'academic_year_id' => $request->academic_year_id,
+            'education_level'  => $request->education_level,
+            'files'            => $fileData,
         ];
         session(['student_registration' => $registrationData]);
 
@@ -895,8 +891,8 @@ class StudentController extends Controller
 
         DB::beginTransaction();
         try {
-            $course       = Course::findOrFail($registrationData['course_id']);
-            $academicYear = AcademicYear::findOrFail($registrationData['academic_year_id']);
+            $course        = Course::findOrFail($registrationData['course_id']);
+            $academicYear  = AcademicYear::findOrFail($registrationData['academic_year_id']);
             $plainPassword = Str::random(8);
 
             $finalFiles = [];
@@ -912,27 +908,27 @@ class StudentController extends Controller
             }
 
             $maxAttempts = 5;
-            $student = null;
+            $student     = null;
 
             for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
                 try {
                     $regNumber = $this->generateUniqueRegNumber($course->abbreviation, $academicYear->year);
 
                     $student = Student::create([
-                        'full_name'               => $registrationData['full_name'],
-                        'email'                   => $registrationData['email'],
-                        'phone'                   => $registrationData['phone'],
-                        'branch_id'               => $registrationData['branch_id'],
-                        'course_id'               => $registrationData['course_id'],
-                        'academic_year_id'        => $registrationData['academic_year_id'],
-                        'reg_number'              => $regNumber,
-                        'password'                => bcrypt($plainPassword),
-                        'id_photo'                => $finalFiles['id_photo'] ?? null,
-                        'passport_photo'          => $finalFiles['passport_photo'] ?? null,
-                        'senior6_document'        => $finalFiles['senior6_document'] ?? null,
-                        'senior3_document'        => $finalFiles['senior3_document'] ?? null,
+                        'full_name'                 => $registrationData['full_name'],
+                        'email'                     => $registrationData['email'],
+                        'phone'                     => $registrationData['phone'],
+                        'branch_id'                 => $registrationData['branch_id'],
+                        'course_id'                 => $registrationData['course_id'],
+                        'academic_year_id'          => $registrationData['academic_year_id'],
+                        'reg_number'                => $regNumber,
+                        'password'                  => bcrypt($plainPassword),
+                        'id_photo'                  => $finalFiles['id_photo'] ?? null,
+                        'passport_photo'            => $finalFiles['passport_photo'] ?? null,
+                        'senior6_document'          => $finalFiles['senior6_document'] ?? null,
+                        'senior3_document'          => $finalFiles['senior3_document'] ?? null,
                         'other_supporting_document' => $finalFiles['other_supporting_document'] ?? null,
-                        'payed_registration_fees' => 1,
+                        'payed_registration_fees'   => 1,
                     ]);
 
                     break;
@@ -953,8 +949,7 @@ class StudentController extends Controller
                 throw new \Exception('Failed to create student record.');
             }
 
-            // Initialize tokens for new student
-            $student->initializeTokens(10); // Give 10 default tokens for exams
+            $student->initializeTokens(10);
 
             StudentTransaction::create([
                 'student_id'     => $student->id,
@@ -1084,8 +1079,8 @@ class StudentController extends Controller
             ->orderByDesc('marked_at')
             ->get();
 
-        $totalDays       = $approvedAttendances->count();
-        $attendedDays    = $approvedAttendances->where('status', 'present')->count();
+        $totalDays         = $approvedAttendances->count();
+        $attendedDays      = $approvedAttendances->where('status', 'present')->count();
         $attendancePercent = $totalDays > 0 ? round(($attendedDays / $totalDays) * 100, 2) : 0;
 
         $registrationFee = $student->course->registration_fee ?? 0;
@@ -1119,18 +1114,57 @@ class StudentController extends Controller
             ->whereIn('status', ['successful', 'paid'])
             ->sum('amount');
 
-                'tuition_fee'  => 'school_fee',
-                'tuition'      => 'school_fee',
-                'school fee'   => 'school_fee',
-                'school-fee'   => 'school_fee',
-                'registration' => 'registration_fee',
-                'pratical_fee' => 'practical_fee',
-                'pratical'     => 'practical_fee',
-                'practical'    => 'practical_fee',
-                'trip'         => 'trip_fee',
-                'studentcard'  => 'student_card',
-                'student-card' => 'student_card',
-                'card'         => 'student_card',
+        $totalPaid   = $paidRegistration + $paidTrip + $paidTuition + $paidPractical;
+        $outstanding = $totalFees - $totalPaid;
+
+        return view('students.dashboard', compact(
+            'student',
+            'approvedAttendances',
+            'totalDays',
+            'attendedDays',
+            'attendancePercent',
+            'registrationFee',
+            'tripFee',
+            'tuitionFee',
+            'praticalFee',
+            'discount',
+            'studentCardFee',
+            'discountAmount',
+            'totalFees',
+            'paidRegistration',
+            'paidTrip',
+            'paidTuition',
+            'paidPractical',
+            'totalPaid',
+            'outstanding'
+        ));
+    }
+
+    // =========================================================================
+    // RECORD CASH PAYMENT
+    // Route: POST /staff/students/{studentId}/pay
+    // =========================================================================
+    public function recordCashPayment(Request $request, $studentId)
+    {
+        $isAjax = $request->ajax() || $request->wantsJson();
+
+        try {
+            $incomingFeeType = $request->input('fee_type');
+
+            $feeTypeMap = [
+                'tuition_fee'   => 'school_fee',
+                'tuition'       => 'school_fee',
+                'school fee'    => 'school_fee',
+                'school-fee'    => 'school_fee',
+                'registration'  => 'registration_fee',
+                'practical_fee' => 'practical_fee',
+                'pratical_fee'  => 'practical_fee',
+                'pratical'      => 'practical_fee',
+                'practical'     => 'practical_fee',
+                'trip'          => 'trip_fee',
+                'studentcard'   => 'student_card',
+                'student-card'  => 'student_card',
+                'card'          => 'student_card',
             ];
 
             if ($incomingFeeType && isset($feeTypeMap[strtolower($incomingFeeType)])) {
@@ -1347,7 +1381,7 @@ class StudentController extends Controller
 
             $message = 'Payment failed: ' . $e->getMessage();
 
-            if (isset($isAjax) && $isAjax) {
+            if ($isAjax) {
                 return response()->json(['success' => false, 'message' => $message], 500);
             }
 
@@ -1405,28 +1439,18 @@ class StudentController extends Controller
 
     // =========================================================================
     // GENERATE STUDENT CARD
-    // Fixed bugs:
-    //   1. QrCode::create() does not exist — use QrCode facade with correct chain
-    //   2. QrCode method names were wrong (setSize, setMargin etc. don't exist)
-    //   3. Auth::user() returns null in staff context — use auth('staff') / auth('admin')
-    //   4. passport_photo base64 detection was fragile — now uses strlen() only
-    //   5. QR output is SVG; stored as raw SVG string (no base64) so it renders
-    //      correctly in blade via {!! $card->qr_code !!} or as a data URI
     // =========================================================================
     public function generateStudentCard(Request $request, $studentId)
     {
         $student = Student::with('course', 'branch', 'academicYear')->findOrFail($studentId);
 
-        // Resolve the actor (staff or admin)
-        $actor = auth('staff')->user() ?? auth('admin')->user();
+        $actor     = auth('staff')->user() ?? auth('admin')->user();
         $actorName = $actor->name ?? $actor->email ?? 'system';
 
-        // Prevent duplicate cards
         if (StudentCard::where('student_id', $student->id)->exists()) {
             return back()->with('error', 'Student card already exists for this student.');
         }
 
-        // Verify student_card fee has been paid
         $studentCardPaid = StudentTransaction::where('student_id', $student->id)
             ->where('type', 'student_card')
             ->whereIn('status', ['successful', 'paid'])
@@ -1436,16 +1460,11 @@ class StudentController extends Controller
             return back()->with('error', 'Student must pay the Student Card fee (2,000 RWF) before generating an ID card.');
         }
 
-        // ── Resolve passport photo ─────────────────────────────────────────────
-        // Photos can be stored as a Storage path (staff upload) OR as a raw
-        // base64 string (student self-registration via updateProfile).
-        // We detect which one by checking whether the value looks like a file path.
         $passportPhotoBase64 = null;
 
         if ($student->passport_photo) {
             $photoValue = $student->passport_photo;
 
-            // If it's short enough to be a file path and exists on disk, read it
             if (strlen($photoValue) < 500 && Storage::disk('public')->exists($photoValue)) {
                 try {
                     $passportPhotoBase64 = base64_encode(
@@ -1459,15 +1478,10 @@ class StudentController extends Controller
                     ]);
                 }
             } elseif (strlen($photoValue) >= 500) {
-                // Already a raw base64 string stored directly in the DB
                 $passportPhotoBase64 = $photoValue;
             }
         }
 
-        // ── Generate QR code ───────────────────────────────────────────────────
-        // CORRECT usage of simplesoftwareio/simple-qrcode:
-        //   \QrCode::size(int)->margin(int)->errorCorrection(string)->generate(string)
-        // Returns an SVG string by default. We store the raw SVG.
         $qrData = json_encode([
             'student_name'   => $student->full_name,
             'reg_number'     => $student->reg_number,
@@ -1478,15 +1492,12 @@ class StudentController extends Controller
         ]);
 
         try {
-            // simplesoftwareio/simple-qrcode v4+ API
-            $qrSvg = \QrCode::size(200)
+            $qrSvg  = \QrCode::size(200)
                 ->margin(0)
                 ->errorCorrection('H')
                 ->encoding('UTF-8')
                 ->generate($qrData);
 
-            // $qrSvg is an Illuminate\Support\HtmlString (or plain string in v3)
-            // Cast to string so we can store it
             $qrCode = (string) $qrSvg;
 
         } catch (\Exception $e) {
@@ -1497,20 +1508,18 @@ class StudentController extends Controller
             return back()->with('error', 'Failed to generate QR code: ' . $e->getMessage());
         }
 
-        // ── Create the StudentCard record ──────────────────────────────────────
         StudentCard::create([
             'student_id'        => $student->id,
             'reg_number'        => $student->reg_number,
             'course'            => $student->course->course_name ?? '',
             'branch'            => $student->branch->name ?? '',
             'passport_photo'    => $passportPhotoBase64,
-            'qr_code'           => $qrCode,          // raw SVG string
+            'qr_code'           => $qrCode,
             'academic_year'     => $student->academicYear->year ?? date('Y'),
             'card_generated_by' => $actorName,
             'generated_at'      => now(),
         ]);
 
-        // ── Email notification ─────────────────────────────────────────────────
         if ($student->email) {
             try {
                 Mail::to($student->email)->send(
@@ -1534,7 +1543,6 @@ class StudentController extends Controller
                     'email'      => $student->email,
                     'error'      => $e->getMessage(),
                 ]);
-                // Non-fatal — card was still created successfully
             }
         }
 
@@ -1549,7 +1557,6 @@ class StudentController extends Controller
 
     // =========================================================================
     // GENERATE CARDS BULK
-    // Same QR code fixes applied as generateStudentCard above.
     // =========================================================================
     public function generateCardsBulk(Request $request)
     {
@@ -1587,13 +1594,11 @@ class StudentController extends Controller
         $skipped   = 0;
 
         foreach ($students as $student) {
-            // Skip if card already exists
             if (StudentCard::where('student_id', $student->id)->exists()) {
                 $skipped++;
                 continue;
             }
 
-            // Skip if student_card fee not paid
             $hasPaid = StudentTransaction::where('student_id', $student->id)
                 ->where('type', 'student_card')
                 ->whereIn('status', ['successful', 'paid'])
@@ -1604,7 +1609,6 @@ class StudentController extends Controller
                 continue;
             }
 
-            // Build QR data
             $qrData = json_encode([
                 'student_name'   => $student->full_name,
                 'reg_number'     => $student->reg_number,
@@ -1615,7 +1619,7 @@ class StudentController extends Controller
             ]);
 
             try {
-                $qrSvg = \QrCode::size(200)
+                $qrSvg  = \QrCode::size(200)
                     ->margin(0)
                     ->errorCorrection('H')
                     ->encoding('UTF-8')
@@ -1631,7 +1635,6 @@ class StudentController extends Controller
                 continue;
             }
 
-            // Resolve passport photo
             $passportPhotoBase64 = null;
             if ($student->passport_photo) {
                 $photoValue = $student->passport_photo;
@@ -1639,7 +1642,7 @@ class StudentController extends Controller
                     try {
                         $passportPhotoBase64 = base64_encode(Storage::disk('public')->get($photoValue));
                     } catch (\Exception $e) {
-                        // Leave as null — non-fatal
+                        // Non-fatal
                     }
                 } elseif (strlen($photoValue) >= 500) {
                     $passportPhotoBase64 = $photoValue;
@@ -1666,8 +1669,6 @@ class StudentController extends Controller
 
     // =========================================================================
     // EDIT TRANSACTION
-    // Handles GET (return edit view) — kept for backward compatibility.
-    // The modal-based AJAX flow uses updateTransaction() below instead.
     // =========================================================================
     public function editTransaction(Request $request, $transactionId)
     {
@@ -1682,7 +1683,7 @@ class StudentController extends Controller
             return view('staff.transactions.edit', compact('transaction'));
         }
 
-        // Legacy POST fallback (non-AJAX form submit)
+        // Legacy POST fallback
         $request->validate([
             'amount'  => 'required|numeric|min:0',
             'type'    => 'required|string',
@@ -1707,9 +1708,7 @@ class StudentController extends Controller
     }
 
     // =========================================================================
-    // UPDATE TRANSACTION  ← THIS METHOD WAS MISSING — NOW ADDED
-    // Route: PUT /staff/transactions/{transaction} → staff.transactions.update
-    // Called via AJAX from the payments table edit modal.
+    // UPDATE TRANSACTION (AJAX)
     // =========================================================================
     public function updateTransaction(Request $request, $transactionId)
     {
@@ -1738,7 +1737,6 @@ class StudentController extends Controller
                 ], 422);
             }
 
-            // Preserve existing meta, update/add notes + audit fields
             $meta = is_array($transaction->meta)
                 ? $transaction->meta
                 : (json_decode($transaction->meta, true) ?? []);
@@ -1749,7 +1747,7 @@ class StudentController extends Controller
 
             $transaction->amount = $request->input('amount');
             $transaction->type   = $request->input('type');
-            $transaction->meta   = $meta;   // model casts meta as 'array' → auto JSON-encoded
+            $transaction->meta   = $meta;
             $transaction->save();
 
             Log::info('Transaction updated by staff', [
@@ -1784,7 +1782,6 @@ class StudentController extends Controller
 
     // =========================================================================
     // DELETE TRANSACTION
-    // Route: DELETE /staff/transactions/{transaction} → staff.transactions.destroy
     // =========================================================================
     public function deleteTransaction(Request $request, $transactionId)
     {
@@ -1847,13 +1844,13 @@ class StudentController extends Controller
         $student = Student::findOrFail($studentId);
 
         return response()->json([
-            'success'               => true,
-            'nesa_registered'       => $student->nesa_registered,
-            'nesa_registration_date'=> $student->nesa_registration_date,
-            'nesa_sdms_code'        => $student->nesa_sdms_code,
-            'nesa_reg_number'       => $student->nesa_reg_number,
-            'nesa_remarks'          => $student->nesa_remarks,
-            'nesa_document'         => $student->nesa_document,
+            'success'                => true,
+            'nesa_registered'        => $student->nesa_registered,
+            'nesa_registration_date' => $student->nesa_registration_date,
+            'nesa_sdms_code'         => $student->nesa_sdms_code,
+            'nesa_reg_number'        => $student->nesa_reg_number,
+            'nesa_remarks'           => $student->nesa_remarks,
+            'nesa_document'          => $student->nesa_document,
         ]);
     }
 
@@ -1864,18 +1861,18 @@ class StudentController extends Controller
         }
 
         $request->validate([
-            'nesa_registered'       => 'required|boolean',
-            'nesa_sdms_code'        => 'nullable|string|max:100',
-            'nesa_reg_number'       => 'nullable|string|max:100',
-            'nesa_registration_date'=> 'nullable|date',
-            'nesa_remarks'          => 'nullable|string|max:500',
-            'nesa_document'         => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'nesa_registered'        => 'required|boolean',
+            'nesa_sdms_code'         => 'nullable|string|max:100',
+            'nesa_reg_number'        => 'nullable|string|max:100',
+            'nesa_registration_date' => 'nullable|date',
+            'nesa_remarks'           => 'nullable|string|max:500',
+            'nesa_document'          => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
         ]);
 
         try {
             DB::beginTransaction();
 
-            $nesaRegistered = (bool) $request->nesa_registered;
+            $nesaRegistered           = (bool) $request->nesa_registered;
             $student->nesa_registered = $nesaRegistered;
 
             if ($nesaRegistered) {
@@ -2023,17 +2020,17 @@ class StudentController extends Controller
                 'success' => true,
                 'message' => 'Student verified successfully',
                 'data'    => [
-                    'student_id'       => $student->id,
-                    'student_name'     => $student->full_name,
-                    'reg_number'       => $student->reg_number,
-                    'course'           => $student->course->course_name ?? '',
-                    'branch'           => $student->branch->name ?? '',
-                    'academic_year'    => $student->academicYear->year ?? '',
-                    'email'            => $student->email,
-                    'phone'            => $student->phone,
-                    'sex'              => $student->sex,
-                    'card_generated_at'=> $studentCard->generated_at,
-                    'verification_time'=> now()->format('Y-m-d H:i:s'),
+                    'student_id'        => $student->id,
+                    'student_name'      => $student->full_name,
+                    'reg_number'        => $student->reg_number,
+                    'course'            => $student->course->course_name ?? '',
+                    'branch'            => $student->branch->name ?? '',
+                    'academic_year'     => $student->academicYear->year ?? '',
+                    'email'             => $student->email,
+                    'phone'             => $student->phone,
+                    'sex'               => $student->sex,
+                    'card_generated_at' => $studentCard->generated_at,
+                    'verification_time' => now()->format('Y-m-d H:i:s'),
                 ],
             ]);
 
@@ -2139,14 +2136,14 @@ class StudentController extends Controller
     public function attendance(Request $request)
     {
         if (auth()->guard('student')->check()) {
-            $user              = auth()->guard('student')->user();
+            $user                = auth()->guard('student')->user();
             $approvedAttendances = $user->attendances()
                 ->where('approved', 1)
                 ->orderByDesc('marked_at')
                 ->get();
 
-            $totalDays       = $approvedAttendances->count();
-            $attendedDays    = $approvedAttendances->where('status', 'present')->count();
+            $totalDays         = $approvedAttendances->count();
+            $attendedDays      = $approvedAttendances->where('status', 'present')->count();
             $attendancePercent = $totalDays > 0 ? round(($attendedDays / $totalDays) * 100, 2) : 0;
 
             return view('students.attendance', compact(

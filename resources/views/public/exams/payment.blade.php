@@ -1,100 +1,54 @@
-@php
-    $systemName = \Illuminate\Support\Facades\Cache::get('esa_system_name', 'ESA Portal');
-    $logoUrl = \App\Helpers\LogoHelper::getLogoUrl();
-@endphp
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payment for {{ $exam->title }} - {{ $systemName }}</title>
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <link rel="icon" type="image/png" href="{{ \App\Helpers\LogoHelper::getFaviconUrl() }}">
-    
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <script src="https://checkout.flutterwave.com/v3.js"></script>
-    
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        
-        :root {
-            --primary-color: #6f42c1;
-            --secondary-color: #36b9cc;
-            --accent-color: #e74a3b;
-            --text-dark: #263238;
-            --text-light: #455a64;
-            --bg-light: #ecf0f1;
-            --bg-white: #ffffff;
-            --border-color: #cfd8dc;
-        }
+@extends('layouts.app')
 
-        body {
-            font-family: 'Inter', sans-serif;
-            color: var(--text-dark);
-        }
+@section('title', 'Payment for ' . $exam->title . ' - ESA Portal')
 
-        .payment-method-card {
-            transition: all 0.3s ease;
-            border: 2px solid var(--border-color);
-        }
+@push('styles')
+<link href="https://checkout.flutterwave.com/v3.js" rel="preload">
+<style>
+    :root {
+        --primary-color: #6f42c1;
+        --secondary-color: #36b9cc;
+        --accent-color: #e74a3b;
+        --text-dark: #263238;
+        --text-light: #455a64;
+        --bg-light: #ecf0f1;
+        --bg-white: #ffffff;
+        --border-color: #cfd8dc;
+    }
 
-        .payment-method-card:hover {
-            border-color: var(--primary-color);
-            transform: translateY(-2px);
-        }
+    .payment-method-card {
+        transition: all 0.3s ease;
+        border: 2px solid var(--border-color);
+    }
 
-        .payment-method-card.selected {
-            border-color: var(--primary-color);
-            background-color: #f3f4f6;
-        }
+    .payment-method-card:hover {
+        border-color: var(--primary-color);
+        transform: translateY(-2px);
+    }
 
-        .btn-primary {
-            background-color: var(--primary-color);
-            color: white;
-            transition: all 0.3s ease;
-        }
+    .payment-method-card.selected {
+        border-color: var(--primary-color);
+        background-color: #f3f4f6;
+    }
 
-        .btn-primary:hover {
-            background-color: #5a32a3;
-            transform: translateY(-2px);
-        }
+    .btn-primary {
+        background-color: var(--primary-color);
+        color: white;
+        transition: all 0.3s ease;
+    }
 
-        .btn-primary:disabled {
-            background-color: #9ca3af;
-            cursor: not-allowed;
-            transform: none;
-        }
-    </style>
-</head>
-<body class="bg-gray-50">
-    <!-- Navigation -->
-    <nav class="bg-white shadow-lg sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center">
-                    <a href="{{ url('/') }}" class="flex items-center space-x-3">
-                        @if($logoUrl)
-                            <img src="{{ $logoUrl }}" alt="{{ $systemName }}" class="h-10 w-auto">
-                        @else
-                            <div class="bg-purple-600 text-white px-3 py-2 rounded-lg font-bold text-lg">ESA</div>
-                        @endif
-                        <span class="font-bold text-xl text-gray-800">{{ $systemName }}</span>
-                    </a>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <a href="{{ url('/') }}" class="text-gray-600 hover:text-purple-600 transition">
-                        <i class="fas fa-home mr-2"></i>Home
-                    </a>
-                    <a href="{{ route('public.exams.index') }}" class="text-gray-600 hover:text-purple-600 transition">
-                        <i class="fas fa-clipboard-list mr-2"></i>Exams
-                    </a>
-                </div>
-            </div>
-        </div>
-    </nav>
+    .btn-primary:hover {
+        background-color: #5a32a3;
+        transform: translateY(-2px);
+    }
 
+    .exam-preview {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+</style>
+@endpush
+
+@section('content')
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         @if(session('error'))
             <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">

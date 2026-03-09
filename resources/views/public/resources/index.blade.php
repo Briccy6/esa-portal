@@ -1,100 +1,57 @@
-@php
-    $systemName = \Illuminate\Support\Facades\Cache::get('esa_system_name', 'ESA Portal');
-    $logoUrl = \App\Helpers\LogoHelper::getLogoUrl();
-@endphp
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Public Resources - {{ $systemName }}</title>
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <link rel="icon" type="image/png" href="{{ \App\Helpers\LogoHelper::getFaviconUrl() }}">
-    
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        
-        :root {
-            --primary-color: #2c3e50;
-            --secondary-color: #3498db;
-            --accent-color: #e74c3c;
-            --text-dark: #263238;
-            --text-light: #455a64;
-            --bg-light: #ecf0f1;
-            --bg-white: #ffffff;
-            --border-color: #cfd8dc;
-        }
+@extends('layouts.app')
 
-        body {
-            font-family: 'Inter', sans-serif;
-            color: var(--text-dark);
-        }
+@section('title', 'Public Resources - ESA Portal')
 
-        .resource-card {
-            transition: all 0.3s ease;
-            border: 1px solid var(--border-color);
-        }
+@push('styles')
+<style>
+    :root {
+        --primary-color: #2c3e50;
+        --secondary-color: #3498db;
+        --accent-color: #e74c3c;
+        --text-dark: #263238;
+        --text-light: #455a64;
+        --bg-light: #ecf0f1;
+        --bg-white: #ffffff;
+        --border-color: #cfd8dc;
+    }
 
-        .resource-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            border-color: var(--secondary-color);
-        }
+    .resource-card {
+        transition: all 0.3s ease;
+        border: 1px solid var(--border-color);
+    }
 
-        .btn-primary {
-            background-color: var(--secondary-color);
-            color: white;
-            transition: all 0.3s ease;
-        }
+    .resource-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        border-color: var(--secondary-color);
+    }
 
-        .btn-primary:hover {
-            background-color: #2980b9;
-            transform: translateY(-2px);
-        }
+    .btn-primary {
+        background-color: var(--secondary-color);
+        color: white;
+        transition: all 0.3s ease;
+    }
 
-        .badge-free {
-            background-color: #27ae60;
-        }
+    .btn-primary:hover {
+        background-color: #2980b9;
+        transform: translateY(-2px);
+    }
 
-        .badge-paid {
-            background-color: #e67e22;
-        }
+    .badge-free {
+        background-color: #27ae60;
+    }
 
-        .search-container {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-        }
-    </style>
-</head>
-<body class="bg-gray-50">
-    <!-- Navigation -->
-    <nav class="bg-white shadow-lg sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center">
-                    <a href="{{ url('/') }}" class="flex items-center space-x-3">
-                        @if($logoUrl)
-                            <img src="{{ $logoUrl }}" alt="{{ $systemName }}" class="h-10 w-auto">
-                        @else
-                            <div class="bg-blue-600 text-white px-3 py-2 rounded-lg font-bold text-lg">ESA</div>
-                        @endif
-                        <span class="font-bold text-xl text-gray-800">{{ $systemName }}</span>
-                    </a>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <a href="{{ url('/') }}" class="text-gray-600 hover:text-blue-600 transition">
-                        <i class="fas fa-home mr-2"></i>Home
-                    </a>
-                    <a href="{{ route('public.resources.index') }}" class="text-blue-600 font-semibold">
-                        <i class="fas fa-book mr-2"></i>Resources
-                    </a>
-                </div>
-            </div>
-        </div>
-    </nav>
+    .badge-paid {
+        background-color: #e67e22;
+    }
+
+    .search-container {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    }
+</style>
+@endpush
+
+@section('content')
 
     <!-- Hero Section with Search -->
     <div class="search-container text-white py-16">
@@ -310,5 +267,41 @@
             }, 3000);
         }
     </script>
-</body>
-</html>
+@endsection
+
+@push('scripts')
+<script>
+    function shareResource(resourceId, title) {
+        const url = window.location.origin + '/public/resources/' + resourceId;
+        
+        if (navigator.share) {
+            navigator.share({
+                title: title,
+                url: url,
+                text: `Check out this resource: ${title}`
+            });
+        } else {
+            // Fallback to copying link
+            navigator.clipboard.writeText(url).then(() => {
+                showNotification('Link copied to clipboard!');
+            }).catch(() => {
+                // Last resort - open in new window
+                window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
+            });
+        }
+    }
+
+    function showNotification(message) {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = 'fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300';
+        notification.textContent = message;
+        document.body.appendChild(notification);
+        
+        // Remove after 3 seconds
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
+    }
+</script>
+@endpush

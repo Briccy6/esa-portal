@@ -1,104 +1,60 @@
-@php
-    $systemName = \Illuminate\Support\Facades\Cache::get('esa_system_name', 'ESA Portal');
-    $logoUrl = \App\Helpers\LogoHelper::getLogoUrl();
-    $resourceName = $resource->document_name ?: $resource->video_name ?: 'Resource';
-@endphp
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payment for {{ $resourceName }} - {{ $systemName }}</title>
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <link rel="icon" type="image/png" href="{{ \App\Helpers\LogoHelper::getFaviconUrl() }}">
-    
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <script src="https://checkout.flutterwave.com/v3.js"></script>
-    
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        
-        :root {
-            --primary-color: #6f42c1;
-            --secondary-color: #36b9cc;
-            --accent-color: #e74a3b;
-            --text-dark: #263238;
-            --text-light: #455a64;
-            --bg-light: #ecf0f1;
-            --bg-white: #ffffff;
-            --border-color: #cfd8dc;
-        }
+@extends('layouts.app')
 
-        body {
-            font-family: 'Inter', sans-serif;
-            color: var(--text-dark);
-        }
+@section('title', 'Payment for ' . ($resource->document_name ?: $resource->video_name ?: 'Resource') . ' - ESA Portal')
 
-        .payment-method-card {
-            transition: all 0.3s ease;
-            border: 2px solid var(--border-color);
-        }
+@push('styles')
+<link href="https://checkout.flutterwave.com/v3.js" rel="preload">
+<style>
+    :root {
+        --primary-color: #6f42c1;
+        --secondary-color: #36b9cc;
+        --accent-color: #e74a3b;
+        --text-dark: #263238;
+        --text-light: #455a64;
+        --bg-light: #ecf0f1;
+        --bg-white: #ffffff;
+        --border-color: #cfd8dc;
+    }
 
-        .payment-method-card:hover {
-            border-color: var(--primary-color);
-            transform: translateY(-2px);
-        }
+    .payment-method-card {
+        transition: all 0.3s ease;
+        border: 2px solid var(--border-color);
+    }
 
-        .payment-method-card.selected {
-            border-color: var(--primary-color);
-            background-color: #f3f4f6;
-        }
+    .payment-method-card:hover {
+        border-color: var(--primary-color);
+        transform: translateY(-2px);
+    }
 
-        .btn-primary {
-            background-color: var(--primary-color);
-            color: white;
-            transition: all 0.3s ease;
-        }
+    .payment-method-card.selected {
+        border-color: var(--primary-color);
+        background-color: #f3f4f6;
+    }
 
-        .btn-primary:hover {
-            background-color: #5a32a3;
-            transform: translateY(-2px);
-        }
+    .btn-primary {
+        background-color: var(--primary-color);
+        color: white;
+        transition: all 0.3s ease;
+    }
 
-        .btn-primary:disabled {
-            background-color: #9ca3af;
-            cursor: not-allowed;
-            transform: none;
-        }
+    .btn-primary:hover {
+        background-color: #5a32a3;
+        transform: translateY(-2px);
+    }
 
-        .resource-preview {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-    </style>
-</head>
-<body class="bg-gray-50">
-    <!-- Navigation -->
-    <nav class="bg-white shadow-lg sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center">
-                    <a href="{{ url('/') }}" class="flex items-center space-x-3">
-                        @if($logoUrl)
-                            <img src="{{ $logoUrl }}" alt="{{ $systemName }}" class="h-10 w-auto">
-                        @else
-                            <div class="bg-purple-600 text-white px-3 py-2 rounded-lg font-bold text-lg">ESA</div>
-                        @endif
-                        <span class="font-bold text-xl text-gray-800">{{ $systemName }}</span>
-                    </a>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <a href="{{ url('/') }}" class="text-gray-600 hover:text-purple-600 transition">
-                        <i class="fas fa-home mr-2"></i>Home
-                    </a>
-                    <a href="{{ route('public.resources.index') }}" class="text-gray-600 hover:text-purple-600 transition">
-                        <i class="fas fa-book mr-2"></i>Resources
-                    </a>
-                </div>
-            </div>
-        </div>
-    </nav>
+    .btn-primary:disabled {
+        background-color: #9ca3af;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .resource-preview {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+</style>
+@endpush
+
+@section('content')
 
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         @if(session('error'))
@@ -394,5 +350,81 @@
             }));
         });
     </script>
-</body>
-</html>
+@endsection
+
+@push('scripts')
+<script src="https://checkout.flutterwave.com/v3.js"></script>
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('paymentForm', () => ({
+            selectedMethod: 'flutterwave',
+            processing: false,
+            
+            selectPaymentMethod(method) {
+                this.selectedMethod = method;
+            },
+            
+            async makePayment() {
+                if (this.processing) return;
+                
+                this.processing = true;
+                
+                const formData = new FormData(document.getElementById('payment-form'));
+                
+                try {
+                    const response = await fetch('{{ route('public.resources.payment.process', $resource->id) }}', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        }
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        if (data.payment_url) {
+                            window.location.href = data.payment_url;
+                        } else if (data.reference) {
+                            this.initiateFlutterwavePayment(data);
+                        }
+                    } else {
+                        this.processing = false;
+                        alert('Payment initialization failed: ' + (data.message || 'Unknown error'));
+                    }
+                }
+                .catch(error => {
+                    this.processing = false;
+                    console.error('Error:', error);
+                    alert('Payment initialization failed. Please try again.');
+                });
+            },
+            
+            initiateFlutterwavePayment(data) {
+                FlutterwaveCheckout({
+                    public_key: '{{ config("services.flutterwave.public_key") }}',
+                    tx_ref: data.reference,
+                    amount: data.amount,
+                    currency: data.currency,
+                    payment_options: 'card, mobilemoney, ussd',
+                    customer: {
+                        email: data.customer_email,
+                        name: data.customer_name
+                    },
+                    callback: function(response) {
+                        window.location.href = '{{ route("public.resources.payment.success") }}?reference=' + response.tx_ref;
+                    },
+                    onclose: function() {
+                        // Payment modal closed
+                    },
+                    customizations: {
+                        title: 'Payment for Resource',
+                        description: '{{ $resource->document_name ?: $resource->video_name ?: "Resource" }}',
+                        logo: '{{ \App\Helpers\LogoHelper::getLogoUrl() ?: asset("images/default-logo.png") }}'
+                    }
+                });
+            }
+        }));
+    });
+</script>
+@endpush

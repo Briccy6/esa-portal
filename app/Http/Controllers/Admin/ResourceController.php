@@ -11,9 +11,17 @@ use App\Models\Lesson;
 use App\Models\Teacher;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
+use App\Services\WatermarkService;
 
 class ResourceController extends Controller
 {
+    private $watermarkService;
+    
+    public function __construct(WatermarkService $watermarkService)
+    {
+        $this->watermarkService = $watermarkService;
+    }
+    
     public function index()
     {
         $resources = Resource::with(['teacher', 'course', 'branch', 'lesson'])
@@ -120,7 +128,7 @@ class ResourceController extends Controller
             
             // Apply watermark if document is public and has content
             if ($request->boolean('is_public') && isset($resourceData['document_blob'])) {
-                $this->applyWatermark($resource);
+                $this->watermarkService->applyWatermark($resource);
             }
             
             return redirect()->route('admin.resources.index')
@@ -216,7 +224,7 @@ class ResourceController extends Controller
             
             // Apply watermark if document is public and has content
             if ($request->boolean('is_public') && $resource->document_blob && !$resource->watermark_applied) {
-                $this->applyWatermark($resource);
+                $this->watermarkService->applyWatermark($resource);
             }
             
             return redirect()->route('admin.resources.index')
@@ -268,162 +276,5 @@ class ResourceController extends Controller
         return response($resource->document_blob)
             ->header('Content-Type', $resource->document_mime)
             ->header('Content-Disposition', 'inline; filename="'.$resource->document_name.'"');
-    }
-    
-    private function applyWatermark(Resource $resource)
-    {
-        try {
-            // Get the logo from storage
-            $logoPath = public_path('logo.png');
-            
-            if (!file_exists($logoPath)) {
-                // Try to get logo from public/images directory
-                $logoPath = public_path('images/logo.png');
-                if (!file_exists($logoPath)) {
-                    // Create a default watermark if logo doesn't exist
-                    $this->createDefaultWatermark($logoPath);
-                }
-            }
-            
-            // Handle PDF watermarking
-            if ($resource->document_mime === 'application/pdf') {
-                return $this->applyPdfWatermark($resource, $logoPath);
-            }
-            
-            // Handle image watermarking
-            if (str_starts_with($resource->document_mime, 'image/')) {
-                return $this->applyImageWatermark($resource, $logoPath);
-            }
-            
-            return false;
-        } catch (\Exception $e) {
-            \Log::error('Watermark application failed: ' . $e->getMessage());
-            return false;
-        }
-    }
-    
-    private function applyPdfWatermark(Resource $resource, $logoPath)
-    {
-        try {
-            // Create temporary file for PDF processing
-            $tempPdfPath = tempnam(sys_get_temp_dir(), 'pdf_watermark_');
-            $tempOutputPath = tempnam(sys_get_temp_dir(), 'pdf_output_');
-            
-            // Write PDF blob to temporary file
-            file_put_contents($tempPdfPath, $resource->document_blob);
-            
-            // Check if TCPDF or similar library is available
-            if (class_exists('\TCPDF')) {
-                $pdf = new \TCPDF();
-                $pdf->setSourceFile($tempPdfPath);
-                
-                // Get school info for watermark text
-                $schoolInfo = \App\Models\SchoolInformation::first();
-                $watermarkText = $schoolInfo->school_name ?? 'ESA School';
-                
-                for ($i = 1; $i <= $pdf->getNumPages(); $i++) {
-                    $pdf->AddPage();
-                    $tplId = $pdf->importPage($i);
-                    $pdf->useTemplate($tplId, 0, 0, 0, 0, true);
-                    
-                    // Add text watermark
-                    $pdf->SetFont('Helvetica', 'B', 50);
-                    $pdf->SetTextColor(200, 200, 200);
-                    $pdf->SetAlpha(0.3);
-                    $pdf->Text(30, 150, $watermarkText, 45, 0, false, false, 0, 0, 'C');
-                    $pdf->SetAlpha(1);
-                }
-                
-                // Save watermarked PDF
-                $watermarkedContent = $pdf->Output('', 'S');
-                
-                // Update resource with watermarked content
-                $resource->update([
-                    'watermark_path' => 'watermarked_documents/resource_' . $resource->id . '.pdf',
-                    'watermark_applied' => true,
-                    'document_blob' => $watermarkedContent,
-                ]);
-                
-                // Clean up temporary files
-                unlink($tempPdfPath);
-                unlink($tempOutputPath);
-                
-                return true;
-            } else {
-                // Fallback: Add a simple text overlay using FPDI if available
-                // For now, just mark as watermarked without actual modification
-                $resource->update([
-                    'watermark_path' => 'watermarked_documents/resource_' . $resource->id . '.pdf',
-                    'watermark_applied' => true,
-                ]);
-                
-                unlink($tempPdfPath);
-                unlink($tempOutputPath);
-                
-                return true;
-            }
-        } catch (\Exception $e) {
-            \Log::error('PDF watermarking failed: ' . $e->getMessage());
-            return false;
-        }
-    }
-    
-    private function applyImageWatermark(Resource $resource, $logoPath)
-    {
-        try {
-            $image = new \Intervention\Image\ImageManager('gd');
-            $imageData = $image->make($resource->document_blob);
-            
-            // Get logo dimensions
-            $logo = $image->make($logoPath);
-            
-            // Calculate watermark size (20% of image width, max 200px)
-            $watermarkWidth = min($imageData->width() * 0.2, 200);
-            $logo->resize($watermarkWidth, null, function ($constraint) {
-                $constraint->aspectRatio();
-            });
-            
-            // Apply watermark with transparency at bottom right corner
-            $logo->opacity(50); // 50% transparency
-            $imageData->insert($logo, 'bottom-right', 20, 20);
-            
-            // Add school name text watermark
-            $schoolInfo = \App\Models\SchoolInformation::first();
-            $schoolName = $schoolInfo->school_name ?? 'ESA School';
-            
-            $imageData->text($schoolName, $imageData->width() / 2, $imageData->height() - 30, function($font) {
-                $font->file(public_path('fonts/arial.ttf')); // Use system font if available
-                $font->size(24);
-                $font->color([255, 255, 255, 0.7]); // White with transparency
-                $font->align('center');
-                $font->valign('bottom');
-            });
-            
-            // Update resource record
-            $resource->update([
-                'watermark_path' => 'watermarked_documents/resource_' . $resource->id . '.png',
-                'watermark_applied' => true,
-                'document_blob' => $imageData->encode('png'), // Update with watermarked version
-            ]);
-            
-            return true;
-        } catch (\Exception $e) {
-            \Log::error('Image watermarking failed: ' . $e->getMessage());
-            return false;
-        }
-    }
-    
-    private function createDefaultWatermark($path)
-    {
-        // Create a simple text watermark as fallback
-        $image = new \Intervention\Image\ImageManager('gd');
-        $canvas = $image->canvas(200, 100, '#ffffff');
-        $canvas->text('ESA SCHOOL', 100, 50, function($font) {
-            $font->size(24);
-            $font->color('#000000');
-            $font->align('center');
-            $font->valign('middle');
-        });
-        $canvas->save($path);
     }
 }
