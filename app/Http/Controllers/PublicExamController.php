@@ -36,18 +36,16 @@ class PublicExamController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate(12);
 
-        // Get available subscriptions for display
         $subscriptions = Subscription::active()
             ->orderBy('price')
             ->get();
 
-        // Check if client is authenticated and has subscription
-        $isClientAuthenticated = false;
-        $clientHasActiveSubscription = false;
-        
+        $isClientAuthenticated        = false;
+        $clientHasActiveSubscription  = false;
+
         try {
             if (Auth::guard('client')->check()) {
-                $isClientAuthenticated = true;
+                $isClientAuthenticated       = true;
                 $clientHasActiveSubscription = Auth::guard('client')->user()->hasActiveSubscription();
             }
         } catch (\Exception $e) {
@@ -67,23 +65,20 @@ class PublicExamController extends Controller
         }
 
         $exam->load(['questions', 'academic_year', 'term', 'teacher', 'courses', 'lessons']);
-        
-        // Get available subscriptions
+
         $subscriptions = Subscription::active()
             ->orderBy('price')
             ->get();
 
-        // Check user access if logged in
         $userAccess = null;
         if (Auth::guard('student')->check()) {
-            $student = Auth::guard('student')->user();
+            $student    = Auth::guard('student')->user();
             $userAccess = $exam->canBeAttemptedByStudent($student);
         } elseif (Auth::guard('client')->check()) {
-            $client = Auth::guard('client')->user();
+            $client     = Auth::guard('client')->user();
             $userAccess = $exam->canBeAttemptedByClient($client);
         }
 
-        // Get Flutterwave public key for frontend
         $flutterwavePublicKey = $this->flutterwavePublicKey;
 
         return view('public.exams.show', compact('exam', 'subscriptions', 'userAccess', 'flutterwavePublicKey'));
@@ -102,10 +97,10 @@ class PublicExamController extends Controller
             abort(404, 'Exam not available for public access');
         }
 
-        // Get Flutterwave public key for frontend
         $flutterwavePublicKey = $this->flutterwavePublicKey;
+        $systemName           = config('app.name', 'ESA E-Learning');
 
-        return view('public.exams.payment', compact('exam', 'flutterwavePublicKey'));
+        return view('public.exams.payment', compact('exam', 'flutterwavePublicKey', 'systemName'));
     }
 
     /**
@@ -114,10 +109,10 @@ class PublicExamController extends Controller
     public function processPayment(Request $request, Exam $exam)
     {
         $request->validate([
-            'email' => 'required|email',
-            'phone_number' => 'required|string',
+            'email'          => 'required|email',
+            'phone_number'   => 'required|string',
             'payment_method' => 'required|in:card,mobile_money,bank_transfer',
-            'name' => 'required|string|max:255',
+            'name'           => 'required|string|max:255',
         ]);
 
         if (!$exam->requiresPayment()) {
@@ -126,53 +121,48 @@ class PublicExamController extends Controller
         }
 
         try {
-            // Generate unique transaction reference
             $txRef = 'EXAM_' . $exam->id . '_' . uniqid() . '_' . time();
-            
-            // Prepare payment data for Flutterwave
+
             $paymentData = [
-                'tx_ref' => $txRef,
-                'amount' => $exam->public_price,
-                'currency' => 'RWF', // Rwandan Francs
+                'tx_ref'          => $txRef,
+                'amount'          => $exam->public_price,
+                'currency'        => 'RWF',
                 'payment_options' => $request->payment_method === 'mobile_money' ? 'mobilemoneyrwanda' : $request->payment_method,
-                'redirect_url' => route('public.exams.payment.callback', $exam),
-                'customer' => [
-                    'email' => $request->email,
-                    'name' => $request->name,
+                'redirect_url'    => route('public.exams.payment.callback', $exam),
+                'customer'        => [
+                    'email'        => $request->email,
+                    'name'         => $request->name,
                     'phone_number' => $request->phone_number,
                 ],
                 'customizations' => [
-                    'title' => 'Exam Payment: ' . $exam->title,
+                    'title'       => 'Exam Payment: ' . $exam->title,
                     'description' => 'Payment for exam: ' . $exam->title,
                 ],
                 'meta' => [
-                    'exam_id' => $exam->id,
-                    'exam_title' => $exam->title,
+                    'exam_id'      => $exam->id,
+                    'exam_title'   => $exam->title,
                     'payment_type' => 'exam_fee',
                 ],
             ];
 
-            // Initialize Flutterwave payment
             $response = $this->initializeFlutterwavePayment($paymentData);
 
             if (!$response['status']) {
                 return back()->with('error', 'Payment initialization failed: ' . $response['message']);
             }
 
-            // Store pending payment record
             $exam->examTokens()->create([
-                'student_id' => null, // Will be updated when user registers/logs in
-                'tokens_used' => 0,
-                'payment_status' => 'pending',
-                'payment_amount' => $exam->public_price,
-                'payment_reference' => $txRef,
+                'student_id'                 => null,
+                'tokens_used'                => 0,
+                'payment_status'             => 'pending',
+                'payment_amount'             => $exam->public_price,
+                'payment_reference'          => $txRef,
                 'flutterwave_transaction_id' => $response['data']['link'],
-                'customer_email' => $request->email,
-                'customer_phone' => $request->phone_number,
-                'customer_name' => $request->name,
+                'customer_email'             => $request->email,
+                'customer_phone'             => $request->phone_number,
+                'customer_name'              => $request->name,
             ]);
 
-            // Redirect to Flutterwave payment page
             return redirect($response['data']['link']);
 
         } catch (\Exception $e) {
@@ -186,25 +176,23 @@ class PublicExamController extends Controller
      */
     public function handlePaymentCallback(Request $request, Exam $exam)
     {
-        $txRef = $request->query('tx_ref');
+        $txRef         = $request->query('tx_ref');
         $transactionId = $request->query('transaction_id');
-        $status = $request->query('status');
+        $status        = $request->query('status');
 
         if ($status === 'successful' || $status === 'completed') {
-            // Verify transaction with Flutterwave
             $verification = $this->verifyFlutterwaveTransaction($transactionId);
 
             if ($verification['status'] === 'successful') {
-                // Update payment record
                 $examToken = $exam->examTokens()
                     ->where('payment_reference', $txRef)
                     ->first();
 
                 if ($examToken) {
                     $examToken->update([
-                        'payment_status' => 'paid',
+                        'payment_status'             => 'paid',
                         'flutterwave_transaction_id' => $transactionId,
-                        'paid_at' => now(),
+                        'paid_at'                    => now(),
                     ]);
                 }
 
@@ -223,7 +211,7 @@ class PublicExamController extends Controller
     public function paymentSuccess(Exam $exam, Request $request)
     {
         $reference = $request->query('reference');
-        
+
         return view('public.exams.payment-success', compact('exam', 'reference'));
     }
 
@@ -236,22 +224,17 @@ class PublicExamController extends Controller
             abort(404, 'Exam not available for public access');
         }
 
-        // For free exams, allow direct access without authentication
         if (!$exam->requiresPayment()) {
-            // Create a guest session and redirect to public exam taking
             return redirect()->route('public.exams.take', $exam);
         }
 
-        // For paid exams, check authentication
         if (!Auth::guard('client')->check() && !Auth::guard('student')->check()) {
-            // No user logged in, redirect to client login
             return redirect()->route('client.auth.login')
                 ->with('intent', 'exam_attempt')
                 ->with('exam_id', $exam->id)
                 ->with('info', 'Please login to access this paid exam');
         }
 
-        // Check if user has already paid
         $hasPaid = false;
         if (Auth::guard('student')->check()) {
             $student = Auth::guard('student')->user();
@@ -260,7 +243,7 @@ class PublicExamController extends Controller
                 ->where('payment_status', 'paid')
                 ->exists();
         } elseif (Auth::guard('client')->check()) {
-            $client = Auth::guard('client')->user();
+            $client  = Auth::guard('client')->user();
             $hasPaid = $exam->examTokens()
                 ->where('client_id', $client->id)
                 ->where('payment_status', 'paid')
@@ -268,34 +251,30 @@ class PublicExamController extends Controller
         }
 
         if (!$hasPaid) {
-            // Check if user has active subscription
             $hasSubscription = false;
             if (Auth::guard('student')->check()) {
-                $student = Auth::guard('student')->user();
+                $student         = Auth::guard('student')->user();
                 $hasSubscription = $student->subscriptions()
                     ->where('status', 'active')
                     ->where('end_date', '>', now())
                     ->exists();
             } elseif (Auth::guard('client')->check()) {
-                $client = Auth::guard('client')->user();
+                $client          = Auth::guard('client')->user();
                 $hasSubscription = $client->hasActiveSubscription();
             }
 
             if ($hasSubscription) {
-                // User has subscription, allow access
                 if (Auth::guard('student')->check()) {
                     return redirect()->route('exams.start', $exam);
                 } else {
                     return redirect()->route('public.exams.take', $exam);
                 }
             } else {
-                // No subscription and no payment, redirect to payment
                 return redirect()->route('public.exams.payment', $exam)
                     ->with('error', 'Payment or subscription required to attempt this exam');
             }
         }
 
-        // User has paid, redirect to appropriate exam taking route
         if (Auth::guard('student')->check()) {
             return redirect()->route('exams.start', $exam);
         } else {
@@ -312,7 +291,6 @@ class PublicExamController extends Controller
             abort(404, 'Exam not available for public access');
         }
 
-        // For paid exams, ensure user is authenticated and has paid
         if ($exam->requiresPayment()) {
             if (!Auth::guard('client')->check() && !Auth::guard('student')->check()) {
                 return redirect()->route('client.auth.login')
@@ -321,13 +299,12 @@ class PublicExamController extends Controller
                     ->with('error', 'Authentication required for paid exams');
             }
 
-            // Check payment status (similar logic as startExam)
-            $hasPaid = false;
+            $hasPaid         = false;
             $hasSubscription = false;
 
             if (Auth::guard('student')->check()) {
-                $student = Auth::guard('student')->user();
-                $hasPaid = $exam->examTokens()
+                $student         = Auth::guard('student')->user();
+                $hasPaid         = $exam->examTokens()
                     ->where('student_id', $student->id)
                     ->where('payment_status', 'paid')
                     ->exists();
@@ -336,8 +313,8 @@ class PublicExamController extends Controller
                     ->where('end_date', '>', now())
                     ->exists();
             } elseif (Auth::guard('client')->check()) {
-                $client = Auth::guard('client')->user();
-                $hasPaid = $exam->examTokens()
+                $client          = Auth::guard('client')->user();
+                $hasPaid         = $exam->examTokens()
                     ->where('client_id', $client->id)
                     ->where('payment_status', 'paid')
                     ->exists();
@@ -350,9 +327,8 @@ class PublicExamController extends Controller
             }
         }
 
-        // Create or get exam session
         $sessionId = $this->createGuestSession($exam);
-        
+
         return redirect()->route('public.exams.take.question', [$exam, $sessionId, 1]);
     }
 
@@ -361,31 +337,27 @@ class PublicExamController extends Controller
      */
     private function createGuestSession(Exam $exam)
     {
-        // Generate unique session ID for guest users
         $sessionId = 'guest_' . uniqid() . '_' . time();
-        
-        // Initialize session data
+
         $sessionData = [
-            'exam_id' => $exam->id,
-            'start_time' => now()->toISOString(),
-            'user_type' => 'guest',
-            'user_id' => null,
-            'answers' => [],
-            'flagged' => [],
+            'exam_id'          => $exam->id,
+            'start_time'       => now()->toISOString(),
+            'user_type'        => 'guest',
+            'user_id'          => null,
+            'answers'          => [],
+            'flagged'          => [],
             'current_question' => 1,
-            'total_questions' => $exam->questions()->count()
+            'total_questions'  => $exam->questions()->count(),
         ];
-        
-        // Store session data with proper key
+
         session(["exam_session_{$sessionId}" => $sessionData]);
-        
-        // Log session creation for debugging
+
         \Log::info('Guest exam session created', [
-            'session_id' => $sessionId,
-            'exam_id' => $exam->id,
-            'session_key' => "exam_session_{$sessionId}"
+            'session_id'  => $sessionId,
+            'exam_id'     => $exam->id,
+            'session_key' => "exam_session_{$sessionId}",
         ]);
-        
+
         return $sessionId;
     }
 
@@ -398,32 +370,30 @@ class PublicExamController extends Controller
             abort(404, 'Exam not available for public access');
         }
 
-        // Get session key and data
-        $sessionKey = "exam_session_{$sessionId}";
+        $sessionKey  = "exam_session_{$sessionId}";
         $sessionData = session($sessionKey);
-        
-        // Enhanced session validation with logging
+
         if (!$sessionData) {
             \Log::error('Session data not found', [
-                'session_id' => $sessionId,
-                'session_key' => $sessionKey,
-                'all_sessions' => array_keys(session()->all())
+                'session_id'   => $sessionId,
+                'session_key'  => $sessionKey,
+                'all_sessions' => array_keys(session()->all()),
             ]);
-            
+
             if (request()->ajax()) {
                 return response()->json(['error' => 'Session expired'], 419);
             }
             return redirect()->route('public.exams.start', $exam)
                 ->with('error', 'Session expired. Please start the exam again.');
         }
-        
+
         if ($sessionData['exam_id'] != $exam->id) {
             \Log::error('Session exam ID mismatch', [
-                'session_exam_id' => $sessionData['exam_id'],
-                'requested_exam_id' => $exam->id,
-                'session_id' => $sessionId
+                'session_exam_id'    => $sessionData['exam_id'],
+                'requested_exam_id'  => $exam->id,
+                'session_id'         => $sessionId,
             ]);
-            
+
             if (request()->ajax()) {
                 return response()->json(['error' => 'Invalid session'], 419);
             }
@@ -431,40 +401,36 @@ class PublicExamController extends Controller
                 ->with('error', 'Invalid session. Please start the exam again.');
         }
 
-        // Validate question number
-        $questions = $exam->questions()->orderBy('id')->get();
+        $questions      = $exam->questions()->orderBy('id')->get();
         $totalQuestions = $questions->count();
-        
+
         if ($questionNumber < 1 || $questionNumber > $totalQuestions) {
             \Log::error('Invalid question number', [
-                'question_number' => $questionNumber,
-                'total_questions' => $totalQuestions,
-                'session_id' => $sessionId
+                'question_number'  => $questionNumber,
+                'total_questions'  => $totalQuestions,
+                'session_id'       => $sessionId,
             ]);
-            
+
             if (request()->ajax()) {
                 return response()->json(['redirect' => route('public.exams.submit', [$exam, $sessionId])]);
             }
             return redirect()->route('public.exams.submit', [$exam, $sessionId]);
         }
 
-        $currentQuestion = $questions[$questionNumber - 1];
-        
-        // Update current question in session
-        $sessionData['current_question'] = $questionNumber;
+        $currentQuestion                   = $questions[$questionNumber - 1];
+        $sessionData['current_question']   = $questionNumber;
         session([$sessionKey => $sessionData]);
-        
-        // Handle AJAX requests
+
         if (request()->ajax()) {
             return response()->json([
-                'success' => true,
-                'question' => $currentQuestion,
+                'success'         => true,
+                'question'        => $currentQuestion,
                 'currentQuestion' => $questionNumber,
-                'totalQuestions' => $totalQuestions,
-                'sessionData' => $sessionData
+                'totalQuestions'  => $totalQuestions,
+                'sessionData'     => $sessionData,
             ]);
         }
-        
+
         return view('public.exams.take', compact('exam', 'currentQuestion', 'questionNumber', 'totalQuestions', 'sessionId', 'sessionData'));
     }
 
@@ -481,20 +447,18 @@ class PublicExamController extends Controller
             'answer' => 'required|string',
         ]);
 
-        // Get and update session data
-        $sessionKey = "exam_session_{$sessionId}";
+        $sessionKey  = "exam_session_{$sessionId}";
         $sessionData = session($sessionKey);
-        
-        // Debug logging
+
         \Log::info("Save Answer Debug", [
-            'sessionKey' => $sessionKey,
-            'sessionId' => $sessionId,
+            'sessionKey'     => $sessionKey,
+            'sessionId'      => $sessionId,
             'questionNumber' => $questionNumber,
-            'answer' => $request->answer,
-            'sessionData' => $sessionData,
-            'hasSessionData' => !empty($sessionData)
+            'answer'         => $request->answer,
+            'sessionData'    => $sessionData,
+            'hasSessionData' => !empty($sessionData),
         ]);
-        
+
         if (!$sessionData || $sessionData['exam_id'] != $exam->id) {
             \Log::error("Invalid session for saveAnswer", ['sessionData' => $sessionData]);
             return response()->json(['error' => 'Invalid session'], 400);
@@ -502,7 +466,7 @@ class PublicExamController extends Controller
 
         $sessionData['answers'][$questionNumber] = $request->answer;
         session([$sessionKey => $sessionData]);
-        
+
         \Log::info("Answer saved successfully", ['answers' => $sessionData['answers']]);
 
         return response()->json(['success' => true]);
@@ -517,102 +481,35 @@ class PublicExamController extends Controller
             abort(404, 'Exam not available for public access');
         }
 
-        // Get session data
         $sessionData = session("exam_session_{$sessionId}");
         if (!$sessionData || $sessionData['exam_id'] != $exam->id) {
             return redirect()->route('public.exams.start', $exam)
                 ->with('error', 'Invalid session. Please start the exam again.');
         }
 
-        // Mark as completed
         $sessionData['completed'] = true;
-        $sessionData['end_time'] = now();
+        $sessionData['end_time']  = now();
         session(["exam_session_{$sessionId}" => $sessionData]);
 
-        // Calculate results
-        $questions = $exam->questions()->orderBy('id')->get();
+        $questions      = $exam->questions()->orderBy('id')->get();
         $correctAnswers = 0;
         $totalQuestions = $questions->count();
 
         foreach ($questions as $index => $question) {
             $questionNumber = $index + 1;
-            if (isset($sessionData['answers'][$questionNumber]) && 
+            if (isset($sessionData['answers'][$questionNumber]) &&
                 $sessionData['answers'][$questionNumber] === $question->correct_answer) {
                 $correctAnswers++;
             }
         }
 
-        $score = ($correctAnswers / $totalQuestions) * 100;
+        $score      = $totalQuestions > 0 ? round(($correctAnswers / $totalQuestions) * 100, 2) : 0;
+        $passed     = $score >= ($exam->passing_score ?? 50);
 
-        return view('public.exams.results', compact('exam', 'score', 'correctAnswers', 'totalQuestions', 'sessionData'));
-    }
-
-    /**
-     * Save session data (for flagged questions)
-     */
-    public function saveSession(Request $request, Exam $exam, $sessionId)
-    {
-        $sessionData = session("exam_session_{$sessionId}");
-        if (!$sessionData || $sessionData['exam_id'] != $exam->id) {
-            return response()->json(['error' => 'Invalid session'], 400);
-        }
-
-        $action = $request->input('action');
-        $key = $request->input('key');
-        $value = $request->input('value');
-
-        if ($action === 'add') {
-            if (!isset($sessionData[$key])) {
-                $sessionData[$key] = [];
-            }
-            if (!in_array($value, $sessionData[$key])) {
-                $sessionData[$key][] = $value;
-            }
-        } elseif ($action === 'remove') {
-            if (isset($sessionData[$key])) {
-                $sessionData[$key] = array_values(array_filter($sessionData[$key], function($item) use ($value) {
-                    return $item != $value;
-                }));
-            }
-        }
-
-        session(["exam_session_{$sessionId}" => $sessionData]);
-
-        return response()->json(['success' => true]);
-    }
-
-    /**
-     * API endpoint to check exam access
-     */
-    public function checkAccess(Exam $exam)
-    {
-        if (!$exam->isPubliclyAccessible()) {
-            return response()->json([
-                'accessible' => false,
-                'reason' => 'Exam not available for public access'
-            ], 403);
-        }
-
-        $response = [
-            'accessible' => true,
-            'exam' => [
-                'id' => $exam->id,
-                'title' => $exam->title,
-                'requires_payment' => $exam->requiresPayment(),
-                'payment_amount' => $exam->public_price,
-                'requires_tokens' => $exam->requiresTokens(),
-                'token_cost' => $exam->getCalculatedTokenCost(),
-                'question_count' => $exam->questions()->count(),
-            ]
-        ];
-
-        if (Auth::guard('student')->check()) {
-            $student = Auth::guard('student')->user();
-            $access = $exam->canBeAttemptedByStudent($student);
-            $response['user_access'] = $access;
-        }
-
-        return response()->json($response);
+        return view('public.exams.results', compact(
+            'exam', 'sessionId', 'sessionData',
+            'correctAnswers', 'totalQuestions', 'score', 'passed'
+        ));
     }
 
     /**
@@ -621,27 +518,41 @@ class PublicExamController extends Controller
     private function initializeFlutterwavePayment($data)
     {
         $curl = curl_init();
-        
+
         curl_setopt_array($curl, [
-            CURLOPT_URL => $this->flutterwaveBaseUrl . '/payments',
+            CURLOPT_URL            => 'https://api.flutterwave.com/v3/payments',
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => json_encode($data),
-            CURLOPT_HTTPHEADER => [
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => json_encode($data),
+            CURLOPT_HTTPHEADER     => [
                 'Content-Type: application/json',
                 'Authorization: Bearer ' . $this->flutterwaveSecretKey,
             ],
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_TIMEOUT        => 30,
         ]);
 
         $response = curl_exec($curl);
-        $err = curl_error($curl);
+        $err      = curl_error($curl);
+        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
         curl_close($curl);
 
         if ($err) {
+            Log::error('Flutterwave cURL Error: ' . $err);
             throw new \Exception('cURL Error: ' . $err);
         }
 
-        return json_decode($response, true);
+        Log::info('Flutterwave Response HTTP Code: ' . $httpCode);
+        Log::info('Flutterwave Response: ' . $response);
+
+        $decodedResponse = json_decode($response, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            Log::error('Flutterwave JSON Decode Error: ' . json_last_error_msg());
+            throw new \Exception('Invalid JSON response from Flutterwave');
+        }
+
+        return $decodedResponse;
     }
 
     /**
@@ -650,18 +561,18 @@ class PublicExamController extends Controller
     private function verifyFlutterwaveTransaction($transactionId)
     {
         $curl = curl_init();
-        
+
         curl_setopt_array($curl, [
-            CURLOPT_URL => $this->flutterwaveBaseUrl . '/transactions/' . $transactionId . '/verify',
+            CURLOPT_URL            => $this->flutterwaveBaseUrl . '/transactions/' . $transactionId . '/verify',
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HTTPHEADER => [
+            CURLOPT_HTTPHEADER     => [
                 'Content-Type: application/json',
                 'Authorization: Bearer ' . $this->flutterwaveSecretKey,
             ],
         ]);
 
         $response = curl_exec($curl);
-        $err = curl_error($curl);
+        $err      = curl_error($curl);
         curl_close($curl);
 
         if ($err) {
