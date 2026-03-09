@@ -1,6 +1,13 @@
 @extends('layouts.app')
 
-@section('title', 'Payment for ' . $exam->title . ' - ESA Portal')
+@section('title', 'Exam Payment - Excellent Servant Academy')
+
+@php
+    $systemName = \Illuminate\Support\Facades\Cache::get('esa_system_name', 'ESA-Parnel');
+@endphp
+
+@section('content')
+@include('components.public-navigation')
 
 @push('styles')
 <link href="https://checkout.flutterwave.com/v3.js" rel="preload">

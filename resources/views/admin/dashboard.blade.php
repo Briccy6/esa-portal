@@ -16,6 +16,107 @@
 .text-teal {
     color: #20c997 !important;
 }
+
+/* Mobile Responsive Dashboard */
+@media (max-width: 768px) {
+    .container-fluid {
+        padding: 0 1rem !important;
+    }
+    
+    .row {
+        margin: 0 !important;
+    }
+    
+    .col-xl-3,
+    .col-md-6 {
+        padding: 0.5rem !important;
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+    }
+    
+    .card {
+        margin-bottom: 1rem !important;
+        border-radius: 0.5rem !important;
+    }
+    
+    .card-body {
+        padding: 1rem !important;
+    }
+    
+    .h5 {
+        font-size: 1.125rem !important;
+    }
+    
+    .text-xs {
+        font-size: 0.75rem !important;
+    }
+    
+    .fa-2x {
+        font-size: 1.5rem !important;
+    }
+    
+    /* Mobile charts */
+    .chart-container {
+        margin: 1rem 0 !important;
+        padding: 1rem !important;
+    }
+    
+    .chart-container canvas {
+        max-height: 300px !important;
+    }
+    
+    /* Mobile tables */
+    .table-responsive {
+        font-size: 0.875rem !important;
+    }
+    
+    .table th,
+    .table td {
+        padding: 0.5rem !important;
+    }
+    
+    /* Mobile stats grid */
+    .stats-grid {
+        grid-template-columns: 1fr !important;
+        gap: 0.75rem !important;
+    }
+}
+
+@media (max-width: 640px) {
+    .card-body {
+        padding: 0.75rem !important;
+    }
+    
+    .h5 {
+        font-size: 1rem !important;
+    }
+    
+    .fa-2x {
+        font-size: 1.25rem !important;
+    }
+    
+    .chart-container canvas {
+        max-height: 250px !important;
+    }
+    
+    .table-responsive {
+        font-size: 0.8125rem !important;
+    }
+}
+
+/* Touch optimizations */
+@media (hover: none) and (pointer: coarse) {
+    .card {
+        cursor: pointer;
+    }
+    
+    .btn {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
 </style>
 @endpush
 

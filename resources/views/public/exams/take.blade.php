@@ -2,6 +2,9 @@
 
 @section('title', 'Exam - ' . $exam->title)
 
+@section('content')
+@include('components.public-navigation')
+
 @push('styles')
 <style>
 /* Modern Moodle-inspired Exam Interface */
@@ -623,6 +626,116 @@
     display: flex;
     align-items: center;
     gap: 8px;
+}
+
+/* Mobile Responsive Enhancements */
+@media (max-width: 768px) {
+    .exam-container {
+        padding: 1rem !important;
+    }
+    
+    .exam-header {
+        padding: 1.5rem !important;
+        margin-bottom: 1rem !important;
+    }
+    
+    .exam-title {
+        font-size: 1.5rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+    
+    .exam-subtitle {
+        font-size: 1rem !important;
+        margin-bottom: 1rem !important;
+    }
+    
+    .question-text {
+        font-size: 1.125rem !important;
+        line-height: 1.6 !important;
+        margin-bottom: 1.5rem !important;
+    }
+    
+    .answer-option {
+        padding: 1rem !important;
+        gap: 0.75rem !important;
+    }
+    
+    .option-text {
+        font-size: 1rem !important;
+    }
+    
+    .question-navigator {
+        margin-bottom: 1rem !important;
+        padding: 1rem !important;
+    }
+    
+    .question-grid {
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 0.5rem !important;
+    }
+    
+    .question-btn {
+        width: 2.5rem !important;
+        height: 2.5rem !important;
+        font-size: 0.875rem !important;
+    }
+    
+    .question-actions {
+        flex-direction: column !important;
+        gap: 0.75rem !important;
+    }
+    
+    .flag-btn, .next-btn, .submit-btn {
+        width: 100% !important;
+        padding: 0.875rem !important;
+        font-size: 1rem !important;
+    }
+}
+
+@media (max-width: 640px) {
+    .exam-header {
+        padding: 1rem !important;
+    }
+    
+    .exam-title {
+        font-size: 1.25rem !important;
+    }
+    
+    .question-grid {
+        grid-template-columns: repeat(3, 1fr) !important;
+    }
+    
+    .question-btn {
+        width: 2.25rem !important;
+        height: 2.25rem !important;
+        font-size: 0.75rem !important;
+    }
+    
+    .status-legend {
+        flex-direction: column !important;
+        gap: 0.5rem !important;
+    }
+    
+    .status-item {
+        font-size: 0.875rem !important;
+    }
+}
+
+/* Touch-friendly buttons */
+@media (hover: none) and (pointer: coarse) {
+    .answer-option {
+        min-height: 44px;
+        padding: 1rem !important;
+    }
+    
+    .question-btn {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    .flag-btn, .next-btn, .submit-btn {
+        min-height: 44px;
+    }
 }
 </style>
 @endpush

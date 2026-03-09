@@ -65,12 +65,153 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #555;
         }
+        
+        /* Global Mobile Responsive Styles */
+        @media (max-width: 768px) {
+            body {
+                font-size: 14px;
+            }
+            
+            .container {
+                padding-left: 1rem !important;
+                padding-right: 1rem !important;
+            }
+            
+            .text-2xl {
+                font-size: 1.5rem !important;
+            }
+            
+            .text-xl {
+                font-size: 1.25rem !important;
+            }
+            
+            .text-lg {
+                font-size: 1.125rem !important;
+            }
+            
+            .px-6 {
+                padding-left: 1rem !important;
+                padding-right: 1rem !important;
+            }
+            
+            .py-4 {
+                padding-top: 0.75rem !important;
+                padding-bottom: 0.75rem !important;
+            }
+            
+            .space-x-6 > * + * {
+                margin-left: 0.5rem !important;
+            }
+            
+            .space-x-3 > * + * {
+                margin-left: 0.25rem !important;
+            }
+            
+            /* Mobile navigation improvements */
+            .hidden.md\\:flex {
+                display: none !important;
+            }
+            
+            .md\\:hidden {
+                display: block !important;
+            }
+            
+            /* Touch-friendly buttons */
+            button, a, input, select, textarea {
+                min-height: 44px;
+            }
+            
+            /* Responsive tables */
+            table {
+                font-size: 0.875rem;
+            }
+            
+            .table-container {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            /* Responsive forms */
+            .form-container {
+                padding: 1rem !important;
+            }
+            
+            .form-group {
+                margin-bottom: 1rem !important;
+            }
+            
+            /* Responsive cards */
+            .card {
+                margin: 0 1rem 1rem 1rem !important;
+            }
+            
+            /* Responsive grids */
+            .grid-cols-3 {
+                grid-template-columns: repeat(2, 1fr) !important;
+            }
+            
+            .grid-cols-4 {
+                grid-template-columns: repeat(2, 1fr) !important;
+            }
+        }
+        
+        @media (max-width: 640px) {
+            body {
+                font-size: 13px;
+            }
+            
+            .text-2xl {
+                font-size: 1.25rem !important;
+            }
+            
+            .text-xl {
+                font-size: 1.125rem !important;
+            }
+            
+            .grid-cols-2,
+            .grid-cols-3,
+            .grid-cols-4 {
+                grid-template-columns: 1fr !important;
+            }
+            
+            .card {
+                margin: 0 0.5rem 1rem 0.5rem !important;
+                border-radius: 0.5rem !important;
+            }
+            
+            .px-4 {
+                padding-left: 0.75rem !important;
+                padding-right: 0.75rem !important;
+            }
+            
+            .py-2 {
+                padding-top: 0.5rem !important;
+                padding-bottom: 0.5rem !important;
+            }
+        }
+        
+        /* Touch device optimizations */
+        @media (hover: none) and (pointer: coarse) {
+            button, a {
+                min-height: 44px;
+                min-width: 44px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            input, select, textarea {
+                min-height: 44px;
+                font-size: 16px; /* Prevents zoom on iOS */
+            }
+        }
     </style>
     
     @stack('styles')
 </head>
 <body class="bg-gray-50 min-h-screen">
-    <!-- Navigation -->
+    <!-- Navigation - Hidden for public pages that use their own navigation -->
+    @if(!request()->is('public/*') && !request()->is('resources') && !request()->is('resources/*'))
     <header class="bg-white shadow-md sticky top-0 z-50">
         <div class="container mx-auto px-6 py-4">
             <div class="flex items-center justify-between">
@@ -221,6 +362,7 @@
             @endif
         </nav>
     </div>
+    @endif
                 
     <!-- Flash Messages -->
     @if(session('success'))

@@ -514,19 +514,182 @@
                 width: 90px;
             }
         }
+
+        /* Mobile Responsive Admin Layout */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: var(--sidebar-collapsed) !important;
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.mobile-open {
+                transform: translateX(0);
+                width: var(--sidebar-width) !important;
+            }
+            
+            .sidebar.collapsed {
+                transform: translateX(-100%);
+            }
+            
+            .main-content {
+                margin-left: 0 !important;
+                padding: 1rem !important;
+            }
+            
+            .top-navbar {
+                padding: 0.75rem 1rem !important;
+            }
+            
+            .navbar-brand {
+                font-size: 1rem !important;
+            }
+            
+            .user-profile {
+                padding: 0.5rem !important;
+            }
+            
+            .user-name {
+                display: none !important;
+            }
+            
+            .mobile-menu-toggle {
+                display: block !important;
+                position: fixed;
+                top: 1rem;
+                left: 1rem;
+                z-index: 1002;
+                background: var(--primary-blue);
+                color: white;
+                border: none;
+                padding: 0.75rem;
+                border-radius: 0.5rem;
+                cursor: pointer;
+                box-shadow: var(--shadow);
+            }
+            
+            .mobile-overlay {
+                display: none !important;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 1000;
+            }
+            
+            .mobile-overlay.active {
+                display: block !important;
+            }
+            
+            /* Mobile sidebar items */
+            .sidebar-item {
+                padding: 0.75rem 1rem !important;
+            }
+            
+            .sidebar-text {
+                display: none !important;
+            }
+            
+            .sidebar.mobile-open .sidebar-text {
+                display: block !important;
+            }
+            
+            .sidebar.mobile-open .sidebar-item {
+                padding: 1rem 1.5rem !important;
+            }
+            
+            /* Mobile dropdown */
+            .dropdown-menu-custom {
+                width: 250px !important;
+                right: 1rem !important;
+            }
+            
+            /* Mobile cards */
+            .card {
+                margin: 0 0 1rem 0 !important;
+                border-radius: 0.5rem !important;
+            }
+            
+            .card-body {
+                padding: 1rem !important;
+            }
+            
+            /* Mobile tables */
+            .table-responsive {
+                margin: 0 -1rem 1rem -1rem !important;
+                padding: 0 1rem !important;
+            }
+            
+            .table {
+                font-size: 0.875rem !important;
+            }
+            
+            .table th,
+            .table td {
+                padding: 0.5rem !important;
+            }
+            
+            /* Mobile forms */
+            .form-control {
+                font-size: 16px !important; /* Prevents zoom on iOS */
+                min-height: 44px !important;
+            }
+            
+            .btn {
+                min-height: 44px !important;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .sidebar.mobile-open {
+                width: 100% !important;
+            }
+            
+            .main-content {
+                padding: 0.75rem !important;
+            }
+            
+            .top-navbar {
+                padding: 0.5rem 0.75rem !important;
+            }
+            
+            .navbar-brand {
+                font-size: 0.875rem !important;
+            }
+            
+            .card-body {
+                padding: 0.75rem !important;
+            }
+            
+            .table {
+                font-size: 0.8125rem !important;
+            }
+        }
     </style>
     @yield('styles')
     @livewireStyles
 </head>
 <body>
  @include('partials.storage-warning')
-    <!-- Sidebar Overlay for Mobile -->
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" id="mobileMenuToggle">
+        <i class="fas fa-bars"></i>
+    </button>
+    
+    <!-- Mobile Overlay -->
+    <div class="mobile-overlay" id="mobileOverlay"></div>
+
+    <!-- Sidebar Overlay for Desktop -->
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
     <!-- Top Navbar -->
     <div class="top-navbar">
         <div class="navbar-left">
-            <button class="menu-toggle" id="menuToggle">
+            <button class="menu-toggle d-none d-md-block" id="menuToggle">
                 <i class="fas fa-bars"></i>
             </button>
             <h5 class="mb-0">Dashboard</h5>
@@ -876,73 +1039,107 @@
         // Current time update for Kigali, Rwanda
         function updateTime() {
             const now = new Date();
-            const kigaliTime = new Date(now.toLocaleString("en-US", {timeZone: "Africa/Kigali"}));
-            const timeString = kigaliTime.toLocaleTimeString('en-US', {
-                hour12: false,
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
-            });
-            document.getElementById('currentTime').textContent = timeString;
+            const options = { 
+                timeZone: 'Africa/Kigali', 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit',
+                hour12: false 
+            };
+            document.getElementById('currentTime').textContent = now.toLocaleTimeString('en-US', options);
         }
-
-        // Update time immediately and then every second
+        
         updateTime();
         setInterval(updateTime, 1000);
 
-        // Sidebar toggle functionality
-        const sidebar = document.getElementById('sidebar');
-        const menuToggle = document.getElementById('menuToggle');
-        const sidebarOverlay = document.getElementById('sidebarOverlay');
-
-        menuToggle.addEventListener('click', function() {
-            if (window.innerWidth <= 768) {
-                // Mobile: Show/hide sidebar
-                sidebar.classList.toggle('show');
-                sidebarOverlay.classList.toggle('show');
-            } else {
-                // Desktop: Collapse/expand sidebar
-                sidebar.classList.toggle('collapsed');
+        // Mobile Menu Toggle
+        document.addEventListener('DOMContentLoaded', function() {
+            const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+            const sidebar = document.querySelector('.sidebar');
+            const mobileOverlay = document.getElementById('mobileOverlay');
+            
+            if (mobileMenuToggle && sidebar && mobileOverlay) {
+                // Toggle mobile menu
+                mobileMenuToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('mobile-open');
+                    mobileOverlay.classList.toggle('active');
+                });
+                
+                // Close mobile menu when clicking overlay
+                mobileOverlay.addEventListener('click', function() {
+                    sidebar.classList.remove('mobile-open');
+                    mobileOverlay.classList.remove('active');
+                });
+                
+                // Close mobile menu on window resize if above tablet size
+                window.addEventListener('resize', function() {
+                    if (window.innerWidth > 768) {
+                        sidebar.classList.remove('mobile-open');
+                        mobileOverlay.classList.remove('active');
+                    }
+                });
             }
         });
 
-        // Close sidebar when clicking overlay (mobile)
-        sidebarOverlay.addEventListener('click', function() {
-            sidebar.classList.remove('show');
-            sidebarOverlay.classList.remove('show');
-        });
-
-        // Profile dropdown functionality
-        const profileBtn = document.getElementById('profileBtn');
-        const profileDropdown = document.getElementById('profileDropdown');
-
-        profileBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            profileDropdown.classList.toggle('show');
-        });
-
-        // Close dropdown when clicking outside
-        document.addEventListener('click', function() {
-            profileDropdown.classList.remove('show');
-        });
-
-        // Handle window resize
-        window.addEventListener('resize', function() {
-            if (window.innerWidth > 768) {
-                sidebar.classList.remove('show');
-                sidebarOverlay.classList.remove('show');
+        // Profile Dropdown
+        document.addEventListener('DOMContentLoaded', function() {
+            const profileBtn = document.getElementById('profileBtn');
+            const profileDropdown = document.getElementById('profileDropdown');
+            
+            if (profileBtn && profileDropdown) {
+                profileBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    profileDropdown.classList.toggle('show');
+                });
+                
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function() {
+                    profileDropdown.classList.remove('show');
+                });
+                
+                // Prevent dropdown from closing when clicking inside
+                profileDropdown.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
             }
         });
 
-        // Smooth scrolling for sidebar menu items
-        document.querySelectorAll('.nav-link').forEach(link => {
-            link.addEventListener('click', function(e) {
-                // Add click effect
-                this.style.transform = 'translateX(12px)';
-                setTimeout(() => {
-                    this.style.transform = '';
-                }, 150);
-            });
+        // Sidebar Toggle (Desktop)
+        document.addEventListener('DOMContentLoaded', function() {
+            const menuToggle = document.getElementById('menuToggle');
+            const sidebar = document.querySelector('.sidebar');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+            const mainContent = document.querySelector('.main-content');
+            
+            if (menuToggle && sidebar && sidebarOverlay && mainContent) {
+                menuToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('collapsed');
+                    sidebarOverlay.classList.toggle('active');
+                    
+                    if (sidebar.classList.contains('collapsed')) {
+                        mainContent.style.marginLeft = 'var(--sidebar-collapsed)';
+                    } else {
+                        mainContent.style.marginLeft = 'var(--sidebar-width)';
+                    }
+                });
+                
+                sidebarOverlay.addEventListener('click', function() {
+                    sidebar.classList.remove('collapsed');
+                    sidebarOverlay.classList.remove('active');
+                    mainContent.style.marginLeft = 'var(--sidebar-width)';
+                });
+            }
+        });
+
+        // Initialize tooltips and other Bootstrap components
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize any tooltips if needed
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            if (tooltipTriggerList.length > 0) {
+                tooltipTriggerList.map(function (tooltipTriggerEl) {
+                    return new bootstrap.Tooltip(tooltipTriggerEl);
+                });
+            }
         });
     </script>
        <!-- Start of LiveChat (www.livechat.com) code -->

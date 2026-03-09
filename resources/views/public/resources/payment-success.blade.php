@@ -1,8 +1,14 @@
 @extends('layouts.app')
 
-@section('title', 'Payment Successful - ESA Portal')
+@section('title', 'Resource Payment Success - ESA Portal')
 
-@push('styles')
+@php
+    $systemName = \Illuminate\Support\Facades\Cache::get('esa_system_name', 'ESA-Parnel');
+    $logoUrl = \App\Helpers\LogoHelper::getLogoUrl();
+@endphp
+
+@section('content')
+@include('components.public-navigation')
 <style>
     .success-animation {
         animation: successPulse 2s ease-in-out infinite;

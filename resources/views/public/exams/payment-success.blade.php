@@ -1,8 +1,9 @@
 @extends('layouts.app')
 
-@section('title', 'Payment Successful - Excellent Servant Academy')
+@section('title', 'Exam Payment Success - Excellent Servant Academy')
 
 @section('content')
+@include('components.public-navigation')
 <div class="container mx-auto px-4 py-8 max-w-4xl">
     <!-- Success Message -->
     <div class="text-center mb-8">

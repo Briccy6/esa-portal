@@ -146,7 +146,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const formData = new FormData(this);
 
-        fetch("{{ route('marks.store') }}", {
+        fetch("{{ route('teacher.marks.store') }}", {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value

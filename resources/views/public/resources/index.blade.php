@@ -2,6 +2,10 @@
 
 @section('title', 'Public Resources - ESA Portal')
 
+@php
+    $systemName = \Illuminate\Support\Facades\Cache::get('esa_system_name', 'ESA-Parnel');
+@endphp
+
 @push('styles')
 <style>
     :root {
@@ -48,10 +52,85 @@
     .search-container {
         background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
     }
+
+    /* Mobile Responsive Enhancements */
+    @media (max-width: 768px) {
+        .search-container {
+            padding: 3rem 1rem !important;
+        }
+        
+        .search-container h1 {
+            font-size: 2rem !important;
+            line-height: 1.2;
+        }
+        
+        .search-container p {
+            font-size: 1rem !important;
+            margin-bottom: 1.5rem !important;
+        }
+        
+        .resource-card {
+            margin-bottom: 1rem;
+        }
+        
+        .resource-card h3 {
+            font-size: 1rem !important;
+            line-height: 1.3;
+        }
+        
+        .resource-card .text-sm {
+            font-size: 0.75rem !important;
+        }
+        
+        /* Better mobile filters */
+        .filter-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .filter-container select {
+            width: 100%;
+            padding: 0.75rem;
+        }
+        
+        .filter-container button {
+            width: 100%;
+            padding: 0.75rem;
+        }
+    }
+    
+    @media (max-width: 640px) {
+        .grid-cols-1 {
+            grid-template-columns: 1fr;
+        }
+        
+        .resource-card {
+            border-radius: 0.5rem;
+        }
+        
+        .search-container {
+            padding: 2rem 1rem !important;
+        }
+    }
+
+    /* Touch-friendly buttons */
+    @media (hover: none) and (pointer: coarse) {
+        .resource-card button {
+            min-height: 44px;
+            min-width: 44px;
+        }
+        
+        .btn-primary {
+            padding: 0.875rem 1.5rem;
+            font-size: 1rem;
+        }
+    }
 </style>
 @endpush
 
 @section('content')
+@include('components.public-navigation')
 
     <!-- Hero Section with Search -->
     <div class="search-container text-white py-16">
@@ -78,8 +157,8 @@
                     </div>
                     
                     <!-- Filters -->
-                    <div class="flex flex-wrap gap-4 mt-6 justify-center">
-                        <select name="course_id" class="px-4 py-2 rounded-lg text-gray-800">
+                    <div class="filter-container flex flex-wrap gap-4 mt-6 justify-center md:flex-row md:gap-4">
+                        <select name="course_id" class="px-4 py-2 rounded-lg text-gray-800 w-full md:w-auto">
                             <option value="">All Courses</option>
                             @foreach($courses as $course)
                                 <option value="{{ $course->id }}" {{ request('course_id') == $course->id ? 'selected' : '' }}>
@@ -88,14 +167,14 @@
                             @endforeach
                         </select>
                         
-                        <select name="price_type" class="px-4 py-2 rounded-lg text-gray-800">
+                        <select name="price_type" class="px-4 py-2 rounded-lg text-gray-800 w-full md:w-auto">
                             <option value="">All Resources</option>
                             <option value="free" {{ request('price_type') == 'free' ? 'selected' : '' }}>Free Only</option>
                             <option value="paid" {{ request('price_type') == 'paid' ? 'selected' : '' }}>Paid Only</option>
                         </select>
                         
                         @if(request()->hasAny(['search', 'course_id', 'price_type']))
-                            <a href="{{ route('public.resources.index') }}" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">
+                            <a href="{{ route('public.resources.index') }}" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 w-full md:w-auto text-center">
                                 <i class="fas fa-times mr-2"></i>Clear Filters
                             </a>
                         @endif

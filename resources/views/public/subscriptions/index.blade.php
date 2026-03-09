@@ -2,10 +2,89 @@
 
 @section('title', 'Subscription Plans - ESA Portal')
 
+@push('styles')
+<style>
+    /* Mobile Responsive Enhancements */
+    @media (max-width: 768px) {
+        .hero-section {
+            padding: 3rem 1rem !important;
+        }
+        
+        .hero-section h1 {
+            font-size: 2rem !important;
+            line-height: 1.2;
+        }
+        
+        .hero-section p {
+            font-size: 1rem !important;
+        }
+        
+        .subscription-card {
+            margin: 0 1rem 1.5rem 1rem !important;
+        }
+        
+        .subscription-card .p-8 {
+            padding: 1.5rem !important;
+        }
+        
+        .subscription-card h3 {
+            font-size: 1.5rem !important;
+        }
+        
+        .subscription-card .text-4xl {
+            font-size: 2rem !important;
+        }
+        
+        .subscription-card .btn-primary {
+            width: 100%;
+            padding: 0.875rem !important;
+            font-size: 1rem !important;
+        }
+    }
+    
+    @media (max-width: 640px) {
+        .hero-section {
+            padding: 2rem 1rem !important;
+        }
+        
+        .hero-section h1 {
+            font-size: 1.75rem !important;
+        }
+        
+        .subscription-card {
+            border-radius: 1rem !important;
+        }
+        
+        .subscription-card .p-8 {
+            padding: 1rem !important;
+        }
+        
+        .subscription-card h3 {
+            font-size: 1.25rem !important;
+        }
+        
+        .subscription-card .text-4xl {
+            font-size: 1.75rem !important;
+        }
+    }
+
+    /* Touch-friendly buttons */
+    @media (hover: none) and (pointer: coarse) {
+        .subscription-card .btn-primary {
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    }
+</style>
+@endpush
+
 @section('content')
+@include('components.public-navigation')
 <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
     <!-- Hero Section -->
-    <div class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+    <div class="hero-section bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
         <div class="container mx-auto px-4 py-16">
             <div class="text-center">
                 <h1 class="text-4xl font-bold mb-4">Choose Your Learning Plan</h1>
@@ -31,7 +110,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             @foreach($subscriptions as $tier => $plans)
                 @foreach($plans as $subscription)
-                    <div class="bg-white rounded-2xl shadow-lg overflow-hidden transform transition-all duration-300 hover:scale-105 {{ $subscription->is_recommended ? 'ring-4 ring-blue-500' : '' }}">
+                    <div class="subscription-card bg-white rounded-2xl shadow-lg overflow-hidden transform transition-all duration-300 hover:scale-105 {{ $subscription->is_recommended ? 'ring-4 ring-blue-500' : '' }}">
                         @if($subscription->is_recommended)
                             <div class="bg-blue-600 text-white text-center py-2 text-sm font-semibold">
                                 MOST POPULAR

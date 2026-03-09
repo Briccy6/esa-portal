@@ -1582,19 +1582,19 @@
             background: #f1f5f9;
         }
 
-        .info-card-body::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 2px;
-        }
+            /* Custom Scrollbar */
+            .info-card-body::-webkit-scrollbar {
+                width: 4px;
+            }
 
-        .info-card-body::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-        }
-    </style>
-@endsection
+            .info-card-body::-webkit-scrollbar-track {
+                background: #f1f5f9;
+            }
 
-@section('scripts')
-<script>
+            .info-card-body::-webkit-scrollbar-thumb {
+                background: #cbd5e1;
+                border-radius: 2px;
+            }
 document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.pay-fee-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {

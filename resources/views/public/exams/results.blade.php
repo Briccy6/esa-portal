@@ -1,8 +1,9 @@
 @extends('layouts.app')
 
-@section('title', 'Exam Results - ' . $exam->title . ' - Excellent Servant Academy')
+@section('title', 'Exam Results - Excellent Servant Academy')
 
 @section('content')
+@include('components.public-navigation')
 <div class="container mx-auto px-4 py-8">
     <!-- Results Header -->
     <div class="text-center mb-12">

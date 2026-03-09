@@ -1006,6 +1006,100 @@
             .card-shadow-hover {
                 padding: 2rem;
             }
+            
+            /* Enhanced Mobile Styles */
+            .section-heading {
+                font-size: 2rem !important;
+            }
+            
+            .alx-card {
+                margin: 0 1rem 1.5rem 1rem !important;
+            }
+            
+            .alx-card-title {
+                font-size: 1.125rem !important;
+                line-height: 1.4 !important;
+            }
+            
+            .alx-card-subtitle {
+                font-size: 0.875rem !important;
+            }
+            
+            .alx-meta-info {
+                font-size: 0.875rem !important;
+            }
+            
+            .alx-btn {
+                padding: 0.75rem 1.5rem !important;
+                font-size: 0.875rem !important;
+            }
+            
+            .btn-primary {
+                padding: 0.875rem 1.5rem !important;
+                font-size: 1rem !important;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .hero-carousel {
+                height: 400px;
+            }
+            
+            .carousel-text h2 {
+                font-size: 2rem;
+            }
+            
+            .carousel-text p {
+                font-size: 1rem;
+            }
+            
+            .section-heading {
+                font-size: 1.75rem !important;
+            }
+            
+            .alx-card {
+                margin: 0 0.5rem 1rem 0.5rem !important;
+                border-radius: 0.75rem !important;
+            }
+            
+            .alx-card-header {
+                padding: 1.5rem 1rem 1rem !important;
+            }
+            
+            .alx-card-body {
+                padding: 1rem !important;
+            }
+            
+            .alx-card-title {
+                font-size: 1rem !important;
+            }
+            
+            .alx-btn {
+                padding: 0.625rem 1.25rem !important;
+                font-size: 0.8125rem !important;
+            }
+        }
+
+        /* Touch-friendly buttons */
+        @media (hover: none) and (pointer: coarse) {
+            .alx-btn {
+                min-height: 44px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .btn-primary {
+                min-height: 44px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .carousel-control {
+                min-height: 44px;
+                min-width: 44px;
+            }
         }
 
         /* Loading Animation */

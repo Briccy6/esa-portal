@@ -1,20 +1,18 @@
 @extends('layouts.app')
 
-@section('title', 'Payment for ' . ($resource->document_name ?: $resource->video_name ?: 'Resource') . ' - ESA Portal')
+@section('title', 'Resource Payment - ESA Portal')
+
+@php
+    $systemName = \Illuminate\Support\Facades\Cache::get('esa_system_name', 'ESA-Parnel');
+@endphp
+
+@section('content')
+@include('components.public-navigation')
 
 @push('styles')
 <link href="https://checkout.flutterwave.com/v3.js" rel="preload">
 <style>
     :root {
-        --primary-color: #6f42c1;
-        --secondary-color: #36b9cc;
-        --accent-color: #e74a3b;
-        --text-dark: #263238;
-        --text-light: #455a64;
-        --bg-light: #ecf0f1;
-        --bg-white: #ffffff;
-        --border-color: #cfd8dc;
-    }
 
     .payment-method-card {
         transition: all 0.3s ease;

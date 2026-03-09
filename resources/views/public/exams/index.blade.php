@@ -2,7 +2,102 @@
 
 @section('title', 'Available Exams - Excellent Servant Academy')
 
+@push('styles')
+<style>
+    /* Mobile Responsive Enhancements */
+    @media (max-width: 768px) {
+        .container {
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+        }
+        
+        .text-5xl {
+            font-size: 2.5rem !important;
+            line-height: 1.2;
+        }
+        
+        .text-xl {
+            font-size: 1rem !important;
+        }
+        
+        .subscription-banner {
+            padding: 1.5rem !important;
+            margin: 0 1rem 2rem 1rem !important;
+        }
+        
+        .subscription-banner h2 {
+            font-size: 1.5rem !important;
+            margin-bottom: 1rem !important;
+        }
+        
+        .subscription-banner p {
+            font-size: 1rem !important;
+            margin-bottom: 1.5rem !important;
+        }
+        
+        .subscription-banner a {
+            padding: 0.875rem 1.5rem !important;
+            font-size: 1rem !important;
+            width: 100%;
+            text-align: center;
+        }
+        
+        .filters-container {
+            padding: 1rem !important;
+            margin: 0 1rem 2rem 1rem !important;
+        }
+        
+        .exam-card {
+            margin: 0 1rem 1.5rem 1rem !important;
+        }
+        
+        .exam-card h3 {
+            font-size: 1.125rem !important;
+            line-height: 1.3;
+        }
+        
+        .exam-card .text-sm {
+            font-size: 0.875rem !important;
+        }
+    }
+    
+    @media (max-width: 640px) {
+        .text-5xl {
+            font-size: 2rem !important;
+        }
+        
+        .subscription-banner {
+            padding: 1rem !important;
+        }
+        
+        .subscription-banner h2 {
+            font-size: 1.25rem !important;
+        }
+        
+        .exam-card {
+            border-radius: 0.75rem !important;
+        }
+    }
+
+    /* Touch-friendly buttons */
+    @media (hover: none) and (pointer: coarse) {
+        .exam-card button {
+            min-height: 44px;
+            min-width: 44px;
+        }
+        
+        .subscription-banner a {
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    }
+</style>
+@endpush
+
 @section('content')
+@include('components.public-navigation')
 <div class="container mx-auto px-4 py-8">
     <!-- Header -->
     <div class="text-center mb-12">
@@ -23,7 +118,7 @@
 
     <!-- Subscription Banner -->
     @if($subscriptions->count() > 0)
-    <div class="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 rounded-2xl p-8 mb-8 text-white shadow-xl relative overflow-hidden">
+    <div class="subscription-banner bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 rounded-2xl p-8 mb-8 text-white shadow-xl relative overflow-hidden">
         <div class="absolute top-0 right-0 w-40 h-40 bg-white opacity-10 rounded-full -mr-20 -mt-20"></div>
         <div class="relative z-10">
             <div class="flex flex-col lg:flex-row items-center justify-between">
@@ -49,7 +144,7 @@
     @endif
 
     <!-- Filters -->
-    <div class="bg-white rounded-2xl shadow-lg p-6 mb-8 border border-gray-100">
+    <div class="filters-container bg-white rounded-2xl shadow-lg p-6 mb-8 border border-gray-100">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-2">Search</label>
@@ -85,7 +180,7 @@
                          data-exam-id="{{ $exam->id }}"
                          data-price="{{ $exam->public_price }}"
                          data-title="{{ $exam->title }}"
-                         data-questions="{{ $exam->questions->count() }}">
+                         data-questions="{{ $exam->questions->count() }}">>
                         
                         <!-- Exam Header -->
                         <div class="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-6 text-white relative overflow-hidden">

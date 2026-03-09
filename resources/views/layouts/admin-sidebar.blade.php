@@ -68,7 +68,7 @@
                        class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white rounded-lg transition-colors">
                         <span class="ml-8">👥 Students</span>
                     </a>
-                    <a href="{{ route('teachers.index') }}" 
+                    <a href="{{ route('admin.teachers.index') }}" 
                        class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white rounded-lg transition-colors">
                         <span class="ml-8">👨‍🏫 Teachers</span>
                     </a>

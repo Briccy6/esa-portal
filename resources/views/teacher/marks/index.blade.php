@@ -9,7 +9,7 @@
                     <h4 class="mb-0">Enter Student Marks</h4>
                 </div>
                 <div class="card-body">
-                    <form id="marksForm" method="POST" action="{{ route('marks.store') }}">
+                    <form id="marksForm" method="POST" action="{{ route('teacher.marks.store') }}">
                         @csrf
                         <div class="row g-3 mb-4">
                             <div class="col-md-3">
@@ -279,7 +279,7 @@
             formData.append('marks_out_of', document.getElementById('marks_out_of').value);
         }
 
-        fetch('{{ route('marks.store') }}', {
+        fetch('{{ route('teacher.marks.store') }}', {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': '{{ csrf_token() }}'
