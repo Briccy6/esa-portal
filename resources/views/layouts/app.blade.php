@@ -24,6 +24,18 @@
             font-family: 'Inter', sans-serif;
         }
         
+        /* CSS Variables for consistent theming */
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #3498db;
+            --text-dark: #263238;
+            --text-light: #455a64;
+            --bg-light: #ecf0f1;
+            --bg-white: #ffffff;
+            --border-color: #cfd8dc;
+        }
+        
         /* Custom animations */
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(20px); }
@@ -75,13 +87,13 @@
                 </div>
                 <!-- Desktop Navigation -->
                 <nav class="hidden md:flex items-center space-x-6">
-                    <a href="{{ route('welcome') }}" class="text-gray-600 hover:text-blue-600 font-medium transition duration-300">Home</a>
-                    <a href="{{ route('public.exams.index') }}" class="text-gray-600 hover:text-blue-600 font-medium transition duration-300">Exams</a>
-                    <a href="#announcements" class="text-gray-600 hover:text-blue-600 font-medium transition duration-300">Announcements</a>
-                    <a href="{{ route('blogs.index') }}" class="text-gray-600 hover:text-blue-600 font-medium transition duration-300">Blog</a>
-                    <a href="#quick-access" class="text-gray-600 hover:text-blue-600 font-medium transition duration-300">Portals</a>
-                    <a href="#about" class="text-gray-600 hover:text-blue-600 font-medium transition duration-300">About</a>
-                    <a href="#contact" class="text-gray-600 hover:text-blue-600 font-medium transition duration-300">Contact</a>
+                    <a href="{{ route('welcome') }}" class="text-gray-600 hover:text-accent-color font-medium transition duration-300">Home</a>
+                    <a href="{{ route('public.exams.index') }}" class="text-gray-600 hover:text-accent-color font-medium transition duration-300">Exams</a>
+                    <a href="#announcements" class="text-gray-600 hover:text-accent-color font-medium transition duration-300">Announcements</a>
+                    <a href="{{ route('blogs.index') }}" class="text-gray-600 hover:text-accent-color font-medium transition duration-300">Blog</a>
+                    <a href="#quick-access" class="text-gray-600 hover:text-accent-color font-medium transition duration-300">Portals</a>
+                    <a href="#about" class="text-gray-600 hover:text-accent-color font-medium transition duration-300">About</a>
+                    <a href="#contact" class="text-gray-600 hover:text-accent-color font-medium transition duration-300">Contact</a>
                 </nav>
                 <!-- Login Buttons -->
                 <div class="hidden md:flex items-center space-x-3">
@@ -148,13 +160,13 @@
     <!-- Mobile Navigation (hidden by default, shown by Alpine.js) -->
     <div class="md:hidden bg-white shadow-lg py-4" x-data="{ open: false }" x-show="open" @click.away="open = false" x-transition.origin.top>
         <nav class="flex flex-col items-center space-y-4">
-            <a href="{{ route('welcome') }}" class="text-gray-600 hover:text-blue-600 font-medium transition duration-300" @click="open = false">Home</a>
-            <a href="{{ route('public.exams.index') }}" class="text-gray-600 hover:text-blue-600 font-medium transition duration-300" @click="open = false">Exams</a>
-            <a href="#announcements" class="text-gray-600 hover:text-blue-600 font-medium transition duration-300" @click="open = false">Announcements</a>
-            <a href="{{ route('blogs.index') }}" class="text-gray-600 hover:text-blue-600 font-medium transition duration-300" @click="open = false">Blog</a>
-            <a href="#quick-access" class="text-gray-600 hover:text-blue-600 font-medium transition duration-300" @click="open = false">Portals</a>
-            <a href="#about" class="text-gray-600 hover:text-blue-600 font-medium transition duration-300" @click="open = false">About</a>
-            <a href="#contact" class="text-gray-600 hover:text-blue-600 font-medium transition duration-300" @click="open = false">Contact</a>
+            <a href="{{ route('welcome') }}" class="text-gray-600 hover:text-accent-color font-medium transition duration-300" @click="open = false">Home</a>
+            <a href="{{ route('public.exams.index') }}" class="text-gray-600 hover:text-accent-color font-medium transition duration-300" @click="open = false">Exams</a>
+            <a href="#announcements" class="text-gray-600 hover:text-accent-color font-medium transition duration-300" @click="open = false">Announcements</a>
+            <a href="{{ route('blogs.index') }}" class="text-gray-600 hover:text-accent-color font-medium transition duration-300" @click="open = false">Blog</a>
+            <a href="#quick-access" class="text-gray-600 hover:text-accent-color font-medium transition duration-300" @click="open = false">Portals</a>
+            <a href="#about" class="text-gray-600 hover:text-accent-color font-medium transition duration-300" @click="open = false">About</a>
+            <a href="#contact" class="text-gray-600 hover:text-accent-color font-medium transition duration-300" @click="open = false">Contact</a>
             <div class="w-full border-t border-gray-200 pt-4 mt-4"></div>
             @if(auth()->guard('student')->check())
                 <div class="relative w-full text-center" x-data="{ loginOpen: false }">
