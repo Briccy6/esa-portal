@@ -128,20 +128,30 @@ class ClientAuthController extends Controller
         try {
             $googleUser = Socialite::driver('google')->user();
             
+            \Log::info('Google OAuth successful for user: ' . $googleUser->getEmail());
+            
             // Check if client already exists
             $existingClient = Client::where('email', $googleUser->getEmail())->first();
             
             if ($existingClient) {
+                \Log::info('Existing client found: ' . $existingClient->id);
+                
                 // Update Google ID if not already set
                 if (!$existingClient->google_id) {
                     $existingClient->update(['google_id' => $googleUser->getId()]);
+                    \Log::info('Updated Google ID for existing client');
                 }
                 
                 // Login existing client
                 Auth::guard('client')->login($existingClient);
+                \Log::info('Client logged in successfully');
                 
-                return redirect()->route('client.dashboard');
+                $redirect = redirect()->route('client.dashboard');
+                \Log::info('Redirecting to client dashboard');
+                return $redirect;
             } else {
+                \Log::info('Creating new client for: ' . $googleUser->getEmail());
+                
                 // Create new client
                 $client = Client::create([
                     'name' => $googleUser->getName(),
@@ -153,15 +163,21 @@ class ClientAuthController extends Controller
                     'verification_status' => 'verified',
                 ]);
 
+                \Log::info('New client created with ID: ' . $client->id);
+
                 // Send welcome email for new clients
                 $this->sendWelcomeEmail($client);
 
                 Auth::guard('client')->login($client);
+                \Log::info('New client logged in successfully');
 
-                return redirect()->route('client.dashboard');
+                $redirect = redirect()->route('client.dashboard');
+                \Log::info('Redirecting new client to dashboard');
+                return $redirect;
             }
         } catch (\Exception $e) {
             \Log::error('Google OAuth error: ' . $e->getMessage());
+            \Log::error('Stack trace: ' . $e->getTraceAsString());
             return redirect()->route('client.auth.login')
                 ->with('error', 'Unable to login with Google. Please try again.');
         }

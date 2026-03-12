@@ -1089,7 +1089,12 @@ Route::middleware(['auth:admin'])->prefix('admin/subscriptions')->name('subscrip
     Route::get('/student-subscriptions', [SubscriptionController::class, 'studentSubscriptions'])->name('student-subscriptions');
     Route::post('/extend/{studentSubscription}', [SubscriptionController::class, 'extendSubscription'])->name('extend');
 });
-
+// Live Class Signaling (polling-based WebRTC)
+Route::prefix('live-signaling')->name('live-signaling.')->group(function () {
+    Route::post('/{liveClassId}/send', [App\Http\Controllers\LiveClassSignalingController::class, 'send'])->name('send');
+    Route::get('/{liveClassId}/poll', [App\Http\Controllers\LiveClassSignalingController::class, 'poll'])->name('poll');
+    Route::get('/{liveClassId}/participants', [App\Http\Controllers\LiveClassSignalingController::class, 'participants'])->name('participants');
+});
 // Public Resource Routes
 // Public Resources Routes
 Route::prefix('resources')->name('public.resources.')->group(function () {
