@@ -473,7 +473,8 @@ document.querySelectorAll('.sidebar-tab').forEach(tab => {
 function approveRequest(requestId) {
     if (!confirm('Approve this request?')) return;
     
-    fetch(`{{ route('live-classes.requests.approve', [$liveClass->id, '']) }}`.replace('/0', '/' + requestId), {
+    const url = `{{ route('live-classes.requests.approve', [$liveClass->id, 'PLACEHOLDER']) }}`.replace('PLACEHOLDER', requestId);
+    fetch(url, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -489,15 +490,16 @@ function approveRequest(requestId) {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
-        alert('Failed to approve request');
+        console.error('Error approving request:', error);
+        alert('Error approving request');
     });
 }
 
 function rejectRequest(requestId) {
     const reason = prompt('Reason for rejection (optional):');
     
-    fetch(`{{ route('live-classes.requests.reject', [$liveClass->id, '']) }}`.replace('/0', '/' + requestId), {
+    const url = `{{ route('live-classes.requests.reject', [$liveClass->id, 'PLACEHOLDER']) }}`.replace('PLACEHOLDER', requestId);
+    fetch(url, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -516,8 +518,8 @@ function rejectRequest(requestId) {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
-        alert('Failed to reject request');
+        console.error('Error rejecting request:', error);
+        alert('Error rejecting request');
     });
 }
 
