@@ -906,6 +906,15 @@ Route::middleware(['auth:admin,staff,teacher,student,client'])->prefix('webrtc')
     Route::get  ('/participants/{roomId}', [WebRTCController::class, 'participants'])->name('participants');
 });
 
+// Additional WebRTC routes specifically for teachers (in case of auth issues)
+Route::middleware(['auth:teacher'])->prefix('webrtc')->name('webrtc.teacher.')->group(function () {
+    
+    // Teacher-specific signaling routes
+    Route::post ('/signaling/{roomId}',  [WebRTCController::class, 'signaling'])     ->name('teacher.signaling');
+    Route::get  ('/signaling/{roomId}',  [WebRTCController::class, 'pollSignaling']) ->name('teacher.pollSignaling');
+    
+});
+
 Route::get('/student/pay/', [StudentController::class, 'payFees'])->name('student.pay');
 
 Route::get('/staff/one-time-login/{staff}', [StaffController::class, 'oneTimeLogin'])

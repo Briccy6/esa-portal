@@ -371,6 +371,23 @@ function postSignal(data) {
     }).catch(console.warn);
 }
 
+// Alternative function to try teacher-specific routes
+function postSignalTeacher(data) {
+    fetch('/webrtc/signaling/' + ROOM_ID, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
+        body: JSON.stringify(data)
+    }).catch(error => {
+        console.error('❌ Teacher signaling failed, trying fallback:', error);
+        // Fallback to generic route
+        fetch('/webrtc/signaling/' + ROOM_ID, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
+            body: JSON.stringify(data)
+        }).catch(console.warn);
+    });
+}
+
 // ═══════════════════════════════════════════════════════════
 // POLL SIGNALS (host reads from host queue)
 // ═══════════════════════════════════════════════════════════
@@ -379,7 +396,10 @@ async function pollSignals() {
         const r = await fetch(`/webrtc/signaling/${ROOM_ID}?role=host&sessionId=${SESSION_ID}`, {
             headers: { 'X-CSRF-TOKEN': CSRF }
         });
-        if (!r.ok) return;
+        if (!r.ok) {
+            console.error('🔍 Teacher poll failed:', r.status, r.statusText);
+            return;
+        }
         const signals = await r.json();
         
         console.log('🔍 Teacher poll: received', signals.length, 'signals:', signals);

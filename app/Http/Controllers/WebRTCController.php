@@ -30,6 +30,14 @@ class WebRTCController extends Controller
         
         // Debug logging
         \Log::info("WebRTC signaling: roomId={$roomId}, role={$role}, sessionId={$sessionId}", ['data' => $data]);
+        
+        // Check authentication
+        $user = auth()->user();
+        $teacher = auth()->guard('teacher')->user();
+        $student = auth()->guard('student')->user();
+        $client = auth()->guard('client')->user();
+        
+        \Log::info("Auth check - User: " . ($user ? $user->id : 'null') . ", Teacher: " . ($teacher ? $teacher->id : 'null') . ", Student: " . ($student ? $student->id : 'null') . ", Client: " . ($client ? $client->id : 'null'));
 
         if ($role === 'host') {
             // Teacher → fan-out to every connected client
@@ -60,6 +68,14 @@ class WebRTCController extends Controller
         
         // Debug logging
         \Log::info("WebRTC pollSignaling: roomId={$roomId}, role={$role}, sessionId={$sessionId}");
+        
+        // Check authentication
+        $user = auth()->user();
+        $teacher = auth()->guard('teacher')->user();
+        $student = auth()->guard('student')->user();
+        $client = auth()->guard('client')->user();
+        
+        \Log::info("Auth check - User: " . ($user ? $user->id : 'null') . ", Teacher: " . ($teacher ? $teacher->id : 'null') . ", Student: " . ($student ? $student->id : 'null') . ", Client: " . ($client ? $client->id : 'null'));
 
         if ($role === 'host') {
             $key     = "webrtc_to_host_{$roomId}";
