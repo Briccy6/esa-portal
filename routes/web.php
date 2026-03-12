@@ -887,12 +887,23 @@ Route::middleware(['auth:admin,staff,teacher'])->group(function () {
     Route::post('live-classes/{liveClass}/requests/{requestId}/reject', [LiveClassController::class, 'rejectRequest'])->name('live-classes.requests.reject');
 });
 
-// WebRTC Routes (Protected)
-Route::middleware(['auth:admin,staff,teacher,student'])->prefix('webrtc')->name('webrtc.')->group(function () {
-    Route::post('/signaling/{roomId}', [WebRTCController::class, 'signaling'])->name('signaling');
-    Route::post('/join/{roomId}', [WebRTCController::class, 'joinRoom'])->name('join');
-    Route::post('/leave/{roomId}', [WebRTCController::class, 'leaveRoom'])->name('leave');
-    Route::post('/chat/{roomId}', [WebRTCController::class, 'chatMessage'])->name('chat');
+
+Route::middleware(['auth:admin,staff,teacher,student,client'])->prefix('webrtc')->name('webrtc.')->group(function () {
+
+    // Signaling — POST sends a signal, GET polls pending signals
+    Route::post ('/signaling/{roomId}',  [WebRTCController::class, 'signaling'])     ->name('signaling');
+    Route::get  ('/signaling/{roomId}',  [WebRTCController::class, 'pollSignaling']) ->name('pollSignaling');
+
+    // Room lifecycle
+    Route::post ('/join/{roomId}',       [WebRTCController::class, 'joinRoom'])      ->name('join');
+    Route::post ('/leave/{roomId}',      [WebRTCController::class, 'leaveRoom'])     ->name('leave');
+
+    // Chat — POST sends, GET polls history
+    Route::post ('/chat/{roomId}',       [WebRTCController::class, 'chatMessage'])   ->name('chat');
+    Route::get  ('/chat/{roomId}',       [WebRTCController::class, 'pollChat'])      ->name('chat.poll');
+
+    // Participants list
+    Route::get  ('/participants/{roomId}', [WebRTCController::class, 'participants'])->name('participants');
 });
 
 Route::get('/student/pay/', [StudentController::class, 'payFees'])->name('student.pay');

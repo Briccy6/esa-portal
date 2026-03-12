@@ -2,167 +2,252 @@
 
 namespace App\Http\Controllers;
 
-use App\Events\LiveClassSignaling;
 use App\Models\LiveClass;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 
+/**
+ * WebRTCController — Cache-based signaling (no Pusher/Echo/log needed)
+ *
+ * Signal flow:
+ *   Teacher  POST role=host  → fanned out to each client's queue
+ *   Student  POST role=client → queued for host to read
+ *   Both     GET  ?role=host|client&sessionId=xxx → drains their queue
+ */
 class WebRTCController extends Controller
 {
+    const TTL = 600;
+
+    // ──────────────────────────────────────────────────────────
+    // POST /webrtc/signaling/{roomId}
+    // ──────────────────────────────────────────────────────────
     public function signaling(Request $request, $roomId)
     {
-        $data = $request->all();
-        $user = Auth::user();
+        $data      = $request->all();
+        $role      = $data['role']      ?? 'client';
+        $sessionId = $data['sessionId'] ?? session()->getId();
         
-        // Validate that user has access to this live class
-        $liveClass = LiveClass::where('meeting_id', $roomId)->first();
-        if (!$liveClass) {
-            return response()->json(['error' => 'Live class not found'], 404);
+        // Debug logging
+        \Log::info("WebRTC signaling: roomId={$roomId}, role={$role}, sessionId={$sessionId}", ['data' => $data]);
+
+        if ($role === 'host') {
+            // Teacher → fan-out to every connected client
+            $clients = Cache::get("webrtc_clients_{$roomId}", []);
+            \Log::info("Host fanning out to " . count($clients) . " clients", ['clients' => $clients]);
+            foreach ($clients as $clientSession) {
+                $this->push("webrtc_to_client_{$roomId}_{$clientSession}", $data);
+                \Log::info("Host sent signal to client: {$clientSession}");
+            }
+        } else {
+            // Student → queue for host
+            $this->push("webrtc_to_host_{$roomId}", array_merge($data, [
+                'fromSession' => $sessionId,
+            ]));
+            \Log::info("Client sent signal to host from: {$sessionId}");
         }
 
-        // Check permissions
-        $this->validateAccess($liveClass, $user);
-
-        // Broadcast the signaling message
-        broadcast(new LiveClassSignaling($roomId, $data, $user->id));
-
-        return response()->json(['success' => true]);
+        return response()->json(['ok' => true]);
     }
 
+    // ──────────────────────────────────────────────────────────
+    // GET /webrtc/signaling/{roomId}?role=host|client&sessionId=xxx
+    // ──────────────────────────────────────────────────────────
+    public function pollSignaling(Request $request, $roomId)
+    {
+        $role      = $request->query('role', 'client');
+        $sessionId = $request->query('sessionId', session()->getId());
+        
+        // Debug logging
+        \Log::info("WebRTC pollSignaling: roomId={$roomId}, role={$role}, sessionId={$sessionId}");
+
+        if ($role === 'host') {
+            $key     = "webrtc_to_host_{$roomId}";
+            $signals = Cache::get($key, []);
+            Cache::put($key, [], self::TTL);
+            
+            \Log::info("Host polling: found " . count($signals) . " signals", ['signals' => $signals]);
+
+        } else {
+            // Register client session so host signals reach it
+            $clients = Cache::get("webrtc_clients_{$roomId}", []);
+            if (!in_array($sessionId, $clients)) {
+                $clients[] = $sessionId;
+                Cache::put("webrtc_clients_{$roomId}", $clients, self::TTL);
+                
+                \Log::info("New client registered: {$sessionId}");
+
+                // Tell host: a new viewer is ready → host will create offer
+                $this->push("webrtc_to_host_{$roomId}", [
+                    'type'      => 'viewer_ready',
+                    'sessionId' => $sessionId,
+                    'role'      => 'client',
+                ]);
+                
+                \Log::info("Sent viewer_ready signal to host for client: {$sessionId}");
+            }
+
+            $key     = "webrtc_to_client_{$roomId}_{$sessionId}";
+            $signals = Cache::get($key, []);
+            Cache::put($key, [], self::TTL);
+            
+            \Log::info("Client polling: found " . count($signals) . " signals for {$sessionId}", ['signals' => $signals]);
+        }
+
+        return response()->json($signals);
+    }
+
+    // ──────────────────────────────────────────────────────────
+    // POST /webrtc/join/{roomId}
+    // ──────────────────────────────────────────────────────────
     public function joinRoom(Request $request, $roomId)
     {
-        $user = Auth::user();
-        
-        // Validate that user has access to this live class
-        $liveClass = LiveClass::where('meeting_id', $roomId)->first();
-        if (!$liveClass) {
-            return response()->json(['error' => 'Live class not found'], 404);
+        $sessionId = session()->getId();
+        $name      = $this->getUserName();
+
+        $participants               = Cache::get("webrtc_participants_{$roomId}", []);
+        $participants[$sessionId]   = [
+            'name'      => $name,
+            'role'      => $request->input('role', 'client'),
+            'joined_at' => now()->toISOString(),
+        ];
+        Cache::put("webrtc_participants_{$roomId}", $participants, self::TTL);
+
+        // Add to client list
+        $clients = Cache::get("webrtc_clients_{$roomId}", []);
+        if (!in_array($sessionId, $clients)) {
+            $clients[] = $sessionId;
+            Cache::put("webrtc_clients_{$roomId}", $clients, self::TTL);
         }
 
-        // Check permissions
-        $this->validateAccess($liveClass, $user);
-
-        // Broadcast that user joined
-        broadcast(new LiveClassSignaling($roomId, [
-            'type' => 'participant-joined',
-            'participant' => [
-                'id' => $user->id,
-                'name' => $this->getUserName($user),
-                'isTeacher' => $this->isTeacher($user, $liveClass)
-            ]
-        ]));
+        // Notify host
+        $this->push("webrtc_to_host_{$roomId}", [
+            'type'      => 'participant_joined',
+            'name'      => $name,
+            'sessionId' => $sessionId,
+            'count'     => count($participants),
+        ]);
 
         return response()->json([
-            'success' => true,
-            'roomId' => $roomId,
-            'isTeacher' => $this->isTeacher($user, $liveClass)
+            'ok'        => true,
+            'sessionId' => $sessionId,
+            'name'      => $name,
+            'count'     => count($participants),
         ]);
     }
 
+    // ──────────────────────────────────────────────────────────
+    // POST /webrtc/leave/{roomId}
+    // ──────────────────────────────────────────────────────────
     public function leaveRoom(Request $request, $roomId)
     {
-        $user = Auth::user();
-        
-        // Validate that user has access to this live class
-        $liveClass = LiveClass::where('meeting_id', $roomId)->first();
-        if (!$liveClass) {
-            return response()->json(['error' => 'Live class not found'], 404);
-        }
+        $sessionId    = session()->getId();
+        $participants = Cache::get("webrtc_participants_{$roomId}", []);
+        $name         = $participants[$sessionId]['name'] ?? 'Unknown';
 
-        // Broadcast that user left
-        broadcast(new LiveClassSignaling($roomId, [
-            'type' => 'participant-left',
-            'participantId' => $user->id
-        ]));
+        unset($participants[$sessionId]);
+        Cache::put("webrtc_participants_{$roomId}", $participants, self::TTL);
 
-        return response()->json(['success' => true]);
-    }
+        $clients = Cache::get("webrtc_clients_{$roomId}", []);
+        $clients = array_values(array_filter($clients, fn($s) => $s !== $sessionId));
+        Cache::put("webrtc_clients_{$roomId}", $clients, self::TTL);
+        Cache::forget("webrtc_to_client_{$roomId}_{$sessionId}");
 
-    public function chatMessage(Request $request, $roomId)
-    {
-        $request->validate([
-            'message' => 'required|string|max:500'
+        $this->push("webrtc_to_host_{$roomId}", [
+            'type'      => 'participant_left',
+            'name'      => $name,
+            'sessionId' => $sessionId,
+            'count'     => count($participants),
         ]);
 
-        $user = Auth::user();
-        
-        // Validate that user has access to this live class
-        $liveClass = LiveClass::where('meeting_id', $roomId)->first();
-        if (!$liveClass) {
-            return response()->json(['error' => 'Live class not found'], 404);
-        }
-
-        // Check permissions
-        $this->validateAccess($liveClass, $user);
-
-        // Broadcast chat message
-        broadcast(new LiveClassSignaling($roomId, [
-            'type' => 'chat-message',
-            'message' => $request->message,
-            'sender' => $this->getUserName($user),
-            'senderId' => $user->id,
-            'timestamp' => now()->toISOString()
-        ]));
-
-        return response()->json(['success' => true]);
+        return response()->json(['ok' => true]);
     }
 
-    private function validateAccess($liveClass, $user)
+    // ──────────────────────────────────────────────────────────
+    // POST /webrtc/chat/{roomId}
+    // ──────────────────────────────────────────────────────────
+    public function chatMessage(Request $request, $roomId)
     {
-        // Admin has access to all classes
-        if (Auth::guard('admin')->check()) {
-            return true;
-        }
+        $request->validate(['message' => 'required|string|max:500']);
 
-        // Staff has access to all classes
-        if (Auth::guard('staff')->check()) {
-            return true;
-        }
+        $sessionId = session()->getId();
+        $name      = $this->getUserName();
+        $msg = [
+            'id'        => uniqid(),
+            'type'      => 'chat',
+            'message'   => $request->message,
+            'sender'    => $name,
+            'sessionId' => $sessionId,
+            'timestamp' => now()->toISOString(),
+        ];
 
-        // Teacher has access if they're assigned to the class
-        if (Auth::guard('teacher')->check()) {
-            return $liveClass->teacher_id == $user->id;
-        }
+        // Persist in shared chat log
+        $log   = Cache::get("webrtc_chat_{$roomId}", []);
+        $log[] = $msg;
+        if (count($log) > 200) $log = array_slice($log, -200);
+        Cache::put("webrtc_chat_{$roomId}", $log, self::TTL);
 
-        // Student has access if they're enrolled in the course
-        if (Auth::guard('student')->check()) {
-            return $liveClass->course_id == $user->course_id;
+        // Push to every other participant's queue
+        $clients = Cache::get("webrtc_clients_{$roomId}", []);
+        foreach ($clients as $cs) {
+            if ($cs !== $sessionId) {
+                $this->push("webrtc_to_client_{$roomId}_{$cs}", $msg);
+            }
         }
+        $this->push("webrtc_to_host_{$roomId}", $msg);
 
-        return false;
+        return response()->json(['ok' => true, 'id' => $msg['id']]);
     }
 
-    private function getUserName($user)
+    // ──────────────────────────────────────────────────────────
+    // GET /webrtc/chat/{roomId}?after=ISO_TIMESTAMP
+    // ──────────────────────────────────────────────────────────
+    public function pollChat(Request $request, $roomId)
     {
-        if (Auth::guard('admin')->check()) {
-            return $user->name . ' (Admin)';
+        $after = $request->query('after', '');
+        $log   = Cache::get("webrtc_chat_{$roomId}", []);
+
+        if ($after) {
+            $log = array_values(array_filter($log, fn($m) => ($m['timestamp'] ?? '') > $after));
         }
 
-        if (Auth::guard('staff')->check()) {
-            return $user->name . ' (Staff)';
-        }
-
-        if (Auth::guard('teacher')->check()) {
-            return $user->name . ' (Teacher)';
-        }
-
-        if (Auth::guard('student')->check()) {
-            return $user->full_name ?? $user->name;
-        }
-
-        return 'Unknown User';
+        return response()->json(['messages' => array_values($log)]);
     }
 
-    private function isTeacher($user, $liveClass)
+    // ──────────────────────────────────────────────────────────
+    // GET /webrtc/participants/{roomId}
+    // ──────────────────────────────────────────────────────────
+    public function participants($roomId)
     {
-        if (Auth::guard('admin')->check() || Auth::guard('staff')->check()) {
-            return true;
-        }
+        $p = Cache::get("webrtc_participants_{$roomId}", []);
+        return response()->json(['count' => count($p), 'participants' => array_values($p)]);
+    }
 
-        if (Auth::guard('teacher')->check()) {
-            return $liveClass->teacher_id == $user->id;
-        }
+    // ──────────────────────────────────────────────────────────
+    // Helpers
+    // ──────────────────────────────────────────────────────────
+    private function push(string $key, array $signal): void
+    {
+        $q   = Cache::get($key, []);
+        $q[] = $signal;
+        Cache::put($key, $q, self::TTL);
+    }
 
-        return false;
+    private function getUserName(): string
+    {
+        foreach (['teacher', 'admin', 'staff', 'student', 'client'] as $guard) {
+            if (Auth::guard($guard)->check()) {
+                $u   = Auth::guard($guard)->user();
+                $n   = $u->full_name ?? $u->name ?? 'User';
+                $tag = match ($guard) {
+                    'teacher' => ' (Teacher)',
+                    'admin'   => ' (Admin)',
+                    'staff'   => ' (Staff)',
+                    default   => '',
+                };
+                return $n . $tag;
+            }
+        }
+        return 'Guest_' . substr(session()->getId(), 0, 6);
     }
 }
