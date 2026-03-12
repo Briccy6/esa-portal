@@ -453,9 +453,17 @@ async function pollSignals() {
             return;
         }
         const signals = await r.json();
-
+        
         console.log('🔍 Student poll: received', signals.length, 'signals:', signals);
-
+        console.log('🔍 Student session ID:', SESSION_ID);
+        console.log('🔍 Polling URL:', `/webrtc/signaling/${ROOM_ID}?role=client&sessionId=${SESSION_ID}`);
+        
+        // Debug: Check if any signals contain offer data
+        const hasOffer = signals.some(sig => sig.type === 'offer');
+        if (hasOffer) {
+            console.log('📋 Found offer in signals:', signals.filter(sig => sig.type === 'offer'));
+        }
+        
         for (const sig of (signals || [])) {
             await handleSignal(sig);
         }
