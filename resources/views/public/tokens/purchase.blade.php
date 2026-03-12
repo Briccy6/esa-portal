@@ -1,9 +1,8 @@
 @extends('layouts.app')
 
-@section('title', 'Token Purchase - ESA Portal')
+@section('title', 'Buy Tokens - ESA Portal')
 
 @section('content')
-@include('components.public-navigation')
 <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12">
     <div class="container mx-auto px-4 max-w-4xl">
         <!-- Header -->

@@ -1,9 +1,8 @@
 @extends('layouts.app')
 
-@section('title', 'Token Plans - ESA Portal')
+@section('title', 'Token History - ESA Portal')
 
 @section('content')
-@include('components.public-navigation')
 <div class="min-h-screen bg-gray-50">
     <!-- Header -->
     <div class="bg-white shadow-sm border-b">

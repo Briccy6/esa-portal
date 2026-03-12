@@ -3,7 +3,6 @@
 @section('title', $exam->title . ' - Skill Practice Test - Excellent Servant Academy')
 
 @section('content')
-@include('components.public-navigation')
 <div class="container mx-auto px-4 py-8">
     <!-- Breadcrumb -->
     <nav class="flex mb-8" aria-label="Breadcrumb">

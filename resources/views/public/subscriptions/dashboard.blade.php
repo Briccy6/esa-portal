@@ -3,7 +3,6 @@
 @section('title', 'Client Dashboard - ESA Portal')
 
 @section('content')
-@include('components.public-navigation')
 <div class="min-h-screen bg-gray-50">
     <!-- Header -->
     <div class="bg-white shadow-sm border-b">

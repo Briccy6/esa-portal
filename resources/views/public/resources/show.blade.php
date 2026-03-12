@@ -1,44 +1,88 @@
-@extends('layouts.app')
+@php
+    $systemName = \Illuminate\Support\Facades\Cache::get('esa_system_name', 'ESA Portal');
+    $logoUrl = \App\Helpers\LogoHelper::getLogoUrl();
+@endphp
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ $resource->document_name ?: $resource->video_name ?: 'Resource' }} - {{ $systemName }}</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link rel="icon" type="image/png" href="{{ \App\Helpers\LogoHelper::getFaviconUrl() }}">
+    
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --text-dark: #263238;
+            --text-light: #455a64;
+            --bg-light: #ecf0f1;
+            --bg-white: #ffffff;
+            --border-color: #cfd8dc;
+        }
 
-@section('title', ($resource->document_name ?: $resource->video_name ?: 'Resource') . ' - ESA Portal')
+        body {
+            font-family: 'Inter', sans-serif;
+            color: var(--text-dark);
+        }
 
-@push('styles')
-<style>
-    :root {
-        --primary-color: #2c3e50;
-        --secondary-color: #3498db;
-        --accent-color: #e74c3c;
-        --text-dark: #263238;
-        --text-light: #455a64;
-        --bg-light: #ecf0f1;
-        --bg-white: #ffffff;
-        --border-color: #cfd8dc;
-    }
+        .btn-primary {
+            background-color: var(--secondary-color);
+            color: white;
+            transition: all 0.3s ease;
+        }
 
-    .resource-header {
-        background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-    }
+        .btn-primary:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+        }
 
-    .btn-primary {
-        background-color: var(--secondary-color);
-        color: white;
-        transition: all 0.3s ease;
-    }
+        .badge-free {
+            background-color: #27ae60;
+        }
 
-    .btn-primary:hover {
-        background-color: #2980b9;
-        transform: translateY(-2px);
-    }
+        .badge-paid {
+            background-color: #e67e22;
+        }
 
-    .resource-meta {
-        background-color: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(10px);
-    }
-</style>
-@endpush
-
-@section('content')
-@include('components.public-navigation')
+        .resource-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a href="{{ url('/') }}" class="flex items-center space-x-3">
+                        @if($logoUrl)
+                            <img src="{{ $logoUrl }}" alt="{{ $systemName }}" class="h-10 w-auto">
+                        @else
+                            <div class="bg-blue-600 text-white px-3 py-2 rounded-lg font-bold text-lg">ESA</div>
+                        @endif
+                        <span class="font-bold text-xl text-gray-800">{{ $systemName }}</span>
+                    </a>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="{{ url('/') }}" class="text-gray-600 hover:text-blue-600 transition">
+                        <i class="fas fa-home mr-2"></i>Home
+                    </a>
+                    <a href="{{ route('public.resources.index') }}" class="text-gray-600 hover:text-blue-600 transition">
+                        <i class="fas fa-book mr-2"></i>Resources
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
 
     <!-- Resource Header -->
     <div class="resource-header text-white py-12">
@@ -65,7 +109,7 @@
                         <span class="badge-free text-lg px-4 py-2 rounded-full">FREE</span>
                     @else
                         <span class="badge-paid text-lg px-4 py-2 rounded-full">
-                            RWF {{ number_format($resource->price, 0) }}
+                            ${{ number_format($resource->price, 2) }}
                         </span>
                     @endif
                 </div>
@@ -139,7 +183,7 @@
                                             </div>
                                         </div>
                                         <div class="flex space-x-2">
-                                            @if($resource->is_free)
+                                            @if($resource->is_free || $resource->price == 0)
                                                 <a href="{{ route('public.resources.preview', $resource->id) }}" 
                                                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
                                                     <i class="fas fa-eye mr-1"></i>Preview
@@ -149,10 +193,9 @@
                                                     <i class="fas fa-download mr-1"></i>Download
                                                 </a>
                                             @else
-                                                <a href="{{ route('public.resources.payment', $resource->id) }}" 
-                                                   class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm">
-                                                    <i class="fas fa-shopping-cart mr-1"></i>Purchase (RWF {{ number_format($resource->price, 0) }})
-                                                </a>
+                                                <button class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm" disabled>
+                                                    <i class="fas fa-lock mr-1"></i>Paid Resource
+                                                </button>
                                             @endif
                                         </div>
                                     </div>
@@ -170,15 +213,14 @@
                                             </div>
                                         </div>
                                         <div class="flex space-x-2">
-                                            @if($resource->is_free)
+                                            @if($resource->is_free || $resource->price == 0)
                                                 <button class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm">
                                                     <i class="fas fa-play mr-1"></i>Play Video
                                                 </button>
                                             @else
-                                                <a href="{{ route('public.resources.payment', $resource->id) }}" 
-                                                   class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm">
-                                                    <i class="fas fa-shopping-cart mr-1"></i>Purchase (RWF {{ number_format($resource->price, 0) }})
-                                                </a>
+                                                <button class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm" disabled>
+                                                    <i class="fas fa-lock mr-1"></i>Paid Resource
+                                                </button>
                                             @endif
                                         </div>
                                     </div>
@@ -257,10 +299,9 @@
                         </a>
                         
                         @if(!$resource->is_free && $resource->price > 0)
-                            <a href="{{ route('public.resources.payment', $resource->id) }}" 
-                               class="w-full bg-orange-600 text-white py-2 rounded-lg font-medium hover:bg-orange-700">
-                                <i class="fas fa-shopping-cart mr-2"></i>Purchase (RWF {{ number_format($resource->price, 0) }})
-                            </a>
+                            <button class="w-full bg-orange-600 text-white py-2 rounded-lg font-medium hover:bg-orange-700">
+                                <i class="fas fa-shopping-cart mr-2"></i>Purchase (${{ number_format($resource->price, 2) }})
+                            </button>
                         @endif
                     </div>
                 </div>
@@ -268,4 +309,14 @@
         </div>
     </div>
 
-    @endsection
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8 mt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <p>&copy; {{ date('Y') }} {{ $systemName }}. All rights reserved.</p>
+                <p class="mt-2 text-gray-400">Empowering education through quality resources</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

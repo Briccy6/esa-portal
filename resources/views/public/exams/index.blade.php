@@ -2,190 +2,7 @@
 
 @section('title', 'Available Exams - Excellent Servant Academy')
 
-@push('styles')
-<style>
-    /* Page-specific styles that complement the enhanced layout */
-    .hero-section {
-        background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-        color: white;
-        padding: 4rem 0;
-        text-align: center;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .hero-section::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
-        }
-    }
-    
-    .hero-title {
-        font-size: 3rem;
-        font-weight: 900;
-        margin-bottom: 1rem;
-        background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        text-fill-color: transparent;
-    }
-    
-    .filters-container {
-        background: var(--bg-white);
-        border-radius: 20px;
-        padding: 2rem;
-        box-shadow: var(--shadow-lg);
-        margin: 2rem 0;
-        border: 1px solid var(--border-color);
-    }
-    
-    .filter-group {
-        margin-bottom: 1.5rem;
-    }
-    
-    .filter-label {
-        font-weight: 600;
-        color: var(--text-dark);
-        margin-bottom: 0.5rem;
-        display: block;
-    }
-    
-    .filter-select {
-        width: 100%;
-        padding: 0.75rem 1rem;
-        border: 2px solid var(--border-color);
-        border-radius: 12px;
-        background: var(--bg-white);
-        font-size: 1rem;
-        transition: all 0.3s ease;
-    }
-    
-    .filter-select:focus {
-        border-color: var(--secondary-color);
-        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
-    }
-    
-    .search-box {
-        position: relative;
-        margin-bottom: 2rem;
-    }
-    
-    .search-input {
-        width: 100%;
-        padding: 1rem 3rem 1rem 3rem;
-        border: 2px solid var(--border-color);
-        border-radius: 50px;
-        font-size: 1rem;
-        background: var(--bg-white);
-        transition: all 0.3s ease;
-    }
-    
-    .search-input:focus {
-        border-color: var(--secondary-color);
-        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
-    }
-    
-    .search-btn {
-        position: absolute;
-        right: 8px;
-        top: 50%;
-        transform: translateY(-50%);
-        background: var(--gradient-primary);
-        color: white;
-        border: none;
-        border-radius: 50%;
-        width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
-    
-    .search-btn:hover {
-        background: var(--gradient-secondary);
-        transform: translateY(-50%) scale(1.05);
-    }
-    
-    .exam-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-        gap: 2rem;
-        margin-top: 2rem;
-    }
-    
-    .exam-card {
-        height: 100%;
-    }
-    
-    .empty-state {
-        text-align: center;
-        padding: 4rem 2rem;
-        background: var(--bg-white);
-        border-radius: 20px;
-        box-shadow: var(--shadow-md);
-        margin: 2rem 0;
-    }
-    
-    .empty-icon {
-        width: 80px;
-        height: 80px;
-        background: var(--gradient-primary);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 1.5rem;
-        font-size: 2rem;
-    }
-    
-    /* Enhanced Mobile Responsive */
-    @media (max-width: 768px) {
-        .hero-title {
-            font-size: 2rem !important;
-        }
-        
-        .exam-grid {
-            grid-template-columns: 1fr !important;
-            gap: 1.5rem !important;
-        }
-        
-        .filters-container {
-            padding: 1.5rem !important;
-            margin: 1rem 0 !important;
-        }
-        
-        .search-input {
-            padding: 0.75rem 2rem 0.75rem 2rem !important;
-        }
-    }
-    
-    @media (max-width: 640px) {
-        .hero-title {
-            font-size: 1.5rem !important;
-        }
-        
-        .exam-grid {
-            grid-template-columns: 1fr !important;
-            gap: 1rem !important;
-        }
-        
-        .filters-container {
-            padding: 1rem !important;
-        }
-    }
-</style>
-@endpush
-
 @section('content')
-@include('components.public-navigation')
 <div class="container mx-auto px-4 py-8">
     <!-- Header -->
     <div class="text-center mb-12">
@@ -206,7 +23,7 @@
 
     <!-- Subscription Banner -->
     @if($subscriptions->count() > 0)
-    <div class="subscription-banner bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 rounded-2xl p-8 mb-8 text-white shadow-xl relative overflow-hidden">
+    <div class="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 rounded-2xl p-8 mb-8 text-white shadow-xl relative overflow-hidden">
         <div class="absolute top-0 right-0 w-40 h-40 bg-white opacity-10 rounded-full -mr-20 -mt-20"></div>
         <div class="relative z-10">
             <div class="flex flex-col lg:flex-row items-center justify-between">
@@ -232,7 +49,7 @@
     @endif
 
     <!-- Filters -->
-    <div class="filters-container bg-white rounded-2xl shadow-lg p-6 mb-8 border border-gray-100">
+    <div class="bg-white rounded-2xl shadow-lg p-6 mb-8 border border-gray-100">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-2">Search</label>
@@ -268,7 +85,7 @@
                          data-exam-id="{{ $exam->id }}"
                          data-price="{{ $exam->public_price }}"
                          data-title="{{ $exam->title }}"
-                         data-questions="{{ $exam->questions->count() }}">>
+                         data-questions="{{ $exam->questions->count() }}">
                         
                         <!-- Exam Header -->
                         <div class="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-6 text-white relative overflow-hidden">
@@ -276,11 +93,9 @@
                             <div class="relative z-10">
                                 <div class="flex items-start justify-between mb-3">
                                     <h3 class="text-xl font-bold leading-tight">{{ Str::limit($exam->title, 60) }}</h3>
-                                    <button onclick="shareExam({{ $exam->id }}, '{{ Str::limit($exam->title, 40) }}')" 
-                                            class="bg-white bg-opacity-20 hover:bg-opacity-30 p-2 rounded-lg transition-all duration-200"
-                                            title="Share this exam">
-                                        <i class="fas fa-share-alt text-white"></i>
-                                    </button>
+                                    <span class="bg-white bg-opacity-20 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium">
+                                        {{ $exam->questions->count() }} Questions
+                                    </span>
                                 </div>
                                 
                                 @if($exam->courses->count() > 0)
@@ -314,7 +129,7 @@
                                         </div>
                                         <span class="font-medium">Duration</span>
                                     </div>
-                                    <span class="text-sm font-semibold text-gray-900">Self-paced</span>
+                                    <span class="text-sm font-semibold text-gray-900">{{ $exam->questions->count() * 2 }} minutes</span>
                                 </div>
                                 
                                 <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
@@ -478,41 +293,5 @@ document.addEventListener('DOMContentLoaded', function() {
     priceFilter.addEventListener('change', filterExams);
     sortSelect.addEventListener('change', filterExams);
 });
-
-// Share Function
-function shareExam(examId, examTitle) {
-    const url = window.location.origin + '/public/exams/' + examId;
-    const text = `Check out this practice test: ${examTitle}`;
-    
-    if (navigator.share) {
-        navigator.share({
-            title: examTitle,
-            text: text,
-            url: url
-        }).catch(err => console.log('Error sharing:', err));
-    } else {
-        // Fallback - copy to clipboard
-        const shareText = `${text} - ${url}`;
-        navigator.clipboard.writeText(shareText).then(() => {
-            showNotification('Link copied to clipboard!');
-        }).catch(() => {
-            // Last resort - open in new window
-            window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
-        });
-    }
-}
-
-function showNotification(message) {
-    // Create notification element
-    const notification = document.createElement('div');
-    notification.className = 'fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300';
-    notification.textContent = message;
-    document.body.appendChild(notification);
-    
-    // Remove after 3 seconds
-    setTimeout(() => {
-        notification.remove();
-    }, 3000);
-}
 </script>
 @endsection

@@ -1,9 +1,8 @@
 @extends('layouts.app')
 
-@section('title', 'Subscription Login - ESA Portal')
+@section('title', 'Client Login - ESA Portal')
 
 @section('content')
-@include('components.public-navigation')
 <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
     <div class="max-w-md w-full space-y-8">
         <!-- Header -->
@@ -80,7 +79,7 @@
         <div class="text-center">
             <p class="text-sm text-gray-600">
                 Don't have an account? 
-                <a href="{{ route('client.auth.register') }}" class="font-medium text-blue-600 hover:text-blue-500">
+                <a href="{{ route('public.subscriptions.register') }}" class="font-medium text-blue-600 hover:text-blue-500">
                     Create one here
                 </a>
             </p>
