@@ -345,6 +345,10 @@ async function createPeerForViewer(viewerSessionId) {
     try {
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
+        
+        // Debug: Log the SDP to check for parsing issues
+        console.log('📋 Generated SDP:', offer.sdp);
+        
         postSignal({
             type:       'offer',
             sdp:        offer.sdp,

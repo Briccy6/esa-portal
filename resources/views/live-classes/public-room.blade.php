@@ -479,6 +479,7 @@ async function handleSignal(sig) {
 
     if (sig.type === 'offer') {
         console.log('📥 Received offer from host');
+        console.log('📋 Received SDP:', sig.sdp);
         try {
             // Wait for peer connection to be ready before setting remote description
             if (pc.signalingState === 'stable' || pc.signalingState === 'have-local-offer') {
@@ -496,6 +497,7 @@ async function handleSignal(sig) {
 
                 const answer = await pc.createAnswer();
                 await pc.setLocalDescription(answer);
+                console.log('📋 Generated Answer SDP:', answer.sdp);
                 postSignal({
                     type:      'answer',
                     sdp:       answer.sdp,
