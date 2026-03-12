@@ -409,6 +409,10 @@ function createPC() {
         }
     };
 
+    pc.onsignalingstatechange = () => {
+        console.log('📡 Signaling state changed to:', pc.signalingState);
+    };
+
     return pc;
 }
 
@@ -463,6 +467,7 @@ async function handleSignal(sig) {
         return;
     }
 
+    // Create peer connection if not exists
     if (!pc) {
         console.log('🔧 Creating peer connection for signal:', sig.type);
         createPC();
@@ -471,26 +476,35 @@ async function handleSignal(sig) {
     if (sig.type === 'offer') {
         console.log('📥 Received offer from host');
         try {
-            await pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: sig.sdp }));
+            // Wait for peer connection to be ready before setting remote description
+            if (pc.signalingState === 'stable' || pc.signalingState === 'have-local-offer') {
+                await pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: sig.sdp }));
+                console.log('✅ Remote description set successfully');
 
-            // Add any local tracks before answering
-            if (localStream) {
-                localStream.getTracks().forEach(t => {
-                    const exists = pc.getSenders().find(s => s.track === t);
-                    if (!exists) pc.addTrack(t, localStream);
+                // Add any local tracks before answering
+                if (localStream) {
+                    localStream.getTracks().forEach(t => {
+                        const exists = pc.getSenders().find(s => s.track === t);
+                        if (!exists) pc.addTrack(t, localStream);
+                    });
+                    console.log('📹 Added local tracks before answering');
+                }
+
+                const answer = await pc.createAnswer();
+                await pc.setLocalDescription(answer);
+                postSignal({
+                    type:      'answer',
+                    sdp:       answer.sdp,
+                    role:      'client',
+                    sessionId: SESSION_ID,
                 });
-                console.log('📹 Added local tracks before answering');
+                console.log('📤 Sent answer to host');
+            } else {
+                console.warn('⚠️ Peer connection not ready for offer, current state:', pc.signalingState);
+                // Retry after a short delay
+                setTimeout(() => handleSignal(sig), 100);
+                return;
             }
-
-            const answer = await pc.createAnswer();
-            await pc.setLocalDescription(answer);
-            postSignal({
-                type:      'answer',
-                sdp:       answer.sdp,
-                role:      'client',
-                sessionId: SESSION_ID,
-            });
-            console.log('📤 Sent answer to host');
         } catch(e) { 
             console.error('❌ Failed to handle offer:', e);
         }
@@ -500,7 +514,13 @@ async function handleSignal(sig) {
     } else if (sig.type === 'ice' && sig.candidate) {
         console.log('🧊 Received ICE candidate from host');
         try {
-            await pc.addIceCandidate(new RTCIceCandidate(sig.candidate));
+            // Only add ICE candidate if remote description is set
+            if (pc.remoteDescription) {
+                await pc.addIceCandidate(new RTCIceCandidate(sig.candidate));
+                console.log('✅ ICE candidate added successfully');
+            } else {
+                console.warn('⚠️ Cannot add ICE candidate - no remote description set');
+            }
         } catch(e) {
             console.error('❌ Failed to add ICE candidate:', e);
         }
