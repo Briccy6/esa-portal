@@ -257,8 +257,12 @@ const CSRF       = document.querySelector('meta[name=csrf-token]').content;
 const SELF_NAME  = '{{ addslashes($guestName ?? auth()->user()->name ?? "Guest") }}';
 const SELF_INIT  = '{{ strtoupper(substr($guestName ?? auth()->user()->name ?? "G", 0, 1)) }}';
 const HOST_NAME  = '{{ addslashes($liveClass->teacher->name ?? "Instructor") }}';
-// Unique session ID per browser tab — used so teacher sends offer to THIS client
-const SESSION_ID = '{{ session()->getId() }}';
+// Store the session ID once when page loads - don't regenerate
+const pageSessionId = '{{ session()->getId() }}';
+console.log('🆔 Student page session ID:', pageSessionId);
+
+// Use this stable session ID for all WebRTC calls
+const SESSION_ID = pageSessionId;
 
 const ICE_SERVERS = { iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
