@@ -10,7 +10,7 @@
 @include('components.public-navigation')
 
 @push('styles')
-<link href="https://checkout.flutterwave.com/v3.js" rel="preload">
+<link href="https://checkout.flutterwave.com/v3.js" rel="preload" as="script">
 <style>
     :root {
 
@@ -256,6 +256,7 @@
 @endsection
 
 @push('scripts')
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cryptico/0.0.134a/cryptico.min.js"></script>
 <script src="https://checkout.flutterwave.com/v3.js"></script>
 <script>
     function makeFlutterwavePayment(paymentData) {
