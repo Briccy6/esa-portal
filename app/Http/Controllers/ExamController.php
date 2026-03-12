@@ -1005,4 +1005,281 @@ class ExamController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Show bulk question upload form
+     */
+    public function bulkUploadForm()
+    {
+        $user = auth()->user();
+        if (!$user || !in_array($user->role, ['admin', 'staff'])) {
+            abort(403, 'Unauthorized access');
+        }
+
+        $exams = Exam::with(['courses', 'lessons'])->get();
+        return view('exams.bulk-upload', compact('exams'));
+    }
+
+    /**
+     * Process bulk question upload
+     */
+    public function bulkUpload(Request $request)
+    {
+        $user = auth()->user();
+        if (!$user || !in_array($user->role, ['admin', 'staff'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized access'
+            ], 403);
+        }
+
+        $request->validate([
+            'exam_id' => 'required|exists:exams,id',
+            'subject' => 'required|in:mathematics,biology',
+            'question_file' => 'required|file|mimes:csv,xlsx,xls|max:10240',
+            'image_files' => 'nullable|array',
+            'image_files.*' => 'file|image|mimes:jpeg,jpg,png,gif|max:2048'
+        ]);
+
+        try {
+            $exam = Exam::findOrFail($request->exam_id);
+            $subject = $request->subject;
+            $file = $request->file('question_file');
+
+            // Process the file based on its type
+            $imageFiles = $request->file('image_files', []);
+            $questions = $this->processQuestionFile($file, $subject, $imageFiles);
+
+            if (empty($questions)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No valid questions found in the file'
+                ]);
+            }
+
+            // Create questions in database
+            $createdCount = 0;
+            foreach ($questions as $questionData) {
+                $question = Question::create([
+                    'exam_id' => $exam->id,
+                    'text' => $questionData['text'],
+                    'question_type' => $questionData['question_type'] ?? 'multiple_choice',
+                    'option_a' => $questionData['option_a'] ?? null,
+                    'option_b' => $questionData['option_b'] ?? null,
+                    'option_c' => $questionData['option_c'] ?? null,
+                    'option_d' => $questionData['option_d'] ?? null,
+                    'correct_answer' => $questionData['correct_answer'],
+                    'marks' => $questionData['marks'] ?? 1,
+                    'difficulty_level' => $questionData['difficulty_level'] ?? 1,
+                    'explanation' => $questionData['explanation'] ?? null,
+                    'subject_area' => $subject === 'mathematics' ? 'Mathematics' : 'Biology',
+                    'biology_topic' => $subject === 'biology' ? ($questionData['biology_topic'] ?? null) : null,
+                ]);
+                $createdCount++;
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => "Successfully uploaded {$createdCount} questions for {$subject}",
+                'count' => $createdCount
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error processing file: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Download question template
+     */
+    public function downloadTemplate($subject)
+    {
+        if (!in_array($subject, ['mathematics', 'biology'])) {
+            abort(404, 'Invalid subject');
+        }
+
+        $user = auth()->user();
+        if (!$user || !in_array($user->role, ['admin', 'staff'])) {
+            abort(403, 'Unauthorized access');
+        }
+
+        $filename = $subject . '_questions_template.csv';
+        $filepath = storage_path('app/templates/' . $filename);
+
+        if (!file_exists($filepath)) {
+            $this->createTemplateFile($subject);
+        }
+
+        return response()->download($filepath, $filename);
+    }
+
+    /**
+     * Process uploaded question file
+     */
+    private function processQuestionFile($file, $subject, $imageFiles = [])
+    {
+        $questions = [];
+        $extension = $file->getClientOriginalExtension();
+
+        if ($extension === 'csv') {
+            $questions = $this->processCsvFile($file, $subject, $imageFiles);
+        } elseif (in_array($extension, ['xlsx', 'xls'])) {
+            $questions = $this->processExcelFile($file, $subject, $imageFiles);
+        }
+
+        return $questions;
+    }
+
+    /**
+     * Process CSV file
+     */
+    private function processCsvFile($file, $subject, $imageFiles = [])
+    {
+        $questions = [];
+        $handle = fopen($file->getPathname(), 'r');
+        
+        if ($handle) {
+            // Skip header row
+            fgetcsv($handle);
+            
+            $rowNumber = 2;
+            while (($row = fgetcsv($handle)) !== false) {
+                $questionData = $this->validateQuestionRow($row, $subject, $rowNumber);
+                if ($questionData) {
+                    // Process image for biology questions
+                    if ($subject === 'biology' && !empty($questionData['image_path'])) {
+                        $questionData['question_image'] = $this->processQuestionImage($questionData['image_path'], $imageFiles, $rowNumber);
+                    }
+                    $questions[] = $questionData;
+                }
+                $rowNumber++;
+            }
+            fclose($handle);
+        }
+        
+        return $questions;
+    }
+
+    /**
+     * Process Excel file
+     */
+    private function processExcelFile($file, $subject, $imageFiles = [])
+    {
+        // For now, convert Excel to CSV processing
+        // In a real implementation, you'd use phpspreadsheet
+        return $this->processCsvFile($file, $subject, $imageFiles);
+    }
+
+    /**
+     * Process question image
+     */
+    private function processQuestionImage($imagePath, $imageFiles, $rowNumber)
+    {
+        if (empty($imageFiles)) {
+            return null;
+        }
+
+        // Find the corresponding image file
+        // Assuming image files are named with row numbers or specific pattern
+        foreach ($imageFiles as $index => $imageFile) {
+            // Match image by row number or file name pattern
+            if (strpos($imageFile->getClientOriginalName(), (string)$rowNumber) !== false || 
+                strpos($imageFile->getClientOriginalName(), str_replace([' ', '.'], '_', $imagePath)) !== false) {
+                
+                // Store the image
+                $filename = 'biology_' . time() . '_' . uniqid() . '.' . $imageFile->getClientOriginalExtension();
+                $imageFile->move(public_path('images/question_images/biology'), $filename);
+                
+                return 'biology/' . $filename;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Validate and format question row
+     */
+    private function validateQuestionRow($row, $subject, $rowNumber)
+    {
+        if (empty($row[0]) || empty($row[2])) {
+            return null; // Skip invalid rows
+        }
+
+        $questionData = [
+            'text' => trim($row[0]),
+            'question_type' => 'multiple_choice',
+            'option_a' => trim($row[1] ?? ''),
+            'option_b' => trim($row[2] ?? ''),
+            'option_c' => trim($row[3] ?? ''),
+            'option_d' => trim($row[4] ?? ''),
+            'correct_answer' => strtoupper(trim($row[5] ?? '')),
+            'marks' => is_numeric($row[6] ?? 1) ? (int)$row[6] : 1,
+            'difficulty_level' => is_numeric($row[7] ?? 1) ? (int)$row[7] : 1,
+            'explanation' => trim($row[8] ?? ''),
+        ];
+
+        // Subject-specific validation
+        if ($subject === 'biology') {
+            $questionData['biology_topic'] = trim($row[9] ?? '');
+            // Add image path support (column 10)
+            $questionData['image_path'] = trim($row[10] ?? '');
+        }
+
+        // Validate correct answer
+        if (!in_array($questionData['correct_answer'], ['A', 'B', 'C', 'D'])) {
+            return null;
+        }
+
+        return $questionData;
+    }
+
+    /**
+     * Create template file
+     */
+    private function createTemplateFile($subject)
+    {
+        $templateDir = storage_path('app/templates');
+        if (!is_dir($templateDir)) {
+            mkdir($templateDir, 0755, true);
+        }
+
+        $filename = $subject . '_questions_template.csv';
+        $filepath = $templateDir . '/' . $filename;
+
+        $headers = ['Question Text', 'Option A', 'Option B', 'Option C', 'Option D', 'Correct Answer (A/B/C/D)', 'Marks', 'Difficulty Level (1-5)', 'Explanation'];
+        
+        if ($subject === 'biology') {
+            $headers[] = 'Biology Topic';
+            $headers[] = 'Image Path (optional)';
+        }
+
+        $handle = fopen($filepath, 'w');
+        fputcsv($handle, $headers);
+
+        // Add sample rows
+        if ($subject === 'mathematics') {
+            fputcsv($handle, [
+                'What is 2 + 2?', '3', '4', '5', '6', 'B', '1', '1', 'Basic addition problem'
+            ]);
+            fputcsv($handle, [
+                'Solve for x: 2x + 4 = 10', 'x = 3', 'x = 4', 'x = 5', 'x = 6', 'A', '2', '2', 'Linear equation solving'
+            ]);
+        } elseif ($subject === 'biology') {
+            fputcsv($handle, [
+                'What is the powerhouse of the cell?', 'Nucleus', 'Mitochondria', 'Ribosome', 'Golgi apparatus', 'B', '1', '1', 'Cell organelles', 'Cell Biology', 'mitochondria_diagram.jpg'
+            ]);
+            fputcsv($handle, [
+                'What process occurs in the chloroplast?', 'Photosynthesis', 'Respiration', 'Digestion', 'Excretion', 'A', '2', '2', 'Plant cell processes', 'Plant Biology', 'chloroplast_structure.png'
+            ]);
+            fputcsv($handle, [
+                'Identify the structure shown in this image', 'Heart', 'Brain', 'Lungs', 'Liver', 'A', '2', '2', 'Anatomy with image reference', 'Anatomy', 'human_heart_diagram.jpg'
+            ]);
+        }
+
+        fclose($handle);
+    }
 }

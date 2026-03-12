@@ -1030,6 +1030,11 @@ Route::middleware(['auth:admin'])->prefix('admin/exams')->name('admin.exams.')->
     Route::delete('/{exam}', [ExamController::class, 'destroy'])->name('destroy');
     Route::post('/{exam}/make-public', [ExamController::class, 'makePublic'])->name('make-public');
     Route::post('/{exam}/make-private', [ExamController::class, 'makePrivate'])->name('make-private');
+    
+    // Bulk Question Upload Routes
+    Route::get('/bulk-upload', [ExamController::class, 'bulkUploadForm'])->name('bulk-upload');
+    Route::post('/bulk-upload', [ExamController::class, 'bulkUpload'])->name('bulk-upload.process');
+    Route::get('/download-template/{subject}', [ExamController::class, 'downloadTemplate'])->name('download-template');
 });
 
 // Teacher-specific exam routes

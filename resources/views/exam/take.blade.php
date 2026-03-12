@@ -3,6 +3,8 @@
 @section('title', 'Exam - ' . $exam->title)
 
 @push('styles')
+<!-- KaTeX CSS for mathematical expressions -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
 <style>
 /* Modern Moodle-inspired Exam Interface */
 .exam-container {
@@ -654,7 +656,7 @@
             
             <div class="question-text">
                 @if(isset($currentQuestion))
-                    {{ $currentQuestion->text }}
+                    <div id="questionTextContent">{{ $currentQuestion->text }}</div>
                 @else
                     No question available
                 @endif
@@ -674,7 +676,7 @@
                             </div>
                             <div class="option-text">
                                 <span class="option-letter">{{ chr(65 + $index) }}</span>
-                                {{ $option }}
+                                <div class="option-content">{{ $option }}</div>
                             </div>
                         </label>
                     @endforeach
@@ -949,6 +951,39 @@ setInterval(() => {
     }
 }, 30000);
 
+// Function to render LaTeX mathematical expressions in text
+function renderMathInText(text) {
+    if (!text) return '';
+    
+    // Process inline math (single dollar signs)
+    let processedText = text.replace(/\$([^$]+)\$/g, function(match, mathExpression) {
+        try {
+            return katex.renderToString(mathExpression, {
+                throwOnError: false,
+                displayMode: false
+            });
+        } catch (e) {
+            console.warn('KaTeX rendering error:', e);
+            return match; // Return original if rendering fails
+        }
+    });
+    
+    // Process display math (double dollar signs)
+    processedText = processedText.replace(/\$\$([^$]+)\$\$/g, function(match, mathExpression) {
+        try {
+            return katex.renderToString(mathExpression, {
+                throwOnError: false,
+                displayMode: true
+            });
+        } catch (e) {
+            console.warn('KaTeX rendering error:', e);
+            return match; // Return original if rendering fails
+        }
+    });
+    
+    return processedText;
+}
+
 // Prevent leaving the page
 window.addEventListener('beforeunload', (e) => {
     if (Object.keys(answers).length > 0) {
@@ -957,4 +992,67 @@ window.addEventListener('beforeunload', (e) => {
     }
 });
 </script>
+@push('scripts')
+<!-- KaTeX JS for mathematical expressions -->
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzYCPoIrYwct0Sbm8Ig8d6TwBleJpKQk5qA" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+<script>
+// Initialize mathematical rendering when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Wait for KaTeX to be ready
+    if (typeof katex === 'undefined') {
+        console.warn('KaTeX not loaded, mathematical expressions will not be rendered');
+    } else {
+        // Process question text
+        const questionTextElement = document.getElementById('questionTextContent');
+        if (questionTextElement) {
+            const questionText = questionTextElement.textContent || questionTextElement.innerHTML;
+            const processedText = renderMathInText(questionText);
+            questionTextElement.innerHTML = processedText;
+        }
+        
+        // Process answer options
+        const optionElements = document.querySelectorAll('.option-content');
+        optionElements.forEach(element => {
+            const optionText = element.textContent || element.innerHTML;
+            const processedText = renderMathInText(optionText);
+            element.innerHTML = processedText;
+        });
+    }
+});
+
+// Function to render LaTeX mathematical expressions in text
+function renderMathInText(text) {
+    if (!text) return '';
+    
+    // Process inline math (single dollar signs)
+    let processedText = text.replace(/\$([^$]+)\$/g, function(match, mathExpression) {
+        try {
+            return katex.renderToString(mathExpression, {
+                throwOnError: false,
+                displayMode: false
+            });
+        } catch (e) {
+            console.warn('KaTeX rendering error:', e);
+            return match; // Return original if rendering fails
+        }
+    });
+    
+    // Process display math (double dollar signs)
+    processedText = processedText.replace(/\$\$([^$]+)\$\$/g, function(match, mathExpression) {
+        try {
+            return katex.renderToString(mathExpression, {
+                throwOnError: false,
+                displayMode: true
+            });
+        } catch (e) {
+            console.warn('KaTeX rendering error:', e);
+            return match; // Return original if rendering fails
+        }
+    });
+    
+    return processedText;
+}
+</script>
+@endpush
 @endsection

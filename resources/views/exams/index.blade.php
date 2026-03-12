@@ -341,6 +341,9 @@
                 <a href="{{ route('admin.exams.create') }}" class="quick-action-btn">
                     <i class="fas fa-plus"></i> Create New Exam
                 </a>
+                <a href="{{ route('admin.exams.bulk-upload') }}" class="quick-action-btn" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                    <i class="fas fa-upload"></i> Bulk Upload Questions
+                </a>
                 <a href="#" class="quick-action-btn" onclick="alert('Question banks not yet implemented')">
                     <i class="fas fa-database"></i> Question Banks
                 </a>

@@ -14,7 +14,8 @@ class Question extends Model
 
     protected $fillable = [
         'exam_id', 'question_bank_id', 'text', 'question_type', 'option_a', 'option_b', 'option_c', 'option_d', 
-        'correct_answer', 'correct_answers', 'marks', 'weight', 'difficulty_level', 'explanation', 'keywords'
+        'correct_answer', 'correct_answers', 'marks', 'weight', 'difficulty_level', 'explanation', 'keywords',
+        'subject_area', 'biology_topic', 'diagram_labels', 'question_image'
     ];
 
     public function exam()
@@ -46,4 +47,24 @@ class Question extends Model
         'correct_answers' => 'array',
         'options' => 'array',
     ];
+    
+    public function getImageUrlAttribute()
+    {
+        if ($this->question_image) {
+            return asset('images/question_images/' . $this->question_image);
+        }
+        return null;
+    }
+    
+    public function getFormattedTextAttribute()
+    {
+        // Process math expressions in the text
+        $text = $this->text;
+        
+        // Basic LaTeX math processing (you might want to enhance this)
+        $text = preg_replace('/\$([^$]+)\$/', '<span class="math-inline">$1</span>', $text);
+        $text = preg_replace('/\$\$([^$]+)\$\$/', '<div class="math-display">$1</div>', $text);
+        
+        return $text;
+    }
 }

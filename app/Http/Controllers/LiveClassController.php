@@ -478,6 +478,24 @@ class LiveClassController extends Controller
                         'gateway_response' => $txData,
                     ]);
 
+                    // Send email with meeting link
+                    try {
+                        \Illuminate\Support\Facades\Mail::to($payment->email)
+                            ->send(new \App\Mail\LiveClassAccessMail($liveClass, $payment));
+                        
+                        \Log::info('Live class access email sent', [
+                            'payment_id' => $payment->id,
+                            'email' => $payment->email,
+                            'live_class_id' => $liveClass->id,
+                        ]);
+                    } catch (\Exception $e) {
+                        \Log::error('Failed to send live class access email', [
+                            'payment_id' => $payment->id,
+                            'email' => $payment->email,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+
                     session(['live_class_payment_' . $liveClass->id => [
                         'email'      => $payment->email,
                         'name'       => $payment->name,
@@ -486,7 +504,7 @@ class LiveClassController extends Controller
                     ]]);
 
                     return redirect()->route('live-classes.room', $liveClass)
-                        ->with('success', 'Payment successful! You can now join the live class.');
+                        ->with('success', 'Payment successful! Check your email for the meeting link.');
                 }
 
                 // Amount/currency mismatch
@@ -552,6 +570,27 @@ class LiveClassController extends Controller
                             'gateway_response' => $txData,
                         ]);
 
+                        // Send email with meeting link
+                        try {
+                            $liveClass = \App\Models\LiveClass::find($payment->live_class_id);
+                            if ($liveClass) {
+                                \Illuminate\Support\Facades\Mail::to($payment->email)
+                                    ->send(new \App\Mail\LiveClassAccessMail($liveClass, $payment));
+                                
+                                \Log::info('Live class access email sent via webhook', [
+                                    'payment_id' => $payment->id,
+                                    'email' => $payment->email,
+                                    'live_class_id' => $liveClass->id,
+                                ]);
+                            }
+                        } catch (\Exception $e) {
+                            \Log::error('Failed to send live class access email via webhook', [
+                                'payment_id' => $payment->id,
+                                'email' => $payment->email,
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
+
                         \Log::info('Live class payment processed via webhook', [
                             'payment_id'    => $payment->id,
                             'live_class_id' => $payment->live_class_id,
@@ -590,6 +629,7 @@ class LiveClassController extends Controller
         $request->validate([
             'title'                         => 'required|string|max:255',
             'description'                   => 'nullable|string',
+            'meet_link'                     => 'required|url',
             'branches'                      => 'required|array|min:1',
             'branches.*'                    => 'exists:branches,id',
             'courses'                       => 'required|array|min:1',
@@ -617,7 +657,7 @@ class LiveClassController extends Controller
             'title'                        => $request->title,
             'summary'                      => $request->title,
             'description'                  => $request->description,
-            'meet_link'                    => '',
+            'meet_link'                    => $request->meet_link,
             'teacher_id'                   => $request->teacher_id ?: null,
             'start_time'                   => $request->start_time,
             'end_time'                     => $request->end_time,
@@ -705,6 +745,7 @@ class LiveClassController extends Controller
         $request->validate([
             'title'       => 'required|string|max:255',
             'description' => 'nullable|string',
+            'meet_link'   => 'required|url',
             'branches'    => 'required|array|min:1',
             'branches.*'  => 'exists:branches,id',
             'courses'     => 'required|array|min:1',
@@ -719,6 +760,7 @@ class LiveClassController extends Controller
         $liveClass->update([
             'title'       => $request->title,
             'description' => $request->description,
+            'meet_link'   => $request->meet_link,
             'teacher_id'  => $request->teacher_id,
             'start_time'  => $request->start_time,
             'end_time'    => $request->end_time,

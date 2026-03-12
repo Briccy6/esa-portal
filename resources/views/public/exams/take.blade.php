@@ -6,6 +6,8 @@
 @include('components.public-navigation')
 
 @push('styles')
+<!-- KaTeX CSS for mathematical expressions -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
 <style>
 /* Modern Moodle-inspired Exam Interface */
 .exam-container {
@@ -788,7 +790,7 @@
             </div>
             
             <div class="question-text">
-                {{ $currentQuestion->text }}
+                <div id="publicQuestionText">{{ $currentQuestion->text }}</div>
             </div>
 
             <!-- Answer Options -->
@@ -802,14 +804,12 @@
                         @endphp
                         @if($optionText)
                             <label class="answer-option" data-option="{{ $option }}">
-                                <input type="radio" name="answer" value="{{ $option }}" class="sr-only" 
-                                       {{ isset($sessionData['answers'][$questionNumber]) && $sessionData['answers'][$questionNumber] === $option ? 'checked' : '' }}>
                                 <div class="option-indicator">
                                     <div class="option-dot"></div>
                                 </div>
                                 <div class="option-text">
                                     <span class="option-letter">{{ $option }}</span>
-                                    {{ $optionText }}
+                                    <div class="option-content">{{ $optionText }}</div>
                                 </div>
                             </label>
                         @endif
@@ -1225,7 +1225,8 @@ function loadQuestion(questionNumber) {
 function updateQuestionContent(data) {
     // Update question text
     const questionText = document.querySelector('.question-text');
-    questionText.innerHTML = data.question.text;
+    const processedQuestionText = renderMathInText(data.question.text);
+    questionText.innerHTML = processedQuestionText;
     
     // Update question number
     const questionNumber = document.querySelector('.question-number');
@@ -1245,11 +1246,12 @@ function updateQuestionContent(data) {
             const optionElement = document.createElement('label');
             optionElement.className = 'answer-option';
             optionElement.setAttribute('data-option', option);
+            const processedOptionText = renderMathInText(optionText);
             optionElement.innerHTML = `
                 <input type="radio" name="answer" value="${option}" class="sr-only">
                 <div class="option-content">
                     <div class="option-letter">${option}</div>
-                    <div class="option-text">${optionText}</div>
+                    <div class="option-text">${processedOptionText}</div>
                 </div>
             `;
             
@@ -1666,7 +1668,69 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
+// Function to render LaTeX mathematical expressions in text
+function renderMathInText(text) {
+    if (!text) return '';
+    
+    // Process inline math (single dollar signs)
+    let processedText = text.replace(/\$([^$]+)\$/g, function(match, mathExpression) {
+        try {
+            return katex.renderToString(mathExpression, {
+                throwOnError: false,
+                displayMode: false
+            });
+        } catch (e) {
+            console.warn('KaTeX rendering error:', e);
+            return match; // Return original if rendering fails
+        }
+    });
+    
+    // Process display math (double dollar signs)
+    processedText = processedText.replace(/\$\$([^$]+)\$\$/g, function(match, mathExpression) {
+        try {
+            return katex.renderToString(mathExpression, {
+                throwOnError: false,
+                displayMode: true
+            });
+        } catch (e) {
+            console.warn('KaTeX rendering error:', e);
+            return match; // Return original if rendering fails
+        }
+    });
+    
+    return processedText;
+}
+
 // Initialize
 updateTimer();
+
+// Process mathematical expressions when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Wait for KaTeX to be ready
+    if (typeof katex === 'undefined') {
+        console.warn('KaTeX not loaded, mathematical expressions will not be rendered');
+    } else {
+        // Process initial question text
+        const publicQuestionText = document.getElementById('publicQuestionText');
+        if (publicQuestionText) {
+            const questionText = publicQuestionText.textContent || publicQuestionText.innerHTML;
+            const processedText = renderMathInText(questionText);
+            publicQuestionText.innerHTML = processedText;
+        }
+        
+        // Process initial answer options
+        const optionElements = document.querySelectorAll('.option-content');
+        optionElements.forEach(element => {
+            const optionText = element.textContent || element.innerHTML;
+            const processedText = renderMathInText(optionText);
+            element.innerHTML = processedText;
+        });
+    }
+});
 </script>
+@push('scripts')
+<!-- KaTeX JS for mathematical expressions -->
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzYCPoIrYwct0Sbm8Ig8d6TwBleJpKQk5qA" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+@endpush
 @endsection

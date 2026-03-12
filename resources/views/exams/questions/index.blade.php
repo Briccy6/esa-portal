@@ -1,8 +1,129 @@
 @extends(
     auth('admin')->check() ? 'admin.layout' :
     (auth('teacher')->check() ? 'teacher.layout' :
-    (auth('student')->check() ? 'student.layout' : 'staff.partials.sidebar_dos'))
+    (auth('student')->check() ? 'student.layout' : 'staff.partials.sidebar_dos')
 )
+
+@section('title', 'Exam Questions')
+
+@push('styles')
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+<style>
+    .question-text {
+        font-family: 'Times New Roman', serif;
+        font-size: 1.1em;
+        line-height: 1.6;
+        margin-bottom: 1rem;
+    }
+    
+    .math-expression {
+        display: block;
+        margin: 1rem 0;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-left: 4px solid #007bff;
+        border-radius: 4px;
+        font-family: 'Courier New', monospace;
+        font-size: 1.1em;
+        color: #333;
+    }
+    
+    .options-container {
+        display: grid;
+        grid-template-columns: auto;
+        gap: 1rem;
+        margin: 1rem 0;
+    }
+    
+    .form-check {
+        padding: 1rem;
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        background: #ffffff;
+        transition: all 0.3s ease;
+    }
+    
+    .form-check:hover {
+        border-color: #007bff;
+        background: #f8f9fa;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    .form-check-label {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        font-weight: 500;
+    }
+    
+    .text-success {
+        color: #155724 !important;
+        font-weight: 700;
+    }
+    
+    .badge {
+        padding: 0.5rem 1rem;
+        border-radius: 1rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+    
+    .card {
+        border: none;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        transition: all 0.3s ease;
+    }
+    
+    .card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    }
+    
+    @media print {
+        .card {
+            break-inside: avoid;
+            page-break-inside: avoid;
+            box-shadow: none;
+            border: 1px solid #ddd;
+        }
+        
+        .btn {
+            display: none;
+        }
+        
+        .card-body {
+            padding: 1rem;
+        }
+        
+        .options-container {
+            page-break-inside: avoid;
+        }
+        
+        .form-check {
+            page-break-inside: avoid;
+            margin: 0.5rem 0;
+        }
+    }
+</style>
+
+<!-- MathJax Configuration -->
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\(', '\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    processEscapes: false
+  },
+  options: {
+    skipHtmlTags: true,
+    processHtmlClass: 'math'
+  }
+};
+</script>
+@endpush
 
 @section('content')
 <div class="container-fluid px-2 px-md-3 py-4">
@@ -68,14 +189,14 @@
                             </div>
                         </div>
                         <div class="card-body">
-                            <p class="mb-3">{{ $question->text }}</p>
+                            <p class="mb-3 question-text">{!! $question->text !!}</p>
                             
                             @if($question->option_a || $question->option_b || $question->option_c || $question->option_d)
                                 <div class="options-container mb-3">
                                     @if($question->option_a)
                                         <div class="form-check {{ $question->correct_answer === 'A' ? 'text-success fw-bold' : '' }}">
                                             <label class="form-check-label">
-                                                A. {{ $question->option_a }}
+                                                A. <span class="option-text math">{!! $question->option_a !!}</span>
                                                 @if($question->correct_answer === 'A') <i class="bi bi-check-circle-fill ms-2"></i> @endif
                                             </label>
                                         </div>
@@ -83,7 +204,7 @@
                                     @if($question->option_b)
                                         <div class="form-check {{ $question->correct_answer === 'B' ? 'text-success fw-bold' : '' }}">
                                             <label class="form-check-label">
-                                                B. {{ $question->option_b }}
+                                                B. <span class="option-text math">{!! $question->option_b !!}</span>
                                                 @if($question->correct_answer === 'B') <i class="bi bi-check-circle-fill ms-2"></i> @endif
                                             </label>
                                         </div>
@@ -91,7 +212,7 @@
                                     @if($question->option_c)
                                         <div class="form-check {{ $question->correct_answer === 'C' ? 'text-success fw-bold' : '' }}">
                                             <label class="form-check-label">
-                                                C. {{ $question->option_c }}
+                                                C. <span class="option-text math">{!! $question->option_c !!}</span>
                                                 @if($question->correct_answer === 'C') <i class="bi bi-check-circle-fill ms-2"></i> @endif
                                             </label>
                                         </div>
@@ -99,7 +220,7 @@
                                     @if($question->option_d)
                                         <div class="form-check {{ $question->correct_answer === 'D' ? 'text-success fw-bold' : '' }}">
                                             <label class="form-check-label">
-                                                D. {{ $question->option_d }}
+                                                D. <span class="option-text math">{!! $question->option_d !!}</span>
                                                 @if($question->correct_answer === 'D') <i class="bi bi-check-circle-fill ms-2"></i> @endif
                                             </label>
                                         </div>

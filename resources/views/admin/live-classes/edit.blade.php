@@ -444,6 +444,23 @@
                                   placeholder="Briefly describe what will be covered in this session…">{{ old('description', $liveClass->description) }}</textarea>
                     </div>
 
+                    <!-- Meeting Link -->
+                    <div class="elc-field" style="grid-column: 1 / -1;">
+                        <label class="elc-label" for="meet_link">
+                            Meeting Link <span class="elc-required">*</span>
+                            <small style="color:#64748b;font-weight:normal;margin-left:8px;">External meeting platform (Google Meet, Zoom, Teams, etc.)</small>
+                        </label>
+                        <input type="url" class="elc-input" id="meet_link" name="meet_link"
+                               value="{{ old('meet_link', $liveClass->meet_link) }}"
+                               placeholder="https://meet.google.com/xxx-xxx-xxx or https://zoom.us/j/xxxxx"
+                               required>
+                        @error('meet_link')
+                            <div class="elc-error" style="margin-top:6px;">
+                                <i class="fas fa-exclamation-circle"></i> {{ $message }}
+                            </div>
+                        @enderror
+                    </div>
+
                     <!-- Branch -->
                     <div class="elc-field">
                         <label class="elc-label" for="branch_id">

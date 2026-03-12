@@ -1,5 +1,7 @@
 @extends('admin.layout')
 
+@section('title', 'Exam Preview: ' . $exam->title)
+
 @section('content')
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -257,6 +259,13 @@
     border-radius: 4px;
 }
 
+/* KaTeX display math centering */
+.katex-display {
+    margin: 0.5em 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
 @media print {
     .no-print { display: none !important; }
     .answer-option { break-inside: avoid; }
@@ -269,25 +278,74 @@ let questions = @json($preparedQuestions->toArray());
 let showAnswers = true;
 let showSources = true;
 
+/**
+ * Renders LaTeX mathematical expressions using KaTeX.
+ * KaTeX is loaded synchronously in the layout <head>, so it is
+ * always available here when this function is called.
+ *
+ * Process $$...$$ (display/block math) BEFORE $...$ (inline math)
+ * to avoid the inner $ signs in display math being matched first.
+ */
+function renderMathInText(text) {
+    if (!text) return '';
+
+    // Safety check — KaTeX must be loaded from layout.blade.php
+    if (typeof katex === 'undefined') {
+        console.warn('KaTeX is not loaded. Mathematical expressions will appear as plain text.');
+        return text;
+    }
+
+    // 1. Display math: $$...$$  (must come BEFORE inline to avoid double-matching)
+    let result = text.replace(/\$\$([^$]+)\$\$/g, function(match, expr) {
+        try {
+            return katex.renderToString(expr.trim(), {
+                throwOnError: false,
+                displayMode: true
+            });
+        } catch (e) {
+            console.warn('KaTeX display math error:', e);
+            return match;
+        }
+    });
+
+    // 2. Inline math: $...$
+    result = result.replace(/\$([^$\n]+)\$/g, function(match, expr) {
+        try {
+            return katex.renderToString(expr.trim(), {
+                throwOnError: false,
+                displayMode: false
+            });
+        } catch (e) {
+            console.warn('KaTeX inline math error:', e);
+            return match;
+        }
+    });
+
+    return result;
+}
+
 function showQuestion(index) {
     if (index < 0 || index >= questions.length) return;
     
     currentQuestionIndex = index;
     const question = questions[index];
     
-    // Update question number
+    // Update question number and points
     document.getElementById('currentQuestionNumber').textContent = index + 1;
     document.getElementById('currentQuestionPoints').textContent = question.points || 5;
     
     // Update navigation buttons
     updateNavigationButtons();
     
-    // Update question content
+    // Build question HTML
     const questionContent = document.getElementById('questionContent');
+    
+    const processedQuestionText = renderMathInText(question.question_text || question.text || '');
+    
     let html = `
         <div class="mb-4">
             <div class="fs-5 text-dark mb-3">
-                ${question.question_text}
+                ${processedQuestionText}
             </div>
             
             ${question.question_image ? `
@@ -306,6 +364,8 @@ function showQuestion(index) {
         const isCorrect = showAnswers && String.fromCharCode(65 + optIndex) === question.correct_answer;
         const optionClass = isCorrect ? 'correct' : '';
         
+        const processedOptionText = renderMathInText(option);
+        
         html += `
             <div class="answer-option ${optionClass}" onclick="selectOption(${optIndex})">
                 <div class="d-flex align-items-center">
@@ -313,9 +373,9 @@ function showQuestion(index) {
                         <strong>${String.fromCharCode(65 + optIndex)}.</strong>
                     </div>
                     <div class="flex-grow-1">
-                        ${option}
+                        ${processedOptionText}
                     </div>
-                    ${showAnswers && isCorrect ? '<i class="bi bi-check-circle-fill text-success"></i>' : ''}
+                    ${showAnswers && isCorrect ? '<i class="bi bi-check-circle-fill text-success ms-2"></i>' : ''}
                 </div>
             </div>
         `;
@@ -325,7 +385,7 @@ function showQuestion(index) {
     
     if (showSources) {
         html += `
-            <div class="question-source">
+            <div class="question-source mt-3">
                 <i class="bi bi-database"></i> Source: ${question.question_bank_name}
             </div>
         `;
@@ -335,7 +395,6 @@ function showQuestion(index) {
 }
 
 function selectOption(index) {
-    // Visual feedback for selection
     const options = document.querySelectorAll('.answer-option');
     options.forEach(opt => opt.classList.remove('selected'));
     options[index].classList.add('selected');
@@ -348,7 +407,6 @@ function updateNavigationButtons() {
     prevBtn.disabled = currentQuestionIndex === 0;
     nextBtn.disabled = currentQuestionIndex === questions.length - 1;
     
-    // Update navigation buttons styling
     const navButtons = document.querySelectorAll('.question-nav-btn');
     navButtons.forEach((btn, index) => {
         btn.classList.toggle('active', index === currentQuestionIndex);
@@ -382,7 +440,7 @@ function printPreview() {
     window.print();
 }
 
-// Event listeners
+// Event listeners for admin controls
 document.getElementById('showAnswers').addEventListener('change', (e) => {
     showAnswers = e.target.checked;
     document.getElementById('adminInfo').style.display = showAnswers ? 'inline' : 'none';
@@ -394,7 +452,9 @@ document.getElementById('showSources').addEventListener('change', (e) => {
     showQuestion(currentQuestionIndex);
 });
 
-// Initialize
+// Initialize on DOM ready
+// KaTeX is already loaded synchronously in layout.blade.php <head>,
+// so it is guaranteed to be available here.
 document.addEventListener('DOMContentLoaded', function() {
     if (questions.length > 0) {
         showQuestion(0);

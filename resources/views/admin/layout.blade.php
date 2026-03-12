@@ -25,6 +25,10 @@
     <!-- Bootstrap & Font Awesome -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
+    <!-- KaTeX for Mathematical Expressions (loaded synchronously so it's available on DOMContentLoaded) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
     
     <style>
         :root {
@@ -489,19 +493,6 @@
             resize: vertical;
         }
 
-            border-radius: 50%;
-            width: 38px;
-            height: 38px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.3rem;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        .wa-chat-send-btn:hover {
-            background: #128c7e;
-        }
         @media (max-width: 600px) {
             .wa-chat-modal {
                 width: 100vw;

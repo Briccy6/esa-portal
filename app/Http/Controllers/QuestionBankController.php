@@ -223,6 +223,10 @@ class QuestionBankController extends Controller
             'difficulty_level' => 'nullable|integer|min:1|max:5',
             'explanation' => 'nullable|string',
             'keywords' => 'nullable|string',
+            'subject_area' => 'nullable|in:mathematics,biology,general',
+            'biology_topic' => 'nullable|string',
+            'diagram_labels' => 'nullable|string',
+            'question_image' => 'nullable|image|max:5120', // 5MB max
             // Multiple choice options
             'option_a' => 'required_if:question_type,multiple_choice,multiple_select|string',
             'option_b' => 'required_if:question_type,multiple_choice,multiple_select|string',
@@ -246,14 +250,34 @@ class QuestionBankController extends Controller
             'difficulty_level' => $request->difficulty_level ?? 1,
             'explanation' => $request->explanation,
             'keywords' => $request->keywords,
+            'subject_area' => $request->subject_area ?? 'general',
+            'biology_topic' => $request->biology_topic,
+            'diagram_labels' => $request->diagram_labels,
         ];
+
+        // Handle image upload
+        if ($request->hasFile('question_image')) {
+            $image = $request->file('question_image');
+            $imageName = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
+            $image->move(public_path('images/question_images'), $imageName);
+            $questionData['question_image'] = $imageName;
+        }
 
         // Add question type specific fields
         if (in_array($request->question_type, ['multiple_choice', 'multiple_select'])) {
-            $questionData['option_a'] = $request->option_a;
-            $questionData['option_b'] = $request->option_b;
-            $questionData['option_c'] = $request->option_c;
-            $questionData['option_d'] = $request->option_d;
+            // Handle options from array or individual fields
+            if ($request->has('options')) {
+                $options = $request->options;
+                $questionData['option_a'] = $options[0] ?? '';
+                $questionData['option_b'] = $options[1] ?? '';
+                $questionData['option_c'] = $options[2] ?? '';
+                $questionData['option_d'] = $options[3] ?? '';
+            } else {
+                $questionData['option_a'] = $request->option_a;
+                $questionData['option_b'] = $request->option_b;
+                $questionData['option_c'] = $request->option_c;
+                $questionData['option_d'] = $request->option_d;
+            }
             
             if ($request->question_type === 'multiple_choice') {
                 $questionData['correct_answer'] = $request->correct_answer;
@@ -343,7 +367,8 @@ class QuestionBankController extends Controller
                     continue;
                 }
                 
-                Question::create([
+                // Enhanced question data with support for math/biology
+                $questionCreateData = [
                     'question_bank_id' => $questionBank->id,
                     'question_type' => $questionData['question_type'] ?? 'multiple_choice',
                     'text' => $text,
@@ -354,7 +379,15 @@ class QuestionBankController extends Controller
                     'correct_answer' => isset($questionData['correct_answer']) && $questionData['correct_answer'] !== '' ? $questionData['correct_answer'] : null,
                     'marks' => is_numeric($questionData['marks'] ?? 1) ? (int)$questionData['marks'] : 1,
                     'explanation' => $questionData['explanation'] ?? null,
-                ]);
+                    'subject_area' => $questionData['subject_area'] ?? 'general',
+                    'biology_topic' => $questionData['biology_topic'] ?? null,
+                    'diagram_labels' => $questionData['diagram_labels'] ?? null,
+                    'keywords' => $questionData['keywords'] ?? null,
+                    'difficulty_level' => is_numeric($questionData['difficulty_level'] ?? 1) ? (int)$questionData['difficulty_level'] : 1,
+                    'weight' => is_numeric($questionData['weight'] ?? 1.0) ? (float)$questionData['weight'] : 1.0,
+                ];
+                
+                Question::create($questionCreateData);
                 
                 $imported++;
             } catch (\Exception $e) {
@@ -379,10 +412,11 @@ class QuestionBankController extends Controller
         $questions = $questionBank->questions;
         $csvData = [];
 
-        // Headers
+        // Enhanced headers with math/biology support
         $csvData[] = [
             'question_type', 'text', 'option_a', 'option_b', 'option_c', 'option_d',
-            'correct_answer', 'marks', 'explanation', 'difficulty_level'
+            'correct_answer', 'marks', 'explanation', 'difficulty_level', 'subject_area',
+            'biology_topic', 'diagram_labels', 'keywords', 'weight'
         ];
 
         // Data rows
@@ -398,10 +432,15 @@ class QuestionBankController extends Controller
                 $question->marks,
                 $question->explanation,
                 $question->difficulty_level,
+                $question->subject_area ?? 'general',
+                $question->biology_topic,
+                $question->diagram_labels,
+                $question->keywords,
+                $question->weight,
             ];
         }
 
-        $filename = "question_bank_{$questionBank->id}_questions.csv";
+        $filename = "question_bank_{$questionBank->id}_questions_enhanced.csv";
         $handle = fopen('php://memory', 'w');
 
         foreach ($csvData as $row) {

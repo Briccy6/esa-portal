@@ -875,6 +875,25 @@ input[type="datetime-local"].lc-input {
                         </div>
                     </div>
 
+                    {{-- Meeting Link --}}
+                    <div class="lc-field">
+                        <label class="lc-label" for="meet_link">
+                            Meeting Link <span class="req">*</span>
+                            <small style="color:var(--text-muted);font-weight:normal;margin-left:8px;">External meeting platform (Google Meet, Zoom, Teams, etc.)</small>
+                        </label>
+                        <div class="lc-input-wrap">
+                            <i class="fas fa-video lc-input-icon"></i>
+                            <input type="url" class="lc-input" id="meet_link" name="meet_link"
+                                   value="{{ old('meet_link') }}" required
+                                   placeholder="https://meet.google.com/xxx-xxx-xxx or https://zoom.us/j/xxxxx">
+                        </div>
+                        @error('meet_link')
+                            <div class="lc-error" style="margin-top:6px;">
+                                <i class="fas fa-exclamation-circle"></i> {{ $message }}
+                            </div>
+                        @enderror
+                    </div>
+
                     {{-- Access Type --}}
                     <div class="lc-field">
                         <label class="lc-label" for="access_type">

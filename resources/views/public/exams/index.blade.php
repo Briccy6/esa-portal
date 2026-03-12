@@ -4,93 +4,181 @@
 
 @push('styles')
 <style>
-    /* Mobile Responsive Enhancements */
+    /* Page-specific styles that complement the enhanced layout */
+    .hero-section {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+        color: white;
+        padding: 4rem 0;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .hero-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+        }
+    }
+    
+    .hero-title {
+        font-size: 3rem;
+        font-weight: 900;
+        margin-bottom: 1rem;
+        background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        text-fill-color: transparent;
+    }
+    
+    .filters-container {
+        background: var(--bg-white);
+        border-radius: 20px;
+        padding: 2rem;
+        box-shadow: var(--shadow-lg);
+        margin: 2rem 0;
+        border: 1px solid var(--border-color);
+    }
+    
+    .filter-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .filter-label {
+        font-weight: 600;
+        color: var(--text-dark);
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+    
+    .filter-select {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        background: var(--bg-white);
+        font-size: 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .filter-select:focus {
+        border-color: var(--secondary-color);
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+    
+    .search-box {
+        position: relative;
+        margin-bottom: 2rem;
+    }
+    
+    .search-input {
+        width: 100%;
+        padding: 1rem 3rem 1rem 3rem;
+        border: 2px solid var(--border-color);
+        border-radius: 50px;
+        font-size: 1rem;
+        background: var(--bg-white);
+        transition: all 0.3s ease;
+    }
+    
+    .search-input:focus {
+        border-color: var(--secondary-color);
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+    
+    .search-btn {
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: var(--gradient-primary);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .search-btn:hover {
+        background: var(--gradient-secondary);
+        transform: translateY(-50%) scale(1.05);
+    }
+    
+    .exam-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 2rem;
+        margin-top: 2rem;
+    }
+    
+    .exam-card {
+        height: 100%;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: var(--bg-white);
+        border-radius: 20px;
+        box-shadow: var(--shadow-md);
+        margin: 2rem 0;
+    }
+    
+    .empty-icon {
+        width: 80px;
+        height: 80px;
+        background: var(--gradient-primary);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1.5rem;
+        font-size: 2rem;
+    }
+    
+    /* Enhanced Mobile Responsive */
     @media (max-width: 768px) {
-        .container {
-            padding-left: 1rem !important;
-            padding-right: 1rem !important;
+        .hero-title {
+            font-size: 2rem !important;
         }
         
-        .text-5xl {
-            font-size: 2.5rem !important;
-            line-height: 1.2;
-        }
-        
-        .text-xl {
-            font-size: 1rem !important;
-        }
-        
-        .subscription-banner {
-            padding: 1.5rem !important;
-            margin: 0 1rem 2rem 1rem !important;
-        }
-        
-        .subscription-banner h2 {
-            font-size: 1.5rem !important;
-            margin-bottom: 1rem !important;
-        }
-        
-        .subscription-banner p {
-            font-size: 1rem !important;
-            margin-bottom: 1.5rem !important;
-        }
-        
-        .subscription-banner a {
-            padding: 0.875rem 1.5rem !important;
-            font-size: 1rem !important;
-            width: 100%;
-            text-align: center;
+        .exam-grid {
+            grid-template-columns: 1fr !important;
+            gap: 1.5rem !important;
         }
         
         .filters-container {
-            padding: 1rem !important;
-            margin: 0 1rem 2rem 1rem !important;
+            padding: 1.5rem !important;
+            margin: 1rem 0 !important;
         }
         
-        .exam-card {
-            margin: 0 1rem 1.5rem 1rem !important;
-        }
-        
-        .exam-card h3 {
-            font-size: 1.125rem !important;
-            line-height: 1.3;
-        }
-        
-        .exam-card .text-sm {
-            font-size: 0.875rem !important;
+        .search-input {
+            padding: 0.75rem 2rem 0.75rem 2rem !important;
         }
     }
     
     @media (max-width: 640px) {
-        .text-5xl {
-            font-size: 2rem !important;
+        .hero-title {
+            font-size: 1.5rem !important;
         }
         
-        .subscription-banner {
+        .exam-grid {
+            grid-template-columns: 1fr !important;
+            gap: 1rem !important;
+        }
+        
+        .filters-container {
             padding: 1rem !important;
-        }
-        
-        .subscription-banner h2 {
-            font-size: 1.25rem !important;
-        }
-        
-        .exam-card {
-            border-radius: 0.75rem !important;
-        }
-    }
-
-    /* Touch-friendly buttons */
-    @media (hover: none) and (pointer: coarse) {
-        .exam-card button {
-            min-height: 44px;
-            min-width: 44px;
-        }
-        
-        .subscription-banner a {
-            min-height: 44px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
         }
     }
 </style>
