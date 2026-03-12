@@ -888,7 +888,9 @@ Route::middleware(['auth:admin,staff,teacher'])->group(function () {
 });
 
 
-Route::middleware(['auth:admin,staff,teacher,student,client'])->prefix('webrtc')->name('webrtc.')->group(function () {
+// WebRTC Routes - NO AUTHENTICATION REQUIRED
+// This allows live streaming to work without authentication issues
+Route::prefix('webrtc')->name('webrtc.')->group(function () {
 
     // Signaling — POST sends a signal, GET polls pending signals
     Route::post ('/signaling/{roomId}',  [WebRTCController::class, 'signaling'])     ->name('signaling');
@@ -904,15 +906,6 @@ Route::middleware(['auth:admin,staff,teacher,student,client'])->prefix('webrtc')
 
     // Participants list
     Route::get  ('/participants/{roomId}', [WebRTCController::class, 'participants'])->name('participants');
-});
-
-// Additional WebRTC routes specifically for teachers (in case of auth issues)
-Route::middleware(['auth:teacher'])->prefix('webrtc')->name('webrtc.teacher.')->group(function () {
-    
-    // Teacher-specific signaling routes
-    Route::post ('/signaling/{roomId}',  [WebRTCController::class, 'signaling'])     ->name('teacher.signaling');
-    Route::get  ('/signaling/{roomId}',  [WebRTCController::class, 'pollSignaling']) ->name('teacher.pollSignaling');
-    
 });
 
 Route::get('/student/pay/', [StudentController::class, 'payFees'])->name('student.pay');
