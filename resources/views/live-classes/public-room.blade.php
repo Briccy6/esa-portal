@@ -251,6 +251,8 @@
 // CONFIG
 // ═══════════════════════════════════════════════════════════
 const ROOM_ID    = 'class-{{ $liveClass->id ?? 1 }}';
+// Store the referrer URL when joining room
+const REFERRER_URL = document.referrer || '/live-classes';
 const CSRF       = document.querySelector('meta[name=csrf-token]').content;
 const SELF_NAME  = '{{ addslashes($guestName ?? auth()->user()->name ?? "Guest") }}';
 const SELF_INIT  = '{{ strtoupper(substr($guestName ?? auth()->user()->name ?? "G", 0, 1)) }}';
@@ -727,7 +729,11 @@ document.getElementById('leaveBtn').addEventListener('click', (e) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
         body: JSON.stringify({ sessionId: SESSION_ID })
-    }).finally(() => window.location.href = '/live-classes');
+    }).finally(() => {
+        // Redirect back to where the user came from
+        console.log('🚪 Leaving class, redirecting to:', REFERRER_URL);
+        window.location.href = REFERRER_URL;
+    });
 });
 
 // ═══════════════════════════════════════════════════════════
