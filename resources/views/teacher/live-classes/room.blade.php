@@ -1,4 +1,3 @@
-{{-- resources/views/teacher/live-classes/room.blade.php --}}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -314,20 +313,31 @@ async function createPeerForViewer(viewerSessionId) {
     const pc = new RTCPeerConnection(ICE_SERVERS);
     peers[viewerSessionId] = pc;
 
-    // Add all existing local tracks
+    // Add all existing local tracks if camera/screen is already on
     if (localStream) {
         localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
         console.log('📹 Added local tracks to peer for:', viewerSessionId);
+    } else {
+        // ── FIX #1: NO local stream yet (camera not started).
+        // Without at least one m= line the SDP is invalid and the student gets:
+        //   "Failed to parse SessionDescription. a=msid-semantic: WMS Expects m line."
+        // Adding sendrecv transceivers guarantees valid audio + video m= lines
+        // in the offer even before the teacher clicks "Start Camera".
+        // When the teacher later starts the camera, addTrack() will reuse these
+        // transceivers automatically and renegotiation is handled via replaceTrack.
+        pc.addTransceiver('video', { direction: 'sendrecv' });
+        pc.addTransceiver('audio', { direction: 'sendrecv' });
+        console.log('📡 Added sendrecv transceivers (camera not yet started) for:', viewerSessionId);
     }
 
     pc.onicecandidate = (e) => {
         if (e.candidate) {
             postSignal({
-                type:      'ice',
-                candidate: e.candidate,
-                role:      'host',
-                sessionId: SESSION_ID,
-                forSession: viewerSessionId,
+                type:       'ice',
+                candidate:  e.candidate,
+                role:       'host',
+                sessionId:  SESSION_ID,
+                forSession: viewerSessionId,  // targeted — only this student receives it
             });
             console.log('🧊 Sent ICE candidate to:', viewerSessionId);
         }
@@ -345,16 +355,16 @@ async function createPeerForViewer(viewerSessionId) {
     try {
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
-        
-        // Debug: Log the SDP to check for parsing issues
+
+        // Debug: Log the SDP to confirm it has m= lines
         console.log('📋 Generated SDP:', offer.sdp);
-        
+
         postSignal({
             type:       'offer',
             sdp:        offer.sdp,
             role:       'host',
             sessionId:  SESSION_ID,
-            forSession: viewerSessionId,
+            forSession: viewerSessionId,  // targeted — only this student receives it
         });
         console.log('📤 Sent offer to viewer:', viewerSessionId);
     } catch(e) {
@@ -420,12 +430,23 @@ async function handleSignal(sig) {
     const from = sig.fromSession || sig.sessionId;
     console.log('🎯 Teacher handling signal:', sig.type, 'from:', from);
 
-    if (sig.type === 'viewer_ready' || sig.type === 'participant_joined') {
-        // New viewer arrived — create peer & send offer
-        console.log('👋 New viewer detected, creating peer for:', from);
+    if (sig.type === 'viewer_ready') {
+        // ── FIX #2a: Only create peer on viewer_ready (the authoritative join signal).
+        // participant_joined is handled separately below just for the UI list.
+        console.log('👋 viewer_ready from:', from);
         if (!peers[from]) {
             await createPeerForViewer(from);
+        } else {
+            console.log('🔄 Peer already exists for viewer_ready, skipping createPeer:', from);
         }
+        addParticipant(from, sig.name || 'Student');
+        return;
+    }
+
+    if (sig.type === 'participant_joined') {
+        // ── FIX #2b: participant_joined only updates the UI list; it does NOT
+        // create a new peer (that was already done by viewer_ready above).
+        console.log('👤 participant_joined from:', from);
         addParticipant(from, sig.name || 'Student');
         return;
     }
@@ -433,7 +454,10 @@ async function handleSignal(sig) {
     if (sig.type === 'participant_left') {
         console.log('👋 Participant left:', from);
         removeParticipant(from);
-        delete peers[from];
+        if (peers[from]) {
+            peers[from].close();
+            delete peers[from];
+        }
         return;
     }
 
@@ -470,6 +494,29 @@ async function handleSignal(sig) {
 setInterval(pollSignals, 2000);
 
 // ═══════════════════════════════════════════════════════════
+// POLL CHAT — fetch persistent chat log every 3 s so teacher
+// sees student messages even if they were not in the signaling
+// queue at the moment of polling (e.g. after a page refresh).
+// ═══════════════════════════════════════════════════════════
+async function pollChat() {
+    try {
+        const url = lastChatTime
+            ? `/webrtc/chat/${ROOM_ID}?after=${encodeURIComponent(lastChatTime)}`
+            : `/webrtc/chat/${ROOM_ID}`;
+        const r = await fetch(url, { headers: { 'X-CSRF-TOKEN': CSRF } });
+        if (!r.ok) return;
+        const data = await r.json();
+        for (const msg of (data.messages || [])) {
+            // Skip messages sent by the teacher themselves (already shown locally)
+            if (msg.sessionId === SESSION_ID) { lastChatTime = msg.timestamp; continue; }
+            appendChat(msg.sender, msg.message, false);
+            lastChatTime = msg.timestamp;
+        }
+    } catch(e) { /* silent */ }
+}
+setInterval(pollChat, 3000);
+
+// ═══════════════════════════════════════════════════════════
 // CAMERA
 // ═══════════════════════════════════════════════════════════
 const localVideo = document.getElementById('localVideo');
@@ -493,12 +540,25 @@ async function startCamera() {
         micCtrl.classList.add('on');
         micCtrl.querySelector('i').className = 'fas fa-microphone';
         micCtrl.querySelector('span').textContent = 'Mic On';
-        // Add tracks to all existing peers
-        Object.values(peers).forEach(pc => {
-            localStream.getTracks().forEach(t => {
-                try { pc.addTrack(t, localStream); } catch(e) {}
+
+        // ── FIX #4: Push/replace tracks in all existing peer connections.
+        // Peers created before camera started have sendrecv transceivers but no
+        // actual tracks. We must either replaceTrack on the existing sender or
+        // addTrack if no sender exists yet for that kind.
+        Object.entries(peers).forEach(([sid, pc]) => {
+            localStream.getTracks().forEach(track => {
+                const sender = pc.getSenders().find(s => s.track && s.track.kind === track.kind);
+                if (sender) {
+                    // Transceiver already exists — replace the null/old track with the live one
+                    sender.replaceTrack(track).catch(e => console.warn('replaceTrack error:', e));
+                } else {
+                    // No sender for this kind yet — add the track
+                    try { pc.addTrack(track, localStream); } catch(e) { console.warn('addTrack error:', e); }
+                }
             });
+            console.log('📹 Pushed camera tracks to existing peer:', sid);
         });
+
         toast('Camera & mic started');
     } catch(e) { toast('Camera access denied'); }
 }

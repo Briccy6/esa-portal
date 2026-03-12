@@ -284,7 +284,6 @@ let qaStarted   = false;
 let lastChatTS  = '';
 let chatUnread  = 0;
 let secs        = 0;
-
 // ═══════════════════════════════════════════════════════════
 // TIMER
 // ═══════════════════════════════════════════════════════════
@@ -313,6 +312,9 @@ document.querySelectorAll('.tab').forEach(btn => {
 
 // ═══════════════════════════════════════════════════════════
 // JOIN — tell the server we are here (registers our sessionId)
+// This is the SINGLE place that sends viewer_ready to the host.
+// The server's pollSignaling no longer auto-pushes viewer_ready,
+// so there is exactly one peer created per student join.
 // ═══════════════════════════════════════════════════════════
 async function joinRoom() {
     try {
@@ -325,10 +327,13 @@ async function joinRoom() {
         if (response.ok) {
             const result = await response.json();
             console.log('✅ Successfully joined room:', result);
+            // Hide connecting overlay now that the server acknowledged us
+            document.getElementById('connOverlay').style.display = 'none';
+            if (!connected) document.getElementById('waitingState').style.display = 'flex';
         } else {
             console.error('❌ Failed to join room:', response.status);
         }
-    } catch(e) { 
+    } catch(e) {
         console.error('❌ Join room error:', e);
     }
 }
@@ -434,7 +439,7 @@ function postSignal(data) {
 // ═══════════════════════════════════════════════════════════
 // POLL SIGNALS (client reads from client queue every 2s)
 // ═══════════════════════════════════════════════════════════
-let pollActive = true;
+let pollActive  = true;
 
 async function pollSignals() {
     if (!pollActive) return;
@@ -448,12 +453,8 @@ async function pollSignals() {
             return;
         }
         const signals = await r.json();
-        
-        console.log('🔍 Student poll: received', signals.length, 'signals:', signals);
 
-        // Hide connecting overlay after first successful poll
-        document.getElementById('connOverlay').style.display = 'none';
-        if (!connected) document.getElementById('waitingState').style.display = 'flex';
+        console.log('🔍 Student poll: received', signals.length, 'signals:', signals);
 
         for (const sig of (signals || [])) {
             await handleSignal(sig);
@@ -463,9 +464,12 @@ async function pollSignals() {
     }
 }
 
+// Queued ICE candidates that arrived before remote description was set
+let pendingIceCandidates = [];
+
 async function handleSignal(sig) {
     console.log('🎯 Student handling signal:', sig.type, 'from:', sig.sessionId);
-    
+
     if (sig.type === 'chat') {
         appendChat(sig.sender, sig.message, false, sig.sender === HOST_NAME);
         return;
@@ -481,37 +485,46 @@ async function handleSignal(sig) {
         console.log('📥 Received offer from host');
         console.log('📋 Received SDP:', sig.sdp);
         try {
-            // Wait for peer connection to be ready before setting remote description
-            if (pc.signalingState === 'stable' || pc.signalingState === 'have-local-offer') {
-                await pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: sig.sdp }));
-                console.log('✅ Remote description set successfully');
-
-                // Add any local tracks before answering
-                if (localStream) {
-                    localStream.getTracks().forEach(t => {
-                        const exists = pc.getSenders().find(s => s.track === t);
-                        if (!exists) pc.addTrack(t, localStream);
-                    });
-                    console.log('📹 Added local tracks before answering');
-                }
-
-                const answer = await pc.createAnswer();
-                await pc.setLocalDescription(answer);
-                console.log('📋 Generated Answer SDP:', answer.sdp);
-                postSignal({
-                    type:      'answer',
-                    sdp:       answer.sdp,
-                    role:      'client',
-                    sessionId: SESSION_ID,
-                });
-                console.log('📤 Sent answer to host');
-            } else {
-                console.warn('⚠️ Peer connection not ready for offer, current state:', pc.signalingState);
-                // Retry after a short delay
-                setTimeout(() => handleSignal(sig), 100);
-                return;
+            // ── FIX #7a: Only set remote description when in 'stable' state.
+            // 'have-local-offer' is wrong for a receive-only student peer —
+            // if that state is hit it means there's a stale half-negotiation;
+            // close and recreate the peer connection cleanly.
+            if (pc.signalingState !== 'stable') {
+                console.warn('⚠️ Peer not in stable state for offer:', pc.signalingState, '— recreating peer');
+                pc.close();
+                createPC();
+                pendingIceCandidates = [];
             }
-        } catch(e) { 
+
+            await pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: sig.sdp }));
+            console.log('✅ Remote description set successfully');
+
+            // Drain any ICE candidates that arrived before the offer
+            for (const candidate of pendingIceCandidates) {
+                await pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(() => {});
+            }
+            pendingIceCandidates = [];
+
+            // Add any local tracks before answering (mic/cam already on)
+            if (localStream) {
+                localStream.getTracks().forEach(t => {
+                    const exists = pc.getSenders().find(s => s.track === t);
+                    if (!exists) pc.addTrack(t, localStream);
+                });
+                console.log('📹 Added local tracks before answering');
+            }
+
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            console.log('📋 Generated Answer SDP:', answer.sdp);
+            postSignal({
+                type:      'answer',
+                sdp:       answer.sdp,
+                role:      'client',
+                sessionId: SESSION_ID,
+            });
+            console.log('📤 Sent answer to host');
+        } catch(e) {
             console.error('❌ Failed to handle offer:', e);
         }
     } else if (sig.type === 'answer') {
@@ -520,12 +533,15 @@ async function handleSignal(sig) {
     } else if (sig.type === 'ice' && sig.candidate) {
         console.log('🧊 Received ICE candidate from host');
         try {
-            // Only add ICE candidate if remote description is set
             if (pc.remoteDescription) {
+                // ── FIX #7b: Remote description is set — add immediately
                 await pc.addIceCandidate(new RTCIceCandidate(sig.candidate));
                 console.log('✅ ICE candidate added successfully');
             } else {
-                console.warn('⚠️ Cannot add ICE candidate - no remote description set');
+                // ── FIX #7c: Remote description not yet set — queue the candidate
+                // so it can be applied right after setRemoteDescription succeeds
+                console.warn('⏳ Queuing ICE candidate (no remote description yet)');
+                pendingIceCandidates.push(sig.candidate);
             }
         } catch(e) {
             console.error('❌ Failed to add ICE candidate:', e);
@@ -535,6 +551,7 @@ async function handleSignal(sig) {
 
 function reconnect() {
     if (connected) return;
+    pendingIceCandidates = [];
     createPC();
     // Re-register so host sends a new offer
     postSignal({ type: 'viewer_ready', role: 'client', sessionId: SESSION_ID });
@@ -543,6 +560,29 @@ function reconnect() {
 // Start polling every 2 seconds
 setInterval(pollSignals, 2000);
 joinRoom().then(() => pollSignals());
+
+// ═══════════════════════════════════════════════════════════
+// POLL CHAT — fetch persistent chat log every 3 s so student
+// sees teacher messages even if the signaling queue was already
+// drained before the student's first poll (race condition on join).
+// ═══════════════════════════════════════════════════════════
+async function pollChat() {
+    try {
+        const url = lastChatTS
+            ? `/webrtc/chat/${ROOM_ID}?after=${encodeURIComponent(lastChatTS)}`
+            : `/webrtc/chat/${ROOM_ID}`;
+        const r = await fetch(url, { headers: { 'X-CSRF-TOKEN': CSRF } });
+        if (!r.ok) return;
+        const data = await r.json();
+        for (const msg of (data.messages || [])) {
+            // Skip messages we sent ourselves (already shown locally)
+            if (msg.sessionId === SESSION_ID) { lastChatTS = msg.timestamp; continue; }
+            appendChat(msg.sender, msg.message, false, msg.sender === HOST_NAME);
+            lastChatTS = msg.timestamp;
+        }
+    } catch(e) { /* silent */ }
+}
+setInterval(pollChat, 3000);
 
 // ═══════════════════════════════════════════════════════════
 // MIC

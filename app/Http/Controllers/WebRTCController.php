@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Cache;
  *
  * Signal flow:
  *   Teacher  POST role=host  → fanned out to each client's queue
+ *             ↳ if forSession is set, only that client receives it (ICE / offer targeting)
  *   Student  POST role=client → queued for host to read
  *   Both     GET  ?role=host|client&sessionId=xxx → drains their queue
  */
@@ -27,20 +28,29 @@ class WebRTCController extends Controller
         $data      = $request->all();
         $role      = $data['role']      ?? 'client';
         $sessionId = $data['sessionId'] ?? session()->getId();
-        
+
         // Debug logging
         \Log::info("WebRTC signaling: roomId={$roomId}, role={$role}, sessionId={$sessionId}", ['data' => $data]);
-        
+
         // No authentication checks - WebRTC routes are now open
         \Log::info("WebRTC: Processing signal without authentication restrictions");
 
         if ($role === 'host') {
-            // Teacher → fan-out to every connected client
-            $clients = Cache::get("webrtc_clients_{$roomId}", []);
-            \Log::info("Host fanning out to " . count($clients) . " clients", ['clients' => $clients]);
-            foreach ($clients as $clientSession) {
-                $this->push("webrtc_to_client_{$roomId}_{$clientSession}", $data);
-                \Log::info("Host sent signal to client: {$clientSession}");
+            // ── FIX #1: if forSession is set, route only to that specific client ──
+            // This prevents ICE candidates / offers meant for one student
+            // from being delivered to every other connected student.
+            if (!empty($data['forSession'])) {
+                $targetSession = $data['forSession'];
+                $this->push("webrtc_to_client_{$roomId}_{$targetSession}", $data);
+                \Log::info("Host sent targeted signal to client: {$targetSession}", ['type' => $data['type'] ?? 'unknown']);
+            } else {
+                // Broadcast to every connected client (e.g. a general host message)
+                $clients = Cache::get("webrtc_clients_{$roomId}", []);
+                \Log::info("Host broadcasting to " . count($clients) . " clients", ['clients' => $clients]);
+                foreach ($clients as $clientSession) {
+                    $this->push("webrtc_to_client_{$roomId}_{$clientSession}", $data);
+                    \Log::info("Host sent broadcast signal to client: {$clientSession}");
+                }
             }
         } else {
             // Student → queue for host
@@ -60,10 +70,10 @@ class WebRTCController extends Controller
     {
         $role      = $request->query('role', 'client');
         $sessionId = $request->query('sessionId', session()->getId());
-        
+
         // Debug logging
         \Log::info("WebRTC pollSignaling: roomId={$roomId}, role={$role}, sessionId={$sessionId}");
-        
+
         // No authentication checks - WebRTC routes are now open
         \Log::info("WebRTC: Processing poll without authentication restrictions");
 
@@ -71,32 +81,28 @@ class WebRTCController extends Controller
             $key     = "webrtc_to_host_{$roomId}";
             $signals = Cache::get($key, []);
             Cache::put($key, [], self::TTL);
-            
+
             \Log::info("Host polling: found " . count($signals) . " signals", ['signals' => $signals]);
 
         } else {
-            // Register client session so host signals reach it
+            // ── FIX #2: Do NOT auto-push viewer_ready here ──
+            // viewer_ready is sent explicitly by joinRoom() on the client JS side.
+            // Auto-registering here caused a second viewer_ready signal to fire on
+            // every single poll (every 2 s), making the teacher create duplicate peers.
+            // We still register the sessionId in the clients list so host can fan-out
+            // ICE/offers to this client, but we do NOT push viewer_ready again.
             $clients = Cache::get("webrtc_clients_{$roomId}", []);
             if (!in_array($sessionId, $clients)) {
                 $clients[] = $sessionId;
                 Cache::put("webrtc_clients_{$roomId}", $clients, self::TTL);
-                
-                \Log::info("New client registered: {$sessionId}");
-
-                // Tell host: a new viewer is ready → host will create offer
-                $this->push("webrtc_to_host_{$roomId}", [
-                    'type'      => 'viewer_ready',
-                    'sessionId' => $sessionId,
-                    'role'      => 'client',
-                ]);
-                
-                \Log::info("Sent viewer_ready signal to host for client: {$sessionId}");
+                \Log::info("New client silently registered in clients list: {$sessionId}");
+                // NOTE: viewer_ready is sent by joinRoom() JS call, not here.
             }
 
             $key     = "webrtc_to_client_{$roomId}_{$sessionId}";
             $signals = Cache::get($key, []);
             Cache::put($key, [], self::TTL);
-            
+
             \Log::info("Client polling: found " . count($signals) . " signals for {$sessionId}", ['signals' => $signals]);
         }
 
@@ -126,12 +132,24 @@ class WebRTCController extends Controller
             Cache::put("webrtc_clients_{$roomId}", $clients, self::TTL);
         }
 
-        // Notify host
+        // ── FIX #3: Push viewer_ready here (from joinRoom) so the host creates
+        // exactly ONE peer per student join. The pollSignaling no longer pushes
+        // viewer_ready, so there is no duplication.
         $this->push("webrtc_to_host_{$roomId}", [
-            'type'      => 'participant_joined',
-            'name'      => $name,
-            'sessionId' => $sessionId,
-            'count'     => count($participants),
+            'type'        => 'viewer_ready',
+            'name'        => $name,
+            'sessionId'   => $sessionId,
+            'fromSession' => $sessionId,
+            'count'       => count($participants),
+        ]);
+
+        // Also push participant_joined for the participant list UI
+        $this->push("webrtc_to_host_{$roomId}", [
+            'type'        => 'participant_joined',
+            'name'        => $name,
+            'sessionId'   => $sessionId,
+            'fromSession' => $sessionId,
+            'count'       => count($participants),
         ]);
 
         return response()->json([
@@ -160,10 +178,11 @@ class WebRTCController extends Controller
         Cache::forget("webrtc_to_client_{$roomId}_{$sessionId}");
 
         $this->push("webrtc_to_host_{$roomId}", [
-            'type'      => 'participant_left',
-            'name'      => $name,
-            'sessionId' => $sessionId,
-            'count'     => count($participants),
+            'type'        => 'participant_left',
+            'name'        => $name,
+            'sessionId'   => $sessionId,
+            'fromSession' => $sessionId,
+            'count'       => count($participants),
         ]);
 
         return response()->json(['ok' => true]);
@@ -200,6 +219,7 @@ class WebRTCController extends Controller
                 $this->push("webrtc_to_client_{$roomId}_{$cs}", $msg);
             }
         }
+        // Also push to host queue so teacher sees student messages
         $this->push("webrtc_to_host_{$roomId}", $msg);
 
         return response()->json(['ok' => true, 'id' => $msg['id']]);
