@@ -3,9 +3,9 @@
 @section('title', 'Token History - ESA Portal')
 
 @section('content')
-<div class="min-h-screen bg-slate-950">
+<div class="min-h-screen bg-slate-100">
     <!-- Header -->
-    <div class="bg-slate-950 border-b border-slate-800">
+    <div class="bg-white border-b border-slate-200">
         <div class="container mx-auto px-4 py-4">
             <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-3">
@@ -13,12 +13,12 @@
                         <i class="fas fa-coins text-amber-300 text-lg"></i>
                     </div>
                     <div>
-                        <h1 class="text-lg md:text-xl font-semibold text-white">My Tokens</h1>
-                        <p class="text-xs text-slate-400">Client wallet for ESA public exams</p>
+                        <h1 class="text-lg md:text-xl font-semibold text-slate-800">My Tokens</h1>
+                        <p class="text-xs text-slate-500">Client wallet for ESA public exams</p>
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <span class="text-sm text-slate-200">Hi, {{ auth()->guard('client')->user()->first_name }}!</span>
+                    <span class="text-sm text-slate-700">Hi, {{ auth()->guard('client')->user()->first_name }}!</span>
                     <form action="{{ route('public.tokens.logout') }}" method="POST" class="inline">
                         @csrf
                         <button type="submit" class="text-xs md:text-sm text-rose-400 hover:text-rose-300">
@@ -35,18 +35,18 @@
         <!-- Balance Overview -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             <div class="lg:col-span-2">
-                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-                    <h2 class="text-lg md:text-xl font-semibold text-white mb-4">Token balance</h2>
+                <div class="bg-white border border-slate-200 shadow rounded-2xl p-6">
+                    <h2 class="text-lg md:text-xl font-semibold text-slate-800 mb-4">Token balance</h2>
                     <div class="text-center">
                         <div class="text-4xl md:text-5xl font-extrabold text-amber-300 mb-1">
                             {{ auth()->guard('client')->user()->getCurrentTokens() }}
                         </div>
-                        <div class="text-slate-300 text-sm">Available tokens</div>
+                        <div class="text-slate-600 text-sm">Available tokens</div>
                     </div>
                     
-                    <div class="mt-6 pt-6 border-t border-slate-800">
+                    <div class="mt-6 pt-6 border-t border-slate-200">
                         <div class="flex justify-between items-center">
-                            <span class="text-slate-300 text-sm">Quick actions</span>
+                            <span class="text-slate-600 text-sm">Quick actions</span>
                             <div class="space-x-2">
                                 <a href="{{ route('public.tokens.purchase') }}" 
                                    class="inline-flex items-center px-3 py-2 text-xs md:text-sm font-medium rounded-full text-slate-900 bg-amber-300 hover:bg-amber-200">
@@ -66,38 +66,38 @@
 
             <!-- Subscription Status -->
             <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-                <h2 class="text-lg md:text-xl font-semibold text-white mb-4">Subscription status</h2>
+                <h2 class="text-lg md:text-xl font-semibold text-slate-800 mb-4">Subscription status</h2>
                 @if(auth()->guard('client')->user()->hasActiveSubscription())
                     @php
                         $activeSubscription = auth()->guard('client')->user()->activeSubscription;
                     @endphp
                     <div class="space-y-3 text-sm">
                         <div class="flex justify-between">
-                            <span class="text-slate-300">Plan</span>
-                            <span class="font-medium text-white">{{ $activeSubscription->subscription->name }}</span>
+                            <span class="text-slate-600">Plan</span>
+                            <span class="font-medium text-slate-800">{{ $activeSubscription->subscription->name }}</span>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-slate-300">Status</span>
+                            <span class="text-slate-600">Status</span>
                             <span class="px-2 py-1 bg-emerald-400/10 text-emerald-300 text-xs font-semibold rounded-full border border-emerald-400/40">
                                 Active plan
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-slate-300">Tokens included</span>
-                            <span class="font-medium text-white">{{ $activeSubscription->subscription->formatted_tokens }}</span>
+                            <span class="text-slate-600">Tokens included</span>
+                            <span class="font-medium text-slate-800">{{ $activeSubscription->subscription->formatted_tokens }}</span>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-slate-300">Started</span>
-                            <span class="font-medium text-white">{{ $activeSubscription->starts_at->format('M j, Y') }}</span>
+                            <span class="text-slate-600">Started</span>
+                            <span class="font-medium text-slate-800">{{ $activeSubscription->starts_at->format('M j, Y') }}</span>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-slate-300">Expires</span>
-                            <span class="font-medium text-white">{{ $activeSubscription->ends_at->format('M j, Y') }}</span>
+                            <span class="text-slate-600">Expires</span>
+                            <span class="font-medium text-slate-800">{{ $activeSubscription->ends_at->format('M j, Y') }}</span>
                         </div>
                     </div>
                 @else
                     <div class="text-center py-4">
                         <i class="fas fa-crown text-slate-500 text-4xl mb-3"></i>
-                        <p class="text-slate-200 mb-2 text-sm">No active subscription</p>
+                        <p class="text-slate-700 mb-2 text-sm">No active subscription</p>
                         <a href="{{ route('public.subscriptions.index') }}" 
                            class="inline-flex items-center px-4 py-2 bg-emerald-500 text-white rounded-full text-xs md:text-sm hover:bg-emerald-400">
                             <i class="fas fa-crown mr-2"></i>

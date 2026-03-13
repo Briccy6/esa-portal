@@ -48,6 +48,11 @@
                         {{ __('Online Tests') }}
                     </x-nav-link>
                     
+                    <!-- Branches Link -->
+                    <x-nav-link :href="route('admin.branch.index')" :active="request()->routeIs('admin.branch.*')">
+                        {{ __('Branches') }}
+                    </x-nav-link>
+                    
                     <!-- Added Profile link -->
                     <x-nav-link :href="route('profile.edit')" :active="request()->routeIs('profile.edit')">
                         {{ __('Annoucements') }}
@@ -146,6 +151,11 @@
             <!-- Added Profile link here too -->
             <x-responsive-nav-link :href="route('profile.edit')" :active="request()->routeIs('profile.edit')">
                 {{ __('Profile') }}
+            </x-responsive-nav-link>
+
+            <!-- Branches Link -->
+            <x-responsive-nav-link :href="route('admin.branch.index')" :active="request()->routeIs('admin.branch.*')">
+                {{ __('Branches') }}
             </x-responsive-nav-link>
         </div>
 

@@ -829,6 +829,14 @@
                     </a>
                     <div class="nav-indicator" x-show="hover" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200"></div>
                 </div>
+
+                <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
+                    <a href="{{ route('admin.branch.index') }}" class="nav-link {{ request()->routeIs('admin.branch.*') ? 'active' : '' }}">
+                        <i class="fas fa-code-branch"></i>
+                        <span class="nav-text">Branches</span>
+                    </a>
+                    <div class="nav-indicator" x-show="hover" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200"></div>
+                </div>
                 
                 <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
                     <a href="{{ route('admin.live-classes.index') }}" class="nav-link {{ request()->routeIs('admin.live-classes.*') ? 'active' : '' }}">

@@ -3,9 +3,9 @@
 @section('title', 'Subscription Plans - ESA Portal')
 
 @section('content')
-<div class="min-h-screen bg-slate-950">
+<div class="min-h-screen bg-slate-100">
     <!-- ALX-style hero -->
-    <div class="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white">
+    <div class="bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-700 text-white">
         <div class="container mx-auto px-4 py-12 md:py-16">
             <div class="grid lg:grid-cols-2 gap-10 items-center">
                 <div>
@@ -33,7 +33,7 @@
                     </div>
                 </div>
 
-                <div class="bg-white/5 border border-white/10 rounded-2xl p-6 md:p-7 shadow-2xl backdrop-blur-sm">
+                <div class="bg-white/20 border border-white/30 rounded-2xl p-6 md:p-7 shadow-2xl backdrop-blur-sm">
                     <h2 class="text-lg font-semibold mb-2">How subscriptions work</h2>
                     <p class="text-sm text-slate-200 mb-4">
                         When you subscribe, your account receives tokens you can spend on tests and resources.

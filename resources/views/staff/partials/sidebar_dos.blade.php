@@ -590,11 +590,33 @@
           </a>
         </li>
         
-        <li class="nav-item">
-          <a href="{{ route('dos.courses.index') }}" class="nav-link text-white d-flex align-items-center gap-2">
+        <li class="nav-item dropdown">
+          <a class="nav-link text-white d-flex align-items-center gap-2 dropdown-toggle" href="#" id="academicDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
             <i class="nav-icon bi bi-book-fill"></i>
-            <span class="nav-text">Courses</span>
+            <span class="nav-text">Academic</span>
           </a>
+          <ul class="dropdown-menu" aria-labelledby="academicDropdown">
+            <li>
+                <a class="dropdown-item {{ request()->routeIs('dos.courses.*') ? 'active' : '' }}" href="{{ route('dos.courses.index') }}">
+                    <i class="fas fa-book"></i> Courses Management
+                </a>
+            </li>
+            <li>
+                <a class="dropdown-item {{ request()->routeIs('dos.live-classes.*') ? 'active' : '' }}" href="{{ route('dos.live-classes.index') }}">
+                    <i class="fas fa-video"></i> Live Classes
+                </a>
+            </li>
+            <li>
+                <a class="dropdown-item {{ request()->routeIs('dos.resources.*') ? 'active' : '' }}" href="{{ route('dos.resources.index') }}">
+                    <i class="fas fa-file-alt"></i> Study Resources
+                </a>
+            </li>
+            <li>
+                <a class="dropdown-item {{ request()->routeIs('dos.assignments.*') ? 'active' : '' }}" href="{{ route('dos.assignments.index') }}">
+                    <i class="fas fa-tasks"></i> Assignments
+                </a>
+            </li>
+        </ul>
         </li>
 
         <li class="nav-item">

@@ -1060,6 +1060,50 @@ Route::middleware(['auth:staff'])->prefix('dos/exams')->name('dos.exams.')->grou
     Route::delete('/{exam}', [ExamController::class, 'destroy'])->name('destroy');
 });
 
+// DOS Academic Routes
+Route::middleware(['auth:staff'])->prefix('dos')->name('dos.')->group(function () {
+    // Courses Management
+    Route::get('/courses', [DosCourseController::class, 'index'])->name('courses.index');
+    Route::get('/courses/create', [DosCourseController::class, 'create'])->name('courses.create');
+    Route::post('/courses', [DosCourseController::class, 'store'])->name('courses.store');
+    Route::get('/courses/{course}', [DosCourseController::class, 'show'])->name('courses.show');
+    Route::get('/courses/{course}/edit', [DosCourseController::class, 'edit'])->name('courses.edit');
+    Route::put('/courses/{course}', [DosCourseController::class, 'update'])->name('courses.update');
+    Route::delete('/courses/{course}', [DosCourseController::class, 'destroy'])->name('courses.destroy');
+    
+    // Live Classes Management
+    Route::get('/live-classes', [DosLiveClassController::class, 'index'])->name('live-classes.index');
+    Route::get('/live-classes/create', [DosLiveClassController::class, 'create'])->name('live-classes.create');
+    Route::post('/live-classes', [DosLiveClassController::class, 'store'])->name('live-classes.store');
+    Route::get('/live-classes/{liveClass}', [DosLiveClassController::class, 'show'])->name('live-classes.show');
+    Route::get('/live-classes/{liveClass}/edit', [DosLiveClassController::class, 'edit'])->name('live-classes.edit');
+    Route::put('/live-classes/{liveClass}', [DosLiveClassController::class, 'update'])->name('live-classes.update');
+    Route::delete('/live-classes/{liveClass}', [DosLiveClassController::class, 'destroy'])->name('live-classes.destroy');
+    Route::post('/live-classes/{liveClass}/start', [DosLiveClassController::class, 'start'])->name('live-classes.start');
+    Route::post('/live-classes/{liveClass}/end', [DosLiveClassController::class, 'end'])->name('live-classes.end');
+    
+    // Study Resources Management
+    Route::get('/resources', [DosResourceController::class, 'index'])->name('resources.index');
+    Route::get('/resources/create', [DosResourceController::class, 'create'])->name('resources.create');
+    Route::post('/resources', [DosResourceController::class, 'store'])->name('resources.store');
+    Route::get('/resources/{resource}', [DosResourceController::class, 'show'])->name('resources.show');
+    Route::get('/resources/{resource}/edit', [DosResourceController::class, 'edit'])->name('resources.edit');
+    Route::put('/resources/{resource}', [DosResourceController::class, 'update'])->name('resources.update');
+    Route::delete('/resources/{resource}', [DosResourceController::class, 'destroy'])->name('resources.destroy');
+    Route::get('/resources/{resource}/download', [DosResourceController::class, 'download'])->name('resources.download');
+    
+    // Assignments Management
+    Route::get('/assignments', [DosAssignmentController::class, 'index'])->name('assignments.index');
+    Route::get('/assignments/create', [DosAssignmentController::class, 'create'])->name('assignments.create');
+    Route::post('/assignments', [DosAssignmentController::class, 'store'])->name('assignments.store');
+    Route::get('/assignments/{assignment}', [DosAssignmentController::class, 'show'])->name('assignments.show');
+    Route::get('/assignments/{assignment}/edit', [DosAssignmentController::class, 'edit'])->name('assignments.edit');
+    Route::put('/assignments/{assignment}', [DosAssignmentController::class, 'update'])->name('assignments.update');
+    Route::delete('/assignments/{assignment}', [DosAssignmentController::class, 'destroy'])->name('assignments.destroy');
+    Route::get('/assignments/{assignment}/submissions', [DosAssignmentController::class, 'submissions'])->name('assignments.submissions');
+    Route::post('/assignments/{assignment}/publish', [DosAssignmentController::class, 'publish'])->name('assignments.publish');
+});
+
 // Admin-specific exam routes
 Route::middleware(['auth:admin'])->prefix('admin/exams')->name('admin.exams.')->group(function () {
     Route::get('/', [ExamController::class, 'index'])->name('index');

@@ -3,25 +3,25 @@
 @section('title', 'Client Login - ESA Portal')
 
 @section('content')
-<div class="min-h-screen bg-slate-950 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+<div class="min-h-screen bg-slate-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
     <div class="max-w-md w-full space-y-8">
         <!-- Header -->
         <div class="text-center">
             <div class="mx-auto mb-4 inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-slate-800">
-                <i class="fas fa-user-circle text-slate-100 text-2xl"></i>
+                <i class="fas fa-user-circle text-slate-800 text-2xl"></i>
             </div>
-            <h2 class="mt-2 text-3xl font-extrabold text-white">Client sign in</h2>
-            <p class="mt-2 text-sm text-slate-300">
+            <h2 class="mt-2 text-3xl font-extrabold text-slate-800">Client sign in</h2>
+            <p class="mt-2 text-sm text-slate-700">
                 Manage your ESA subscriptions, tokens, and public practice tests.
             </p>
         </div>
 
         <!-- Login Form -->
-        <div class="bg-slate-900/90 border border-slate-800 py-8 px-6 shadow-2xl rounded-2xl backdrop-blur-sm">
+        <div class="bg-white border border-slate-200 shadow-lg py-8 px-6 rounded-2xl backdrop-blur-sm">
             <!-- Google Sign In -->
             <div class="mb-6">
                 <a href="{{ route('client.auth.google') }}"
-                   class="w-full flex items-center justify-center px-4 py-3 border border-slate-700 rounded-lg text-sm font-medium text-slate-100 bg-slate-900 hover:bg-slate-800 transition-colors">
+                   class="w-full flex items-center justify-center px-4 py-3 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 transition-colors">
                     <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24">
                         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                         <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -47,9 +47,9 @@
                 @csrf
                 
                 <div>
-                    <label for="email" class="block text-sm font-medium text-slate-200">Email address</label>
+                    <label for="email" class="block text-sm font-medium text-slate-800">Email address</label>
                     <input id="email" name="email" type="email" required autocomplete="email"
-                           class="mt-1 block w-full px-3 py-2 border border-slate-700 bg-slate-950 text-slate-100 rounded-md shadow-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                           class="mt-1 block w-full px-3 py-2 border border-slate-300 bg-white text-slate-800 rounded-md shadow-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                            value="{{ old('email') }}">
                     @error('email')
                         <span class="text-rose-300 text-xs">{{ $message }}</span>
@@ -57,9 +57,9 @@
                 </div>
 
                 <div>
-                    <label for="password" class="block text-sm font-medium text-slate-200">Password</label>
+                    <label for="password" class="block text-sm font-medium text-slate-800">Password</label>
                     <input id="password" name="password" type="password" required autocomplete="current-password"
-                           class="mt-1 block w-full px-3 py-2 border border-slate-700 bg-slate-950 text-slate-100 rounded-md shadow-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                           class="mt-1 block w-full px-3 py-2 border border-slate-300 bg-white text-slate-800 rounded-md shadow-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
                     @error('password')
                         <span class="text-rose-300 text-xs">{{ $message }}</span>
                     @enderror
@@ -69,7 +69,7 @@
                     <div class="flex items-center">
                         <input id="remember" name="remember" type="checkbox" 
                                class="h-4 w-4 text-emerald-500 focus:ring-emerald-500 border-slate-700 rounded bg-slate-900">
-                        <label for="remember" class="ml-2 block text-sm text-gray-900">
+                        <label for="remember" class="ml-2 block text-sm text-slate-700">
                             Remember me
                         </label>
                     </div>

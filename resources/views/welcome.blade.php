@@ -1126,7 +1126,7 @@
     @include('components.live-streaming-banner')
 
     <!-- Hero Section - ALX-style split layout -->
-    <section id="home" class="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white py-16 md:py-24">
+    <section id="home" class="bg-gradient-to-br from-slate-100 via-slate-50 to-slate-100 text-slate-800 py-16 md:py-24">
         <div class="container mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center">
             <!-- Left column: messaging -->
             <div>
@@ -1194,7 +1194,7 @@
                     </a>
                 </div>
 
-                <div class="bg-slate-900/70 border border-white/10 rounded-2xl p-6 flex flex-col justify-between">
+                <div class="bg-slate-100/70 border border-slate-300 rounded-2xl p-6 flex flex-col justify-between">
                     <div>
                         <p class="text-xs font-semibold tracking-wide text-emerald-400 uppercase mb-2">
                             Learning hub
@@ -1211,13 +1211,13 @@
                     </a>
                 </div>
 
-                <div class="bg-slate-900/60 border border-white/10 rounded-2xl p-6 flex flex-col justify-between sm:col-span-2">
+                <div class="bg-slate-100/60 border border-slate-300 rounded-2xl p-6 flex flex-col justify-between sm:col-span-2">
                     <div>
                         <p class="text-xs font-semibold tracking-wide text-amber-300 uppercase mb-2">
                             Portals
                         </p>
                         <h3 class="text-xl font-bold mb-2">Admin, staff, teacher & student access</h3>
-                        <p class="text-sm text-slate-200 mb-4">
+                        <p class="text-sm text-slate-600 mb-4">
                             A single entry point for managing classes, results, subscriptions, and student journeys.
                         </p>
                     </div>
