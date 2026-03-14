@@ -10,7 +10,7 @@
                     <x-application-logo class="w-10 h-10" />
                 </div>
                 <h1 class="mt-6 text-3xl font-bold text-white">
-                    {{ $systemName }}
+                    ESA Portal
                 </h1>
                 <p class="mt-2 text-lg text-blue-100">
                     {{ __('Welcome to your learning portal') }}
@@ -38,9 +38,9 @@
                         <x-input-label for="password" :value="__('Password')" />
                         <div class="relative">
                             <x-text-input id="password" class="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent px-4 py-3 text-gray-900 placeholder-gray-400 transition duration-300" type="password" name="password" required autocomplete="current-password" />
-                            <button type="button" class="absolute inset-y-0 right-0 top-0 h-full px-4 py-2 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset-2 focus:ring-indigo-500" @click="togglePasswordVisibility">
-                                <x-icon name="eye" class="h-5 w-5" />
-                                <x-icon name="eye-off" class="h-5 w-5 hidden" />
+                            <button type="button" class="absolute inset-y-0 right-0 top-0 h-full px-4 py-2 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset-2 focus:ring-indigo-500" @click="togglePasswordVisibility" id="password-toggle">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                <svg class="h-5 w-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825 11.25 15.125 8.625 18.825 10.875 12.75 8.625 18.825 13.875 18.825"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.75 9.75 11.25 15.125 8.625 12.75 12.75 9.75 15.75 9.75"></path></svg>
                             </button>
                         </div>
                         <x-input-error :messages="$errors->get('password')" class="mt-2" />
@@ -63,7 +63,7 @@
                         @endif
                         
                         <button type="submit" class="w-full flex justify-center items-center rounded-lg bg-indigo-600 px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-300">
-                            <x-icon name="login" class="w-5 h-5 mr-2" />
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
                             {{ __('Sign in') }}
                         </button>
                     </div>
@@ -74,6 +74,6 @@
 
     <!-- Footer -->
     <div class="mt-auto text-center text-gray-500 text-sm">
-        <p>&copy; {{ date('Y') }} {{ $systemName }}. {{ __('All rights reserved.') }}</p>
+        <p>&copy; {{ date('Y') }} ESA Portal. {{ __('All rights reserved.') }}</p>
     </div>
 </x-guest-layout>

@@ -75,9 +75,26 @@ class BlogForm extends Component
         }
     }
 
-    public function save()
+public function save()
     {
         $this->validate();
+
+        // DEBUG: Auth check before blog creation
+        \Log::info('=== BlogForm::save() DEBUG ===');
+        \Log::info('Admin auth check: ' . (Auth::guard('admin')->check() ? 'YES' : 'NO'));
+        \Log::info('Admin ID: ' . (Auth::guard('admin')->id() ?? 'NULL'));
+        \Log::info('Session ID: ' . session()->getId());
+        \Log::info('All session keys: ' . json_encode(array_keys(session()->all())));
+
+        if (!Auth::guard('admin')->check()) {
+            $this->dispatch('blog-saved', [
+                'type' => 'error',
+                'message' => 'Authentication failed. Please login again as admin.',
+                'blogId' => null
+            ]);
+            return;
+        }
+        \Log::info('Admin auth passed, proceeding with blog creation...');
 
         $blogData = [
             'title' => $this->title,
