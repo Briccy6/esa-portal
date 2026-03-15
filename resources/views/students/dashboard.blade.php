@@ -940,15 +940,230 @@
     .subscription-features { margin-bottom: 1.5rem; }
     .feature-item { display: flex; align-items: center; margin-bottom: 0.5rem; font-size: 0.875rem; color: #4b5563; }
     .feature-item i { margin-right: 0.5rem; }
+    @media (max-width: 1200px) {
+        .fee-card { margin-bottom: 1rem; }
+        .subscription-card { margin-bottom: 1rem; }
+    }
+    
+    @media (max-width: 992px) {
+        .alx-card { margin-bottom: 1rem; }
+        .info-card { margin-bottom: 1rem; }
+        .token-balance-display { padding: 1.5rem; }
+        .balance-number { font-size: 2.8rem; }
+        .token-icon { font-size: 2.5rem; }
+    }
+    
     @media (max-width: 768px) {
+        .container-fluid { padding: 0.75rem; }
+        .welcome-header { padding: 1.5rem; }
         .welcome-title { font-size: 1.5rem; }
-        .live-class-alert { flex-direction: column; text-align: center; }
-        .live-class-icon { margin-right: 0; margin-bottom: 1rem; }
-        .exam-item { flex-direction: column; align-items: flex-start; }
-        .exam-status { margin-top: 0.5rem; }
-        .token-balance-display { padding: 1.5rem 1rem; }
+        .welcome-subtitle { font-size: 1rem; }
+        
+        .section-title { font-size: 1.1rem; margin-bottom: 1rem; }
+        .fee-card { margin-bottom: 1rem; }
+        .fee-card-header { padding: 1rem; }
+        .fee-card-body { padding: 0 1rem 1rem; }
+        .fee-amount { font-size: 1.5rem; }
+        .fee-icon { width: 40px; height: 40px; font-size: 1.25rem; }
+        
+        .live-class-alert { flex-direction: column; text-align: center; padding: 1.25rem; }
+        .live-class-icon { margin-right: 0; margin-bottom: 1rem; font-size: 1.5rem; }
+        .live-class-action { margin-top: 1rem; }
+        
+        .info-card { margin-bottom: 1rem; }
+        .info-card-header { padding: 1rem; flex-direction: column; gap: 0.75rem; text-align: center; }
+        .info-card-header h4 { font-size: 1rem; }
+        .info-card-body { padding: 1rem; max-height: none; }
+        
+        .exam-item { flex-direction: column; align-items: flex-start; padding: 0.75rem 0; }
+        .exam-status { margin-top: 0.75rem; align-self: stretch; }
+        .status-badge { font-size: 0.8rem; padding: 0.4rem 0.8rem; }
+        
+        .token-overview { padding: 0.75rem 0; }
+        .token-balance-display { padding: 1.25rem 0.75rem; }
+        .balance-amount { flex-direction: column; margin-bottom: 1rem; }
+        .token-icon { margin-right: 0; margin-bottom: 0.5rem; font-size: 2rem; }
         .balance-number { font-size: 2.5rem; }
+        .balance-label { margin-left: 0; font-size: 1rem; }
         .balance-details { flex-direction: column; gap: 0.5rem; }
+        
+        .subscription-card { padding: 1rem; margin-bottom: 1rem; }
+        .subscription-header h5 { font-size: 1rem; }
+        .price-amount { font-size: 1.25rem; }
+        .feature-item { font-size: 0.8rem; }
+        
+        .alx-card { margin-bottom: 1rem; }
+        .alx-card-header { padding: 1rem; }
+        .alx-card-body { padding: 1rem; }
+        .alx-card-title { font-size: 1rem; }
+        .alx-card-price { font-size: 1.1rem; }
+        .alx-meta-info { gap: 0.5rem; }
+        .alx-meta-item { font-size: 0.8rem; }
+        .alx-btn { padding: 0.6rem 1rem; font-size: 0.8rem; }
+        
+        .announcement-item { padding: 0.75rem 0; }
+        .announcement-content h6 { font-size: 0.95rem; }
+        .announcement-content p { font-size: 0.85rem; }
+        .announcement-date { font-size: 0.8rem; }
+    }
+    
+    @media (max-width: 576px) {
+        .container-fluid { padding: 0.5rem; }
+        .welcome-header { padding: 1rem; margin-bottom: 0.75rem; }
+        .welcome-title { font-size: 1.25rem; }
+        .welcome-subtitle { font-size: 0.9rem; }
+        
+        .section-title { font-size: 1rem; margin-bottom: 0.75rem; }
+        .fee-card { margin-bottom: 0.75rem; }
+        .fee-card-header { padding: 0.75rem; }
+        .fee-card-body { padding: 0 0.75rem 0.75rem; }
+        .fee-amount { font-size: 1.25rem; }
+        .fee-icon { width: 36px; height: 36px; font-size: 1.1rem; margin-right: 0.75rem; }
+        .fee-title h6 { font-size: 0.9rem; }
+        .fee-detail-item { font-size: 0.8rem; }
+        .btn-pay { padding: 0.6rem 1rem; font-size: 0.85rem; }
+        
+        .alert { padding: 0.75rem; margin-bottom: 0.75rem; }
+        .alert .btn { font-size: 0.8rem; padding: 0.25rem 0.5rem; }
+        
+        .live-class-alert { padding: 1rem; }
+        .live-class-content h5 { font-size: 1rem; }
+        .live-class-content p { font-size: 0.85rem; }
+        .btn-join { padding: 0.5rem 1rem; font-size: 0.85rem; }
+        
+        .info-card { margin-bottom: 0.75rem; }
+        .info-card-header { padding: 0.75rem; }
+        .info-card-header h4 { font-size: 0.9rem; }
+        .info-card-header .btn { font-size: 0.75rem; padding: 0.25rem 0.5rem; }
+        .info-card-body { padding: 0.75rem; }
+        
+        .exam-item { padding: 0.5rem 0; }
+        .exam-content h6 { font-size: 0.9rem; }
+        .exam-date { font-size: 0.8rem; }
+        .exam-tokens { font-size: 0.8rem; }
+        .status-badge { font-size: 0.75rem; padding: 0.35rem 0.7rem; }
+        .btn-sm { font-size: 0.75rem; padding: 0.25rem 0.5rem; }
+        
+        .token-overview { padding: 0.5rem 0; }
+        .token-balance-display { padding: 1rem 0.5rem; }
+        .balance-number { font-size: 2rem; }
+        .balance-label { font-size: 0.9rem; }
+        .token-icon { font-size: 1.75rem; }
+        .detail-item { font-size: 0.8rem; }
+        .token-actions .btn { font-size: 0.8rem; padding: 0.5rem 0.75rem; }
+        
+        .subscription-card { padding: 0.75rem; }
+        .subscription-header h5 { font-size: 0.9rem; }
+        .price-amount { font-size: 1.1rem; }
+        .price-period { font-size: 0.75rem; }
+        .subscription-tokens { font-size: 0.8rem; padding: 0.5rem; }
+        .feature-item { font-size: 0.75rem; }
+        .subscription-card .btn { font-size: 0.8rem; padding: 0.5rem 0.75rem; }
+        
+        .alx-card { margin-bottom: 0.75rem; }
+        .alx-card-header { padding: 0.75rem; }
+        .alx-card-title { font-size: 0.9rem; }
+        .alx-card-subtitle { font-size: 0.8rem; }
+        .alx-card-body { padding: 0.75rem; }
+        .alx-card-price { font-size: 1rem; }
+        .alx-meta-info { flex-direction: column; gap: 0.25rem; }
+        .alx-meta-item { font-size: 0.75rem; }
+        .alx-type-badges { gap: 0.25rem; }
+        .alx-type-badge { font-size: 0.7rem; padding: 0.2rem 0.5rem; }
+        .alx-btn { font-size: 0.75rem; padding: 0.5rem 0.75rem; }
+        .alx-share-btn { padding: 0.35rem; font-size: 0.8rem; }
+        
+        .announcement-item { padding: 0.5rem 0; }
+        .announcement-content h6 { font-size: 0.85rem; }
+        .announcement-content p { font-size: 0.8rem; }
+        .announcement-date { font-size: 0.75rem; }
+        
+        .modal-dialog { margin: 0.5rem; }
+        .modal-header { padding: 1rem; }
+        .modal-body { padding: 1rem; }
+        .modal-footer { padding: 0.75rem 1rem; }
+        .modal-title { font-size: 1rem; }
+        .form-control { font-size: 0.9rem; }
+        .form-label { font-size: 0.85rem; }
+    }
+    
+    @media (max-width: 480px) {
+        .welcome-header { padding: 0.75rem; }
+        .welcome-title { font-size: 1.1rem; }
+        .welcome-subtitle { font-size: 0.85rem; }
+        
+        .fee-card { border-radius: 12px; }
+        .fee-card-header { padding: 0.5rem; }
+        .fee-card-body { padding: 0 0.5rem 0.5rem; }
+        .fee-icon { width: 32px; height: 32px; font-size: 1rem; margin-right: 0.5rem; }
+        .fee-title h6 { font-size: 0.85rem; }
+        .fee-amount { font-size: 1.1rem; }
+        .fee-detail-item { font-size: 0.75rem; }
+        .btn-pay { padding: 0.5rem 0.75rem; font-size: 0.8rem; }
+        
+        .info-card { border-radius: 12px; }
+        .info-card-header { padding: 0.5rem; }
+        .info-card-header h4 { font-size: 0.85rem; }
+        .info-card-body { padding: 0.5rem; }
+        
+        .token-balance-display { padding: 0.75rem 0.25rem; }
+        .balance-number { font-size: 1.75rem; }
+        .balance-label { font-size: 0.85rem; }
+        .token-icon { font-size: 1.5rem; }
+        
+        .subscription-card { padding: 0.5rem; border-radius: 12px; }
+        .subscription-header h5 { font-size: 0.85rem; }
+        .price-amount { font-size: 1rem; }
+        .subscription-tokens { font-size: 0.75rem; }
+        
+        .alx-card { border-radius: 8px; }
+        .alx-card-header { padding: 0.5rem; }
+        .alx-card-body { padding: 0.5rem; }
+        .alx-card-title { font-size: 0.85rem; }
+        .alx-card-price { font-size: 0.9rem; }
+        .alx-btn { font-size: 0.7rem; padding: 0.4rem 0.6rem; }
+        
+        .modal-dialog { margin: 0.25rem; }
+        .modal-header { padding: 0.75rem; }
+        .modal-body { padding: 0.75rem; }
+        .modal-footer { padding: 0.5rem 0.75rem; }
+    }
+    
+    /* Ensure all elements are visible on mobile */
+    @media (max-width: 768px) {
+        .d-flex { display: flex !important; }
+        .justify-content-between { justify-content: space-between !important; }
+        .align-items-center { align-items: center !important; }
+        .text-end { text-align: right !important; }
+        .text-center { text-align: center !important; }
+        .mb-4 { margin-bottom: 1rem !important; }
+        .mb-3 { margin-bottom: 0.75rem !important; }
+        .mb-2 { margin-bottom: 0.5rem !important; }
+        .mb-1 { margin-bottom: 0.25rem !important; }
+        .mt-4 { margin-top: 1rem !important; }
+        .mt-3 { margin-top: 0.75rem !important; }
+        .mt-2 { margin-top: 0.5rem !important; }
+        .mt-1 { margin-top: 0.25rem !important; }
+        .py-4 { padding-top: 1rem !important; padding-bottom: 1rem !important; }
+        .py-3 { padding-top: 0.75rem !important; padding-bottom: 0.75rem !important; }
+        .py-2 { padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; }
+        .py-1 { padding-top: 0.25rem !important; padding-bottom: 0.25rem !important; }
+    }
+    
+    /* Fix overflow issues on mobile */
+    @media (max-width: 576px) {
+        .row { margin: 0; }
+        .col-12, .col-lg-6, .col-lg-4, .col-lg-3, .col-md-6, .col-md-4, .col-md-8 { padding: 0 0.25rem; }
+        .fee-card, .info-card, .alx-card, .subscription-card { overflow: hidden; }
+        .btn { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .badge { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+    }
+    
+    /* Touch-friendly targets for mobile */
+    @media (max-width: 768px) {
+        .btn, .pay-fee-btn, .alx-btn { min-height: 44px; min-width: 44px; }
+        .fee-card, .info-card, .alx-card, .subscription-card { margin-bottom: 0.75rem; }
+        .modal-dialog { max-width: 95vw; }
     }
 </style>
 @endsection
