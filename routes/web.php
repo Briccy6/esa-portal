@@ -237,6 +237,19 @@ Route::prefix('admin')->group(function () {
 Route::middleware('auth:teacher')->prefix('teacher')->name('teacher.')->group(function () {
     Route::get('dashboard', [\App\Http\Controllers\TeacherAuthController::class, 'dashboard'])->name('dashboard');
     
+    // Teacher Question Banks
+    Route::get('question-banks', [\App\Http\Controllers\QuestionBankController::class, 'index'])->name('question-banks.index');
+    Route::get('question-banks/create', [\App\Http\Controllers\QuestionBankController::class, 'create'])->name('question-banks.create');
+    Route::post('question-banks', [\App\Http\Controllers\QuestionBankController::class, 'store'])->name('question-banks.store');
+    Route::get('question-banks/{questionBank}', [\App\Http\Controllers\QuestionBankController::class, 'show'])->name('question-banks.show');
+    Route::get('question-banks/{questionBank}/edit', [\App\Http\Controllers\QuestionBankController::class, 'edit'])->name('question-banks.edit');
+    Route::put('question-banks/{questionBank}', [\App\Http\Controllers\QuestionBankController::class, 'update'])->name('question-banks.update');
+    Route::delete('question-banks/{questionBank}', [\App\Http\Controllers\QuestionBankController::class, 'destroy'])->name('question-banks.destroy');
+    Route::get('question-banks/{questionBank}/add-question', [\App\Http\Controllers\QuestionBankController::class, 'addQuestion'])->name('question-banks.add-question');
+    Route::post('question-banks/{questionBank}/questions', [\App\Http\Controllers\QuestionBankController::class, 'storeQuestion'])->name('question-banks.store-question');
+    Route::post('question-banks/{questionBank}/import', [\App\Http\Controllers\QuestionBankController::class, 'importQuestions'])->name('question-banks.import');
+    Route::get('question-banks/{questionBank}/export', [\App\Http\Controllers\QuestionBankController::class, 'exportQuestions'])->name('question-banks.export');
+    
     // Teacher Live Classes
     Route::get('live-classes', [\App\Http\Controllers\TeacherLiveClassController::class, 'index'])->name('live-classes.index');
     Route::get('live-classes/{liveClass}', [\App\Http\Controllers\TeacherLiveClassController::class, 'show'])->name('live-classes.show');

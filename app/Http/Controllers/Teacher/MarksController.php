@@ -149,7 +149,13 @@ public function index()
         
         foreach ($marks as $mark) {
             $termId = $mark->term_id ?: 'no-term';
-            $termName = $mark->term ? $mark->term->name : 'Unknown Term';
+            // Handle term_id = 0 as no-term as well
+            if ($mark->term_id == 0) {
+                $termId = 'no-term';
+                $termName = 'Unknown Term';
+            } else {
+                $termName = $mark->term ? $mark->term->name : 'Unknown Term';
+            }
             $lessonId = $mark->lesson_id;
             $lessonTitle = $mark->lesson->title;
             $testDate = $mark->test_date ?: 'no-date'; // Handle empty dates
