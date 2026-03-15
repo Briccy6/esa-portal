@@ -12,7 +12,7 @@ class ClientExamController extends Controller
     public function index()
     {
         $exams = Exam::where('is_public', true)
-            ->where('status', 'published')
+            ->where('is_active', true)
             ->orderBy('created_at', 'desc')
             ->paginate(12);
 
@@ -21,7 +21,7 @@ class ClientExamController extends Controller
 
     public function show(Exam $exam)
     {
-        if (!$exam->is_public || $exam->status !== 'published') {
+        if (!$exam->is_public || !$exam->is_active) {
             abort(404);
         }
 
@@ -30,7 +30,7 @@ class ClientExamController extends Controller
 
     public function take(Exam $exam)
     {
-        if (!$exam->is_public || $exam->status !== 'published') {
+        if (!$exam->is_public || !$exam->is_active) {
             abort(404);
         }
 
@@ -52,7 +52,7 @@ class ClientExamController extends Controller
 
     public function takeQuestion(Exam $exam, $session, $questionNumber = 1)
     {
-        if (!$exam->is_public || $exam->status !== 'published') {
+        if (!$exam->is_public || !$exam->is_active) {
             abort(404);
         }
 
