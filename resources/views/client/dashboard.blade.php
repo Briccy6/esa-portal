@@ -730,36 +730,36 @@
             Dashboard
         </a>
 
-        <a href="{{ route('public.exams.index') }}" class="nav-item">
+        <a href="{{ route('client.exams.index') }}" class="nav-item">
             <i class="fas fa-graduation-cap"></i>
             Practice Exams
         </a>
 
-        <a href="{{ route('public.subscriptions.index') }}" class="nav-item">
+        <a href="{{ route('client.subscriptions.index') }}" class="nav-item">
             <i class="fas fa-crown"></i>
             Subscriptions
         </a>
 
         <div class="nav-section-label">Tokens</div>
 
-        <a href="{{ route('public.tokens.purchase') }}" class="nav-item">
+        <a href="{{ route('client.tokens.purchase') }}" class="nav-item">
             <i class="fas fa-coins"></i>
             Buy Tokens
         </a>
 
-        <a href="{{ route('public.tokens.index') }}" class="nav-item">
+        <a href="{{ route('client.tokens.index') }}" class="nav-item">
             <i class="fas fa-history"></i>
             Token History
         </a>
 
         <div class="nav-section-label">Account</div>
 
-        <a href="#" class="nav-item">
+        <a href="{{ route('client.profile.edit') }}" class="nav-item">
             <i class="fas fa-user-circle"></i>
             My Profile
         </a>
 
-        <a href="#" class="nav-item">
+        <a href="{{ route('client.settings.index') }}" class="nav-item">
             <i class="fas fa-cog"></i>
             Settings
         </a>
@@ -770,7 +770,7 @@
         <div class="label">Token Balance</div>
         <div class="value">{{ auth()->guard('client')->user()->getCurrentTokens() }}</div>
         <div class="sub">Available for practice tests</div>
-        <a href="{{ route('public.tokens.purchase') }}" class="btn-buy-tokens">
+        <a href="{{ route('client.tokens.purchase') }}" class="btn-buy-tokens">
             <i class="fas fa-plus"></i>
             Buy More Tokens
         </a>
@@ -860,25 +860,25 @@
         <div class="panel" style="margin-bottom:20px;">
             <div class="panel-title">Quick Actions</div>
             <div class="actions-grid">
-                <a href="{{ route('public.exams.index') }}" class="action-card">
+                <a href="{{ route('client.exams.index') }}" class="action-card">
                     <div class="action-icon" style="background:rgba(79,142,247,0.12); color:var(--accent);">
                         <i class="fas fa-graduation-cap"></i>
                     </div>
                     Browse Exams
                 </a>
-                <a href="{{ route('public.subscriptions.index') }}" class="action-card">
+                <a href="{{ route('client.subscriptions.index') }}" class="action-card">
                     <div class="action-icon" style="background:rgba(167,139,250,0.12); color:var(--accent-2);">
                         <i class="fas fa-crown"></i>
                     </div>
                     Subscriptions
                 </a>
-                <a href="{{ route('public.tokens.purchase') }}" class="action-card">
+                <a href="{{ route('client.tokens.purchase') }}" class="action-card">
                     <div class="action-icon" style="background:rgba(251,191,36,0.12); color:var(--accent-warm);">
                         <i class="fas fa-coins"></i>
                     </div>
                     Buy Tokens
                 </a>
-                <a href="{{ route('public.tokens.index') }}" class="action-card">
+                <a href="{{ route('client.tokens.index') }}" class="action-card">
                     <div class="action-icon" style="background:rgba(52,211,153,0.12); color:var(--accent-3);">
                         <i class="fas fa-chart-line"></i>
                     </div>
@@ -894,7 +894,7 @@
             <div class="panel {{ auth()->guard('client')->user()->hasActiveSubscription() ? 'sub-active' : '' }}">
                 <div class="panel-title">
                     Subscription Status
-                    <a href="{{ route('public.subscriptions.index') }}">Manage →</a>
+                    <a href="{{ route('client.subscriptions.index') }}">Manage →</a>
                 </div>
 
                 @if(auth()->guard('client')->user()->hasActiveSubscription())
@@ -920,7 +920,7 @@
                         <i class="fas fa-crown"></i>
                         <p>No active subscription</p>
                     </div>
-                    <a href="{{ route('public.subscriptions.index') }}"
+                    <a href="{{ route('client.subscriptions.index') }}"
                        style="display:flex; align-items:center; justify-content:center; gap:8px; padding:10px; background:var(--accent); color:#fff; border-radius:8px; font-size:13px; font-weight:600; text-decoration:none; margin-top:12px;">
                         <i class="fas fa-crown"></i>
                         Get a Subscription
@@ -932,7 +932,7 @@
             <div class="panel">
                 <div class="panel-title">
                     Recent Activity
-                    <a href="{{ route('public.tokens.index') }}">View All →</a>
+                    <a href="{{ route('client.tokens.index') }}">View All →</a>
                 </div>
                 @php
                     $recentTransactions = auth()->guard('client')->user()->transactions()->latest()->take(5)->get();
@@ -968,7 +968,7 @@
                     <div>
                         <h4>Practice Tests</h4>
                         <p>Wide range of exams across subjects and difficulty levels.</p>
-                        <a href="{{ route('public.exams.index') }}" style="color:var(--accent);">Explore Tests →</a>
+                        <a href="{{ route('client.exams.index') }}" style="color:var(--accent);">Explore Tests →</a>
                     </div>
                 </div>
                 <div class="resource-card">
@@ -978,7 +978,7 @@
                     <div>
                         <h4>Premium Plans</h4>
                         <p>Exclusive benefits and token packages with subscriptions.</p>
-                        <a href="{{ route('public.subscriptions.index') }}" style="color:var(--accent-2);">View Plans →</a>
+                        <a href="{{ route('client.subscriptions.index') }}" style="color:var(--accent-2);">View Plans →</a>
                     </div>
                 </div>
                 <div class="resource-card">
@@ -988,7 +988,7 @@
                     <div>
                         <h4>Token Packages</h4>
                         <p>Bulk token purchases with discounts and bonus tokens.</p>
-                        <a href="{{ route('public.tokens.purchase') }}" style="color:var(--accent-warm);">Buy Tokens →</a>
+                        <a href="{{ route('client.tokens.purchase') }}" style="color:var(--accent-warm);">Buy Tokens →</a>
                     </div>
                 </div>
                 <div class="resource-card">
@@ -998,7 +998,7 @@
                     <div>
                         <h4>Progress Tracking</h4>
                         <p>Monitor learning progress and track achievements over time.</p>
-                        <a href="{{ route('public.tokens.index') }}" style="color:var(--accent-3);">View Progress →</a>
+                        <a href="{{ route('client.tokens.index') }}" style="color:var(--accent-3);">View Progress →</a>
                     </div>
                 </div>
             </div>

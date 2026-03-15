@@ -889,9 +889,35 @@ Route::prefix('auth/client')->name('client.auth.')->group(function () {
         ->name('password.reset.code');
 });
 
-// Client Dashboard Route
+// Client Dashboard Routes
 Route::middleware('auth:client')->prefix('client')->name('client.')->group(function () {
     Route::get('/dashboard', [App\Http\Controllers\Auth\Client\ClientAuthController::class, 'showDashboard'])->name('dashboard');
+    
+    // Exams
+    Route::get('/exams', [App\Http\Controllers\Client\ClientExamController::class, 'index'])->name('exams.index');
+    Route::get('/exams/{exam}', [App\Http\Controllers\Client\ClientExamController::class, 'show'])->name('exams.show');
+    Route::get('/exams/{exam}/take', [App\Http\Controllers\Client\ClientExamController::class, 'take'])->name('exams.take');
+    Route::get('/exams/{exam}/take/{session}/{questionNumber?}', [App\Http\Controllers\Client\ClientExamController::class, 'takeQuestion'])->name('exams.take.question');
+    Route::post('/exams/{exam}/save-answer/{session}/{questionNumber}', [App\Http\Controllers\Client\ClientExamController::class, 'saveAnswer'])->name('exams.save-answer');
+    Route::post('/exams/{exam}/submit/{session}', [App\Http\Controllers\Client\ClientExamController::class, 'submitExam'])->name('exams.submit');
+    
+    // Subscriptions
+    Route::get('/subscriptions', [App\Http\Controllers\Client\ClientSubscriptionController::class, 'index'])->name('subscriptions.index');
+    Route::get('/subscriptions/purchase', [App\Http\Controllers\Client\ClientSubscriptionController::class, 'purchase'])->name('subscriptions.purchase');
+    Route::post('/subscriptions/purchase/{subscription}', [App\Http\Controllers\Client\ClientSubscriptionController::class, 'processPurchase'])->name('subscriptions.process');
+    
+    // Tokens
+    Route::get('/tokens', [App\Http\Controllers\Client\ClientTokenController::class, 'index'])->name('tokens.index');
+    Route::get('/tokens/purchase', [App\Http\Controllers\Client\ClientTokenController::class, 'purchase'])->name('tokens.purchase');
+    Route::post('/tokens/purchase', [App\Http\Controllers\Client\ClientTokenController::class, 'processPurchase'])->name('tokens.process');
+    
+    // Profile
+    Route::get('/profile', [App\Http\Controllers\Client\ClientProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [App\Http\Controllers\Client\ClientProfileController::class, 'update'])->name('profile.update');
+    
+    // Settings
+    Route::get('/settings', [App\Http\Controllers\Client\ClientSettingsController::class, 'index'])->name('settings.index');
+    Route::put('/settings', [App\Http\Controllers\Client\ClientSettingsController::class, 'update'])->name('settings.update');
 });
 Route::prefix('public-subscriptions')->name('public.subscriptions.')->group(function () {
     Route::get('/', [App\Http\Controllers\PublicSubscriptionController::class, 'index'])->name('index');
