@@ -323,6 +323,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::post('/subscriptions/{subscription}/toggle', [SubscriptionController::class, 'adminToggle'])->name('subscriptions.toggle');
     Route::get('/subscriptions/student-subscriptions', [SubscriptionController::class, 'studentSubscriptions'])->name('subscriptions.student-subscriptions');
     Route::post('/subscriptions/extend/{studentSubscription}', [SubscriptionController::class, 'extendSubscription'])->name('subscriptions.extend');
+    Route::delete('/subscriptions/destroy/{studentSubscription}', [SubscriptionController::class, 'destroyStudentSubscription'])->name('subscriptions.destroy-student');
 
     // Live Classes
     Route::resource('live-classes', LiveClassController::class);

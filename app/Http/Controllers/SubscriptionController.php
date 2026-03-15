@@ -189,6 +189,19 @@ class SubscriptionController extends Controller
             ->with('success', 'Subscription extended successfully');
     }
 
+    public function destroyStudentSubscription(StudentSubscription $studentSubscription)
+    {
+        // Store subscription details for logging
+        $studentName = $studentSubscription->student->full_name ?? 'Unknown Student';
+        $subscriptionName = $studentSubscription->subscription->name ?? 'Unknown Subscription';
+        
+        // Delete the student subscription
+        $studentSubscription->delete();
+
+        return redirect()->route('subscriptions.student-subscriptions')
+            ->with('success', "Subscription for {$studentName} ({$subscriptionName}) has been deleted successfully");
+    }
+
     public function adminDestroy(Subscription $subscription)
     {
         // Check if subscription has any active student subscriptions

@@ -140,6 +140,9 @@
                                             <i class="fas fa-{{ $subscription->is_active ? 'pause' : 'play' }}"></i>
                                         </button>
                                     </form>
+                                    <button type="button" class="btn btn-outline-danger" onclick="deleteSubscription({{ $subscription->id }}, '{{ $subscription->name }}')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -212,6 +215,33 @@
 </div>
 
 <script>
+function deleteSubscription(subscriptionId, subscriptionName) {
+    if (confirm(`Are you sure you want to delete the subscription "${subscriptionName}"? This action cannot be undone and may affect students who have purchased this subscription.`)) {
+        // Submit delete form using the correct route
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/admin/subscriptions/${subscriptionId}`;
+        
+        // Add CSRF token
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = '_token';
+        csrfInput.value = csrfToken;
+        form.appendChild(csrfInput);
+        
+        // Add method override for DELETE
+        const methodInput = document.createElement('input');
+        methodInput.type = 'hidden';
+        methodInput.name = '_method';
+        methodInput.value = 'DELETE';
+        form.appendChild(methodInput);
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
 function exportSubscriptions() {
     // Implement export functionality
     alert('Export functionality will be implemented here');
