@@ -12,7 +12,7 @@ use Illuminate\Support\Str;
 class BlogController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display a listing of the resource (admin).
      */
     public function index()
     {
@@ -34,26 +34,27 @@ class BlogController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'title' => 'required|string|max:255',
-            'content' => 'required|string',
-            'meta_title' => 'nullable|string|max:255',
+            'title'            => 'required|string|max:255',
+            'content'          => 'required|string',
+            'meta_title'       => 'nullable|string|max:255',
             'meta_description' => 'nullable|string|max:500',
-            'status' => 'required|in:draft,published,archived',
-            'is_featured' => 'boolean',
-            'images' => 'nullable|array',
-            'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
-            'documents' => 'nullable|array',
-            'documents.*' => 'file|mimes:pdf,doc,docx|max:5120',
+            'status'           => 'required|in:draft,published,archived',
+            'is_featured'      => 'nullable|boolean',
+            'images'           => 'nullable|array',
+            'images.*'         => 'image|mimes:jpeg,png,jpg,gif|max:2048',
+            'documents'        => 'nullable|array',
+            'documents.*'      => 'file|mimes:pdf,doc,docx|max:5120',
         ]);
 
         $blog = Blog::create([
-            'title' => $request->title,
-            'slug' => Str::slug($request->title),
-            'content' => $request->content,
-            'meta_title' => $request->meta_title,
+            'title'            => $request->title,
+            'slug'             => Str::slug($request->title),
+            'content'          => $request->content,
+            'meta_title'       => $request->meta_title,
             'meta_description' => $request->meta_description,
-            'status' => $request->status,
-            'is_featured' => $request->boolean('featured'),
+            'status'           => $request->status,
+            // ✅ Fixed: use is_featured (the actual DB column name)
+            'is_featured'      => $request->boolean('is_featured'),
         ]);
 
         // Handle images
@@ -61,10 +62,10 @@ class BlogController extends Controller
             foreach ($request->file('images') as $index => $image) {
                 $path = $image->store('blogs/images', 'public');
                 BlogImage::create([
-                    'blog_id' => $blog->id,
+                    'blog_id'    => $blog->id,
                     'image_path' => $path,
-                    'caption' => $request->image_captions[$index] ?? null,
-                    'alt_text' => $request->image_alt_texts[$index] ?? null,
+                    'caption'    => $request->image_captions[$index] ?? null,
+                    'alt_text'   => $request->image_alt_texts[$index] ?? null,
                     'sort_order' => $index,
                 ]);
             }
@@ -75,11 +76,11 @@ class BlogController extends Controller
             foreach ($request->file('documents') as $document) {
                 $path = $document->store('blogs/documents', 'public');
                 BlogDocument::create([
-                    'blog_id' => $blog->id,
+                    'blog_id'       => $blog->id,
                     'document_path' => $path,
                     'document_name' => $document->getClientOriginalName(),
-                    'file_size' => $document->getSize(),
-                    'mime_type' => $document->getMimeType(),
+                    'file_size'     => $document->getSize(),
+                    'mime_type'     => $document->getMimeType(),
                 ]);
             }
         }
@@ -88,11 +89,12 @@ class BlogController extends Controller
     }
 
     /**
-     * Display the specified resource.
+     * Display the specified resource (public).
      */
     public function show(Blog $blog)
     {
-        $blog->load(['images', 'documents', 'relatedPosts']);
+        $blog->load(['images', 'documents']);
+        $blog->increment('views');
         return view('blogs.show', compact('blog'));
     }
 
@@ -111,26 +113,27 @@ class BlogController extends Controller
     public function update(Request $request, Blog $blog)
     {
         $request->validate([
-            'title' => 'required|string|max:255',
-            'content' => 'required|string',
-            'meta_title' => 'nullable|string|max:255',
+            'title'            => 'required|string|max:255',
+            'content'          => 'required|string',
+            'meta_title'       => 'nullable|string|max:255',
             'meta_description' => 'nullable|string|max:500',
-            'status' => 'required|in:draft,published,archived',
-            'is_featured' => 'boolean',
-            'images' => 'nullable|array',
-            'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
-            'documents' => 'nullable|array',
-            'documents.*' => 'file|mimes:pdf,doc,docx|max:5120',
+            'status'           => 'required|in:draft,published,archived',
+            'is_featured'      => 'nullable|boolean',
+            'images'           => 'nullable|array',
+            'images.*'         => 'image|mimes:jpeg,png,jpg,gif|max:2048',
+            'documents'        => 'nullable|array',
+            'documents.*'      => 'file|mimes:pdf,doc,docx|max:5120',
         ]);
 
         $blog->update([
-            'title' => $request->title,
-            'slug' => Str::slug($request->title),
-            'content' => $request->content,
-            'meta_title' => $request->meta_title,
+            'title'            => $request->title,
+            'slug'             => Str::slug($request->title),
+            'content'          => $request->content,
+            'meta_title'       => $request->meta_title,
             'meta_description' => $request->meta_description,
-            'status' => $request->status,
-            'is_featured' => $request->boolean('featured'),
+            'status'           => $request->status,
+            // ✅ Fixed: use is_featured
+            'is_featured'      => $request->boolean('is_featured'),
         ]);
 
         // Handle new images
@@ -138,10 +141,10 @@ class BlogController extends Controller
             foreach ($request->file('images') as $index => $image) {
                 $path = $image->store('blogs/images', 'public');
                 BlogImage::create([
-                    'blog_id' => $blog->id,
+                    'blog_id'    => $blog->id,
                     'image_path' => $path,
-                    'caption' => $request->image_captions[$index] ?? null,
-                    'alt_text' => $request->image_alt_texts[$index] ?? null,
+                    'caption'    => $request->image_captions[$index] ?? null,
+                    'alt_text'   => $request->image_alt_texts[$index] ?? null,
                     'sort_order' => $blog->images()->count() + $index,
                 ]);
             }
@@ -152,11 +155,11 @@ class BlogController extends Controller
             foreach ($request->file('documents') as $document) {
                 $path = $document->store('blogs/documents', 'public');
                 BlogDocument::create([
-                    'blog_id' => $blog->id,
+                    'blog_id'       => $blog->id,
                     'document_path' => $path,
                     'document_name' => $document->getClientOriginalName(),
-                    'file_size' => $document->getSize(),
-                    'mime_type' => $document->getMimeType(),
+                    'file_size'     => $document->getSize(),
+                    'mime_type'     => $document->getMimeType(),
                 ]);
             }
         }
@@ -169,13 +172,11 @@ class BlogController extends Controller
      */
     public function destroy(Blog $blog)
     {
-        // Delete images
         foreach ($blog->images as $image) {
             Storage::disk('public')->delete($image->image_path);
             $image->delete();
         }
 
-        // Delete documents
         foreach ($blog->documents as $document) {
             Storage::disk('public')->delete($document->document_path);
             $document->delete();
@@ -187,59 +188,61 @@ class BlogController extends Controller
     }
 
     /**
-     * Toggle featured status
+     * Toggle featured status.
+     * ✅ Fixed: was updating 'featured' — correct column is 'is_featured'
      */
     public function toggleFeatured(Blog $blog)
     {
-        $blog->update(['featured' => !$blog->featured]);
-        
+        $blog->update(['is_featured' => !$blog->is_featured]);
+
         return response()->json([
-            'success' => true,
-            'featured' => $blog->featured,
-            'message' => $blog->featured ? 'Blog marked as featured' : 'Blog removed from featured'
+            'success'  => true,
+            'featured' => $blog->is_featured,
+            'message'  => $blog->is_featured ? 'Blog marked as featured' : 'Blog removed from featured',
         ]);
     }
 
     /**
-     * Delete an image
+     * Delete an image (AJAX).
      */
     public function deleteImage(BlogImage $image)
     {
         Storage::disk('public')->delete($image->image_path);
         $image->delete();
-        
+
         return response()->json(['success' => true, 'message' => 'Image deleted successfully']);
     }
 
     /**
-     * Delete a document
+     * Delete a document (AJAX).
      */
     public function deleteDocument(BlogDocument $document)
     {
         Storage::disk('public')->delete($document->document_path);
         $document->delete();
-        
+
         return response()->json(['success' => true, 'message' => 'Document deleted successfully']);
     }
 
     /**
-     * Display public blog index
+     * Display public blog listing.
+     * Note: registered as route name 'blogs.public.index' to avoid conflict with admin 'blogs.index'.
      */
     public function publicIndex()
     {
-        $featuredBlogs = Blog::published()->featured()->latest()->take(3)->get();
-        $blogs = Blog::published()->latest()->paginate(9);
-        
-        // Increment view count for each blog
-        foreach ($blogs as $blog) {
-            $blog->increment('views');
-        }
-        
+        $featuredBlogs = Blog::where('status', 'published')
+                             ->where('is_featured', true)
+                             ->latest()
+                             ->take(3)
+                             ->get();
+
+        $blogs = Blog::where('status', 'published')->latest()->paginate(9);
+
         return view('blogs.index', compact('blogs', 'featuredBlogs'));
     }
 
     /**
-     * Increment blog view count
+     * Increment blog view count (AJAX).
      */
     public function incrementViewCount(Blog $blog)
     {

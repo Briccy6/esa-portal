@@ -8,6 +8,14 @@ use App\Models\Branch;
 
 class AttendanceController extends Controller
 {
+    public function index()
+    {
+        $courses = Course::all();
+        $branches = Branch::all();
+        
+        return view('admin.attendance.index', compact('courses', 'branches'));
+    }
+
     public function showMarkForm(Request $request)
     {
         $courses = Course::all();

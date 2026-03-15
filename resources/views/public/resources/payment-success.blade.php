@@ -101,31 +101,7 @@
     </style>
 </head>
 <body class="bg-gray-50">
-    <!-- Navigation -->
-    <nav class="bg-white shadow-lg sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center">
-                    <a href="{{ url('/') }}" class="flex items-center space-x-3">
-                        @if($logoUrl)
-                            <img src="{{ $logoUrl }}" alt="{{ $systemName }}" class="h-10 w-auto">
-                        @else
-                            <div class="bg-purple-600 text-white px-3 py-2 rounded-lg font-bold text-lg">ESA</div>
-                        @endif
-                        <span class="font-bold text-xl text-gray-800">{{ $systemName }}</span>
-                    </a>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <a href="{{ url('/') }}" class="text-gray-600 hover:text-purple-600 transition">
-                        <i class="fas fa-home mr-2"></i>Home
-                    </a>
-                    <a href="{{ route('public.resources.index') }}" class="text-gray-600 hover:text-purple-600 transition">
-                        <i class="fas fa-book mr-2"></i>Resources
-                    </a>
-                </div>
-            </div>
-        </div>
-    </nav>
+    @include('components.public-navbar')
 
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         @if(session('success'))

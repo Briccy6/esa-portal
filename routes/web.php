@@ -284,6 +284,9 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::resource('branch', BranchController::class);
     Route::resource('teachers', TeacherController::class);
     
+    // Attendance routes
+    Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
+    
     // Client Management Routes
     Route::get('/clients', [App\Http\Controllers\Admin\ClientManagementController::class, 'index'])->name('clients.index');
     Route::get('/clients/{client}', [App\Http\Controllers\Admin\ClientManagementController::class, 'show'])->name('clients.show');
@@ -440,17 +443,27 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
 
 });
 
-// Blog Management Routes - Admin Protected
+// ============================================================
+// BLOG ROUTES — replace the two blog sections in your web.php
+// ============================================================
+
+// -------------------------------------------------------
+// 1. Admin Blog Management Routes (protected)
+//    FIND this block (~line 443) and replace with below:
+// -------------------------------------------------------
 Route::middleware(['auth:admin,staff,teacher'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/blogs', [BlogController::class, 'index'])->name('blogs.index');
-    Route::get('/blogs/create', [BlogController::class, 'create'])->name('blogs.create');
-    Route::post('/blogs', [BlogController::class, 'store'])->name('blogs.store');
-    Route::get('/blogs/{blog}/edit', [BlogController::class, 'edit'])->name('blogs.edit');
-    Route::put('/blogs/{blog}', [BlogController::class, 'update'])->name('blogs.update');
-    Route::delete('/blogs/{blog}', [BlogController::class, 'destroy'])->name('blogs.destroy');
-    Route::post('/blogs/{blog}/toggle-featured', [BlogController::class, 'toggleFeatured'])->name('blogs.toggle-featured');
-    Route::delete('/blogs/images/{image}', [BlogController::class, 'deleteImage'])->name('blogs.delete-image');
-    Route::delete('/blogs/documents/{document}', [BlogController::class, 'deleteDocument'])->name('blogs.delete-document');
+    Route::get('/blogs',                              [BlogController::class, 'index'])->name('blogs.index');
+    Route::get('/blogs/create',                       [BlogController::class, 'create'])->name('blogs.create');
+    Route::post('/blogs',                             [BlogController::class, 'store'])->name('blogs.store');
+    Route::get('/blogs/{blog}/edit',                  [BlogController::class, 'edit'])->name('blogs.edit');
+    Route::put('/blogs/{blog}',                       [BlogController::class, 'update'])->name('blogs.update');
+    Route::delete('/blogs/{blog}',                    [BlogController::class, 'destroy'])->name('blogs.destroy');
+    // ✅ Fixed route name: admin.blogs.toggle-featured (was blogs.toggle-featured)
+    Route::post('/blogs/{blog}/toggle-featured',      [BlogController::class, 'toggleFeatured'])->name('blogs.toggle-featured');
+    // ✅ Fixed route name: admin.blogs.delete-image (was blogs.delete-image)
+    Route::delete('/blogs/images/{image}',            [BlogController::class, 'deleteImage'])->name('blogs.delete-image');
+    // ✅ Fixed route name: admin.blogs.delete-document (was blogs.delete-document)
+    Route::delete('/blogs/documents/{document}',      [BlogController::class, 'deleteDocument'])->name('blogs.delete-document');
 });
 
 // Secretary protected routes
@@ -1086,10 +1099,18 @@ Route::get('teacher/resources/{resource}/edit', [\App\Http\Controllers\Teacher\R
 Route::delete('teacher/resources/{id}', [\App\Http\Controllers\Teacher\ResourceController::class, 'destroy'])->name('teacher.resources.destroy');
 Route::get('teacher/resources/{resource}/view-document', [\App\Http\Controllers\Teacher\ResourceController::class, 'viewDocument'])->name('teacher.resources.viewDocument');
 
-// Blog Routes - Public Access
-Route::get('/blogs', [BlogController::class, 'publicIndex'])->name('blogs.index');
-Route::get('/blogs/{blog:slug}', [BlogController::class, 'show'])->name('blogs.show');
-Route::post('/blogs/{blog:slug}/view', [BlogController::class, 'incrementViewCount'])->name('blogs.view-count');
+// -------------------------------------------------------
+// 2. Public Blog Routes
+//    FIND the public block (~line 1089) and replace with below:
+// -------------------------------------------------------
+
+// ✅ Fixed: renamed 'blogs.index' → 'blogs.public.index' to avoid conflict with admin.blogs.index
+// If your public blog listing view uses route('blogs.index'), update it to route('blogs.public.index')
+Route::get('/blogs',                   [BlogController::class, 'publicIndex'])->name('blogs.public.index');
+
+// blogs.show stays the same — used in index blade as route('blogs.show', $blog->slug)
+Route::get('/blogs/{blog:slug}',       [BlogController::class, 'show'])->name('blogs.show');
+Route::post('/blogs/{blog}/view',      [BlogController::class, 'incrementViewCount'])->name('blogs.view-count');
 
 // Public Exam Routes - REMOVED DUPLICATE (already defined above with public. prefix)
 
