@@ -19,7 +19,7 @@ class SubscriptionController extends Controller
         $student = Auth::user();
         $activeSubscription = $student->activeSubscription;
 
-        return view('subscriptions.index', compact('subscriptions', 'student', 'activeSubscription'));
+        return view('subscriptions.student-index', compact('subscriptions', 'student', 'activeSubscription'));
     }
 
     public function purchase(Request $request)

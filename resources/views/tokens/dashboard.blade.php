@@ -189,7 +189,7 @@
                             <div class="row g-2">
                                 @foreach($subscriptions as $subscription)
                                 <div class="col-12 mb-2">
-                                    <div class="card h-100 @if($subscription->is_recommended) border-primary @else border-secondary">
+                                    <div class="card h-100 @if($subscription->is_recommended) border-primary @else border-secondary @endif">
                                         @if($subscription->is_recommended)
                                         <div class="card-header bg-primary text-white text-center py-1">
                                             <small class="fw-bold">RECOMMENDED</small>
@@ -205,6 +205,7 @@
                                             </button>
                                         </div>
                                     </div>
+                                </div>
                                 @endforeach
                             </div>
                         </div>

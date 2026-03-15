@@ -310,10 +310,10 @@
                     <div class="nav-group-title">Financial</div>
                     <ul class="nav flex-column">
                         <li class="nav-item">
-                            <a href="{{ route('tokens.index') }}" 
-                               class="nav-link {{ request()->routeIs('tokens.index') ? 'active' : '' }}">
-                                <i class="bi bi-coin"></i>
-                                Token Management
+                            <a href="{{ route('subscriptions.index') }}" 
+                               class="nav-link {{ request()->routeIs('subscriptions.index') ? 'active' : '' }}">
+                                <i class="bi bi-star"></i>
+                                My Subscriptions
                             </a>
                         </li>
                         <li class="nav-item">

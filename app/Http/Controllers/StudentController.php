@@ -1071,6 +1071,7 @@ class StudentController extends Controller
     public function dashboard(Request $request)
     {
         $student = auth()->guard('student')->user();
+        $student->load('course'); // Load course relationship
 
         $student->initializeTokens();
 
@@ -1129,14 +1130,55 @@ class StudentController extends Controller
 
         // Get resources for the student's course and branch
         $resources = \App\Models\Resource::where(function($query) use ($student) {
-            $query->where('is_public', true)
-                  ->orWhere('course_id', $student->course_id)
+            $query->orWhere('course_id', $student->course_id)
                   ->orWhere('branch_id', $student->branch_id);
         })
         ->with(['teacher', 'course', 'branch'])
         ->orderByDesc('created_at')
         ->take(6) // Limit to 6 resources for dashboard display
         ->get();
+
+        // Get upcoming live classes for the student
+        $liveClass = \App\Models\LiveClass::where(function($query) use ($student) {
+            $query->whereHas('courses', function($q) use ($student) {
+                $q->where('courses.id', $student->course_id);
+            })
+            ->orWhereHas('branches', function($q) use ($student) {
+                $q->where('branches.id', $student->branch_id);
+            });
+        })
+        ->where('status', 'active')
+        ->where('start_time', '>', now())
+        ->orderBy('start_time', 'asc')
+        ->first();
+
+        // Get latest announcements for the student
+        $announcements = \App\Models\Announcement::where(function($query) use ($student) {
+            $query->whereIn('audience', ['public', 'all', 'students']);
+        })
+        ->orderByDesc('created_at')
+        ->take(5) // Limit to 5 announcements for dashboard display
+        ->get();
+
+        // Get exams for the student
+        $exams = \App\Models\Exam::where(function ($query) use ($student) {
+            $query->whereHas('courses', function ($q) use ($student) {
+                $q->where('courses.id', $student->course_id);
+            })
+            ->orWhereHas('lessons', function ($q) use ($student) {
+                $q->where('lessons.course_id', $student->course_id);
+            });
+        })
+        ->with(['marks' => function ($q) use ($student) {
+            $q->where('student_id', $student->id);
+        }])
+        ->orderBy('class_date', 'asc')
+        ->take(5) // Limit to 5 exams for dashboard display
+        ->get();
+
+        // Get subscription data for the student
+        $subscriptions = \App\Models\Subscription::active()->orderBy('price')->get();
+        $activeSubscription = $student->activeSubscription;
 
         return view('students.dashboard', compact(
             'student',
@@ -1156,9 +1198,15 @@ class StudentController extends Controller
             'paidTrip',
             'paidTuition',
             'paidPractical',
+            'paidStudentCard',
             'totalPaid',
             'outstanding',
-            'resources'
+            'resources',
+            'liveClass',
+            'announcements',
+            'exams',
+            'subscriptions',
+            'activeSubscription'
         ));
     }
 

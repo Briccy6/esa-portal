@@ -75,6 +75,12 @@ use App\Http\Controllers\PublicExamController;
 Route::prefix('student')->name('student.')->middleware(['auth:student'])->group(function() {
     Route::get('/resources', [\App\Http\Controllers\Student\ResourceViewController::class, 'index'])->name('resources.index');
     Route::get('/resources/{resource}', [\App\Http\Controllers\Student\ResourceViewController::class, 'show'])->name('resources.show');
+    Route::get('/resources/{resource}/download', [\App\Http\Controllers\Student\ResourceViewController::class, 'download'])->name('resources.download');
+    Route::get('/resources/{resource}/payment', [\App\Http\Controllers\Student\ResourceViewController::class, 'payment'])->name('resources.payment');
+    Route::post('/payment/process', [\App\Http\Controllers\FlutterwaveController::class, 'addPayment'])->name('payment.process');
+    Route::get('/payment/callback', [\App\Http\Controllers\FlutterwaveController::class, 'handleCallback'])->name('payment.callback');
+    Route::get('/payment/success', [\App\Http\Controllers\FlutterwaveController::class, 'paymentSuccess'])->name('payment.success');
+    Route::get('/payment/failed', [\App\Http\Controllers\FlutterwaveController::class, 'paymentFailed'])->name('payment.failed');
 });
 
 Route::prefix('timetable')->name('timetable.')->group(function () {
