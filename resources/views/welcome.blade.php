@@ -1211,6 +1211,30 @@
                     </a>
                 </div>
 
+                <div class="bg-slate-100/50 border border-slate-300 rounded-2xl p-6 flex flex-col justify-between">
+                    <div>
+                        <p class="text-xs font-semibold tracking-wide text-purple-300 uppercase mb-2">
+                            Subscription plans
+                        </p>
+                        <h3 class="text-xl font-bold mb-2">Tokens & subscriptions</h3>
+                        <p class="text-sm text-slate-600 mb-4">
+                            Purchase tokens and unlock premium features with flexible subscription plans.
+                        </p>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <a href="{{ route('public.subscriptions.index') }}"
+                           class="inline-flex items-center px-4 py-2 rounded-full bg-purple-500/20 text-xs font-semibold text-purple-300 hover:bg-purple-500/30">
+                            View plans
+                            <i class="fas fa-arrow-right ml-2 text-[10px]"></i>
+                        </a>
+                        <a href="{{ route('public.subscriptions.login') }}"
+                           class="inline-flex items-center px-4 py-2 rounded-full bg-white/10 text-xs font-semibold hover:bg-white/15">
+                            Client login
+                            <i class="fas fa-sign-in-alt ml-2 text-[10px]"></i>
+                        </a>
+                    </div>
+                </div>
+
                 <div class="bg-slate-100/60 border border-slate-300 rounded-2xl p-6 flex flex-col justify-between sm:col-span-2">
                     <div>
                         <p class="text-xs font-semibold tracking-wide text-amber-300 uppercase mb-2">

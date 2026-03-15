@@ -41,6 +41,7 @@
                                             </option>
                                         @endforeach
                                     </select>
+                                    <small class="text-muted">Start typing student name or registration number to search</small>
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -141,6 +142,26 @@ document.addEventListener('DOMContentLoaded', function() {
     const previewTokens = document.getElementById('preview-tokens');
     const previewDuration = document.getElementById('preview-duration');
     const currentTokensSpan = document.getElementById('current-tokens');
+
+    // Initialize Select2 for student dropdown
+    $(studentSelect).select2({
+        placeholder: "Search for a student...",
+        allowClear: true,
+        width: '100%',
+        templateResult: function(student) {
+            if (!student.id) {
+                return student.text;
+            }
+            var $student = $('<span>' + student.text + '</span>');
+            return $student;
+        },
+        templateSelection: function(student) {
+            if (!student.id) {
+                return student.text;
+            }
+            return student.text;
+        }
+    });
 
     function updatePreview() {
         const selectedStudent = studentSelect.options[studentSelect.selectedIndex];

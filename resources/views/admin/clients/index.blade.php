@@ -186,11 +186,6 @@
                                                title="View Details">
                                                 <i class="fas fa-eye"></i>
                                             </a>
-                                            <a href="{{ route('admin.clients.add-tokens', $client) }}" 
-                                               class="btn btn-sm btn-outline-success" 
-                                               title="Add Tokens">
-                                                <i class="fas fa-plus"></i>
-                                            </a>
                                             <a href="{{ route('admin.clients.subscription', $client) }}" 
                                                class="btn btn-sm btn-outline-info" 
                                                title="Record Subscription">

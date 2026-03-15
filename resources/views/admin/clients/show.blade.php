@@ -53,10 +53,6 @@
                                 <p class="mb-0">Current Balance</p>
                                 <h3 class="text-primary">{{ number_format($tokenStats['current_balance']) }}</h3>
                             </div>
-                            <a href="{{ route('admin.clients.add-tokens', $client) }}" class="btn btn-outline-primary">
-                                <i class="fas fa-plus"></i>
-                                Add Manual Tokens
-                            </a>
                         </div>
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <div>

@@ -916,13 +916,7 @@
                         </a>
                     </div>
                     
-                    <div class="nav-item">
-                        <a href="{{ route('admin.tokens.index') }}" class="nav-link {{ request()->routeIs('admin.tokens.*') ? 'active' : '' }}">
-                            <i class="fas fa-coins"></i>
-                            <span class="nav-text">Token Management</span>
-                        </a>
-                    </div>
-                    
+                                        
                     <div class="nav-item">
                         <a href="{{ route('subscriptions.admin-index') }}" class="nav-link {{ request()->routeIs('admin.subscriptions.*') ? 'active' : '' }}">
                             <i class="fas fa-crown"></i>
