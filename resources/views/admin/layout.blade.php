@@ -826,6 +826,13 @@
                         <span class="nav-text">Dashboard</span>
                     </a>
                 </div>
+                
+                <div class="nav-item">
+                    <a href="{{ route('admin.blogs.index') }}" class="nav-link {{ request()->routeIs('admin.blogs.*') ? 'active' : '' }}">
+                        <i class="fas fa-blog"></i>
+                        <span class="nav-text">Blog Management</span>
+                    </a>
+                </div>
             </div>
 
             <!-- Academic Management -->

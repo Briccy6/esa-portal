@@ -43,13 +43,26 @@
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
+.table-responsive {
+    max-height: 70vh;
+    overflow-y: auto;
+    overflow-x: auto;
+}
+
 .resources-table .table {
     margin-bottom: 0;
+    min-width: 1200px;
+    background: white;
+    border: 1px solid #e2e8f0;
 }
 
 .resources-table .table thead {
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
     color: white;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    box-shadow: 0 4px 8px rgba(30, 58, 138, 0.3);
 }
 
 .resources-table .table thead th {
@@ -59,16 +72,32 @@
     text-transform: uppercase;
     font-size: 0.85rem;
     letter-spacing: 0.5px;
+    color: white;
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.resources-table .table thead th:last-child {
+    border-right: none;
 }
 
 .resources-table .table td {
     padding: 0.875rem;
     vertical-align: middle;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid #e2e8f0;
+    color: #374151;
 }
 
 .resources-table .table tbody tr:hover {
-    background-color: #fef3c7;
+    background-color: #f0f9ff;
+    border-left: 3px solid #3b82f6;
+}
+
+.resources-table .table tbody tr:nth-child(even) {
+    background-color: #fafafa;
+}
+
+.resources-table .table tbody tr:nth-child(even):hover {
+    background-color: #f0f9ff;
 }
 
 .badge-custom {
@@ -79,23 +108,27 @@
 }
 
 .badge-free {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    background: linear-gradient(135deg, #059669 0%, #10b981 100%);
     color: white;
+    border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
 .badge-paid {
-    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
     color: white;
+    border: 1px solid rgba(59, 130, 246, 0.3);
 }
 
 .badge-public {
-    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%);
     color: white;
+    border: 1px solid rgba(139, 92, 246, 0.3);
 }
 
 .badge-private {
     background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
     color: white;
+    border: 1px solid rgba(75, 85, 99, 0.3);
 }
 
 .btn-action {
@@ -105,61 +138,82 @@
     font-weight: 500;
     transition: all 0.2s ease;
     border: none;
+    display: inline-block;
+    min-width: 32px;
+    text-align: center;
+    color: white !important;
+    text-decoration: none !important;
+}
+
+.btn-action:hover {
+    transform: translateY(-1px);
+    color: white !important;
+    text-decoration: none !important;
 }
 
 .btn-edit {
-    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
     color: white;
+    border: 1px solid rgba(14, 165, 233, 0.3);
 }
 
 .btn-edit:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(14, 165, 233, 0.4);
     color: white;
-}
-
-.btn-public {
-    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-    color: white;
-}
-
-.btn-public:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(139, 92, 246, 0.3);
-    color: white;
-}
-
-.btn-download {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    color: white;
-}
-
-.btn-download:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
-    color: white;
-}
-
-.btn-delete {
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-    color: white;
-}
-
-.btn-delete:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
-    color: white;
+    background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
 }
 
 .btn-price {
     background: linear-gradient(135deg, #10b981 0%, #059669 100%);
     color: white;
+    border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
 .btn-price:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(16, 185, 129, 0.4);
     color: white;
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+}
+
+.btn-public {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    color: white;
+    border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+.btn-public:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(139, 92, 246, 0.4);
+    color: white;
+    background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+}
+
+.btn-download {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.btn-download:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(245, 158, 11, 0.4);
+    color: white;
+    background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+}
+
+.btn-delete {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.btn-delete:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(239, 68, 68, 0.4);
+    color: white;
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
 }
 
 .link-action {
@@ -258,6 +312,67 @@
         font-size: 0.75rem;
     }
 }
+
+.btn-group {
+    display: flex;
+    gap: 4px;
+    flex-wrap: nowrap;
+}
+
+.btn-group .btn-action {
+    flex-shrink: 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+}
+
+.btn-group .btn-action:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Search Bar Styling */
+.search-container {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    border: 1px solid #e2e8f0;
+}
+
+.search-container .input-group {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.search-container .input-group-text {
+    background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+    border: none;
+    color: white;
+}
+
+.search-container .form-control,
+.search-container .form-select {
+    border: 1px solid #e2e8f0;
+    border-radius: 0;
+    padding: 0.75rem;
+    font-weight: 500;
+    background: white;
+}
+
+.search-container .form-control:focus,
+.search-container .form-select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.no-results {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border-radius: 12px;
+    margin: 1rem;
+}
 </style>
 @endsection
 
@@ -286,6 +401,34 @@
             </div>
             
             <div class="card-body p-0">
+                <!-- Search Bar -->
+                <div class="search-container">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-search"></i>
+                                </span>
+                                <input type="text" id="searchInput" class="form-control" placeholder="Search resources by teacher, course, branch, lesson...">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <select id="visibilityFilter" class="form-select">
+                                <option value="">All Visibility</option>
+                                <option value="public">Public</option>
+                                <option value="private">Private</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select id="priceFilter" class="form-select">
+                                <option value="">All Prices</option>
+                                <option value="free">Free</option>
+                                <option value="paid">Paid</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
                 @if(session('success'))
                     <div class="alert alert-success alert-dismissible fade show alert-custom" role="alert">
                         <i class="bi bi-check-circle"></i> {{ session('success') }}
@@ -311,8 +454,6 @@
                                 <th>Branch</th>
                                 <th>Lesson</th>
                                 <th>Document</th>
-                                <th>Video</th>
-                                <th>YouTube</th>
                                 <th>Price</th>
                                 <th>Visibility</th>
                                 <th>Actions</th>
@@ -342,24 +483,6 @@
                                         @endif
                                     </td>
                                     <td>
-                                        @if($resource->video_name)
-                                            <span class="text-success">
-                                                <i class="bi bi-film"></i> {{ Str::limit($resource->video_name, 15) }}
-                                            </span>
-                                        @else
-                                            <span class="text-muted">No video</span>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        @if($resource->youtube_link)
-                                            <a href="{{ $resource->youtube_link }}" target="_blank" class="text-danger text-decoration-none" title="Open YouTube">
-                                                <i class="bi bi-youtube"></i> YouTube
-                                            </a>
-                                        @else
-                                            <span class="text-muted">No link</span>
-                                        @endif
-                                    </td>
-                                    <td>
                                         @if($resource->is_free)
                                             <span class="badge badge-custom badge-free">Free</span>
                                         @else
@@ -376,14 +499,14 @@
                                     <td>
                                         <div class="btn-group" role="group">
                                             <a href="{{ route('admin.resources.edit', $resource->id) }}" class="btn btn-action btn-edit" title="Edit">
-                                                <i class="bi bi-pencil"></i>
+                                                <i class="bi bi-pencil-square"></i>
                                             </a>
                                             <button type="button" class="btn btn-action btn-price" title="Set Price" onclick="openPriceModal({{ $resource->id }}, '{{ $resource->is_public ? 'public' : 'private' }}', {{ $resource->is_free ? 0 : $resource->price }})">
-                                                <i class="bi bi-cash"></i>
+                                                <i class="bi bi-cash-coin"></i>
                                             </button>
                                             @if(!$resource->is_public)
                                                 <a href="{{ route('admin.resources.make-public', $resource->id) }}" class="btn btn-action btn-public" title="Make Public" onclick="return confirm('This will apply watermarks and make the resource public. Continue?')">
-                                                    <i class="bi bi-eye"></i>
+                                                    <i class="bi bi-eye-fill"></i>
                                                 </a>
                                             @endif
                                             @if($resource->document_name && !str_starts_with($resource->document_mime, 'text/url'))
@@ -395,7 +518,7 @@
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="btn btn-action btn-delete" title="Delete" onclick="return confirm('Are you sure you want to delete this resource?')">
-                                                    <i class="bi bi-trash"></i>
+                                                    <i class="bi bi-trash3-fill"></i>
                                                 </button>
                                             </form>
                                         </div>
@@ -403,7 +526,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="11" class="text-center">
+                                    <td colspan="9" class="text-center">
                                         <div class="empty-state m-4">
                                             <i class="bi bi-folder-open display-1"></i>
                                             <h5 class="mt-4">No Resources Found</h5>
@@ -568,15 +691,110 @@ $(document).ready(function() {
             url: $(this).attr('action'),
             method: 'POST',
             data: formData,
+            beforeSend: function() {
+                // Disable submit button and show loading
+                $('#priceForm button[type="submit"]').prop('disabled', true).html('<i class="bi bi-hourglass-split"></i> Updating...');
+            },
             success: function(response) {
                 $('#priceModal').modal('hide');
-                location.reload();
+                // Show success message
+                showAlert('success', 'Resource price and visibility updated successfully!');
+                // Reload page after short delay
+                setTimeout(function() {
+                    location.reload();
+                }, 1000);
             },
             error: function(xhr) {
-                alert('Error updating resource: ' + xhr.responseText);
+                var errorMessage = 'Error updating resource';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                }
+                showAlert('error', errorMessage);
+                // Re-enable submit button
+                $('#priceForm button[type="submit"]').prop('disabled', false).html('<i class="bi bi-check-circle"></i> Update Price & Visibility');
+            },
+            complete: function() {
+                // Re-enable submit button if not reloading
+                setTimeout(function() {
+                    $('#priceForm button[type="submit"]').prop('disabled', false).html('<i class="bi bi-check-circle"></i> Update Price & Visibility');
+                }, 2000);
             }
         });
     });
+
+    // Live search functionality
+    $('#searchInput, #visibilityFilter, #priceFilter').on('input change', function() {
+        var searchTerm = $('#searchInput').val().toLowerCase();
+        var visibilityFilter = $('#visibilityFilter').val();
+        var priceFilter = $('#priceFilter').val();
+        
+        $('tbody tr').each(function() {
+            var $row = $(this);
+            var showRow = true;
+            
+            // Skip empty state row
+            if ($row.find('.empty-state').length > 0) {
+                return;
+            }
+            
+            // Search functionality
+            if (searchTerm) {
+                var text = $row.text().toLowerCase();
+                if (text.indexOf(searchTerm) === -1) {
+                    showRow = false;
+                }
+            }
+            
+            // Visibility filter
+            if (visibilityFilter && showRow) {
+                var visibility = $row.find('.badge-public, .badge-private').text().toLowerCase();
+                if (visibility !== visibilityFilter) {
+                    showRow = false;
+                }
+            }
+            
+            // Price filter
+            if (priceFilter && showRow) {
+                var priceBadge = $row.find('.badge-free, .badge-paid');
+                if (priceFilter === 'free' && !priceBadge.hasClass('badge-free')) {
+                    showRow = false;
+                } else if (priceFilter === 'paid' && !priceBadge.hasClass('badge-paid')) {
+                    showRow = false;
+                }
+            }
+            
+            // Show/hide row
+            $row.toggle(showRow);
+        });
+        
+        // Show no results message if needed
+        var visibleRows = $('tbody tr:visible').length;
+        var emptyState = $('.empty-state').closest('tr');
+        
+        if (visibleRows === 0 && emptyState.length === 0) {
+            $('tbody').append('<tr class="no-results"><td colspan="9" class="text-center p-4"><i class="bi bi-search display-1 text-muted"></i><h5 class="mt-3 text-muted">No resources found</h5><p class="text-muted">Try adjusting your search criteria</p></td></tr>');
+        } else if (visibleRows > 0) {
+            $('.no-results').remove();
+        }
+    });
+
+    // Helper function to show alerts
+    function showAlert(type, message) {
+        var alertHtml = '<div class="alert alert-' + type + ' alert-dismissible fade show alert-custom" role="alert">' +
+                      '<i class="bi bi-' + (type === 'success' ? 'check-circle' : 'exclamation-circle') + '"></i> ' + message +
+                      '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+        
+        // Remove existing alerts
+        $('.alert').alert('close');
+        
+        // Add new alert
+        $('.card-body').prepend(alertHtml);
+        
+        // Auto-dismiss after 5 seconds
+        setTimeout(function() {
+            $('.alert').alert('close');
+        }, 5000);
+    }
 });
 </script>
 @endsection

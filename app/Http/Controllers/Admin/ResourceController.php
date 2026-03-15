@@ -315,24 +315,40 @@ class ResourceController extends Controller
             $isFree = $request->boolean('is_free');
             $price = $isFree ? 0 : $request->price;
             
-            $resource->update([
-                'is_public' => $isPublic,
-                'is_free' => $isFree,
-                'price' => $price,
-            ]);
+            // Update resource fields
+            $resource->is_public = $isPublic;
+            $resource->is_free = $isFree;
+            $resource->price = $price;
+            $resource->save();
             
             // Apply watermark if making public and not already watermarked
             if ($isPublic && !$resource->watermark_applied) {
-                $this->watermarkService->applyWatermark($resource);
-                $resource->update(['watermark_applied' => true]);
+                try {
+                    if (isset($this->watermarkService)) {
+                        $this->watermarkService->applyWatermark($resource);
+                        $resource->watermark_applied = true;
+                        $resource->save();
+                    }
+                } catch (\Exception $watermarkException) {
+                    // Log watermark error but don't fail the update
+                    \Log::warning('Watermark application failed: ' . $watermarkException->getMessage());
+                }
             }
             
             return response()->json([
                 'success' => true,
-                'message' => 'Resource price and visibility updated successfully!'
+                'message' => 'Resource price and visibility updated successfully!',
+                'data' => [
+                    'id' => $resource->id,
+                    'is_public' => $resource->is_public,
+                    'is_free' => $resource->is_free,
+                    'price' => $resource->price,
+                    'watermark_applied' => $resource->watermark_applied
+                ]
             ]);
             
         } catch (\Exception $e) {
+            \Log::error('Resource update failed: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Error updating resource: ' . $e->getMessage()

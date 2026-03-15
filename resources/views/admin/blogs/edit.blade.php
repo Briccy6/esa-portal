@@ -1,231 +1,283 @@
-@extends('layouts.app')
+@extends('admin.layout')
 
 @section('title', 'Edit Blog Post')
 
 @section('content')
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="h3 mb-0">Edit Blog Post</h1>
-                <a href="{{ route('admin.blogs.index') }}" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left"></i> Back to Blogs
-                </a>
-            </div>
-
-            <div class="card">
-                <div class="card-body">
-                    <form action="{{ route('admin.blogs.update', $blog) }}" method="POST" enctype="multipart/form-data">
-                        @csrf
-                        @method('PUT')
-
-                        <div class="row">
-                            <div class="col-md-8">
-                                <div class="mb-3">
-                                    <label for="title" class="form-label">Title <span class="text-danger">*</span></label>
-                                    <input type="text" 
-                                           class="form-control @error('title') is-invalid @enderror" 
-                                           id="title" 
-                                           name="title" 
-                                           value="{{ old('title', $blog->title) }}" 
-                                           required>
-                                    @error('title')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-
-                                <div class="mb-3">
-                                    <label for="content" class="form-label">Content <span class="text-danger">*</span></label>
-                                    <textarea class="form-control @error('content') is-invalid @enderror" 
-                                              id="content" 
-                                              name="content" 
-                                              rows="15" 
-                                              required>{{ old('content', $blog->content) }}</textarea>
-                                    @error('content')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label for="meta_title" class="form-label">Meta Title</label>
-                                            <input type="text" 
-                                                   class="form-control @error('meta_title') is-invalid @enderror" 
-                                                   id="meta_title" 
-                                                   name="meta_title" 
-                                                   value="{{ old('meta_title', $blog->meta_title) }}"
-                                                   placeholder="SEO title (optional)">
-                                            @error('meta_title')
-                                                <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label for="meta_description" class="form-label">Meta Description</label>
-                                            <textarea class="form-control @error('meta_description') is-invalid @enderror" 
-                                                      id="meta_description" 
-                                                      name="meta_description" 
-                                                      rows="3" 
-                                                      placeholder="SEO description (optional)">{{ old('meta_description', $blog->meta_description) }}</textarea>
-                                            @error('meta_description')
-                                                <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col-md-4">
-                                <div class="card">
-                                    <div class="card-header">
-                                        <h6 class="mb-0">Publish Settings</h6>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="mb-3">
-                                            <label for="status" class="form-label">Status <span class="text-danger">*</span></label>
-                                            <select class="form-select @error('status') is-invalid @enderror" 
-                                                    id="status" 
-                                                    name="status" 
-                                                    required>
-                                                <option value="draft" {{ old('status', $blog->status) == 'draft' ? 'selected' : '' }}>Draft</option>
-                                                <option value="published" {{ old('status', $blog->status) == 'published' ? 'selected' : '' }}>Published</option>
-                                                <option value="archived" {{ old('status', $blog->status) == 'archived' ? 'selected' : '' }}>Archived</option>
-                                            </select>
-                                            @error('status')
-                                                <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
-                                        </div>
-
-                                        <div class="form-check mb-3">
-                                            <input class="form-check-input @error('featured') is-invalid @enderror" 
-                                                   type="checkbox" 
-                                                   id="featured" 
-                                                   name="featured" 
-                                                   value="1"
-                                                   {{ old('featured', $blog->featured) ? 'checked' : '' }}>
-                                            <label class="form-check-label" for="featured">
-                                                Featured Post
-                                            </label>
-                                            @error('featured')
-                                                <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="card mt-3">
-                                    <div class="card-header">
-                                        <h6 class="mb-0">Current Images</h6>
-                                    </div>
-                                    <div class="card-body">
-                                        @if($blog->images->count() > 0)
-                                            @foreach($blog->images as $image)
-                                                <div class="mb-3 p-2 border rounded">
-                                                    <img src="{{ $image->url }}" class="img-thumbnail mb-2" style="max-height: 100px;">
-                                                    <div class="d-flex justify-content-between align-items-center">
-                                                        <small class="text-muted">{{ $image->caption ?? 'No caption' }}</small>
-                                                        <button type="button" 
-                                                                class="btn btn-sm btn-danger" 
-                                                                onclick="deleteImage({{ $image->id }})">
-                                                            <i class="fas fa-trash"></i>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            @endforeach
-                                        @else
-                                            <p class="text-muted">No images uploaded yet.</p>
-                                        @endif
-                                    </div>
-                                </div>
-
-                                <div class="card mt-3">
-                                    <div class="card-header">
-                                        <h6 class="mb-0">Add New Images</h6>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="mb-3">
-                                            <input type="file" 
-                                                   class="form-control @error('images') is-invalid @enderror" 
-                                                   id="images" 
-                                                   name="images[]" 
-                                                   multiple 
-                                                   accept="image/*">
-                                            @error('images')
-                                                <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
-                                            <small class="form-text text-muted">
-                                                You can upload multiple images. Max size: 2MB per image.
-                                            </small>
-                                        </div>
-
-                                        <div id="image-previews" class="mt-3"></div>
-                                    </div>
-                                </div>
-
-                                <div class="card mt-3">
-                                    <div class="card-header">
-                                        <h6 class="mb-0">Documents</h6>
-                                    </div>
-                                    <div class="card-body">
-                                        @if($blog->documents->count() > 0)
-                                            @foreach($blog->documents as $document)
-                                                <div class="mb-2 p-2 border rounded">
-                                                    <div class="d-flex justify-content-between align-items-center">
-                                                        <div>
-                                                            <i class="fas fa-file"></i> {{ $document->document_name }}
-                                                            <small class="text-muted d-block">{{ $document->human_file_size }}</small>
-                                                        </div>
-                                                        <button type="button" 
-                                                                class="btn btn-sm btn-danger" 
-                                                                onclick="deleteDocument({{ $document->id }})">
-                                                            <i class="fas fa-trash"></i>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            @endforeach
-                                        @else
-                                            <p class="text-muted">No documents uploaded yet.</p>
-                                        @endif
-
-                                        <hr>
-
-                                        <div class="mb-3">
-                                            <label for="documents" class="form-label">Add New Documents</label>
-                                            <input type="file" 
-                                                   class="form-control @error('documents') is-invalid @enderror" 
-                                                   id="documents" 
-                                                   name="documents[]" 
-                                                   multiple 
-                                                   accept=".pdf,.doc,.docx">
-                                            @error('documents')
-                                                <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
-                                            <small class="form-text text-muted">
-                                                Upload PDF, DOC, or DOCX files. Max size: 5MB per file.
-                                            </small>
-                                        </div>
-
-                                        <div id="document-previews" class="mt-3"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row mt-4">
-                            <div class="col-12">
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-save"></i> Update Blog Post
-                                </button>
-                                <a href="{{ route('admin.blogs.index') }}" class="btn btn-secondary">
-                                    Cancel
-                                </a>
-                            </div>
-                        </div>
-                    </form>
+<div class="p-6">
+    <!-- Header -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-gradient-to-br from-purple-500 to-pink-500 p-3 rounded-xl">
+                    <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M2 5a2 2 0 012-2h8a2 2 0 012 2v10a2 2 0 002 2H4a2 2 0 01-2-2V5zm3 1h6v4H5V6zm6 6H5v2h6v-2z" clip-rule="evenodd"/>
+                        <path d="M15 7h1a2 2 0 012 2v5.5a1.5 1.5 0 01-3 0V9a1 1 0 00-1-1h-1v-1z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">Edit Blog Post</h1>
+                    <p class="text-gray-600 text-sm mt-1">Update your blog content and settings</p>
                 </div>
             </div>
+            <a href="{{ route('admin.blogs.index') }}" class="inline-flex items-center px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 font-medium rounded-lg transition-colors duration-200">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                Back to Blogs
+            </a>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200">
+            <form action="{{ route('admin.blogs.update', $blog) }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                @method('PUT')
+                
+                <div class="p-6 space-y-8">
+                    <!-- Main Content Section -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <!-- Left Column - Main Content -->
+                        <div class="lg:col-span-2 space-y-6">
+                            <!-- Title -->
+                            <div>
+                                <label for="title" class="block text-sm font-medium text-gray-900 mb-2">
+                                    Title <span class="text-red-500">*</span>
+                                </label>
+                                <input type="text" 
+                                       id="title" 
+                                       name="title" 
+                                       value="{{ old('title', $blog->title) }}" 
+                                       required
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 {{ $errors->has('title') ? 'border-red-500 ring-2 ring-red-500' : '' }}"
+                                       placeholder="Enter a catchy title for your blog post">
+                                @error('title')
+                                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <!-- Content -->
+                            <div>
+                                <label for="content" class="block text-sm font-medium text-gray-900 mb-2">
+                                    Content <span class="text-red-500">*</span>
+                                </label>
+                                <textarea id="content" 
+                                          name="content" 
+                                          rows="15" 
+                                          required
+                                          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-vertical {{ $errors->has('content') ? 'border-red-500 ring-2 ring-red-500' : '' }}"
+                                          placeholder="Write your amazing blog content here...">{{ old('content', $blog->content) }}</textarea>
+                                @error('content')
+                                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                                <div class="mt-2 flex items-center text-sm text-gray-500">
+                                    <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                                    </svg>
+                                    You can use HTML formatting in your content
+                                </div>
+                            </div>
+
+                            <!-- SEO Settings -->
+                            <div class="bg-gray-50 rounded-xl p-6">
+                                <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                                    <svg class="w-5 h-5 mr-2 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/>
+                                    </svg>
+                                    SEO Settings
+                                </h3>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="meta_title" class="block text-sm font-medium text-gray-700 mb-2">
+                                            Meta Title
+                                        </label>
+                                        <input type="text" 
+                                               id="meta_title" 
+                                               name="meta_title" 
+                                               value="{{ old('meta_title', $blog->meta_title) }}"
+                                               maxlength="60"
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm {{ $errors->has('meta_title') ? 'border-red-500' : '' }}"
+                                               placeholder="SEO title (max 60 chars)">
+                                        <p class="mt-1 text-xs text-gray-500">{{ strlen(old('meta_title', $blog->meta_title ?? '')) }}/60 characters</p>
+                                        @error('meta_title')
+                                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+                                    <div>
+                                        <label for="meta_description" class="block text-sm font-medium text-gray-700 mb-2">
+                                            Meta Description
+                                        </label>
+                                        <textarea id="meta_description" 
+                                                  name="meta_description" 
+                                                  rows="3" 
+                                                  maxlength="160"
+                                                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm resize-vertical {{ $errors->has('meta_description') ? 'border-red-500' : '' }}"
+                                                  placeholder="SEO description (max 160 chars)">{{ old('meta_description', $blog->meta_description) }}</textarea>
+                                        <p class="mt-1 text-xs text-gray-500">{{ strlen(old('meta_description', $blog->meta_description ?? '')) }}/160 characters</p>
+                                        @error('meta_description')
+                                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column - Settings -->
+                        <div class="space-y-6">
+                            <!-- Publish Settings -->
+                            <div class="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-6 border border-blue-200">
+                                <h3 class="text-lg font-semibold text-gray-900 mb-4">Publish Settings</h3>
+                                
+                                <!-- Status -->
+                                <div class="mb-4">
+                                    <label for="status" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Status <span class="text-red-500">*</span>
+                                    </label>
+                                    <select id="status" 
+                                            name="status" 
+                                            required
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent {{ $errors->has('status') ? 'border-red-500' : '' }}">
+                                        <option value="draft" {{ old('status', $blog->status) == 'draft' ? 'selected' : '' }}>📝 Draft</option>
+                                        <option value="published" {{ old('status', $blog->status) == 'published' ? 'selected' : '' }}>🌐 Published</option>
+                                        <option value="archived" {{ old('status', $blog->status) == 'archived' ? 'selected' : '' }}>📦 Archived</option>
+                                    </select>
+                                    @error('status')
+                                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                <!-- Featured -->
+                                <div class="mb-4">
+                                    <div class="flex items-center">
+                                        <input type="checkbox" 
+                                               id="is_featured" 
+                                               name="is_featured" 
+                                               value="1"
+                                               {{ old('is_featured', $blog->is_featured) ? 'checked' : '' }}
+                                               class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                                        <label for="is_featured" class="ml-3 flex items-center">
+                                            <svg class="w-5 h-5 text-yellow-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                            </svg>
+                                            <span class="text-sm font-medium text-gray-700">Featured Post</span>
+                                        </label>
+                                    </div>
+                                    <p class="mt-2 text-xs text-gray-500">Featured posts appear prominently on the blog page</p>
+                                    @error('is_featured')
+                                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <!-- Current Images -->
+                            @if($blog->images->count() > 0)
+                            <div class="bg-white rounded-xl p-6 border border-gray-200">
+                                <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                                    <svg class="w-5 h-5 mr-2 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"/>
+                                    </svg>
+                                    Current Images
+                                </h3>
+                                
+                                <div class="space-y-3">
+                                    @foreach($blog->images as $image)
+                                    <div class="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg">
+                                        <img src="{{ asset('storage/' . $image->image_path) }}" 
+                                             alt="{{ $image->alt_text ?? $blog->title }}" 
+                                             class="w-16 h-16 rounded-lg object-cover">
+                                        <div class="flex-1">
+                                            <p class="text-sm font-medium text-gray-900">{{ $image->caption ?? 'No caption' }}</p>
+                                            <p class="text-xs text-gray-500">{{ $image->alt_text ?? 'No alt text' }}</p>
+                                        </div>
+                                        <form action="{{ route('admin.blogs.images.destroy', $image) }}" method="POST" class="inline">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="text-red-500 hover:text-red-700" title="Delete image">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                </svg>
+                                            </button>
+                                        </form>
+                                    </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                            @endif
+
+                            <!-- New Images -->
+                            <div class="bg-white rounded-xl p-6 border border-gray-200">
+                                <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                                    <svg class="w-5 h-5 mr-2 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"/>
+                                    </svg>
+                                    Add New Images
+                                </h3>
+                                
+                                <div class="mb-4">
+                                    <label for="images" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Upload Images
+                                    </label>
+                                    <input type="file" 
+                                           id="images" 
+                                           name="images[]" 
+                                           multiple 
+                                           accept="image/*"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 {{ $errors->has('images') ? 'border-red-500' : '' }}">
+                                    <p class="mt-2 text-xs text-gray-500">You can upload multiple images. Max size: 2MB per image.</p>
+                                    @error('images')
+                                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                <div id="image-previews" class="space-y-3"></div>
+                            </div>
+
+                            <!-- Documents -->
+                            <div class="bg-white rounded-xl p-6 border border-gray-200">
+                                <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                                    <svg class="w-5 h-5 mr-2 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
+                                    </svg>
+                                    Documents
+                                </h3>
+                                
+                                <div class="mb-4">
+                                    <label for="documents" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Upload Documents
+                                    </label>
+                                    <input type="file" 
+                                           id="documents" 
+                                           name="documents[]" 
+                                           multiple 
+                                           accept=".pdf,.doc,.docx"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 {{ $errors->has('documents') ? 'border-red-500' : '' }}">
+                                    <p class="mt-2 text-xs text-gray-500">Upload PDF, DOC, or DOCX files. Max size: 5MB per file.</p>
+                                    @error('documents')
+                                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                <div id="document-previews" class="space-y-2"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 rounded-b-2xl">
+                    <div class="flex flex-col sm:flex-row gap-3 justify-end">
+                        <a href="{{ route('admin.blogs.index') }}" class="px-6 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200">
+                            Cancel
+                        </a>
+                        <button type="submit" class="px-6 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-cyan-700 transition-all duration-200 shadow-sm hover:shadow-md">
+                            <svg class="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            Update Blog Post
+                        </button>
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -238,16 +290,24 @@ document.getElementById('images').addEventListener('change', function(e) {
     previews.innerHTML = '';
     
     Array.from(e.target.files).forEach((file, index) => {
-        const div = document.createElement('div');
-        div.className = 'mb-2';
-        div.innerHTML = `
-            <img src="${URL.createObjectURL(file)}" class="img-thumbnail" style="max-height: 100px;">
-            <div class="mt-1">
-                <input type="text" class="form-control form-control-sm" placeholder="Caption" name="image_captions[${index}]">
-                <input type="text" class="form-control form-control-sm mt-1" placeholder="Alt Text" name="image_alt_texts[${index}]">
-            </div>
-        `;
-        previews.appendChild(div);
+        if (file.type.startsWith('image/')) {
+            const div = document.createElement('div');
+            div.className = 'border border-gray-200 rounded-lg p-3';
+            div.innerHTML = `
+                <div class="flex items-start space-x-3">
+                    <img src="${URL.createObjectURL(file)}" class="w-16 h-16 rounded-lg object-cover">
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-gray-900 truncate">${file.name}</p>
+                        <p class="text-xs text-gray-500">${(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                        <div class="mt-2 space-y-2">
+                            <input type="text" class="w-full px-2 py-1 text-xs border border-gray-300 rounded" placeholder="Caption" name="image_captions[${index}]">
+                            <input type="text" class="w-full px-2 py-1 text-xs border border-gray-300 rounded" placeholder="Alt Text" name="image_alt_texts[${index}]">
+                        </div>
+                    </div>
+                </div>
+            `;
+            previews.appendChild(div);
+        }
     });
 });
 
@@ -257,59 +317,41 @@ document.getElementById('documents').addEventListener('change', function(e) {
     
     Array.from(e.target.files).forEach(file => {
         const div = document.createElement('div');
-        div.className = 'mb-2 p-2 border rounded';
+        div.className = 'flex items-center space-x-3 p-2 border border-gray-200 rounded-lg';
+        
+        const icon = file.type === 'application/pdf' ? '📄' : '📝';
         div.innerHTML = `
-            <i class="fas fa-file"></i> ${file.name}
-            <small class="text-muted d-block">Size: ${(file.size / 1024 / 1024).toFixed(2)} MB</small>
+            <span class="text-2xl">${icon}</span>
+            <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-gray-900 truncate">${file.name}</p>
+                <p class="text-xs text-gray-500">${(file.size / 1024 / 1024).toFixed(2)} MB</p>
+            </div>
         `;
         previews.appendChild(div);
     });
 });
 
-function deleteImage(imageId) {
-    if (confirm('Are you sure you want to delete this image?')) {
-        fetch(`/admin/blogs/images/${imageId}`, {
-            method: 'DELETE',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert('Error: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('An error occurred while deleting the image.');
-        });
+// Character counters
+document.getElementById('meta_title').addEventListener('input', function() {
+    const counter = this.nextElementSibling;
+    counter.textContent = `${this.value.length}/60 characters`;
+    if (this.value.length > 60) {
+        counter.classList.add('text-red-500');
+    } else {
+        counter.classList.remove('text-red-500');
     }
-}
+});
 
-function deleteDocument(documentId) {
-    if (confirm('Are you sure you want to delete this document?')) {
-        fetch(`/admin/blogs/documents/${documentId}`, {
-            method: 'DELETE',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert('Error: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('An error occurred while deleting the document.');
-        });
+document.getElementById('meta_description').addEventListener('input', function() {
+    const counter = this.nextElementSibling;
+    counter.textContent = `${this.value.length}/160 characters`;
+    if (this.value.length > 160) {
+        counter.classList.add('text-red-500');
+    } else {
+        counter.classList.remove('text-red-500');
     }
-}
+});
 </script>
-@endpush
+@section('scripts')
+</div>
+</div>

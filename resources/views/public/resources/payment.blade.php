@@ -15,7 +15,6 @@
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <script src="https://checkout.flutterwave.com/v3.js"></script>
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
@@ -102,31 +101,7 @@
     </style>
 </head>
 <body class="bg-gray-50">
-    <!-- Navigation -->
-    <nav class="bg-white shadow-lg sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center">
-                    <a href="{{ url('/') }}" class="flex items-center space-x-3">
-                        @if($logoUrl)
-                            <img src="{{ $logoUrl }}" alt="{{ $systemName }}" class="h-10 w-auto">
-                        @else
-                            <div class="bg-purple-600 text-white px-3 py-2 rounded-lg font-bold text-lg">ESA</div>
-                        @endif
-                        <span class="font-bold text-xl text-gray-800">{{ $systemName }}</span>
-                    </a>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <a href="{{ url('/') }}" class="text-gray-600 hover:text-purple-600 transition">
-                        <i class="fas fa-home mr-2"></i>Home
-                    </a>
-                    <a href="{{ route('public.resources.index') }}" class="text-gray-600 hover:text-purple-600 transition">
-                        <i class="fas fa-book mr-2"></i>Resources
-                    </a>
-                </div>
-            </div>
-        </div>
-    </nav>
+    @include('components.public-navbar')
 
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         @if(session('error'))
@@ -209,7 +184,7 @@
         </div>
 
         <!-- Payment Form -->
-        <div class="bg-white rounded-lg shadow-lg p-6">
+        <div class="bg-white rounded-lg shadow-lg p-6" x-data="paymentForm">
             <h3 class="text-xl font-semibold text-gray-900 mb-6">Complete Your Payment</h3>
             
             <form id="payment-form" @submit.prevent="processPayment">
@@ -330,35 +305,16 @@
     </footer>
 
     <script>
-        function makeFlutterwavePayment(paymentData) {
-            return FlutterwaveCheckout({
-                public_key: '{{ $flutterwavePublicKey }}',
-                tx_ref: paymentData.tx_ref,
-                amount: paymentData.amount,
-                currency: paymentData.currency,
-                payment_options: paymentData.payment_options,
-                customer: paymentData.customer,
-                customizations: paymentData.customizations,
-                callback: function(response) {
-                    // Redirect to success page
-                    window.location.href = response.data.redirect_url || '{{ route("public.resources.payment.success", $resource) }}?reference=' + paymentData.tx_ref;
-                },
-                onclose: function() {
-                    // Payment modal closed
-                    console.log('Payment modal closed');
-                },
-                callbackContext: {
-                    resourceId: {{ $resource->id }}
-                }
-            });
-        }
-
+        // Don't expose the public key in frontend JavaScript
+        // Instead, we'll initialize payment through the server
+        
         document.addEventListener('alpine:init', () => {
-            return {
+            Alpine.data('paymentForm', () => ({
                 selectedMethod: 'mobile_money',
                 processing: false,
                 
                 processPayment() {
+                    console.log('Starting payment process...');
                     this.processing = true;
                     
                     const form = document.getElementById('payment-form');
@@ -367,28 +323,7 @@
                     // Generate unique transaction reference
                     const txRef = 'RESOURCE_{{ $resource->id }}_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
                     
-                    const paymentData = {
-                        tx_ref: txRef,
-                        amount: {{ $resource->price }},
-                        currency: 'RWF',
-                        payment_options: this.selectedMethod === 'mobile_money' ? 'mobilemoneyrwanda' : this.selectedMethod,
-                        customer: {
-                            email: formData.get('email'),
-                            name: formData.get('name'),
-                            phone_number: formData.get('phone_number'),
-                        },
-                        customizations: {
-                            title: 'Resource Access: {{ $resourceName }}',
-                            description: 'Payment for resource: {{ $resourceName }}',
-                        },
-                        meta: {
-                            resource_id: {{ $resource->id }},
-                            resource_type: '{{ $resource->document_blob ? 'document' : 'video' }}',
-                            payment_type: 'resource_access',
-                        },
-                    };
-
-                    // Submit form data to server first to create pending payment record
+                    // Submit form data to server to initialize payment
                     fetch('{{ route("public.resources.payment.process", $resource) }}', {
                         method: 'POST',
                         headers: {
@@ -403,23 +338,28 @@
                             tx_ref: txRef
                         })
                     })
-                    .then(response => response.json())
+                    .then(response => {
+                        console.log('Server response status:', response.status);
+                        return response.json();
+                    })
                     .then(data => {
-                        if (data.status) {
-                            // Open Flutterwave payment modal
-                            makeFlutterwavePayment(paymentData);
+                        console.log('Server response data:', data);
+                        if (data.status && data.payment_link) {
+                            // Redirect to Flutterwave payment link
+                            console.log('Redirecting to payment...');
+                            window.location.href = data.payment_link;
                         } else {
                             this.processing = false;
                             alert('Payment initialization failed: ' + (data.message || 'Unknown error'));
                         }
                     })
                     .catch(error => {
-                        this.processing = false;
                         console.error('Error:', error);
+                        this.processing = false;
                         alert('Payment initialization failed. Please try again.');
                     });
                 }
-            }
+            }));
         });
     </script>
 </body>

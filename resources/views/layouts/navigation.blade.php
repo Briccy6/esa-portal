@@ -48,6 +48,17 @@
                         {{ __('Online Tests') }}
                     </x-nav-link>
                     
+                    <!-- Blog Management Link -->
+                    <x-nav-link :href="route('admin.blogs.index')" :active="request()->routeIs('admin.blogs.*')">
+                        <span class="flex items-center">
+                            <svg class="w-5 h-5 mr-2 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M2 5a2 2 0 012-2h8a2 2 0 012 2v10a2 2 0 002 2H4a2 2 0 01-2-2V5zm3 1h6v4H5V6zm6 6H5v2h6v-2z" clip-rule="evenodd"/>
+                                <path d="M15 7h1a2 2 0 012 2v5.5a1.5 1.5 0 01-3 0V9a1 1 0 00-1-1h-1v-1z"/>
+                            </svg>
+                            {{ __('Blog') }}
+                        </span>
+                    </x-nav-link>
+                    
                     <!-- Branches Link -->
                     <x-nav-link :href="route('admin.branch.index')" :active="request()->routeIs('admin.branch.*')">
                         {{ __('Branches') }}

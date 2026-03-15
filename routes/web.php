@@ -784,6 +784,8 @@ Route::get('/teacher/dailies', [TeacherDailyController::class, 'index'])->name('
 Route::middleware('auth:teacher')->prefix('teacher')->name('teacher.')->group(function () {
     Route::get('resources/create', [\App\Http\Controllers\Teacher\ResourceController::class, 'create'])->name('resources.create');
     Route::post('resources', [\App\Http\Controllers\Teacher\ResourceController::class, 'store'])->name('resources.store');
+    Route::get('resources/{resource}/view-document', [\App\Http\Controllers\Teacher\ResourceController::class, 'viewDocument'])->name('resources.viewDocument');
+    Route::get('resources/{resource}/stream-video', [\App\Http\Controllers\Teacher\ResourceController::class, 'streamVideo'])->name('resources.streamVideo');
 });
 
 Route::middleware('auth:teacher')->prefix('teacher')->name('teacher.')->group(function () {
@@ -1075,8 +1077,6 @@ Route::get('/test-logo', function() {
 Route::get('/students/{student}/transcript', [App\Http\Controllers\StudentController::class, 'transcript'])->name('students.transcript');
 Route::get('/students/{student}/transcript/ajax', [App\Http\Controllers\StudentController::class, 'transcriptAjax']);
 
-Route::get('resources/{resource}/view-document', [ResourceController::class, 'viewDocument'])->name('resources.viewDocument');
-Route::get('resources/{resource}/stream-video', [ResourceController::class, 'streamVideo'])->name('resources.streamVideo');
 
 // Teacher resource routes
 

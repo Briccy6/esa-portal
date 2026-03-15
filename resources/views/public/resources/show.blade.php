@@ -221,9 +221,10 @@
                                                     <i class="fas fa-download mr-1"></i>Download
                                                 </a>
                                             @else
-                                                <button class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm" disabled>
-                                                    <i class="fas fa-lock mr-1"></i>Paid Resource
-                                                </button>
+                                                <a href="{{ route('public.resources.payment', $resource->id) }}" 
+                                                   class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm">
+                                                    <i class="fas fa-shopping-cart mr-1"></i>Purchase (${{ number_format($resource->price, 2) }})
+                                                </a>
                                             @endif
                                         </div>
                                     </div>
@@ -246,9 +247,10 @@
                                                     <i class="fas fa-play mr-1"></i>Play Video
                                                 </button>
                                             @else
-                                                <button class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm" disabled>
-                                                    <i class="fas fa-lock mr-1"></i>Paid Resource
-                                                </button>
+                                                <a href="{{ route('public.resources.payment', $resource->id) }}" 
+                                                   class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm">
+                                                    <i class="fas fa-shopping-cart mr-1"></i>Purchase (${{ number_format($resource->price, 2) }})
+                                                </a>
                                             @endif
                                         </div>
                                     </div>
@@ -327,9 +329,10 @@
                         </a>
                         
                         @if(!$resource->is_free && $resource->price > 0)
-                            <button class="w-full bg-orange-600 text-white py-2 rounded-lg font-medium hover:bg-orange-700">
+                            <a href="{{ route('public.resources.payment', $resource->id) }}" 
+                               class="w-full bg-orange-600 text-white py-2 rounded-lg font-medium hover:bg-orange-700">
                                 <i class="fas fa-shopping-cart mr-2"></i>Purchase (${{ number_format($resource->price, 2) }})
-                            </button>
+                            </a>
                         @endif
                     </div>
                 </div>

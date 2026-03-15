@@ -16,12 +16,17 @@ class Blog extends Model
         'title',
         'slug',
         'content',
+        'excerpt',
+        'featured_image',
+        'status',
+        'published_at',
+        'author_id',
         'meta_title',
         'meta_description',
-        'status',
-        'is_featured',
+        'tags',
+        'category',
         'views',
-        'published_at',
+        'is_featured',
     ];
 
     protected $casts = [

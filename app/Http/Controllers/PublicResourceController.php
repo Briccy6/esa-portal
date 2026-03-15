@@ -150,18 +150,34 @@ class PublicResourceController extends Controller
             'phone_number'   => 'required|string',
             'payment_method' => 'required|in:card,mobile_money,bank_transfer',
             'name'           => 'required|string|max:255',
+            'tx_ref'         => 'required|string',
         ]);
 
         if ($resource->is_free || $resource->price <= 0) {
-            return redirect()->route('public.resources.show', $resource)
-                ->with('error', 'This resource is free to access');
+            return response()->json([
+                'status' => false,
+                'message' => 'This resource is free to access'
+            ]);
         }
 
         try {
-            $txRef = 'RESOURCE_' . $resource->id . '_' . uniqid() . '_' . time();
+            // Store payment session data for callback handling
+            session([
+                'resource_payment' => [
+                    'resource_id'      => $resource->id,
+                    'payment_reference'=> $request->tx_ref,
+                    'customer_email'   => $request->email,
+                    'customer_phone'   => $request->phone_number,
+                    'customer_name'    => $request->name,
+                    'payment_amount'   => $resource->price,
+                    'payment_status'   => 'pending',
+                    'payment_method'   => $request->payment_method,
+                ],
+            ]);
 
+            // Initialize Flutterwave payment on server side
             $paymentData = [
-                'tx_ref'          => $txRef,
+                'tx_ref'          => $request->tx_ref,
                 'amount'          => $resource->price,
                 'currency'        => 'RWF',
                 'payment_options' => $request->payment_method === 'mobile_money' ? 'mobilemoneyrwanda' : $request->payment_method,
@@ -174,6 +190,7 @@ class PublicResourceController extends Controller
                 'customizations' => [
                     'title'       => 'Resource Access: ' . ($resource->document_name ?: $resource->video_name ?: 'Resource'),
                     'description' => 'Payment for resource: ' . ($resource->document_name ?: $resource->video_name ?: 'Resource'),
+                    'logo'        => url('/images/esa.png')
                 ],
                 'meta' => [
                     'resource_id'   => $resource->id,
@@ -198,22 +215,11 @@ class PublicResourceController extends Controller
                 ]);
             }
 
-            session([
-                'resource_payment' => [
-                    'resource_id'      => $resource->id,
-                    'payment_reference'=> $txRef,
-                    'customer_email'   => $request->email,
-                    'customer_phone'   => $request->phone_number,
-                    'customer_name'    => $request->name,
-                    'payment_amount'   => $resource->price,
-                    'payment_status'   => 'pending',
-                ],
-            ]);
-
             return response()->json([
-                'status'  => true,
-                'message' => 'Payment initialized successfully',
-                'data'    => $response['data'],
+                'status'       => true,
+                'message'      => 'Payment initialized successfully',
+                'payment_link' => $response['data']['link'] ?? null,
+                'tx_ref'       => $request->tx_ref,
             ]);
 
         } catch (\Exception $e) {
