@@ -23,6 +23,9 @@
                 <a href="{{ route('welcome') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300">
                     Home
                 </a>
+                <a href="{{ route('blogs.index') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300">
+                    Blog
+                </a>
                 <a href="{{ route('public.exams.index') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300">
                     Test Skills
                 </a>
@@ -74,6 +77,9 @@
                     <nav class="flex flex-col items-center space-y-4">
                         <a href="{{ route('welcome') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300" @click="open = false">
                             Home
+                        </a>
+                        <a href="{{ route('blogs.index') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300" @click="open = false">
+                            Blog
                         </a>
                         <a href="{{ route('public.exams.index') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300" @click="open = false">
                             Test Skills

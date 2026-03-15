@@ -12,7 +12,14 @@ class ExamQuestionController extends Controller
         $exam = \App\Models\Exam::with(['questions.questionBank'])->findOrFail($examId);
         $courses = \App\Models\Course::all(); // Or filter as needed
 
-        return view('exams.questions.index', compact('exam', 'courses'));
+        // Return appropriate view based on authentication
+        if (auth('teacher')->check()) {
+            return view('exams.questions.index', compact('exam', 'courses'));
+        } elseif (auth('staff')->check() && auth('staff')->user()->role === 'DOS') {
+            return view('exams.questions.index', compact('exam', 'courses'));
+        } else {
+            return view('exams.questions.index', compact('exam', 'courses'));
+        }
     }
     
     public function create($examId)

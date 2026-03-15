@@ -29,7 +29,10 @@ public function index()
     // Load courses relationship for branches to use in view
     $branches = $branches->load('courses');
     
-    return view('teacher.marks.index', compact('lessons', 'courses', 'branches'));
+    // Get all terms for term selection
+    $terms = \App\Models\Term::orderBy('name')->get();
+    
+    return view('teacher.marks.index', compact('lessons', 'courses', 'branches', 'terms'));
 }
 
     public function create(Lesson $lesson)
@@ -44,6 +47,7 @@ public function index()
             'course_id'       => 'required|exists:courses,id',
             'branch_id'       => 'required|exists:branches,id',
             'lesson_id'       => 'required|exists:lessons,id',
+            'term_id'         => 'required|exists:terms,id',
             'assessment_type' => 'required|in:test,exam',
             'exam_id'         => 'required_if:assessment_type,exam|exists:exams,id',
             'marks_out_of'    => 'required_if:assessment_type,test|numeric|min:1',
@@ -54,6 +58,18 @@ public function index()
             'marks'           => 'required|array',
             'marks.*.value'   => 'required|numeric|min:0',
         ]);
+
+        // Additional validation to ensure term exists
+        if ($request->term_id) {
+            $termExists = \App\Models\Term::where('id', $request->term_id)->exists();
+            if (!$termExists) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Selected term does not exist',
+                    'errors' => ['term_id' => ['The selected term is invalid']]
+                ], 422);
+            }
+        }
 
         if ($validator->fails()) {
             return response()->json([
@@ -77,6 +93,7 @@ public function index()
                         'course_id'  => $request->course_id,
                         'branch_id'  => $request->branch_id,
                         'lesson_id'  => $request->lesson_id,
+                        'term_id'    => $request->term_id,
                         'assessment_type' => $request->assessment_type,
                         'value' => $value,
                         'status' => 'recorded'
@@ -115,21 +132,24 @@ public function index()
     {
         $teacher = auth('teacher')->user();
         
-        // Get all marks recorded by this teacher
+        // Get all marks recorded by this teacher with term relationship
         $marks = Mark::whereHas('lesson', function($query) use ($teacher) {
             $query->where('teacher_id', $teacher->id);
         })
-        ->with(['student', 'course', 'branch', 'lesson'])
+        ->with(['student', 'course', 'branch', 'lesson', 'term'])
+        ->orderBy('term_id')
         ->orderBy('lesson_id')
         ->orderBy('test_date')
         ->orderBy('student_id')
         ->get();
 
-        // Group marks by lesson, then by test date
+        // Group marks by term, then by lesson, then by test date
         $groupedMarks = [];
         $students = [];
         
         foreach ($marks as $mark) {
+            $termId = $mark->term_id ?: 'no-term';
+            $termName = $mark->term ? $mark->term->name : 'Unknown Term';
             $lessonId = $mark->lesson_id;
             $lessonTitle = $mark->lesson->title;
             $testDate = $mark->test_date ?: 'no-date'; // Handle empty dates
@@ -145,9 +165,17 @@ public function index()
                 ];
             }
             
-            // Group by lesson
-            if (!isset($groupedMarks[$lessonId])) {
-                $groupedMarks[$lessonId] = [
+            // Group by term first
+            if (!isset($groupedMarks[$termId])) {
+                $groupedMarks[$termId] = [
+                    'name' => $termName,
+                    'lessons' => []
+                ];
+            }
+            
+            // Group by lesson within term
+            if (!isset($groupedMarks[$termId]['lessons'][$lessonId])) {
+                $groupedMarks[$termId]['lessons'][$lessonId] = [
                     'title' => $lessonTitle,
                     'dates' => [],
                     'students' => []
@@ -155,37 +183,36 @@ public function index()
             }
             
             // Collect unique dates for this lesson
-            if (!isset($groupedMarks[$lessonId]['dates'][$testDate])) {
-                $groupedMarks[$lessonId]['dates'][$testDate] = [];
+            if (!isset($groupedMarks[$termId]['lessons'][$lessonId]['dates'][$testDate])) {
+                $groupedMarks[$termId]['lessons'][$lessonId]['dates'][$testDate] = [];
             }
             
-            // Store marks by student for this lesson and date
-            if (!isset($groupedMarks[$lessonId]['students'][$studentId])) {
-                $groupedMarks[$lessonId]['students'][$studentId] = [];
-            }
-            
-            $groupedMarks[$lessonId]['students'][$studentId][$testDate] = $mark;
+            // Store mark for this student on this date
+            $groupedMarks[$termId]['lessons'][$lessonId]['dates'][$testDate][$studentId] = $mark;
+            $groupedMarks[$termId]['lessons'][$lessonId]['students'][$studentId][$testDate] = $mark;
         }
 
         // Sort dates within each lesson (put no-date at the end)
-        foreach ($groupedMarks as $lessonId => &$lessonData) {
-            // Separate no-date from actual dates
-            $noDate = [];
-            $actualDates = [];
-            
-            foreach ($lessonData['dates'] as $date => $dateMarks) {
-                if ($date === 'no-date') {
-                    $noDate[$date] = $dateMarks;
-                } else {
-                    $actualDates[$date] = $dateMarks;
+        foreach ($groupedMarks as $termId => &$termData) {
+            foreach ($termData['lessons'] as $lessonId => &$lessonData) {
+                // Separate no-date from actual dates
+                $noDate = [];
+                $actualDates = [];
+                
+                foreach ($lessonData['dates'] as $date => $dateMarks) {
+                    if ($date === 'no-date') {
+                        $noDate[$date] = $dateMarks;
+                    } else {
+                        $actualDates[$date] = $dateMarks;
+                    }
                 }
+                
+                // Sort actual dates
+                ksort($actualDates);
+                
+                // Combine: actual dates first, then no-date
+                $lessonData['dates'] = $actualDates + $noDate;
             }
-            
-            // Sort actual dates
-            ksort($actualDates);
-            
-            // Combine: actual dates first, then no-date
-            $lessonData['dates'] = $actualDates + $noDate;
         }
         
         // Sort students by name

@@ -403,7 +403,7 @@
                                     </td>
                                     <td data-label="Document">
                                         @if($resource->document_name)
-                                            <a href="{{ $resource->document_name }}" target="_blank" class="btn btn-sm btn-info">View Document</a>
+                                            <a href="{{ route('teacher.resources.viewDocument', $resource->id) }}" target="_blank" class="btn btn-sm btn-info">View Document</a>
                                         @else
                                             <span class="text-muted">-</span>
                                         @endif

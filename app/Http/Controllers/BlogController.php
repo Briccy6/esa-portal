@@ -15,12 +15,6 @@ class BlogController extends Controller
 {
     public function index(Request $request)
     {
-        // Check if admin is authenticated
-        if (!Auth::guard('admin')->check()) {
-            return redirect()->route('admin.login.form')
-                ->with('error', 'You must be logged in to access blog management.');
-        }
-
         $blogs = Blog::with(['author', 'images', 'documents'])
             ->when($request->status, function($query, $status) {
                 $query->where('status', $status);
@@ -51,21 +45,46 @@ class BlogController extends Controller
 
     public function create()
     {
-        // Check if admin is authenticated
-        if (!Auth::guard('admin')->check()) {
-            return redirect()->route('admin.login.form')
-                ->with('error', 'You must be logged in to create blog posts.');
-        }
-
         return view('admin.blogs.create');
     }
 
     public function store(Request $request)
     {
-        // Check if admin is authenticated
-        if (!Auth::guard('admin')->check()) {
-            return redirect()->route('admin.login.form')
-                ->with('error', 'You must be logged in to create blog posts.');
+        // Enhanced authentication check with session debugging
+        \Log::info('=== BLOG STORE METHOD DEBUG ===');
+        \Log::info('Request URL: ' . $request->fullUrl());
+        \Log::info('Request Method: ' . $request->method());
+        \Log::info('Session ID: ' . session()->getId());
+        \Log::info('Session exists: ' . (session()->isStarted() ? 'YES' : 'NO'));
+        \Log::info('Session data keys: ' . json_encode(array_keys(session()->all())));
+        
+        // Check admin authentication
+        $adminAuthenticated = auth('admin')->check();
+        \Log::info('Admin authenticated: ' . ($adminAuthenticated ? 'YES' : 'NO'));
+        
+        if (!$adminAuthenticated) {
+            \Log::error('Admin not authenticated in blog store method');
+            \Log::error('All session data: ' . json_encode(session()->all()));
+            
+            // Try to re-authenticate with session data
+            $adminId = session()->get('admin_id');
+            if ($adminId) {
+                \Log::info('Found admin_id in session: ' . $adminId);
+                // Try to manually log in the admin
+                $admin = \App\Models\Admin::find($adminId);
+                if ($admin) {
+                    \Log::info('Found admin user, attempting manual login');
+                    auth('admin')->login($admin);
+                    \Log::info('Manual login successful: ' . (auth('admin')->check() ? 'YES' : 'NO'));
+                }
+            }
+            
+            // If still not authenticated, redirect to login
+            if (!auth('admin')->check()) {
+                return redirect()->route('admin.login.form')
+                    ->with('error', 'You must be logged in as an admin to create blogs.')
+                    ->with('intended', $request->fullUrl());
+            }
         }
 
         $request->validate([
@@ -84,6 +103,9 @@ class BlogController extends Controller
             'image_alts' => 'nullable|array',
         ]);
 
+        $adminId = auth('admin')->id();
+        \Log::info('Creating blog with admin ID: ' . $adminId);
+
         $blog = Blog::create([
             'title' => $request->title,
             'slug' => $this->generateUniqueSlug($request->title),
@@ -91,7 +113,7 @@ class BlogController extends Controller
             'content' => $request->content,
             'status' => $request->status,
             'published_at' => $request->status === 'published' ? now() : null,
-            'author_id' => Auth::guard('admin')->id(),
+            'author_id' => $adminId,
             'category' => $request->category,
             'tags' => $request->tags,
             'meta_title' => $request->meta_title ?: $request->title,
@@ -150,6 +172,14 @@ class BlogController extends Controller
 
     public function update(Request $request, Blog $blog)
     {
+        // Debug: Check authentication state
+        if (!auth('admin')->check()) {
+            \Log::error('Admin not authenticated in blog update method');
+            \Log::error('Session data: ' . json_encode(session()->all()));
+            return redirect()->route('admin.login.form')
+                ->with('error', 'You must be logged in as an admin to update blogs.');
+        }
+
         $request->validate([
             'title' => 'required|string|max:255',
             'excerpt' => 'nullable|string|max:500',

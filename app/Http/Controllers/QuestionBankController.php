@@ -63,7 +63,38 @@ class QuestionBankController extends Controller
             abort(403, 'Unauthorized');
         }
 
-        return view('question-banks.index', compact('questionBanks'));
+        $viewPath = $this->getViewPath() . '.index';
+        return view($viewPath, compact('questionBanks'));
+    }
+
+    /**
+     * Get the appropriate redirect route based on user type.
+     */
+    protected function getRedirectRoute()
+    {
+        if (auth('admin')->check()) {
+            return 'admin';
+        } elseif (auth('staff')->check()) {
+            return 'staff';
+        } elseif (auth('teacher')->check()) {
+            return 'teacher';
+        }
+        return 'admin'; // fallback
+    }
+
+    /**
+     * Get the appropriate view path based on user type.
+     */
+    protected function getViewPath()
+    {
+        if (auth('admin')->check()) {
+            return 'question-banks';
+        } elseif (auth('staff')->check()) {
+            return 'staff.question-banks';
+        } elseif (auth('teacher')->check()) {
+            return 'teacher.question-banks';
+        }
+        return 'question-banks'; // fallback
     }
 
     /**
@@ -107,7 +138,8 @@ class QuestionBankController extends Controller
             abort(403, 'Unauthorized');
         }
 
-        return view('question-banks.create', compact('courses', 'academicYears', 'teachers'));
+        $viewPath = $this->getViewPath() . '.create';
+        return view($viewPath, compact('courses', 'academicYears', 'teachers'));
     }
 
     public function store(Request $request)
@@ -133,7 +165,7 @@ class QuestionBankController extends Controller
             'is_active' => true,
         ]);
 
-        return redirect()->route('admin.question-banks.index')
+        return redirect()->route($this->getRedirectRoute() . '.question-banks.index')
             ->with('success', 'Question bank created successfully!');
     }
 
@@ -145,7 +177,8 @@ class QuestionBankController extends Controller
             $query->orderBy('created_at', 'desc');
         }]);
 
-        return view('question-banks.show', compact('questionBank'));
+        $viewPath = $this->getViewPath() . '.show';
+        return view($viewPath, compact('questionBank'));
     }
 
     public function edit(QuestionBank $questionBank)
@@ -163,7 +196,8 @@ class QuestionBankController extends Controller
             $teachers = collect([$teacher]);
         }
 
-        return view('question-banks.edit', compact('questionBank', 'courses', 'academicYears', 'teachers'));
+        $viewPath = $this->getViewPath() . '.edit';
+        return view($viewPath, compact('questionBank', 'courses', 'academicYears', 'teachers'));
     }
 
     public function update(Request $request, QuestionBank $questionBank)
@@ -190,7 +224,7 @@ class QuestionBankController extends Controller
             'is_active' => $request->has('is_active'),
         ]);
 
-        return redirect()->route('admin.question-banks.show', $questionBank)
+        return redirect()->route($this->getRedirectRoute() . '.question-banks.show', $questionBank)
             ->with('success', 'Question bank updated successfully!');
     }
 
@@ -200,7 +234,7 @@ class QuestionBankController extends Controller
         
         $questionBank->delete();
         
-        return redirect()->route('admin.question-banks.index')
+        return redirect()->route($this->getRedirectRoute() . '.question-banks.index')
             ->with('success', 'Question bank deleted successfully!');
     }
 
@@ -208,7 +242,8 @@ class QuestionBankController extends Controller
     {
         $this->authorize('update', $questionBank);
 
-        return view('question-banks.add-question', compact('questionBank'));
+        $viewPath = $this->getViewPath() . '.add-question';
+        return view($viewPath, compact('questionBank'));
     }
 
     public function storeQuestion(Request $request, QuestionBank $questionBank)
@@ -290,7 +325,7 @@ class QuestionBankController extends Controller
 
         Question::create($questionData);
 
-        return redirect()->route('admin.question-banks.show', $questionBank)
+        return redirect()->route($this->getRedirectRoute() . '.question-banks.show', $questionBank)
             ->with('success', 'Question added successfully!');
     }
 
@@ -400,7 +435,7 @@ class QuestionBankController extends Controller
             $message .= " However, there were " . count($errors) . " errors.";
         }
 
-        return redirect()->route('admin.question-banks.show', $questionBank)
+        return redirect()->route($this->getRedirectRoute() . '.question-banks.show', $questionBank)
             ->with('success', $message)
             ->with('errors', $errors);
     }

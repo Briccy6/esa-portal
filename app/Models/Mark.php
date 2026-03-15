@@ -11,6 +11,7 @@ class Mark extends Model
         'course_id',
         'branch_id',
         'lesson_id',
+        'term_id',
         'exam_id',
         'value',
         'grade_id',
@@ -49,6 +50,11 @@ class Mark extends Model
     public function lesson()
     {
         return $this->belongsTo(\App\Models\Lesson::class);
+    }
+
+    public function term()
+    {
+        return $this->belongsTo(\App\Models\Term::class);
     }
 
     // Optional accessors

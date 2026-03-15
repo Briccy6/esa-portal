@@ -49,6 +49,17 @@
                 </div>
             </div>
         </div>
+        <!-- Question Banks Card -->
+        <div class="col-md-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-question-circle fs-1 text-info"></i>
+                    <h5 class="card-title mt-2">Question Banks</h5>
+                    <p class="card-text">Create and manage question banks for your courses.</p>
+                    <a href="{{ route('teacher.question-banks.index') }}" class="btn btn-outline-info btn-sm">Manage Banks</a>
+                </div>
+            </div>
+        </div>
         <!-- Salary Card -->
         <div class="col-md-3">
             <div class="card shadow-sm h-100">

@@ -310,7 +310,7 @@
                 <i class="bi bi-save me-2"></i>Save Draft
             </button>
             <button type="submit" wire:target="publish" class="btn btn-primary">
-                <i class="bi bi-send me-2"></i>{{ $blog->id ? 'Update' : 'Publish' }} Blog
+                <i class="bi bi-send me-2"></i>{{ $blog ? 'Update' : 'Publish' }} Blog
             </button>
         </div>
     </div>

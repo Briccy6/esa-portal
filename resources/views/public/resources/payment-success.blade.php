@@ -32,6 +32,35 @@
         body {
             font-family: 'Inter', sans-serif;
             color: var(--text-dark);
+            position: relative;
+        }
+
+        /* ESA Watermark Background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 400px;
+            height: 400px;
+            background-image: url('/images/esa.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            opacity: 0.05;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* Ensure content is above watermark */
+        .max-w-4xl,
+        .bg-white,
+        .success-bg,
+        nav,
+        footer {
+            position: relative;
+            z-index: 1;
         }
 
         .success-animation {

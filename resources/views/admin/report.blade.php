@@ -258,6 +258,31 @@
         font-size: 1.2rem;
         vertical-align: middle;
     }
+
+    /* Multi-select dropdown styling */
+    #terms {
+        min-height: 58px;
+        padding: 0.75rem 2.25rem 0.75rem 0.75rem !important;
+    }
+
+    #terms option {
+        padding: 0.5rem;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    #terms option:last-child {
+        border-bottom: none;
+    }
+
+    #terms option:checked {
+        background-color: #667eea;
+        color: white;
+    }
+
+    .form-floating > select.form-select[multiple] {
+        background-image: none;
+        padding-right: 0.75rem;
+    }
 </style>
 @endpush
 
@@ -294,6 +319,19 @@
                         </div>
                         <div class="col-md-3">
                             <div class="form-floating">
+                                <select name="terms[]" id="terms" class="form-select" multiple size="1" style="height: auto;">
+                                    @foreach($terms as $term)
+                                        <option value="{{ $term->id }}" 
+                                            {{ in_array($term->id, request('terms', [])) ? 'selected' : '' }}>
+                                            {{ $term->name }} - {{ $term->academicYear->year }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <label for="terms">Terms (Hold Ctrl/Cmd to select multiple)</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-floating">
                                 <input type="date" name="from" id="from" class="form-control" value="{{ request('from', $from) }}">
                                 <label for="from">From Date</label>
                             </div>
@@ -310,6 +348,22 @@
                             </button>
                         </div>
                     </div>
+                    
+                    @if(request('terms'))
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <div class="alert alert-info d-flex align-items-center">
+                                    <i class="bi bi-info-circle me-2"></i>
+                                    <div>
+                                        <strong>Selected Terms:</strong>
+                                        @foreach($terms->whereIn('id', request('terms')) as $selectedTerm)
+                                            <span class="badge bg-primary me-1">{{ $selectedTerm->name }} - {{ $selectedTerm->academicYear->year }}</span>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
                 </form>
             </div>
         </div>
@@ -330,7 +384,7 @@
                             </div>
                         </div>
                         <div class="col-md-6 text-end">
-                            <a href="{{ route('admin.expenses.export', ['from' => $from, 'to' => $to]) }}" class="btn btn-warning me-2" id="exportExpensesBtn">
+                            <a href="{{ route('admin.expenses.export', ['from' => $from, 'to' => $to, 'terms' => request('terms', [])]) }}" class="btn btn-warning me-2" id="exportExpensesBtn">
                                 <i class="bi bi-file-earmark-arrow-down me-2"></i>Export Excel
                             </a>
                         </div>

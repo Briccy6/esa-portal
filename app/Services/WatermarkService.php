@@ -54,22 +54,38 @@ class WatermarkService
             
             // Check if TCPDF or similar library is available
             if (class_exists('\TCPDF')) {
-                $pdf = new \TCPDF();
-                $pdf->setSourceFile($tempPdfPath);
+                // Use FPDI to import existing PDF and TCPDF to add watermark
+                $pdf = new \TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
                 
                 // Get school info for watermark text
                 $schoolInfo = \App\Models\SchoolInformation::first();
                 $watermarkText = $schoolInfo->school_name ?? 'ESA School';
                 
-                for ($i = 1; $i <= $pdf->getNumPages(); $i++) {
-                    $pdf->AddPage();
-                    $tplId = $pdf->importPage($i);
-                    $pdf->useTemplate($tplId, 0, 0, 0, 0, true);
+                // Import pages from existing PDF
+                if (class_exists('\setasign\Fpdi\TcpdfFpdi')) {
+                    $pdf = new \setasign\Fpdi\TcpdfFpdi(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+                    $pageCount = $pdf->setSourceFile($tempPdfPath);
                     
-                    // Add ESA logo watermark
-                    if (file_exists($logoPath)) {
-                        $pdf->Image($logoPath, 30, 30, 60, 0, 'PNG', '', '', false, 300, '', false, false, 0, false, false, true);
+                    for ($i = 1; $i <= $pageCount; $i++) {
+                        $pdf->AddPage();
+                        $tplId = $pdf->importPage($i);
+                        $pdf->useTemplate($tplId, 0, 0, 0, 0, true);
+                        
+                        // Add ESA logo watermark
+                        if (file_exists($logoPath)) {
+                            $pdf->Image($logoPath, 30, 30, 60, 0, 'PNG', '', '', false, 300, '', false, false, 0, false, true);
+                        }
+                        
+                        // Add text watermark
+                        $pdf->SetFont('Helvetica', 'B', 50);
+                        $pdf->SetTextColor(200, 200, 200);
+                        $pdf->SetAlpha(0.3);
+                        $pdf->Text(30, 150, $watermarkText, 45, 0, false, false, 0, 0, 'C');
+                        $pdf->SetAlpha(1);
                     }
+                } else {
+                    // FPDI not available, create new PDF with watermark text only
+                    $pdf->AddPage();
                     
                     // Add text watermark
                     $pdf->SetFont('Helvetica', 'B', 50);
@@ -77,6 +93,12 @@ class WatermarkService
                     $pdf->SetAlpha(0.3);
                     $pdf->Text(30, 150, $watermarkText, 45, 0, false, false, 0, 0, 'C');
                     $pdf->SetAlpha(1);
+                    
+                    // Add note about original document
+                    $pdf->SetFont('Helvetica', '', 12);
+                    $pdf->SetTextColor(0, 0, 0);
+                    $pdf->SetAlpha(1);
+                    $pdf->Text(20, 280, 'Original document: ' . $resource->document_name);
                 }
                 
                 // Save watermarked PDF

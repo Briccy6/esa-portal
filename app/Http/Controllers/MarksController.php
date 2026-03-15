@@ -20,7 +20,8 @@ class MarksController extends Controller
             $lessons = Lesson::with('course')->where('teacher_id', $teacher->id)->get();
             $courses = $teacher->courses ?? Course::whereIn('id', $lessons->pluck('course_id'))->get();
             $branches = $teacher->branches; // <-- FIXED
-            return view('teacher.marks.index', compact('lessons', 'courses', 'branches'));
+            $terms = \App\Models\Term::all(); // Add missing terms variable
+            return view('teacher.marks.index', compact('lessons', 'courses', 'branches', 'terms'));
         }
 
         // Staff/Admin logic as before

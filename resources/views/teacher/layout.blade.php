@@ -379,11 +379,33 @@
             transition: all 0.2s ease;
         }
 
-        .mobile-menu-toggle:hover {
-            background: rgba(255,255,255,0.3);
-            color: white;
-        }
+            .quick-action-btn:hover {
+                background: rgba(255,255,255,0.3);
+                border-color: rgba(255,255,255,0.5);
+                transform: translateY(-1px);
+                box-shadow: var(--shadow-md);
+                color: white;
+            }
     </style>
+    
+    <!-- MathJax for Mathematical Expressions -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true,
+                processEnvironments: true
+            },
+            options: {
+                skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+            },
+            startup: {
+                typeset: false
+            }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" id="MathJax-script" async></script>
 </head>
 <body>
 @php
@@ -1200,6 +1222,22 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+// Initialize MathJax for mathematical expressions
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.MathJax) {
+        MathJax.startup.promise.then(() => {
+            MathJax.typesetPromise();
+        });
+    }
+});
+
+// Re-render MathJax when content changes (for dynamic content)
+function reRenderMathJax() {
+    if (window.MathJax && MathJax.typesetPromise) {
+        MathJax.typesetPromise();
+    }
+}
 </script>
 @yield('scripts')
 <!-- LiveChat script removed due to expired license -->

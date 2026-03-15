@@ -126,10 +126,7 @@ class ResourceController extends Controller
             
             $resource = Resource::create($resourceData);
             
-            // Apply watermark if document is public and has content
-            if ($request->boolean('is_public') && isset($resourceData['document_blob'])) {
-                $this->watermarkService->applyWatermark($resource);
-            }
+            // Watermark is automatically applied by model events when is_public = true
             
             return redirect()->route('admin.resources.index')
                 ->with('success', 'Resource uploaded successfully!');
@@ -222,10 +219,7 @@ class ResourceController extends Controller
             
             $resource->update($resourceData);
             
-            // Apply watermark if document is public and has content
-            if ($request->boolean('is_public') && $resource->document_blob && !$resource->watermark_applied) {
-                $this->watermarkService->applyWatermark($resource);
-            }
+            // Watermark is automatically applied by model events when is_public = true
             
             return redirect()->route('admin.resources.index')
                 ->with('success', 'Resource updated successfully!');
@@ -276,5 +270,29 @@ class ResourceController extends Controller
         return response($resource->document_blob)
             ->header('Content-Type', $resource->document_mime)
             ->header('Content-Disposition', 'inline; filename="'.$resource->document_name.'"');
+    }
+    
+    /**
+     * Make a resource public (trigger automatic watermarking)
+     */
+    public function makePublic($id)
+    {
+        try {
+            $resource = Resource::findOrFail($id);
+            
+            // Update resource to be public
+            $resource->update([
+                'is_public' => true,
+            ]);
+            
+            // Watermark is automatically applied by model events
+            
+            return redirect()->route('admin.resources.index')
+                ->with('success', 'Resource made public successfully! Watermark has been applied.');
+                
+        } catch (\Exception $e) {
+            return back()
+                ->with('error', 'Error making resource public: ' . $e->getMessage());
+        }
     }
 }

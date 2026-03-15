@@ -1,19 +1,358 @@
 @extends('teacher.layout')
 
+@section('styles')
+@push('styles')
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #0d0f14;
+  --ink-muted: #4a5066;
+  --ink-faint: #8891a8;
+  --surface: #ffffff;
+  --surface-2: #f5f6fa;
+  --surface-3: #eceef5;
+  --border: #e2e5ef;
+  --accent: #4f63ff;
+  --accent-dark: #3447e8;
+  --accent-glow: rgba(79,99,255,0.08);
+  --green: #00c98d;
+  --green-dark: #0d7a56;
+  --green-bg: #e6faf4;
+  --red: #ff4f6a;
+  --amber: #f59e0b;
+  --font: 'Sora', sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+}
+
+* {
+  font-family: var(--font);
+}
+
+body {
+  background: var(--surface-2);
+  padding: 2.5rem 0 4rem;
+}
+
+.hero-banner {
+  background: var(--ink);
+  border-radius: 20px;
+  padding: 2.25rem 3rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-banner::before {
+  content: '';
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 200px;
+  height: 200px;
+  background: var(--accent);
+  opacity: 0.08;
+  border-radius: 50%;
+}
+
+.hero-banner::after {
+  content: '';
+  position: absolute;
+  bottom: -30px;
+  left: -30px;
+  width: 120px;
+  height: 120px;
+  background: var(--accent);
+  opacity: 0.06;
+  border-radius: 50%;
+}
+
+.hero-title {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.04em;
+  margin-bottom: 0.5rem;
+}
+
+.hero-subtitle {
+  color: rgba(255,255,255,0.5);
+  font-size: 0.875rem;
+}
+
+.hero-stats {
+  font-family: var(--mono);
+  font-size: 1.25rem;
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.card {
+  background: var(--surface);
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.05);
+}
+
+.card-header {
+  background: var(--ink);
+  color: white;
+  padding: 1.1rem 1.5rem;
+  border-radius: 16px 16px 0 0;
+  border: none;
+}
+
+.card-body {
+  padding: 1.75rem;
+}
+
+.btn {
+  border-radius: 9px;
+  font-family: var(--font);
+  font-weight: 600;
+  transition: background 0.15s, transform 0.12s;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.btn-primary:hover {
+  background: var(--accent-dark);
+  border-color: var(--accent-dark);
+}
+
+.btn-success {
+  background: var(--green-bg);
+  color: #0d6e4e;
+  border: 1px solid #a7f3d0;
+}
+
+.btn-success:hover {
+  background: #d4f4e8;
+  transform: translateY(-1px);
+}
+
+.btn-outline-info {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--ink-muted);
+}
+
+.btn-outline-info:hover {
+  background: var(--surface-2);
+  transform: translateY(-1px);
+}
+
+.btn-outline-secondary {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--ink-muted);
+}
+
+.btn-outline-secondary:hover {
+  background: var(--surface-2);
+  transform: translateY(-1px);
+}
+
+.form-control, .form-select {
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  padding: 0.7rem 1rem;
+  font-family: var(--font);
+  font-size: 0.875rem;
+  background: var(--surface);
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+  outline: none;
+}
+
+.form-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--ink);
+  margin-bottom: 0.5rem;
+}
+
+.modal-content {
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.05);
+}
+
+.modal-header {
+  background: var(--ink);
+  color: white;
+  border-radius: 16px 16px 0 0;
+  border: none;
+}
+
+.modal-body {
+  background: var(--surface-2);
+}
+
+.table {
+  background: var(--surface);
+}
+
+.table thead th {
+  background: var(--surface-2);
+  color: var(--ink-faint);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border-bottom: 2px solid var(--border);
+}
+
+.table tbody tr {
+  border-bottom: 1px solid var(--surface-3);
+  transition: background 0.15s;
+}
+
+.table tbody tr:hover {
+  background: var(--surface-2);
+}
+
+.table td {
+  padding: 0.85rem 1rem;
+  vertical-align: middle;
+}
+
+.alert-info {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+  border-radius: 12px;
+  padding: 0.9rem 1.25rem;
+  display: flex;
+  gap: 0.7rem;
+}
+
+.mark-input {
+  font-family: var(--mono);
+  font-weight: 500;
+  text-align: center;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  max-width: 110px;
+  transition: all 0.15s;
+}
+
+.mark-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+  outline: none;
+}
+
+.percentage-badge {
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: 0.8rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+}
+
+.badge-high {
+  background: var(--green-bg);
+  color: #0d6e4e;
+}
+
+.badge-mid {
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.badge-low {
+  background: #fff0f3;
+  color: #b91c1c;
+}
+
+@media (max-width: 768px) {
+  .hero-banner {
+    padding: 1.75rem 1.5rem;
+  }
+  
+  .hero-title {
+    font-size: 1.35rem;
+  }
+  
+  .card-body {
+    padding: 1.25rem;
+  }
+  
+  .row.g-4 > .col-md-3 {
+    margin-bottom: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-title {
+    font-size: 1.2rem;
+  }
+  
+  .container-fluid {
+    padding: 0 1rem;
+  }
+  
+  .btn-lg {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+}
+</style>
+@endpush
+@endsection
+
 @section('content')
-<div class="container py-4">
+<div class="container">
     <div class="row justify-content-center">
-        <div class="col-lg-10">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="mb-0">Enter Student Marks</h4>
+        <div class="col-12">
+            <!-- Hero Banner -->
+            <div class="hero-banner mb-4">
+                <div class="text-center">
+                    <div class="mb-3">
+                        <i class="bi bi-award-fill" style="font-size: 3rem; color: var(--accent);"></i>
+                    </div>
+                    <h1 class="hero-title">Student Marks Management</h1>
+                    <p class="hero-subtitle">Enter and manage student assessment marks with ease</p>
+                    @if(isset($totalMarks))
+                        <div class="hero-stats mt-3">Total Records: {{ $totalMarks }}</div>
+                    @endif
+                </div>
+            </div>
+
+            <!-- Main Form Card -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            <i class="bi bi-pencil-square" style="font-size: 1.5rem; color: var(--accent);"></i>
+                        </div>
+                        <div>
+                            <h4 class="mb-0">Assessment Details</h4>
+                            <small style="color: rgba(255,255,255,0.7);">Configure the assessment parameters</small>
+                        </div>
+                    </div>
                 </div>
                 <div class="card-body">
                     <form id="marksForm" method="POST" action="{{ route('teacher.marks.store') }}">
                         @csrf
-                        <div class="row g-3 mb-4">
+                        <div class="row g-4">
                             <div class="col-md-3">
-                                <label for="branch_id" class="form-label fw-bold">Branch</label>
+                                <label for="branch_id" class="form-label">
+                                    <i class="bi bi-geo-alt me-1" style="color: var(--accent);"></i>Branch
+                                </label>
                                 <select name="branch_id" id="branch_id" class="form-select" required>
                                     <option value="">Select Branch</option>
                                     @foreach($branches as $branch)
@@ -22,7 +361,9 @@
                                 </select>
                             </div>
                             <div class="col-md-3">
-                                <label for="course_id" class="form-label fw-bold">Course</label>
+                                <label for="course_id" class="form-label">
+                                    <i class="bi bi-book me-1" style="color: var(--accent);"></i>Course
+                                </label>
                                 <select name="course_id" id="course_id" class="form-select" required>
                                     <option value="">Select Course</option>
                                     @foreach($branches as $branch)
@@ -35,7 +376,9 @@
                                 </select>
                             </div>
                             <div class="col-md-3">
-                                <label for="lesson_id" class="form-label fw-bold">Lesson</label>
+                                <label for="lesson_id" class="form-label">
+                                    <i class="bi bi-journal-text me-1" style="color: var(--accent);"></i>Lesson
+                                </label>
                                 <select name="lesson_id" id="lesson_id" class="form-select" required>
                                     <option value="">Select Lesson</option>
                                     @foreach($lessons as $lesson)
@@ -46,48 +389,69 @@
                                 </select>
                             </div>
                             <div class="col-md-3">
-                                <label for="assessment_type" class="form-label fw-bold">Assessment Type</label>
+                                <label for="assessment_type" class="form-label">
+                                    <i class="bi bi-clipboard-check me-1" style="color: var(--accent);"></i>Assessment Type
+                                </label>
                                 <select name="assessment_type" id="assessment_type" class="form-select" required>
                                     <option value="">Select Type</option>
                                     <option value="test">Test</option>
                                     <option value="exam">Exam</option>
                                 </select>
                             </div>
+                            <div class="col-md-3">
+                                <label for="term_id" class="form-label">
+                                    <i class="bi bi-calendar3 me-1" style="color: var(--accent);"></i>Term
+                                </label>
+                                <select name="term_id" id="term_id" class="form-select" required>
+                                    <option value="">Select Term</option>
+                                    @foreach($terms as $term)
+                                        <option value="{{ $term->id }}">{{ $term->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
                         </div>
 
-                        <div class="row g-3 mb-4" id="testMarksOutOfRow" style="display:none;">
-                            <div class="col-md-2">
-                                <label for="marks_out_of" class="form-label fw-bold">Marks Out Of</label>
+                        <div class="row g-4 mt-2" id="testMarksOutOfRow" style="display:none;">
+                            <div class="col-md-3">
+                                <label for="marks_out_of" class="form-label">
+                                    <i class="bi bi-calculator me-1" style="color: var(--accent);"></i>Marks Out Of
+                                </label>
                                 <input type="number" name="marks_out_of" id="marks_out_of" class="form-control" min="1" placeholder="e.g. 20">
                             </div>
-                            <div class="col-md-2">
-                                <label for="test_date" class="form-label fw-bold">Test Date</label>
+                            <div class="col-md-3">
+                                <label for="test_date" class="form-label">
+                                    <i class="bi bi-calendar-event me-1" style="color: var(--accent);"></i>Test Date
+                                </label>
                                 <input type="date" name="test_date" id="test_date" class="form-control" required>
                             </div>
                         </div>
 
-                        <div class="row g-3 mb-4" id="examSelectRow" style="display:none;">
-                            <div class="col-md-2">
-                                <label for="exam_id" class="form-label fw-bold">Select Exam</label>
+                        <div class="row g-4 mt-2" id="examSelectRow" style="display:none;">
+                            <div class="col-md-3">
+                                <label for="exam_id" class="form-label">
+                                    <i class="bi bi-file-earmark-text me-1" style="color: var(--accent);"></i>Select Exam
+                                </label>
                                 <select name="exam_id" id="exam_id" class="form-select">
                                     <option value="">Select Exam</option>
                                 </select>
                             </div>
-                            <div class="col-md-2">
-                                <label for="exam_date" class="form-label fw-bold">Exam Date</label>
+                            <div class="col-md-3">
+                                <label for="exam_date" class="form-label">
+                                    <i class="bi bi-calendar-event me-1" style="color: var(--accent);"></i>Exam Date
+                                </label>
                                 <input type="date" name="exam_date" id="exam_date" class="form-control" required>
                             </div>
                         </div>
 
-                        <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="d-flex justify-content-between align-items-center mt-4">
                             <a href="{{ route('teacher.marks.view') }}" class="btn btn-outline-info">
-                                <i class="bi bi-eye"></i> View Recorded Marks
+                                <i class="bi bi-eye me-2"></i>View Recorded Marks
                             </a>
-                            <button type="button" class="btn btn-info px-4" id="showStudentsBtn" data-bs-toggle="modal" data-bs-target="#studentsModal">
-                                <i class="bi bi-people"></i> Show Students
+                            <button type="button" class="btn btn-primary px-4" id="showStudentsBtn" data-bs-toggle="modal" data-bs-target="#studentsModal">
+                                <i class="bi bi-people me-2"></i>Show Students
                             </button>
                         </div>
-                        <div id="marks-message" class="mt-2"></div>
+                        <div id="marks-message" class="mt-3"></div>
                     </form>
                 </div>
             </div>
@@ -95,40 +459,175 @@
     </div>
 </div>
 
-<!-- Students Modal -->
+<!-- Enhanced Students Modal -->
 <div class="modal fade" id="studentsModal" tabindex="-1" aria-labelledby="studentsModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title" id="studentsModalLabel"><i class="bi bi-person-lines-fill"></i> Students List</h5>
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <!-- Professional Modal Header -->
+      <div class="modal-header bg-gradient-primary text-white border-0">
+        <div class="d-flex align-items-center">
+            <div class="me-3">
+                <i class="bi bi-people-fill" style="font-size: 1.5rem; color: var(--accent);"></i>
+            </div>
+            <div>
+                <h5 class="modal-title mb-0" id="studentsModalLabel">Students List</h5>
+                <small style="color: rgba(255,255,255,0.7);">Enter marks for each student</small>
+            </div>
+        </div>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body">
+      
+      <!-- Enhanced Modal Body -->
+      <div class="modal-body bg-light">
         <form id="studentsMarksForm">
-            <div class="table-responsive">
-                <table class="table table-bordered align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Name</th>
-                            <th>Mark</th>
-                        </tr>
-                    </thead>
-                    <tbody id="students-modal-list">
-                        <!-- Students will be loaded here -->
-                    </tbody>
-                </table>
+            <!-- Instructions Card -->
+            <div class="alert alert-info border-0 bg-blue-50 text-blue-800 mb-4">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-info-circle me-2" style="font-size: 1.2rem;"></i>
+                    <div>
+                        <strong>Instructions:</strong> Enter the marks for each student below. Marks will be automatically validated against the total marks.
+                    </div>
+                </div>
             </div>
-            <div class="d-flex justify-content-end">
-                <button type="submit" class="btn btn-success px-4 mt-3">
-                    <i class="bi bi-save"></i> Save Marks
-                </button>
+            
+            <!-- Professional Students Table -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-primary text-white">
+                                <tr>
+                                    <th class="border-0" style="width: 50px;">
+                                        <i class="bi bi-hash"></i>
+                                    </th>
+                                    <th class="border-0">
+                                        <i class="bi bi-person-circle me-2"></i>Student Name
+                                    </th>
+                                    <th class="border-0" style="width: 150px;">
+                                        <i class="bi bi-pencil-square me-2"></i>Marks
+                                    </th>
+                                    <th class="border-0" style="width: 100px;">
+                                        <i class="bi bi-percent me-2"></i>Percentage
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody id="students-modal-list" class="bg-white">
+                                <!-- Students will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="d-flex justify-content-between align-items-center mt-4">
+                <div class="text-muted">
+                    <small><i class="bi bi-info-circle me-1"></i>All fields are required</small>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-2"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-success px-4" id="saveMarksBtn">
+                        <i class="bi bi-save"></i> <span id="saveBtnText">Save Marks</span>
+                    </button>
+                </div>
             </div>
         </form>
-        <div id="modal-message" class="mt-2"></div>
+        
+        <!-- Message Area -->
+        <div id="modal-message" class="mt-3"></div>
       </div>
     </div>
   </div>
 </div>
+
+<!-- Enhanced Styles -->
+<style>
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
+
+.modal-xl {
+    max-width: 90%;
+}
+
+.form-select-lg, .form-control-lg {
+    font-size: 1rem;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.form-select-lg:focus, .form-control-lg:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.btn-lg {
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.btn-lg:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.table-hover tbody tr:hover {
+    background-color: #f8f9fa;
+    cursor: pointer;
+}
+
+.mark-input {
+    font-weight: 600;
+    text-align: center;
+    border: 2px solid #e9ecef;
+    border-radius: 0.375rem;
+    transition: all 0.3s ease;
+}
+
+.mark-input:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    transform: scale(1.05);
+}
+
+.percentage-badge {
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.student-row {
+    transition: all 0.3s ease;
+}
+
+.student-row:hover {
+    background-color: #f8f9fa;
+    transform: translateX(5px);
+}
+
+.alert-info {
+    border-left: 4px solid #0dcaf0;
+}
+
+.badge-high {
+    background: var(--green-bg);
+    color: #0d6e4e;
+}
+
+.badge-mid {
+    background: #fffbeb;
+    color: #92400e;
+}
+
+.badge-low {
+    background: #fff0f3;
+    color: #b91c1c;
+}
+</style>
 
 <!-- Bootstrap Icons CDN (for icons) -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
@@ -231,54 +730,137 @@
             })
             .then(data => {
                 if (Array.isArray(data) && data.length > 0) {
-                    data.forEach(function(student) {
+                    data.forEach(function(student, index) {
                         modalTbody.innerHTML += `
-                            <tr>
-                                <td>${student.full_name}</td>
+                            <tr class="student-row">
+                                <td class="text-center">
+                                    <span class="badge bg-primary rounded-circle">${index + 1}</span>
+                                </td>
                                 <td>
-                                    <input type="number" name="marks[${student.id}][value]" class="form-control mark-input" min="0" max="${assessmentType === 'test' ? marksOutOf : 100}" required>
+                                    <div class="d-flex align-items-center">
+                                        <div class="me-3">
+                                            <div class="avatar-circle bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; font-weight: 600;">
+                                                ${student.full_name.charAt(0).toUpperCase()}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div class="fw-semibold text-dark">${student.full_name}</div>
+                                            <small class="text-muted">Student ID: ${student.id}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="input-group">
+                                        <input type="number" name="marks[${student.id}][value]" class="form-control mark-input" min="0" max="${assessmentType === 'test' ? marksOutOf : 100}" required placeholder="0">
+                                        <span class="input-group-text">/ ${assessmentType === 'test' ? marksOutOf : 100}</span>
+                                    </div>
                                     <input type="hidden" name="students[]" value="${student.id}">
+                                </td>
+                                <td class="text-center">
+                                    <span class="percentage-badge" id="percentage-${student.id}">-</span>
                                 </td>
                             </tr>
                         `;
                     });
 
-                    // Live validation for mark inputs
+                    // Enhanced live validation for mark inputs
                     setTimeout(function() {
                         var markInputs = document.querySelectorAll('.mark-input');
                         markInputs.forEach(function(input) {
-                            var errorSpan = document.createElement('span');
-                            errorSpan.className = 'text-danger small d-block mt-1';
-                            errorSpan.style.display = 'none';
-                            input.parentNode.appendChild(errorSpan);
+                            var errorDiv = document.createElement('div');
+                            errorDiv.className = 'text-danger small mt-1';
+                            errorDiv.style.display = 'none';
+                            input.parentNode.parentNode.appendChild(errorDiv);
 
                             input.addEventListener('input', function() {
                                 var max = parseInt(input.getAttribute('max'), 10);
                                 var value = parseInt(input.value, 10);
-                                if (value > max) {
-                                    input.classList.add('is-invalid');
-                                    errorSpan.textContent = `Entered marks (${value}) cannot be greater than total (${max}).`;
-                                    errorSpan.style.display = 'block';
-                                    input.value = max;
-                                } else {
+                                var studentId = input.name.match(/marks\[(\d+)\]/)[1];
+                                var percentageBadge = document.getElementById('percentage-' + studentId);
+                                
+                                // Calculate and display percentage
+                                if (value >= 0 && value <= max) {
+                                    var percentage = Math.round((value / max) * 100);
+                                    percentageBadge.textContent = percentage + '%';
+                                    
+                                    // Update badge color based on percentage
+                                    percentageBadge.className = 'percentage-badge';
+                                    if (percentage >= 75) {
+                                        percentageBadge.classList.add('badge-high');
+                                    } else if (percentage >= 50) {
+                                        percentageBadge.classList.add('badge-mid');
+                                    } else {
+                                        percentageBadge.classList.add('badge-low');
+                                    }
+                                    
                                     input.classList.remove('is-invalid');
-                                    errorSpan.textContent = '';
-                                    errorSpan.style.display = 'none';
+                                    errorDiv.style.display = 'none';
+                                } else if (value > max) {
+                                    input.classList.add('is-invalid');
+                                    errorDiv.textContent = `Marks (${value}) cannot exceed total (${max})`;
+                                    errorDiv.style.display = 'block';
+                                    input.value = max;
+                                    
+                                    // Update percentage for max value
+                                    var percentage = Math.round((max / max) * 100);
+                                    percentageBadge.textContent = percentage + '%';
+                                    percentageBadge.className = 'percentage-badge badge-high';
+                                } else {
+                                    percentageBadge.textContent = '-';
+                                    percentageBadge.className = 'percentage-badge';
                                 }
                             });
                         });
                     }, 100);
                 } else {
-                    modalTbody.innerHTML = '<tr><td colspan="2" class="text-danger">No students found.</td></tr>';
+                    modalTbody.innerHTML = `
+                        <tr>
+                            <td colspan="4" class="text-center py-5">
+                                <div class="text-muted">
+                                    <i class="bi bi-person-x" style="font-size: 3rem;"></i>
+                                    <div class="mt-3">
+                                        <h5>No Students Found</h5>
+                                        <p class="mb-0">There are no students enrolled in this course/lesson combination.</p>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
                 }
             })
             .catch(error => {
-                modalTbody.innerHTML = `<tr><td colspan="2" class="text-danger">Error loading students: ${error.message}</td></tr>`;
+                modalTbody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center py-5">
+                            <div class="text-danger">
+                                <i class="bi bi-exclamation-triangle" style="font-size: 3rem;"></i>
+                                <div class="mt-3">
+                                    <h5>Error Loading Students</h5>
+                                    <p class="mb-0">${error.message}</p>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
             });
     }
 
     document.getElementById('studentsMarksForm').addEventListener('submit', function(e) {
         e.preventDefault();
+        
+        var saveBtn = document.getElementById('saveMarksBtn');
+        var saveBtnText = document.getElementById('saveBtnText');
+        var modalMsg = document.getElementById('modal-message');
+        
+        // Disable button and show loading state
+        saveBtn.disabled = true;
+        saveBtnText.innerHTML = '<i class="bi bi-hourglass-split"></i> Saving...';
+        saveBtn.classList.remove('btn-success');
+        saveBtn.classList.add('btn-outline-secondary');
+        
+        // Clear previous messages
+        modalMsg.innerHTML = '';
+        
         var form = e.target;
         var formData = new FormData(form);
         formData.append('branch_id', document.getElementById('branch_id').value);
@@ -303,14 +885,36 @@
         })
         .then(res => res.json())
         .then(data => {
-            var modalMsg = document.getElementById('modal-message');
+            // Restore button state
+            saveBtn.disabled = false;
+            saveBtnText.innerHTML = '<i class="bi bi-save"></i> Save Marks';
+            saveBtn.classList.remove('btn-outline-secondary');
+            saveBtn.classList.add('btn-success');
+            
             if (data.success) {
                 modalMsg.innerHTML = `<div class="text-success">${data.message}</div>`;
+                // Clear form after successful save
+                form.reset();
+                // Clear the students list
+                document.getElementById('students-modal-list').innerHTML = '';
+                // Close modal after 2 seconds
+                setTimeout(function() {
+                    var modal = bootstrap.Modal.getInstance(document.getElementById('studentsModal'));
+                    if (modal) {
+                        modal.hide();
+                    }
+                }, 2000);
             } else {
                 modalMsg.innerHTML = `<div class="text-danger">${data.message || 'Failed to save marks.'}</div>`;
             }
         })
         .catch(error => {
+            // Restore button state on error
+            saveBtn.disabled = false;
+            saveBtnText.innerHTML = '<i class="bi bi-save"></i> Save Marks';
+            saveBtn.classList.remove('btn-outline-secondary');
+            saveBtn.classList.add('btn-success');
+            
             document.getElementById('modal-message').innerHTML = `<div class="text-danger">Error: ${error.message}</div>`;
         });
     });

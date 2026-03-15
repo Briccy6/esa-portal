@@ -2,275 +2,234 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\LiveClass;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 /**
- * WebRTCController — Cache-based signaling (no Pusher/Echo/log needed)
+ * WebRTCController — File-based signaling (bypasses Cache driver entirely)
  *
- * Signal flow:
- *   Teacher  POST role=host  → fanned out to each client's queue
- *             ↳ if forSession is set, only that client receives it (ICE / offer targeting)
- *   Student  POST role=client → queued for host to read
- *   Both     GET  ?role=host|client&sessionId=xxx → drains their queue
+ * Root cause of the "0 signals" bug: the default cache driver may be 'array'
+ * (in-memory, lost between requests) or misconfigured Redis/Memcached.
+ * This implementation writes signal queues directly to storage/app/webrtc/
+ * as JSON files with exclusive file locking, so every read/write hits the
+ * exact same file on disk, regardless of cache configuration.
  */
 class WebRTCController extends Controller
 {
     const TTL = 600;
 
-    // ──────────────────────────────────────────────────────────
-    // POST /webrtc/signaling/{roomId}
-    // ──────────────────────────────────────────────────────────
+    private function dir(): string
+    {
+        $d = storage_path('app/webrtc');
+        if (!is_dir($d)) mkdir($d, 0755, true);
+        return $d;
+    }
+
+    private function path(string $key): string
+    {
+        $safe = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $key);
+        return $this->dir() . '/' . $safe . '.json';
+    }
+
+    private function read(string $key, $default = null)
+    {
+        $p = $this->path($key);
+        if (!file_exists($p)) return $default;
+        $fp = fopen($p, 'r');
+        if (!$fp) return $default;
+        flock($fp, LOCK_SH);
+        $raw = stream_get_contents($fp);
+        flock($fp, LOCK_UN);
+        fclose($fp);
+        $data = json_decode($raw, true);
+        if (!is_array($data) || ($data['exp'] ?? 0) < time()) { @unlink($p); return $default; }
+        return $data['v'] ?? $default;
+    }
+
+    private function write(string $key, $value, int $ttl = self::TTL): void
+    {
+        $p = $this->path($key);
+        $fp = fopen($p, 'c');
+        if (!$fp) return;
+        flock($fp, LOCK_EX);
+        ftruncate($fp, 0); rewind($fp);
+        fwrite($fp, json_encode(['v' => $value, 'exp' => time() + $ttl]));
+        flock($fp, LOCK_UN); fclose($fp);
+    }
+
+    private function forget(string $key): void { @unlink($this->path($key)); }
+
+    private function push(string $key, array $item): void
+    {
+        $p = $this->path($key);
+        $fp = fopen($p, 'c');
+        if (!$fp) return;
+        flock($fp, LOCK_EX);
+        $raw = stream_get_contents($fp) ?: '';
+        $data = json_decode($raw, true);
+        $q = (is_array($data) && ($data['exp'] ?? 0) >= time()) ? ($data['v'] ?? []) : [];
+        $q[] = $item;
+        ftruncate($fp, 0); rewind($fp);
+        fwrite($fp, json_encode(['v' => $q, 'exp' => time() + self::TTL]));
+        flock($fp, LOCK_UN); fclose($fp);
+    }
+
+    private function drain(string $key): array
+    {
+        $p = $this->path($key);
+        if (!file_exists($p)) return [];
+        $fp = fopen($p, 'c');
+        if (!$fp) return [];
+        flock($fp, LOCK_EX);
+        $raw = stream_get_contents($fp) ?: '';
+        $data = json_decode($raw, true);
+        $q = (is_array($data) && ($data['exp'] ?? 0) >= time()) ? ($data['v'] ?? []) : [];
+        ftruncate($fp, 0); rewind($fp);
+        fwrite($fp, json_encode(['v' => [], 'exp' => time() + self::TTL]));
+        flock($fp, LOCK_UN); fclose($fp);
+        return $q;
+    }
+
     public function signaling(Request $request, $roomId)
     {
-        $data      = $request->all();
-        $role      = $data['role']      ?? 'client';
+        $data = $request->all();
+        $role = $data['role'] ?? 'client';
         $sessionId = $data['sessionId'] ?? session()->getId();
-
-        // Debug logging
-        \Log::info("WebRTC signaling: roomId={$roomId}, role={$role}, sessionId={$sessionId}", ['data' => $data]);
-
-        // No authentication checks - WebRTC routes are now open
-        \Log::info("WebRTC: Processing signal without authentication restrictions");
+        $type = $data['type'] ?? '?';
+        Log::info("WS signal room={$roomId} role={$role} type={$type} sid={$sessionId}");
 
         if ($role === 'host') {
-            // ── FIX #1: if forSession is set, route only to that specific client ──
-            // This prevents ICE candidates / offers meant for one student
-            // from being delivered to every other connected student.
             if (!empty($data['forSession'])) {
-                $targetSession = $data['forSession'];
-                $this->push("webrtc_to_client_{$roomId}_{$targetSession}", $data);
-                \Log::info("Host sent targeted signal to client: {$targetSession}", ['type' => $data['type'] ?? 'unknown']);
+                $target = $data['forSession'];
+                $key = "wrtc_c_{$roomId}_{$target}";
+                $this->push($key, $data);
+                Log::info("Host->client[{$target}] type={$type} key={$key}");
             } else {
-                // Broadcast to every connected client (e.g. a general host message)
-                $clients = Cache::get("webrtc_clients_{$roomId}", []);
-                \Log::info("Host broadcasting to " . count($clients) . " clients", ['clients' => $clients]);
-                foreach ($clients as $clientSession) {
-                    $this->push("webrtc_to_client_{$roomId}_{$clientSession}", $data);
-                    \Log::info("Host sent broadcast signal to client: {$clientSession}");
-                }
+                $clients = $this->read("wrtc_clients_{$roomId}", []);
+                foreach ($clients as $cid) { $this->push("wrtc_c_{$roomId}_{$cid}", $data); }
+                Log::info("Host broadcast type={$type} to ".count($clients)." clients");
             }
         } else {
-            // Student → queue for host
-            $this->push("webrtc_to_host_{$roomId}", array_merge($data, [
-                'fromSession' => $sessionId,
-            ]));
-            \Log::info("Client sent signal to host from: {$sessionId}");
+            $key = "wrtc_h_{$roomId}";
+            $this->push($key, array_merge($data, ['fromSession' => $sessionId]));
+            Log::info("Client[{$sessionId}]->host type={$type}");
         }
-
         return response()->json(['ok' => true]);
     }
 
-    // ──────────────────────────────────────────────────────────
-    // GET /webrtc/signaling/{roomId}?role=host|client&sessionId=xxx
-    // ──────────────────────────────────────────────────────────
     public function pollSignaling(Request $request, $roomId)
     {
-        $role      = $request->query('role', 'client');
+        $role = $request->query('role', 'client');
         $sessionId = $request->query('sessionId', session()->getId());
 
-        // Debug logging
-        \Log::info("WebRTC pollSignaling: roomId={$roomId}, role={$role}, sessionId={$sessionId}");
-
-        // No authentication checks - WebRTC routes are now open
-        \Log::info("WebRTC: Processing poll without authentication restrictions");
-
         if ($role === 'host') {
-            $key     = "webrtc_to_host_{$roomId}";
-            $signals = Cache::get($key, []);
-            Cache::put($key, [], self::TTL);
-
-            \Log::info("Host polling: found " . count($signals) . " signals", ['signals' => $signals]);
-
+            $signals = $this->drain("wrtc_h_{$roomId}");
+            if (count($signals)) Log::info("Host poll: drained ".count($signals)." signals room={$roomId}");
         } else {
-            // ── FIX #2: Do NOT auto-push viewer_ready here ──
-            // viewer_ready is sent explicitly by joinRoom() on the client JS side.
-            // Auto-registering here caused a second viewer_ready signal to fire on
-            // every single poll (every 2 s), making the teacher create duplicate peers.
-            // We still register the sessionId in the clients list so host can fan-out
-            // ICE/offers to this client, but we do NOT push viewer_ready again.
-            $clients = Cache::get("webrtc_clients_{$roomId}", []);
+            $clients = $this->read("wrtc_clients_{$roomId}", []);
             if (!in_array($sessionId, $clients)) {
                 $clients[] = $sessionId;
-                Cache::put("webrtc_clients_{$roomId}", $clients, self::TTL);
-                \Log::info("New client silently registered in clients list: {$sessionId}");
-                // NOTE: viewer_ready is sent by joinRoom() JS call, not here.
+                $this->write("wrtc_clients_{$roomId}", $clients);
+                Log::info("Client auto-registered: {$sessionId} room={$roomId}");
             }
-
-            $key     = "webrtc_to_client_{$roomId}_{$sessionId}";
-            $signals = Cache::get($key, []);
-            Cache::put($key, [], self::TTL);
-
-            \Log::info("Client polling: found " . count($signals) . " signals for {$sessionId}", ['signals' => $signals]);
+            $key = "wrtc_c_{$roomId}_{$sessionId}";
+            $signals = $this->drain($key);
+            if (count($signals)) Log::info("Client[{$sessionId}] poll: drained ".count($signals)." room={$roomId}");
         }
-
         return response()->json($signals);
     }
 
-    // ──────────────────────────────────────────────────────────
-    // POST /webrtc/join/{roomId}
-    // ──────────────────────────────────────────────────────────
     public function joinRoom(Request $request, $roomId)
     {
-        $sessionId = session()->getId();
-        $name      = $this->getUserName();
+        $sessionId = $request->input('sessionId', session()->getId());
+        $name = $request->input('name') ?: $this->getUserName();
 
-        $participants               = Cache::get("webrtc_participants_{$roomId}", []);
-        $participants[$sessionId]   = [
-            'name'      => $name,
-            'role'      => $request->input('role', 'client'),
-            'joined_at' => now()->toISOString(),
-        ];
-        Cache::put("webrtc_participants_{$roomId}", $participants, self::TTL);
+        $participants = $this->read("wrtc_parts_{$roomId}", []);
+        $participants[$sessionId] = ['name' => $name, 'role' => $request->input('role', 'client'), 'joined_at' => now()->toISOString()];
+        $this->write("wrtc_parts_{$roomId}", $participants);
 
-        // Add to client list
-        $clients = Cache::get("webrtc_clients_{$roomId}", []);
-        if (!in_array($sessionId, $clients)) {
-            $clients[] = $sessionId;
-            Cache::put("webrtc_clients_{$roomId}", $clients, self::TTL);
-        }
+        $clients = $this->read("wrtc_clients_{$roomId}", []);
+        if (!in_array($sessionId, $clients)) { $clients[] = $sessionId; $this->write("wrtc_clients_{$roomId}", $clients); }
 
-        // ── FIX #3: Push viewer_ready here (from joinRoom) so the host creates
-        // exactly ONE peer per student join. The pollSignaling no longer pushes
-        // viewer_ready, so there is no duplication.
-        $this->push("webrtc_to_host_{$roomId}", [
-            'type'        => 'viewer_ready',
-            'name'        => $name,
-            'sessionId'   => $sessionId,
-            'fromSession' => $sessionId,
-            'count'       => count($participants),
-        ]);
+        $this->push("wrtc_h_{$roomId}", ['type' => 'viewer_ready', 'name' => $name, 'sessionId' => $sessionId, 'fromSession' => $sessionId, 'count' => count($participants)]);
+        $this->push("wrtc_h_{$roomId}", ['type' => 'participant_joined', 'name' => $name, 'sessionId' => $sessionId, 'fromSession' => $sessionId, 'count' => count($participants)]);
+        Log::info("joinRoom: room={$roomId} sid={$sessionId} name={$name}");
 
-        // Also push participant_joined for the participant list UI
-        $this->push("webrtc_to_host_{$roomId}", [
-            'type'        => 'participant_joined',
-            'name'        => $name,
-            'sessionId'   => $sessionId,
-            'fromSession' => $sessionId,
-            'count'       => count($participants),
-        ]);
-
-        return response()->json([
-            'ok'        => true,
-            'sessionId' => $sessionId,
-            'name'      => $name,
-            'count'     => count($participants),
-        ]);
+        return response()->json(['ok' => true, 'sessionId' => $sessionId, 'name' => $name, 'count' => count($participants)]);
     }
 
-    // ──────────────────────────────────────────────────────────
-    // POST /webrtc/leave/{roomId}
-    // ──────────────────────────────────────────────────────────
     public function leaveRoom(Request $request, $roomId)
     {
-        $sessionId    = session()->getId();
-        $participants = Cache::get("webrtc_participants_{$roomId}", []);
-        $name         = $participants[$sessionId]['name'] ?? 'Unknown';
-
+        $sessionId = $request->input('sessionId', session()->getId());
+        $participants = $this->read("wrtc_parts_{$roomId}", []);
+        $name = $participants[$sessionId]['name'] ?? 'Unknown';
         unset($participants[$sessionId]);
-        Cache::put("webrtc_participants_{$roomId}", $participants, self::TTL);
-
-        $clients = Cache::get("webrtc_clients_{$roomId}", []);
+        $this->write("wrtc_parts_{$roomId}", $participants);
+        $clients = $this->read("wrtc_clients_{$roomId}", []);
         $clients = array_values(array_filter($clients, fn($s) => $s !== $sessionId));
-        Cache::put("webrtc_clients_{$roomId}", $clients, self::TTL);
-        Cache::forget("webrtc_to_client_{$roomId}_{$sessionId}");
-
-        $this->push("webrtc_to_host_{$roomId}", [
-            'type'        => 'participant_left',
-            'name'        => $name,
-            'sessionId'   => $sessionId,
-            'fromSession' => $sessionId,
-            'count'       => count($participants),
-        ]);
-
+        $this->write("wrtc_clients_{$roomId}", $clients);
+        $this->forget("wrtc_c_{$roomId}_{$sessionId}");
+        $this->push("wrtc_h_{$roomId}", ['type' => 'participant_left', 'name' => $name, 'sessionId' => $sessionId, 'fromSession' => $sessionId, 'count' => count($participants)]);
         return response()->json(['ok' => true]);
     }
 
-    // ──────────────────────────────────────────────────────────
-    // POST /webrtc/chat/{roomId}
-    // ──────────────────────────────────────────────────────────
     public function chatMessage(Request $request, $roomId)
     {
         $request->validate(['message' => 'required|string|max:500']);
-
-        $sessionId = session()->getId();
-        $name      = $this->getUserName();
-        $msg = [
-            'id'        => uniqid(),
-            'type'      => 'chat',
-            'message'   => $request->message,
-            'sender'    => $name,
-            'sessionId' => $sessionId,
-            'timestamp' => now()->toISOString(),
-        ];
-
-        // Persist in shared chat log
-        $log   = Cache::get("webrtc_chat_{$roomId}", []);
+        $sessionId = $request->input('sessionId', session()->getId());
+        $name = $request->input('name') ?: $this->getUserName();
+        $msg = ['id' => uniqid(), 'type' => 'chat', 'message' => $request->message, 'sender' => $name, 'sessionId' => $sessionId, 'timestamp' => now()->toISOString()];
+        $log = $this->read("wrtc_chat_{$roomId}", []);
         $log[] = $msg;
         if (count($log) > 200) $log = array_slice($log, -200);
-        Cache::put("webrtc_chat_{$roomId}", $log, self::TTL);
-
-        // Push to every other participant's queue
-        $clients = Cache::get("webrtc_clients_{$roomId}", []);
-        foreach ($clients as $cs) {
-            if ($cs !== $sessionId) {
-                $this->push("webrtc_to_client_{$roomId}_{$cs}", $msg);
-            }
-        }
-        // Also push to host queue so teacher sees student messages
-        $this->push("webrtc_to_host_{$roomId}", $msg);
-
+        $this->write("wrtc_chat_{$roomId}", $log);
+        $clients = $this->read("wrtc_clients_{$roomId}", []);
+        foreach ($clients as $cid) { if ($cid !== $sessionId) $this->push("wrtc_c_{$roomId}_{$cid}", $msg); }
+        $this->push("wrtc_h_{$roomId}", $msg);
         return response()->json(['ok' => true, 'id' => $msg['id']]);
     }
 
-    // ──────────────────────────────────────────────────────────
-    // GET /webrtc/chat/{roomId}?after=ISO_TIMESTAMP
-    // ──────────────────────────────────────────────────────────
     public function pollChat(Request $request, $roomId)
     {
         $after = $request->query('after', '');
-        $log   = Cache::get("webrtc_chat_{$roomId}", []);
-
-        if ($after) {
-            $log = array_values(array_filter($log, fn($m) => ($m['timestamp'] ?? '') > $after));
-        }
-
+        $log = $this->read("wrtc_chat_{$roomId}", []);
+        if ($after) $log = array_values(array_filter($log, fn($m) => ($m['timestamp'] ?? '') > $after));
         return response()->json(['messages' => array_values($log)]);
     }
 
-    // ──────────────────────────────────────────────────────────
-    // GET /webrtc/participants/{roomId}
-    // ──────────────────────────────────────────────────────────
     public function participants($roomId)
     {
-        $p = Cache::get("webrtc_participants_{$roomId}", []);
+        $p = $this->read("wrtc_parts_{$roomId}", []);
         return response()->json(['count' => count($p), 'participants' => array_values($p)]);
     }
 
-    // ──────────────────────────────────────────────────────────
-    // Helpers
-    // ──────────────────────────────────────────────────────────
-    private function push(string $key, array $signal): void
+    // Debug endpoint — remove in production
+    public function debug(Request $request, $roomId)
     {
-        $q   = Cache::get($key, []);
-        $q[] = $signal;
-        Cache::put($key, $q, self::TTL);
+        $sid = $request->query('sessionId', '');
+        $dir = $this->dir();
+        $files = [];
+        foreach (scandir($dir) as $f) {
+            if ($f === '.' || $f === '..') continue;
+            $key = str_replace('.json', '', $f);
+            $val = $this->read($key);
+            $files[$key] = is_array($val) ? count($val).' items' : $val;
+        }
+        return response()->json([
+            'dir' => $dir, 'writable' => is_writable($dir),
+            'files' => $files, 'php_session' => session()->getId(),
+            'client_queue' => $sid ? $this->read("wrtc_c_{$roomId}_{$sid}", []) : 'no sid provided',
+        ]);
     }
 
     private function getUserName(): string
     {
         foreach (['teacher', 'admin', 'staff', 'student', 'client'] as $guard) {
             if (Auth::guard($guard)->check()) {
-                $u   = Auth::guard($guard)->user();
-                $n   = $u->full_name ?? $u->name ?? 'User';
-                $tag = match ($guard) {
-                    'teacher' => ' (Teacher)',
-                    'admin'   => ' (Admin)',
-                    'staff'   => ' (Staff)',
-                    default   => '',
-                };
+                $u = Auth::guard($guard)->user();
+                $n = $u->full_name ?? $u->name ?? 'User';
+                $tag = match ($guard) { 'teacher' => ' (Teacher)', 'admin' => ' (Admin)', 'staff' => ' (Staff)', default => '' };
                 return $n . $tag;
             }
         }

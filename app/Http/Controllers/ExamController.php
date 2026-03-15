@@ -38,6 +38,9 @@ class ExamController extends Controller
                 ->with(['courses', 'lessons'])
                 ->latest()
                 ->paginate(10);
+
+            $courses = $teacher->courses ?? collect();
+            return view('teacher.exams.index', compact('exams', 'courses'));
         } elseif (auth('staff')->check()) {
             $staff = auth('staff')->user();
             if ($staff->role === 'DOS') {
@@ -110,7 +113,7 @@ class ExamController extends Controller
                 \Log::error('Question banks table not available: ' . $e->getMessage());
             }
             
-            return view('exams.create', compact(
+            return view('teacher.exams.create', compact(
                 'courses', 'lessons', 'branches', 'teachers', 
                 'academicYears', 'terms', 'questionBanks', 'examPassword'
             ));
@@ -254,6 +257,8 @@ class ExamController extends Controller
             // Redirect based on authentication
             if (auth('admin')->check()) {
                 return redirect()->route('admin.exams.index')->with('success', 'Exam created successfully.');
+            } elseif (auth('teacher')->check()) {
+                return redirect()->route('teacher.exams.index')->with('success', 'Exam created successfully.');
             } elseif (auth('staff')->check()) {
                 $staff = auth('staff')->user();
                 if ($staff->role === 'DOS') {
@@ -295,8 +300,15 @@ class ExamController extends Controller
             ->with(['student', 'course', 'branch', 'lesson'])
             ->get()
             ->groupBy('student_id');
-        
-        return view('exams.show', compact('exam', 'marks', 'testMarks'));
+
+        // Return appropriate view based on authentication
+        if (auth('teacher')->check()) {
+            return view('teacher.exams.show', compact('exam', 'marks', 'testMarks'));
+        } elseif (auth('staff')->check() && auth('staff')->user()->role === 'DOS') {
+            return view('exams.dos_show', compact('exam', 'marks', 'testMarks'));
+        } else {
+            return view('exams.show', compact('exam', 'marks', 'testMarks'));
+        }
     }
 
     /**
@@ -304,7 +316,19 @@ class ExamController extends Controller
      */
     public function edit(Exam $exam)
     {
-        if (auth('staff')->check() && auth('staff')->user()->role === 'DOS') {
+        if (auth('teacher')->check()) {
+            $user = auth('teacher')->user();
+            // Teacher can only access their assigned courses and lessons
+            $courses = $user->courses ?? collect();
+            $lessons = $user->lessons ?? collect();
+            $branches = $user->branches ?? collect();
+            $teachers = collect([$user]);
+            $academicYears = \App\Models\AcademicYear::orderBy('year', 'desc')->get();
+            $terms = \App\Models\Term::all();
+            $exam->load(['courses', 'lessons', 'academic_year', 'term', 'teacher', 'branch']);
+            
+            return view('teacher.exams.edit', compact('exam', 'courses', 'lessons', 'branches', 'teachers', 'academicYears', 'terms'));
+        } elseif (auth('staff')->check() && auth('staff')->user()->role === 'DOS') {
             $courses = Course::all();
             $lessons = Lesson::all();
             $branches = \App\Models\Branch::all();
@@ -427,6 +451,8 @@ class ExamController extends Controller
         // Redirect based on authentication
         if (auth('admin')->check()) {
             return redirect()->route('admin.exams.index')->with('success', 'Exam updated successfully.');
+        } elseif (auth('teacher')->check()) {
+            return redirect()->route('teacher.exams.index')->with('success', 'Exam updated successfully.');
         } elseif (auth('staff')->check()) {
             $staff = auth('staff')->user();
             if ($staff->role === 'DOS') {
@@ -516,6 +542,8 @@ class ExamController extends Controller
             // Redirect based on authentication
             if (auth('admin')->check()) {
                 return redirect()->route('admin.exams.index')->with('success', 'Exam deleted successfully.');
+            } elseif (auth('teacher')->check()) {
+                return redirect()->route('teacher.exams.index')->with('success', 'Exam deleted successfully.');
             } elseif (auth('staff')->check()) {
                 $staff = auth('staff')->user();
                 if ($staff->role === 'DOS') {

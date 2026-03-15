@@ -68,22 +68,52 @@ class ResourceController extends Controller
             'course_id' => 'required|exists:courses,id',
             'lesson_id' => 'required|exists:lessons,id',
             'youtube_link' => 'nullable|url',
-            'document_name' => 'required|url', // Use document_name to store the link
+            'document_upload' => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx,txt,xls,xlsx|max:10240', // 10MB max
+            'document_name' => 'nullable|required_without:document_upload|url', // Required if no file upload
+            'video_upload' => 'nullable|file|mimes:mp4,avi,mov,wmv,flv,webm|max:102400', // 100MB max
         ]);
 
-        Resource::create([
+        $resourceData = [
             'teacher_id' => auth('teacher')->id(),
             'branch_id' => $request->branch_id,
             'course_id' => $request->course_id,
             'lesson_id' => $request->lesson_id,
             'youtube_link' => $request->youtube_link,
-            'document_name' => $request->document_name, // Store the link here
-            'document_blob' => null,
-            'document_mime' => null,
-            'video_blob' => null, // Add missing field
-            'video_name' => null, // Add missing field
-            'video_mime' => null, // Add missing field
-        ]);
+            'price' => 0.00, // Default price
+            'is_free' => true, // Default to free
+            'is_public' => false, // Default to private (admin controls visibility)
+        ];
+
+        // Handle document upload or link
+        if ($request->hasFile('document_upload')) {
+            $documentFile = $request->file('document_upload');
+            $documentContent = file_get_contents($documentFile->getPathname());
+            $resourceData['document_blob'] = base64_encode($documentContent);
+            $resourceData['document_name'] = $documentFile->getClientOriginalName();
+            $resourceData['document_mime'] = $documentFile->getMimeType();
+        } elseif ($request->filled('document_name')) {
+            $resourceData['document_name'] = $request->document_name;
+            $resourceData['document_blob'] = null;
+            $resourceData['document_mime'] = null;
+        }
+
+        // Handle video upload
+        if ($request->hasFile('video_upload')) {
+            $videoFile = $request->file('video_upload');
+            $videoContent = file_get_contents($videoFile->getPathname());
+            $resourceData['video_blob'] = base64_encode($videoContent);
+            $resourceData['video_name'] = $videoFile->getClientOriginalName();
+            $resourceData['video_mime'] = $videoFile->getMimeType();
+        } else {
+            $resourceData['video_blob'] = null;
+            $resourceData['video_name'] = null;
+            $resourceData['video_mime'] = null;
+        }
+
+        $resource = Resource::create($resourceData);
+        
+        // Note: Watermarks will be applied by admin when resource is made public
+        // Teachers only upload content, admins control pricing and visibility
 
         return redirect()->route('teacher.resources.index')->with('success', 'Resource uploaded successfully!');
     }
@@ -153,17 +183,53 @@ public function update(Request $request, $id)
         'course_id' => 'required|exists:courses,id',
         'lesson_id' => 'required|exists:lessons,id',
         'youtube_link' => 'nullable|url',
-        'document_name' => 'required|url',
+        'document_upload' => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx,txt,xls,xlsx|max:10240', // 10MB max
+        'document_name' => 'nullable|url', // Optional for updates
+        'video_upload' => 'nullable|file|mimes:mp4,avi,mov,wmv,flv,webm|max:102400', // 100MB max
     ]);
 
-    $resource = Resource::findOrFail($id);
-    $resource->update([
+    $resource = Resource::where('id', $id)
+        ->where('teacher_id', auth('teacher')->id())
+        ->firstOrFail();
+
+    $resourceData = [
         'branch_id' => $request->branch_id,
         'course_id' => $request->course_id,
         'lesson_id' => $request->lesson_id,
         'youtube_link' => $request->youtube_link,
-        'document_name' => $request->document_name,
-    ]);
+    ];
+
+    // Handle document upload or link
+    $documentUpdated = false;
+    if ($request->hasFile('document_upload')) {
+        $documentFile = $request->file('document_upload');
+        $documentContent = file_get_contents($documentFile->getPathname());
+        $resourceData['document_blob'] = base64_encode($documentContent);
+        $resourceData['document_name'] = $documentFile->getClientOriginalName();
+        $resourceData['document_mime'] = $documentFile->getMimeType();
+        $documentUpdated = true;
+    } elseif ($request->filled('document_name')) {
+        $resourceData['document_name'] = $request->document_name;
+        $resourceData['document_blob'] = null;
+        $resourceData['document_mime'] = null;
+        $documentUpdated = true;
+    }
+    // If neither file nor link provided, keep existing values
+
+    // Handle video upload
+    if ($request->hasFile('video_upload')) {
+        $videoFile = $request->file('video_upload');
+        $videoContent = file_get_contents($videoFile->getPathname());
+        $resourceData['video_blob'] = base64_encode($videoContent);
+        $resourceData['video_name'] = $videoFile->getClientOriginalName();
+        $resourceData['video_mime'] = $videoFile->getMimeType();
+    }
+    // If no video uploaded, keep existing values
+
+    $resource->update($resourceData);
+    
+    // Note: Watermarks and pricing are handled by admin
+    // Teachers only upload and update content
 
     return redirect()->route('teacher.resources.index')->with('success', 'Resource updated successfully!');
 }

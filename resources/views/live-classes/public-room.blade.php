@@ -158,7 +158,7 @@
     <div class="vcol">
         <div class="stage" id="stage">
 
-            {{-- Connecting overlay (shown until we get first poll response) --}}
+            {{-- Connecting overlay --}}
             <div class="conn-overlay" id="connOverlay">
                 <div class="spin"></div>
                 <h3>Joining class…</h3>
@@ -168,7 +168,7 @@
             {{-- Remote stream --}}
             <video id="remoteVideo" autoplay playsinline></video>
 
-            {{-- Waiting state (shown when connected but no stream yet) --}}
+            {{-- Waiting state --}}
             <div class="waiting" id="waitingState" style="display:none">
                 <div class="waiting-icon"><i class="fas fa-chalkboard-teacher"></i></div>
                 <h2>Waiting for instructor…</h2>
@@ -250,19 +250,20 @@
 // ═══════════════════════════════════════════════════════════
 // CONFIG
 // ═══════════════════════════════════════════════════════════
-const ROOM_ID    = 'class-{{ $liveClass->id ?? 1 }}';
-// Store the referrer URL when joining room
-const REFERRER_URL = document.referrer || '/live-classes';
-const CSRF       = document.querySelector('meta[name=csrf-token]').content;
-const SELF_NAME  = '{{ addslashes($guestName ?? auth()->user()->name ?? "Guest") }}';
-const SELF_INIT  = '{{ strtoupper(substr($guestName ?? auth()->user()->name ?? "G", 0, 1)) }}';
-const HOST_NAME  = '{{ addslashes($liveClass->teacher->name ?? "Instructor") }}';
-// Store the session ID once when page loads - don't regenerate
-const pageSessionId = '{{ session()->getId() }}';
-console.log('🆔 Student page session ID:', pageSessionId);
+const ROOM_ID       = 'class-{{ $liveClass->id ?? 1 }}';
+const REFERRER_URL  = document.referrer || '/live-classes';
+const CSRF          = document.querySelector('meta[name=csrf-token]').content;
+const SELF_NAME     = '{{ addslashes($guestName ?? auth()->user()->name ?? "Guest") }}';
+const SELF_INIT     = '{{ strtoupper(substr($guestName ?? auth()->user()->name ?? "G", 0, 1)) }}';
+const HOST_NAME     = '{{ addslashes($liveClass->teacher->name ?? "Instructor") }}';
 
-// Use this stable session ID for all WebRTC calls
-const SESSION_ID = pageSessionId;
+// ── KEY FIX: Capture the PHP session ID exactly once at page render time.
+// This value is used as our stable identifier for ALL signaling operations.
+// The server uses session()->getId() in Blade, so this will always match
+// what the server uses when it stores/reads from the cache.
+const SESSION_ID = '{{ session()->getId() }}';
+
+console.log('🆔 Student SESSION_ID:', SESSION_ID);
 
 const ICE_SERVERS = { iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
@@ -284,6 +285,8 @@ let qaStarted   = false;
 let lastChatTS  = '';
 let chatUnread  = 0;
 let secs        = 0;
+let pendingIceCandidates = [];
+
 // ═══════════════════════════════════════════════════════════
 // TIMER
 // ═══════════════════════════════════════════════════════════
@@ -311,30 +314,28 @@ document.querySelectorAll('.tab').forEach(btn => {
 });
 
 // ═══════════════════════════════════════════════════════════
-// JOIN — tell the server we are here (registers our sessionId)
-// This is the SINGLE place that sends viewer_ready to the host.
-// The server's pollSignaling no longer auto-pushes viewer_ready,
-// so there is exactly one peer created per student join.
+// JOIN — registers the student with the server.
+// The server pushes viewer_ready to the host queue.
+// We do NOT re-send viewer_ready from JS — the server handles it.
 // ═══════════════════════════════════════════════════════════
 async function joinRoom() {
     try {
-        console.log('🚪 Student joining room:', ROOM_ID, 'with sessionId:', SESSION_ID);
-        const response = await fetch('/webrtc/join/' + ROOM_ID, {
-            method: 'POST',
+        console.log('🚪 Joining room:', ROOM_ID, 'sessionId:', SESSION_ID);
+        const res = await fetch('/webrtc/join/' + ROOM_ID, {
+            method:  'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
-            body: JSON.stringify({ role: 'client', name: SELF_NAME, sessionId: SESSION_ID })
+            body:    JSON.stringify({ role: 'client', name: SELF_NAME, sessionId: SESSION_ID }),
         });
-        if (response.ok) {
-            const result = await response.json();
-            console.log('✅ Successfully joined room:', result);
-            // Hide connecting overlay now that the server acknowledged us
+        if (res.ok) {
+            const result = await res.json();
+            console.log('✅ Joined room:', result);
             document.getElementById('connOverlay').style.display = 'none';
             if (!connected) document.getElementById('waitingState').style.display = 'flex';
         } else {
-            console.error('❌ Failed to join room:', response.status);
+            console.error('❌ Join failed:', res.status);
         }
     } catch(e) {
-        console.error('❌ Join room error:', e);
+        console.error('❌ Join error:', e);
     }
 }
 
@@ -342,84 +343,57 @@ async function joinRoom() {
 // CREATE PEER CONNECTION
 // ═══════════════════════════════════════════════════════════
 function createPC() {
-    if (pc) { 
-        console.log('🔄 Closing existing peer connection');
-        pc.close(); 
-    }
-    console.log('🔧 Creating new peer connection');
+    if (pc) { pc.close(); }
+    console.log('🔧 Creating peer connection');
     pc = new RTCPeerConnection(ICE_SERVERS);
 
-    // When we receive the instructor's stream — show it!
     pc.ontrack = (e) => {
-        console.log('🎥 Received track:', e.track.kind, 'from instructor');
+        console.log('🎥 Received track:', e.track.kind);
         const remoteVideo = document.getElementById('remoteVideo');
         if (e.streams && e.streams[0]) {
             remoteVideo.srcObject = e.streams[0];
-            console.log('📺 Set remote video stream');
         } else {
-            // Fallback: attach the track directly
-            if (!remoteVideo.srcObject) {
-                remoteVideo.srcObject = new MediaStream();
-            }
+            if (!remoteVideo.srcObject) remoteVideo.srcObject = new MediaStream();
             remoteVideo.srcObject.addTrack(e.track);
-            console.log('📺 Added track to existing stream');
         }
-
         remoteVideo.style.display = 'block';
         document.getElementById('waitingState').style.display = 'none';
         document.getElementById('connOverlay').style.display  = 'none';
         document.getElementById('instrTag').classList.add('show');
         document.getElementById('qualChip').style.display = 'flex';
         connected = true;
-        console.log('✅ Video connection established!');
+        console.log('✅ Video stream active!');
 
-        // Detect screen share by video resolution
         if (e.track.kind === 'video') {
             e.track.addEventListener('unmute', () => {
                 setTimeout(() => {
-                    const settings = e.track.getSettings();
-                    if (settings.width > 1400) {
-                        document.getElementById('screenBanner').classList.add('show');
-                        console.log('🖥️ Screen sharing detected');
-                    }
+                    const s = e.track.getSettings();
+                    if (s.width > 1400) document.getElementById('screenBanner').classList.add('show');
                 }, 500);
             });
         }
     };
 
-    // Send our ICE candidates to the host
     pc.onicecandidate = (e) => {
         if (e.candidate) {
-            postSignal({
-                type:      'ice',
-                candidate: e.candidate,
-                role:      'client',
-                sessionId: SESSION_ID,
-            });
-            console.log('🧊 Sent ICE candidate to host');
+            postSignal({ type: 'ice', candidate: e.candidate, role: 'client', sessionId: SESSION_ID });
         }
     };
 
     pc.onconnectionstatechange = () => {
         const s = pc.connectionState;
-        console.log('🔗 Peer connection state changed to:', s);
+        console.log('🔗 Connection state:', s);
         document.getElementById('qualLabel').textContent =
             s === 'connected' ? 'Good' : s === 'connecting' ? 'Connecting…' : s;
 
-        if (['disconnected','failed'].includes(s)) {
-            console.log('❌ Connection lost, showing waiting state');
-            document.getElementById('remoteVideo').style.display    = 'none';
-            document.getElementById('waitingState').style.display   = 'flex';
+        if (['disconnected', 'failed'].includes(s)) {
+            document.getElementById('remoteVideo').style.display  = 'none';
+            document.getElementById('waitingState').style.display = 'flex';
             document.getElementById('instrTag').classList.remove('show');
             document.getElementById('screenBanner').classList.remove('show');
             connected = false;
-            // Attempt to reconnect after 3s
             setTimeout(reconnect, 3000);
         }
-    };
-
-    pc.onsignalingstatechange = () => {
-        console.log('📡 Signaling state changed to:', pc.signalingState);
     };
 
     return pc;
@@ -430,16 +404,16 @@ function createPC() {
 // ═══════════════════════════════════════════════════════════
 function postSignal(data) {
     fetch('/webrtc/signaling/' + ROOM_ID, {
-        method: 'POST',
+        method:  'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
-        body: JSON.stringify(data)
+        body:    JSON.stringify(data),
     }).catch(console.warn);
 }
 
 // ═══════════════════════════════════════════════════════════
-// POLL SIGNALS (client reads from client queue every 2s)
+// POLL SIGNALS — client queue, every 2s
 // ═══════════════════════════════════════════════════════════
-let pollActive  = true;
+let pollActive = true;
 
 async function pollSignals() {
     if (!pollActive) return;
@@ -448,131 +422,97 @@ async function pollSignals() {
             `/webrtc/signaling/${ROOM_ID}?role=client&sessionId=${SESSION_ID}`,
             { headers: { 'X-CSRF-TOKEN': CSRF } }
         );
-        if (!r.ok) {
-            console.error('🔍 Student poll failed:', r.status);
-            return;
-        }
+        if (!r.ok) { console.error('Poll failed:', r.status); return; }
         const signals = await r.json();
-        
-        console.log('🔍 Student poll: received', signals.length, 'signals:', signals);
-        console.log('🔍 Student session ID:', SESSION_ID);
-        console.log('🔍 Polling URL:', `/webrtc/signaling/${ROOM_ID}?role=client&sessionId=${SESSION_ID}`);
-        
-        // Debug: Check if any signals contain offer data
-        const hasOffer = signals.some(sig => sig.type === 'offer');
-        if (hasOffer) {
-            console.log('📋 Found offer in signals:', signals.filter(sig => sig.type === 'offer'));
-        }
-        
-        for (const sig of (signals || [])) {
-            await handleSignal(sig);
-        }
+        if (signals.length) console.log('📨 Student received', signals.length, 'signals');
+        for (const sig of signals) await handleSignal(sig);
     } catch(e) {
-        console.error('🔍 Student poll error:', e);
+        console.error('Poll error:', e);
     }
 }
 
-// Queued ICE candidates that arrived before remote description was set
-let pendingIceCandidates = [];
-
 async function handleSignal(sig) {
-    console.log('🎯 Student handling signal:', sig.type, 'from:', sig.sessionId);
+    console.log('🎯 Handling signal:', sig.type);
 
     if (sig.type === 'chat') {
         appendChat(sig.sender, sig.message, false, sig.sender === HOST_NAME);
         return;
     }
 
-    // Create peer connection if not exists
-    if (!pc) {
-        console.log('🔧 Creating peer connection for signal:', sig.type);
-        createPC();
-    }
+    if (!pc) pc = createPC();
 
     if (sig.type === 'offer') {
-        console.log('📥 Received offer from host');
-        console.log('📋 Received SDP:', sig.sdp);
+        console.log('📥 Received offer');
+        if (!sig.sdp || (!sig.sdp.includes('m=video') && !sig.sdp.includes('m=audio'))) {
+            console.error('❌ Invalid SDP'); return;
+        }
+
+        // Recreate peer if not in stable state
+        if (pc.signalingState !== 'stable') {
+            console.warn('⚠️ Recreating peer — was in state:', pc.signalingState);
+            pc.close();
+            pc = createPC();
+            pendingIceCandidates = [];
+        }
+
+        // Strip ssrc-group:FID lines that cause parser errors on some browsers
+        const sdp = sig.sdp.split('\n').filter(l => !l.startsWith('a=ssrc-group:FID')).join('\n');
+
         try {
-            // ── FIX #7a: Only set remote description when in 'stable' state.
-            // 'have-local-offer' is wrong for a receive-only student peer —
-            // if that state is hit it means there's a stale half-negotiation;
-            // close and recreate the peer connection cleanly.
-            if (pc.signalingState !== 'stable') {
-                console.warn('⚠️ Peer not in stable state for offer:', pc.signalingState, '— recreating peer');
-                pc.close();
-                createPC();
-                pendingIceCandidates = [];
-            }
+            await pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp }));
+            console.log('✅ Remote description set');
 
-            await pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: sig.sdp }));
-            console.log('✅ Remote description set successfully');
-
-            // Drain any ICE candidates that arrived before the offer
-            for (const candidate of pendingIceCandidates) {
-                await pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(() => {});
+            // Drain queued ICE candidates
+            for (const c of pendingIceCandidates) {
+                await pc.addIceCandidate(new RTCIceCandidate(c)).catch(() => {});
             }
             pendingIceCandidates = [];
 
-            // Add any local tracks before answering (mic/cam already on)
+            // Add any local tracks (mic/cam already on)
             if (localStream) {
                 localStream.getTracks().forEach(t => {
-                    const exists = pc.getSenders().find(s => s.track === t);
-                    if (!exists) pc.addTrack(t, localStream);
+                    if (!pc.getSenders().find(s => s.track === t)) pc.addTrack(t, localStream);
                 });
-                console.log('📹 Added local tracks before answering');
             }
 
             const answer = await pc.createAnswer();
             await pc.setLocalDescription(answer);
-            console.log('📋 Generated Answer SDP:', answer.sdp);
-            postSignal({
-                type:      'answer',
-                sdp:       answer.sdp,
-                role:      'client',
-                sessionId: SESSION_ID,
-            });
-            console.log('📤 Sent answer to host');
+            postSignal({ type: 'answer', sdp: answer.sdp, role: 'client', sessionId: SESSION_ID });
+            console.log('📤 Answer sent');
         } catch(e) {
-            console.error('❌ Failed to handle offer:', e);
+            console.error('❌ Offer handling failed:', e.name, e.message);
         }
-    } else if (sig.type === 'answer') {
-        // Shouldn't happen for client, but handle gracefully
-        console.log('⚠️ Unexpected answer signal received by client');
+
     } else if (sig.type === 'ice' && sig.candidate) {
-        console.log('🧊 Received ICE candidate from host');
         try {
             if (pc.remoteDescription) {
-                // ── FIX #7b: Remote description is set — add immediately
                 await pc.addIceCandidate(new RTCIceCandidate(sig.candidate));
-                console.log('✅ ICE candidate added successfully');
             } else {
-                // ── FIX #7c: Remote description not yet set — queue the candidate
-                // so it can be applied right after setRemoteDescription succeeds
-                console.warn('⏳ Queuing ICE candidate (no remote description yet)');
                 pendingIceCandidates.push(sig.candidate);
             }
-        } catch(e) {
-            console.error('❌ Failed to add ICE candidate:', e);
-        }
+        } catch(e) { console.warn('ICE error:', e); }
     }
 }
 
 function reconnect() {
     if (connected) return;
+    console.log('🔄 Reconnecting…');
     pendingIceCandidates = [];
     createPC();
-    // Re-register so host sends a new offer
-    postSignal({ type: 'viewer_ready', role: 'client', sessionId: SESSION_ID });
+    // Re-register with server so teacher sends a new offer
+    fetch('/webrtc/join/' + ROOM_ID, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
+        body:    JSON.stringify({ role: 'client', name: SELF_NAME, sessionId: SESSION_ID }),
+    }).catch(console.warn);
 }
 
-// Start polling every 2 seconds
+// Start polling, then join
 setInterval(pollSignals, 2000);
 joinRoom().then(() => pollSignals());
 
 // ═══════════════════════════════════════════════════════════
-// POLL CHAT — fetch persistent chat log every 3 s so student
-// sees teacher messages even if the signaling queue was already
-// drained before the student's first poll (race condition on join).
+// POLL CHAT — persistent chat log, every 3s
 // ═══════════════════════════════════════════════════════════
 async function pollChat() {
     try {
@@ -583,7 +523,6 @@ async function pollChat() {
         if (!r.ok) return;
         const data = await r.json();
         for (const msg of (data.messages || [])) {
-            // Skip messages we sent ourselves (already shown locally)
             if (msg.sessionId === SESSION_ID) { lastChatTS = msg.timestamp; continue; }
             appendChat(msg.sender, msg.message, false, msg.sender === HOST_NAME);
             lastChatTS = msg.timestamp;
@@ -753,9 +692,9 @@ function sendChat() {
     appendChat(SELF_NAME + ' (You)', txt, true, false);
     document.getElementById('chatInput').value = '';
     fetch('/webrtc/chat/' + ROOM_ID, {
-        method: 'POST',
+        method:  'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
-        body: JSON.stringify({ message: txt, role: 'client', sessionId: SESSION_ID })
+        body:    JSON.stringify({ message: txt, role: 'client', sessionId: SESSION_ID, name: SELF_NAME }),
     }).catch(console.warn);
 }
 
@@ -778,11 +717,10 @@ function sendQA() {
             </div>
         </div>`);
     document.getElementById('qaMsgs').scrollTop = 9999;
-    // Send Q&A as a tagged chat message
     fetch('/webrtc/chat/' + ROOM_ID, {
-        method: 'POST',
+        method:  'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
-        body: JSON.stringify({ message: `[Q&A] ${txt}`, role: 'client', sessionId: SESSION_ID })
+        body:    JSON.stringify({ message: `[Q&A] ${txt}`, role: 'client', sessionId: SESSION_ID, name: SELF_NAME }),
     }).catch(console.warn);
     document.getElementById('qaInput').value = '';
     toast('Question sent to instructor!');
@@ -800,14 +738,10 @@ document.getElementById('leaveBtn').addEventListener('click', (e) => {
     localStream?.getTracks().forEach(t => t.stop());
     if (pc) { pc.close(); pc = null; }
     fetch('/webrtc/leave/' + ROOM_ID, {
-        method: 'POST',
+        method:  'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
-        body: JSON.stringify({ sessionId: SESSION_ID })
-    }).finally(() => {
-        // Redirect back to where the user came from
-        console.log('🚪 Leaving class, redirecting to:', REFERRER_URL);
-        window.location.href = REFERRER_URL;
-    });
+        body:    JSON.stringify({ sessionId: SESSION_ID }),
+    }).finally(() => { window.location.href = REFERRER_URL; });
 });
 
 // ═══════════════════════════════════════════════════════════

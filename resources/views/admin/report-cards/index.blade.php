@@ -51,7 +51,7 @@
                         <select name="term_id" class="rc-select" required>
                             <option value="">Select Term</option>
                             @foreach(\App\Models\Term::all() as $term)
-                                <option value="{{ $term->id }}">Term {{ $term->term }}</option>
+                                <option value="{{ $term->id }}">{{ $term->name }}</option>
                             @endforeach
                         </select>
                     </div>

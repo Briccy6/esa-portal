@@ -405,6 +405,17 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::get('chat-test', function() {
         return view('admin.profile.test');
     })->name('chat.test');
+
+    // Blog Management Routes
+    Route::get('/blogs', [BlogController::class, 'index'])->name('blogs.index');
+    Route::get('/blogs/create', [BlogController::class, 'create'])->name('blogs.create');
+    Route::post('/blogs', [BlogController::class, 'store'])->name('blogs.store');
+    Route::get('/blogs/{blog}/edit', [BlogController::class, 'edit'])->name('blogs.edit');
+    Route::put('/blogs/{blog}', [BlogController::class, 'update'])->name('blogs.update');
+    Route::delete('/blogs/{blog}', [BlogController::class, 'destroy'])->name('blogs.destroy');
+    Route::post('/blogs/{blog}/toggle-featured', [BlogController::class, 'toggleFeatured'])->name('blogs.toggle-featured');
+    Route::delete('/blogs/images/{image}', [BlogController::class, 'deleteImage'])->name('blogs.delete-image');
+    Route::delete('/blogs/documents/{document}', [BlogController::class, 'deleteDocument'])->name('blogs.delete-document');
 });
 
 // Secretary protected routes
@@ -896,7 +907,7 @@ Route::prefix('public-subscriptions')->name('public.subscriptions.')->group(func
 });
 
 // Public Token Routes
-Route::prefix('tokens')->name('public.tokens.')->group(function () {
+Route::prefix('public-subscriptions/tokens')->name('public.tokens.')->group(function () {
     Route::get('/', [App\Http\Controllers\PublicTokenController::class, 'index'])->name('index')->middleware('auth:client');
     Route::get('/purchase', [App\Http\Controllers\PublicTokenController::class, 'purchase'])->name('purchase')->middleware('auth:client');
     Route::post('/purchase', [App\Http\Controllers\PublicTokenController::class, 'processPurchase'])->name('purchase.process')->middleware('auth:client');
@@ -1011,19 +1022,6 @@ Route::get('/blogs', [BlogController::class, 'publicIndex'])->name('blogs.index'
 Route::get('/blogs/{blog:slug}', [BlogController::class, 'show'])->name('blogs.show');
 
 // Public Exam Routes - REMOVED DUPLICATE (already defined above with public. prefix)
-
-// Admin Blog Routes
-Route::middleware('auth:admin')->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/blogs', [BlogController::class, 'index'])->name('blogs.index');
-    Route::get('/blogs/create', [BlogController::class, 'create'])->name('blogs.create');
-    Route::post('/blogs', [BlogController::class, 'store'])->name('blogs.store');
-    Route::get('/blogs/{blog}/edit', [BlogController::class, 'edit'])->name('blogs.edit');
-    Route::put('/blogs/{blog}', [BlogController::class, 'update'])->name('blogs.update');
-    Route::delete('/blogs/{blog}', [BlogController::class, 'destroy'])->name('blogs.destroy');
-    Route::post('/blogs/{blog}/toggle-featured', [BlogController::class, 'toggleFeatured'])->name('blogs.toggle-featured');
-    Route::delete('/blogs/images/{image}', [BlogController::class, 'deleteImage'])->name('blogs.delete-image');
-    Route::delete('/blogs/documents/{document}', [BlogController::class, 'deleteDocument'])->name('blogs.delete-document');
-});
 
 Route::get('dos/courses', [\App\Http\Controllers\DosCourseController::class, 'index'])->name('dos.courses.index');
 Route::post('dos/courses/assign-lesson', [\App\Http\Controllers\DosCourseController::class, 'assignLesson'])->name('dos.courses.assignLesson');

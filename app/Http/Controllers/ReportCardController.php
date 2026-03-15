@@ -282,14 +282,31 @@ class ReportCardController extends Controller
                 'lesson_exists' => !is_null($lesson),
             ]));
 
-            // Get exam marks for this lesson and normalize to 100
-            $examMarks = Mark::where('student_id', $reportCard->student_id)
+            // Get ALL marks for this student and lesson for the specific term
+            $allMarks = Mark::where('student_id', $reportCard->student_id)
                 ->where('lesson_id', $lesson->id)
-                ->where('assessment_type', 'exam')
+                ->where('term_id', $reportCard->term_id)
                 ->with('exam')
                 ->get();
 
-            // Normalize exam marks to 100
+            \Log::info('Found marks for lesson: ' . json_encode([
+                'lesson_id' => $lesson->id,
+                'total_marks_count' => $allMarks->count(),
+                'marks' => $allMarks->map(function($mark) {
+                    return [
+                        'assessment_type' => $mark->assessment_type,
+                        'value' => $mark->value,
+                        'marks_out_of' => $mark->marks_out_of,
+                        'exam_id' => $mark->exam_id
+                    ];
+                })->toArray()
+            ]));
+
+            // Separate exam marks and test marks
+            $examMarks = $allMarks->where('assessment_type', 'exam');
+            $testMarks = $allMarks->where('assessment_type', 'test');
+
+            // Calculate exam mark (normalized to 100)
             $examMark = 0;
             if ($examMarks->isNotEmpty()) {
                 $totalExamMark = $examMarks->sum('value');
@@ -299,7 +316,7 @@ class ReportCardController extends Controller
                     $examMark = ($totalExamMark / $totalExamMax) * 100;
                 }
                 
-                \Log::info('Exam marks found: ' . json_encode([
+                \Log::info('Exam marks calculated: ' . json_encode([
                     'lesson_id' => $lesson->id,
                     'exam_marks_count' => $examMarks->count(),
                     'total_exam_mark' => $totalExamMark,
@@ -308,19 +325,11 @@ class ReportCardController extends Controller
                 ]));
             }
 
-            // Get test marks for this lesson
-            $testMarks = Mark::where('student_id', $reportCard->student_id)
-                ->where('lesson_id', $lesson->id)
-                ->where('assessment_type', 'test')
-                ->with('exam')
-                ->get();
-
             // Create report card subject
             if ($lesson) {
-                \Log::info('Processing lesson: ' . json_encode([
+                \Log::info('Creating report card subject: ' . json_encode([
                     'lesson_id' => $lesson->id,
                     'lesson_title' => $lesson->title,
-                    'lesson_exists' => !is_null($lesson),
                     'exam_mark' => $examMark
                 ]));
 
@@ -332,14 +341,32 @@ class ReportCardController extends Controller
                 ]);
 
                 // Process test marks
-                foreach ($testMarks as $mark) {
+                foreach ($testMarks as $index => $mark) {
                     $maxMark = $mark->marks_out_of ?? 100;
                     $normalizedMark = $maxMark > 0 ? ($mark->value / $maxMark) * 100 : 0;
                     
+                    // Create a meaningful test name
+                    $testName = 'Test ' . ($index + 1);
+                    if ($mark->test_date) {
+                        $testName .= ' (' . date('M j', strtotime($mark->test_date)) . ')';
+                    }
+                    if ($mark->exam && $mark->exam->title) {
+                        $testName = $mark->exam->title;
+                    }
+                    
+                    \Log::info('Creating test mark: ' . json_encode([
+                        'mark_id' => $mark->id,
+                        'test_name' => $testName,
+                        'original_mark' => $mark->value,
+                        'max_mark' => $maxMark,
+                        'normalized_mark' => $normalizedMark,
+                        'exam_id' => $mark->exam_id
+                    ]));
+                    
                     ReportCardTestMark::create([
                         'report_card_subject_id' => $reportCardSubject->id,
-                        'exam_id' => $mark->exam_id,
-                        'test_name' => $mark->exam->title ?? 'Test',
+                        'exam_id' => $mark->exam_id, // Allow NULL for test marks
+                        'test_name' => $testName,
                         'original_mark' => $mark->value,
                         'max_mark' => $maxMark,
                         'normalized_mark' => $normalizedMark,
@@ -353,6 +380,12 @@ class ReportCardController extends Controller
 
                 $totalMarks += $reportCardSubject->total_mark;
                 $subjectCount++;
+
+                \Log::info('Report card subject completed: ' . json_encode([
+                    'subject_id' => $reportCardSubject->id,
+                    'total_mark' => $reportCardSubject->total_mark,
+                    'test_average' => $reportCardSubject->test_average
+                ]));
             }
         }
 
@@ -364,6 +397,13 @@ class ReportCardController extends Controller
             
             // Calculate class position based on average marks
             $reportCard->calculateClassPosition();
+            
+            \Log::info('Report card totals updated: ' . json_encode([
+                'report_card_id' => $reportCard->id,
+                'total_marks' => $totalMarks,
+                'average_marks' => $reportCard->average_marks,
+                'subject_count' => $subjectCount
+            ]));
         }
     }
 }

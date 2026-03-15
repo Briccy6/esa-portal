@@ -31,7 +31,7 @@
                     </div>
                 @endif
 
-                <form method="POST" action="{{ route('teacher.resources.update', $resource->id) }}" id="resourceForm" novalidate>
+                <form method="POST" action="{{ route('teacher.resources.update', $resource->id) }}" id="resourceForm" enctype="multipart/form-data" novalidate>
                     @csrf
                     @method('PUT')
 
@@ -114,17 +114,55 @@
 
                         <div class="col-md-6">
                             <div class="form-group">
+                                <label for="video_upload" class="form-label">
+                                    <i class="fas fa-video"></i>
+                                    Upload Video File (Optional)
+                                </label>
+                                <input type="file" name="video_upload" id="video_upload" class="form-control" accept="video/*">
+                                @if($resource->video_name)
+                                    <div class="form-text">Current video: {{ $resource->video_name }} (Leave empty to keep current video)</div>
+                                @else
+                                    <div class="form-text">Upload a video file (MP4, AVI, MOV, etc.). Max size: 100MB.</div>
+                                @endif
+                                @error('video_upload')
+                                    <div class="error-message show">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="document_upload" class="form-label">
+                                    <i class="fas fa-file-upload"></i>
+                                    Upload Document File (Optional)
+                                </label>
+                                <input type="file" name="document_upload" id="document_upload" accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.xls,.xlsx">
+                                @if($resource->document_blob && $resource->document_name)
+                                    <div class="form-text">
+                                        Current document: <a href="{{ route('teacher.resources.viewDocument', $resource->id) }}" target="_blank">{{ $resource->document_name }}</a> (Leave empty to keep current document)
+                                    </div>
+                                @else
+                                    <div class="form-text">Upload your document file (PDF, Word, PowerPoint, Excel, etc.).</div>
+                                @endif
+                                @error('document_upload')
+                                    <div class="error-message show">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group">
                                 <label for="document_name" class="form-label">
                                     <i class="fas fa-link"></i>
-                                    Document File Link (Required)
+                                    Document File Link (Alternative to upload)
                                 </label>
                                 <input type="url" name="document_name" id="document_name" class="form-control"
                                     value="{{ old('document_name', $resource->document_name) }}"
-                                    placeholder="https://drive.google.com/..." required>
+                                    placeholder="https://drive.google.com/...">
                                 @error('document_name')
                                     <div class="error-message show">{{ $message }}</div>
                                 @enderror
-                                <div class="form-text">Paste the link to your document (Google Drive, Dropbox, etc.).</div>
+                                <div class="form-text">Paste the link to your document (Google Drive, Dropbox, etc.) - Use this OR upload file above.</div>
                             </div>
                         </div>
 
