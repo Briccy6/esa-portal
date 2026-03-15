@@ -7,7 +7,7 @@ use App\Models\ClientTransaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Flutterwavedev\Flutterwave\Flutterwave;
+use Flutterwave\Flutterwave;
 
 class PublicTokenController extends Controller
 {
