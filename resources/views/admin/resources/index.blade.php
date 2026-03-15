@@ -151,6 +151,17 @@
     color: white;
 }
 
+.btn-price {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+}
+
+.btn-price:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+    color: white;
+}
+
 .link-action {
     color: #3b82f6;
     text-decoration: none;
@@ -367,6 +378,9 @@
                                             <a href="{{ route('admin.resources.edit', $resource->id) }}" class="btn btn-action btn-edit" title="Edit">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
+                                            <button type="button" class="btn btn-action btn-price" title="Set Price" onclick="openPriceModal({{ $resource->id }}, '{{ $resource->is_public ? 'public' : 'private' }}', {{ $resource->is_free ? 0 : $resource->price }})">
+                                                <i class="bi bi-cash"></i>
+                                            </button>
                                             @if(!$resource->is_public)
                                                 <a href="{{ route('admin.resources.make-public', $resource->id) }}" class="btn btn-action btn-public" title="Make Public" onclick="return confirm('This will apply watermarks and make the resource public. Continue?')">
                                                     <i class="bi bi-eye"></i>
@@ -435,6 +449,66 @@
         </div>
     </div>
 </div>
+
+<!-- Price Modal -->
+<div class="modal fade" id="priceModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-cash"></i> Set Resource Price & Visibility</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="priceForm" method="POST" action="">
+                @csrf
+                <input type="hidden" id="resourceId" name="resource_id">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="visibility" class="form-label fw-bold">Visibility</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="visibility" id="public" value="public" required>
+                            <label class="form-check-label" for="public">
+                                <i class="bi bi-globe"></i> Public
+                                <small class="text-muted d-block">Students can access this resource</small>
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="visibility" id="private" value="private" required>
+                            <label class="form-check-label" for="private">
+                                <i class="bi bi-lock"></i> Private
+                                <small class="text-muted d-block">Only administrators can access this resource</small>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="price" class="form-label fw-bold">Price</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control" id="price" name="price" min="0" step="0.01" placeholder="0.00" required>
+                        </div>
+                        <small class="text-muted">Enter 0 for free resource, or any amount for paid access</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="is_free" name="is_free" value="1">
+                            <label class="form-check-label" for="is_free">
+                                <i class="bi bi-gift"></i> Mark as Free Resource
+                                <small class="text-muted d-block">Override price and make resource completely free</small>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Update Price & Visibility
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 @endsection
 
 @section('scripts')
@@ -445,6 +519,64 @@ $(document).ready(function() {
         $('#previewFrame').attr('src', '{{ route('admin.resources.preview', ':id') }}'.replace(':id', resourceId));
         $('#previewModal').modal('show');
     };
+
+    // Open price modal
+    window.openPriceModal = function(resourceId, visibility, price) {
+        $('#resourceId').val(resourceId);
+        
+        // Set form action with resource ID
+        $('#priceForm').attr('action', '{{ route('admin.resources.update-price', ':id') }}'.replace(':id', resourceId));
+        
+        // Set visibility
+        $('input[name="visibility"][value="' + visibility + '"]').prop('checked', true);
+        
+        // Set price
+        $('#price').val(price);
+        
+        // Set free checkbox
+        if (price == 0) {
+            $('#is_free').prop('checked', true);
+        } else {
+            $('#is_free').prop('checked', false);
+        }
+        
+        // Handle free checkbox change
+        $('#is_free').change(function() {
+            if ($(this).is(':checked')) {
+                $('#price').val(0).prop('readonly', true);
+            } else {
+                $('#price').prop('readonly', false);
+            }
+        });
+        
+        $('#priceModal').modal('show');
+    };
+
+    // Handle form submission
+    $('#priceForm').submit(function(e) {
+        e.preventDefault();
+        
+        var formData = {
+            _token: $('input[name="_token"]').val(),
+            resource_id: $('#resourceId').val(),
+            visibility: $('input[name="visibility"]:checked').val(),
+            price: $('#price').val(),
+            is_free: $('#is_free').is(':checked') ? 1 : 0
+        };
+
+        $.ajax({
+            url: $(this).attr('action'),
+            method: 'POST',
+            data: formData,
+            success: function(response) {
+                $('#priceModal').modal('hide');
+                location.reload();
+            },
+            error: function(xhr) {
+                alert('Error updating resource: ' + xhr.responseText);
+            }
+        });
+    });
 });
 </script>
 @endsection

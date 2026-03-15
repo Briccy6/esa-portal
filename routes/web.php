@@ -431,6 +431,8 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::get('resources/{id}/download', [\App\Http\Controllers\Admin\ResourceController::class, 'downloadDocument'])->name('resources.download');
     Route::get('resources/{id}/preview', [\App\Http\Controllers\Admin\ResourceController::class, 'previewDocument'])->name('resources.preview');
     Route::get('resources/get-lessons/{courseId}', [\App\Http\Controllers\Admin\ResourceController::class, 'getLessons'])->name('resources.get-lessons');
+    Route::post('resources/{id}/make-public', [\App\Http\Controllers\Admin\ResourceController::class, 'makePublic'])->name('resources.make-public');
+    Route::post('resources/{id}/update-price', [\App\Http\Controllers\Admin\ResourceController::class, 'updatePrice'])->name('resources.update-price');
 
     Route::get('chat-test', function() {
         return view('admin.profile.test');
@@ -438,16 +440,18 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
 
 });
 
-// Blog Management Routes - Public Access
-Route::get('/admin/blogs', [BlogController::class, 'index'])->name('admin.blogs.index');
-Route::get('/admin/blogs/create', [BlogController::class, 'create'])->name('admin.blogs.create');
-Route::post('/admin/blogs', [BlogController::class, 'store'])->name('admin.blogs.store');
-Route::get('/admin/blogs/{blog}/edit', [BlogController::class, 'edit'])->name('admin.blogs.edit');
-Route::put('/admin/blogs/{blog}', [BlogController::class, 'update'])->name('admin.blogs.update');
-Route::delete('/admin/blogs/{blog}', [BlogController::class, 'destroy'])->name('admin.blogs.destroy');
-Route::post('/admin/blogs/{blog}/toggle-featured', [BlogController::class, 'toggleFeatured'])->name('admin.blogs.toggle-featured');
-Route::delete('/admin/blogs/images/{image}', [BlogController::class, 'deleteImage'])->name('admin.blogs.delete-image');
-Route::delete('/admin/blogs/documents/{document}', [BlogController::class, 'deleteDocument'])->name('admin.blogs.delete-document');
+// Blog Management Routes - Admin Protected
+Route::middleware(['auth:admin,staff,teacher'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/blogs', [BlogController::class, 'index'])->name('blogs.index');
+    Route::get('/blogs/create', [BlogController::class, 'create'])->name('blogs.create');
+    Route::post('/blogs', [BlogController::class, 'store'])->name('blogs.store');
+    Route::get('/blogs/{blog}/edit', [BlogController::class, 'edit'])->name('blogs.edit');
+    Route::put('/blogs/{blog}', [BlogController::class, 'update'])->name('blogs.update');
+    Route::delete('/blogs/{blog}', [BlogController::class, 'destroy'])->name('blogs.destroy');
+    Route::post('/blogs/{blog}/toggle-featured', [BlogController::class, 'toggleFeatured'])->name('blogs.toggle-featured');
+    Route::delete('/blogs/images/{image}', [BlogController::class, 'deleteImage'])->name('blogs.delete-image');
+    Route::delete('/blogs/documents/{document}', [BlogController::class, 'deleteDocument'])->name('blogs.delete-document');
+});
 
 // Secretary protected routes
 Route::middleware(['auth:staff'])->prefix('secretary')->name('secretary.')->group(function () {
@@ -1082,9 +1086,10 @@ Route::get('teacher/resources/{resource}/edit', [\App\Http\Controllers\Teacher\R
 Route::delete('teacher/resources/{id}', [\App\Http\Controllers\Teacher\ResourceController::class, 'destroy'])->name('teacher.resources.destroy');
 Route::get('teacher/resources/{resource}/view-document', [\App\Http\Controllers\Teacher\ResourceController::class, 'viewDocument'])->name('teacher.resources.viewDocument');
 
-// Blog Routes
+// Blog Routes - Public Access
 Route::get('/blogs', [BlogController::class, 'publicIndex'])->name('blogs.index');
 Route::get('/blogs/{blog:slug}', [BlogController::class, 'show'])->name('blogs.show');
+Route::post('/blogs/{blog:slug}/view', [BlogController::class, 'incrementViewCount'])->name('blogs.view-count');
 
 // Public Exam Routes - REMOVED DUPLICATE (already defined above with public. prefix)
 

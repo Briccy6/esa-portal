@@ -39,7 +39,7 @@ class BlogController extends Controller
             'meta_title' => 'nullable|string|max:255',
             'meta_description' => 'nullable|string|max:500',
             'status' => 'required|in:draft,published,archived',
-            'featured' => 'boolean',
+            'is_featured' => 'boolean',
             'images' => 'nullable|array',
             'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
             'documents' => 'nullable|array',
@@ -53,7 +53,7 @@ class BlogController extends Controller
             'meta_title' => $request->meta_title,
             'meta_description' => $request->meta_description,
             'status' => $request->status,
-            'featured' => $request->boolean('featured'),
+            'is_featured' => $request->boolean('featured'),
         ]);
 
         // Handle images
@@ -116,7 +116,7 @@ class BlogController extends Controller
             'meta_title' => 'nullable|string|max:255',
             'meta_description' => 'nullable|string|max:500',
             'status' => 'required|in:draft,published,archived',
-            'featured' => 'boolean',
+            'is_featured' => 'boolean',
             'images' => 'nullable|array',
             'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
             'documents' => 'nullable|array',
@@ -130,7 +130,7 @@ class BlogController extends Controller
             'meta_title' => $request->meta_title,
             'meta_description' => $request->meta_description,
             'status' => $request->status,
-            'featured' => $request->boolean('featured'),
+            'is_featured' => $request->boolean('featured'),
         ]);
 
         // Handle new images
@@ -227,9 +227,23 @@ class BlogController extends Controller
      */
     public function publicIndex()
     {
-        $featuredBlogs = Blog::where('status', 'published')->where('featured', true)->latest()->take(3)->get();
-        $blogs = Blog::where('status', 'published')->latest()->paginate(9);
+        $featuredBlogs = Blog::published()->featured()->latest()->take(3)->get();
+        $blogs = Blog::published()->latest()->paginate(9);
+        
+        // Increment view count for each blog
+        foreach ($blogs as $blog) {
+            $blog->increment('views');
+        }
         
         return view('blogs.index', compact('blogs', 'featuredBlogs'));
+    }
+
+    /**
+     * Increment blog view count
+     */
+    public function incrementViewCount(Blog $blog)
+    {
+        $blog->increment('views');
+        return response()->json(['success' => true]);
     }
 }

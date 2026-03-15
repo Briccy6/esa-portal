@@ -296,6 +296,50 @@ class ResourceController extends Controller
         }
     }
     
+    /**
+     * Update resource price and visibility
+     */
+    public function updatePrice(Request $request)
+    {
+        $request->validate([
+            'resource_id' => 'required|exists:resources,id',
+            'visibility' => 'required|in:public,private',
+            'price' => 'required|numeric|min:0',
+            'is_free' => 'sometimes|boolean',
+        ]);
+        
+        try {
+            $resource = Resource::findOrFail($request->resource_id);
+            
+            $isPublic = $request->visibility === 'public';
+            $isFree = $request->boolean('is_free');
+            $price = $isFree ? 0 : $request->price;
+            
+            $resource->update([
+                'is_public' => $isPublic,
+                'is_free' => $isFree,
+                'price' => $price,
+            ]);
+            
+            // Apply watermark if making public and not already watermarked
+            if ($isPublic && !$resource->watermark_applied) {
+                $this->watermarkService->applyWatermark($resource);
+                $resource->update(['watermark_applied' => true]);
+            }
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Resource price and visibility updated successfully!'
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error updating resource: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    
     // Assignment Management Methods for DOS
     public function assignmentsIndex()
     {

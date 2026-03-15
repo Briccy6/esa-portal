@@ -332,7 +332,7 @@
 
             <div class="question-text">
                 @if(isset($currentQuestion))
-                    <div id="questionTextContent">{{ $currentQuestion->text }}</div>
+                    <div id="questionTextContent">{!! $currentQuestion->text !!}</div>
                 @else
                     No question available
                 @endif
@@ -351,7 +351,7 @@
                             </div>
                             <div class="option-text">
                                 <span class="option-letter">{{ chr(65 + $index) }}</span>
-                                <div class="option-content">{{ $option }}</div>
+                                <div class="option-content">{!! $option !!}</div>
                             </div>
                         </label>
                     @endforeach
@@ -657,5 +657,36 @@ window.addEventListener('beforeunload', function(e) {
         e.returnValue = '';
     }
 });
+</script>
+
+<!-- MathJax Configuration for Mathematical Expressions -->
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script>
+window.MathJax = {
+    tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        processEscapes: true,
+        processEnvironments: true
+    },
+    options: {
+        skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+    }
+};
+
+// Re-render MathJax when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.MathJax && window.MathJax.typesetPromise) {
+        window.MathJax.typesetPromise([document.getElementById('questionTextContent')]);
+    }
+});
+
+// Re-render MathJax when navigating to questions
+function renderMathJax() {
+    if (window.MathJax && window.MathJax.typesetPromise) {
+        window.MathJax.typesetPromise([document.getElementById('questionTextContent')]);
+    }
+}
 </script>
 @endsection

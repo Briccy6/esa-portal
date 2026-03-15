@@ -58,13 +58,17 @@ class Question extends Model
     
     public function getFormattedTextAttribute()
     {
-        // Process math expressions in the text
-        $text = $this->text;
-        
-        // Basic LaTeX math processing (you might want to enhance this)
-        $text = preg_replace('/\$([^$]+)\$/', '<span class="math-inline">$1</span>', $text);
-        $text = preg_replace('/\$\$([^$]+)\$\$/', '<div class="math-display">$1</div>', $text);
-        
-        return $text;
+        // Return text as-is - MathJax will handle LaTeX rendering
+        return $this->text;
+    }
+    
+    public function getOptionsAttribute()
+    {
+        return [
+            $this->option_a,
+            $this->option_b,
+            $this->option_c,
+            $this->option_d,
+        ];
     }
 }
