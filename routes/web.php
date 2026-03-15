@@ -1072,7 +1072,7 @@ Route::get('/blogs/{blog:slug}', [BlogController::class, 'show'])->name('blogs.s
 // Remove duplicate routes - they're already defined in DOS group below
 
 // Enhanced Exam System Routes
-Route::middleware(['auth:admin,staff,teacher'])->prefix('exams')->name('exams.')->group(function () {
+Route::middleware(['web', 'auth:admin,staff,teacher'])->prefix('exams')->name('exams.')->group(function () {
     // Question Banks
     Route::resource('question-banks', QuestionBankController::class);
     Route::get('question-banks/{questionBank}/add-question', [QuestionBankController::class, 'addQuestion'])->name('question-banks.add-question');
@@ -1097,7 +1097,8 @@ Route::middleware(['auth:admin,staff,teacher'])->prefix('exams')->name('exams.')
     Route::post('{exam}/questions', [\App\Http\Controllers\ExamQuestionController::class, 'store'])->name('questions.store');
     Route::post('{exam}/questions/import', [\App\Http\Controllers\ExamQuestionController::class, 'import'])->name('questions.import');
     Route::post('{exam}/import-from-banks', [\App\Http\Controllers\ExamController::class, 'importFromBanks'])->name('import-from-banks');
-});
+    
+    });
 
 // DOS-specific exam routes
 Route::middleware(['auth:staff'])->prefix('dos/exams')->name('dos.exams.')->group(function () {
@@ -1108,6 +1109,12 @@ Route::middleware(['auth:staff'])->prefix('dos/exams')->name('dos.exams.')->grou
     Route::get('/{exam}/edit', [ExamController::class, 'edit'])->name('edit');
     Route::put('/{exam}', [ExamController::class, 'update'])->name('update');
     Route::delete('/{exam}', [ExamController::class, 'destroy'])->name('destroy');
+    
+    // Staff Question Management Routes
+    Route::get('{exam}/questions', [\App\Http\Controllers\Staff\StaffQuestionController::class, 'index'])->name('questions');
+    Route::get('{exam}/questions/create', [\App\Http\Controllers\Staff\StaffQuestionController::class, 'create'])->name('questions.create');
+    Route::post('{exam}/questions', [\App\Http\Controllers\Staff\StaffQuestionController::class, 'store'])->name('questions.store');
+    Route::post('{exam}/questions/import', [\App\Http\Controllers\Staff\StaffQuestionController::class, 'import'])->name('questions.import');
 });
 
 // DOS Academic Routes
@@ -1161,6 +1168,12 @@ Route::middleware(['auth:admin'])->prefix('admin/exams')->name('admin.exams.')->
     Route::get('/bulk-upload', [ExamController::class, 'bulkUploadForm'])->name('bulk-upload');
     Route::post('/bulk-upload', [ExamController::class, 'bulkUpload'])->name('bulk-upload.process');
     Route::get('/download-template/{subject}', [ExamController::class, 'downloadTemplate'])->name('download-template');
+    
+    // Admin Question Management Routes
+    Route::get('{exam}/questions', [\App\Http\Controllers\Admin\AdminQuestionController::class, 'index'])->name('questions');
+    Route::get('{exam}/questions/create', [\App\Http\Controllers\Admin\AdminQuestionController::class, 'create'])->name('questions.create');
+    Route::post('{exam}/questions', [\App\Http\Controllers\Admin\AdminQuestionController::class, 'store'])->name('questions.store');
+    Route::post('{exam}/questions/import', [\App\Http\Controllers\Admin\AdminQuestionController::class, 'import'])->name('questions.import');
 });
 
 // Teacher-specific exam routes
@@ -1172,6 +1185,12 @@ Route::middleware(['auth:teacher'])->prefix('teacher/exams')->name('teacher.exam
     Route::get('/{exam}/edit', [ExamController::class, 'edit'])->name('edit');
     Route::put('/{exam}', [ExamController::class, 'update'])->name('update');
     Route::delete('/{exam}', [ExamController::class, 'destroy'])->name('destroy');
+    
+    // Teacher Question Management Routes
+    Route::get('{exam}/questions', [\App\Http\Controllers\Teacher\TeacherQuestionController::class, 'index'])->name('questions');
+    Route::get('{exam}/questions/create', [\App\Http\Controllers\Teacher\TeacherQuestionController::class, 'create'])->name('questions.create');
+    Route::post('{exam}/questions', [\App\Http\Controllers\Teacher\TeacherQuestionController::class, 'store'])->name('questions.store');
+    Route::post('{exam}/questions/import', [\App\Http\Controllers\Teacher\TeacherQuestionController::class, 'import'])->name('questions.import');
 });
 
 // Student Exam Taking Routes

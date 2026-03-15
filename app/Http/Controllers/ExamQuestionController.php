@@ -8,27 +8,202 @@ class ExamQuestionController extends Controller
 {
     public function index($examId)
     {
-        // Fetch exam and its questions with question bank relationships
-        $exam = \App\Models\Exam::with(['questions.questionBank'])->findOrFail($examId);
-        $courses = \App\Models\Course::all(); // Or filter as needed
+        // Comprehensive debugging for authentication troubleshooting
+        \Log::info('=== EXAM QUESTIONS ACCESS DEBUG ===', [
+            'timestamp' => now()->toDateTimeString(),
+            'exam_id' => $examId,
+            'request_url' => request()->fullUrl(),
+            'request_method' => request()->method(),
+            'request_ip' => request()->ip(),
+            'user_agent' => request()->userAgent(),
+            'session_id' => session()->getId(),
+            'session_exists' => session()->has('session.started'),
+            'session_data' => session()->all(),
+        ]);
 
-        // Return appropriate view based on authentication
-        if (auth('teacher')->check()) {
-            return view('exams.questions.index', compact('exam', 'courses'));
-        } elseif (auth('staff')->check() && auth('staff')->user()->role === 'DOS') {
-            return view('exams.questions.index', compact('exam', 'courses'));
-        } else {
-            return view('exams.questions.index', compact('exam', 'courses'));
+        // Check all authentication guards
+        $authChecks = [
+            'admin_authenticated' => auth('admin')->check(),
+            'admin_user_id' => auth('admin')->check() ? auth('admin')->user()->id : null,
+            'admin_user_email' => auth('admin')->check() ? auth('admin')->user()->email : null,
+            'staff_authenticated' => auth('staff')->check(),
+            'staff_user_id' => auth('staff')->check() ? auth('staff')->user()->id : null,
+            'teacher_authenticated' => auth('teacher')->check(),
+            'teacher_user_id' => auth('teacher')->check() ? auth('teacher')->user()->id : null,
+            'web_authenticated' => auth()->check(),
+            'web_user_id' => auth()->check() ? auth()->user()->id : null,
+        ];
+
+        \Log::info('Authentication checks results', $authChecks);
+
+        // Validate and initialize session
+        if (!session()->has('session.started')) {
+            session()->put('session.started', now());
+            session()->put('debug_info', [
+                'initialized_at' => now(),
+                'exam_access' => $examId,
+                'user_agent' => request()->userAgent(),
+            ]);
+            \Log::info('Session initialized for exam access', ['exam_id' => $examId]);
+        }
+
+        // Check if user is authenticated for any allowed guard
+        $isAuthenticated = auth('admin')->check() || auth('staff')->check() || auth('teacher')->check();
+        
+        if (!$isAuthenticated) {
+            \Log::warning('Unauthorized access attempt to exam questions', [
+                'exam_id' => $examId,
+                'session_id' => session()->getId(),
+                'session_data' => session()->all(),
+                'guards_checked' => ['admin', 'staff', 'teacher'],
+                'timestamp' => now()->toDateTimeString(),
+            ]);
+            
+            return redirect()->route('login')->with('error', 'Please login to access exam questions.');
+        }
+
+        \Log::info('User is authenticated, proceeding to load exam questions', [
+            'exam_id' => $examId,
+            'authenticated_as' => [
+                'admin' => auth('admin')->check(),
+                'staff' => auth('staff')->check(),
+                'teacher' => auth('teacher')->check(),
+            ],
+            'session_id' => session()->getId(),
+        ]);
+
+        try {
+            // Fetch exam and its questions with question bank relationships
+            $exam = \App\Models\Exam::with(['questions.questionBank'])->findOrFail($examId);
+            $courses = \App\Models\Course::all(); // Or filter as needed
+
+            \Log::info('Exam loaded successfully', [
+                'exam_id' => $examId,
+                'exam_title' => $exam->title,
+                'questions_count' => $exam->questions->count(),
+                'session_id' => session()->getId(),
+            ]);
+
+            // Return appropriate view based on authentication
+            if (auth('admin')->check()) {
+                \Log::info('Rendering admin layout for exam questions', ['exam_id' => $examId]);
+                return view('exams.questions.index', compact('exam', 'courses'));
+            } elseif (auth('staff')->check()) {
+                \Log::info('Rendering staff layout for exam questions', ['exam_id' => $examId]);
+                return view('exams.questions.index', compact('exam', 'courses'));
+            } elseif (auth('teacher')->check()) {
+                \Log::info('Rendering teacher layout for exam questions', ['exam_id' => $examId]);
+                return view('exams.questions.index', compact('exam', 'courses'));
+            } else {
+                \Log::error('No valid authentication found for exam questions', [
+                    'exam_id' => $examId,
+                    'session_id' => session()->getId(),
+                    'auth_checks' => $authChecks,
+                ]);
+                return redirect()->route('login')->with('error', 'Please login to access exam questions.');
+            }
+
+        } catch (\Exception $e) {
+            \Log::error('Exception in ExamQuestionController@index', [
+                'exam_id' => $examId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'session_id' => session()->getId(),
+            ]);
+            
+            return redirect()->route('login')->with('error', 'An error occurred while loading exam questions.');
         }
     }
     
     public function create($examId)
     {
-        $exam = \App\Models\Exam::findOrFail($examId);
-        // Pass any other data needed for the form, e.g. courses
-        $courses = \App\Models\Course::all();
+        // Comprehensive debugging for authentication troubleshooting
+        \Log::info('=== EXAM QUESTIONS CREATE ACCESS DEBUG ===', [
+            'timestamp' => now()->toDateTimeString(),
+            'exam_id' => $examId,
+            'request_url' => request()->fullUrl(),
+            'request_method' => request()->method(),
+            'request_ip' => request()->ip(),
+            'user_agent' => request()->userAgent(),
+            'session_id' => session()->getId(),
+            'session_exists' => session()->has('session.started'),
+            'session_data' => session()->all(),
+        ]);
 
-        return view('exams.questions.create', compact('exam', 'courses'));
+        // Check all authentication guards
+        $authChecks = [
+            'admin_authenticated' => auth('admin')->check(),
+            'admin_user_id' => auth('admin')->check() ? auth('admin')->user()->id : null,
+            'admin_user_email' => auth('admin')->check() ? auth('admin')->user()->email : null,
+            'staff_authenticated' => auth('staff')->check(),
+            'staff_user_id' => auth('staff')->check() ? auth('staff')->user()->id : null,
+            'teacher_authenticated' => auth('teacher')->check(),
+            'teacher_user_id' => auth('teacher')->check() ? auth('teacher')->user()->id : null,
+            'web_authenticated' => auth()->check(),
+            'web_user_id' => auth()->check() ? auth()->user()->id : null,
+        ];
+
+        \Log::info('Authentication checks results', $authChecks);
+
+        // Validate and initialize session
+        if (!session()->has('session.started')) {
+            session()->put('session.started', now());
+            session()->put('debug_info', [
+                'initialized_at' => now(),
+                'exam_create_access' => $examId,
+                'user_agent' => request()->userAgent(),
+            ]);
+            \Log::info('Session initialized for exam create access', ['exam_id' => $examId]);
+        }
+
+        // Check if user is authenticated for any allowed guard
+        $isAuthenticated = auth('admin')->check() || auth('staff')->check() || auth('teacher')->check();
+        
+        if (!$isAuthenticated) {
+            \Log::warning('Unauthorized access attempt to exam questions create', [
+                'exam_id' => $examId,
+                'session_id' => session()->getId(),
+                'session_data' => session()->all(),
+                'guards_checked' => ['admin', 'staff', 'teacher'],
+                'timestamp' => now()->toDateTimeString(),
+            ]);
+            
+            return redirect()->route('login')->with('error', 'Please login to access exam questions.');
+        }
+
+        \Log::info('User is authenticated, proceeding to load exam create form', [
+            'exam_id' => $examId,
+            'authenticated_as' => [
+                'admin' => auth('admin')->check(),
+                'staff' => auth('staff')->check(),
+                'teacher' => auth('teacher')->check(),
+            ],
+            'session_id' => session()->getId(),
+        ]);
+
+        try {
+            $exam = \App\Models\Exam::findOrFail($examId);
+            // Pass any other data needed for the form, e.g. courses
+            $courses = \App\Models\Course::all();
+
+            \Log::info('Exam loaded successfully for create form', [
+                'exam_id' => $examId,
+                'exam_title' => $exam->title,
+                'session_id' => session()->getId(),
+            ]);
+
+            return view('exams.questions.create', compact('exam', 'courses'));
+
+        } catch (\Exception $e) {
+            \Log::error('Exception in ExamQuestionController@create', [
+                'exam_id' => $examId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'session_id' => session()->getId(),
+            ]);
+            
+            return redirect()->route('login')->with('error', 'An error occurred while loading exam questions.');
+        }
     }
 
     public function store(Request $request, $examId)

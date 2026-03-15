@@ -481,7 +481,7 @@
                                 <a href="{{ route('admin.exams.show', $exam->id) }}" class="btn btn-sm btn-outline-primary">
                                     <i class="bi bi-eye"></i> View
                                 </a>
-                                <a href="{{ route('exams.questions.index', $exam->id) }}" class="btn btn-sm btn-outline-info">
+                                <a href="{{ route('admin.exams.questions.index', $exam->id) }}" class="btn btn-sm btn-outline-info">
                                     <i class="bi bi-question-circle"></i> Questions
                                 </a>
                                 <a href="{{ route('admin.exams.preview', $exam->id) }}" class="btn btn-sm btn-outline-success" target="_blank">
@@ -523,7 +523,7 @@
                         <a href="{{ route('admin.exams.show', $exam) }}" class="btn btn-primary btn-exam">
                             <i class="fas fa-eye"></i> View
                         </a>
-                        <a href="{{ route('exams.questions', $exam) }}" class="btn btn-info btn-exam">
+                        <a href="{{ route('admin.exams.questions', $exam->id) }}" class="btn btn-info btn-exam">
                             <i class="fas fa-question-circle"></i> Questions
                         </a>
                         @if($exam->is_public)

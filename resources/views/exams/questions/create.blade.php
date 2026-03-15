@@ -1,7 +1,8 @@
 @extends(
-    auth('admin')->check() ? 'admin.layout' :
-    (auth('teacher')->check() ? 'teacher.layout' :
-    (auth('student')->check() ? 'student.layout' : 'staff.partials.sidebar_dos'))
+    auth('admin')->check() ? 'admin.questions.create' :
+    (auth('staff')->check() ? 'staff.questions.create' :
+    (auth('teacher')->check() ? 'teacher.questions.create' :
+    'layouts.app'))
 )
 
 @section('content')

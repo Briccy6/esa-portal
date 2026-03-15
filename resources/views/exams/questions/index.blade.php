@@ -1,11 +1,9 @@
 @if(auth('admin')->check())
-    @extends('admin.layout')
-@elseif(auth('teacher')->check())
-    @extends('teacher.layout')
-@elseif(auth('student')->check())
-    @extends('student.layout')
+    @extends('admin.questions.index')
 @elseif(auth('staff')->check())
-    @extends('staff.partials.sidebar_dos')
+    @extends('staff.questions.index')
+@elseif(auth('teacher')->check())
+    @extends('teacher.questions.index')
 @else
     @extends('layouts.app')
 @endif
