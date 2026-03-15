@@ -13,7 +13,12 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,
+            'custom.post.size' => \App\Http\Middleware\CustomValidatePostSize::class,
         ]);
+        
+        // Replace the default ValidatePostSize with our custom one
+        $middleware->remove(\Illuminate\Http\Middleware\ValidatePostSize::class);
+        $middleware->web(append: \App\Http\Middleware\CustomValidatePostSize::class);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

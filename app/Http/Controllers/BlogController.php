@@ -46,13 +46,24 @@ class BlogController extends Controller
             'documents.*'      => 'file|mimes:pdf,doc,docx|max:5120',
         ]);
 
+        // Generate unique slug
+        $slug = Str::slug($request->title);
+        $originalSlug = $slug;
+        $counter = 1;
+        
+        while (Blog::where('slug', $slug)->exists()) {
+            $slug = $originalSlug . '-' . $counter;
+            $counter++;
+        }
+
         $blog = Blog::create([
             'title'            => $request->title,
-            'slug'             => Str::slug($request->title),
+            'slug'             => $slug,
             'content'          => $request->content,
             'meta_title'       => $request->meta_title,
             'meta_description' => $request->meta_description,
             'status'           => $request->status,
+            'author_id'        => auth('admin')->id(),
             // ✅ Fixed: use is_featured (the actual DB column name)
             'is_featured'      => $request->boolean('is_featured'),
         ]);
@@ -64,8 +75,6 @@ class BlogController extends Controller
                 BlogImage::create([
                     'blog_id'    => $blog->id,
                     'image_path' => $path,
-                    'caption'    => $request->image_captions[$index] ?? null,
-                    'alt_text'   => $request->image_alt_texts[$index] ?? null,
                     'sort_order' => $index,
                 ]);
             }
@@ -125,9 +134,19 @@ class BlogController extends Controller
             'documents.*'      => 'file|mimes:pdf,doc,docx|max:5120',
         ]);
 
+        // Generate unique slug (but allow current blog's slug)
+        $slug = Str::slug($request->title);
+        $originalSlug = $slug;
+        $counter = 1;
+        
+        while (Blog::where('slug', $slug)->where('id', '!=', $blog->id)->exists()) {
+            $slug = $originalSlug . '-' . $counter;
+            $counter++;
+        }
+
         $blog->update([
             'title'            => $request->title,
-            'slug'             => Str::slug($request->title),
+            'slug'             => $slug,
             'content'          => $request->content,
             'meta_title'       => $request->meta_title,
             'meta_description' => $request->meta_description,
@@ -143,8 +162,6 @@ class BlogController extends Controller
                 BlogImage::create([
                     'blog_id'    => $blog->id,
                     'image_path' => $path,
-                    'caption'    => $request->image_captions[$index] ?? null,
-                    'alt_text'   => $request->image_alt_texts[$index] ?? null,
                     'sort_order' => $blog->images()->count() + $index,
                 ]);
             }

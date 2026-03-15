@@ -649,7 +649,7 @@
                         <a class="nav-link" href="{{ route('public.exams.index') }}">Exams</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ route('blogs.index') }}">Blog</a>
+                        <a class="nav-link" href="{{ route('blogs.public.index') }}">Blog</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ route('students.create') }}">Register</a>
@@ -807,7 +807,7 @@
                                 <i class="fas fa-check-circle me-1"></i> Free
                             </div>
                             <div class="course-actions">
-                                <a href="{{ route('blogs.index') }}" class="btn-course btn-primary-course">
+                                <a href="{{ route('blogs.public.index') }}" class="btn-course btn-primary-course">
                                     <i class="fas fa-book me-1"></i> Resources
                                 </a>
                                 <a href="#" class="btn-course btn-secondary-course">
@@ -1013,7 +1013,7 @@
                         <ul>
                             <li><a href="{{ route('welcome') }}">Home</a></li>
                             <li><a href="{{ route('public.exams.index') }}">Exams</a></li>
-                            <li><a href="{{ route('blogs.index') }}">Blog</a></li>
+                            <li><a href="{{ route('blogs.public.index') }}">Blog</a></li>
                             <li><a href="{{ route('students.create') }}">Register</a></li>
                         </ul>
                     </div>

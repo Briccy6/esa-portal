@@ -106,7 +106,7 @@
                     <ul class="space-y-2 text-sm">
                         <li><a href="{{ route('welcome') }}" class="text-gray-400 hover:text-white transition-colors">Home</a></li>
                         <li><a href="{{ route('public.exams.index') }}" class="text-gray-400 hover:text-white transition-colors">Exams</a></li>
-                        <li><a href="{{ route('blogs.index') }}" class="text-gray-400 hover:text-white transition-colors">Blog</a></li>
+                        <li><a href="{{ route('blogs.public.index') }}" class="text-gray-400 hover:text-white transition-colors">Blog</a></li>
                         <li><a href="{{ route('students.create') }}" class="text-gray-400 hover:text-white transition-colors">Register</a></li>
                     </ul>
                 </div>

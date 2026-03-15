@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 
 class Blog extends Model
@@ -33,6 +34,14 @@ class Blog extends Model
         'is_featured' => 'boolean',
         'published_at' => 'datetime',
     ];
+
+    /**
+     * Get the author of the blog post.
+     */
+    public function author(): BelongsTo
+    {
+        return $this->belongsTo(Admin::class, 'author_id');
+    }
 
     /**
      * Get the images for the blog post.
