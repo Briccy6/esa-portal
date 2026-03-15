@@ -66,12 +66,33 @@
             backdrop-filter: blur(10px);
             box-shadow: var(--shadow);
             z-index: 1000;
-            transition: left 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             align-items: center;
             justify-content: space-between;
             padding: 0 2rem;
             color: white;
+        }
+
+        /* Enhanced collapse behavior */
+        .sidebar.collapsed ~ .top-navbar {
+            left: var(--sidebar-collapsed) !important;
+        }
+
+        /* Ensure navbar adjusts when sidebar is collapsed */
+        .sidebar.collapsed ~ .main-content {
+            margin-left: var(--sidebar-collapsed) !important;
+        }
+
+        /* Debug: Add visual indicator when sidebar is collapsed */
+        .sidebar.collapsed ~ .top-navbar::before {
+            content: "◀";
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255,255,255,0.5);
+            font-size: 12px;
         }
 
         .navbar-left {
@@ -248,16 +269,80 @@
             margin-bottom: 1.5rem;
         }
 
+        /* Professional Collapsible Sidebar */
         .nav-header {
-            font-size: 0.75rem;
-            padding: 0.5rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1.5rem;
             color: var(--text-muted);
             text-transform: uppercase;
             font-weight: 600;
             letter-spacing: 1px;
             white-space: nowrap;
             opacity: 1;
-            transition: opacity 0.3s;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            user-select: none;
+            border-radius: 8px;
+            margin: 0.25rem 0.8rem;
+        }
+
+        .nav-header:hover {
+            background: rgba(255,255,255,0.05);
+            color: var(--text-light);
+        }
+
+        .nav-header i {
+            font-size: 0.75rem;
+            transition: transform 0.3s ease;
+        }
+
+        .rotate-90 {
+            transform: rotate(90deg);
+        }
+
+        .cursor-pointer {
+            cursor: pointer;
+        }
+
+        /* Enhanced transitions */
+        .transition-transform {
+            transition-property: transform;
+            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+            transition-duration: 200ms;
+        }
+
+        .duration-200 {
+            transition-duration: 200ms;
+        }
+
+        /* Professional section styling */
+        .nav-section {
+            margin-bottom: 0.5rem;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        /* Enhanced active states */
+        .nav-link.active {
+            background: rgba(52, 152, 219, 0.2);
+            color: #3498db;
+            border-left: 3px solid #3498db;
+            font-weight: 600;
+        }
+
+        /* Smooth accordion animations */
+        [x-show] {
+            transition: all 0.3s ease;
+        }
+
+        [x-transition\:enter] {
+            transition: all 0.3s ease;
+        }
+
+        [x-transition\:leave] {
+            transition: all 0.3s ease;
         }
 
         .sidebar.collapsed .nav-header {
@@ -361,15 +446,7 @@
             margin-top: 70px;
             padding: 2rem;
             min-height: calc(100vh - 70px);
-            transition: margin-left 0.3s ease;
-        }
-
-        .sidebar.collapsed ~ .main-content {
-            margin-left: var(--sidebar-collapsed);
-        }
-
-        .sidebar.collapsed ~ .top-navbar {
-            left: var(--sidebar-collapsed);
+            transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         /* Mobile Responsiveness */
@@ -750,286 +827,217 @@
                     </a>
                 </div>
             </div>
-            <div class="nav-section">
-                <div class="nav-header">Management</div>
-                
-                <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
-                    <a href="{{ route('admin.preferences') }}" class="nav-link {{ request()->routeIs('admin.preferences') ? 'active' : '' }}">
-                        <i class="fas fa-sliders-h"></i>
-                        <span class="nav-text">Preferences</span>
-                    </a>
-                    <div class="nav-indicator" x-show="hover" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200"></div>
+
+            <!-- Academic Management -->
+            <div class="nav-section" x-data="{ isOpen: true }">
+                <div class="nav-header cursor-pointer" @click="isOpen = !isOpen">
+                    <i class="fas fa-chevron-right transition-transform duration-200" :class="isOpen ? 'rotate-90' : ''"></i>
+                    Academic Management
                 </div>
                 
-                <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
-                    <a href="{{ route('admin.students.index') }}" class="nav-link {{ request()->routeIs('admin.students.*') ? 'active' : '' }}">
-                        <i class="fas fa-user-graduate"></i>
-                        <span class="nav-text">Students</span>
-                    </a>
-                    <div class="nav-indicator" x-show="hover" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200"></div>
-                </div>
-
-                <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
-                    <a href="{{ route('admin.clients.index') }}" class="nav-link {{ request()->routeIs('admin.clients.*') ? 'active' : '' }}">
-                        <i class="fas fa-users"></i>
-                        <span class="nav-text">Client Management</span>
-                    </a>
-                    <div class="nav-indicator" x-show="hover" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200"></div>
-                </div>
-
-                <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
-                    <a href="{{ route('admin.tokens.index') }}" class="nav-link {{ request()->routeIs('admin.tokens.*') ? 'active' : '' }}">
-                        <i class="fas fa-coins"></i>
-                        <span class="nav-text">Token Management</span>
-                    </a>
-                    <div class="nav-indicator" x-show="hover" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200"></div>
-                </div>
-
-                <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
-                    <a href="{{ route('subscriptions.admin-index') }}" class="nav-link {{ request()->routeIs('admin.subscriptions.*') ? 'active' : '' }}">
-                        <i class="fas fa-crown"></i>
-                        <span class="nav-text">Subscriptions</span>
-                    </a>
-                    <div class="nav-indicator" x-show="hover" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200"></div>
-                </div>
-                
-                <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
-                    <a href="{{ route('admin.blogs.index') }}" class="nav-link {{ request()->routeIs('admin.blogs.*') ? 'active' : '' }}">
-                        <i class="fas fa-blog"></i>
-                        <span class="nav-text">Blogs</span>
-                    </a>
-                    <div class="nav-indicator" x-show="hover" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200"></div>
+                <div x-show="isOpen" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200">
+                    <div class="nav-item">
+                        <a href="{{ route('admin.course.index') }}" class="nav-link {{ request()->routeIs('admin.course.*') ? 'active' : '' }}">
+                            <i class="fas fa-book"></i>
+                            <span class="nav-text">Courses</span>
+                        </a>
+                    </div>
+                    
+                    <div class="nav-item">
+                        <a href="{{ route('admin.terms.index') }}" class="nav-link {{ request()->routeIs('admin.terms.*') ? 'active' : '' }}">
+                            <i class="fas fa-calendar-alt"></i>
+                            <span class="nav-text">Terms</span>
+                        </a>
+                    </div>
+                    
+                    <div class="nav-item">
+                        <a href="{{ route('admin.exams.index') }}" class="nav-link {{ request()->routeIs('admin.exams.*') ? 'active' : '' }}">
+                            <i class="fas fa-file-alt"></i>
+                            <span class="nav-text">Exams</span>
+                        </a>
+                    </div>
+                    
+                    <div class="nav-item">
+                        <a href="{{ route('admin.question-banks.index') }}" class="nav-link {{ request()->routeIs('admin.question-banks.*') ? 'active' : '' }}">
+                            <i class="fas fa-database"></i>
+                            <span class="nav-text">Question Banks</span>
+                        </a>
+                    </div>
+                    
+                    <div class="nav-item">
+                        <a href="{{ route('admin.live-classes.index') }}" class="nav-link {{ request()->routeIs('admin.live-classes.*') ? 'active' : '' }}">
+                            <i class="fas fa-video"></i>
+                            <span class="nav-text">Live Classes</span>
+                        </a>
+                    </div>
+                    
+                    <div class="nav-item">
+                        <a href="{{ route('admin.academic_year.create') }}" class="nav-link {{ request()->routeIs('admin.academic_year.create') ? 'active' : '' }}">
+                            <i class="fas fa-calendar-plus"></i>
+                            <span class="nav-text">Academic Year</span>
+                        </a>
+                    </div>
                 </div>
             </div>
 
-
-            <div class="nav-section">
-                <div class="nav-header">Academic</div>
-                
-                <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
-                    <a href="{{ route('admin.course.index') }}" class="nav-link {{ request()->routeIs('admin.course.*') ? 'active' : '' }}">
-                        <i class="fas fa-book"></i>
-                        <span class="nav-text">Courses</span>
-                    </a>
-                    <div class="nav-indicator" x-show="hover" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200"></div>
-                </div>
-
-                <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
-                    <a href="{{ route('admin.terms.index') }}" class="nav-link {{ request()->routeIs('admin.terms.*') ? 'active' : '' }}">
-                        <i class="fas fa-calendar-alt"></i>
-                        <span class="nav-text">Terms</span>
-                    </a>
-                    <div class="nav-indicator" x-show="hover" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200"></div>
-                </div>
-
-                <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
-                    <a href="{{ route('admin.exams.index') }}" class="nav-link {{ request()->routeIs('admin.exams.*') ? 'active' : '' }}">
-                        <i class="fas fa-file-alt"></i>
-                        <span class="nav-text">Exams</span>
-                    </a>
-                    <div class="nav-indicator" x-show="hover" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200"></div>
-                </div>
-
-                <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
-                    <a href="{{ route('admin.question-banks.index') }}" class="nav-link {{ request()->routeIs('admin.question-banks.*') ? 'active' : '' }}">
-                        <i class="fas fa-database"></i>
-                        <span class="nav-text">Question Banks</span>
-                    </a>
-                    <div class="nav-indicator" x-show="hover" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200"></div>
-                </div>
-
-                <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
-                    <a href="{{ route('admin.branch.index') }}" class="nav-link {{ request()->routeIs('admin.branch.*') ? 'active' : '' }}">
-                        <i class="fas fa-code-branch"></i>
-                        <span class="nav-text">Branches</span>
-                    </a>
-                    <div class="nav-indicator" x-show="hover" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200"></div>
+            <!-- MIS (Management Information System) -->
+            <div class="nav-section" x-data="{ isOpen: false }">
+                <div class="nav-header cursor-pointer" @click="isOpen = !isOpen">
+                    <i class="fas fa-chevron-right transition-transform duration-200" :class="isOpen ? 'rotate-90' : ''"></i>
+                    MIS
                 </div>
                 
-                <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
-                    <a href="{{ route('admin.live-classes.index') }}" class="nav-link {{ request()->routeIs('admin.live-classes.*') ? 'active' : '' }}">
-                        <i class="fas fa-video"></i>
-                        <span class="nav-text">Live Classes</span>
-                    </a>
-                    <div class="nav-indicator" x-show="hover" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200"></div>
-                </div>
-                
-                <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
-                    <a href="{{ route('admin.academic_year.create') }}" class="nav-link {{ request()->routeIs('admin.academic_year.create') ? 'active' : '' }}">
-                        <i class="fas fa-calendar-plus"></i>
-                        <span class="nav-text">Academic Year</span>
-                    </a>
-                    <div class="nav-indicator" x-show="hover" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200"></div>
-                </div>
-                
-                <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
-                    <a href="{{ route('admin.branch.create') }}" class="nav-link {{ request()->routeIs('admin.branch') ? 'active' : '' }}">
-                        <i class="fas fa-calendar-plus"></i>
-                        <span class="nav-text">School Branch</span>
-                    </a>
-                    <div class="nav-indicator" x-show="hover" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200"></div>
+                <div x-show="isOpen" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200">
+                    <div class="nav-item">
+                        <a href="{{ route('admin.students.index') }}" class="nav-link {{ request()->routeIs('admin.students.*') ? 'active' : '' }}">
+                            <i class="fas fa-user-graduate"></i>
+                            <span class="nav-text">Students</span>
+                        </a>
+                    </div>
+                    
+                    <div class="nav-item">
+                        <a href="{{ route('admin.teachers.create') }}" class="nav-link {{ request()->routeIs('admin.teachers.create') ? 'active' : '' }}">
+                            <i class="fas fa-chalkboard-teacher"></i>
+                            <span class="nav-text">Teachers</span>
+                        </a>
+                    </div>
+                    
+                    <div class="nav-item">
+                        <a href="{{ route('admin.staff.create') }}" class="nav-link {{ request()->routeIs('admin.staff.create') ? 'active' : '' }}">
+                            <i class="fas fa-users"></i>
+                            <span class="nav-text">Staff Members</span>
+                        </a>
+                    </div>
+                    
+                    <div class="nav-item">
+                        <a href="{{ route('admin.clients.index') }}" class="nav-link {{ request()->routeIs('admin.clients.*') ? 'active' : '' }}">
+                            <i class="fas fa-users"></i>
+                            <span class="nav-text">Client Management</span>
+                        </a>
+                    </div>
+                    
+                    <div class="nav-item">
+                        <a href="{{ route('admin.tokens.index') }}" class="nav-link {{ request()->routeIs('admin.tokens.*') ? 'active' : '' }}">
+                            <i class="fas fa-coins"></i>
+                            <span class="nav-text">Token Management</span>
+                        </a>
+                    </div>
+                    
+                    <div class="nav-item">
+                        <a href="{{ route('subscriptions.admin-index') }}" class="nav-link {{ request()->routeIs('admin.subscriptions.*') ? 'active' : '' }}">
+                            <i class="fas fa-crown"></i>
+                            <span class="nav-text">Subscriptions</span>
+                        </a>
+                    </div>
+                    
+                    <div class="nav-item">
+                        <a href="{{ route('admin.branch.index') }}" class="nav-link {{ request()->routeIs('admin.branch.*') ? 'active' : '' }}">
+                            <i class="fas fa-code-branch"></i>
+                            <span class="nav-text">Branches</span>
+                        </a>
+                    </div>
+                    
+                    <div class="nav-item">
+                        <a href="{{ route('admin.branch.create') }}" class="nav-link {{ request()->routeIs('admin.branch') ? 'active' : '' }}">
+                            <i class="fas fa-building"></i>
+                            <span class="nav-text">School Branch</span>
+                        </a>
+                    </div>
+                    
+                    <div class="nav-item">
+                        <a href="{{ route('admin.accounting.index') }}" class="nav-link {{ request()->routeIs('admin.accounting.*') ? 'active' : '' }}">
+                            <i class="fas fa-balance-scale"></i>
+                            <span class="nav-text">Accounting Reports</span>
+                        </a>
+                    </div>
                 </div>
             </div>
 
-            <div class="nav-section">
-                <div class="nav-header">Management</div>
-                
-                <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
-                    <a href="{{ route('admin.grades.create') }}" class="nav-link {{ request()->routeIs('admin.grades.create') ? 'active' : '' }}">
-                        <i class="fas fa-star"></i>
-                        <span class="nav-text">Create Grades</span>
-                    </a>
-                    <div class="nav-indicator" x-show="hover" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200"></div>
+            <!-- Reports -->
+            <div class="nav-section" x-data="{ isOpen: false }">
+                <div class="nav-header cursor-pointer" @click="isOpen = !isOpen">
+                    <i class="fas fa-chevron-right transition-transform duration-200" :class="isOpen ? 'rotate-90' : ''"></i>
+                    Reports
                 </div>
                 
-                <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
-                    <a href="{{ route('admin.teachers.create') }}" class="nav-link {{ request()->routeIs('admin.teachers.create') ? 'active' : '' }}">
-                        <i class="fas fa-chalkboard-teacher"></i>
-                        <span class="nav-text">Teachers</span>
-                    </a>
-                    <div class="nav-indicator" x-show="hover" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200"></div>
-                </div>
-                
-                <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
-                    <a href="{{ route('admin.staff.create') }}" class="nav-link {{ request()->routeIs('admin.staff.create') ? 'active' : '' }}">
-                        <i class="fas fa-users"></i>
-                        <span class="nav-text">Staff Members</span>
-                    </a>
-                    <div class="nav-indicator" x-show="hover" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200"></div>
-                </div>
-                
-                <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
-                    <a href="{{ route('admin.fees.index') }}" class="nav-link {{ request()->routeIs('admin.fees.*') ? 'active' : '' }}">
-                        <i class="fas fa-money-bill-wave"></i>
-                        <span class="nav-text">School Fess</span>
-                    </a>
-                    <div class="nav-indicator" x-show="hover" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200"></div>
-                </div>
-                
-                <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
-                    <a href="{{ route('admin.payments.create') }}" class="nav-link {{ request()->routeIs('admin.payments.*') ? 'active' : '' }}">
-                        <i class="fas fa-money-bill-wave"></i>
-                        <span class="nav-text">Payments Fess</span>
-                    </a>
-                    <div class="nav-indicator" x-show="hover" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200"></div>
-                </div>
-                
-                <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
-                    <a href="{{ route('admin.accounting.index') }}" class="nav-link {{ request()->routeIs('admin.accounting.*') ? 'active' : '' }}">
-                        <i class="fas fa-balance-scale"></i>
-                        <span class="nav-text">Accounting Reports</span>
-                    </a>
-                    <div class="nav-indicator" x-show="hover" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200"></div>
+                <div x-show="isOpen" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200">
+                    <div class="nav-item">
+                        <a href="{{ route('admin.report') }}" class="nav-link {{ request()->routeIs('admin.report') ? 'active' : '' }}">
+                            <i class="fas fa-chart-line"></i>
+                            <span class="nav-text">System Report</span>
+                        </a>
+                    </div>
+                    
+                    <div class="nav-item">
+                        <a href="{{ route('admin.report-cards.index') }}" class="nav-link {{ request()->routeIs('admin.report-cards.*') ? 'active' : '' }}">
+                            <i class="fas fa-file-alt"></i>
+                            <span class="nav-text">Report Cards</span>
+                        </a>
+                    </div>
+                    
+                    <div class="nav-item">
+                        <a href="{{ route('admin.accounting.cashbook') }}" class="nav-link {{ request()->routeIs('admin.accounting.cashbook') ? 'active' : '' }}">
+                            <i class="fas fa-book"></i>
+                            <span class="nav-text">Cash Book</span>
+                        </a>
+                    </div>
+                    
+                    <div class="nav-item">
+                        <a href="{{ route('admin.accounting.balance-sheet') }}" class="nav-link {{ request()->routeIs('admin.accounting.balance-sheet') ? 'active' : '' }}">
+                            <i class="fas fa-balance-scale"></i>
+                            <span class="nav-text">Balance Sheet</span>
+                        </a>
+                    </div>
+                    
+                    <div class="nav-item">
+                        <a href="{{ route('admin.accounting.trial-balance') }}" class="nav-link {{ request()->routeIs('admin.accounting.trial-balance') ? 'active' : '' }}">
+                            <i class="fas fa-list-alt"></i>
+                            <span class="nav-text">Trial Balance</span>
+                        </a>
+                    </div>
                 </div>
             </div>
 
-            <div class="nav-section">
-                <div class="nav-header">Accounting</div>
-                
-                <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
-                    <a href="{{ route('admin.accounting.cashbook') }}" class="nav-link {{ request()->routeIs('admin.accounting.cashbook') ? 'active' : '' }}">
-                        <i class="fas fa-book"></i>
-                        <span class="nav-text">Cash Book</span>
-                    </a>
-                    <div class="nav-indicator" x-show="hover" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200"></div>
+            <!-- Documents -->
+            <div class="nav-section" x-data="{ isOpen: false }">
+                <div class="nav-header cursor-pointer" @click="isOpen = !isOpen">
+                    <i class="fas fa-chevron-right transition-transform duration-200" :class="isOpen ? 'rotate-90' : ''"></i>
+                    Documents
                 </div>
                 
-                <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
-                    <a href="{{ route('admin.accounting.balance-sheet') }}" class="nav-link {{ request()->routeIs('admin.accounting.balance-sheet') ? 'active' : '' }}">
-                        <i class="fas fa-balance-scale"></i>
-                        <span class="nav-text">Balance Sheet</span>
-                    </a>
-                    <div class="nav-indicator" x-show="hover" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200"></div>
-                </div>
-                
-                <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
-                    <a href="{{ route('admin.accounting.trial-balance') }}" class="nav-link {{ request()->routeIs('admin.accounting.trial-balance') ? 'active' : '' }}">
-                        <i class="fas fa-list-alt"></i>
-                        <span class="nav-text">Trial Balance</span>
-                    </a>
-                    <div class="nav-indicator" x-show="hover" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200"></div>
+                <div x-show="isOpen" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200">
+                    <div class="nav-item">
+                        <a href="{{ route('admin.resources.index') }}" class="nav-link {{ request()->routeIs('admin.resources.*') ? 'active' : '' }}">
+                            <i class="fas fa-upload"></i>
+                            <span class="nav-text">Resource Upload</span>
+                        </a>
+                    </div>
                 </div>
             </div>
 
-            <div class="nav-section">
-                <div class="nav-header">Communication</div>
-                
-                <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
-                    <a href="{{ route('admin.messages.index') }}" class="nav-link {{ request()->routeIs('admin.messages.*') ? 'active' : '' }}">
-                        <i class="fas fa-envelope"></i>
-                        <span class="nav-text">Messages</span>
-                    </a>
-                    <div class="nav-indicator" x-show="hover" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200"></div>
+            <!-- Settings -->
+            <div class="nav-section" x-data="{ isOpen: false }">
+                <div class="nav-header cursor-pointer" @click="isOpen = !isOpen">
+                    <i class="fas fa-chevron-right transition-transform duration-200" :class="isOpen ? 'rotate-90' : ''"></i>
+                    Settings
                 </div>
                 
-                <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
-                    <a href="{{ route('admin.blogs.index') }}" class="nav-link {{ request()->routeIs('admin.blogs.*') ? 'active' : '' }}">
-                        <i class="fas fa-blog"></i>
-                        <span class="nav-text">Blog Management</span>
-                    </a>
-                    <div class="nav-indicator" x-show="hover" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200"></div>
-                </div>
-            </div>
-
-            <div class="nav-section">
-                <div class="nav-header">Resources</div>
-                
-                <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
-                    </a>
-                </div>
-                
-                <div class="nav-item">
-                    <a href="{{ route('admin.documents.index') }}" class="nav-link {{ request()->routeIs('admin.documents.*') ? 'active' : '' }}">
-                        <i class="fas fa-file-alt"></i>
-                        <span class="nav-text">Document Management</span>
-                    </a>
-                </div>
-                
-                <div class="nav-item">
-                    <a href="{{ route('admin.resources.index') }}" class="nav-link {{ request()->routeIs('admin.resources.*') ? 'active' : '' }}">
-                        <i class="fas fa-upload"></i>
-                        <span class="nav-text">Resource Upload</span>
-                    </a>
-                </div>
-                
-                <div class="nav-item">
-                    <a href="{{ route('admin.chat.test') }}" class="nav-link {{ request()->routeIs('admin.chat.test') ? 'active' : '' }}">
-                        <i class="fas fa-comments"></i>
-                        <span class="nav-text">Chat Test</span>
-                    </a>
+                <div x-show="isOpen" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200">
+                    <div class="nav-item">
+                        <a href="{{ route('admin.school-information.edit') }}" class="nav-link {{ request()->routeIs('admin.school-information.*') ? 'active' : '' }}">
+                            <i class="fas fa-school"></i>
+                            <span class="nav-text">School Information</span>
+                        </a>
+                    </div>
+                    
+                    <div class="nav-item">
+                        <a href="{{ route('admin.preferences') }}" class="nav-link {{ request()->routeIs('admin.preferences') ? 'active' : '' }}">
+                            <i class="fas fa-cog"></i>
+                            <span class="nav-text">System Preferences</span>
+                        </a>
+                    </div>
                 </div>
             </div>
-            <div class="nav-section">
-    <div class="nav-header">Settings</div>
-    <div class="nav-item">
-     <a href="{{ route('youtube.redirect') }}" class="btn btn-danger">
-    <i class="bi bi-upload"></i> Upload Video to YouTube
-</a>
-    </div>
-</div>
-
-<div class="nav-section">
-    <div class="nav-header">Reports</div>
-    <div class="nav-item">
-        <a href="{{ route('admin.report') }}" class="nav-link {{ request()->routeIs('admin.report') ? 'active' : '' }}">
-            <i class="fas fa-chart-line"></i>
-            <span class="nav-text">System Report</span>
-        </a>
-    </div>
-    <div class="nav-item">
-        <a href="{{ route('admin.report-cards.index') }}" class="nav-link {{ request()->routeIs('admin.report-cards.*') ? 'active' : '' }}">
-            <i class="fas fa-file-alt"></i>
-            <span class="nav-text">Report Cards</span>
-        </a>
-    </div>
-    <div class="nav-item">
-        <a href="{{ route('admin.school-information.edit') }}" class="nav-link {{ request()->routeIs('admin.school-information.*') ? 'active' : '' }}">
-            <i class="fas fa-school"></i>
-            <span class="nav-text">School Information</span>
-        </a>
-    </div>
-</div>
-
         </div>
     </div>
 
