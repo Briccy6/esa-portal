@@ -1,8 +1,14 @@
-@extends(
-    auth('admin')->check() ? 'admin.layout' :
-    (auth('teacher')->check() ? 'teacher.layout' :
-    (auth('student')->check() ? 'student.layout' : 'staff.partials.sidebar_dos')
-)
+@if(auth('admin')->check())
+    @extends('admin.layout')
+@elseif(auth('teacher')->check())
+    @extends('teacher.layout')
+@elseif(auth('student')->check())
+    @extends('student.layout')
+@elseif(auth('staff')->check())
+    @extends('staff.partials.sidebar_dos')
+@else
+    @extends('layouts.app')
+@endif
 
 @section('title', 'Exam Questions')
 

@@ -1,494 +1,554 @@
 @extends('layouts.client')
 
-@section('title', 'Tokens - ESA Portal')
+@section('title', 'My Tokens - ESA Portal')
 
 @section('content')
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap');
+:root {
+    --bg: #f4f6fb;
+    --surface: #ffffff;
+    --surface-2: #f8f9fc;
+    --border: #e5e7eb;
+    --accent: #7c3aed;
+    --accent-2: #8b5cf6;
+    --accent-3: #06b6d4;
+    --accent-warm: #f59e0b;
+    --text-primary: #1f2937;
+    --text-muted: #6b7280;
+    --text-dim: #9ca3af;
+}
 
-    :root {
-        --sidebar-w: 260px;
-        --bg: #0f1117;
-        --surface: #181c27;
-        --surface-2: #1e2436;
-        --border: rgba(255,255,255,0.07);
-        --accent: #4f8ef7;
-        --accent-2: #a78bfa;
-        --accent-3: #34d399;
-        --accent-warm: #fbbf24;
-        --text-primary: #f0f2f8;
-        --text-muted: #6b7a99;
-        --text-dim: #3d4663;
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    line-height: 1.6;
+}
+
+/* Topbar */
+.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    border-radius: 12px 12px 0 0;
+    margin-bottom: 24px;
+}
+
+.topbar-left h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 2px;
+}
+
+.topbar-left p {
+    font-size: 14px;
+    color: var(--text-muted);
+}
+
+.topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Page Content Wrapper */
+.page-content {
+    padding: 0 24px 24px;
+}
+
+/* Balance Cards Grid */
+.balance-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin-bottom: 32px;
+}
+
+.balance-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    text-align: center;
+}
+
+.balance-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+}
+
+.balance-card.available::before {
+    background: linear-gradient(90deg, #7c3aed, #8b5cf6);
+}
+
+.balance-card.purchased::before {
+    background: linear-gradient(90deg, #06b6d4, #3b82f6);
+}
+
+.balance-card.used::before {
+    background: linear-gradient(90deg, #f59e0b, #ef4444);
+}
+
+.balance-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.balance-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    font-size: 24px;
+    color: white;
+}
+
+.balance-card.available .balance-icon {
+    background: linear-gradient(135deg, #7c3aed, #8b5cf6);
+}
+
+.balance-card.purchased .balance-icon {
+    background: linear-gradient(135deg, #06b6d4, #3b82f6);
+}
+
+.balance-card.used .balance-icon {
+    background: linear-gradient(135deg, #f59e0b, #ef4444);
+}
+
+.balance-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 36px;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1;
+    margin-bottom: 8px;
+}
+
+.balance-label {
+    font-size: 14px;
+    color: var(--text-muted);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+}
+
+/* Transaction History Section */
+.history-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+}
+
+.history-header {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.history-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: white;
+}
+
+.history-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.btn-history {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    color: white;
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.btn-history:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Transaction Table */
+.table-container {
+    overflow-x: auto;
+}
+
+.history-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.history-table thead {
+    background: var(--surface-2);
+}
+
+.history-table th {
+    padding: 16px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.history-table tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background-color 0.2s ease;
+}
+
+.history-table tbody tr:hover {
+    background: var(--surface-2);
+}
+
+.history-table td {
+    padding: 16px;
+    color: var(--text-primary);
+}
+
+/* Status Badges */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-purchase {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.status-usage {
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.status-completed {
+    background: rgba(79, 142, 247, 0.1);
+    color: var(--accent);
+    border: 1px solid rgba(79, 142, 247, 0.2);
+}
+
+.status-pending {
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.status-failed {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+/* Buttons */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+}
+
+.empty-state i {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.3;
+}
+
+.empty-state h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.empty-state p {
+    font-size: 14px;
+    margin-bottom: 24px;
+}
+
+/* Pagination */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    padding: 24px;
+}
+
+.pagination-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.pagination-link:hover {
+    background: var(--surface-2);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.pagination-link.active {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    border-color: var(--accent);
+    color: white;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .topbar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+        padding: 16px;
     }
-
-    body {
-        font-family: 'DM Sans', sans-serif;
-        background: var(--bg);
-        color: var(--text-primary);
-        min-height: 100vh;
+    
+    .topbar-right {
+        width: 100%;
+        justify-content: flex-start;
     }
-
-    /* Page content */
-    .page-content {
-        padding: 32px;
-    }
-
-    /* Token Balance Cards */
+    
     .balance-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 24px;
-        margin-bottom: 32px;
+        grid-template-columns: 1fr;
+        gap: 16px;
     }
-
-    @media (max-width: 900px) {
-        .balance-grid {
-            grid-template-columns: 1fr;
-            gap: 20px;
-        }
+    
+    .page-content {
+        padding: 0 16px 16px;
     }
-
-    .balance-card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 16px;
-        padding: 24px;
-        text-align: center;
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .balance-card:hover {
-        transform: translateY(-2px);
-        border-color: rgba(79,142,247,0.3);
-        box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-    }
-
-    .balance-icon {
-        width: 60px;
-        height: 60px;
-        background: linear-gradient(135deg, var(--accent), var(--accent-2));
-        border-radius: 16px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 16px;
-        font-size: 24px;
-        color: #fff;
-    }
-
+    
     .balance-value {
-        font-family: 'Syne', sans-serif;
-        font-size: 32px;
-        font-weight: 800;
-        color: var(--text-primary);
-        margin-bottom: 8px;
-        line-height: 1;
+        font-size: 28px;
     }
-
-    .balance-label {
-        font-size: 13px;
-        color: var(--text-muted);
-        text-transform: uppercase;
-        letter-spacing: 0.8px;
-        font-weight: 500;
+    
+    .history-table {
+        font-size: 12px;
     }
-
-    /* Transaction History */
-    .history-section {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 16px;
-        overflow: hidden;
+    
+    .history-table th,
+    .history-table td {
+        padding: 12px 8px;
     }
-
+    
     .history-header {
-        background: linear-gradient(135deg, var(--accent), var(--accent-2));
-        padding: 20px 24px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .history-title {
-        font-family: 'Syne', sans-serif;
-        font-size: 18px;
-        font-weight: 700;
-        color: #fff;
-    }
-
-    .history-actions {
-        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
         gap: 12px;
     }
-
-    .btn-history {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        padding: 10px 16px;
-        background: rgba(255,255,255,0.1);
-        border: 1px solid rgba(255,255,255,0.2);
-        border-radius: 8px;
-        color: #fff;
-        font-size: 13px;
-        font-weight: 500;
-        text-decoration: none;
-        transition: all 0.2s ease;
-    }
-
-    .btn-history:hover {
-        background: rgba(255,255,255,0.2);
-        border-color: rgba(255,255,255,0.3);
-    }
-
-    /* History Table */
-    .history-table {
+    
+    .history-actions {
         width: 100%;
-        border-collapse: collapse;
+        justify-content: flex-start;
     }
+}
 
-    .history-table thead {
-        background: var(--surface-2);
-    }
-
-    .history-table th {
-        padding: 16px;
-        text-align: left;
-        font-size: 13px;
-        font-weight: 600;
-        color: var(--text-primary);
-        border-bottom: 1px solid var(--border);
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .history-table tbody tr {
-        border-bottom: 1px solid var(--border);
-        transition: background-color 0.2s ease;
-    }
-
-    .history-table tbody tr:hover {
-        background: var(--surface-2);
-    }
-
-    .history-table td {
-        padding: 16px;
-        font-size: 14px;
-        color: var(--text-primary);
-    }
-
-    /* Status Badges */
-    .status-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 6px 12px;
-        border-radius: 20px;
+@media (max-width: 480px) {
+    .history-table {
         font-size: 11px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
     }
-
-    .status-purchase {
-        background: rgba(52,211,153,0.15);
-        color: var(--accent-3);
-        border: 1px solid rgba(52,211,153,0.2);
+    
+    .history-table th,
+    .history-table td {
+        padding: 8px 4px;
     }
-
-    .status-usage {
-        background: rgba(251,191,36,0.15);
-        color: var(--accent-warm);
-        border: 1px solid rgba(251,191,36,0.2);
-    }
-
-    .status-completed {
-        background: rgba(79,142,247,0.15);
-        color: var(--accent);
-        border: 1px solid rgba(79,142,247,0.2);
-    }
-
-    .status-pending {
-        background: rgba(251,191,36,0.15);
-        color: var(--accent-warm);
-        border: 1px solid rgba(251,191,36,0.2);
-    }
-
-    .status-failed {
-        background: rgba(239,68,68,0.15);
-        color: #ef4444;
-        border: 1px solid rgba(239,68,68,0.2);
-    }
-
-    /* Action Buttons */
-    .action-buttons {
-        display: flex;
-        gap: 16px;
-        margin-top: 32px;
-    }
-
-    .btn-primary {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        padding: 16px 24px;
-        background: linear-gradient(135deg, var(--accent), var(--accent-2));
-        color: #fff;
-        border-radius: 12px;
-        font-size: 15px;
-        font-weight: 600;
-        text-decoration: none;
-        transition: all 0.3s ease;
-        cursor: pointer;
-        border: none;
-        box-shadow: 0 4px 12px rgba(79,142,247,0.3);
-    }
-
-    .btn-primary:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 16px rgba(79,142,247,0.4);
-    }
-
-    .btn-secondary {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        padding: 14px 20px;
-        background: var(--surface-2);
-        color: var(--text-primary);
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        font-size: 14px;
-        font-weight: 500;
-        text-decoration: none;
-        transition: all 0.2s ease;
-    }
-
-    .btn-secondary:hover {
-        background: var(--surface);
-        border-color: rgba(79,142,247,0.3);
-        color: var(--accent);
-    }
-
-    /* Empty State */
-    .empty-state {
-        text-align: center;
-        padding: 60px 20px;
-        color: var(--text-muted);
-    }
-
-    .empty-state i {
-        font-size: 48px;
-        margin-bottom: 16px;
-        opacity: 0.4;
-        display: block;
-    }
-
-    .empty-state h3 {
-        font-family: 'Syne', sans-serif;
-        font-size: 20px;
-        font-weight: 700;
-        color: var(--text-primary);
-        margin-bottom: 8px;
-    }
-
-    .empty-state p {
-        font-size: 14px;
-        margin-bottom: 24px;
-    }
-
-    /* Responsive */
-    @media (max-width: 768px) {
-        .page-content {
-            padding: 20px;
-        }
-        
-        .balance-grid {
-            grid-template-columns: 1fr;
-            gap: 16px;
-        }
-        
-        .history-table {
-            font-size: 12px;
-        }
-        
-        .history-table th,
-        .history-table td {
-            padding: 12px;
-        }
-        
-        .action-buttons {
-            flex-direction: column;
-        }
-    }
+}
 </style>
 
-<!-- Page Header -->
+<!-- Topbar -->
 <div class="topbar">
     <div class="topbar-left">
         <h1>My Tokens</h1>
-        <p>Manage your exam tokens</p>
+        <p>Manage your exam tokens and view transaction history</p>
     </div>
     <div class="topbar-right">
-        <a href="{{ route('client.tokens.purchase') }}" class="btn-primary">
+        <a href="{{ route('client.tokens.purchase') }}" class="btn btn-primary">
             <i class="fas fa-plus"></i>
             Buy Tokens
         </a>
     </div>
 </div>
 
-<!-- Token Balance Cards -->
-<div class="balance-grid">
-    <div class="balance-card">
-        <div class="balance-icon">
-            <i class="fas fa-coins"></i>
-        </div>
-        <div class="balance-value">{{ auth()->guard('client')->user()->getCurrentTokens() ?? 0 }}</div>
-        <div class="balance-label">Available Tokens</div>
-    </div>
-    
-    <div class="balance-card">
-        <div class="balance-icon" style="background: linear-gradient(135deg, var(--accent-3), var(--accent));">
-            <i class="fas fa-shopping-cart"></i>
-        </div>
-        <div class="balance-value">{{ auth()->guard('client')->user()->getTotalTokensPurchased() ?? 0 }}</div>
-        <div class="balance-label">Total Purchased</div>
-    </div>
-    
-    <div class="balance-card">
-        <div class="balance-icon" style="background: linear-gradient(135deg, var(--accent-warm), var(--accent-2));">
-            <i class="fas fa-graduation-cap"></i>
-        </div>
-        <div class="balance-value">{{ auth()->guard('client')->user()->getTotalTokensUsed() ?? 0 }}</div>
-        <div class="balance-label">Tokens Used</div>
-    </div>
-</div>
-
-<!-- Transaction History -->
-@if($transactions && $transactions->count() > 0)
-    <div class="history-section">
-        <div class="history-header">
-            <h3 class="history-title">Transaction History</h3>
-            <div class="history-actions">
-                <a href="#" class="btn-history">
-                    <i class="fas fa-download"></i>
-                    Export
-                </a>
-                <a href="#" class="btn-history">
-                    <i class="fas fa-filter"></i>
-                    Filter
-                </a>
+<!-- Page Content -->
+<div class="page-content">
+    <!-- Balance Cards -->
+    <div class="balance-grid">
+        <div class="balance-card available">
+            <div class="balance-icon">
+                <i class="fas fa-coins"></i>
             </div>
+            <div class="balance-value">{{ auth()->guard('client')->user()->getCurrentTokens() ?? 0 }}</div>
+            <div class="balance-label">Available Tokens</div>
         </div>
-        
-        <div class="overflow-x-auto">
-            <table class="history-table">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Type</th>
-                        <th>Description</th>
-                        <th>Tokens</th>
-                        <th>Bonus</th>
-                        <th>Total</th>
-                        <th>Amount</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($transactions as $transaction)
-                        <tr>
-                            <td>{{ $transaction->created_at->format('M j, Y H:i') }}</td>
-                            <td>
-                                @if($transaction->type === 'purchase')
-                                    <span class="status-badge status-purchase">
-                                        <i class="fas fa-plus"></i>
-                                        Purchase
-                                    </span>
-                                @elseif($transaction->type === 'usage')
-                                    <span class="status-badge status-usage">
-                                        <i class="fas fa-minus"></i>
-                                        Usage
-                                    </span>
-                                @else
-                                    <span class="status-badge status-pending">
-                                        <i class="fas fa-question"></i>
-                                        {{ $transaction->type }}
-                                    </span>
-                                @endif
-                            </td>
-                            <td>
-                                @if($transaction->tokenPackage)
-                                    {{ $transaction->tokenPackage->name }} Package
-                                @else
-                                    {{ $transaction->description ?? 'Token transaction' }}
-                                @endif
-                            </td>
-                            <td class="balance-value">{{ $transaction->tokens ?? 0 }}</td>
-                            <td>
-                                @if($transaction->bonus_tokens > 0)
-                                    <span style="color: var(--accent-3); font-weight: 600;">+{{ $transaction->bonus_tokens }}</span>
-                                @else
-                                    <span style="color: var(--text-muted);">-</span>
-                                @endif
-                            </td>
-                            <td class="balance-value">{{ $transaction->total_tokens ?? 0 }}</td>
-                            <td class="balance-value">{{ number_format($transaction->amount ?? 0) }} RWF</td>
-                            <td>
-                                @if($transaction->status === 'completed')
-                                    <span class="status-badge status-completed">
-                                        <i class="fas fa-check"></i>
-                                        Completed
-                                    </span>
-                                @elseif($transaction->status === 'pending')
-                                    <span class="status-badge status-pending">
-                                        <i class="fas fa-clock"></i>
-                                        Pending
-                                    </span>
-                                @else
-                                    <span class="status-badge status-failed">
-                                        <i class="fas fa-times"></i>
-                                        Failed
-                                    </span>
-                                @endif
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-        
-        <!-- Pagination -->
-        <div style="padding: 24px; text-align: center;">
-            {{ $transactions->links() }}
-        </div>
-    </div>
-@else
-    <div class="empty-state">
-        <i class="fas fa-coins"></i>
-        <h3>No Token History</h3>
-        <p>You haven't had any token transactions yet. Purchase tokens to start taking exams!</p>
-        <a href="{{ route('client.tokens.purchase') }}" class="btn-primary">
-            <i class="fas fa-plus"></i>
-            Buy Your First Tokens
-        </a>
-    </div>
-@endif
 
-<!-- Action Buttons -->
-<div class="action-buttons">
-    <a href="{{ route('client.tokens.purchase') }}" class="btn-primary">
-        <i class="fas fa-plus"></i>
-        Purchase More Tokens
-    </a>
-    <a href="{{ route('client.dashboard') }}" class="btn-secondary">
-        <i class="fas fa-arrow-left"></i>
-        Back to Dashboard
-    </a>
+        <div class="balance-card purchased">
+            <div class="balance-icon">
+                <i class="fas fa-shopping-cart"></i>
+            </div>
+            <div class="balance-value">{{ auth()->guard('client')->user()->getTotalTokensPurchased() ?? 0 }}</div>
+            <div class="balance-label">Total Purchased</div>
+        </div>
+
+        <div class="balance-card used">
+            <div class="balance-icon">
+                <i class="fas fa-graduation-cap"></i>
+            </div>
+            <div class="balance-value">{{ auth()->guard('client')->user()->getTotalTokensUsed() ?? 0 }}</div>
+            <div class="balance-label">Tokens Used</div>
+        </div>
+    </div>
+
+    <!-- Transaction History -->
+    @if($transactions && $transactions->count() > 0)
+        <div class="history-section">
+            <div class="history-header">
+                <h3 class="history-title">Transaction History</h3>
+                <div class="history-actions">
+                    <a href="#" class="btn-history">
+                        <i class="fas fa-download"></i>
+                        Export
+                    </a>
+                    <a href="#" class="btn-history">
+                        <i class="fas fa-filter"></i>
+                        Filter
+                    </a>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                            <th>Tokens</th>
+                            <th>Bonus</th>
+                            <th>Total</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($transactions as $transaction)
+                            <tr>
+                                <td>{{ $transaction->created_at->format('M j, Y H:i') }}</td>
+                                <td>{{ ucfirst($transaction->type) }}</td>
+                                <td>
+                                    @if($transaction->subscription)
+                                        {{ $transaction->subscription->name }}
+                                    @else
+                                        {{ $transaction->description ?? 'Token transaction' }}
+                                    @endif
+                                </td>
+                                <td>{{ $transaction->tokens ?? 0 }}</td>
+                                <td>{{ $transaction->bonus_tokens ?? 0 }}</td>
+                                <td>{{ $transaction->total_tokens ?? 0 }}</td>
+                                <td>{{ $transaction->formatted_amount ?? '-' }}</td>
+                                <td>
+                                    <span class="status-badge status-{{ $transaction->status ?? $transaction->type }}">
+                                        {{ ucfirst($transaction->status ?? $transaction->type) }}
+                                    </span>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            @if($transactions->hasPages())
+                <div class="pagination">
+                    {{ $transactions->links() }}
+                </div>
+            @endif
+        </div>
+    @else
+        <div class="empty-state">
+            <i class="fas fa-coins"></i>
+            <h3>No Transactions Yet</h3>
+            <p>You haven't made any token transactions yet. Purchase tokens to get started!</p>
+            <a href="{{ route('client.tokens.purchase') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i>
+                Buy Tokens
+            </a>
+        </div>
+    @endif
 </div>
 @endsection

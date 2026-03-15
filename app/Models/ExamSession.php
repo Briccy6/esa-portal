@@ -10,9 +10,9 @@ class ExamSession extends Model
     use HasFactory;
 
     protected $fillable = [
-        'exam_id', 'student_id', 'attempt_id', 'session_start', 'last_activity',
+        'exam_id', 'student_id', 'client_id', 'attempt_id', 'session_start', 'last_activity',
         'time_remaining_seconds', 'is_fullscreen', 'tab_switches', 'fullscreen_violations',
-        'question_order', 'answer_orders'
+        'question_order', 'answer_orders', 'data', 'started_at', 'completed_at', 'score'
     ];
 
     protected $casts = [
@@ -20,6 +20,10 @@ class ExamSession extends Model
         'last_activity' => 'datetime',
         'question_order' => 'array',
         'answer_orders' => 'array',
+        'data' => 'array',
+        'started_at' => 'datetime',
+        'completed_at' => 'datetime',
+        'score' => 'decimal:2',
     ];
 
     public function exam()
@@ -30,6 +34,11 @@ class ExamSession extends Model
     public function student()
     {
         return $this->belongsTo(User::class, 'student_id');
+    }
+
+    public function client()
+    {
+        return $this->belongsTo(Client::class, 'client_id');
     }
 
     public function attempt()

@@ -108,4 +108,34 @@ class Client extends Authenticatable
             'type' => $type,
         ]);
     }
+
+    public function canAccessExam($exam)
+    {
+        // Free exams are accessible to everyone
+        if ($exam->public_price == 0) {
+            return true;
+        }
+
+        // Check if client has active subscription
+        if ($this->hasActiveSubscription()) {
+            return true;
+        }
+
+        // Check if client has enough tokens
+        if ($this->getCurrentTokens() >= $exam->token_cost) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public function examSessions()
+    {
+        return $this->hasMany(ExamSession::class);
+    }
+
+    public function examAttempts()
+    {
+        return $this->examSessions()->whereNotNull('session_start');
+    }
 }

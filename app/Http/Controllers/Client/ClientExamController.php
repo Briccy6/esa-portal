@@ -42,9 +42,18 @@ class ClientExamController extends Controller
         }
 
         // Create exam session
-        $session = $client->examSessions()->create([
+        $session = \App\Models\ExamSession::create([
             'exam_id' => $exam->id,
-            'started_at' => now(),
+            'client_id' => $client->id,
+            'student_id' => null, // Not a student
+            'attempt_id' => null, // No attempt tracking for clients
+            'session_start' => now(),
+            'last_activity' => now(),
+            'time_remaining_seconds' => 3600, // Default 1 hour (60 minutes * 60 seconds)
+            'data' => [
+                'answers' => [],
+                'flagged' => []
+            ]
         ]);
 
         return redirect()->route('client.exams.take.question', [$exam->id, $session->id, 1]);
@@ -59,9 +68,9 @@ class ClientExamController extends Controller
         $client = Auth::guard('client')->user();
         
         // Verify session belongs to client
-        $examSession = $client->examSessions()
-            ->where('exam_id', $exam->id)
+        $examSession = \App\Models\ExamSession::where('exam_id', $exam->id)
             ->where('id', $session)
+            ->where('client_id', $client->id)
             ->firstOrFail();
 
         // Get questions with relationships
@@ -101,9 +110,9 @@ class ClientExamController extends Controller
         $client = Auth::guard('client')->user();
         
         // Verify session belongs to client
-        $examSession = $client->examSessions()
-            ->where('exam_id', $exam->id)
+        $examSession = \App\Models\ExamSession::where('exam_id', $exam->id)
             ->where('id', $session)
+            ->where('client_id', $client->id)
             ->firstOrFail();
 
         // Get current session data
@@ -123,9 +132,9 @@ class ClientExamController extends Controller
         $client = Auth::guard('client')->user();
         
         // Verify session belongs to client
-        $examSession = $client->examSessions()
-            ->where('exam_id', $exam->id)
+        $examSession = \App\Models\ExamSession::where('exam_id', $exam->id)
             ->where('id', $session)
+            ->where('client_id', $client->id)
             ->firstOrFail();
 
         // Get session data

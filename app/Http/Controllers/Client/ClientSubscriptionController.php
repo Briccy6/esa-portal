@@ -22,13 +22,23 @@ class ClientSubscriptionController extends Controller
         return view('client.subscriptions.index', compact('activeSubscription', 'subscriptions'));
     }
 
-    public function purchase()
+    public function purchase(Request $request)
     {
-        $subscriptions = Subscription::where('is_active', true)
-            ->orderBy('price')
-            ->get();
+        $subscriptionId = $request->query('id');
+        
+        if (!$subscriptionId) {
+            return redirect()->route('client.subscriptions.index')
+                ->with('error', 'Please select a subscription to purchase.');
+        }
+        
+        $subscription = Subscription::find($subscriptionId);
+        
+        if (!$subscription) {
+            return redirect()->route('client.subscriptions.index')
+                ->with('error', 'Subscription not found.');
+        }
 
-        return view('client.subscriptions.purchase', compact('subscriptions'));
+        return view('client.subscriptions.purchase', compact('subscription'));
     }
 
     public function processPurchase(Request $request, Subscription $subscription)
@@ -74,5 +84,54 @@ class ClientSubscriptionController extends Controller
         ];
 
         return redirect()->away('https://checkout.flutterwave.com/v3/payment?' . http_build_query($paymentData));
+    }
+
+    /**
+     * Handle Flutterwave payment callback
+     */
+    public function handlePaymentCallback(Request $request)
+    {
+        \Log::info('Flutterwave callback received', ['data' => $request->all()]);
+        
+        // Verify the payment was successful
+        if ($request->status === 'successful') {
+            // Find the client subscription
+            $clientSubscription = ClientSubscription::where('tx_ref', $request->tx_ref)
+                ->where('status', 'pending')
+                ->first();
+            
+            if ($clientSubscription) {
+                // Update subscription status to active
+                $clientSubscription->update([
+                    'status' => 'active',
+                    'payment_reference' => $request->tx_ref,
+                    'paid_at' => now(),
+                ]);
+                
+                \Log::info('Subscription activated successfully', [
+                    'client_subscription_id' => $clientSubscription->id,
+                    'tx_ref' => $request->tx_ref,
+                ]);
+                
+                return redirect()->route('client.subscriptions.index')
+                    ->with('success', 'Subscription activated successfully! You now have access to all premium features.');
+            } else {
+                \Log::error('Payment failed or subscription not found', [
+                    'tx_ref' => $request->tx_ref,
+                    'status' => $request->status,
+                ]);
+                
+                return redirect()->route('client.subscriptions.index')
+                    ->with('error', 'Payment was not successful. Please contact support if the issue persists.');
+            }
+        } else {
+            \Log::error('Invalid payment callback', [
+                'status' => $request->status,
+                'data' => $request->all(),
+            ]);
+            
+            return redirect()->route('client.subscriptions.index')
+                ->with('error', 'Invalid payment callback received.');
+        }
     }
 }

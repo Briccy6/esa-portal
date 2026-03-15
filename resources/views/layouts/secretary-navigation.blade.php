@@ -35,6 +35,10 @@
                         {{ __('Students') }}
                     </x-nav-link>
                     
+                    <x-nav-link href="{{ route('secretary.clients.index') }}" :active="request()->routeIs('secretary.clients.*')">
+                        {{ __('Client Management') }}
+                    </x-nav-link>
+                    
                     <x-nav-link href="#" :active="request()->routeIs('payments.*')">
                         {{ __('Payments') }}
                     </x-nav-link>

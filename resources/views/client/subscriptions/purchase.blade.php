@@ -539,4 +539,25 @@
         </a>
     </div>
 @endif
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const purchaseForm = document.querySelector('form[action*="process"]');
+    const purchaseBtn = document.querySelector('.btn-purchase');
+    
+    if (purchaseForm && purchaseBtn) {
+        purchaseForm.addEventListener('submit', function(e) {
+            console.log('Form submitted');
+            purchaseBtn.disabled = true;
+            purchaseBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            
+            // Re-enable button after 5 seconds in case of errors
+            setTimeout(() => {
+                purchaseBtn.disabled = false;
+                purchaseBtn.innerHTML = '<i class="fas fa-lock"></i> Proceed to Secure Payment';
+            }, 5000);
+        });
+    }
+});
+</script>
 @endsection

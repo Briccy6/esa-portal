@@ -8,7 +8,6 @@ use App\Models\BlogDocument;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
 class BlogController extends Controller
@@ -50,43 +49,6 @@ class BlogController extends Controller
 
     public function store(Request $request)
     {
-        // Enhanced authentication check with session debugging
-        \Log::info('=== BLOG STORE METHOD DEBUG ===');
-        \Log::info('Request URL: ' . $request->fullUrl());
-        \Log::info('Request Method: ' . $request->method());
-        \Log::info('Session ID: ' . session()->getId());
-        \Log::info('Session exists: ' . (session()->isStarted() ? 'YES' : 'NO'));
-        \Log::info('Session data keys: ' . json_encode(array_keys(session()->all())));
-        
-        // Check admin authentication
-        $adminAuthenticated = auth('admin')->check();
-        \Log::info('Admin authenticated: ' . ($adminAuthenticated ? 'YES' : 'NO'));
-        
-        if (!$adminAuthenticated) {
-            \Log::error('Admin not authenticated in blog store method');
-            \Log::error('All session data: ' . json_encode(session()->all()));
-            
-            // Try to re-authenticate with session data
-            $adminId = session()->get('admin_id');
-            if ($adminId) {
-                \Log::info('Found admin_id in session: ' . $adminId);
-                // Try to manually log in the admin
-                $admin = \App\Models\Admin::find($adminId);
-                if ($admin) {
-                    \Log::info('Found admin user, attempting manual login');
-                    auth('admin')->login($admin);
-                    \Log::info('Manual login successful: ' . (auth('admin')->check() ? 'YES' : 'NO'));
-                }
-            }
-            
-            // If still not authenticated, redirect to login
-            if (!auth('admin')->check()) {
-                return redirect()->route('admin.login.form')
-                    ->with('error', 'You must be logged in as an admin to create blogs.')
-                    ->with('intended', $request->fullUrl());
-            }
-        }
-
         $request->validate([
             'title' => 'required|string|max:255',
             'excerpt' => 'nullable|string|max:500',
@@ -103,9 +65,6 @@ class BlogController extends Controller
             'image_alts' => 'nullable|array',
         ]);
 
-        $adminId = auth('admin')->id();
-        \Log::info('Creating blog with admin ID: ' . $adminId);
-
         $blog = Blog::create([
             'title' => $request->title,
             'slug' => $this->generateUniqueSlug($request->title),
@@ -113,7 +72,7 @@ class BlogController extends Controller
             'content' => $request->content,
             'status' => $request->status,
             'published_at' => $request->status === 'published' ? now() : null,
-            'author_id' => $adminId,
+            'author_id' => 1, // Default author ID since auth is removed
             'category' => $request->category,
             'tags' => $request->tags,
             'meta_title' => $request->meta_title ?: $request->title,
@@ -172,14 +131,6 @@ class BlogController extends Controller
 
     public function update(Request $request, Blog $blog)
     {
-        // Debug: Check authentication state
-        if (!auth('admin')->check()) {
-            \Log::error('Admin not authenticated in blog update method');
-            \Log::error('Session data: ' . json_encode(session()->all()));
-            return redirect()->route('admin.login.form')
-                ->with('error', 'You must be logged in as an admin to update blogs.');
-        }
-
         $request->validate([
             'title' => 'required|string|max:255',
             'excerpt' => 'nullable|string|max:500',

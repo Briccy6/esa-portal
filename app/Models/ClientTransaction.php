@@ -12,15 +12,21 @@ class ClientTransaction extends Model
     protected $fillable = [
         'client_id',
         'subscription_id',
+        'token_package_id',
         'tx_ref',
         'type',
         'amount',
         'currency',
         'status',
         'payment_method',
+        'payment_reference',
         'gateway_response',
         'meta',
         'paid_at',
+        'tokens',
+        'bonus_tokens',
+        'total_tokens',
+        'description',
     ];
 
     protected $casts = [

@@ -770,6 +770,14 @@
                 </div>
 
                 <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
+                    <a href="{{ route('admin.clients.index') }}" class="nav-link {{ request()->routeIs('admin.clients.*') ? 'active' : '' }}">
+                        <i class="fas fa-users"></i>
+                        <span class="nav-text">Client Management</span>
+                    </a>
+                    <div class="nav-indicator" x-show="hover" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200"></div>
+                </div>
+
+                <div class="nav-item" x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false">
                     <a href="{{ route('admin.tokens.index') }}" class="nav-link {{ request()->routeIs('admin.tokens.*') ? 'active' : '' }}">
                         <i class="fas fa-coins"></i>
                         <span class="nav-text">Token Management</span>
