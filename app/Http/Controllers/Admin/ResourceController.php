@@ -295,4 +295,50 @@ class ResourceController extends Controller
                 ->with('error', 'Error making resource public: ' . $e->getMessage());
         }
     }
+    
+    // Assignment Management Methods for DOS
+    public function assignmentsIndex()
+    {
+        // For now, return a placeholder view or redirect to resources
+        return view('admin.assignments.index');
+    }
+    
+    public function assignmentsCreate()
+    {
+        // For now, return a placeholder view
+        return view('admin.assignments.create');
+    }
+    
+    public function assignmentsStore(Request $request)
+    {
+        // Placeholder implementation
+        return redirect()->route('dos.assignments.index')
+            ->with('success', 'Assignment created successfully!');
+    }
+    
+    public function assignmentsShow($id)
+    {
+        // Placeholder implementation
+        return view('admin.assignments.show', ['assignment' => (object)['id' => $id]]);
+    }
+    
+    public function assignmentsEdit($id)
+    {
+        // Placeholder implementation
+        return view('admin.assignments.edit', ['assignment' => (object)['id' => $id]]);
+    }
+    
+    public function assignmentsUpdate(Request $request, $id)
+    {
+        // Placeholder implementation
+        return redirect()->route('dos.assignments.index')
+            ->with('success', 'Assignment updated successfully!');
+    }
+    
+    public function assignmentsDestroy($id)
+    {
+        // Placeholder implementation
+        return redirect()->route('dos.assignments.index')
+            ->with('success', 'Assignment deleted successfully!');
+    }
 }

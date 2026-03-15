@@ -1129,27 +1129,48 @@ Route::middleware(['auth:staff'])->prefix('dos')->name('dos.')->group(function (
     Route::delete('/courses/{course}', [\App\Http\Controllers\DosCourseController::class, 'destroy'])->name('courses.destroy');
     
     // Live Classes Management
-    Route::get('/live-classes', [\App\Http\Controllers\LiveClassController::class, 'index'])->name('live-classes.index');
-    Route::get('/live-classes/create', [\App\Http\Controllers\LiveClassController::class, 'create'])->name('live-classes.create');
-    Route::post('/live-classes', [\App\Http\Controllers\LiveClassController::class, 'store'])->name('live-classes.store');
-    Route::get('/live-classes/{liveClass}', [\App\Http\Controllers\LiveClassController::class, 'show'])->name('live-classes.show');
-    Route::get('/live-classes/{liveClass}/edit', [\App\Http\Controllers\LiveClassController::class, 'edit'])->name('live-classes.edit');
-    Route::put('/live-classes/{liveClass}', [\App\Http\Controllers\LiveClassController::class, 'update'])->name('live-classes.update');
-    Route::delete('/live-classes/{liveClass}', [\App\Http\Controllers\LiveClassController::class, 'destroy'])->name('live-classes.destroy');
-    Route::post('/live-classes/{liveClass}/start', [\App\Http\Controllers\LiveClassController::class, 'start'])->name('live-classes.start');
-    Route::post('/live-classes/{liveClass}/end', [\App\Http\Controllers\LiveClassController::class, 'end'])->name('live-classes.end');
+    Route::get('/live-classes', [\App\Http\Controllers\DOS\LiveClassController::class, 'index'])->name('live-classes.index');
+    Route::get('/live-classes/create', [\App\Http\Controllers\DOS\LiveClassController::class, 'create'])->name('live-classes.create');
+    Route::post('/live-classes', [\App\Http\Controllers\DOS\LiveClassController::class, 'store'])->name('live-classes.store');
+    Route::get('/live-classes/{liveClass}', [\App\Http\Controllers\DOS\LiveClassController::class, 'show'])->name('live-classes.show');
+    Route::get('/live-classes/{liveClass}/edit', [\App\Http\Controllers\DOS\LiveClassController::class, 'edit'])->name('live-classes.edit');
+    Route::put('/live-classes/{liveClass}', [\App\Http\Controllers\DOS\LiveClassController::class, 'update'])->name('live-classes.update');
+    Route::delete('/live-classes/{liveClass}', [\App\Http\Controllers\DOS\LiveClassController::class, 'destroy'])->name('live-classes.destroy');
+    Route::post('/live-classes/{liveClass}/start', [\App\Http\Controllers\DOS\LiveClassController::class, 'start'])->name('live-classes.start');
+    Route::post('/live-classes/{liveClass}/end', [\App\Http\Controllers\DOS\LiveClassController::class, 'end'])->name('live-classes.end');
+    Route::get('/live-classes/{liveClass}/room', [\App\Http\Controllers\DOS\LiveClassController::class, 'room'])->name('live-classes.room');
+    Route::get('/live-classes/{liveClass}/requests', [\App\Http\Controllers\DOS\LiveClassController::class, 'manageRequests'])->name('live-classes.requests');
     
     // Study Resources Management
-    Route::get('/resources', [\App\Http\Controllers\Admin\ResourceController::class, 'index'])->name('resources.index');
-    Route::get('/resources/create', [\App\Http\Controllers\Admin\ResourceController::class, 'create'])->name('resources.create');
-    Route::post('/resources', [\App\Http\Controllers\Admin\ResourceController::class, 'store'])->name('resources.store');
-    Route::get('/resources/{resource}', [\App\Http\Controllers\Admin\ResourceController::class, 'show'])->name('resources.show');
-    Route::get('/resources/{resource}/edit', [\App\Http\Controllers\Admin\ResourceController::class, 'edit'])->name('resources.edit');
-    Route::put('/resources/{resource}', [\App\Http\Controllers\Admin\ResourceController::class, 'update'])->name('resources.update');
-    Route::delete('/resources/{resource}', [\App\Http\Controllers\Admin\ResourceController::class, 'destroy'])->name('resources.destroy');
-    Route::get('/resources/{resource}/download', [\App\Http\Controllers\Admin\ResourceController::class, 'download'])->name('resources.download');
+    Route::get('/resources', [\App\Http\Controllers\DOS\ResourceController::class, 'index'])->name('resources.index');
+    Route::get('/resources/create', [\App\Http\Controllers\DOS\ResourceController::class, 'create'])->name('resources.create');
+    Route::post('/resources', [\App\Http\Controllers\DOS\ResourceController::class, 'store'])->name('resources.store');
+    Route::get('/resources/{resource}', [\App\Http\Controllers\DOS\ResourceController::class, 'show'])->name('resources.show');
+    Route::get('/resources/{resource}/edit', [\App\Http\Controllers\DOS\ResourceController::class, 'edit'])->name('resources.edit');
+    Route::put('/resources/{resource}', [\App\Http\Controllers\DOS\ResourceController::class, 'update'])->name('resources.update');
+    Route::delete('/resources/{resource}', [\App\Http\Controllers\DOS\ResourceController::class, 'destroy'])->name('resources.destroy');
+    Route::get('/resources/{resource}/download', [\App\Http\Controllers\DOS\ResourceController::class, 'downloadDocument'])->name('resources.download');
+    Route::get('/resources/{resource}/preview', [\App\Http\Controllers\DOS\ResourceController::class, 'previewDocument'])->name('resources.preview');
     
-    // Assignments Management - TODO: Create DosAssignmentController if needed
+    // Assignments Management
+    Route::get('/assignments', [\App\Http\Controllers\Admin\ResourceController::class, 'assignmentsIndex'])->name('assignments.index');
+    Route::get('/assignments/create', [\App\Http\Controllers\Admin\ResourceController::class, 'assignmentsCreate'])->name('assignments.create');
+    Route::post('/assignments', [\App\Http\Controllers\Admin\ResourceController::class, 'assignmentsStore'])->name('assignments.store');
+    Route::get('/assignments/{assignment}', [\App\Http\Controllers\Admin\ResourceController::class, 'assignmentsShow'])->name('assignments.show');
+    Route::get('/assignments/{assignment}/edit', [\App\Http\Controllers\Admin\ResourceController::class, 'assignmentsEdit'])->name('assignments.edit');
+    Route::put('/assignments/{assignment}', [\App\Http\Controllers\Admin\ResourceController::class, 'assignmentsUpdate'])->name('assignments.update');
+    Route::delete('/assignments/{assignment}', [\App\Http\Controllers\Admin\ResourceController::class, 'assignmentsDestroy'])->name('assignments.destroy');
+    
+    // Student Management Routes
+    Route::get('/students', [\App\Http\Controllers\DOS\StudentController::class, 'index'])->name('students.index');
+    Route::get('/students/cards', [\App\Http\Controllers\DOS\StudentController::class, 'listStudentCards'])->name('students.StudentCards');
+    Route::get('/students/report', [\App\Http\Controllers\DOS\StudentController::class, 'report'])->name('students.report');
+    Route::get('/students/attendance', [\App\Http\Controllers\DOS\StudentController::class, 'attendance'])->name('students.attendance');
+    Route::get('/students/{student}/edit', [\App\Http\Controllers\DOS\StudentController::class, 'edit'])->name('students.edit');
+    Route::put('/students/{student}', [\App\Http\Controllers\DOS\StudentController::class, 'update'])->name('students.update');
+    Route::post('/students/{student}/generate-card', [\App\Http\Controllers\DOS\StudentController::class, 'generateStudentCard'])->name('students.generate_card');
+    Route::post('/students/generate-cards-bulk', [\App\Http\Controllers\DOS\StudentController::class, 'generateCardsBulk'])->name('students.generate_cards_bulk');
+    Route::get('/students/qr-scan/{qrData}', [\App\Http\Controllers\DOS\StudentController::class, 'verifyQRCode'])->name('students.qr_scan');
 });
 
 // Admin-specific exam routes

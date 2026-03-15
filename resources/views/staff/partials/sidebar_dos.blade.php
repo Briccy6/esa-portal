@@ -611,11 +611,6 @@
                     <i class="fas fa-file-alt"></i> Study Resources
                 </a>
             </li>
-            <li>
-                <a class="dropdown-item {{ request()->routeIs('dos.assignments.*') ? 'active' : '' }}" href="{{ route('dos.assignments.index') }}">
-                    <i class="fas fa-tasks"></i> Assignments
-                </a>
-            </li>
         </ul>
         </li>
 
@@ -633,22 +628,22 @@
           </a>
           <ul class="dropdown-menu" aria-labelledby="studentsDropdown">
             <li>
-                <a class="dropdown-item {{ request()->routeIs('staff.students.index') ? 'active' : '' }}" href="{{ route('staff.students.index') }}">
+                <a class="dropdown-item {{ request()->routeIs('dos.students.*') ? 'active' : '' }}" href="{{ route('dos.students.index') }}">
                     <i class="fas fa-list"></i> Student List
                 </a>
             </li>
             <li>
-                <a class="dropdown-item {{ request()->routeIs('staff.students.StudentCards') ? 'active' : '' }}" href="{{ route('staff.students.StudentCards') }}">
+                <a class="dropdown-item {{ request()->routeIs('dos.students.*') ? 'active' : '' }}" href="{{ route('dos.students.StudentCards') }}">
                     <i class="fas fa-id-card"></i> Student Cards
                 </a>
             </li>
             <li>
-                <a class="dropdown-item {{ request()->routeIs('staff.students.report') ? 'active' : '' }}" href="{{ route('staff.students.report') }}">
+                <a class="dropdown-item {{ request()->routeIs('dos.students.*') ? 'active' : '' }}" href="{{ route('dos.students.report') }}">
                     <i class="fas fa-file-alt"></i> Student Report
                 </a>
             </li>
             <li>
-                <a class="dropdown-item {{ request()->routeIs('staff.students.attendance') ? 'active' : '' }}" href="{{ route('staff.students.attendance') }}">
+                <a class="dropdown-item {{ request()->routeIs('dos.students.*') ? 'active' : '' }}" href="{{ route('dos.students.attendance') }}">
                     <i class="fas fa-calendar-check"></i> Student Attendance
                 </a>
             </li>
@@ -659,13 +654,6 @@
           <a href="{{ route('dos.marks.index') }}" class="nav-link text-white d-flex align-items-center gap-2">
             <i class="nav-icon bi bi-clipboard-check-fill"></i>
             <span class="nav-text">Marks Management</span>
-          </a>
-        </li>
-
-        <li class="nav-item">
-          <a href="{{ route('dos.marks.report-card') }}" class="nav-link text-white d-flex align-items-center gap-2">
-            <i class="nav-icon bi bi-file-earmark-text-fill"></i>
-            <span class="nav-text">TVET Report Cards</span>
           </a>
         </li>
 
