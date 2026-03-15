@@ -443,7 +443,7 @@
                     @endif
                     
                     @if($subscription->features)
-                        @foreach(json_decode($subscription->features, true) as $feature)
+                        @foreach($subscription->features as $feature)
                             <li class="feature-item">
                                 <div class="feature-icon">
                                     <i class="fas fa-check"></i>
