@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Models\Client;
 use App\Models\ClientTransaction;
 use App\Models\ClientToken;
-use App\Models\TokenPackage;
 use App\Models\Subscription;
 use App\Models\ClientSubscription;
 use Illuminate\Http\Request;
@@ -56,7 +55,7 @@ class ClientManagementController extends Controller
     public function show(Client $client)
     {
         $client->load(['activeSubscription', 'transactions' => function($query) {
-            $query->with('tokenPackage')->latest()->limit(10);
+            $query->with('subscription')->latest()->limit(10);
         }, 'subscriptions' => function($query) {
             $query->with('subscription')->latest()->limit(5);
         }]);
@@ -64,14 +63,14 @@ class ClientManagementController extends Controller
         // Calculate token statistics
         $tokenStats = [
             'current_balance' => $client->getCurrentTokens(),
-            'total_purchased' => $client->transactions()->where('type', 'purchase')->sum('total_tokens'),
-            'total_used' => $client->transactions()->where('type', 'usage')->sum('amount_deducted'),
-            'total_bonus' => $client->transactions()->where('type', 'purchase')->sum('bonus_tokens'),
+            'total_purchased' => $client->tokens()->where('type', 'purchase')->sum('amount_added'),
+            'total_used' => $client->tokens()->where('type', 'usage')->sum('amount_deducted'),
+            'total_bonus' => $client->tokens()->where('type', 'bonus')->sum('amount_added'),
         ];
 
         // Recent transactions
         $recentTransactions = $client->transactions()
-            ->with('tokenPackage')
+            ->with('subscription')
             ->latest()
             ->take(10)
             ->get();
@@ -81,11 +80,11 @@ class ClientManagementController extends Controller
 
     public function addTokens(Client $client)
     {
-        $tokenPackages = TokenPackage::where('is_active', true)
-            ->orderBy('tokens')
+        $subscriptions = Subscription::where('is_active', true)
+            ->orderBy('tokens_included')
             ->get();
 
-        return view('admin.clients.add-tokens', compact('client', 'tokenPackages'));
+        return view('admin.clients.add-tokens', compact('client', 'subscriptions'));
     }
 
     public function storeTokens(Request $request, Client $client)
@@ -94,7 +93,7 @@ class ClientManagementController extends Controller
             'amount' => 'required|integer|min:1|max:10000',
             'description' => 'nullable|string|max:255',
             'type' => 'required|in:purchase,bonus,manual,subscription',
-            'package_id' => 'nullable|exists:token_packages,id',
+            'subscription_id' => 'nullable|exists:subscriptions,id',
             'payment_status' => 'required|in:pending,completed,failed',
             'payment_method' => 'nullable|string|max:100',
             'payment_reference' => 'nullable|string|max:255',
@@ -104,13 +103,14 @@ class ClientManagementController extends Controller
         $tokensToAdd = 0;
         $bonusTokens = 0;
         $amount = 0;
+        $subscription = null;
 
-        if ($request->package_id) {
-            $package = TokenPackage::findOrFail($request->package_id);
-            $tokensToAdd = $package->tokens;
-            $bonusTokens = $package->bonus_tokens;
-            $amount = $package->price;
-            $description = "Purchased {$package->name} package";
+        if ($request->subscription_id) {
+            $subscription = Subscription::findOrFail($request->subscription_id);
+            $tokensToAdd = $subscription->tokens_included;
+            $bonusTokens = 0;
+            $amount = $subscription->price;
+            $description = "Purchased {$subscription->name} subscription";
         } else {
             $tokensToAdd = $request->amount;
             $bonusTokens = $request->bonus_tokens ?? 0;
@@ -118,35 +118,74 @@ class ClientManagementController extends Controller
             $description = $request->description;
         }
 
-        // Create client transaction
-        $transaction = ClientTransaction::create([
-            'client_id' => $client->id,
-            'token_package_id' => $request->package_id,
-            'tokens' => $tokensToAdd,
-            'bonus_tokens' => $bonusTokens,
-            'total_tokens' => $tokensToAdd + $bonusTokens,
-            'amount' => $amount,
-            'currency' => 'RWF',
-            'type' => $request->type,
-            'description' => $description,
-            'status' => $request->payment_status,
-            'payment_method' => $request->payment_method,
-            'payment_reference' => $request->payment_reference,
-            'created_at' => $request->payment_date ? Carbon::parse($request->payment_date) : now(),
-        ]);
+        // Generate transaction reference for manual transactions
+        $txRef = 'MAN-' . strtoupper(uniqid()) . '-' . time();
 
-        // Update client token balance
-        $currentBalance = $client->getCurrentTokens();
-        ClientToken::create([
-            'client_id' => $client->id,
-            'balance' => $currentBalance + $tokensToAdd + $bonusTokens,
-            'amount_added' => $tokensToAdd + $bonusTokens,
-            'description' => $description,
-            'type' => $request->type,
-        ]);
+        DB::beginTransaction();
+        try {
+            // Create client subscription if subscription_id is provided
+            $clientSubscription = null;
+            if ($subscription && $request->payment_status === 'completed') {
+                $clientSubscription = ClientSubscription::create([
+                    'client_id' => $client->id,
+                    'subscription_id' => $subscription->id,
+                    'payment_status' => $request->payment_status,
+                    'payment_reference' => $request->payment_reference,
+                    'paid_amount' => $amount,
+                    'amount' => $amount,
+                    'currency' => 'RWF',
+                    'payment_gateway' => $request->payment_method,
+                    'starts_at' => now(),
+                    'ends_at' => now()->addDays($subscription->duration_days),
+                    'is_active' => true,
+                ]);
+            }
 
-        return redirect()->route('admin.clients.show', $client)
-            ->with('success', "Successfully added {$tokensToAdd} tokens to {$client->name}");
+            // Create client transaction
+            $transaction = ClientTransaction::create([
+                'client_id' => $client->id,
+                'subscription_id' => $request->subscription_id,
+                'tx_ref' => $txRef,
+                'tokens' => $tokensToAdd,
+                'bonus_tokens' => $bonusTokens,
+                'total_tokens' => $tokensToAdd + $bonusTokens,
+                'amount' => $amount,
+                'currency' => 'RWF',
+                'type' => $request->type,
+                'description' => $description,
+                'status' => $request->payment_status,
+                'payment_method' => $request->payment_method,
+                'payment_reference' => $request->payment_reference,
+                'paid_at' => $request->payment_status === 'completed' ? now() : null,
+                'created_at' => $request->payment_date ? Carbon::parse($request->payment_date) : now(),
+            ]);
+
+            // Update client token balance
+            $currentBalance = $client->getCurrentTokens();
+            ClientToken::create([
+                'client_id' => $client->id,
+                'balance' => $currentBalance + $tokensToAdd + $bonusTokens,
+                'amount_added' => $tokensToAdd + $bonusTokens,
+                'description' => $description,
+                'type' => $request->type,
+                'created_at' => $request->payment_date ? Carbon::parse($request->payment_date) : now(),
+            ]);
+
+            DB::commit();
+
+            $successMessage = $subscription 
+                ? "Successfully added {$tokensToAdd} tokens and assigned {$subscription->name} subscription to {$client->name}"
+                : "Successfully added {$tokensToAdd} tokens to {$client->name}";
+
+            return redirect()->route('admin.clients.show', $client)
+                ->with('success', $successMessage);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            return redirect()->back()
+                ->with('error', 'An error occurred while adding tokens: ' . $e->getMessage())
+                ->withInput();
+        }
     }
 
     public function recordSubscription(Client $client)
@@ -179,13 +218,13 @@ class ClientManagementController extends Controller
             'subscription_id' => $subscription->id,
             'payment_status' => $request->payment_status,
             'starts_at' => $request->starts_at ? Carbon::parse($request->starts_at) : now(),
-            'ends_at' => $request->ends_at ? Carbon::parse($request->ends_at) : now()->addMonths($subscription->duration_months),
+            'ends_at' => $request->ends_at ? Carbon::parse($request->ends_at) : now()->addMonths($subscription->duration_months ?? 1),
             'is_active' => $request->payment_status === 'completed',
             'amount' => $request->payment_amount,
             'currency' => 'RWF',
         ]);
 
-        // Add subscription tokens as bonus
+        // Add subscription tokens automatically when payment is completed
         if ($request->payment_status === 'completed') {
             $currentBalance = $client->getCurrentTokens();
             
@@ -195,10 +234,16 @@ class ClientManagementController extends Controller
                 'amount_added' => $subscription->tokens_included,
                 'description' => "Subscription: {$subscription->name}",
                 'type' => 'subscription',
+                'created_at' => $request->payment_date ? Carbon::parse($request->payment_date) : now(),
             ]);
+
+            // Generate transaction reference for subscription
+            $txRef = 'SUB-' . strtoupper(uniqid()) . '-' . time();
 
             ClientTransaction::create([
                 'client_id' => $client->id,
+                'subscription_id' => $subscription->id,
+                'tx_ref' => $txRef,
                 'tokens' => $subscription->tokens_included,
                 'bonus_tokens' => 0,
                 'total_tokens' => $subscription->tokens_included,
@@ -209,6 +254,7 @@ class ClientManagementController extends Controller
                 'status' => 'completed',
                 'payment_method' => $request->payment_method,
                 'payment_reference' => $request->payment_reference,
+                'paid_at' => $request->payment_date ? Carbon::parse($request->payment_date) : now(),
                 'created_at' => $request->payment_date ? Carbon::parse($request->payment_date) : now(),
             ]);
         }

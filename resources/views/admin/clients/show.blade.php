@@ -55,7 +55,7 @@
                             </div>
                             <a href="{{ route('admin.clients.add-tokens', $client) }}" class="btn btn-outline-primary">
                                 <i class="fas fa-plus"></i>
-                                Add Tokens
+                                Add Manual Tokens
                             </a>
                         </div>
                         <div class="d-flex justify-content-between align-items-center mb-2">
@@ -79,6 +79,53 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Current Subscription Status -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Current Subscription Status</h5>
+                    @if($client->activeSubscription)
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle me-2"></i>
+                            <strong>Active Subscription:</strong> {{ $client->activeSubscription->subscription->name }}
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-3">
+                                <p class="mb-1"><strong>Started:</strong></p>
+                                <p class="text-success">{{ $client->activeSubscription->starts_at->format('M j, Y') }}</p>
+                            </div>
+                            <div class="col-md-3">
+                                <p class="mb-1"><strong>Ends:</strong></p>
+                                <p class="text-warning">{{ $client->activeSubscription->ends_at->format('M j, Y') }}</p>
+                            </div>
+                            <div class="col-md-3">
+                                <p class="mb-1"><strong>Tokens Included:</strong></p>
+                                <p class="text-primary">{{ number_format($client->activeSubscription->subscription->tokens_included) }}</p>
+                            </div>
+                            <div class="col-md-3">
+                                <p class="mb-1"><strong>Status:</strong></p>
+                                <p><span class="badge bg-success">Active</span></p>
+                            </div>
+                        </div>
+                    @else
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>No Active Subscription</strong>
+                            <p class="mb-0 mt-2">This client currently does not have an active subscription.</p>
+                            <div class="mt-3">
+                                <a href="{{ route('admin.clients.subscription', $client) }}" class="btn btn-primary">
+                                    <i class="fas fa-crown me-2"></i>
+                                    Record Subscription
+                                </a>
+                            </div>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
