@@ -118,6 +118,9 @@ class AdminAuthController extends Controller
                     ->selectRaw('SUM(ji.credit_amount - ji.debit_amount) as total_revenue')
                     ->value('total_revenue') ?? 0;
 
+                // Debug: Log accounting system usage
+                \Log::info('Using accounting system for revenue data - Revenue: ' . $revenueData);
+
                 // Get expenses from journal entries (Expense accounts)
                 $expensesData = DB::table('journal_items as ji')
                     ->join('journal_entries as je', 'ji.journal_entry_id', '=', 'je.id')
@@ -258,8 +261,6 @@ class AdminAuthController extends Controller
                 
                 // Debug: Log fallback revenue data
                 \Log::info('Fallback Revenue - Token: ' . $tokenRevenue . ', LiveClass: ' . $liveClassRevenue . ', Resource: ' . $resourceRevenue . ', Subscription: ' . $subscriptionRevenue . ', Total: ' . $revenueData);
-            } else {
-                \Log::info('Using accounting system for revenue data');
             }
 
             // Calculate total revenue and profit metrics
