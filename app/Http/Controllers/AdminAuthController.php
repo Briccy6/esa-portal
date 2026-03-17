@@ -72,6 +72,24 @@ class AdminAuthController extends Controller
             $totalTeachers = class_exists(Teacher::class) ? Teacher::count() : 0;
             $totalStaff = class_exists(Staff::class) ? Staff::count() : 0;
             
+            // Initialize revenue variables to prevent undefined variable errors
+            $revenueData = 0;
+            $expensesData = 0;
+            $tokenRevenue = 0;
+            $liveClassRevenue = 0;
+            $resourceRevenue = 0;
+            $subscriptionRevenue = 0;
+            $monthlyTokenRevenue = 0;
+            $monthlyLiveClassRevenue = 0;
+            $monthlyResourceRevenue = 0;
+            $monthlySubscriptionRevenue = 0;
+            $totalExpenses = 0;
+            
+            // Initialize expense variables to prevent undefined variable errors
+            $expensesByBranch = collect();
+            $expensesByType = collect();
+            $expenseTrend = [];
+
             // REVENUE SOURCE ANALYTICS - Using Accounting System with Fallback
             // Check if accounting system has data
             $hasAccountingData = DB::table('journal_entries')->count() > 0;
@@ -233,7 +251,7 @@ class AdminAuthController extends Controller
 
             // Calculate total revenue and profit metrics
             $totalRevenue = $revenueData;
-            $totalExpenses = $expensesData;
+            $totalExpenses = $expensesData ?? $totalExpenses;
             $netProfit = $totalRevenue - $totalExpenses;
             $profitMargin = $totalRevenue > 0 ? round(($netProfit / $totalRevenue) * 100, 2) : 0;
 
@@ -394,29 +412,6 @@ class AdminAuthController extends Controller
                 'totalExpenses',
                 'netProfit',
                 'profitMargin',
-                'recentStudents',
-                'recentExpenses',
-                'studentsByGender',
-                'studentsByCourseGender',
-                'registrationPaidPercent',
-                'tuitionPaidPercent',
-                'expensesByBranch',
-                'expensesByType',
-                'branchFinancialHealth',
-                'expenseTrend',
-                'tuitionByBranch',
-                'tuitionPaidByBranch',
-                'monthlyTokenRevenue',
-                'monthlyLiveClassRevenue',
-                'monthlyResourceRevenue',
-                'monthlySubscriptionRevenue',
-                'totalClients',
-                'activeClients',
-                'inactiveClients',
-                'totalClientTokens',
-                'totalClientRevenue',
-                'recentClients',
-                'startDate',
                 'endDate'
             );
             
