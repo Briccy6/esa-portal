@@ -86,50 +86,57 @@ class AdminAuthController extends Controller
             $expensesByType = collect();
             $expenseTrend = collect(); // Ensure it's always a collection
 
-            // SIMPLIFIED REVENUE CALCULATION - Direct from transaction tables
-            // Token Purchase Revenue (from all credit transactions)
-            $tokenRevenue = TokenTransaction::where('type', 'credit')->sum('amount');
-            $liveClassRevenue = LiveClassPayment::where('status', 'completed')->sum('amount');
-            $resourceRevenue = Resource::where('is_free', false)->where('price', '>', 0)->sum('price');
-            $subscriptionRevenue = StudentSubscription::where('payment_status', 'paid')->where('is_active', true)->sum('paid_amount');
+            // SIMPLIFIED REVENUE CALCULATION - Direct from student_transactions table
+            // Revenue from student transactions (using actual transaction types)
+            $tokenRevenue = StudentTransaction::where('type', 'student_card')->where('status', 'successful')->sum('amount');
+            $liveClassRevenue = 0; // No live_class transactions found
+            $resourceRevenue = 0; // No resource transactions found
+            $subscriptionRevenue = StudentTransaction::where('type', 'subscription')->where('status', 'successful')->sum('amount');
+            $registrationRevenue = StudentTransaction::where('type', 'registration')->where('status', 'successful')->sum('amount');
             $totalExpenses = Expense::sum('amount') ?? 0;
 
-            // Debug: Check table counts and revenue data
-            \Log::info('Token Transactions count: ' . TokenTransaction::count());
-            \Log::info('Token Revenue: ' . $tokenRevenue);
-            \Log::info('Live Class Payments count: ' . LiveClassPayment::count());
-            \Log::info('Live Class Revenue: ' . $liveClassRevenue);
-            \Log::info('Resources count: ' . Resource::count());
-            \Log::info('Resource Revenue: ' . $resourceRevenue);
-            \Log::info('Student Subscriptions count: ' . StudentSubscription::count());
-            \Log::info('Subscription Revenue: ' . $subscriptionRevenue);
+            // Debug: Check student_transactions table data
+            \Log::info('Student Transactions count: ' . StudentTransaction::count());
+            \Log::info('Token Revenue (token_purchase): ' . $tokenRevenue);
+            \Log::info('Live Class Revenue (live_class): ' . $liveClassRevenue);
+            \Log::info('Resource Revenue (resource): ' . $resourceRevenue);
+            \Log::info('Subscription Revenue (subscription): ' . $subscriptionRevenue);
             \Log::info('Expenses count: ' . Expense::count());
             \Log::info('Total Expenses: ' . $totalExpenses);
+            
+            // Debug: Show sample transaction types
+            $sampleTransactions = StudentTransaction::limit(5)->get(['type', 'status', 'amount']);
+            \Log::info('Sample Transactions:');
+            foreach ($sampleTransactions as $transaction) {
+                \Log::info("  Type: {$transaction->type}, Status: {$transaction->status}, Amount: {$transaction->amount}");
+            }
 
             // Monthly breakdowns
-            $monthlyTokenRevenue = TokenTransaction::where('type', 'credit')
+            $monthlyTokenRevenue = StudentTransaction::where('type', 'token_purchase')
+                ->where('status', 'successful')
                 ->whereMonth('created_at', Carbon::now()->month)
                 ->whereYear('created_at', Carbon::now()->year)
                 ->sum('amount');
 
-            $monthlyLiveClassRevenue = LiveClassPayment::where('status', 'completed')
-                ->whereMonth('paid_at', Carbon::now()->month)
-                ->whereYear('paid_at', Carbon::now()->year)
+            $monthlyLiveClassRevenue = StudentTransaction::where('type', 'live_class')
+                ->where('status', 'successful')
+                ->whereMonth('created_at', Carbon::now()->month)
+                ->whereYear('created_at', Carbon::now()->year)
                 ->sum('amount');
 
-            $monthlySubscriptionRevenue = StudentSubscription::where('payment_status', 'paid')
-                ->where('is_active', true)
+            $monthlySubscriptionRevenue = StudentTransaction::where('type', 'subscription')
+                ->where('status', 'successful')
                 ->whereMonth('created_at', Carbon::now()->month)
                 ->whereYear('created_at', Carbon::now()->year)
-                ->sum('paid_amount');
+                ->sum('amount');
 
-            $monthlyResourceRevenue = Resource::where('is_free', false)
-                ->where('price', '>', 0)
+            $monthlyResourceRevenue = StudentTransaction::where('type', 'resource')
+                ->where('status', 'successful')
                 ->whereMonth('created_at', Carbon::now()->month)
                 ->whereYear('created_at', Carbon::now()->year)
-                ->sum('price');
+                ->sum('amount');
 
-            $revenueData = $tokenRevenue + $liveClassRevenue + $resourceRevenue + $subscriptionRevenue;
+            $revenueData = $tokenRevenue + $liveClassRevenue + $resourceRevenue + $subscriptionRevenue + $registrationRevenue;
 
             // Calculate total revenue and profit metrics
             $totalRevenue = $revenueData;
@@ -212,6 +219,7 @@ class AdminAuthController extends Controller
                 'liveClassRevenue',
                 'resourceRevenue',
                 'subscriptionRevenue',
+                'registrationRevenue',
                 'totalRevenue',
                 'totalExpenses',
                 'netProfit',

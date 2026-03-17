@@ -62,6 +62,9 @@ class TermController extends Controller
     public function store(Request $request)
     {
         try {
+            // Get the ongoing academic year as default
+            $ongoingYear = AcademicYear::where('is_ongoing', true)->first();
+            
             $rules = [
                 'academic_year_id' => 'required|exists:academic_years,id',
                 'name'             => 'required|string|in:Term 1,Term 2,Term 3',
@@ -71,10 +74,30 @@ class TermController extends Controller
 
             $validated = $request->validate($rules);
 
+            // Double-check academic year exists and get details
             $academicYear = AcademicYear::find($validated['academic_year_id']);
             if (!$academicYear) {
-                return back()->withErrors(['academic_year_id' => 'Invalid academic year.'])->withInput();
+                // If provided academic year doesn't exist, use the ongoing one
+                if ($ongoingYear) {
+                    $academicYear = $ongoingYear;
+                    $validated['academic_year_id'] = $ongoingYear->id;
+                    \Log::warning('Invalid academic year provided, using ongoing year', [
+                        'invalid_id' => $request->academic_year_id,
+                        'using_id' => $ongoingYear->id
+                    ]);
+                } else {
+                    return back()->withErrors(['academic_year_id' => 'Invalid academic year selected and no ongoing academic year found.'])->withInput();
+                }
             }
+
+            // Log for debugging
+            \Log::info('Creating term', [
+                'academic_year_id' => $validated['academic_year_id'],
+                'academic_year_name' => $academicYear->name ?? 'Unknown',
+                'term_name' => $validated['name'],
+                'start_date' => $validated['start_date'],
+                'end_date' => $validated['end_date']
+            ]);
 
             $term = $validated['name'];
             $existingTerms = Term::where('academic_year_id', $academicYear->id)->get();

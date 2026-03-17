@@ -7,86 +7,59 @@ $app = require_once 'bootstrap/app.php';
 $kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
 $kernel->bootstrap();
 
-use App\Models\TokenTransaction;
-use App\Models\LiveClassPayment;
-use App\Models\Resource;
-use App\Models\StudentSubscription;
+use App\Models\StudentTransaction;
 use App\Models\Expense;
 
-echo "=== Revenue Data Check ===\n\n";
+echo "=== Student Transactions Revenue Data Check ===\n\n";
 
-// Check Token Transactions
-$tokenCount = TokenTransaction::count();
-$tokenRevenue = TokenTransaction::where('type', 'credit')->where('source', 'purchase')->sum('amount');
-echo "Token Transactions:\n";
-echo "  Total Count: $tokenCount\n";
-echo "  Revenue: $tokenRevenue\n";
+// Check Student Transactions
+$transactionCount = StudentTransaction::count();
+echo "Student Transactions:\n";
+echo "  Total Count: $transactionCount\n";
 
-// Check a few sample records
-$sampleTokens = TokenTransaction::limit(3)->get(['type', 'source', 'amount']);
-echo "  Sample Records:\n";
-foreach ($sampleTokens as $token) {
-    echo "    Type: {$token->type}, Source: {$token->source}, Amount: {$token->amount}\n";
+// Check revenue by type
+$tokenRevenue = StudentTransaction::where('type', 'token_purchase')->where('status', 'successful')->sum('amount');
+$liveClassRevenue = StudentTransaction::where('type', 'live_class')->where('status', 'successful')->sum('amount');
+$resourceRevenue = StudentTransaction::where('type', 'resource')->where('status', 'successful')->sum('amount');
+$subscriptionRevenue = StudentTransaction::where('type', 'subscription')->where('status', 'successful')->sum('amount');
+
+echo "  Token Revenue (token_purchase): $tokenRevenue\n";
+echo "  Live Class Revenue (live_class): $liveClassRevenue\n";
+echo "  Resource Revenue (resource): $resourceRevenue\n";
+echo "  Subscription Revenue (subscription): $subscriptionRevenue\n";
+
+// Show all transaction types
+$transactionTypes = StudentTransaction::select('type', 'status', \DB::raw('count(*) as count'), \DB::raw('sum(amount) as total'))
+    ->groupBy('type', 'status')
+    ->get();
+
+echo "\n  Transaction Types:\n";
+foreach ($transactionTypes as $type) {
+    echo "    Type: {$type->type}, Status: {$type->status}, Count: {$type->count}, Total: {$type->total}\n";
 }
-echo "\n";
 
-// Check Live Class Payments
-$liveClassCount = LiveClassPayment::count();
-$liveClassRevenue = LiveClassPayment::where('status', 'completed')->sum('amount');
-echo "Live Class Payments:\n";
-echo "  Total Count: $liveClassCount\n";
-echo "  Revenue: $liveClassRevenue\n";
-
-$sampleLiveClasses = LiveClassPayment::limit(3)->get(['status', 'amount']);
-echo "  Sample Records:\n";
-foreach ($sampleLiveClasses as $payment) {
-    echo "    Status: {$payment->status}, Amount: {$payment->amount}\n";
+// Show sample records
+$sampleTransactions = StudentTransaction::limit(5)->get(['type', 'status', 'amount', 'created_at']);
+echo "\n  Sample Records:\n";
+foreach ($sampleTransactions as $transaction) {
+    echo "    Type: {$transaction->type}, Status: {$transaction->status}, Amount: {$transaction->amount}, Date: {$transaction->created_at}\n";
 }
-echo "\n";
-
-// Check Resources
-$resourceCount = Resource::count();
-$resourceRevenue = Resource::where('is_free', false)->where('price', '>', 0)->sum('price');
-echo "Resources:\n";
-echo "  Total Count: $resourceCount\n";
-echo "  Revenue: $resourceRevenue\n";
-
-$sampleResources = Resource::limit(3)->get(['is_free', 'price']);
-echo "  Sample Records:\n";
-foreach ($sampleResources as $resource) {
-    echo "    Is Free: " . ($resource->is_free ? 'Yes' : 'No') . ", Price: {$resource->price}\n";
-}
-echo "\n";
-
-// Check Student Subscriptions
-$subscriptionCount = StudentSubscription::count();
-$subscriptionRevenue = StudentSubscription::where('payment_status', 'paid')->where('is_active', true)->sum('paid_amount');
-echo "Student Subscriptions:\n";
-echo "  Total Count: $subscriptionCount\n";
-echo "  Revenue: $subscriptionRevenue\n";
-
-$sampleSubscriptions = StudentSubscription::limit(3)->get(['payment_status', 'is_active', 'paid_amount']);
-echo "  Sample Records:\n";
-foreach ($sampleSubscriptions as $subscription) {
-    echo "    Payment Status: {$subscription->payment_status}, Is Active: " . ($subscription->is_active ? 'Yes' : 'No') . ", Paid Amount: {$subscription->paid_amount}\n";
-}
-echo "\n";
 
 // Check Expenses
 $expenseCount = Expense::count();
 $totalExpenses = Expense::sum('amount');
-echo "Expenses:\n";
+echo "\nExpenses:\n";
 echo "  Total Count: $expenseCount\n";
 echo "  Total Amount: $totalExpenses\n";
 
-$sampleExpenses = Expense::limit(3)->get(['amount']);
+$sampleExpenses = Expense::limit(3)->get(['amount', 'expense_date']);
 echo "  Sample Records:\n";
 foreach ($sampleExpenses as $expense) {
-    echo "    Amount: {$expense->amount}\n";
+    echo "    Amount: {$expense->amount}, Date: {$expense->expense_date}\n";
 }
-echo "\n";
 
-echo "=== Summary ===\n";
-echo "Total Revenue: " . ($tokenRevenue + $liveClassRevenue + $resourceRevenue + $subscriptionRevenue) . "\n";
+echo "\n=== Summary ===\n";
+$totalRevenue = $tokenRevenue + $liveClassRevenue + $resourceRevenue + $subscriptionRevenue;
+echo "Total Revenue: $totalRevenue\n";
 echo "Total Expenses: $totalExpenses\n";
-echo "Net Profit: " . (($tokenRevenue + $liveClassRevenue + $resourceRevenue + $subscriptionRevenue) - $totalExpenses) . "\n";
+echo "Net Profit: " . ($totalRevenue - $totalExpenses) . "\n";
