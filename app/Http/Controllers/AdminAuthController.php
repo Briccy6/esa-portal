@@ -360,23 +360,23 @@ class AdminAuthController extends Controller
             if ($hasAccountingData) {
                 $branchFinancialHealth = Branch::select('branches.name',
                         DB::raw('(SELECT COALESCE(SUM(ji.credit_amount - ji.debit_amount), 0) 
-                                 FROM esa.journal_items ji 
-                                 JOIN esa.journal_entries je ON ji.journal_entry_id = je.id 
-                                 JOIN esa.accounts a ON ji.account_id = a.id 
+                                 FROM u244769603_esa.journal_items ji 
+                                 JOIN u244769603_esa.journal_entries je ON ji.journal_entry_id = je.id 
+                                 JOIN u244769603_esa.accounts a ON ji.account_id = a.id 
                                  WHERE a.account_type = "Revenue" AND je.status = "Posted" 
                                  AND je.description LIKE CONCAT("%", branches.name, "%")) as revenue'),
                         DB::raw('(SELECT COALESCE(SUM(ji.debit_amount - ji.credit_amount), 0) 
-                                 FROM esa.journal_items ji 
-                                 JOIN esa.journal_entries je ON ji.journal_entry_id = je.id 
-                                 JOIN esa.accounts a ON ji.account_id = a.id 
+                                 FROM u244769603_esa.journal_items ji 
+                                 JOIN u244769603_esa.journal_entries je ON ji.journal_entry_id = je.id 
+                                 JOIN u244769603_esa.accounts a ON ji.account_id = a.id 
                                  WHERE a.account_type = "Expense" AND je.status = "Posted" 
                                  AND je.description LIKE CONCAT("%", branches.name, "%")) as expenses'))
                     ->get();
             } else {
                 // Fallback to existing data models
                 $branchFinancialHealth = Branch::select('branches.name',
-                        DB::raw('(SELECT COALESCE(sum(ss.paid_amount), 0) FROM esa.student_subscriptions ss JOIN esa.students s ON ss.student_id = s.id WHERE s.branch_id = branches.id AND ss.payment_status = "paid" AND ss.is_active = 1) as revenue'),
-                        DB::raw('(SELECT COALESCE(sum(e.amount), 0) FROM esa.expenses e WHERE e.paid_by = branches.name) as expenses'))
+                        DB::raw('(SELECT COALESCE(sum(ss.paid_amount), 0) FROM u244769603_esa.student_subscriptions ss JOIN u244769603_esa.students s ON ss.student_id = s.id WHERE s.branch_id = branches.id AND ss.payment_status = "paid" AND ss.is_active = 1) as revenue'),
+                        DB::raw('(SELECT COALESCE(sum(e.amount), 0) FROM u244769603_esa.expenses e WHERE e.paid_by = branches.name) as expenses'))
                     ->get();
             }
 
