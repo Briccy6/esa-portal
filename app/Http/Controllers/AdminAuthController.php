@@ -322,8 +322,7 @@ class AdminAuthController extends Controller
                     )
                     ->groupBy('month')
                     ->orderBy('month')
-                    ->get()
-                    ->toArray();
+                    ->get();
             } else {
                 // Fallback to expenses table
                 $expensesByBranchQuery = Expense::select('paid_by as branch', DB::raw('sum(amount) as total'));
