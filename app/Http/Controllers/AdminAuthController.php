@@ -87,8 +87,8 @@ class AdminAuthController extends Controller
             $expenseTrend = collect(); // Ensure it's always a collection
 
             // SIMPLIFIED REVENUE CALCULATION - Direct from transaction tables
-            // Token Purchase Revenue (from credit transactions)
-            $tokenRevenue = TokenTransaction::where('type', 'credit')->where('source', 'purchase')->sum('amount');
+            // Token Purchase Revenue (from all credit transactions)
+            $tokenRevenue = TokenTransaction::where('type', 'credit')->sum('amount');
             $liveClassRevenue = LiveClassPayment::where('status', 'completed')->sum('amount');
             $resourceRevenue = Resource::where('is_free', false)->where('price', '>', 0)->sum('price');
             $subscriptionRevenue = StudentSubscription::where('payment_status', 'paid')->where('is_active', true)->sum('paid_amount');
@@ -108,7 +108,6 @@ class AdminAuthController extends Controller
 
             // Monthly breakdowns
             $monthlyTokenRevenue = TokenTransaction::where('type', 'credit')
-                ->where('source', 'purchase')
                 ->whereMonth('created_at', Carbon::now()->month)
                 ->whereYear('created_at', Carbon::now()->year)
                 ->sum('amount');
