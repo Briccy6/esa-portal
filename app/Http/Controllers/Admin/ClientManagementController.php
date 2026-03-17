@@ -67,16 +67,43 @@ class ClientManagementController extends Controller
             'is_active' => 'boolean',
         ]);
 
+        // Generate a random password
+        $plainPassword = $this->generateRandomPassword();
+        
+        // Create client with hashed password
         $client = Client::create([
             'name' => $request->name,
             'email' => $request->email,
             'phone' => $request->phone,
             'address' => $request->address,
+            'password' => bcrypt($plainPassword), // Hash the password
             'is_active' => $request->has('is_active') ? true : false,
         ]);
 
+        // Send password to client via email
+        try {
+            \Mail::to($client->email)->send(new \App\Mail\ClientWelcomeMail($client, $plainPassword));
+        } catch (\Exception $e) {
+            \Log::error('Failed to send client welcome email: ' . $e->getMessage());
+        }
+
         return redirect()->route('admin.clients.show', $client)
-            ->with('success', "Client {$client->name} has been created successfully!");
+            ->with('success', "Client {$client->name} has been created successfully! Password has been sent to {$client->email}");
+    }
+
+    /**
+     * Generate a random password
+     */
+    private function generateRandomPassword($length = 12)
+    {
+        $characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+        $password = '';
+        
+        for ($i = 0; $i < $length; $i++) {
+            $password .= $characters[rand(0, strlen($characters) - 1)];
+        }
+        
+        return $password;
     }
 
     public function edit(Client $client)
