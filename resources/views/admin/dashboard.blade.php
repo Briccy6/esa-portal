@@ -123,54 +123,6 @@
 @section('content')
 <div class="container-fluid">
 
-    <!-- Date Filter Section -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card border-left-primary shadow h-100 py-3">
-                <div class="card-header py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="m-0 font-weight-bold text-primary">Financial Dashboard Filters</h6>
-                    <div class="btn-group">
-                        <a href="{{ route('admin.dashboard') }}" class="btn btn-secondary btn-sm">
-                            <i class="fas fa-times mr-1"></i> Clear Filters
-                        </a>
-                        <a href="{{ route('admin.accounting.cashbook') }}" class="btn btn-info btn-sm">
-                            <i class="fas fa-book mr-1"></i> View Accounting Books
-                        </a>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <form method="GET" action="{{ route('admin.dashboard') }}" class="form-inline">
-                        <div class="row g-3 align-items-end">
-                            <div class="col-md-3">
-                                <label for="start_date" class="form-label">Start Date</label>
-                                <input type="date" id="start_date" name="start_date" class="form-control" value="{{ $startDate ? $startDate->format('Y-m-d') : '' }}">
-                            </div>
-                            <div class="col-md-3">
-                                <label for="end_date" class="form-label">End Date</label>
-                                <input type="date" id="end_date" name="end_date" class="form-control" value="{{ $endDate ? $endDate->format('Y-m-d') : '' }}">
-                            </div>
-                            <div class="col-md-auto">
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-filter mr-1"></i> Apply Filters
-                                </button>
-                            </div>
-                            <div class="col-md-auto">
-                                <div class="alert alert-info mb-0 py-2 px-3">
-                                    <i class="fas fa-info-circle mr-1"></i>
-                                    @if($startDate || $endDate)
-                                        Showing data for: {{ $startDate ? $startDate->format('M d, Y') : 'All time' }} - {{ $endDate ? $endDate->format('M d, Y') : 'Present' }}
-                                    @else
-                                        Showing all-time data
-                                    @endif
-                                </div>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Summary Cards -->
     <div class="row mb-4">
         <div class="col-xl-3 col-md-6 mb-4">

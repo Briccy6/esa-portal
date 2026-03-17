@@ -62,10 +62,6 @@ class AdminAuthController extends Controller
         DB::enableQueryLog();
         
         try {
-            // Get date filters from request
-            $startDate = $request->get('start_date') ? Carbon::parse($request->get('start_date')) : null;
-            $endDate = $request->get('end_date') ? Carbon::parse($request->get('end_date')) : null;
-            
             // Basic counts (fast queries)
             $totalStudents = Student::count();
             $pendingTransactions = StudentTransaction::where('status', 'pending')->count();
@@ -92,33 +88,11 @@ class AdminAuthController extends Controller
 
             // SIMPLIFIED REVENUE CALCULATION - Direct from transaction tables
             // Token Purchase Revenue (from credit transactions)
-            $tokenRevenueQuery = TokenTransaction::where('type', 'credit')->where('source', 'purchase');
-            $liveClassRevenueQuery = LiveClassPayment::where('status', 'completed');
-            $resourceRevenueQuery = Resource::where('is_free', false)->where('price', '>', 0);
-            $subscriptionRevenueQuery = StudentSubscription::where('payment_status', 'paid')->where('is_active', true);
-            $expensesQuery = Expense::query();
-
-            // Apply date filters if provided
-            if ($startDate) {
-                $tokenRevenueQuery->whereDate('created_at', '>=', $startDate);
-                $liveClassRevenueQuery->whereDate('paid_at', '>=', $startDate);
-                $resourceRevenueQuery->whereDate('created_at', '>=', $startDate);
-                $subscriptionRevenueQuery->whereDate('created_at', '>=', $startDate);
-                $expensesQuery->whereDate('expense_date', '>=', $startDate);
-            }
-            if ($endDate) {
-                $tokenRevenueQuery->whereDate('created_at', '<=', $endDate);
-                $liveClassRevenueQuery->whereDate('paid_at', '<=', $endDate);
-                $resourceRevenueQuery->whereDate('created_at', '<=', $endDate);
-                $subscriptionRevenueQuery->whereDate('created_at', '<=', $endDate);
-                $expensesQuery->whereDate('expense_date', '<=', $endDate);
-            }
-
-            $tokenRevenue = $tokenRevenueQuery->sum('amount');
-            $liveClassRevenue = $liveClassRevenueQuery->sum('amount');
-            $resourceRevenue = $resourceRevenueQuery->sum('price');
-            $subscriptionRevenue = $subscriptionRevenueQuery->sum('paid_amount');
-            $totalExpenses = $expensesQuery->sum('amount') ?? 0;
+            $tokenRevenue = TokenTransaction::where('type', 'credit')->where('source', 'purchase')->sum('amount');
+            $liveClassRevenue = LiveClassPayment::where('status', 'completed')->sum('amount');
+            $resourceRevenue = Resource::where('is_free', false)->where('price', '>', 0)->sum('price');
+            $subscriptionRevenue = StudentSubscription::where('payment_status', 'paid')->where('is_active', true)->sum('paid_amount');
+            $totalExpenses = Expense::sum('amount') ?? 0;
 
             // Monthly breakdowns
             $monthlyTokenRevenue = TokenTransaction::where('type', 'credit')
@@ -176,29 +150,18 @@ class AdminAuthController extends Controller
             $tuitionPaidPercent = 0; // No tuition fee status column exists, set to 0 for now
 
             // Expenses by branch (from expenses table)
-            $expensesByBranchQuery = Expense::select('paid_by as branch', DB::raw('sum(amount) as total'));
-            $expensesByTypeQuery = Expense::select('expense_type', DB::raw('sum(amount) as total'));
-            $expenseTrendQuery = Expense::select(
-                DB::raw('DATE_FORMAT(expense_date, "%b %Y") as month'),
-                DB::raw('sum(amount) as amount')
-            );
-
-            // Apply date filters
-            if ($startDate) {
-                $expensesByBranchQuery->whereDate('expense_date', '>=', $startDate);
-                $expensesByTypeQuery->whereDate('expense_date', '>=', $startDate);
-                $expenseTrendQuery->whereDate('expense_date', '>=', $startDate);
-            }
-            if ($endDate) {
-                $expensesByBranchQuery->whereDate('expense_date', '<=', $endDate);
-                $expensesByTypeQuery->whereDate('expense_date', '<=', $endDate);
-                $expenseTrendQuery->whereDate('expense_date', '<=', $endDate);
-            }
-
-            $expensesByBranch = $expensesByBranchQuery->groupBy('paid_by')->get();
-            $expensesByType = $expensesByTypeQuery->groupBy('expense_type')->get();
+            $expensesByBranch = Expense::select('paid_by as branch', DB::raw('sum(amount) as total'))
+                ->groupBy('paid_by')
+                ->get();
+                
+            $expensesByType = Expense::select('expense_type', DB::raw('sum(amount) as total'))
+                ->groupBy('expense_type')
+                ->get();
             
-            $expenseTrend = $expenseTrendQuery
+            $expenseTrend = Expense::select(
+                    DB::raw('DATE_FORMAT(expense_date, "%b %Y") as month'),
+                    DB::raw('sum(amount) as amount')
+                )
                 ->where('expense_date', '>=', Carbon::now()->subMonths(6))
                 ->groupBy('month')
                 ->orderBy('expense_date')
@@ -263,9 +226,7 @@ class AdminAuthController extends Controller
                 'inactiveClients',
                 'totalClientTokens',
                 'totalClientRevenue',
-                'recentClients',
-                'startDate',
-                'endDate'
+                'recentClients'
             );
             
             return view('admin.dashboard', $dashboardData);
