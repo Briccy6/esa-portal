@@ -139,6 +139,21 @@
                                     </div>
 
                                     <div class="mb-3">
+                                        <label for="sex" class="form-label fw-bold">Sex *</label>
+                                        <select class="form-select @error('sex') is-invalid @enderror" 
+                                                id="sex" 
+                                                name="sex" 
+                                                required>
+                                            <option value="">Select Sex</option>
+                                            <option value="Male" {{ old('sex', $student->sex) == 'Male' ? 'selected' : '' }}>Male</option>
+                                            <option value="Female" {{ old('sex', $student->sex) == 'Female' ? 'selected' : '' }}>Female</option>
+                                        </select>
+                                        @error('sex')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+
+                                    <div class="mb-3">
                                         <label for="discount" class="form-label fw-bold">Discount (%)</label>
                                         <input type="number" 
                                                class="form-control @error('discount') is-invalid @enderror" 
