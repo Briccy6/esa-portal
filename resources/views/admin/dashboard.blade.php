@@ -1185,16 +1185,24 @@ const genderCounts = genderData.map(g => g.total);
         type: 'line',
         data: {
             labels: [
-                @foreach($expenseTrend as $trend)
-                    "{{ $trend->month }}"{{ !$loop->last ? ',' : '' }}
-                @endforeach
+                @if($expenseTrend && $expenseTrend->count() > 0)
+                    @foreach($expenseTrend as $trend)
+                        {{ $trend->month ?? $trend['month'] ?? 'Unknown' }}{{ !$loop->last ? ',' : '' }}
+                    @endforeach
+                @else
+                    'No Data'
+                @endif
             ],
             datasets: [{
                 label: 'Monthly Expenses (Rwf)',
                 data: [
-                    @foreach($expenseTrend as $trend)
-                        {{ $trend->amount }}{{ !$loop->last ? ',' : '' }}
-                    @endforeach
+                    @if($expenseTrend && $expenseTrend->count() > 0)
+                        @foreach($expenseTrend as $trend)
+                            {{ $trend->amount ?? $trend['amount'] ?? 0 }}{{ !$loop->last ? ',' : '' }}
+                        @endforeach
+                    @else
+                        0
+                    @endif
                 ],
                 borderColor: '#f6c23e',
                 backgroundColor: function(context) {

@@ -88,7 +88,7 @@ class AdminAuthController extends Controller
             // Initialize expense variables to prevent undefined variable errors
             $expensesByBranch = collect();
             $expensesByType = collect();
-            $expenseTrend = [];
+            $expenseTrend = collect(); // Ensure it's always a collection
 
             // REVENUE SOURCE ANALYTICS - Using Accounting System with Fallback
             // Check if accounting system has data
@@ -397,6 +397,14 @@ class AdminAuthController extends Controller
                 });
 
             // Cache the results for 1 hour
+            // Debug: Check expenseTrend data structure
+            if ($expenseTrend && $expenseTrend->count() > 0) {
+                \Log::info('expenseTrend type: ' . gettype($expenseTrend));
+                \Log::info('expenseTrend first item: ' . print_r($expenseTrend->first(), true));
+            } else {
+                \Log::info('expenseTrend is empty or null');
+            }
+            
             $dashboardData = compact(
                 'totalStudents',
                 'pendingTransactions',
