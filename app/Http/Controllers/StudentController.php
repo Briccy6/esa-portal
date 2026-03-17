@@ -293,6 +293,167 @@ class StudentController extends Controller
         ));
     }
 
+    public function edit(Student $student)
+    {
+        $branches = Branch::all();
+        $courses = Course::all();
+        $academicYears = AcademicYear::all();
+
+        return view('admin.students.edit', compact('student', 'branches', 'courses', 'academicYears'));
+    }
+
+    public function update(Request $request, Student $student)
+    {
+        $request->validate([
+            'full_name'                  => 'required|string|max:255',
+            'email'                      => 'required|email|max:255|unique:students,email,' . $student->id,
+            'phone'                      => 'required|string|max:20',
+            'sex'                        => 'required|in:Male,Female,Other',
+            'branch_id'                  => 'required|exists:branches,id',
+            'course_id'                  => 'required|exists:courses,id',
+            'academic_year_id'           => 'required|exists:academic_years,id',
+            'discount'                   => 'nullable|numeric|min:0|max:100',
+            'education_level'            => 'nullable|string|max:50',
+            'identification_type'        => 'nullable|in:ID,Passport',
+            'id_number'                  => 'nullable|string|max:50',
+            'id_photo'                   => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'passport_photo'             => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'senior6_document'           => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'senior3_document'           => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'other_supporting_document'  => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+        ], [
+            'full_name.required'    => 'Student name is required',
+            'email.required'        => 'Email address is required',
+            'email.email'           => 'Please enter a valid email address',
+            'email.unique'          => 'This email is already registered',
+            'phone.required'        => 'Phone number is required',
+            'sex.required'          => 'Sex is required',
+            'id_photo.image'        => 'ID photo must be an image file',
+            'id_photo.max'          => 'ID photo size must not exceed 2MB',
+            'passport_photo.image'  => 'Passport photo must be an image file',
+            'passport_photo.max'    => 'Passport photo size must not exceed 2MB',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $updatedFields = [];
+
+            if ($request->full_name !== $student->full_name) {
+                $student->full_name = $request->full_name;
+                $updatedFields[] = 'Full Name';
+            }
+            if ($request->sex !== $student->sex) {
+                $student->sex = $request->sex;
+                $updatedFields[] = 'Sex';
+            }
+            if ($request->email !== $student->email) {
+                $student->email = $request->email;
+                $updatedFields[] = 'Email';
+            }
+            if ($request->phone !== $student->phone) {
+                $student->phone = $request->phone;
+                $updatedFields[] = 'Phone';
+            }
+            if ($request->branch_id != $student->branch_id) {
+                $student->branch_id = $request->branch_id;
+                $updatedFields[] = 'Branch';
+            }
+            if ($request->course_id != $student->course_id) {
+                $student->course_id = $request->course_id;
+                $updatedFields[] = 'Course';
+            }
+            if ($request->academic_year_id != $student->academic_year_id) {
+                $student->academic_year_id = $request->academic_year_id;
+                $updatedFields[] = 'Academic Year';
+            }
+            if ($request->filled('discount') && $request->discount != $student->discount) {
+                $student->discount = $request->discount;
+                $updatedFields[] = 'Discount';
+            }
+            if ($request->filled('education_level') && $request->education_level !== $student->education_level) {
+                $student->education_level = $request->education_level;
+                $updatedFields[] = 'Education Level';
+            }
+            if ($request->filled('identification_type') && $request->identification_type !== $student->identification_type) {
+                $student->identification_type = $request->identification_type;
+                $updatedFields[] = 'Identification Type';
+            }
+            if ($request->filled('id_number') && $request->id_number !== $student->id_number) {
+                $student->id_number = $request->id_number;
+                $updatedFields[] = 'ID Number';
+            }
+
+            if ($request->hasFile('id_photo')) {
+                if ($student->id_photo && Storage::disk('public')->exists($student->id_photo)) {
+                    Storage::disk('public')->delete($student->id_photo);
+                }
+                $student->id_photo = $request->file('id_photo')->store('students/id_photo', 'public');
+                $updatedFields[] = 'ID Photo';
+            }
+
+            if ($request->hasFile('passport_photo')) {
+                if ($student->passport_photo && Storage::disk('public')->exists($student->passport_photo)) {
+                    Storage::disk('public')->delete($student->passport_photo);
+                }
+                $student->passport_photo = $request->file('passport_photo')->store('students/passport_photo', 'public');
+                $updatedFields[] = 'Passport Photo';
+            }
+            if ($request->hasFile('senior6_document')) {
+                if ($student->senior6_document && Storage::disk('public')->exists($student->senior6_document)) {
+                    Storage::disk('public')->delete($student->senior6_document);
+                }
+                $student->senior6_document = $request->file('senior6_document')->store('students/documents', 'public');
+                $updatedFields[] = 'Senior 6 Certificate';
+            }
+            if ($request->hasFile('senior3_document')) {
+                if ($student->senior3_document && Storage::disk('public')->exists($student->senior3_document)) {
+                    Storage::disk('public')->delete($student->senior3_document);
+                }
+                $student->senior3_document = $request->file('senior3_document')->store('students/documents', 'public');
+                $updatedFields[] = 'Senior 3 Certificate';
+            }
+            if ($request->hasFile('other_supporting_document')) {
+                if ($student->other_supporting_document && Storage::disk('public')->exists($student->other_supporting_document)) {
+                    Storage::disk('public')->delete($student->other_supporting_document);
+                }
+                $student->other_supporting_document = $request->file('other_supporting_document')->store('students/documents', 'public');
+                $updatedFields[] = 'Supporting Document';
+            }
+
+            $student->save();
+
+            DB::commit();
+
+            Log::info('Student updated by admin', [
+                'student_id'     => $student->id,
+                'admin_id'       => auth('admin')->id,
+                'updated_fields' => $updatedFields,
+            ]);
+
+            if (count($updatedFields) > 0) {
+                return redirect()->route('admin.students.edit', $student)
+                    ->with('success', 'Student information updated successfully!')
+                    ->with('updated_fields', $updatedFields);
+            }
+
+            return redirect()->route('admin.students.edit', $student)
+                ->with('success', 'No changes were made.');
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            Log::error('Student update failed', [
+                'student_id' => $student->id,
+                'error'      => $e->getMessage(),
+                'trace'      => $e->getTraceAsString(),
+            ]);
+
+            return redirect()->back()
+                ->with('error', 'Failed to update student: ' . $e->getMessage())
+                ->withInput();
+        }
+    }
+
     public function editByStaff(Student $student)
     {
         if (!auth()->guard('staff')->check()) {
