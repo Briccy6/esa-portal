@@ -94,6 +94,18 @@ class AdminAuthController extends Controller
             $subscriptionRevenue = StudentSubscription::where('payment_status', 'paid')->where('is_active', true)->sum('paid_amount');
             $totalExpenses = Expense::sum('amount') ?? 0;
 
+            // Debug: Check table counts and revenue data
+            \Log::info('Token Transactions count: ' . TokenTransaction::count());
+            \Log::info('Token Revenue: ' . $tokenRevenue);
+            \Log::info('Live Class Payments count: ' . LiveClassPayment::count());
+            \Log::info('Live Class Revenue: ' . $liveClassRevenue);
+            \Log::info('Resources count: ' . Resource::count());
+            \Log::info('Resource Revenue: ' . $resourceRevenue);
+            \Log::info('Student Subscriptions count: ' . StudentSubscription::count());
+            \Log::info('Subscription Revenue: ' . $subscriptionRevenue);
+            \Log::info('Expenses count: ' . Expense::count());
+            \Log::info('Total Expenses: ' . $totalExpenses);
+
             // Monthly breakdowns
             $monthlyTokenRevenue = TokenTransaction::where('type', 'credit')
                 ->where('source', 'purchase')
