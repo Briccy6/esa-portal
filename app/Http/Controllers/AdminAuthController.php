@@ -93,7 +93,7 @@ class AdminAuthController extends Controller
                     ->value('total_revenue') ?? 0;
 
                 // Get expenses from journal entries (Expense accounts)
-                $expensesData = DB::table('journal_items as ji')
+                $totalExpenses = DB::table('journal_items as ji')
                     ->join('journal_entries as je', 'ji.journal_entry_id', '=', 'je.id')
                     ->join('accounts as a', 'ji.account_id', '=', 'a.id')
                     ->where('je.status', 'Posted')
