@@ -1019,6 +1019,7 @@ Route::middleware('auth:student')->prefix('student')->name('student.')->group(fu
         return redirect()->route('student.live-classes.room', $liveClass);
     });
     Route::get('/live-classes/{liveClass}/room', [LiveClassController::class, 'room'])->name('live-classes.room');
+    Route::post('/live-classes/{liveClass}/leave', [LiveClassController::class, 'studentLeave'])->name('live-classes.leave');
 });
 
 

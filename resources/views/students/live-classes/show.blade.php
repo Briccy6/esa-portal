@@ -1,83 +1,110 @@
-@extends('layouts.app')
+@extends('students.app')
 
 @section('title', 'Live Class Details')
 
 @section('content')
-<div class="container">
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h3 class="section-title">
+                    <i class="bi bi-broadcast me-2"></i>
+                    {{ $liveClass->title }}
+                </h3>
+                <a href="{{ route('student.live-classes.index') }}" class="btn btn-outline-primary">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Classes
+                </a>
+            </div>
+        </div>
+    </div>
+
+    @if(session('error'))
+        <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            {{ session('error') }}
+        </div>
+    @endif
+
+    @if(session('success'))
+        <div class="alert alert-success">
+            <i class="bi bi-check-circle me-2"></i>
+            {{ session('success') }}
+        </div>
+    @endif
+
+    @if(session('info'))
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle me-2"></i>
+            {{ session('info') }}
+        </div>
+    @endif
+
+    <!-- Live Class Details Card -->
     <div class="row">
         <div class="col-12">
             <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">{{ $liveClass->title }}</h3>
-                    <div class="card-tools">
-                        <a href="{{ route('student.live-classes.index') }}" class="btn btn-secondary btn-sm">
-                            <i class="fas fa-arrow-left"></i> Back to Classes
-                        </a>
-                    </div>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Class Information</h5>
+                    @switch($liveClass->status)
+                        @case('scheduled')
+                            <span class="badge bg-warning">Scheduled</span>
+                            @break
+                        @case('active')
+                            <span class="badge bg-success">Live Now</span>
+                            @break
+                        @case('ended')
+                            <span class="badge bg-secondary">Ended</span>
+                            @break
+                        @default
+                            <span class="badge bg-secondary">{{ $liveClass->status }}</span>
+                    @endswitch
                 </div>
                 <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-8">
-                            @if($liveClass->description)
-                                <p>{{ $liveClass->description }}</p>
-                            @endif
+                    @if($liveClass->description)
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <p class="lead">{{ $liveClass->description }}</p>
+                            </div>
                         </div>
-                        <div class="col-md-4 text-right">
-                            @switch($liveClass->status)
-                                @case('scheduled')
-                                    <span class="badge badge-warning badge-lg">Scheduled</span>
-                                    @break
-                                @case('active')
-                                    <span class="badge badge-success badge-lg">Live Now</span>
-                                    @break
-                                @case('ended')
-                                    <span class="badge badge-secondary badge-lg">Ended</span>
-                                    @break
-                                @default
-                                    <span class="badge badge-secondary badge-lg">{{ $liveClass->status }}</span>
-                            @endswitch
+                    @endif
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-primary mb-3">Class Details</h6>
+                            <div class="mb-3">
+                                <small class="text-muted d-block">Course</small>
+                                <strong>{{ $liveClass->course?->course_name ?? 'N/A' }}</strong>
+                            </div>
+                            <div class="mb-3">
+                                <small class="text-muted d-block">Teacher</small>
+                                <strong>{{ $liveClass->teacher?->teacher_name ?? 'No teacher assigned' }}</strong>
+                            </div>
+                            <div class="mb-3">
+                                <small class="text-muted d-block">Lesson</small>
+                                <strong>{{ $liveClass->lesson?->title ?? 'N/A' }}</strong>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-primary mb-3">Schedule</h6>
+                            <div class="mb-3">
+                                <small class="text-muted d-block">Start Time</small>
+                                <strong><i class="bi bi-clock me-1"></i>{{ $liveClass->start_time->format('M j, Y H:i') }}</strong>
+                            </div>
+                            <div class="mb-3">
+                                <small class="text-muted d-block">End Time</small>
+                                <strong><i class="bi bi-clock me-1"></i>{{ $liveClass->end_time->format('M j, Y H:i') }}</strong>
+                            </div>
+                            <div class="mb-3">
+                                <small class="text-muted d-block">Duration</small>
+                                <strong><i class="bi bi-hourglass me-1"></i>{{ $liveClass->start_time->diffInHours($liveClass->end_time) }} hours</strong>
+                            </div>
                         </div>
                     </div>
 
                     <hr>
 
-                    <div class="row">
-                        <div class="col-md-6">
-                            <table class="table table-borderless">
-                                <tr>
-                                    <td><strong>Course:</strong></td>
-                                    <td>{{ $liveClass->course?->course_name ?? 'N/A' }}</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Teacher:</strong></td>
-                                    <td>{{ $liveClass->teacher?->name ?? 'No teacher assigned' }}</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Lesson:</strong></td>
-                                    <td>{{ $liveClass->lesson?->title ?? 'N/A' }}</td>
-                                </tr>
-                            </table>
-                        </div>
-                        <div class="col-md-6">
-                            <table class="table table-borderless">
-                                <tr>
-                                    <td><strong>Start Time:</strong></td>
-                                    <td>{{ $liveClass->start_time->format('M j, Y H:i') }}</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>End Time:</strong></td>
-                                    <td>{{ $liveClass->end_time->format('M j, Y H:i') }}</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Duration:</strong></td>
-                                    <td>{{ $liveClass->start_time->diffInHours($liveClass->end_time) }} hours</td>
-                                </tr>
-                            </table>
-                        </div>
-                    </div>
-
-                    <hr>
-
+                    <!-- Live Class Actions -->
                     @if($liveClass->status === 'active')
                         @php
                             $studentRequest = \App\Models\LiveClassRequest::where('live_class_id', $liveClass->id)
@@ -90,93 +117,104 @@
                             @switch($studentRequest->status)
                                 @case('pending')
                                     <div class="alert alert-warning">
-                                        <h5><i class="fas fa-clock"></i> Request Pending</h5>
-                                        <p>Your request to join this class is pending approval.</p>
-                                        <p>Submitted: {{ $studentRequest->created_at->format('M j, Y H:i') }}</p>
+                                        <h5><i class="bi bi-clock me-2"></i> Request Pending</h5>
+                                        <p class="mb-0">Your request to join this class is pending approval.</p>
+                                        <small class="text-muted">Submitted: {{ $studentRequest->created_at->format('M j, Y H:i') }}</small>
                                     </div>
                                     <div class="text-center">
                                         <button class="btn btn-outline-warning btn-lg" disabled>
-                                            <i class="fas fa-clock"></i> Request Pending
+                                            <i class="bi bi-clock me-2"></i> Request Pending
                                         </button>
                                     </div>
                                     @break
                                 @case('approved')
                                     <div class="alert alert-success">
-                                        <h5><i class="fas fa-check-circle"></i> Request Approved</h5>
-                                        <p>Your request has been approved! You can now join the live class.</p>
+                                        <h5><i class="bi bi-check-circle me-2"></i> Request Approved</h5>
+                                        <p class="mb-0">Your request has been approved! You can now join the live class.</p>
                                     </div>
                                     <div class="text-center">
                                         <a href="{{ route('student.live-classes.room', $liveClass) }}" class="btn btn-success btn-lg">
-                                            <i class="fas fa-video"></i> Join Live Class Now
+                                            <i class="bi bi-camera-video me-2"></i> Join Live Class Now
                                         </a>
                                     </div>
                                     @break
                                 @case('rejected')
                                     <div class="alert alert-danger">
-                                        <h5><i class="fas fa-times-circle"></i> Request Rejected</h5>
-                                        <p>Your request was rejected.</p>
+                                        <h5><i class="bi bi-x-circle me-2"></i> Request Rejected</h5>
+                                        <p class="mb-0">Your request was rejected.</p>
                                         @if($studentRequest->rejected_reason)
                                             <p><strong>Reason:</strong> {{ $studentRequest->rejected_reason }}</p>
                                         @endif
                                     </div>
                                     <div class="text-center">
                                         <button class="btn btn-outline-danger btn-lg" disabled>
-                                            <i class="fas fa-times-circle"></i> Request Rejected
+                                            <i class="bi bi-x-circle me-2"></i> Request Rejected
                                         </button>
                                     </div>
                                     @break
                             @endswitch
                         @else
                             <div class="alert alert-success">
-                                <h5><i class="fas fa-broadcast-tower"></i> This class is currently live!</h5>
-                                <p>Join now to participate in the live session.</p>
+                                <h5><i class="bi bi-broadcast me-2"></i> This class is currently live!</h5>
+                                <p class="mb-0">Join now to participate in the live session.</p>
                             </div>
 
                             <div class="text-center">
                                 <a href="{{ route('student.live-classes.room', $liveClass) }}" class="btn btn-success btn-lg">
-                                    <i class="fas fa-video"></i> Join Live Class Now
+                                    <i class="bi bi-camera-video me-2"></i> Join Live Class Now
                                 </a>
                             </div>
                         @endif
                     @elseif($liveClass->start_time->isFuture())
                         <div class="alert alert-info">
-                            <h5><i class="fas fa-clock"></i> Class hasn't started yet</h5>
-                            <p>This class will start at: <strong>{{ $liveClass->start_time->format('M j, Y H:i') }}</strong></p>
-                            <p>Time until start: <strong>{{ $liveClass->start_time->diffForHumans() }}</strong></p>
+                            <h5><i class="bi bi-clock me-2"></i> Class hasn't started yet</h5>
+                            <p class="mb-0">This class will start at: <strong>{{ $liveClass->start_time->format('M j, Y H:i') }}</strong></p>
+                            <small class="text-muted">Time until start: <strong>{{ $liveClass->start_time->diffForHumans() }}</strong></small>
                         </div>
 
                         <div class="text-center">
                             <button class="btn btn-outline-secondary btn-lg" disabled>
-                                <i class="fas fa-clock"></i> Not Started Yet
+                                <i class="bi bi-clock me-2"></i> Not Started Yet
                             </button>
                         </div>
                     @else
                         <div class="alert alert-secondary">
-                            <h5><i class="fas fa-archive"></i> Class has ended</h5>
-                            <p>This class ended at: <strong>{{ $liveClass->end_time->format('M j, Y H:i') }}</strong></p>
-                            <p>Recording may be available soon.</p>
+                            <h5><i class="bi bi-archive me-2"></i> Class has ended</h5>
+                            <p class="mb-0">This class ended at: <strong>{{ $liveClass->end_time->format('M j, Y H:i') }}</strong></p>
+                            <small class="text-muted">Recording may be available soon.</small>
                         </div>
 
                         <div class="text-center">
                             <button class="btn btn-outline-secondary btn-lg" disabled>
-                                <i class="fas fa-archive"></i> Class Ended
+                                <i class="bi bi-archive me-2"></i> Class Ended
                             </button>
                         </div>
                     @endif
 
                     <hr>
 
+                    <!-- Technical Requirements -->
                     <div class="row">
                         <div class="col-12">
-                            <h5>Technical Requirements</h5>
+                            <h6 class="text-primary mb-3">
+                                <i class="bi bi-gear me-2"></i>Technical Requirements
+                            </h6>
                             <div class="alert alert-light">
-                                <h6>Before joining the live class, make sure you have:</h6>
-                                <ul class="mb-0">
-                                    <li>A modern web browser (Chrome, Firefox, Safari, or Edge)</li>
-                                    <li>Stable internet connection</li>
-                                    <li>Webcam and microphone (if you want to participate)</li>
-                                    <li>Headphones recommended for better audio quality</li>
-                                </ul>
+                                <h6 class="mb-3">Before joining the live class, make sure you have:</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <ul class="mb-0">
+                                            <li><i class="bi bi-browser-chrome text-primary me-2"></i>A modern web browser (Chrome, Firefox, Safari, or Edge)</li>
+                                            <li><i class="bi bi-wifi text-primary me-2"></i>Stable internet connection</li>
+                                        </ul>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <ul class="mb-0">
+                                            <li><i class="bi bi-camera-video text-primary me-2"></i>Webcam and microphone (if you want to participate)</li>
+                                            <li><i class="bi bi-headphones text-primary me-2"></i>Headphones recommended for better audio quality</li>
+                                        </ul>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

@@ -477,6 +477,12 @@ class PublicExamController extends Controller
      */
     public function submitExam(Request $request, Exam $exam, $sessionId)
     {
+        // Only allow POST requests
+        if (!$request->isMethod('post')) {
+            return redirect()->route('public.exams.take.question', [$exam, $sessionId, 1])
+                ->with('error', 'Invalid request method. Please use the submit button.');
+        }
+        
         if (!$exam->isPubliclyAccessible()) {
             abort(404, 'Exam not available for public access');
         }
@@ -505,6 +511,9 @@ class PublicExamController extends Controller
 
         $score      = $totalQuestions > 0 ? round(($correctAnswers / $totalQuestions) * 100, 2) : 0;
         $passed     = $score >= ($exam->passing_score ?? 50);
+
+        // Load exam with relationships for results display
+        $exam->load(['courses', 'lessons', 'academic_year', 'term', 'teacher']);
 
         return view('public.exams.results', compact(
             'exam', 'sessionId', 'sessionData',

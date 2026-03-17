@@ -2,7 +2,7 @@
 
 @section('title', 'Live Class Room - {{ $liveClass->title }}')
 
-@section('styles')
+@push('styles')
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
     :root {
@@ -351,7 +351,7 @@
         }
     }
 </style>
-@endsection
+@endpush
 
 @section('content')
 <div class="lc-root">
@@ -482,8 +482,8 @@ let participantCount = 1;
 // WebRTC configuration
 const roomId = '{{ $liveClass->id }}';
 const signalingUrl = '{{ route("live-signaling.poll", $liveClass->id) }}';
-const chatUrl = '{{ route("webrtc.chat", roomId) }}';
-const participantsUrl = '{{ route("webrtc.participants", roomId) }}';
+const chatUrl = '{{ route("webrtc.chat", $liveClass->id) }}';
+const participantsUrl = '{{ route("webrtc.participants", $liveClass->id) }}';
 
 // Toggle audio
 function toggleAudio() {
@@ -520,16 +520,33 @@ function toggleFullscreen() {
 // Leave class
 function leaveClass() {
     if (confirm('Are you sure you want to leave this live class?')) {
-        // Leave WebRTC room
-        fetch(`{{ route('webrtc.leave', roomId) }}`, {
+        // Mark as left in database before leaving WebRTC room
+        fetch(`/student/live-classes/{{ $liveClass->id }}/leave`, {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': '{{ csrf_token() }}',
                 'Content-Type': 'application/json'
             }
-        }).finally(() => {
-            // Redirect back to student dashboard
-            window.location.href = '{{ route('student.live-classes.index') }}';
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Successfully marked as left:', data);
+        })
+        .catch(err => {
+            console.error('Error marking as left:', err);
+        })
+        .finally(() => {
+            // Leave WebRTC room
+            fetch(`{{ route('webrtc.leave', $liveClass->id) }}`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Content-Type': 'application/json'
+                }
+            }).finally(() => {
+                // Redirect back to student dashboard
+                window.location.href = '{{ route('student.live-classes.index') }}';
+            });
         });
     }
 }
@@ -580,7 +597,7 @@ function addChatMessage(author, message, time = null) {
 
 // Send WebRTC signal
 function sendSignal(type, data) {
-    fetch(`{{ route('webrtc.signaling', roomId) }}`, {
+    fetch(`{{ route('webrtc.signaling', $liveClass->id) }}`, {
         method: 'POST',
         headers: {
             'X-CSRF-TOKEN': '{{ csrf_token() }}',
@@ -650,7 +667,7 @@ function pollParticipants() {
 
 // Join WebRTC room
 function joinRoom() {
-    fetch(`{{ route('webrtc.join', roomId) }}`, {
+    fetch(`{{ route('webrtc.join', $liveClass->id) }}`, {
         method: 'POST',
         headers: {
             'X-CSRF-TOKEN': '{{ csrf_token() }}',
@@ -684,15 +701,37 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Cleanup on page unload
 window.addEventListener('beforeunload', function() {
+    // Send synchronous request to mark as left when leaving page
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `/student/live-classes/{{ $liveClass->id }}/leave`, false);
+    xhr.setRequestHeader('X-CSRF-TOKEN', '{{ csrf_token() }}');
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.send();
+    
     // Leave WebRTC room
-    fetch(`{{ route('webrtc.leave', roomId) }}`, {
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            'Content-Type': 'application/json'
-        },
-        keepalive: true
-    });
+    const webrtcXhr = new XMLHttpRequest();
+    webrtcXhr.open('POST', `{{ route('webrtc.leave', $liveClass->id) }}`, false);
+    webrtcXhr.setRequestHeader('X-CSRF-TOKEN', '{{ csrf_token() }}');
+    webrtcXhr.setRequestHeader('Content-Type', 'application/json');
+    webrtcXhr.send();
+});
+
+// Also handle visibility change (when tab is hidden/shown)
+document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'hidden') {
+        // Mark as left when tab becomes hidden (optional - might be too aggressive)
+        // Uncomment if you want to mark as left when switching tabs
+        /*
+        fetch(`/student/live-classes/{{ $liveClass->id }}/leave`, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Content-Type': 'application/json'
+            },
+            keepalive: true
+        }).catch(err => console.log('Error marking as left on visibility change:', err));
+        */
+    }
 });
 </script>
 @endsection

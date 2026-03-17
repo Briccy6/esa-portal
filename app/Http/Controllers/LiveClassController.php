@@ -1334,4 +1334,33 @@ class LiveClassController extends Controller
 
         return view('live-classes.payment-verification', compact('liveClass', 'payment'));
     }
+
+    /**
+     * Handle student leaving a live class
+     */
+    public function studentLeave(Request $request, LiveClass $liveClass)
+    {
+        $student = Auth::guard('student')->user();
+        
+        // Find the student's active participant record
+        $participant = $liveClass->participants()
+            ->where('user_id', $student->id)
+            ->where('user_type', 'student')
+            ->where('is_active', true)
+            ->whereNull('left_at')
+            ->first();
+            
+        if ($participant) {
+            // Mark as left
+            $participant->update([
+                'left_at' => now(),
+                'is_active' => false
+            ]);
+        }
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Successfully left the live class'
+        ]);
+    }
 }

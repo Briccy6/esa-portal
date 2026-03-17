@@ -200,7 +200,7 @@
                 {!! $currentQuestion->text !!}
             </div>
 
-            <form id="answerForm">
+            <form id="answerForm" onsubmit="event.preventDefault(); event.stopPropagation(); return submitExam();">
                 @csrf
                 <div class="answer-options">
                     @foreach($currentQuestion->options ?? [] as $index => $option)
@@ -233,7 +233,7 @@
                                 Next <i class="fas fa-arrow-right"></i>
                             </button>
                         @else
-                            <button type="button" id="submitBtn" class="nav-btn success" disabled onclick="submitExam()">
+                            <button type="submit" id="submitBtn" class="nav-btn success" disabled>
                                 <i class="fas fa-check-circle"></i> Submit Exam
                             </button>
                         @endif
@@ -375,8 +375,30 @@ function goToQuestion(questionNum) {
 
 function submitExam() {
     if (confirm('Are you sure you want to submit this exam? You cannot change your answers after submission.')) {
-        window.location.href = '{{ route('public.exams.submit', [$exam, $sessionId]) }}';
+        // Prevent any default browser behavior
+        event.preventDefault();
+        
+        // Create a form and submit it via POST
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ route('public.exams.submit', [$exam, $sessionId]) }}';
+        form.style.display = 'none'; // Hide the form
+        
+        // Add CSRF token
+        const csrfToken = document.createElement('input');
+        csrfToken.type = 'hidden';
+        csrfToken.name = '_token';
+        csrfToken.value = '{{ csrf_token() }}';
+        form.appendChild(csrfToken);
+        
+        // Add the form to body and submit
+        document.body.appendChild(form);
+        form.submit();
+        
+        // Prevent any further navigation
+        return false;
     }
+    return false;
 }
 
 document.addEventListener('DOMContentLoaded', function() {

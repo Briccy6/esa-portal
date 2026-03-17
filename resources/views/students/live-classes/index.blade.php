@@ -142,6 +142,10 @@
                                 <button type="button" class="btn btn-success btn-block" onclick="checkAndJoin({{ $liveClass->id }})">
                                     <i class="bi bi-camera-video"></i> Join Live Class
                                 </button>
+                            @elseif($liveClass->status === 'active' && isset($canJoin['can_rejoin']) && $canJoin['can_rejoin'])
+                                <button type="button" class="btn btn-primary btn-block" onclick="checkAndJoin({{ $liveClass->id }})">
+                                    <i class="bi bi-arrow-return-left"></i> Rejoin Live Class
+                                </button>
                             @elseif($liveClass->status === 'active' && isset($canJoin['requires_payment']))
                                 <div class="payment-required">
                                     <div class="alert alert-warning py-2 mb-2">

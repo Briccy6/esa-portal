@@ -156,11 +156,24 @@ class LiveClass extends Model
                 ->where('user_id', $student->id)
                 ->where('user_type', 'student')
                 ->where('is_active', true)
+                ->whereNull('left_at') // Only check if they haven't properly left
                 ->first();
             
             if ($existingSession) {
                 return ['allowed' => false, 'reason' => 'You are already joined from another device'];
             }
+        }
+
+        // Check if student has left and can rejoin
+        $previousSession = $this->participants()
+            ->where('user_id', $student->id)
+            ->where('user_type', 'student')
+            ->whereNotNull('left_at')
+            ->first();
+            
+        if ($previousSession) {
+            // Student has left before, they can rejoin
+            return ['allowed' => true, 'can_rejoin' => true];
         }
 
         // Check maximum participants
