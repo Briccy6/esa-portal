@@ -233,7 +233,7 @@ class AdminAuthController extends Controller
 
             // Calculate total revenue and profit metrics
             $totalRevenue = $revenueData;
-            $totalExpenses = $expensesData;
+            $totalExpenses = $totalExpenses;
             $netProfit = $totalRevenue - $totalExpenses;
             $profitMargin = $totalRevenue > 0 ? round(($netProfit / $totalRevenue) * 100, 2) : 0;
 
