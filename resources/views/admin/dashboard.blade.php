@@ -123,6 +123,54 @@
 @section('content')
 <div class="container-fluid">
 
+    <!-- Date Filter Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-left-primary shadow h-100 py-3">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">Financial Dashboard Filters</h6>
+                    <div class="btn-group">
+                        <a href="{{ route('admin.dashboard') }}" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-times mr-1"></i> Clear Filters
+                        </a>
+                        <a href="{{ route('admin.accounting.cashbook') }}" class="btn btn-info btn-sm">
+                            <i class="fas fa-book mr-1"></i> View Accounting Books
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form method="GET" action="{{ route('admin.dashboard') }}" class="form-inline">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-3">
+                                <label for="start_date" class="form-label">Start Date</label>
+                                <input type="date" id="start_date" name="start_date" class="form-control" value="{{ $startDate ? $startDate->format('Y-m-d') : '' }}">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="end_date" class="form-label">End Date</label>
+                                <input type="date" id="end_date" name="end_date" class="form-control" value="{{ $endDate ? $endDate->format('Y-m-d') : '' }}">
+                            </div>
+                            <div class="col-md-auto">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-filter mr-1"></i> Apply Filters
+                                </button>
+                            </div>
+                            <div class="col-md-auto">
+                                <div class="alert alert-info mb-0 py-2 px-3">
+                                    <i class="fas fa-info-circle mr-1"></i>
+                                    @if($startDate || $endDate)
+                                        Showing data for: {{ $startDate ? $startDate->format('M d, Y') : 'All time' }} - {{ $endDate ? $endDate->format('M d, Y') : 'Present' }}
+                                    @else
+                                        Showing all-time data
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Summary Cards -->
     <div class="row mb-4">
         <div class="col-xl-3 col-md-6 mb-4">
@@ -192,7 +240,7 @@
 
     <!-- Revenue Source Cards -->
     <div class="row mb-4">
-        <div class="col-xl-4 col-md-6 mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
             <div class="card border-left-warning shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
@@ -209,7 +257,7 @@
             </div>
         </div>
 
-        <div class="col-xl-4 col-md-6 mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
             <div class="card border-left-purple shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
@@ -226,7 +274,7 @@
             </div>
         </div>
 
-        <div class="col-xl-4 col-md-6 mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
             <div class="card border-left-teal shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
@@ -242,16 +290,35 @@
                 </div>
             </div>
         </div>
-    </div>
 
-    <div class="col-xl-4 col-md-6 mb-4">
-            <div class="card border-left-teal shadow h-100 py-2">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-teal text-uppercase mb-1">Subscription Revenue</div>
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Subscription Revenue</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($subscriptionRevenue ?? 0) }} Rwf</div>
                             <div class="text-xs text-muted">This month: {{ number_format($monthlySubscriptionRevenue ?? 0) }} Rwf</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-crown fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Client Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Total Clients</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalClients ?? 0) }}</div>
+                            <div class="text-xs text-muted">{{ number_format($activeClients ?? 0) }} active, {{ number_format($inactiveClients ?? 0) }} inactive</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-users fa-2x text-gray-300"></i>
@@ -260,6 +327,58 @@
                 </div>
             </div>
         </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Client Tokens Sold</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalClientTokens ?? 0) }}</div>
+                            <div class="text-xs text-muted">Total tokens purchased</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-coins fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Client Revenue</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalClientRevenue ?? 0) }} Rwf</div>
+                            <div class="text-xs text-muted">From token purchases</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-chart-line fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Active Subscriptions</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ \App\Models\ClientSubscription::where('is_active', true)->count() }}</div>
+                            <div class="text-xs text-muted">Currently active</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-crown fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Report Cards Quick Access -->
     <div class="row mb-4">
@@ -362,6 +481,115 @@
                     <div class="mt-3 text-center">
                         <a href="{{ route('admin.blogs.index') }}" class="btn btn-primary">
                             <i class="fas fa-cog me-2"></i>Manage All Blogs
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Client Management Section -->
+    <div class="row mb-4">
+        <div class="col-xl-12 col-lg-12 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-warning">Client Management</h6>
+                    <div class="btn-group">
+                        <a href="{{ route('admin.clients.index') }}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-list me-2"></i>All Clients
+                        </a>
+                        <a href="{{ route('admin.clients.index') }}?status=active" class="btn btn-success btn-sm">
+                            <i class="fas fa-user-check me-2"></i>Active Clients
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-2">
+                            <div class="text-center">
+                                <h3 class="text-warning">{{ $totalClients ?? 0 }}</h3>
+                                <p class="text-muted">Total Clients</p>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="text-center">
+                                <h3 class="text-success">{{ $activeClients ?? 0 }}</h3>
+                                <p class="text-muted">Active</p>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="text-center">
+                                <h3 class="text-danger">{{ $inactiveClients ?? 0 }}</h3>
+                                <p class="text-muted">Inactive</p>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="text-center">
+                                <h3 class="text-info">{{ number_format($totalClientTokens ?? 0) }}</h3>
+                                <p class="text-muted">Tokens Sold</p>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="text-center">
+                                <h3 class="text-primary">{{ number_format($totalClientRevenue ?? 0) }} Rwf</h3>
+                                <p class="text-muted">Revenue</p>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="text-center">
+                                <h3 class="text-secondary">{{ \App\Models\ClientSubscription::where('is_active', true)->count() }}</h3>
+                                <p class="text-muted">Active Subscriptions</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    @if(isset($recentClients) && $recentClients->count() > 0)
+                    <div class="mt-4">
+                        <h6 class="text-muted mb-3">Recent Clients</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        <th>Tokens</th>
+                                        <th>Subscription</th>
+                                        <th>Status</th>
+                                        <th>Joined</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($recentClients as $client)
+                                    <tr>
+                                        <td>{{ $client->name }}</td>
+                                        <td>{{ $client->email }}</td>
+                                        <td><span class="badge bg-primary">{{ $client->getCurrentTokens() }}</span></td>
+                                        <td>
+                                            @if($client->hasActiveSubscription())
+                                                <span class="badge bg-success">{{ $client->activeSubscription->subscription->name }}</span>
+                                            @else
+                                                <span class="badge bg-secondary">None</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if($client->is_active)
+                                                <span class="badge bg-success">Active</span>
+                                            @else
+                                                <span class="badge bg-danger">Inactive</span>
+                                            @endif
+                                        </td>
+                                        <td>{{ $client->created_at->format('M j, Y') }}</td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    @endif
+                    
+                    <div class="mt-3 text-center">
+                        <a href="{{ route('admin.clients.index') }}" class="btn btn-warning">
+                            <i class="fas fa-users me-2"></i>Manage All Clients
                         </a>
                     </div>
                 </div>
@@ -958,14 +1186,14 @@ const genderCounts = genderData.map(g => g.total);
         data: {
             labels: [
                 @foreach($expenseTrend as $trend)
-                    "{{ $trend['month'] }}"{{ !$loop->last ? ',' : '' }}
+                    "{{ $trend->month }}"{{ !$loop->last ? ',' : '' }}
                 @endforeach
             ],
             datasets: [{
                 label: 'Monthly Expenses (Rwf)',
                 data: [
                     @foreach($expenseTrend as $trend)
-                        {{ $trend['amount'] }}{{ !$loop->last ? ',' : '' }}
+                        {{ $trend->amount }}{{ !$loop->last ? ',' : '' }}
                     @endforeach
                 ],
                 borderColor: '#f6c23e',

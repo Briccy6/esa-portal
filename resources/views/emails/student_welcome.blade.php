@@ -273,14 +273,14 @@
                 <div class="credential-item">
                     <div class="credential-label">Password</div>
                     <div class="password-container">
-                        <div class="password-display">{{ $student->password }}</div>
+                        <div class="password-display">{{ $password }}</div>
                                            
                     </div>
                 </div>
             </div>
             
             <div class="cta-section">
-                <a href="#" class="login-button">🚀 Start Learning Now</a>
+                <a href="{{ url('/student/login') }}" class="login-button">🚀 Start Learning Now</a>
             </div>
             
             <p class="welcome-text">

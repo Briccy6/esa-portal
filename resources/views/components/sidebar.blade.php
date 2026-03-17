@@ -62,6 +62,31 @@
                     Branches
                 </a>
             </li>
+
+            <li>
+                <a href="{{ route('admin.students.index') }}" 
+                   class="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors duration-200
+                   {{ request()->routeIs('admin.students.*') ? 'bg-purple-100 text-purple-700' : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900' }}">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                    </svg>
+                    Students
+                </a>
+            </li>
+
+            <li>
+                <form action="{{ route('admin.students.sendBulkInformationEmails') }}" method="POST" onsubmit="return confirm('Are you sure you want to send information emails to ALL students? This may take several minutes.')" class="w-full">
+                    @csrf
+                    <button type="submit" 
+                           class="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors duration-200 w-full text-left
+                           {{ request()->routeIs('admin.students.sendBulkInformationEmails') ? 'bg-purple-100 text-purple-700' : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900' }}">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                        </svg>
+                        Send Info Emails
+                    </button>
+                </form>
+            </li>
         </ul>
 
         <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4 mt-8">Other</h3>

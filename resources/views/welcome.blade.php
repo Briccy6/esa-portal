@@ -1227,7 +1227,7 @@
                             View plans
                             <i class="fas fa-arrow-right ml-2 text-[10px]"></i>
                         </a>
-                        <a href="{{ route('public.subscriptions.login') }}"
+                        <a href="{{ route('client.auth.login') }}"
                            class="inline-flex items-center px-4 py-2 rounded-full bg-white/10 text-xs font-semibold hover:bg-white/15">
                             Client login
                             <i class="fas fa-sign-in-alt ml-2 text-[10px]"></i>

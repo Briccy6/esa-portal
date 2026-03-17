@@ -58,6 +58,9 @@
                         <a href="{{ route('student.login') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition duration-150">
                             <i class="fas fa-user-graduate mr-2 text-purple-600"></i>Student Login
                         </a>
+                        <a href="{{ route('client.auth.login') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition duration-150">
+                            <i class="fas fa-briefcase mr-2 text-orange-600"></i>Client Login
+                        </a>
                     </div>
                 </div>
                 <a href="{{ route('register.choice') }}" class="btn-primary px-6 py-2 rounded-lg font-medium shadow-md">
@@ -110,6 +113,9 @@
                                 </a>
                                 <a href="{{ route('student.login') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition duration-150">
                                     <i class="fas fa-user-graduate mr-2 text-purple-600"></i>Student Login
+                                </a>
+                                <a href="{{ route('client.auth.login') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition duration-150">
+                                    <i class="fas fa-briefcase mr-2 text-orange-600"></i>Client Login
                                 </a>
                             </div>
                         </div>

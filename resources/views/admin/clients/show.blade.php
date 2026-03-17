@@ -11,7 +11,11 @@
             <p class="text-muted mb-0">{{ $client->name }} - {{ $client->email }}</p>
         </div>
         <div>
-            <a href="{{ route('admin.clients.index') }}" class="btn btn-outline-primary me-2">
+            <a href="{{ route('admin.clients.edit', $client) }}" class="btn btn-warning me-2">
+                <i class="fas fa-edit"></i>
+                Edit Client
+            </a>
+            <a href="{{ route('admin.clients.index') }}" class="btn btn-outline-primary">
                 <i class="fas fa-arrow-left"></i>
                 Back to Clients
             </a>

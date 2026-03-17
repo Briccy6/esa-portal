@@ -186,6 +186,11 @@
                                                title="View Details">
                                                 <i class="fas fa-eye"></i>
                                             </a>
+                                            <a href="{{ route('admin.clients.edit', $client) }}" 
+                                               class="btn btn-sm btn-outline-warning" 
+                                               title="Edit Client">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
                                             <a href="{{ route('admin.clients.subscription', $client) }}" 
                                                class="btn btn-sm btn-outline-info" 
                                                title="Record Subscription">
@@ -195,7 +200,7 @@
                                                   class="d-inline" 
                                                   onsubmit="return confirm('Are you sure you want to toggle this client\\'s status?')">
                                                 @csrf
-                                                <button type="submit" class="btn btn-sm btn-outline-warning" 
+                                                <button type="submit" class="btn btn-sm btn-outline-secondary" 
                                                         title="Toggle Status">
                                                     <i class="fas fa-power-off"></i>
                                                 </button>

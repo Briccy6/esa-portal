@@ -52,6 +52,60 @@ class ClientManagementController extends Controller
         return view('admin.clients.index', compact('clients', 'stats'));
     }
 
+    public function create()
+    {
+        return view('admin.clients.create');
+    }
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:clients,email',
+            'phone' => 'nullable|string|max:20',
+            'address' => 'nullable|string|max:500',
+            'is_active' => 'boolean',
+        ]);
+
+        $client = Client::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'phone' => $request->phone,
+            'address' => $request->address,
+            'is_active' => $request->has('is_active') ? true : false,
+        ]);
+
+        return redirect()->route('admin.clients.show', $client)
+            ->with('success', "Client {$client->name} has been created successfully!");
+    }
+
+    public function edit(Client $client)
+    {
+        return view('admin.clients.edit', compact('client'));
+    }
+
+    public function update(Request $request, Client $client)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:clients,email,' . $client->id,
+            'phone' => 'nullable|string|max:20',
+            'address' => 'nullable|string|max:500',
+            'is_active' => 'boolean',
+        ]);
+
+        $client->update([
+            'name' => $request->name,
+            'email' => $request->email,
+            'phone' => $request->phone,
+            'address' => $request->address,
+            'is_active' => $request->has('is_active') ? true : false,
+        ]);
+
+        return redirect()->route('admin.clients.show', $client)
+            ->with('success', "Client {$client->name} has been updated successfully!");
+    }
+
     public function show(Client $client)
     {
         $client->load(['activeSubscription', 'transactions' => function($query) {

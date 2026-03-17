@@ -32,8 +32,6 @@
 
     <!-- Tailwind CSS — required for blog views and any Tailwind-based pages -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Alpine.js — required for sidebar accordion x-data/x-show directives -->
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     
     <style>
         :root {
@@ -921,11 +919,42 @@
                         </a>
                     </div>
                     
-                    <div class="nav-item">
-                        <a href="{{ route('admin.clients.index') }}" class="nav-link {{ request()->routeIs('admin.clients.*') ? 'active' : '' }}">
-                            <i class="fas fa-users"></i>
-                            <span class="nav-text">Client Management</span>
-                        </a>
+                    <!-- Client Management Submenu -->
+                    <div class="nav-section" x-data="{ isOpen: {{ request()->routeIs('admin.clients.*') ? 'true' : 'false' }} }">
+                        <div class="nav-header cursor-pointer" @click="isOpen = !isOpen">
+                            <i class="fas fa-chevron-right transition-transform duration-200" :class="isOpen ? 'rotate-90' : ''"></i>
+                            Client Management
+                        </div>
+                        
+                        <div x-show="isOpen" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-200">
+                            <div class="nav-item">
+                                <a href="{{ route('admin.clients.index') }}" class="nav-link {{ request()->routeIs('admin.clients.index') ? 'active' : '' }}">
+                                    <i class="fas fa-list"></i>
+                                    <span class="nav-text">View All Clients</span>
+                                </a>
+                            </div>
+                            
+                            <div class="nav-item">
+                                <a href="#" onclick="showCreateClientModal()" class="nav-link">
+                                    <i class="fas fa-plus"></i>
+                                    <span class="nav-text">Create New Client</span>
+                                </a>
+                            </div>
+                            
+                            <div class="nav-item">
+                                <a href="{{ route('admin.clients.index') }}?status=active" class="nav-link {{ request()->routeIs('admin.clients.index') && request('status') === 'active' ? 'active' : '' }}">
+                                    <i class="fas fa-user-check"></i>
+                                    <span class="nav-text">Active Clients</span>
+                                </a>
+                            </div>
+                            
+                            <div class="nav-item">
+                                <a href="{{ route('admin.clients.index') }}?status=inactive" class="nav-link {{ request()->routeIs('admin.clients.index') && request('status') === 'inactive' ? 'active' : '' }}">
+                                    <i class="fas fa-user-times"></i>
+                                    <span class="nav-text">Inactive Clients</span>
+                                </a>
+                            </div>
+                        </div>
                     </div>
                     
                                         
@@ -1162,15 +1191,13 @@
                 });
             }
         });
+
+        // Create Client Modal Function
+        function showCreateClientModal() {
+            // Redirect to create client page
+            window.location.href = '{{ route('admin.clients.create') }}';
+        }
     </script>
-       <!-- Start of LiveChat (www.livechat.com) code -->
-<script>
-    window.__lc = window.__lc || {};
-    window.__lc.license = 19254904;
-    window.__lc.integration_name = "manual_channels";
-    window.__lc.product_name = "livechat";
-    ;(function(n,t,c){function i(n){return e._h?e._h.apply(null,n):e._q.push(n)}var e={_q:[],_h:null,_v:"2.0",on:function(){i(["on",c.call(arguments)])},once:function(){i(["once",c.call(arguments)])},off:function(){i(["off",c.call(arguments)])},get:function(){if(!e._h)throw new Error("[LiveChatWidget] You can't use getters before load.");return i(["get",c.call(arguments)])},call:function(){i(["call",c.call(arguments)])},init:function(){var n=t.createElement("script");n.async=!0,n.type="text/javascript",n.src="https://cdn.livechatinc.com/tracking.js",t.head.appendChild(n)}};!n.__lc.asyncInit&&e.init(),n.LiveChatWidget=n.LiveChatWidget||e}(window,document,[].slice))
-</script>
 
     <script>
         // Provide a minimal hljs stub when highlight.js is not loaded to avoid console errors

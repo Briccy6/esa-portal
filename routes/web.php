@@ -272,6 +272,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::get('/dashboard', [\App\Http\Controllers\AdminAuthController::class, 'dashboard'])->name('dashboard');
 
     Route::resource('students', StudentController::class);
+    Route::post('/students/send-bulk-information-emails', [StudentController::class, 'sendBulkStudentInformationEmails'])->name('students.sendBulkInformationEmails');
     // NESA student endpoints removed
 
     Route::resource('academic_year', AcademicYearController::class)->except(['show']);
@@ -289,7 +290,11 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     
     // Client Management Routes
     Route::get('/clients', [App\Http\Controllers\Admin\ClientManagementController::class, 'index'])->name('clients.index');
+    Route::get('/clients/create', [App\Http\Controllers\Admin\ClientManagementController::class, 'create'])->name('clients.create');
+    Route::post('/clients', [App\Http\Controllers\Admin\ClientManagementController::class, 'store'])->name('clients.store');
     Route::get('/clients/{client}', [App\Http\Controllers\Admin\ClientManagementController::class, 'show'])->name('clients.show');
+    Route::get('/clients/{client}/edit', [App\Http\Controllers\Admin\ClientManagementController::class, 'edit'])->name('clients.edit');
+    Route::put('/clients/{client}', [App\Http\Controllers\Admin\ClientManagementController::class, 'update'])->name('clients.update');
     Route::get('/clients/{client}/add-tokens', [App\Http\Controllers\Admin\ClientManagementController::class, 'addTokens'])->name('clients.add-tokens');
     Route::post('/clients/{client}/store-tokens', [App\Http\Controllers\Admin\ClientManagementController::class, 'storeTokens'])->name('clients.store-tokens');
     Route::get('/clients/{client}/subscription', [App\Http\Controllers\Admin\ClientManagementController::class, 'recordSubscription'])->name('clients.subscription');

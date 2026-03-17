@@ -15,6 +15,9 @@ use App\Models\TokenTransaction;
 use App\Models\LiveClassPayment;
 use App\Models\Resource;
 use App\Models\StudentSubscription;
+use App\Models\Client;
+use App\Models\ClientTransaction;
+use App\Models\ClientSubscription;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -53,71 +56,198 @@ class AdminAuthController extends Controller
         return view('admin.force-logout');
     }
 
-    public function dashboard()
+    public function dashboard(Request $request)
     {
         // Enable query logging for debugging
         DB::enableQueryLog();
         
         try {
+            // Get date filters from request
+            $startDate = $request->get('start_date') ? Carbon::parse($request->get('start_date')) : null;
+            $endDate = $request->get('end_date') ? Carbon::parse($request->get('end_date')) : null;
+            
             // Basic counts (fast queries)
             $totalStudents = Student::count();
             $pendingTransactions = StudentTransaction::where('status', 'pending')->count();
             $totalTeachers = class_exists(Teacher::class) ? Teacher::count() : 0;
             $totalStaff = class_exists(Staff::class) ? Staff::count() : 0;
             
-            // REVENUE SOURCE ANALYTICS
-            // Token Purchase Revenue (from credit transactions)
-            $tokenRevenue = TokenTransaction::where('type', 'credit')
-                ->where('source', 'purchase')
-                ->sum('amount');
+            // REVENUE SOURCE ANALYTICS - Using Accounting System with Fallback
+            // Check if accounting system has data
+            $hasAccountingData = DB::table('journal_entries')->count() > 0;
+            
+            if ($hasAccountingData) {
+                // Get revenue from journal entries (Revenue accounts)
+                $revenueData = DB::table('journal_items as ji')
+                    ->join('journal_entries as je', 'ji.journal_entry_id', '=', 'je.id')
+                    ->join('accounts as a', 'ji.account_id', '=', 'a.id')
+                    ->where('je.status', 'Posted')
+                    ->where('a.account_type', 'Revenue')
+                    ->when($startDate, function($query, $startDate) {
+                        return $query->whereDate('je.entry_date', '>=', $startDate);
+                    })
+                    ->when($endDate, function($query, $endDate) {
+                        return $query->whereDate('je.entry_date', '<=', $endDate);
+                    })
+                    ->selectRaw('SUM(ji.credit_amount - ji.debit_amount) as total_revenue')
+                    ->value('total_revenue') ?? 0;
 
-            // Live Class Revenue (from completed payments)
-            $liveClassRevenue = LiveClassPayment::where('status', 'completed')
-                ->sum('amount');
+                // Get expenses from journal entries (Expense accounts)
+                $expensesData = DB::table('journal_items as ji')
+                    ->join('journal_entries as je', 'ji.journal_entry_id', '=', 'je.id')
+                    ->join('accounts as a', 'ji.account_id', '=', 'a.id')
+                    ->where('je.status', 'Posted')
+                    ->where('a.account_type', 'Expense')
+                    ->when($startDate, function($query, $startDate) {
+                        return $query->whereDate('je.entry_date', '>=', $startDate);
+                    })
+                    ->when($endDate, function($query, $endDate) {
+                        return $query->whereDate('je.entry_date', '<=', $endDate);
+                    })
+                    ->selectRaw('SUM(ji.debit_amount - ji.credit_amount) as total_expenses')
+                    ->value('total_expenses') ?? 0;
 
-            // Resource Upload Revenue (from paid resources)
-            $resourceRevenue = Resource::where('is_free', false)
-                ->where('price', '>', 0)
-                ->sum('price');
+                // Revenue breakdown by source (using account names)
+                $revenueBySource = DB::table('journal_items as ji')
+                    ->join('journal_entries as je', 'ji.journal_entry_id', '=', 'je.id')
+                    ->join('accounts as a', 'ji.account_id', '=', 'a.id')
+                    ->where('je.status', 'Posted')
+                    ->where('a.account_type', 'Revenue')
+                    ->when($startDate, function($query, $startDate) {
+                        return $query->whereDate('je.entry_date', '>=', $startDate);
+                    })
+                    ->when($endDate, function($query, $endDate) {
+                        return $query->whereDate('je.entry_date', '<=', $endDate);
+                    })
+                    ->select('a.account_name as source', DB::raw('SUM(ji.credit_amount - ji.debit_amount) as amount'))
+                    ->groupBy('a.id', 'a.account_name')
+                    ->get();
 
-            // Subscription Revenue (from active student subscriptions)
-            $subscriptionRevenue = StudentSubscription::where('payment_status', 'paid')
-                ->where('is_active', true)
-                ->sum('paid_amount');
+                // Extract revenue by source for dashboard
+                $tokenRevenue = $revenueBySource->where('source', 'LIKE', '%token%')->sum('amount');
+                $liveClassRevenue = $revenueBySource->where('source', 'LIKE', '%class%')->sum('amount');
+                $resourceRevenue = $revenueBySource->where('source', 'LIKE', '%resource%')->sum('amount');
+                $subscriptionRevenue = $revenueBySource->where('source', 'LIKE', '%subscription%')->sum('amount');
 
-            // Monthly breakdown for each revenue source
-            $monthlyTokenRevenue = TokenTransaction::where('type', 'credit')
-                ->where('source', 'purchase')
-                ->whereMonth('created_at', Carbon::now()->month)
-                ->whereYear('created_at', Carbon::now()->year)
-                ->sum('amount');
+                // Monthly breakdowns by source
+                $monthlyTokenRevenue = DB::table('journal_items as ji')
+                    ->join('journal_entries as je', 'ji.journal_entry_id', '=', 'je.id')
+                    ->join('accounts as a', 'ji.account_id', '=', 'a.id')
+                    ->where('je.status', 'Posted')
+                    ->where('a.account_type', 'Revenue')
+                    ->where('a.account_name', 'LIKE', '%token%')
+                    ->whereMonth('je.entry_date', Carbon::now()->month)
+                    ->whereYear('je.entry_date', Carbon::now()->year)
+                    ->selectRaw('SUM(ji.credit_amount - ji.debit_amount) as amount')
+                    ->value('amount') ?? 0;
 
-            $monthlyLiveClassRevenue = LiveClassPayment::where('status', 'completed')
-                ->whereMonth('paid_at', Carbon::now()->month)
-                ->whereYear('paid_at', Carbon::now()->year)
-                ->sum('amount');
+                $monthlyLiveClassRevenue = DB::table('journal_items as ji')
+                    ->join('journal_entries as je', 'ji.journal_entry_id', '=', 'je.id')
+                    ->join('accounts as a', 'ji.account_id', '=', 'a.id')
+                    ->where('je.status', 'Posted')
+                    ->where('a.account_type', 'Revenue')
+                    ->where('a.account_name', 'LIKE', '%class%')
+                    ->whereMonth('je.entry_date', Carbon::now()->month)
+                    ->whereYear('je.entry_date', Carbon::now()->year)
+                    ->selectRaw('SUM(ji.credit_amount - ji.debit_amount) as amount')
+                    ->value('amount') ?? 0;
 
-            $monthlySubscriptionRevenue = StudentSubscription::where('payment_status', 'paid')
-                ->where('is_active', true)
-                ->whereMonth('created_at', Carbon::now()->month)
-                ->whereYear('created_at', Carbon::now()->year)
-                ->sum('paid_amount');
+                $monthlySubscriptionRevenue = DB::table('journal_items as ji')
+                    ->join('journal_entries as je', 'ji.journal_entry_id', '=', 'je.id')
+                    ->join('accounts as a', 'ji.account_id', '=', 'a.id')
+                    ->where('je.status', 'Posted')
+                    ->where('a.account_type', 'Revenue')
+                    ->where('a.account_name', 'LIKE', '%subscription%')
+                    ->whereMonth('je.entry_date', Carbon::now()->month)
+                    ->whereYear('je.entry_date', Carbon::now()->year)
+                    ->selectRaw('SUM(ji.credit_amount - ji.debit_amount) as amount')
+                    ->value('amount') ?? 0;
 
-            $monthlyResourceRevenue = Resource::where('is_free', false)
-                ->where('price', '>', 0)
-                ->whereMonth('created_at', Carbon::now()->month)
-                ->whereYear('created_at', Carbon::now()->year)
-                ->sum('price');
+                $monthlyResourceRevenue = DB::table('journal_items as ji')
+                    ->join('journal_entries as je', 'ji.journal_entry_id', '=', 'je.id')
+                    ->join('accounts as a', 'ji.account_id', '=', 'a.id')
+                    ->where('je.status', 'Posted')
+                    ->where('a.account_type', 'Revenue')
+                    ->where('a.account_name', 'LIKE', '%resource%')
+                    ->whereMonth('je.entry_date', Carbon::now()->month)
+                    ->whereYear('je.entry_date', Carbon::now()->year)
+                    ->selectRaw('SUM(ji.credit_amount - ji.debit_amount) as amount')
+                    ->value('amount') ?? 0;
+            } else {
+                // Fallback to existing data models when accounting system is empty
+                // Token Purchase Revenue (from credit transactions)
+                $tokenRevenueQuery = TokenTransaction::where('type', 'credit')->where('source', 'purchase');
+                $liveClassRevenueQuery = LiveClassPayment::where('status', 'completed');
+                $resourceRevenueQuery = Resource::where('is_free', false)->where('price', '>', 0);
+                $subscriptionRevenueQuery = StudentSubscription::where('payment_status', 'paid')->where('is_active', true);
+                $expensesQuery = Expense::query();
+
+                // Apply date filters if provided
+                if ($startDate) {
+                    $tokenRevenueQuery->whereDate('created_at', '>=', $startDate);
+                    $liveClassRevenueQuery->whereDate('paid_at', '>=', $startDate);
+                    $resourceRevenueQuery->whereDate('created_at', '>=', $startDate);
+                    $subscriptionRevenueQuery->whereDate('created_at', '>=', $startDate);
+                    $expensesQuery->whereDate('expense_date', '>=', $startDate);
+                }
+                if ($endDate) {
+                    $tokenRevenueQuery->whereDate('created_at', '<=', $endDate);
+                    $liveClassRevenueQuery->whereDate('paid_at', '<=', $endDate);
+                    $resourceRevenueQuery->whereDate('created_at', '<=', $endDate);
+                    $subscriptionRevenueQuery->whereDate('created_at', '<=', $endDate);
+                    $expensesQuery->whereDate('expense_date', '<=', $endDate);
+                }
+
+                $tokenRevenue = $tokenRevenueQuery->sum('amount');
+                $liveClassRevenue = $liveClassRevenueQuery->sum('amount');
+                $resourceRevenue = $resourceRevenueQuery->sum('price');
+                $subscriptionRevenue = $subscriptionRevenueQuery->sum('paid_amount');
+                $totalExpenses = $expensesQuery->sum('amount') ?? 0;
+
+                // Monthly breakdowns
+                $monthlyTokenRevenue = TokenTransaction::where('type', 'credit')
+                    ->where('source', 'purchase')
+                    ->whereMonth('created_at', Carbon::now()->month)
+                    ->whereYear('created_at', Carbon::now()->year)
+                    ->sum('amount');
+
+                $monthlyLiveClassRevenue = LiveClassPayment::where('status', 'completed')
+                    ->whereMonth('paid_at', Carbon::now()->month)
+                    ->whereYear('paid_at', Carbon::now()->year)
+                    ->sum('amount');
+
+                $monthlySubscriptionRevenue = StudentSubscription::where('payment_status', 'paid')
+                    ->where('is_active', true)
+                    ->whereMonth('created_at', Carbon::now()->month)
+                    ->whereYear('created_at', Carbon::now()->year)
+                    ->sum('paid_amount');
+
+                $monthlyResourceRevenue = Resource::where('is_free', false)
+                    ->where('price', '>', 0)
+                    ->whereMonth('created_at', Carbon::now()->month)
+                    ->whereYear('created_at', Carbon::now()->year)
+                    ->sum('price');
+
+                $revenueData = $tokenRevenue + $liveClassRevenue + $resourceRevenue + $subscriptionRevenue;
+            }
 
             // Calculate total revenue and profit metrics
-            $totalRevenue = $tokenRevenue + $liveClassRevenue + $resourceRevenue + $subscriptionRevenue;
-            $totalExpenses = Expense::sum('amount') ?? 0;
+            $totalRevenue = $revenueData;
+            $totalExpenses = $expensesData;
             $netProfit = $totalRevenue - $totalExpenses;
             $profitMargin = $totalRevenue > 0 ? round(($netProfit / $totalRevenue) * 100, 2) : 0;
 
             // Recent data for dashboard tables
             $recentStudents = Student::with(['branch', 'course'])->latest()->take(10)->get();
             $recentExpenses = Expense::latest()->take(10)->get();
+
+            // Client statistics for dashboard
+            $totalClients = Client::count();
+            $activeClients = Client::where('is_active', true)->count();
+            $inactiveClients = Client::where('is_active', false)->count();
+            $totalClientTokens = ClientTransaction::where('type', 'purchase')->sum('total_tokens');
+            $totalClientRevenue = ClientTransaction::where('type', 'purchase')->sum('amount');
+            $recentClients = Client::with(['activeSubscription'])->latest()->take(5)->get();
 
             // Chart data variables
             $studentsByGender = Student::select('sex', DB::raw('count(*) as total'))
@@ -130,28 +260,107 @@ class AdminAuthController extends Controller
 
             $tuitionPaidPercent = 0; // No tuition fee status column exists, set to 0 for now
 
-            $expensesByBranch = Expense::select('paid_by as branch', DB::raw('sum(amount) as total'))
-                ->groupBy('paid_by')
-                ->get();
+            // Expenses by branch (from accounting system with fallback)
+            if ($hasAccountingData) {
+                $expensesByBranch = DB::table('journal_items as ji')
+                    ->join('journal_entries as je', 'ji.journal_entry_id', '=', 'je.id')
+                    ->join('accounts as a', 'ji.account_id', '=', 'a.id')
+                    ->where('je.status', 'Posted')
+                    ->where('a.account_type', 'Expense')
+                    ->when($startDate, function($query, $startDate) {
+                        return $query->whereDate('je.entry_date', '>=', $startDate);
+                    })
+                    ->when($endDate, function($query, $endDate) {
+                        return $query->whereDate('je.entry_date', '<=', $endDate);
+                    })
+                    ->select('je.description as branch', DB::raw('SUM(ji.debit_amount - ji.credit_amount) as total'))
+                    ->groupBy('je.description')
+                    ->get();
 
-            $expensesByType = Expense::select('expense_type', DB::raw('sum(amount) as total'))
-                ->groupBy('expense_type')
-                ->get();
+                $expensesByType = DB::table('journal_items as ji')
+                    ->join('journal_entries as je', 'ji.journal_entry_id', '=', 'je.id')
+                    ->join('accounts as a', 'ji.account_id', '=', 'a.id')
+                    ->where('je.status', 'Posted')
+                    ->where('a.account_type', 'Expense')
+                    ->when($startDate, function($query, $startDate) {
+                        return $query->whereDate('je.entry_date', '>=', $startDate);
+                    })
+                    ->when($endDate, function($query, $endDate) {
+                        return $query->whereDate('je.entry_date', '<=', $endDate);
+                    })
+                    ->select('a.account_name as expense_type', DB::raw('SUM(ji.debit_amount - ji.credit_amount) as total'))
+                    ->groupBy('a.id', 'a.account_name')
+                    ->get();
 
-            $branchFinancialHealth = Branch::select('branches.name',
-                    DB::raw('(SELECT COALESCE(sum(ss.paid_amount), 0) FROM student_subscriptions ss JOIN students s ON ss.student_id = s.id WHERE s.branch_id = branches.id AND ss.payment_status = "paid" AND ss.is_active = 1) as revenue'),
-                    DB::raw('(SELECT COALESCE(sum(e.amount), 0) FROM expenses e WHERE e.paid_by = branches.name) as expenses'))
-                ->get();
-
-            $expenseTrend = Expense::select(
+                $expenseTrend = DB::table('journal_items as ji')
+                    ->join('journal_entries as je', 'ji.journal_entry_id', '=', 'je.id')
+                    ->join('accounts as a', 'ji.account_id', '=', 'a.id')
+                    ->where('je.status', 'Posted')
+                    ->where('a.account_type', 'Expense')
+                    ->where('je.entry_date', '>=', Carbon::now()->subMonths(6))
+                    ->select(
+                        DB::raw('DATE_FORMAT(je.entry_date, "%b %Y") as month'),
+                        DB::raw('SUM(ji.debit_amount - ji.credit_amount) as amount')
+                    )
+                    ->groupBy('month')
+                    ->orderBy('month')
+                    ->get()
+                    ->toArray();
+            } else {
+                // Fallback to expenses table
+                $expensesByBranchQuery = Expense::select('paid_by as branch', DB::raw('sum(amount) as total'));
+                $expensesByTypeQuery = Expense::select('expense_type', DB::raw('sum(amount) as total'));
+                $expenseTrendQuery = Expense::select(
                     DB::raw('DATE_FORMAT(expense_date, "%b %Y") as month'),
                     DB::raw('sum(amount) as amount')
-                )
-                ->where('expense_date', '>=', Carbon::now()->subMonths(6))
-                ->groupBy('month')
-                ->orderBy('expense_date')
-                ->get()
-                ->toArray();
+                );
+
+                // Apply date filters
+                if ($startDate) {
+                    $expensesByBranchQuery->whereDate('expense_date', '>=', $startDate);
+                    $expensesByTypeQuery->whereDate('expense_date', '>=', $startDate);
+                    $expenseTrendQuery->whereDate('expense_date', '>=', $startDate);
+                }
+                if ($endDate) {
+                    $expensesByBranchQuery->whereDate('expense_date', '<=', $endDate);
+                    $expensesByTypeQuery->whereDate('expense_date', '<=', $endDate);
+                    $expenseTrendQuery->whereDate('expense_date', '<=', $endDate);
+                }
+
+                $expensesByBranch = $expensesByBranchQuery->groupBy('paid_by')->get();
+                $expensesByType = $expensesByTypeQuery->groupBy('expense_type')->get();
+                
+                $expenseTrend = $expenseTrendQuery
+                    ->where('expense_date', '>=', Carbon::now()->subMonths(6))
+                    ->groupBy('month')
+                    ->orderBy('expense_date')
+                    ->get()
+                    ->toArray();
+            }
+
+            // Branch Financial Health (using accounting data with fallback)
+            if ($hasAccountingData) {
+                $branchFinancialHealth = Branch::select('branches.name',
+                        DB::raw('(SELECT COALESCE(SUM(ji.credit_amount - ji.debit_amount), 0) 
+                                 FROM esa.journal_items ji 
+                                 JOIN esa.journal_entries je ON ji.journal_entry_id = je.id 
+                                 JOIN esa.accounts a ON ji.account_id = a.id 
+                                 WHERE a.account_type = "Revenue" AND je.status = "Posted" 
+                                 AND je.description LIKE CONCAT("%", branches.name, "%")) as revenue'),
+                        DB::raw('(SELECT COALESCE(SUM(ji.debit_amount - ji.credit_amount), 0) 
+                                 FROM esa.journal_items ji 
+                                 JOIN esa.journal_entries je ON ji.journal_entry_id = je.id 
+                                 JOIN esa.accounts a ON ji.account_id = a.id 
+                                 WHERE a.account_type = "Expense" AND je.status = "Posted" 
+                                 AND je.description LIKE CONCAT("%", branches.name, "%")) as expenses'))
+                    ->get();
+            } else {
+                // Fallback to existing data models
+                $branchFinancialHealth = Branch::select('branches.name',
+                        DB::raw('(SELECT COALESCE(sum(ss.paid_amount), 0) FROM esa.student_subscriptions ss JOIN esa.students s ON ss.student_id = s.id WHERE s.branch_id = branches.id AND ss.payment_status = "paid" AND ss.is_active = 1) as revenue'),
+                        DB::raw('(SELECT COALESCE(sum(e.amount), 0) FROM esa.expenses e WHERE e.paid_by = branches.name) as expenses'))
+                    ->get();
+            }
 
             // Tuition by branch data
             $tuitionByBranch = Branch::select('name as branch', 
@@ -200,7 +409,15 @@ class AdminAuthController extends Controller
                 'monthlyTokenRevenue',
                 'monthlyLiveClassRevenue',
                 'monthlyResourceRevenue',
-                'monthlySubscriptionRevenue'
+                'monthlySubscriptionRevenue',
+                'totalClients',
+                'activeClients',
+                'inactiveClients',
+                'totalClientTokens',
+                'totalClientRevenue',
+                'recentClients',
+                'startDate',
+                'endDate'
             );
             
             return view('admin.dashboard', $dashboardData);

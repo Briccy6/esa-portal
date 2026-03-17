@@ -24,6 +24,7 @@ use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\StudentWelcomeMail;
 use App\Mail\StudentEmailVerificationMail;
+use App\Mail\StudentInformationEmail;
 use Illuminate\Support\Facades\Storage;
 use App\Models\StudentTransaction;
 use App\Models\Exam;
@@ -2380,5 +2381,88 @@ class StudentController extends Controller
     private function buildRegNumber(string $abbr, string $yearRange, int $id): string
     {
         return $abbr . str_pad($id, 3, '0', STR_PAD_LEFT) . $yearRange;
+    }
+
+    /**
+     * Generate a temporary password for a student
+     */
+    private function generateTemporaryPassword($student)
+    {
+        // Generate a secure 8-character password
+        return strtoupper(substr(md5($student->id . $student->reg_number . time()), 0, 8));
+    }
+
+    /**
+     * Send bulk email with student information to all students
+     */
+    public function sendBulkStudentInformationEmails(Request $request)
+    {
+        // Only allow admin users
+        if (!auth('admin')->check()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        try {
+            // Get all students with their relationships
+            $students = Student::with(['branch', 'course', 'academicYear'])->get();
+            
+            $sentCount = 0;
+            $failedCount = 0;
+            $failedEmails = [];
+
+            foreach ($students as $student) {
+                try {
+                    // Generate a temporary password if the student needs one
+                    $password = $this->generateTemporaryPassword($student);
+                    
+                    // Update the student's password with the new temporary password
+                    $student->password = Hash::make($password);
+                    $student->save();
+                    
+                    // Send the email with the new password
+                    Mail::to($student->email)->send(new StudentInformationEmail($student, $password));
+                    $sentCount++;
+                    
+                    // Add delay to avoid overwhelming the email server
+                    usleep(100000); // 0.1 second delay
+                    
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $failedEmails[] = [
+                        'email' => $student->email,
+                        'name' => $student->full_name,
+                        'error' => $e->getMessage()
+                    ];
+                    
+                    Log::error('Failed to send student information email', [
+                        'student_id' => $student->id,
+                        'email' => $student->email,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+
+            $message = "Email sending completed. Sent: {$sentCount}, Failed: {$failedCount}";
+            
+            if ($failedCount > 0) {
+                $message .= ". Check logs for failed emails.";
+                Log::info('Bulk student information email results', [
+                    'total_students' => $students->count(),
+                    'sent' => $sentCount,
+                    'failed' => $failedCount,
+                    'failed_emails' => $failedEmails
+                ]);
+            }
+
+            return redirect()->back()->with('success', $message);
+
+        } catch (\Exception $e) {
+            Log::error('Bulk email sending failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return redirect()->back()->with('error', 'Failed to send bulk emails: ' . $e->getMessage());
+        }
     }
 }

@@ -1166,8 +1166,17 @@ class LiveClassController extends Controller
             $isPublicUser = true;
         }
         
-        // For public users, always show the public room view
-        $viewName = $isPublicUser ? 'live-classes.public-room' : 'live-classes.room';
+        // Determine the correct view based on user type
+        if (Auth::guard('student')->check()) {
+            // Student gets the student-specific room view
+            $viewName = 'students.live-classes.room';
+        } elseif ($isPublicUser) {
+            // Public users get the public room view
+            $viewName = 'live-classes.public-room';
+        } else {
+            // Admin/teacher/staff get the admin room view
+            $viewName = 'live-classes.room';
+        }
         
         return view($viewName, compact('liveClass', 'isTeacher', 'studentRequests'));
     }

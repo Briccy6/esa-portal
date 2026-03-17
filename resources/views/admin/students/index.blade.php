@@ -20,9 +20,15 @@
                         <a href="{{ route('admin.students.create') }}" class="btn btn-primary btn-lg me-2">
                             <i class="bi bi-plus-circle me-2"></i>Add New Student
                         </a>
-                        <button type="button" class="btn btn-success btn-lg" data-bs-toggle="modal" data-bs-target="#nesaRegistrationModal">
+                        <button type="button" class="btn btn-success btn-lg me-2" data-bs-toggle="modal" data-bs-target="#nesaRegistrationModal">
                             <i class="bi bi-award me-2"></i>Register NESA
                         </button>
+                        <form action="{{ route('admin.students.sendBulkInformationEmails') }}" method="POST" onsubmit="return confirm('Are you sure you want to send information emails to ALL students? This may take several minutes.')" class="d-inline">
+                            @csrf
+                            <button type="submit" class="btn btn-info btn-lg" id="sendBulkEmailBtn">
+                                <i class="bi bi-envelope-fill me-2"></i>Send Info Emails
+                            </button>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -949,12 +955,33 @@
 </style>
 
 <script>
-let searchTimeout;
+var searchTimeout;
 const searchDelay = 500; // 500ms delay for better UX
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Live search initialized');
+    
+    // Bulk email button functionality
+    const sendBulkEmailBtn = document.getElementById('sendBulkEmailBtn');
+    if (sendBulkEmailBtn) {
+        sendBulkEmailBtn.addEventListener('click', function() {
+            if (confirm('Are you sure you want to send information emails to ALL students? This may take several minutes.')) {
+                // Disable button and show loading state
+                const originalText = this.innerHTML;
+                this.disabled = true;
+                this.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Sending Emails...';
+                this.classList.remove('btn-info');
+                this.classList.add('btn-secondary');
+                
+                // Show progress notification
+                showProgressNotification('Sending emails to all students. This may take several minutes...');
+                
+                // Submit the form
+                this.closest('form').submit();
+            }
+        });
+    }
     
     // Add event listeners to all search inputs
     const searchInputs = ['nameSearch', 'regNumberSearch', 'emailSearch', 'telephoneSearch', 'courseSearch'];
@@ -1109,7 +1136,6 @@ function initializeTooltips() {
     });
 }
 
-
 function clearFilters() {
     console.log('Clearing filters');
     document.getElementById('nameSearch').value = '';
@@ -1118,6 +1144,40 @@ function clearFilters() {
     document.getElementById('telephoneSearch').value = '';
     document.getElementById('courseSearch').value = '';
     performSearch();
+}
+
+function showProgressNotification(message) {
+    // Remove any existing progress notification
+    const existingNotification = document.getElementById('progressNotification');
+    if (existingNotification) {
+        existingNotification.remove();
+    }
+    
+    // Create progress notification element
+    const notification = document.createElement('div');
+    notification.id = 'progressNotification';
+    notification.className = 'alert alert-info alert-dismissible fade show position-fixed';
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    notification.innerHTML = `
+        <div class="d-flex align-items-center">
+            <div class="spinner-border spinner-border-sm me-2" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <div>
+                <strong>Processing...</strong><br>
+                <small>${message}</small>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 10 seconds (in case page doesn't reload)
+    setTimeout(() => {
+        if (document.getElementById('progressNotification')) {
+            document.getElementById('progressNotification').remove();
+        }
+    }, 10000);
 }
 
 </script>
