@@ -351,8 +351,7 @@ class AdminAuthController extends Controller
                     ->where('expense_date', '>=', Carbon::now()->subMonths(6))
                     ->groupBy('month')
                     ->orderBy('expense_date')
-                    ->get()
-                    ->toArray();
+                    ->get();
             }
 
             // Branch Financial Health (using accounting data with fallback)
