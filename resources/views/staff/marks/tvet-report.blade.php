@@ -311,9 +311,8 @@
 
         <!-- Assessment Legend -->
         <div class="legend-section">
-            <span class="font-bold">F.A:</span> Formative Assessment |
-            <span class="font-bold"> LA:</span> Integrated Assessment |
-            <span class="font-bold"> C.A:</span> Comprehensive Assessment |
+            <span class="font-bold">TEST:</span> Test Marks | 
+            <span class="font-bold"> EXAM:</span> Exam Marks | 
             <span class="font-bold"> AVG:</span> Average
         </div>
 
@@ -323,14 +322,14 @@
                 <tr class="bg-gray font-bold">
                     <td colspan="4" class="text-left"></td>
                     <td>MAX</td>
-                    <td colspan="4" class="bg-gray">{{ $reportCard->term->term ?? 'Current Term' }}</td>
+                    <td colspan="3" class="bg-gray">{{ $reportCard->term->term ?? 'Current Term' }}</td>
                     <td colspan="3" class="bg-gray">A.A<br>(%)</td>
                 </tr>
                 
                 <tr class="bg-gray font-bold">
                     <td colspan="4" class="text-left">Behaviour</td>
                     <td>100</td>
-                    <td colspan="4">-</td>
+                    <td colspan="3">-</td>
                     <td colspan="3">-</td>
                 </tr>
                 
@@ -338,9 +337,8 @@
                     <th colspan="3" rowspan="2" class="bg-gray">Module Code</th>
                     <th rowspan="2" class="bg-gray">Competence Title</th>
                     <th rowspan="2" class="bg-gray">Credits</th>
-                    <th class="bg-gray">F.A</th>
-                    <th class="bg-gray">LA</th>
-                    <th class="bg-gray">C.A</th>
+                    <th class="bg-gray">TEST</th>
+                    <th class="bg-gray">EXAM</th>
                     <th class="bg-gray">AVG</th>
                     <th class="bg-gray">A.A</th>
                     <th class="bg-gray">R.E</th>
@@ -358,13 +356,12 @@
                             <td colspan="3">{{ $subject->subject_code ?? 'N/A' }}</td>
                             <td class="text-left">{{ $subject->subject_name }}</td>
                             <td>{{ $subject->credits ?? 3 }}</td>
-                            <td>{{ number_format($subject->test_average ?? 0, 1) }}</td>
-                            <td>-</td>
-                            <td>{{ number_format($subject->exam_mark ?? 0, 1) }}</td>
-                            <td>{{ number_format($subject->total_mark ?? 0, 1) }}</td>
-                            <td class="font-bold">{{ number_format($subject->total_mark ?? 0, 1) }}</td>
+                            <td>{{ number_format($subject->test_average ?? 0, 2) }}</td>
+                            <td>{{ number_format($subject->exam_mark ?? 0, 2) }}</td>
+                            <td>{{ number_format($subject->total_mark ?? 0, 2) }}</td>
+                            <td class="font-bold">{{ number_format($subject->total_mark ?? 0, 2) }}</td>
                             <td class="font-bold"></td>
-                            <td class="font-bold">{{ $subject->grade === 'A' || $subject->grade === 'B' ? 'C' : 'NYC' }}</td>
+                            <td class="font-bold">{{ $subject->grade === 'A' || $subject->grade === 'B' || $subject->grade === 'C' ? 'C' : 'NYC' }}</td>
                         </tr>
                     @endforeach
                 @else
@@ -384,7 +381,6 @@
                         <td colspan="4" class="text-left">TOTAL</td>
                         <td>{{ $reportCard->subjects->count() * 3 }}</td>
                         <td>{{ number_format($reportCard->subjects->sum('test_average'), 1) }}</td>
-                        <td>-</td>
                         <td>{{ number_format($reportCard->subjects->sum('exam_mark'), 1) }}</td>
                         <td>{{ number_format($reportCard->subjects->sum('total_mark'), 1) }}</td>
                         <td>{{ number_format($reportCard->subjects->sum('total_mark'), 1) }}</td>
@@ -405,7 +401,7 @@
                     <tr class="bg-gray font-bold">
                         <td colspan="4" class="text-left">Percentage %</td>
                         <td>100</td>
-                        <td colspan="4">{{ number_format($reportCard->average_marks, 1) }}%</td>
+                        <td colspan="3">{{ number_format($reportCard->average_marks, 1) }}%</td>
                         <td colspan="3">{{ number_format($reportCard->average_marks, 1) }}%</td>
                     </tr>
                 @endif
@@ -414,7 +410,7 @@
                 <tr class="bg-white font-bold">
                     <td colspan="4" class="text-left">Class Trainer's Comments & Signature</td>
                     <td></td>
-                    <td colspan="4"></td>
+                    <td colspan="3"></td>
                     <td colspan="3"></td>
                 </tr>
                 
@@ -422,7 +418,7 @@
                 <tr class="bg-white font-bold">
                     <td colspan="4" class="text-left">Parents signature</td>
                     <td></td>
-                    <td colspan="4"></td>
+                    <td colspan="3"></td>
                     <td colspan="3"></td>
                 </tr>
             </tbody>

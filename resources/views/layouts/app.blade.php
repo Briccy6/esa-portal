@@ -62,22 +62,64 @@
 
     <!-- Flash Messages -->
     @if(session('success'))
-        <div class="bg-green-50 border-b border-green-200">
+        <div class="bg-green-50 border-b border-green-200" id="flash-success">
             <div class="container mx-auto px-4 py-3">
-                <div class="flex items-center">
-                    <i class="fas fa-check-circle text-green-600 mr-3"></i>
-                    <p class="text-green-800">{{ session('success') }}</p>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <i class="fas fa-check-circle text-green-600 mr-3"></i>
+                        <p class="text-green-800">{{ session('success') }}</p>
+                    </div>
+                    <button onclick="this.parentElement.parentElement.parentElement.remove()" class="text-green-600 hover:text-green-800 ml-4">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
             </div>
         </div>
     @endif
 
     @if(session('error'))
-        <div class="bg-red-50 border-b border-red-200">
+        <div class="bg-red-50 border-b border-red-200" id="flash-error">
             <div class="container mx-auto px-4 py-3">
-                <div class="flex items-center">
-                    <i class="fas fa-exclamation-circle text-red-600 mr-3"></i>
-                    <p class="text-red-800">{{ session('error') }}</p>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <i class="fas fa-exclamation-circle text-red-600 mr-3"></i>
+                        <p class="text-red-800">{{ session('error') }}</p>
+                    </div>
+                    <button onclick="this.parentElement.parentElement.parentElement.remove()" class="text-red-600 hover:text-red-800 ml-4">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    @if(session('warning'))
+        <div class="bg-yellow-50 border-b border-yellow-200" id="flash-warning">
+            <div class="container mx-auto px-4 py-3">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <i class="fas fa-exclamation-triangle text-yellow-600 mr-3"></i>
+                        <p class="text-yellow-800">{{ session('warning') }}</p>
+                    </div>
+                    <button onclick="this.parentElement.parentElement.parentElement.remove()" class="text-yellow-600 hover:text-yellow-800 ml-4">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    @if(session('info'))
+        <div class="bg-blue-50 border-b border-blue-200" id="flash-info">
+            <div class="container mx-auto px-4 py-3">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <i class="fas fa-info-circle text-blue-600 mr-3"></i>
+                        <p class="text-blue-800">{{ session('info') }}</p>
+                    </div>
+                    <button onclick="this.parentElement.parentElement.parentElement.remove()" class="text-blue-600 hover:text-blue-800 ml-4">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
             </div>
         </div>
@@ -147,6 +189,28 @@
 
     <!-- Alpine.js -->
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    
+    <!-- Auto-dismiss Flash Messages -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Auto-dismiss flash messages after 5 seconds
+            setTimeout(function() {
+                const flashMessages = ['flash-success', 'flash-error', 'flash-warning', 'flash-info'];
+                flashMessages.forEach(function(id) {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        element.style.transition = 'opacity 0.5s ease-out';
+                        element.style.opacity = '0';
+                        setTimeout(function() {
+                            if (element.parentNode) {
+                                element.parentNode.removeChild(element);
+                            }
+                        }, 500);
+                    }
+                });
+            }, 5000);
+        });
+    </script>
     
     @stack('scripts')
 </body>

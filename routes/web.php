@@ -1357,3 +1357,8 @@ Route::prefix('exam')->name('exam.')->group(function () {
         return redirect()->route('exam.take', $exam)->with('success', 'Payment processed successfully');
     })->name('payment.process');
 });
+
+// Fallback route for 404 errors
+Route::fallback(function () {
+    return response()->view('errors.404', [], 404);
+});

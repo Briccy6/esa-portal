@@ -59,7 +59,7 @@ public function index()
             'marks.*.value'   => 'required|numeric|min:0',
         ]);
 
-        // Additional validation to ensure term exists
+        // Additional validation to ensure term exists and is valid
         if ($request->term_id) {
             $termExists = \App\Models\Term::where('id', $request->term_id)->exists();
             if (!$termExists) {
@@ -69,6 +69,15 @@ public function index()
                     'errors' => ['term_id' => ['The selected term is invalid']]
                 ], 422);
             }
+        }
+
+        // Ensure term_id is not null or zero
+        if (!$request->term_id || $request->term_id == 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Term selection is required',
+                'errors' => ['term_id' => ['Please select a valid term for recording marks']]
+            ], 422);
         }
 
         if ($validator->fails()) {
@@ -93,11 +102,16 @@ public function index()
                         'course_id'  => $request->course_id,
                         'branch_id'  => $request->branch_id,
                         'lesson_id'  => $request->lesson_id,
-                        'term_id'    => $request->term_id,
+                        'term_id'    => $request->term_id, // Ensure term_id is always set
                         'assessment_type' => $request->assessment_type,
                         'value' => $value,
                         'status' => 'recorded'
                     ];
+
+                    // Double-check term_id is valid before creating
+                    if (!$createData['term_id'] || $createData['term_id'] == 0) {
+                        continue; // Skip this mark if term_id is invalid
+                    }
 
                     // Only add exam_id and exam_date if assessment_type is exam
                     if ($request->assessment_type === 'exam') {

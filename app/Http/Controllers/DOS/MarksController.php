@@ -370,26 +370,50 @@ class MarksController extends Controller
                 $subject->subject_code = $lesson->code ?? strtoupper(substr($lesson->title, 0, 3));
                 $subject->credits = 3;
                 
-                // Calculate test average
+                // Calculate test average (multiple test marks for same lesson)
                 $testMarks = $lessonMarks->where('assessment_type', 'test');
                 $subject->test_average = $testMarks->isNotEmpty() ? $testMarks->avg('value') : 0;
                 
-                // Get exam mark
+                // Get exam mark (should be only one exam mark per lesson)
                 $examMark = $lessonMarks->where('assessment_type', 'exam')->first();
                 $subject->exam_mark = $examMark ? $examMark->value : 0;
                 
-                // Calculate total mark
-                $subject->total_mark = ($subject->test_average * 0.4) + ($subject->exam_mark * 0.6);
+                // Calculate weighted average: 40% test average + 60% exam mark
+                // Convert to percentage scale (out of 100)
+                $testWeighted = $subject->test_average * 0.4; // 40% weight for tests
+                $examWeighted = $subject->exam_mark * 0.6;    // 60% weight for exam
                 
-                // Determine grade
-                if ($subject->total_mark >= 80) {
-                    $subject->grade = 'A';
-                } elseif ($subject->total_mark >= 70) {
-                    $subject->grade = 'B';
-                } elseif ($subject->total_mark >= 60) {
-                    $subject->grade = 'C';
+                // Ensure we're working with percentages
+                if ($subject->test_average > 0 && $subject->test_average <= 100) {
+                    $testWeighted = $subject->test_average * 0.4;
                 } else {
-                    $subject->grade = 'NYC';
+                    // Convert from original scale to percentage
+                    $testOutOf = $testMarks->first()->marks_out_of ?? 100;
+                    $testWeighted = ($subject->test_average / $testOutOf) * 100 * 0.4;
+                }
+                
+                if ($subject->exam_mark > 0 && $subject->exam_mark <= 100) {
+                    $examWeighted = $subject->exam_mark * 0.6;
+                } else {
+                    // Convert from original scale to percentage
+                    $examOutOf = $examMark->marks_out_of ?? 100;
+                    $examWeighted = ($subject->exam_mark / $examOutOf) * 100 * 0.6;
+                }
+                
+                $subject->total_mark = $testWeighted + $examWeighted;
+                
+                // Ensure total is capped at 100
+                $subject->total_mark = min($subject->total_mark, 100);
+                
+                // Determine grade based on TVET standards
+                if ($subject->total_mark >= 73) {
+                    $subject->grade = 'A'; // Distinction
+                } elseif ($subject->total_mark >= 60) {
+                    $subject->grade = 'B'; // Credit  
+                } elseif ($subject->total_mark >= 50) {
+                    $subject->grade = 'C'; // Pass
+                } else {
+                    $subject->grade = 'NYC'; // Not Yet Competent
                 }
                 
                 $subjects->push($subject);
