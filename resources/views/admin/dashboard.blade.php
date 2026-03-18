@@ -134,7 +134,7 @@
                             <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalRevenue) }} Rwf</div>
                         </div>
                         <div class="col-auto">
-                            <i class="fas fa-coins fa-2x text-gray-300"></i>
+                            <i class="fas fa-money-bill-wave fa-2x text-primary"></i>
                         </div>
                     </div>
                 </div>
@@ -150,7 +150,7 @@
                             <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalExpenses) }} Rwf</div>
                         </div>
                         <div class="col-auto">
-                            <i class="fas fa-money-bill-wave fa-2x text-gray-300"></i>
+                            <i class="fas fa-receipt fa-2x text-danger"></i>
                         </div>
                     </div>
                 </div>
@@ -166,7 +166,7 @@
                             <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($netProfit) }} Rwf</div>
                         </div>
                         <div class="col-auto">
-                            <i class="fas fa-chart-line fa-2x text-gray-300"></i>
+                            <i class="fas fa-chart-line fa-2x text-success"></i>
                         </div>
                     </div>
                 </div>
@@ -182,7 +182,7 @@
                             <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $profitMargin }}%</div>
                         </div>
                         <div class="col-auto">
-                            <i class="fas fa-percentage fa-2x text-gray-300"></i>
+                            <i class="fas fa-percentage fa-2x text-info"></i>
                         </div>
                     </div>
                 </div>
@@ -202,7 +202,7 @@
                             <div class="text-xs text-muted">This month: {{ number_format($monthlyTokenRevenue ?? 0) }} Rwf</div>
                         </div>
                         <div class="col-auto">
-                            <i class="fas fa-coins fa-2x text-gray-300"></i>
+                            <i class="fas fa-coins fa-2x text-warning"></i>
                         </div>
                     </div>
                 </div>
@@ -219,7 +219,7 @@
                             <div class="text-xs text-muted">This month: {{ number_format($monthlyLiveClassRevenue ?? 0) }} Rwf</div>
                         </div>
                         <div class="col-auto">
-                            <i class="fas fa-video fa-2x text-gray-300"></i>
+                            <i class="fas fa-video fa-2x text-purple"></i>
                         </div>
                     </div>
                 </div>
@@ -236,7 +236,7 @@
                             <div class="text-xs text-muted">This month: {{ number_format($monthlyResourceRevenue ?? 0) }} Rwf</div>
                         </div>
                         <div class="col-auto">
-                            <i class="fas fa-file-upload fa-2x text-gray-300"></i>
+                            <i class="fas fa-file-upload fa-2x text-teal"></i>
                         </div>
                     </div>
                 </div>
@@ -253,7 +253,78 @@
                             <div class="text-xs text-muted">This month: {{ number_format($monthlySubscriptionRevenue ?? 0) }} Rwf</div>
                         </div>
                         <div class="col-auto">
-                            <i class="fas fa-crown fa-2x text-gray-300"></i>
+                            <i class="fas fa-crown fa-2x text-info"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Additional Revenue Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Exam Purchase Revenue</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($examRevenue ?? 0) }} Rwf</div>
+                            <div class="text-xs text-muted">From public exam sales</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-graduation-cap fa-2x text-success"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Registration Revenue</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($registrationRevenue ?? 0) }} Rwf</div>
+                            <div class="text-xs text-muted">Student registration fees</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-user-plus fa-2x text-primary"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Client Revenue</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalClientRevenue ?? 0) }} Rwf</div>
+                            <div class="text-xs text-muted">From client token purchases</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-handshake fa-2x text-warning"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-danger shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Total Expenses</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalExpenses ?? 0) }} Rwf</div>
+                            <div class="text-xs text-muted">Operational expenses</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-receipt fa-2x text-danger"></i>
                         </div>
                     </div>
                 </div>
@@ -273,7 +344,7 @@
                             <div class="text-xs text-muted">{{ number_format($activeClients ?? 0) }} active, {{ number_format($inactiveClients ?? 0) }} inactive</div>
                         </div>
                         <div class="col-auto">
-                            <i class="fas fa-users fa-2x text-gray-300"></i>
+                            <i class="fas fa-users fa-2x text-warning"></i>
                         </div>
                     </div>
                 </div>
@@ -290,7 +361,7 @@
                             <div class="text-xs text-muted">Total tokens purchased</div>
                         </div>
                         <div class="col-auto">
-                            <i class="fas fa-coins fa-2x text-gray-300"></i>
+                            <i class="fas fa-coins fa-2x text-success"></i>
                         </div>
                     </div>
                 </div>
@@ -307,7 +378,7 @@
                             <div class="text-xs text-muted">From token purchases</div>
                         </div>
                         <div class="col-auto">
-                            <i class="fas fa-chart-line fa-2x text-gray-300"></i>
+                            <i class="fas fa-chart-line fa-2x text-primary"></i>
                         </div>
                     </div>
                 </div>
@@ -324,7 +395,7 @@
                             <div class="text-xs text-muted">Currently active</div>
                         </div>
                         <div class="col-auto">
-                            <i class="fas fa-crown fa-2x text-gray-300"></i>
+                            <i class="fas fa-crown fa-2x text-info"></i>
                         </div>
                     </div>
                 </div>

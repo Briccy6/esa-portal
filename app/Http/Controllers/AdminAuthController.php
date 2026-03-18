@@ -88,11 +88,12 @@ class AdminAuthController extends Controller
 
             // SIMPLIFIED REVENUE CALCULATION - Direct from student_transactions table
             // Revenue from student transactions (using actual transaction types)
-            $tokenRevenue = StudentTransaction::where('type', 'student_card')->where('status', 'successful')->sum('amount');
-            $liveClassRevenue = 0; // No live_class transactions found
-            $resourceRevenue = 0; // No resource transactions found
+            $tokenRevenue = StudentTransaction::where('type', 'token_purchase')->where('status', 'successful')->sum('amount');
+            $liveClassRevenue = StudentTransaction::where('type', 'live_class')->where('status', 'successful')->sum('amount');
+            $resourceRevenue = StudentTransaction::where('type', 'resource')->where('status', 'successful')->sum('amount');
             $subscriptionRevenue = StudentTransaction::where('type', 'subscription')->where('status', 'successful')->sum('amount');
             $registrationRevenue = StudentTransaction::where('type', 'registration')->where('status', 'successful')->sum('amount');
+            $examRevenue = StudentTransaction::where('type', 'exam_purchase')->where('status', 'successful')->sum('amount');
             $totalExpenses = Expense::sum('amount') ?? 0;
 
             // Debug: Check student_transactions table data
@@ -136,7 +137,7 @@ class AdminAuthController extends Controller
                 ->whereYear('created_at', Carbon::now()->year)
                 ->sum('amount');
 
-            $revenueData = $tokenRevenue + $liveClassRevenue + $resourceRevenue + $subscriptionRevenue + $registrationRevenue;
+            $revenueData = $tokenRevenue + $liveClassRevenue + $resourceRevenue + $subscriptionRevenue + $registrationRevenue + $examRevenue;
 
             // Calculate total revenue and profit metrics
             $totalRevenue = $revenueData;
@@ -220,6 +221,7 @@ class AdminAuthController extends Controller
                 'resourceRevenue',
                 'subscriptionRevenue',
                 'registrationRevenue',
+                'examRevenue',
                 'totalRevenue',
                 'totalExpenses',
                 'netProfit',
