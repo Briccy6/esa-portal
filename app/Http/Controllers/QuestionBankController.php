@@ -404,6 +404,7 @@ class QuestionBankController extends Controller
                 
                 // Enhanced question data with support for math/biology
                 $questionCreateData = [
+                    'exam_id' => null, // Allow questions in question banks without being tied to an exam
                     'question_bank_id' => $questionBank->id,
                     'question_type' => $questionData['question_type'] ?? 'multiple_choice',
                     'text' => $text,
