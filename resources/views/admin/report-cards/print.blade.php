@@ -466,15 +466,15 @@
                     </tr>
                     @foreach($reportCard->subjects as $subject)
                         <tr>
-                            <td colspan="3" class="text-left">{{ $subject->lesson->code ?? $subject->subject_name }}</td>
+                            <td colspan="3" class="text-left">{{ $subject->subject_code ?? $subject->subject_name }}</td>
                             <td class="text-left">{{ $subject->subject_name }}</td>
-                            <td class="numeric">{{ $subject->lesson->credits ?? 3 }}</td>
-                            <td class="numeric">{{ number_format($subject->test_average ?? 0, 2) }}</td>
-                            <td class="numeric">{{ number_format($subject->exam_mark ?? 0, 2) }}</td>
-                            <td class="numeric font-bold">{{ number_format($subject->total_mark ?? 0, 2) }}</td>
-                            <td class="numeric font-bold">{{ number_format($subject->total_mark ?? 0, 2) }}</td>
+                            <td class="numeric">{{ $subject->credits ?? 3 }}</td>
+                            <td class="numeric">{{ $subject->test_average ?? '-' }}</td>
+                            <td class="numeric">{{ $subject->exam_mark ?? '-' }}</td>
+                            <td class="numeric font-bold">{{ $subject->total_mark ?? '-' }}</td>
+                            <td class="numeric font-bold">{{ $subject->total_mark ?? '-' }}</td>
                             <td class="numeric font-bold"></td>
-                            <td class="font-bold">{{ $subject->grade === 'A' || $subject->grade === 'B' || $subject->grade === 'C' ? 'C' : 'NYC' }}</td>
+                            <td class="font-bold">{{ $subject->grade === 'A' || $subject->grade === 'B' ? 'C' : 'NYC' }}</td>
                         </tr>
                     @endforeach
                 @else
