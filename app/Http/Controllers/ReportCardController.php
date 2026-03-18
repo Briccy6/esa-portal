@@ -165,6 +165,12 @@ class ReportCardController extends Controller
         'subjects.testMarks.exam'
     ]);
 
+    // Calculate class position if not already calculated
+    if (!$reportCard->class_position) {
+        $reportCard->calculateClassPosition();
+        $reportCard->refresh(); // Reload to get updated values
+    }
+
     $schoolInfo = SchoolInformation::getActive();
 
     // Resolve student passport photo to base64 for DomPDF
