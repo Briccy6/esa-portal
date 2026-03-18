@@ -17,6 +17,17 @@
     color: #20c997 !important;
 }
 
+/* Card hover effects */
+.card-hover {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
 /* Mobile Responsive Dashboard */
 @media (max-width: 768px) {
     .container-fluid {
@@ -126,280 +137,312 @@
     <!-- Summary Cards -->
     <div class="row mb-4">
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-primary shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Revenue</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalRevenue) }} Rwf</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-money-bill-wave fa-2x text-primary"></i>
+            <a href="{{ route('admin.report') }}" class="text-decoration-none">
+                <div class="card border-left-primary shadow h-100 py-2 card-hover">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Revenue</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalRevenue) }} Rwf</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-money-bill-wave fa-2x text-primary"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </a>
         </div>
 
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-danger shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Total Expenses</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalExpenses) }} Rwf</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-receipt fa-2x text-danger"></i>
+            <a href="{{ route('admin.expenses.export') }}" class="text-decoration-none">
+                <div class="card border-left-danger shadow h-100 py-2 card-hover">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Total Expenses</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalExpenses) }} Rwf</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-receipt fa-2x text-danger"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </a>
         </div>
 
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-success shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Net Profit</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($netProfit) }} Rwf</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-chart-line fa-2x text-success"></i>
+            <a href="{{ route('admin.report') }}" class="text-decoration-none">
+                <div class="card border-left-success shadow h-100 py-2 card-hover">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Net Profit</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($netProfit) }} Rwf</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-chart-line fa-2x text-success"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </a>
         </div>
 
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-info shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Profit Margin</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $profitMargin }}%</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-percentage fa-2x text-info"></i>
+            <a href="{{ route('admin.report') }}" class="text-decoration-none">
+                <div class="card border-left-info shadow h-100 py-2 card-hover">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Profit Margin</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $profitMargin }}%</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-percentage fa-2x text-info"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </a>
         </div>
     </div>
 
     <!-- Revenue Source Cards -->
     <div class="row mb-4">
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-warning shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Token Purchase Revenue</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($tokenRevenue ?? 0) }} Rwf</div>
-                            <div class="text-xs text-muted">This month: {{ number_format($monthlyTokenRevenue ?? 0) }} Rwf</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-coins fa-2x text-warning"></i>
+            <a href="{{ route('admin.report') }}" class="text-decoration-none">
+                <div class="card border-left-warning shadow h-100 py-2 card-hover">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Token Purchase Revenue</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($tokenRevenue ?? 0) }} Rwf</div>
+                                <div class="text-xs text-muted">This month: {{ number_format($monthlyTokenRevenue ?? 0) }} Rwf</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-coins fa-2x text-warning"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </a>
         </div>
 
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-purple shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-purple text-uppercase mb-1">Live Class Revenue</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($liveClassRevenue ?? 0) }} Rwf</div>
-                            <div class="text-xs text-muted">This month: {{ number_format($monthlyLiveClassRevenue ?? 0) }} Rwf</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-video fa-2x text-purple"></i>
+            <a href="{{ route('admin.report') }}" class="text-decoration-none">
+                <div class="card border-left-purple shadow h-100 py-2 card-hover">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-purple text-uppercase mb-1">Live Class Revenue</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($liveClassRevenue ?? 0) }} Rwf</div>
+                                <div class="text-xs text-muted">This month: {{ number_format($monthlyLiveClassRevenue ?? 0) }} Rwf</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-video fa-2x text-purple"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </a>
         </div>
 
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-teal shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-teal text-uppercase mb-1">Resource Upload Revenue</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($resourceRevenue ?? 0) }} Rwf</div>
-                            <div class="text-xs text-muted">This month: {{ number_format($monthlyResourceRevenue ?? 0) }} Rwf</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-file-upload fa-2x text-teal"></i>
+            <a href="{{ route('admin.report') }}" class="text-decoration-none">
+                <div class="card border-left-teal shadow h-100 py-2 card-hover">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-teal text-uppercase mb-1">Resource Upload Revenue</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($resourceRevenue ?? 0) }} Rwf</div>
+                                <div class="text-xs text-muted">This month: {{ number_format($monthlyResourceRevenue ?? 0) }} Rwf</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-file-upload fa-2x text-teal"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </a>
         </div>
 
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-info shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Subscription Revenue</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($subscriptionRevenue ?? 0) }} Rwf</div>
-                            <div class="text-xs text-muted">This month: {{ number_format($monthlySubscriptionRevenue ?? 0) }} Rwf</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-crown fa-2x text-info"></i>
+            <a href="{{ route('admin.report') }}" class="text-decoration-none">
+                <div class="card border-left-info shadow h-100 py-2 card-hover">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Subscription Revenue</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($subscriptionRevenue ?? 0) }} Rwf</div>
+                                <div class="text-xs text-muted">This month: {{ number_format($monthlySubscriptionRevenue ?? 0) }} Rwf</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-crown fa-2x text-info"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </a>
         </div>
     </div>
 
     <!-- Additional Revenue Cards -->
     <div class="row mb-4">
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-success shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Exam Purchase Revenue</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($examRevenue ?? 0) }} Rwf</div>
-                            <div class="text-xs text-muted">From public exam sales</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-graduation-cap fa-2x text-success"></i>
+            <a href="{{ route('admin.report') }}" class="text-decoration-none">
+                <div class="card border-left-success shadow h-100 py-2 card-hover">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Exam Purchase Revenue</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($examRevenue ?? 0) }} Rwf</div>
+                                <div class="text-xs text-muted">From public exam sales</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-graduation-cap fa-2x text-success"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </a>
         </div>
 
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-primary shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Registration Revenue</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($registrationRevenue ?? 0) }} Rwf</div>
-                            <div class="text-xs text-muted">Student registration fees</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-user-plus fa-2x text-primary"></i>
+            <a href="{{ route('admin.report') }}" class="text-decoration-none">
+                <div class="card border-left-primary shadow h-100 py-2 card-hover">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Registration Revenue</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($registrationRevenue ?? 0) }} Rwf</div>
+                                <div class="text-xs text-muted">Student registration fees</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-user-plus fa-2x text-primary"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </a>
         </div>
 
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-warning shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Client Revenue</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalClientRevenue ?? 0) }} Rwf</div>
-                            <div class="text-xs text-muted">From client token purchases</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-handshake fa-2x text-warning"></i>
+            <a href="{{ route('admin.clients.index') }}" class="text-decoration-none">
+                <div class="card border-left-warning shadow h-100 py-2 card-hover">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Client Revenue</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalClientRevenue ?? 0) }} Rwf</div>
+                                <div class="text-xs text-muted">From client token purchases</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-handshake fa-2x text-warning"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </a>
         </div>
 
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-danger shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Total Expenses</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalExpenses ?? 0) }} Rwf</div>
-                            <div class="text-xs text-muted">Operational expenses</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-receipt fa-2x text-danger"></i>
+            <a href="{{ route('admin.expenses.export') }}" class="text-decoration-none">
+                <div class="card border-left-danger shadow h-100 py-2 card-hover">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Total Expenses</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalExpenses ?? 0) }} Rwf</div>
+                                <div class="text-xs text-muted">Operational expenses</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-receipt fa-2x text-danger"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </a>
         </div>
     </div>
 
     <!-- Client Statistics Cards -->
     <div class="row mb-4">
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-warning shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Total Clients</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalClients ?? 0) }}</div>
-                            <div class="text-xs text-muted">{{ number_format($activeClients ?? 0) }} active, {{ number_format($inactiveClients ?? 0) }} inactive</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-users fa-2x text-warning"></i>
+            <a href="{{ route('admin.clients.index') }}" class="text-decoration-none">
+                <div class="card border-left-warning shadow h-100 py-2 card-hover">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Total Clients</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalClients ?? 0) }}</div>
+                                <div class="text-xs text-muted">{{ number_format($activeClients ?? 0) }} active, {{ number_format($inactiveClients ?? 0) }} inactive</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-users fa-2x text-warning"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </a>
         </div>
 
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-success shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Client Tokens Sold</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalClientTokens ?? 0) }}</div>
-                            <div class="text-xs text-muted">Total tokens purchased</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-coins fa-2x text-success"></i>
+            <a href="{{ route('admin.clients.index') }}" class="text-decoration-none">
+                <div class="card border-left-success shadow h-100 py-2 card-hover">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Client Tokens Sold</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalClientTokens ?? 0) }}</div>
+                                <div class="text-xs text-muted">Total tokens purchased</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-coins fa-2x text-success"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </a>
         </div>
 
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-primary shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Client Revenue</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalClientRevenue ?? 0) }} Rwf</div>
-                            <div class="text-xs text-muted">From token purchases</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-chart-line fa-2x text-primary"></i>
+            <a href="{{ route('admin.clients.index') }}" class="text-decoration-none">
+                <div class="card border-left-primary shadow h-100 py-2 card-hover">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Client Revenue</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalClientRevenue ?? 0) }} Rwf</div>
+                                <div class="text-xs text-muted">From token purchases</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-chart-line fa-2x text-primary"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </a>
         </div>
 
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-info shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Active Subscriptions</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ \App\Models\ClientSubscription::where('is_active', true)->count() }}</div>
-                            <div class="text-xs text-muted">Currently active</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-crown fa-2x text-info"></i>
+            <a href="{{ route('admin.clients.index') }}" class="text-decoration-none">
+                <div class="card border-left-info shadow h-100 py-2 card-hover">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Active Subscriptions</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ \App\Models\ClientSubscription::where('is_active', true)->count() }}</div>
+                                <div class="text-xs text-muted">Currently active</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-crown fa-2x text-info"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </a>
         </div>
     </div>
 

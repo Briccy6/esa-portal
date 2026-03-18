@@ -149,10 +149,11 @@ public function index()
         
         foreach ($marks as $mark) {
             $termId = $mark->term_id ?: 'no-term';
+            
             // Handle term_id = 0 as no-term as well
-            if ($mark->term_id == 0) {
+            if ($mark->term_id == 0 || $mark->term_id === null) {
                 $termId = 'no-term';
-                $termName = 'Unknown Term';
+                $termName = 'No Term Assigned';
             } else {
                 $termName = $mark->term ? $mark->term->name : 'Unknown Term';
             }

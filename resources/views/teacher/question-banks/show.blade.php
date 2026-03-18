@@ -159,9 +159,33 @@
                         <a href="{{ route('teacher.question-banks.add-question', $questionBank) }}" class="btn btn-success">
                             <i class="bi bi-plus-circle"></i> Add Question
                         </a>
-                        <a href="{{ route('teacher.question-banks.import', $questionBank) }}" class="btn btn-info">
-                            <i class="bi bi-upload"></i> Import Questions
-                        </a>
+                        <form action="{{ route('teacher.question-banks.import', $questionBank) }}" method="POST" enctype="multipart/form-data" class="mb-2">
+                            @csrf
+                            <input type="file" name="csv_file" accept=".csv,.txt" class="form-control mb-2" id="importFile" style="display: none;">
+                            <button type="button" class="btn btn-info w-100" onclick="document.getElementById('importFile').click()">
+                                <i class="bi bi-upload"></i> Import Questions
+                            </button>
+                            <div id="importFileName" class="text-muted small mt-1" style="display: none;"></div>
+                            <button type="submit" id="submitImport" class="btn btn-success w-100 mt-2" style="display: none;">
+                                <i class="bi bi-check-circle"></i> Upload Selected File
+                            </button>
+                        </form>
+                        <script>
+                        document.getElementById('importFile').addEventListener('change', function(e) {
+                            const fileName = e.target.files[0]?.name || '';
+                            const fileDisplay = document.getElementById('importFileName');
+                            const submitBtn = document.getElementById('submitImport');
+                            
+                            if (fileName) {
+                                fileDisplay.textContent = 'Selected: ' + fileName;
+                                fileDisplay.style.display = 'block';
+                                submitBtn.style.display = 'block';
+                            } else {
+                                fileDisplay.style.display = 'none';
+                                submitBtn.style.display = 'none';
+                            }
+                        });
+                        </script>
                         <a href="{{ route('teacher.question-banks.export', $questionBank) }}" class="btn btn-outline-primary">
                             <i class="bi bi-download"></i> Export Questions
                         </a>

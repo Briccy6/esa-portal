@@ -708,6 +708,7 @@ body {
         var branchId = document.getElementById('branch_id').value;
         var courseId = document.getElementById('course_id').value;
         var lessonId = document.getElementById('lesson_id').value;
+        var termId = document.getElementById('term_id').value;
         var assessmentType = document.getElementById('assessment_type').value;
         var examId = document.getElementById('exam_id').value;
         var examDate = document.getElementById('exam_date').value;
@@ -718,8 +719,8 @@ body {
         modalTbody.innerHTML = '';
         modalMsg.innerHTML = '';
 
-        if (!branchId || !courseId || !lessonId || !assessmentType || (assessmentType === 'exam' && (!examId || !examDate)) || (assessmentType === 'test' && (!marksOutOf || !testDate))) {
-            modalMsg.innerHTML = '<div class="text-warning">Please select all required fields.</div>';
+        if (!branchId || !courseId || !lessonId || !termId || !assessmentType || (assessmentType === 'exam' && (!examId || !examDate)) || (assessmentType === 'test' && (!marksOutOf || !testDate))) {
+            modalMsg.innerHTML = '<div class="text-warning">Please select all required fields including term.</div>';
             return;
         }
 
@@ -866,6 +867,7 @@ body {
         formData.append('branch_id', document.getElementById('branch_id').value);
         formData.append('course_id', document.getElementById('course_id').value);
         formData.append('lesson_id', document.getElementById('lesson_id').value);
+        formData.append('term_id', document.getElementById('term_id').value);
         formData.append('assessment_type', document.getElementById('assessment_type').value);
         if (document.getElementById('assessment_type').value === 'exam') {
             formData.append('exam_id', document.getElementById('exam_id').value);
@@ -923,12 +925,13 @@ body {
         var branchId = document.getElementById('branch_id').value;
         var courseId = document.getElementById('course_id').value;
         var lessonId = document.getElementById('lesson_id').value;
+        var termId = document.getElementById('term_id').value;
         var assessmentType = document.getElementById('assessment_type').value;
         var examId = document.getElementById('exam_id').value;
         var examDate = document.getElementById('exam_date').value;
         var marksOutOf = document.getElementById('marks_out_of').value;
         var btn = document.getElementById('showStudentsBtn');
-        if (!branchId || !courseId || !lessonId || !assessmentType ||
+        if (!branchId || !courseId || !lessonId || !termId || !assessmentType ||
             (assessmentType === 'exam' && (!examId || !examDate)) ||
             (assessmentType === 'test' && !marksOutOf)) {
             btn.disabled = true;
@@ -936,7 +939,7 @@ body {
             btn.disabled = false;
         }
     }
-    ['branch_id', 'course_id', 'lesson_id', 'assessment_type', 'exam_id', 'marks_out_of', 'exam_date'].forEach(function(id) {
+    ['branch_id', 'course_id', 'lesson_id', 'assessment_type', 'exam_id', 'marks_out_of', 'exam_date', 'term_id'].forEach(function(id) {
         var el = document.getElementById(id);
         if (el) el.addEventListener('change', updateShowStudentsBtn);
     });

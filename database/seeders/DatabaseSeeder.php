@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             CoursesTableSeeder::class,
             AcademicYearsSeeder::class,
+            TermsSeeder::class,
             AdminSeeder::class,
             SchoolInformationSeeder::class,
             KigaliTourismMarksSeeder::class,
