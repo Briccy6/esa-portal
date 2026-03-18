@@ -358,228 +358,80 @@ class MarksController extends Controller
             ->orderBy('created_at', 'asc')
             ->get();
 
-        // Group marks by lesson and create subjects structure using unified calculation
-        $subjects = $this->calculateStudentSubjects($student->id, $request->term, $request->academic_year);
+        // Group marks by lesson and create subjects structure
+        $subjects = collect();
+        $lessons = $marks->groupBy('lesson_id');
+        
+        foreach ($lessons as $lessonId => $lessonMarks) {
+            $lesson = $lessonMarks->first()->lesson;
+            if ($lesson) {
+                $subject = new \stdClass();
+                $subject->subject_name = $lesson->title;
+                $subject->subject_code = $lesson->code ?? strtoupper(substr($lesson->title, 0, 3));
+                $subject->credits = 3;
+                
+                // Calculate test average (multiple test marks for same lesson)
+                $testMarks = $lessonMarks->where('assessment_type', 'test');
+                $subject->test_average = $testMarks->isNotEmpty() ? $testMarks->avg('value') : 0;
+                
+                // Get exam mark (should be only one exam mark per lesson)
+                $examMark = $lessonMarks->where('assessment_type', 'exam')->first();
+                $subject->exam_mark = $examMark ? $examMark->value : 0;
+                
+                // Calculate weighted average: 40% test average + 60% exam mark
+                // Convert to percentage scale (out of 100)
+                $testWeighted = $subject->test_average * 0.4; // 40% weight for tests
+                $examWeighted = $subject->exam_mark * 0.6;    // 60% weight for exam
+                
+                // Ensure we're working with percentages
+                if ($subject->test_average > 0 && $subject->test_average <= 100) {
+                    $testWeighted = $subject->test_average * 0.4;
+                } else {
+                    // Convert from original scale to percentage
+                    $testOutOf = $testMarks->first()->marks_out_of ?? 100;
+                    $testWeighted = ($subject->test_average / $testOutOf) * 100 * 0.4;
+                }
+                
+                if ($subject->exam_mark > 0 && $subject->exam_mark <= 100) {
+                    $examWeighted = $subject->exam_mark * 0.6;
+                } else {
+                    // Convert from original scale to percentage
+                    $examOutOf = $examMark->marks_out_of ?? 100;
+                    $examWeighted = ($subject->exam_mark / $examOutOf) * 100 * 0.6;
+                }
+                
+                $subject->total_mark = $testWeighted + $examWeighted;
+                
+                // Ensure total is capped at 100
+                $subject->total_mark = min($subject->total_mark, 100);
+                
+                // Determine grade based on TVET standards
+                if ($subject->total_mark >= 73) {
+                    $subject->grade = 'A'; // Distinction
+                } elseif ($subject->total_mark >= 60) {
+                    $subject->grade = 'B'; // Credit  
+                } elseif ($subject->total_mark >= 50) {
+                    $subject->grade = 'C'; // Pass
+                } else {
+                    $subject->grade = 'NYC'; // Not Yet Competent
+                }
+                
+                $subjects->push($subject);
+            }
+        }
         
         $reportCard->subjects = $subjects;
         
-        // Calculate totals using the same calculation method
+        // Calculate totals
         $reportCard->total_marks = $subjects->sum('total_mark');
         $reportCard->average_marks = $subjects->isNotEmpty() ? $subjects->avg('total_mark') : 0;
-        
-        // Calculate student position based on total marks compared to all students in same course
-        $reportCard->class_position = $this->calculateStudentPosition($student, $reportCard->total_marks, $request->term, $request->academic_year);
-        $reportCard->total_students = $this->getTotalStudentsInCourse($student->course_id, $request->term, $request->academic_year);
+        $reportCard->class_position = 1; // Mock position
+        $reportCard->total_students = 1; // Mock total students
         
         // Get school information
         $schoolInfo = \App\Models\SchoolInformation::getActive();
 
         return view('staff.marks.tvet-report', compact('reportCard', 'schoolInfo', 'studentPhotoBase64', 'studentPhotoMime'));
-    }
-    
-    /**
-     * Unified method to calculate student subjects with consistent logic
-     */
-    private function calculateStudentSubjects($studentId, $term = null, $academicYear = null)
-    {
-        try {
-            $subjects = collect();
-            
-            // Get marks for this student
-            $marks = Mark::with(['lesson'])
-                ->where('student_id', $studentId)
-                ->when($term, fn($q) => $q->where('term', $term))
-                ->when($academicYear, fn($q) => $q->where('academic_year', $academicYear))
-                ->orderBy('created_at', 'asc')
-                ->get();
-            
-            // Group marks by lesson
-            $lessons = $marks->groupBy('lesson_id');
-            
-            foreach ($lessons as $lessonId => $lessonMarks) {
-                $lesson = $lessonMarks->first()->lesson;
-                if ($lesson) {
-                    $subject = new \stdClass();
-                    $subject->subject_name = $lesson->title;
-                    $subject->subject_code = $lesson->code ?? strtoupper(substr($lesson->title, 0, 3));
-                    $subject->credits = 3;
-                    
-                    // Calculate test average (multiple test marks for same lesson)
-                    $testMarks = $lessonMarks->where('assessment_type', 'test');
-                    $subject->test_average = $testMarks->isNotEmpty() ? $testMarks->avg('value') : 0;
-                    
-                    // Get exam mark (should be only one exam mark per lesson)
-                    $examMark = $lessonMarks->where('assessment_type', 'exam')->first();
-                    $subject->exam_mark = $examMark ? $examMark->value : 0;
-                    
-                    // Calculate weighted average: 40% test average + 60% exam mark
-                    // Convert to percentage scale (out of 100)
-                    $testWeighted = $subject->test_average * 0.4; // 40% weight for tests
-                    $examWeighted = $subject->exam_mark * 0.6;    // 60% weight for exam
-                    
-                    // Ensure we're working with percentages
-                    if ($subject->test_average > 0 && $subject->test_average <= 100) {
-                        $testWeighted = $subject->test_average * 0.4;
-                    } else {
-                        // Convert from original scale to percentage
-                        $testOutOf = $testMarks->first()->marks_out_of ?? 100;
-                        $testWeighted = ($subject->test_average / $testOutOf) * 100 * 0.4;
-                    }
-                    
-                    if ($subject->exam_mark > 0 && $subject->exam_mark <= 100) {
-                        $examWeighted = $subject->exam_mark * 0.6;
-                    } else {
-                        // Convert from original scale to percentage
-                        $examOutOf = $examMark->marks_out_of ?? 100;
-                        $examWeighted = ($subject->exam_mark / $examOutOf) * 100 * 0.6;
-                    }
-                    
-                    $subject->total_mark = $testWeighted + $examWeighted;
-                    
-                    // Ensure total is capped at 100
-                    $subject->total_mark = min($subject->total_mark, 100);
-                    
-                    // Determine grade based on TVET standards
-                    if ($subject->total_mark >= 73) {
-                        $subject->grade = 'A'; // Distinction
-                    } elseif ($subject->total_mark >= 60) {
-                        $subject->grade = 'B'; // Credit  
-                    } elseif ($subject->total_mark >= 50) {
-                        $subject->grade = 'C'; // Pass
-                    } else {
-                        $subject->grade = 'NYC'; // Not Yet Competent
-                    }
-                    
-                    $subjects->push($subject);
-                }
-            }
-            
-            return $subjects;
-            
-        } catch (\Exception $e) {
-            \Log::error('Error calculating student subjects', [
-                'student_id' => $studentId,
-                'error' => $e->getMessage()
-            ]);
-            return collect(); // Return empty collection
-        }
-    }
-
-    /**
-     * Calculate student's position in class based on total marks
-     */
-    private function calculateStudentPosition($student, $studentTotalMarks, $term = null, $academicYear = null)
-    {
-        try {
-            // Get all students in the same course with their total marks
-            $allStudentsMarks = $this->getAllStudentsTotalMarks($student->course_id, $term, $academicYear);
-            
-            if ($allStudentsMarks->isEmpty()) {
-                return 1; // Only student
-            }
-            
-            // Sort by total marks descending
-            $sortedMarks = $allStudentsMarks->sortByDesc('total_marks');
-            
-            // Find current student's position
-            $position = 1;
-            $previousMarks = null;
-            $sharedPositions = [];
-            
-            foreach ($sortedMarks as $index => $studentMarks) {
-                $currentMarks = $studentMarks->total_marks;
-                
-                // Handle ties: if same marks as previous, share the same position
-                if ($previousMarks !== null && $currentMarks == $previousMarks) {
-                    // Same marks, share position with previous student(s)
-                    $sharedPositions[] = $position;
-                } else {
-                    // Different marks, update position
-                    if ($sharedPositions) {
-                        // If we were in a tie, calculate the correct position
-                        $position = $index + 1;
-                        $sharedPositions = [];
-                    } else {
-                        $position = $index + 1;
-                    }
-                }
-                
-                // Check if this is our student
-                if ($studentMarks->student_id == $student->id) {
-                    return $position;
-                }
-                
-                $previousMarks = $currentMarks;
-            }
-            
-            return 1; // Fallback
-            
-        } catch (\Exception $e) {
-            \Log::error('Error calculating student position', [
-                'student_id' => $student->id,
-                'course_id' => $student->course_id,
-                'error' => $e->getMessage()
-            ]);
-            return 1; // Fallback position
-        }
-    }
-    
-    /**
-     * Get total number of students in the same course
-     */
-    private function getTotalStudentsInCourse($courseId, $term = null, $academicYear = null)
-    {
-        try {
-            $query = Student::where('course_id', $courseId);
-            
-            // If term or academic year filtering is needed, add those conditions
-            // This depends on how your student data is structured
-            
-            return $query->count();
-            
-        } catch (\Exception $e) {
-            \Log::error('Error getting total students in course', [
-                'course_id' => $courseId,
-                'error' => $e->getMessage()
-            ]);
-            return 1; // Fallback
-        }
-    }
-    
-    /**
-     * Get all students' total marks in the same course for ranking
-     */
-    private function getAllStudentsTotalMarks($courseId, $term = null, $academicYear = null)
-    {
-        try {
-            // Get all students in this course
-            $students = Student::where('course_id', $courseId)->get();
-            
-            $studentsTotalMarks = collect();
-            
-            foreach ($students as $student) {
-                // Use the same unified calculation method for consistency
-                $subjects = $this->calculateStudentSubjects($student->id, $term, $academicYear);
-                
-                if ($subjects->isNotEmpty()) {
-                    $totalMarks = $subjects->sum('total_mark');
-                    
-                    $studentsTotalMarks->push((object) [
-                        'student_id' => $student->id,
-                        'total_marks' => $totalMarks
-                    ]);
-                }
-            }
-            
-            return $studentsTotalMarks;
-            
-        } catch (\Exception $e) {
-            \Log::error('Error getting all students total marks', [
-                'course_id' => $courseId,
-                'error' => $e->getMessage()
-            ]);
-            return collect(); // Return empty collection
-        }
     }
 
     private function calculatePassRate($marks)
