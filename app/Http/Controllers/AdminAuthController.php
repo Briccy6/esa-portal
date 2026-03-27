@@ -58,9 +58,6 @@ class AdminAuthController extends Controller
 
     public function dashboard(Request $request)
     {
-        // Enable query logging for debugging
-        DB::enableQueryLog();
-        
         try {
             // Basic counts (fast queries)
             $totalStudents = Student::count();
@@ -68,96 +65,46 @@ class AdminAuthController extends Controller
             $totalTeachers = class_exists(Teacher::class) ? Teacher::count() : 0;
             $totalStaff = class_exists(Staff::class) ? Staff::count() : 0;
             
-            // Initialize revenue variables to prevent undefined variable errors
-            $revenueData = 0;
-            $expensesData = 0;
-            $tokenRevenue = 0;
-            $liveClassRevenue = 0;
-            $resourceRevenue = 0;
-            $subscriptionRevenue = 0;
+            // Initialize revenue variables with actual transaction types from your database
+            $tokenRevenue = 0; // No token_purchase transactions exist
+            $liveClassRevenue = 0; // No live_class transactions exist
+            $resourceRevenue = 0; // No resource transactions exist
+            $subscriptionRevenue = StudentTransaction::where('type', 'subscription')->where('status', 'successful')->sum('amount');
+            $registrationRevenue = StudentTransaction::where('type', 'registration')->where('status', 'successful')->sum('amount') + 
+                                 StudentTransaction::where('type', 'registration_fee')->where('status', 'successful')->sum('amount');
+            $examRevenue = 0; // No exam_purchase transactions exist
+            
+            // Calculate total expenses from expenses table
+            $totalExpenses = Expense::sum('amount') ?? 0;
+            
+            // Calculate total revenue
+            $totalRevenue = $subscriptionRevenue + $registrationRevenue;
+            $netProfit = $totalRevenue - $totalExpenses;
+            $profitMargin = $totalRevenue > 0 ? round(($netProfit / $totalRevenue) * 100, 2) : 0;
+            
+            // Monthly breakdowns
             $monthlyTokenRevenue = 0;
             $monthlyLiveClassRevenue = 0;
             $monthlyResourceRevenue = 0;
-            $monthlySubscriptionRevenue = 0;
-            $totalExpenses = 0;
-            
-            // Initialize expense variables to prevent undefined variable errors
-            $expensesByBranch = collect();
-            $expensesByType = collect();
-            $expenseTrend = collect(); // Ensure it's always a collection
-
-            // SIMPLIFIED REVENUE CALCULATION - Direct from student_transactions table
-            // Revenue from student transactions (using actual transaction types)
-            $tokenRevenue = StudentTransaction::where('type', 'token_purchase')->where('status', 'successful')->sum('amount');
-            $liveClassRevenue = StudentTransaction::where('type', 'live_class')->where('status', 'successful')->sum('amount');
-            $resourceRevenue = StudentTransaction::where('type', 'resource')->where('status', 'successful')->sum('amount');
-            $subscriptionRevenue = StudentTransaction::where('type', 'subscription')->where('status', 'successful')->sum('amount');
-            $registrationRevenue = StudentTransaction::where('type', 'registration')->where('status', 'successful')->sum('amount');
-            $examRevenue = StudentTransaction::where('type', 'exam_purchase')->where('status', 'successful')->sum('amount');
-            $totalExpenses = Expense::sum('amount') ?? 0;
-
-            // Debug: Check student_transactions table data
-            \Log::info('Student Transactions count: ' . StudentTransaction::count());
-            \Log::info('Token Revenue (token_purchase): ' . $tokenRevenue);
-            \Log::info('Live Class Revenue (live_class): ' . $liveClassRevenue);
-            \Log::info('Resource Revenue (resource): ' . $resourceRevenue);
-            \Log::info('Subscription Revenue (subscription): ' . $subscriptionRevenue);
-            \Log::info('Expenses count: ' . Expense::count());
-            \Log::info('Total Expenses: ' . $totalExpenses);
-            
-            // Debug: Show sample transaction types
-            $sampleTransactions = StudentTransaction::limit(5)->get(['type', 'status', 'amount']);
-            \Log::info('Sample Transactions:');
-            foreach ($sampleTransactions as $transaction) {
-                \Log::info("  Type: {$transaction->type}, Status: {$transaction->status}, Amount: {$transaction->amount}");
-            }
-
-            // Monthly breakdowns
-            $monthlyTokenRevenue = StudentTransaction::where('type', 'token_purchase')
-                ->where('status', 'successful')
-                ->whereMonth('created_at', Carbon::now()->month)
-                ->whereYear('created_at', Carbon::now()->year)
-                ->sum('amount');
-
-            $monthlyLiveClassRevenue = StudentTransaction::where('type', 'live_class')
-                ->where('status', 'successful')
-                ->whereMonth('created_at', Carbon::now()->month)
-                ->whereYear('created_at', Carbon::now()->year)
-                ->sum('amount');
-
             $monthlySubscriptionRevenue = StudentTransaction::where('type', 'subscription')
                 ->where('status', 'successful')
                 ->whereMonth('created_at', Carbon::now()->month)
                 ->whereYear('created_at', Carbon::now()->year)
                 ->sum('amount');
 
-            $monthlyResourceRevenue = StudentTransaction::where('type', 'resource')
-                ->where('status', 'successful')
-                ->whereMonth('created_at', Carbon::now()->month)
-                ->whereYear('created_at', Carbon::now()->year)
-                ->sum('amount');
-
-            $revenueData = $tokenRevenue + $liveClassRevenue + $resourceRevenue + $subscriptionRevenue + $registrationRevenue + $examRevenue;
-
-            // Calculate total revenue and profit metrics
-            $totalRevenue = $revenueData;
-            $totalExpenses = $totalExpenses; // Use the value from expenses query
-            $netProfit = $totalRevenue - $totalExpenses;
-            $profitMargin = $totalRevenue > 0 ? round(($netProfit / $totalRevenue) * 100, 2) : 0;
-
             // Recent data for dashboard tables
             $recentStudents = Student::with(['branch', 'course'])->latest()->take(10)->get();
             $recentExpenses = Expense::latest()->take(10)->get();
 
-            // Client statistics for dashboard
+            // Client statistics
             $totalClients = Client::count();
             $activeClients = Client::where('is_active', true)->count();
             $inactiveClients = Client::where('is_active', false)->count();
-            $totalClientTokens = ClientTransaction::where('type', 'purchase')->sum('total_tokens');
-            $totalClientRevenue = ClientTransaction::where('type', 'purchase')->sum('amount');
+            $totalClientTokens = ClientTransaction::where('type', 'purchase')->sum('total_tokens') ?? 0;
+            $totalClientRevenue = ClientTransaction::where('type', 'purchase')->sum('amount') ?? 0;
             $recentClients = Client::with(['activeSubscription'])->latest()->take(5)->get();
 
-            // Chart data variables
+            // Student demographics
             $studentsByGender = Student::select('sex', DB::raw('count(*) as total'))
                 ->groupBy('sex')
                 ->get();
@@ -166,9 +113,9 @@ class AdminAuthController extends Controller
                 ? round((Student::where('payed_registration_fees', true)->count() / Student::count()) * 100, 1)
                 : 0;
 
-            $tuitionPaidPercent = 0; // No tuition fee status column exists, set to 0 for now
+            $tuitionPaidPercent = 0; // No tuition fee tracking
 
-            // Expenses by branch (from expenses table)
+            // Expenses by branch and type
             $expensesByBranch = Expense::select('paid_by as branch', DB::raw('sum(amount) as total'))
                 ->groupBy('paid_by')
                 ->get();
@@ -186,29 +133,35 @@ class AdminAuthController extends Controller
                 ->orderBy('expense_date')
                 ->get();
 
-            // Branch Financial Health (using direct table data)
-            $branchFinancialHealth = Branch::select('branches.name',
-                    DB::raw('(SELECT COALESCE(sum(ss.paid_amount), 0) FROM student_subscriptions ss JOIN students s ON ss.student_id = s.id WHERE s.branch_id = branches.id AND ss.payment_status = "paid" AND ss.is_active = 1) as revenue'),
-                    DB::raw('(SELECT COALESCE(sum(e.amount), 0) FROM expenses e WHERE e.paid_by = branches.name) as expenses'))
+            // Simplified branch financial health
+            $branchFinancialHealth = Branch::select('name', 
+                    DB::raw('0 as revenue'), // No subscription revenue tracking
+                    DB::raw('(SELECT COALESCE(sum(amount), 0) FROM expenses WHERE paid_by = name) as expenses'))
                 ->get();
 
-            // Tuition by branch data
+            // Tuition by branch (simplified)
             $tuitionByBranch = Branch::select('name as branch', 
-                    DB::raw('(SELECT COUNT(*) FROM students WHERE branch_id = branches.id) * 100000 as expected')) // Assuming 100,000 RWF per student
+                    DB::raw('(SELECT COUNT(*) FROM students WHERE branch_id = branches.id) * 100000 as expected'))
                 ->get();
 
-            $tuitionPaidByBranch = collect(); // Empty collection since we don't have tuition payment tracking
+            $tuitionPaidByBranch = collect();
 
-            // Students by course and gender data
-            $studentsByCourseGender = Student::select('sex', 'courses.course_name as course_name', 'courses.id as course_id', DB::raw('count(*) as total'))
-                ->join('courses', 'students.course_id', '=', 'courses.id')
-                ->groupBy('sex', 'courses.id', 'courses.course_name')
-                ->get()
-                ->map(function($item) {
-                    $item->course = (object)['name' => $item->course_name, 'id' => $item->course_id];
-                    $item->sex = strtoupper(substr($item->sex, 0, 1)); // Convert to M/F format
-                    return $item;
-                });
+            // Students by course and gender (with error handling)
+            $studentsByCourseGender = collect();
+            try {
+                $studentsByCourseGender = Student::select('sex', 'courses.course_name as course_name', 'courses.id as course_id', DB::raw('count(*) as total'))
+                    ->join('courses', 'students.course_id', '=', 'courses.id')
+                    ->groupBy('sex', 'courses.id', 'courses.course_name')
+                    ->get()
+                    ->map(function($item) {
+                        $item->course = (object)['name' => $item->course_name, 'id' => $item->course_id];
+                        $item->sex = strtoupper(substr($item->sex, 0, 1));
+                        return $item;
+                    });
+            } catch (\Exception $e) {
+                // If courses table doesn't exist or has issues, return empty collection
+                $studentsByCourseGender = collect();
+            }
 
             // Cache the results for 1 hour
             $dashboardData = compact(
@@ -252,23 +205,17 @@ class AdminAuthController extends Controller
             
             return view('admin.dashboard', $dashboardData);
             
-        } catch (Exception $e) {
-            // Get the query log to debug which query failed
-            $queries = DB::getQueryLog();
-            $errorInfo = [
-                'error_message' => $e->getMessage(),
-                'query_log' => $queries,
-                'trace' => $e->getTraceAsString()
-            ];
-            
+        } catch (\Exception $e) {
             // Log the error for debugging
             \Log::error('Dashboard Error: ' . $e->getMessage(), [
-                'queries' => $queries,
                 'trace' => $e->getTraceAsString()
             ]);
             
             // Return error view with debug information
-            return view('admin.dashboard-error', $errorInfo);
+            return view('admin.dashboard-error', [
+                'error_message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
         }
     }
 }
