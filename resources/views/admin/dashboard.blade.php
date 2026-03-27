@@ -956,7 +956,7 @@
                                     <td>{{ \Carbon\Carbon::parse($expense->expense_date)->format('M d') }}</td>
                                     <td>{{ ucfirst($expense->expense_type) }}</td>
                                     <td>{{ number_format($expense->amount) }}</td>
-                                    <td>{{ $expense->paid_by ?? 'N/A' }}</td>
+                                    <td>{{ $expense->branch->name ?? 'N/A' }}</td>
                                 </tr>
                                 @endforeach
                             </tbody>
@@ -988,7 +988,7 @@
                                     <td>{{ \Carbon\Carbon::parse($expense->expense_date)->format('M d') }}</td>
                                     <td>{{ ucfirst($expense->expense_type) }}</td>
                                     <td>{{ number_format($expense->amount) }}</td>
-                                    <td>{{ $expense->paid_by ?? 'N/A' }}</td>
+                                    <td>{{ $expense->branch->name ?? 'N/A' }}</td>
                                 </tr>
                                 @endforeach
                             </tbody>
@@ -1004,6 +1004,18 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    // Helper function to capitalize first letter (JavaScript equivalent of PHP ucfirst)
+    function ucfirst(str) {
+        if (!str) return str;
+        return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+    
+    // Check if Chart.js is loaded
+    if (typeof Chart === 'undefined') {
+        console.error('Chart.js is not loaded!');
+        return;
+    }
+    
     // Chart defaults for professional look
     Chart.defaults.font.family = "'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
     Chart.defaults.color = '#858796';
@@ -1105,20 +1117,84 @@ const genderCounts = genderData.map(g => g.total);
 
     // 2. Fee Payments Bar Chart
     const feesCtx = document.getElementById('feesBarChart').getContext('2d');
+    
+    // Debug: Check if canvas exists
+    if (!feesCtx) {
+        console.error('Canvas element feesBarChart not found!');
+        return;
+    }
+    
+    const feeData = {!! json_encode($feePaymentData) !!};
+    console.log('Fee payment data:', feeData);
+    
+    // Filter out zero values and prepare chart data
+    const feeLabels = [];
+    const feeAmounts = [];
+    const feeColors = [];
+    
+    if (feeData.registration_fees > 0) {
+        feeLabels.push('Registration Fees');
+        feeAmounts.push(feeData.registration_fees);
+        feeColors.push('#f6c23e');
+    }
+    
+    if (feeData.school_fees > 0) {
+        feeLabels.push('School Fees');
+        feeAmounts.push(feeData.school_fees);
+        feeColors.push('#1cc88a');
+    }
+    
+    if (feeData.subscription_fees > 0) {
+        feeLabels.push('Subscription Fees');
+        feeAmounts.push(feeData.subscription_fees);
+        feeColors.push('#4e73df');
+    }
+    
+    if (feeData.student_card_fees > 0) {
+        feeLabels.push('Student Card Fees');
+        feeAmounts.push(feeData.student_card_fees);
+        feeColors.push('#36b9cc');
+    }
+    
+    if (feeData.exam_fees > 0) {
+        feeLabels.push('Exam Fees');
+        feeAmounts.push(feeData.exam_fees);
+        feeColors.push('#e74a3b');
+    }
+    
+    if (feeData.token_fees > 0) {
+        feeLabels.push('Token Purchases');
+        feeAmounts.push(feeData.token_fees);
+        feeColors.push('#858796');
+    }
+    
+    if (feeData.live_class_fees > 0) {
+        feeLabels.push('Live Class Fees');
+        feeAmounts.push(feeData.live_class_fees);
+        feeColors.push('#5a5c69');
+    }
+    
+    if (feeData.resource_fees > 0) {
+        feeLabels.push('Resource Fees');
+        feeAmounts.push(feeData.resource_fees);
+        feeColors.push('#2e59d9');
+    }
+    
+    // If no fee data, show "No Data"
+    if (feeLabels.length === 0) {
+        feeLabels.push('No Fee Data');
+        feeAmounts.push(1);
+        feeColors.push('#e9ecef');
+    }
+    
     new Chart(feesCtx, {
         type: 'bar',
         data: {
-            labels: ['Registration Paid', 'Tuition Paid'],
+            labels: feeLabels,
             datasets: [{
-                label: 'Percentage (%)',
-                data: [
-                    {{ $registrationPaidPercent ?? 0 }},
-                    {{ $tuitionPaidPercent ?? 0 }}
-                ],
-                backgroundColor: [
-                    createGradient(feesCtx, '#f6c23e', '#dda20a'),
-                    createGradient(feesCtx, '#1cc88a', '#17a673')
-                ],
+                label: 'Amount (Rwf)',
+                data: feeAmounts,
+                backgroundColor: feeColors,
                 borderWidth: 0,
                 borderRadius: 8
             }]
@@ -1131,7 +1207,7 @@ const genderCounts = genderData.map(g => g.total);
                 tooltip: {
                     callbacks: {
                         label: function(context) {
-                            return context.parsed.y + '%';
+                            return context.dataset.label + ': ' + context.parsed.y.toLocaleString() + ' Rwf';
                         }
                     }
                 }
@@ -1139,11 +1215,16 @@ const genderCounts = genderData.map(g => g.total);
             scales: {
                 y: {
                     beginAtZero: true,
-                    max: 100,
                     grid: { color: 'rgba(0, 0, 0, 0.05)' },
-                    ticks: { callback: function(value) { return value + '%'; } }
+                    ticks: {
+                        callback: function(value) {
+                            return value.toLocaleString() + ' Rwf';
+                        }
+                    }
                 },
-                x: { grid: { display: false } }
+                x: { 
+                    grid: { display: false }
+                }
             }
         }
     });
@@ -1311,7 +1392,15 @@ const genderCounts = genderData.map(g => g.total);
 
     // 7. Expense Trend
     const trendCtx = document.getElementById('expenseTrendChart').getContext('2d');
+    
+    // Debug: Check if canvas exists
+    if (!trendCtx) {
+        console.error('Canvas element expenseTrendChart not found!');
+        return;
+    }
+    
     const expenseTrendData = {!! json_encode($expenseTrend) !!};
+    console.log('Expense trend data:', expenseTrendData);
     
     new Chart(trendCtx, {
         type: 'line',
@@ -1324,15 +1413,30 @@ const genderCounts = genderData.map(g => g.total);
                 backgroundColor: 'rgba(246, 194, 62, 0.1)',
                 borderWidth: 3,
                 fill: true,
-                tension: 0.4
+                tension: 0.4,
+                pointBackgroundColor: '#f6c23e',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 6,
+                pointHoverRadius: 8
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: true,
             plugins: {
-                legend: { display: false },
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: { 
+                        padding: 15, 
+                        font: { size: 12 },
+                        usePointStyle: true
+                    }
+                },
                 tooltip: {
+                    mode: 'index',
+                    intersect: false,
                     callbacks: {
                         label: function(context) {
                             return context.dataset.label + ': ' + context.parsed.y.toLocaleString() + ' Rwf';
@@ -1343,9 +1447,21 @@ const genderCounts = genderData.map(g => g.total);
             scales: {
                 y: {
                     beginAtZero: true,
-                    grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                    grid: { color: 'rgba(0, 0, 0, 0.05)' },
+                    ticks: {
+                        callback: function(value) {
+                            return value.toLocaleString() + ' Rwf';
+                        }
+                    }
                 },
-                x: { grid: { display: false } }
+                x: { 
+                    grid: { display: false }
+                }
+            },
+            interaction: {
+                mode: 'nearest',
+                axis: 'x',
+                intersect: false
             }
         }
     });

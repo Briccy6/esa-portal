@@ -21,4 +21,9 @@ class Expense extends Model
     {
         return $this->belongsTo(\App\Models\Staff::class, 'paid_by');
     }
+    
+    public function branch()
+    {
+        return $this->belongsTo(\App\Models\Branch::class, 'paid_by');
+    }
 }

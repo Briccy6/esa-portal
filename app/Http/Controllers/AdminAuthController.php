@@ -65,36 +65,53 @@ class AdminAuthController extends Controller
             $totalTeachers = class_exists(Teacher::class) ? Teacher::count() : 0;
             $totalStaff = class_exists(Staff::class) ? Staff::count() : 0;
             
-            // Initialize revenue variables with actual transaction types from your database
-            $tokenRevenue = 0; // No token_purchase transactions exist
-            $liveClassRevenue = 0; // No live_class transactions exist
-            $resourceRevenue = 0; // No resource transactions exist
-            $subscriptionRevenue = StudentTransaction::where('type', 'subscription')->where('status', 'successful')->sum('amount');
-            $registrationRevenue = StudentTransaction::where('type', 'registration')->where('status', 'successful')->sum('amount') + 
-                                 StudentTransaction::where('type', 'registration_fee')->where('status', 'successful')->sum('amount');
-            $examRevenue = 0; // No exam_purchase transactions exist
+            // Calculate total revenue from ALL successful student transactions
+            $totalRevenue = StudentTransaction::where('status', 'successful')->sum('amount') ?? 0;
+            
+            // Revenue breakdown by type for detailed analysis
+            $revenueByType = StudentTransaction::where('status', 'successful')
+                ->select('type', DB::raw('sum(amount) as total'))
+                ->groupBy('type')
+                ->pluck('total', 'type')
+                ->toArray();
+            
+            // Individual revenue types for dashboard cards
+            $tokenRevenue = $revenueByType['token_purchase'] ?? 0;
+            $liveClassRevenue = $revenueByType['live_class'] ?? 0;
+            $resourceRevenue = $revenueByType['resource'] ?? 0;
+            $subscriptionRevenue = $revenueByType['subscription'] ?? 0;
+            $registrationRevenue = ($revenueByType['registration'] ?? 0) + ($revenueByType['registration_fee'] ?? 0);
+            $schoolFeeRevenue = $revenueByType['school_fee'] ?? 0;
+            $studentCardRevenue = $revenueByType['student_card'] ?? 0;
+            $examRevenue = $revenueByType['exam_purchase'] ?? 0;
             
             // Calculate total expenses from expenses table
             $totalExpenses = Expense::sum('amount') ?? 0;
             
-            // Calculate total revenue
-            $totalRevenue = $subscriptionRevenue + $registrationRevenue;
             $netProfit = $totalRevenue - $totalExpenses;
             $profitMargin = $totalRevenue > 0 ? round(($netProfit / $totalRevenue) * 100, 2) : 0;
             
-            // Monthly breakdowns
-            $monthlyTokenRevenue = 0;
-            $monthlyLiveClassRevenue = 0;
-            $monthlyResourceRevenue = 0;
-            $monthlySubscriptionRevenue = StudentTransaction::where('type', 'subscription')
-                ->where('status', 'successful')
+            // Monthly breakdowns for ALL transaction types
+            $monthlyRevenueByType = StudentTransaction::where('status', 'successful')
                 ->whereMonth('created_at', Carbon::now()->month)
                 ->whereYear('created_at', Carbon::now()->year)
-                ->sum('amount');
+                ->select('type', DB::raw('sum(amount) as total'))
+                ->groupBy('type')
+                ->pluck('total', 'type')
+                ->toArray();
+            
+            $monthlyTokenRevenue = $monthlyRevenueByType['token_purchase'] ?? 0;
+            $monthlyLiveClassRevenue = $monthlyRevenueByType['live_class'] ?? 0;
+            $monthlyResourceRevenue = $monthlyRevenueByType['resource'] ?? 0;
+            $monthlySubscriptionRevenue = $monthlyRevenueByType['subscription'] ?? 0;
+            $monthlyRegistrationRevenue = ($monthlyRevenueByType['registration'] ?? 0) + ($monthlyRevenueByType['registration_fee'] ?? 0);
+            $monthlySchoolFeeRevenue = $monthlyRevenueByType['school_fee'] ?? 0;
+            $monthlyStudentCardRevenue = $monthlyRevenueByType['student_card'] ?? 0;
+            $monthlyExamRevenue = $monthlyRevenueByType['exam_purchase'] ?? 0;
 
             // Recent data for dashboard tables
             $recentStudents = Student::with(['branch', 'course'])->latest()->take(10)->get();
-            $recentExpenses = Expense::latest()->take(10)->get();
+            $recentExpenses = Expense::with(['branch'])->latest()->take(10)->get();
 
             // Client statistics
             $totalClients = Client::count();
@@ -115,6 +132,34 @@ class AdminAuthController extends Controller
 
             $tuitionPaidPercent = 0; // No tuition fee tracking
 
+            // Comprehensive fee payment data from student_transactions
+            $feePaymentData = [
+                'registration_fees' => StudentTransaction::where('status', 'successful')
+                    ->whereIn('type', ['registration', 'registration_fee'])
+                    ->sum('amount'),
+                'school_fees' => StudentTransaction::where('status', 'successful')
+                    ->where('type', 'school_fee')
+                    ->sum('amount'),
+                'subscription_fees' => StudentTransaction::where('status', 'successful')
+                    ->where('type', 'subscription')
+                    ->sum('amount'),
+                'student_card_fees' => StudentTransaction::where('status', 'successful')
+                    ->where('type', 'student_card')
+                    ->sum('amount'),
+                'exam_fees' => StudentTransaction::where('status', 'successful')
+                    ->where('type', 'exam_purchase')
+                    ->sum('amount'),
+                'token_fees' => StudentTransaction::where('status', 'successful')
+                    ->where('type', 'token_purchase')
+                    ->sum('amount'),
+                'live_class_fees' => StudentTransaction::where('status', 'successful')
+                    ->where('type', 'live_class')
+                    ->sum('amount'),
+                'resource_fees' => StudentTransaction::where('status', 'successful')
+                    ->where('type', 'resource')
+                    ->sum('amount')
+            ];
+
             // Expenses by branch and type (fixed to use branch names)
             $expensesByBranch = Expense::select('branches.name as branch', DB::raw('sum(expenses.amount) as total'))
                 ->leftJoin('branches', 'expenses.paid_by', '=', 'branches.id')
@@ -127,25 +172,40 @@ class AdminAuthController extends Controller
             
             $expenseTrend = Expense::select(
                     DB::raw('DATE_FORMAT(expense_date, "%b %Y") as month'),
-                    DB::raw('sum(amount) as amount')
+                    DB::raw('sum(amount) as amount'),
+                    DB::raw('YEAR(expense_date) as year'),
+                    DB::raw('MONTH(expense_date) as month_num')
                 )
                 ->where('expense_date', '>=', Carbon::now()->subMonths(6))
-                ->groupBy('month')
-                ->orderBy('expense_date')
+                ->groupBy('year', 'month_num', 'month')
+                ->orderBy('year')
+                ->orderBy('month_num')
                 ->get();
 
-            // Simplified branch financial health (fixed to use actual data)
+            // Branch financial health with actual revenue from student transactions
             $branchFinancialHealth = Branch::select('branches.name', 
-                    DB::raw('0 as revenue'), // No subscription revenue tracking
+                    DB::raw('(SELECT COALESCE(sum(st.amount), 0) 
+                              FROM student_transactions st 
+                              JOIN students s ON st.student_id = s.id 
+                              WHERE s.branch_id = branches.id AND st.status = "successful") as revenue'),
                     DB::raw('(SELECT COALESCE(sum(expenses.amount), 0) FROM expenses WHERE expenses.paid_by = branches.id) as expenses'))
                 ->get();
 
-            // Tuition by branch (simplified)
+            // Tuition by branch with actual collected amounts
             $tuitionByBranch = Branch::select('name as branch', 
-                    DB::raw('(SELECT COUNT(*) FROM students WHERE branch_id = branches.id) * 100000 as expected'))
+                    DB::raw('(SELECT COALESCE(sum(st.amount), 0) 
+                              FROM student_transactions st 
+                              JOIN students s ON st.student_id = s.id 
+                              WHERE s.branch_id = branches.id AND st.status = "successful" 
+                              AND st.type IN ("school_fee", "registration", "registration_fee")) as expected'))
                 ->get();
 
-            $tuitionPaidByBranch = collect();
+            $tuitionPaidByBranch = Branch::select('name as branch',
+                    DB::raw('(SELECT COALESCE(sum(st.amount), 0) 
+                              FROM student_transactions st 
+                              JOIN students s ON st.student_id = s.id 
+                              WHERE s.branch_id = branches.id AND st.status = "successful") as paid'))
+                ->pluck('paid', 'branch');
 
             // Students by course and gender (with error handling)
             $studentsByCourseGender = collect();
@@ -175,6 +235,8 @@ class AdminAuthController extends Controller
                 'resourceRevenue',
                 'subscriptionRevenue',
                 'registrationRevenue',
+                'schoolFeeRevenue',
+                'studentCardRevenue',
                 'examRevenue',
                 'totalRevenue',
                 'totalExpenses',
@@ -186,6 +248,7 @@ class AdminAuthController extends Controller
                 'studentsByCourseGender',
                 'registrationPaidPercent',
                 'tuitionPaidPercent',
+                'feePaymentData',
                 'expensesByBranch',
                 'expensesByType',
                 'branchFinancialHealth',
@@ -196,6 +259,10 @@ class AdminAuthController extends Controller
                 'monthlyLiveClassRevenue',
                 'monthlyResourceRevenue',
                 'monthlySubscriptionRevenue',
+                'monthlyRegistrationRevenue',
+                'monthlySchoolFeeRevenue',
+                'monthlyStudentCardRevenue',
+                'monthlyExamRevenue',
                 'totalClients',
                 'activeClients',
                 'inactiveClients',
