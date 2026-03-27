@@ -10,14 +10,14 @@
                 <div class="card-header">
                     <h3 class="card-title">Trial Balance Report</h3>
                     <div class="card-tools">
-                        <a href="{{ route('admin.accounting.export.trial-balance', request()->query()) }}" class="btn btn-success btn-sm">
+                        <a href="{{ route('accounting.export.trial-balance', request()->query()) }}" class="btn btn-success btn-sm">
                             <i class="fas fa-download"></i> Export CSV
                         </a>
                     </div>
                 </div>
                 <div class="card-body">
                     <!-- Filter Form -->
-                    <form method="GET" action="{{ route('admin.accounting.trial-balance') }}" class="mb-3">
+                    <form method="GET" action="{{ route('accounting.trial-balance') }}" class="mb-3">
                         <div class="row">
                             <div class="col-md-4">
                                 <label for="as_of_date">As of Date</label>
@@ -26,7 +26,7 @@
                             <div class="col-md-4">
                                 <label>&nbsp;</label><br>
                                 <button type="submit" class="btn btn-primary">Generate</button>
-                                <a href="{{ route('admin.accounting.trial-balance') }}" class="btn btn-secondary">Reset to Today</a>
+                                <a href="{{ route('accounting.trial-balance') }}" class="btn btn-secondary">Reset to Today</a>
                             </div>
                         </div>
                     </form>

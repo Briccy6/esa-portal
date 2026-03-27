@@ -11,7 +11,7 @@
                     <h3 class="card-title">General Ledger</h3>
                 </div>
                 <div class="card-body">
-                    <form method="GET" action="{{ route('admin.accounting.general-ledger') }}" class="mb-3">
+                    <form method="GET" action="{{ route('accounting.general-ledger') }}" class="mb-3">
                         <div class="row">
                             <div class="col-md-4">
                                 <label for="account_id">Account</label>
@@ -38,7 +38,7 @@
                             <div class="col-md-2">
                                 <label>&nbsp;</label><br>
                                 <button type="submit" class="btn btn-primary">Generate</button>
-                                <a href="{{ route('admin.accounting.general-ledger') }}" class="btn btn-secondary">Reset</a>
+                                <a href="{{ route('accounting.general-ledger') }}" class="btn btn-secondary">Reset</a>
                             </div>
                         </div>
                     </form>
