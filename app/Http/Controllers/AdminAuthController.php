@@ -115,9 +115,10 @@ class AdminAuthController extends Controller
 
             $tuitionPaidPercent = 0; // No tuition fee tracking
 
-            // Expenses by branch and type
-            $expensesByBranch = Expense::select('paid_by as branch', DB::raw('sum(amount) as total'))
-                ->groupBy('paid_by')
+            // Expenses by branch and type (fixed to use branch names)
+            $expensesByBranch = Expense::select('branches.name as branch', DB::raw('sum(expenses.amount) as total'))
+                ->leftJoin('branches', 'expenses.paid_by', '=', 'branches.id')
+                ->groupBy('branches.name', 'expenses.paid_by')
                 ->get();
                 
             $expensesByType = Expense::select('expense_type', DB::raw('sum(amount) as total'))
@@ -133,10 +134,10 @@ class AdminAuthController extends Controller
                 ->orderBy('expense_date')
                 ->get();
 
-            // Simplified branch financial health
-            $branchFinancialHealth = Branch::select('name', 
+            // Simplified branch financial health (fixed to use actual data)
+            $branchFinancialHealth = Branch::select('branches.name', 
                     DB::raw('0 as revenue'), // No subscription revenue tracking
-                    DB::raw('(SELECT COALESCE(sum(amount), 0) FROM expenses WHERE paid_by = name) as expenses'))
+                    DB::raw('(SELECT COALESCE(sum(expenses.amount), 0) FROM expenses WHERE expenses.paid_by = branches.id) as expenses'))
                 ->get();
 
             // Tuition by branch (simplified)

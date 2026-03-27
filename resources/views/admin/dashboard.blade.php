@@ -824,6 +824,60 @@
 
     <!-- Row 5: Recent Students with NESA Status -->
     <div class="row mb-4">
+        <div class="col-xl-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">Members Distribution</h6>
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="card-body">
+                    <canvas id="membersPieChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-info">Students by Gender</h6>
+                    <i class="fas fa-venus-mars"></i>
+                </div>
+                <div class="card-body">
+                    <canvas id="genderPieChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Row 6: Fee Payments & Revenue vs Expenses -->
+    <div class="row mb-4">
+        <div class="col-xl-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-warning">Fee Payment Status</h6>
+                    <i class="fas fa-credit-card"></i>
+                </div>
+                <div class="card-body">
+                    <canvas id="feesBarChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-success">Revenue vs Expenses</h6>
+                    <i class="fas fa-balance-scale"></i>
+                </div>
+                <div class="card-body">
+                    <canvas id="revenueExpenseChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Row 7: Recent Students with NESA Status -->
+    <div class="row mb-4">
         <div class="col-xl-12 mb-4">
             <div class="card shadow h-100">
                 <div class="card-header py-3">
@@ -872,6 +926,38 @@
                                             @endif
                                         </td>
                                     </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-success">Recent Expenses</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Amount</th>
+                                    <th>Branch</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($recentExpenses->take(5) as $expense)
+                                <tr>
+                                    <td>{{ \Carbon\Carbon::parse($expense->expense_date)->format('M d') }}</td>
+                                    <td>{{ ucfirst($expense->expense_type) }}</td>
+                                    <td>{{ number_format($expense->amount) }}</td>
+                                    <td>{{ $expense->paid_by ?? 'N/A' }}</td>
+                                </tr>
                                 @endforeach
                             </tbody>
                         </table>
@@ -1100,21 +1186,15 @@ const genderCounts = genderData.map(g => g.total);
 
     // 4. Expenses by Branch
     const expBranchCtx = document.getElementById('expensesByBranchChart').getContext('2d');
+    const expensesByBranchData = {!! json_encode($expensesByBranch) !!};
+    
     new Chart(expBranchCtx, {
         type: 'bar',
         data: {
-            labels: [
-                @foreach($expensesByBranch as $branch)
-                    "{{ $branch->branch }}"{{ !$loop->last ? ',' : '' }}
-                @endforeach
-            ],
+            labels: expensesByBranchData.length > 0 ? expensesByBranchData.map(item => item.branch) : ['No Data'],
             datasets: [{
                 label: 'Total Expenses (Rwf)',
-                data: [
-                    @foreach($expensesByBranch as $branch)
-                        {{ $branch->total }}{{ !$loop->last ? ',' : '' }}
-                    @endforeach
-                ],
+                data: expensesByBranchData.length > 0 ? expensesByBranchData.map(item => parseFloat(item.total)) : [0],
                 backgroundColor: createGradient(expBranchCtx, '#e74a3b', '#be2617'),
                 borderWidth: 0,
                 borderRadius: 8
@@ -1146,21 +1226,15 @@ const genderCounts = genderData.map(g => g.total);
 
     // 5. Expenses by Type
     const expTypeCtx = document.getElementById('expensesByTypeChart').getContext('2d');
+    const expensesByTypeData = {!! json_encode($expensesByType) !!};
+    
     new Chart(expTypeCtx, {
-        type: 'pie',
+        type: 'doughnut',
         data: {
-            labels: [
-                @foreach($expensesByType as $type)
-                    "{{ ucfirst($type->expense_type) }}"{{ !$loop->last ? ',' : '' }}
-                @endforeach
-            ],
+            labels: expensesByTypeData.length > 0 ? expensesByTypeData.map(item => ucfirst(item.expense_type)) : ['No Data'],
             datasets: [{
-                data: [
-                    @foreach($expensesByType as $type)
-                        {{ $type->total }}{{ !$loop->last ? ',' : '' }}
-                    @endforeach
-                ],
-                backgroundColor: primaryColors,
+                data: expensesByTypeData.length > 0 ? expensesByTypeData.map(item => parseFloat(item.total)) : [1],
+                backgroundColor: expensesByTypeData.length > 0 ? primaryColors : ['#e9ecef'],
                 borderWidth: 3,
                 borderColor: '#fff'
             }]
@@ -1186,33 +1260,23 @@ const genderCounts = genderData.map(g => g.total);
 
     // 6. Branch Financial Health
     const branchHealthCtx = document.getElementById('branchFinancialHealthChart').getContext('2d');
+    const branchHealthData = {!! json_encode($branchFinancialHealth) !!};
+    
     new Chart(branchHealthCtx, {
         type: 'bar',
         data: {
-            labels: [
-                @foreach($branchFinancialHealth as $branch)
-                    "{{ $branch->name }}"{{ !$loop->last ? ',' : '' }}
-                @endforeach
-            ],
+            labels: branchHealthData.length > 0 ? branchHealthData.map(item => item.name) : ['No Data'],
             datasets: [
                 {
                     label: 'Revenue (Rwf)',
-                    data: [
-                        @foreach($branchFinancialHealth as $branch)
-                            {{ $branch->revenue }}{{ !$loop->last ? ',' : '' }}
-                        @endforeach
-                    ],
+                    data: branchHealthData.length > 0 ? branchHealthData.map(item => parseFloat(item.revenue)) : [0],
                     backgroundColor: createGradient(branchHealthCtx, '#1cc88a', '#17a673'),
                     borderWidth: 0,
                     borderRadius: 8
                 },
                 {
                     label: 'Expenses (Rwf)',
-                    data: [
-                        @foreach($branchFinancialHealth as $branch)
-                            {{ $branch->expenses }}{{ !$loop->last ? ',' : '' }}
-                        @endforeach
-                    ],
+                    data: branchHealthData.length > 0 ? branchHealthData.map(item => parseFloat(item.expenses)) : [0],
                     backgroundColor: createGradient(branchHealthCtx, '#e74a3b', '#be2617'),
                     borderWidth: 0,
                     borderRadius: 8
@@ -1247,47 +1311,20 @@ const genderCounts = genderData.map(g => g.total);
 
     // 7. Expense Trend
     const trendCtx = document.getElementById('expenseTrendChart').getContext('2d');
+    const expenseTrendData = {!! json_encode($expenseTrend) !!};
+    
     new Chart(trendCtx, {
         type: 'line',
         data: {
-            labels: [
-                @if($expenseTrend && $expenseTrend->count() > 0)
-                    @foreach($expenseTrend as $trend)
-                        {{ $trend->month ?? $trend['month'] ?? 'Unknown' }}{{ !$loop->last ? ',' : '' }}
-                    @endforeach
-                @else
-                    'No Data'
-                @endif
-            ],
+            labels: expenseTrendData.length > 0 ? expenseTrendData.map(item => item.month) : ['No Data'],
             datasets: [{
                 label: 'Monthly Expenses (Rwf)',
-                data: [
-                    @if($expenseTrend && $expenseTrend->count() > 0)
-                        @foreach($expenseTrend as $trend)
-                            {{ $trend->amount ?? $trend['amount'] ?? 0 }}{{ !$loop->last ? ',' : '' }}
-                        @endforeach
-                    @else
-                        0
-                    @endif
-                ],
+                data: expenseTrendData.length > 0 ? expenseTrendData.map(item => parseFloat(item.amount)) : [0],
                 borderColor: '#f6c23e',
-                backgroundColor: function(context) {
-                    const chart = context.chart;
-                    const {ctx, chartArea} = chart;
-                    if (!chartArea) return null;
-                    const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-                    gradient.addColorStop(0, 'rgba(246, 194, 62, 0.3)');
-                    gradient.addColorStop(1, 'rgba(246, 194, 62, 0.01)');
-                    return gradient;
-                },
-                fill: true,
-                tension: 0.4,
+                backgroundColor: 'rgba(246, 194, 62, 0.1)',
                 borderWidth: 3,
-                pointRadius: 5,
-                pointBackgroundColor: '#f6c23e',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2,
-                pointHoverRadius: 7
+                fill: true,
+                tension: 0.4
             }]
         },
         options: {
@@ -1298,7 +1335,7 @@ const genderCounts = genderData.map(g => g.total);
                 tooltip: {
                     callbacks: {
                         label: function(context) {
-                            return context.parsed.y.toLocaleString() + ' Rwf';
+                            return context.dataset.label + ': ' + context.parsed.y.toLocaleString() + ' Rwf';
                         }
                     }
                 }
@@ -1315,34 +1352,25 @@ const genderCounts = genderData.map(g => g.total);
 
     // 8. Branch Tuition Chart
     const tuitionCtx = document.getElementById('branchTuitionChart').getContext('2d');
+    const tuitionData = {!! json_encode($tuitionByBranch) !!};
+    const tuitionPaidData = {!! json_encode($tuitionPaidByBranch) !!};
+    
     new Chart(tuitionCtx, {
         type: 'bar',
         data: {
-            labels: [
-                @foreach($tuitionByBranch as $branch)
-                    "{{ $branch->branch }}"{{ !$loop->last ? ',' : '' }}
-                @endforeach
-            ],
+            labels: tuitionData.length > 0 ? tuitionData.map(item => item.branch) : ['No Data'],
             datasets: [
                 {
-                    label: 'Paid (Rwf)',
-                    data: [
-                        @foreach($tuitionByBranch as $branch)
-                            {{ $tuitionPaidByBranch->firstWhere('branch', $branch->branch)->paid ?? 0 }}{{ !$loop->last ? ',' : '' }}
-                        @endforeach
-                    ],
+                    label: 'Expected (Rwf)',
+                    data: tuitionData.length > 0 ? tuitionData.map(item => parseFloat(item.expected)) : [0],
                     backgroundColor: createGradient(tuitionCtx, '#36b9cc', '#2c9faf'),
                     borderWidth: 0,
                     borderRadius: 8
                 },
                 {
-                    label: 'Expected (Rwf)',
-                    data: [
-                        @foreach($tuitionByBranch as $branch)
-                            {{ $branch->expected ?? 0 }}{{ !$loop->last ? ',' : '' }}
-                        @endforeach
-                    ],
-                    backgroundColor: createGradient(tuitionCtx, '#f6c23e', '#dda20a'),
+                    label: 'Paid (Rwf)',
+                    data: tuitionPaidData.length > 0 ? tuitionPaidData.map(item => parseFloat(item.paid ?? 0)) : [0],
+                    backgroundColor: createGradient(tuitionCtx, '#1cc88a', '#17a673'),
                     borderWidth: 0,
                     borderRadius: 8
                 }
@@ -1354,7 +1382,7 @@ const genderCounts = genderData.map(g => g.total);
             plugins: {
                 legend: {
                     position: 'top',
-                    labels: { padding: 20, font: { size: 12 } }
+                    labels: { padding: 15, font: { size: 12 } }
                 },
                 tooltip: {
                     callbacks: {
