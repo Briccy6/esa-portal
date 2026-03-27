@@ -1404,72 +1404,142 @@ const genderCounts = genderData.map(g => g.total);
 
     // 9. Students by Course and Gender
     const courseGenderCtx = document.getElementById('courseGenderChart').getContext('2d');
+    
+    // Debug: Check if canvas exists
+    if (!courseGenderCtx) {
+        console.error('Canvas element courseGenderChart not found!');
+        return;
+    }
+    
     const courseGenderData = {!! json_encode($studentsByCourseGender) !!};
+    console.log('Raw course gender data:', courseGenderData);
     
-    // Get unique courses
-    const courses = [...new Set(courseGenderData.map(item => item.course?.name || 'Unknown'))];
+    // Simple and robust data processing
+    let chartData = {
+        labels: [],
+        maleData: [],
+        femaleData: []
+    };
     
-    // Prepare data for males and females
-    const maleData = courses.map(course => {
-        const item = courseGenderData.find(d => (d.course?.name || 'Unknown') === course && d.sex === 'M');
-        return item ? item.total : 0;
-    });
+    if (courseGenderData && courseGenderData.length > 0) {
+        // Group by course
+        const courseGroups = {};
+        
+        courseGenderData.forEach(item => {
+            const courseName = item.course?.name || 'Unknown Course';
+            if (!courseGroups[courseName]) {
+                courseGroups[courseName] = { male: 0, female: 0 };
+            }
+            
+            if (item.sex === 'M') {
+                courseGroups[courseName].male = item.total || 0;
+            } else if (item.sex === 'F') {
+                courseGroups[courseName].female = item.total || 0;
+            }
+        });
+        
+        // Convert to chart arrays
+        Object.keys(courseGroups).forEach(courseName => {
+            chartData.labels.push(courseName);
+            chartData.maleData.push(courseGroups[courseName].male);
+            chartData.femaleData.push(courseGroups[courseName].female);
+        });
+        
+        console.log('Processed chart data:', chartData);
+    }
     
-    const femaleData = courses.map(course => {
-        const item = courseGenderData.find(d => (d.course?.name || 'Unknown') === course && d.sex === 'F');
-        return item ? item.total : 0;
-    });
-    
-    new Chart(courseGenderCtx, {
-        type: 'bar',
-        data: {
-            labels: courses,
-            datasets: [
-                {
-                    label: 'Male Students',
-                    data: maleData,
-                    backgroundColor: createGradient(courseGenderCtx, '#4e73df', '#224abe'),
+    // Create chart
+    if (chartData.labels.length === 0) {
+        // No data chart
+        new Chart(courseGenderCtx, {
+            type: 'bar',
+            data: {
+                labels: ['No Data Available'],
+                datasets: [{
+                    label: 'No Students Found',
+                    data: [1],
+                    backgroundColor: '#e9ecef',
                     borderWidth: 0,
                     borderRadius: 8
-                },
-                {
-                    label: 'Female Students',
-                    data: femaleData,
-                    backgroundColor: createGradient(courseGenderCtx, '#e74a3b', '#be2617'),
-                    borderWidth: 0,
-                    borderRadius: 8
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-                legend: {
-                    position: 'top',
-                    labels: { padding: 20, font: { size: 12 } }
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            return context.dataset.label + ': ' + context.parsed.y.toLocaleString();
-                        }
-                    }
-                }
+                }]
             },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: { color: 'rgba(0, 0, 0, 0.05)' },
-                    stacked: false
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: false }
                 },
-                x: { 
-                    grid: { display: false },
-                    stacked: false
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 1,
+                        grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                    },
+                    x: { grid: { display: false } }
                 }
             }
-        }
-    });
+        });
+    } else {
+        // Real data chart
+        new Chart(courseGenderCtx, {
+            type: 'bar',
+            data: {
+                labels: chartData.labels,
+                datasets: [
+                    {
+                        label: 'Male Students',
+                        data: chartData.maleData,
+                        backgroundColor: 'rgba(78, 115, 223, 0.8)',
+                        borderColor: 'rgba(78, 115, 223, 1)',
+                        borderWidth: 2,
+                        borderRadius: 8
+                    },
+                    {
+                        label: 'Female Students',
+                        data: chartData.femaleData,
+                        backgroundColor: 'rgba(231, 74, 59, 0.8)',
+                        borderColor: 'rgba(231, 74, 59, 1)',
+                        borderWidth: 2,
+                        borderRadius: 8
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { 
+                            padding: 20, 
+                            font: { size: 12 },
+                            usePointStyle: true
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': ' + context.parsed.y.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(0, 0, 0, 0.05)' },
+                        ticks: {
+                            stepSize: 1
+                        }
+                    },
+                    x: { 
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    }
 });
 
 // NESA Registration Functions
