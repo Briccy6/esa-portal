@@ -318,19 +318,59 @@ document.querySelectorAll('.tab').forEach(btn => {
 // The server pushes viewer_ready to the host queue.
 // We do NOT re-send viewer_ready from JS — the server handles it.
 // ═══════════════════════════════════════════════════════════
+// Track the highest signal ID seen
+let lastSignalId = 0;
+
 async function joinRoom() {
     try {
         console.log('🚪 Joining room:', ROOM_ID, 'sessionId:', SESSION_ID);
-        const res = await fetch('/webrtc/join/' + ROOM_ID, {
-            method:  'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
-            body:    JSON.stringify({ role: 'client', name: SELF_NAME, sessionId: SESSION_ID }),
+        // Start polling immediately instead of separate join endpoint
+        const res = await fetch(`/live-signaling/${ROOM_ID}/poll?peer=${SESSION_ID}&since=0`, {
+            headers: { 'X-CSRF-TOKEN': CSRF }
         });
         if (res.ok) {
             const result = await res.json();
             console.log('✅ Joined room:', result);
             document.getElementById('connOverlay').style.display = 'none';
             if (!connected) document.getElementById('waitingState').style.display = 'flex';
+            
+            // BUG 1 FIX: Send join signal to announce presence to teacher
+            console.log('📤 Student sending join signal to teacher, from_peer:', SESSION_ID, 'to_peer: teacher');
+            try {
+                const joinResponse = await fetch(`/live-signaling/${ROOM_ID}/send`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
+                    body: JSON.stringify({
+                        from_peer: SESSION_ID,
+                        to_peer: 'teacher',
+                        type: 'join',
+                        payload: {
+                            sessionId: SESSION_ID,
+                            name: SELF_NAME
+                        }
+                    })
+                });
+                if (!joinResponse.ok) {
+                    console.error('❌ Join signal failed:', joinResponse.status, joinResponse.statusText);
+                } else {
+                    console.log('✅ Join signal sent successfully');
+                }
+            } catch(e) {
+                console.error('❌ Join signal error:', e);
+            }
+            
+            // Also send viewer_ready signal for compatibility
+            console.log('📤 Student sending viewer_ready to teacher, from_peer:', SESSION_ID, 'to_peer: teacher');
+            fetch(`/live-signaling/${ROOM_ID}/send`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
+                body: JSON.stringify({
+                    from_peer: SESSION_ID,
+                    to_peer: 'teacher',
+                    type: 'viewer_ready',
+                    payload: { name: SELF_NAME }
+                })
+            }).catch(console.warn);
         } else {
             console.error('❌ Join failed:', res.status);
         }
@@ -403,10 +443,20 @@ function createPC() {
 // SIGNAL HELPERS
 // ═══════════════════════════════════════════════════════════
 function postSignal(data) {
-    fetch('/webrtc/signaling/' + ROOM_ID, {
+    fetch(`/live-signaling/${ROOM_ID}/send`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
-        body:    JSON.stringify(data),
+        body:    JSON.stringify({
+            from_peer: SESSION_ID,
+            to_peer: 'teacher',
+            type: data.type,
+            payload: {
+                sdp: data.sdp,
+                candidate: data.candidate,
+                role: data.role,
+                sessionId: data.sessionId
+            }
+        }),
     }).catch(console.warn);
 }
 
@@ -418,12 +468,31 @@ let pollActive = true;
 async function pollSignals() {
     if (!pollActive) return;
     try {
+        console.log('📨 Student polling with peer:', SESSION_ID, 'since:', lastSignalId);
         const r = await fetch(
-            `/webrtc/signaling/${ROOM_ID}?role=client&sessionId=${SESSION_ID}`,
+            `/live-signaling/${ROOM_ID}/poll?peer=${SESSION_ID}&since=${lastSignalId}`,
             { headers: { 'X-CSRF-TOKEN': CSRF } }
         );
         if (!r.ok) { console.error('Poll failed:', r.status); return; }
-        const signals = await r.json();
+        const response = await r.json();
+        const signals = response.signals || [];
+        
+        // BUG 2 FIX: Update the last signal ID properly
+        console.log('📊 Poll response:', response);
+        if (response.signals && response.signals.length > 0) {
+            const signalIds = response.signals.map(s => s.id);
+            const maxId = Math.max(...signalIds);
+            console.log('📊 Signal IDs received:', signalIds, 'maxId:', maxId, 'current lastSignalId:', lastSignalId);
+            if (maxId > lastSignalId) {
+                lastSignalId = maxId;
+                console.log('📈 Updated lastSignalId to:', lastSignalId);
+            } else {
+                console.log('📊 No update needed, maxId <= lastSignalId');
+            }
+        } else {
+            console.log('📊 No signals in response');
+        }
+        
         if (signals.length) console.log('📨 Student received', signals.length, 'signals');
         for (const sig of signals) await handleSignal(sig);
     } catch(e) {
@@ -435,7 +504,7 @@ async function handleSignal(sig) {
     console.log('🎯 Handling signal:', sig.type);
 
     if (sig.type === 'chat') {
-        appendChat(sig.sender, sig.message, false, sig.sender === HOST_NAME);
+        appendChat(sig.payload?.sender, sig.payload?.message, false, sig.from_peer === 'teacher');
         return;
     }
 
@@ -443,7 +512,7 @@ async function handleSignal(sig) {
 
     if (sig.type === 'offer') {
         console.log('📥 Received offer');
-        if (!sig.sdp || (!sig.sdp.includes('m=video') && !sig.sdp.includes('m=audio'))) {
+        if (!sig.payload?.sdp || (!sig.payload.sdp.includes('m=video') && !sig.payload.sdp.includes('m=audio'))) {
             console.error('❌ Invalid SDP'); return;
         }
 
@@ -456,7 +525,7 @@ async function handleSignal(sig) {
         }
 
         // Strip ssrc-group:FID lines that cause parser errors on some browsers
-        const sdp = sig.sdp.split('\n').filter(l => !l.startsWith('a=ssrc-group:FID')).join('\n');
+        const sdp = sig.payload.sdp.split('\n').filter(l => !l.startsWith('a=ssrc-group:FID')).join('\n');
 
         try {
             await pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp }));
@@ -483,12 +552,12 @@ async function handleSignal(sig) {
             console.error('❌ Offer handling failed:', e.name, e.message);
         }
 
-    } else if (sig.type === 'ice' && sig.candidate) {
+    } else if (sig.type === 'ice' && sig.payload?.candidate) {
         try {
             if (pc.remoteDescription) {
-                await pc.addIceCandidate(new RTCIceCandidate(sig.candidate));
+                await pc.addIceCandidate(new RTCIceCandidate(sig.payload.candidate));
             } else {
-                pendingIceCandidates.push(sig.candidate);
+                pendingIceCandidates.push(sig.payload.candidate);
             }
         } catch(e) { console.warn('ICE error:', e); }
     }
@@ -500,10 +569,15 @@ function reconnect() {
     pendingIceCandidates = [];
     createPC();
     // Re-register with server so teacher sends a new offer
-    fetch('/webrtc/join/' + ROOM_ID, {
+    fetch(`/live-signaling/${ROOM_ID}/send`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
-        body:    JSON.stringify({ role: 'client', name: SELF_NAME, sessionId: SESSION_ID }),
+        body:    JSON.stringify({
+            from_peer: SESSION_ID,
+            to_peer: 'teacher',
+            type: 'viewer_ready',
+            payload: { name: SELF_NAME }
+        }),
     }).catch(console.warn);
 }
 
@@ -514,18 +588,30 @@ joinRoom().then(() => pollSignals());
 // ═══════════════════════════════════════════════════════════
 // POLL CHAT — persistent chat log, every 3s
 // ═══════════════════════════════════════════════════════════
+// Track the highest signal ID seen for chat
+let lastChatSignalId = 0;
+
+// Poll for chat messages through the signaling endpoint
 async function pollChat() {
     try {
-        const url = lastChatTS
-            ? `/webrtc/chat/${ROOM_ID}?after=${encodeURIComponent(lastChatTS)}`
-            : `/webrtc/chat/${ROOM_ID}`;
-        const r = await fetch(url, { headers: { 'X-CSRF-TOKEN': CSRF } });
+        const r = await fetch(`/live-signaling/${ROOM_ID}/poll?peer=${SESSION_ID}&since=${lastChatSignalId}`, {
+            headers: { 'X-CSRF-TOKEN': CSRF }
+        });
         if (!r.ok) return;
-        const data = await r.json();
-        for (const msg of (data.messages || [])) {
-            if (msg.sessionId === SESSION_ID) { lastChatTS = msg.timestamp; continue; }
-            appendChat(msg.sender, msg.message, false, msg.sender === HOST_NAME);
-            lastChatTS = msg.timestamp;
+        const response = await r.json();
+        const signals = response.signals || [];
+        
+        // Filter for chat signals only
+        const chatSignals = signals.filter(sig => sig.type === 'chat');
+        
+        // Update the last signal ID
+        if (signals.length > 0) {
+            lastChatSignalId = Math.max(...signals.map(s => s.id));
+        }
+        
+        for (const sig of chatSignals) {
+            if (sig.from_peer === SESSION_ID) { continue; }
+            appendChat(sig.payload?.sender, sig.payload?.message, false, sig.from_peer === 'teacher');
         }
     } catch(e) { /* silent */ }
 }
@@ -691,10 +777,19 @@ function sendChat() {
     const txt = document.getElementById('chatInput').value.trim(); if (!txt) return;
     appendChat(SELF_NAME + ' (You)', txt, true, false);
     document.getElementById('chatInput').value = '';
-    fetch('/webrtc/chat/' + ROOM_ID, {
+    // Send chat message through signaling endpoint
+    fetch(`/live-signaling/${ROOM_ID}/send`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
-        body:    JSON.stringify({ message: txt, role: 'client', sessionId: SESSION_ID, name: SELF_NAME }),
+        body:    JSON.stringify({
+            from_peer: SESSION_ID,
+            to_peer: 'all',
+            type: 'chat',
+            payload: {
+                message: txt,
+                sender: SELF_NAME
+            }
+        }),
     }).catch(console.warn);
 }
 
@@ -717,10 +812,19 @@ function sendQA() {
             </div>
         </div>`);
     document.getElementById('qaMsgs').scrollTop = 9999;
-    fetch('/webrtc/chat/' + ROOM_ID, {
+    // Send Q&A message through signaling endpoint
+    fetch(`/live-signaling/${ROOM_ID}/send`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
-        body:    JSON.stringify({ message: `[Q&A] ${txt}`, role: 'client', sessionId: SESSION_ID, name: SELF_NAME }),
+        body:    JSON.stringify({
+            from_peer: SESSION_ID,
+            to_peer: 'all',
+            type: 'chat',
+            payload: {
+                message: `[Q&A] ${txt}`,
+                sender: SELF_NAME
+            }
+        }),
     }).catch(console.warn);
     document.getElementById('qaInput').value = '';
     toast('Question sent to instructor!');

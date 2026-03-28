@@ -41,7 +41,6 @@ use App\Http\Controllers\AdminProfileController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\LiveClassController;
-use App\Http\Controllers\WebRTCController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\QuestionBankController;
 use App\Http\Controllers\ExamTakingController;
@@ -51,7 +50,7 @@ use App\Http\Controllers\TokenController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\SecretaryAuthController;
 use App\Http\Controllers\ReportCardController;
-use App\Http\Controllers\PublicExamController;
+use Illuminate\Http\Request;
 
 /*
 |--------------------------------------------------------------------------
@@ -421,6 +420,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::get('report-cards/{reportCard}/edit', [ReportCardController::class, 'edit'])->name('report-cards.edit');
     Route::put('report-cards/{reportCard}', [ReportCardController::class, 'update'])->name('report-cards.update');
     Route::delete('report-cards/{reportCard}', [ReportCardController::class, 'destroy'])->name('report-cards.destroy');
+    Route::get('report-cards/{reportCard}/print-view', [ReportCardController::class, 'printView'])->name('report-cards.print-view');
     Route::get('report-cards/{reportCard}/print', [ReportCardController::class, 'printReport'])->name('report-cards.print');
     Route::post('report-cards/generate-class', [ReportCardController::class, 'generateForClass'])->name('report-cards.generate-class');
     Route::get('report-cards/print-class', [ReportCardController::class, 'printClassReports'])->name('report-cards.print-class');
@@ -1023,6 +1023,16 @@ Route::middleware('auth:student')->prefix('student')->name('student.')->group(fu
 });
 
 
+// Simple test route to debug web requests
+Route::get('/test-web-request', function() {
+    return response()->json([
+        'message' => 'Web request works!',
+        'timestamp' => now(),
+        'database_connection' => \DB::connection()->getDatabaseName(),
+        'debug' => 'This is a test'
+    ]);
+});
+
 // Live Class Request Management (accessible from room)
 Route::middleware(['auth:admin,staff,teacher'])->group(function () {
     Route::post('live-classes/{liveClass}/requests/{requestId}/approve', [LiveClassController::class, 'approveRequest'])->name('live-classes.requests.approve');
@@ -1032,23 +1042,6 @@ Route::middleware(['auth:admin,staff,teacher'])->group(function () {
 
 // WebRTC Routes - NO AUTHENTICATION REQUIRED
 // This allows live streaming to work without authentication issues
-Route::prefix('webrtc')->name('webrtc.')->group(function () {
-
-    // Signaling — POST sends a signal, GET polls pending signals
-    Route::post ('/signaling/{roomId}',  [WebRTCController::class, 'signaling'])     ->name('signaling');
-    Route::get  ('/signaling/{roomId}',  [WebRTCController::class, 'pollSignaling']) ->name('pollSignaling');
-
-    // Room lifecycle
-    Route::post ('/join/{roomId}',       [WebRTCController::class, 'joinRoom'])      ->name('join');
-    Route::post ('/leave/{roomId}',      [WebRTCController::class, 'leaveRoom'])     ->name('leave');
-
-    // Chat — POST sends, GET polls history
-    Route::post ('/chat/{roomId}',       [WebRTCController::class, 'chatMessage'])   ->name('chat');
-    Route::get  ('/chat/{roomId}',       [WebRTCController::class, 'pollChat'])      ->name('chat.poll');
-
-    // Participants list
-    Route::get  ('/participants/{roomId}', [WebRTCController::class, 'participants'])->name('participants');
-});
 
 Route::get('/student/pay/', [StudentController::class, 'payFees'])->name('student.pay');
 
@@ -1324,12 +1317,49 @@ Route::middleware(['auth:admin'])->prefix('admin/subscriptions')->name('subscrip
     Route::get('/student-subscriptions', [SubscriptionController::class, 'studentSubscriptions'])->name('student-subscriptions');
     Route::post('/extend/{studentSubscription}', [SubscriptionController::class, 'extendSubscription'])->name('extend');
 });
-// Live Class Signaling (polling-based WebRTC)
-Route::prefix('live-signaling')->name('live-signaling.')->group(function () {
-    Route::post('/{liveClassId}/send', [App\Http\Controllers\LiveClassSignalingController::class, 'send'])->name('send');
-    Route::get('/{liveClassId}/poll', [App\Http\Controllers\LiveClassSignalingController::class, 'poll'])->name('poll');
-    Route::get('/{liveClassId}/participants', [App\Http\Controllers\LiveClassSignalingController::class, 'participants'])->name('participants');
+// Absolute simplest test route
+Route::post('/simple-test', function() {
+    return 'simple test works';
+})->withoutMiddleware(['web']);
+
+// Test route without middleware
+Route::post('/no-middleware-test', function() {
+    return response()->json(['message' => 'No middleware test works!']);
+})->withoutMiddleware(['web']);
+
+// Simple test signaling route
+Route::post('/test-signaling/{liveClassId}', function(Request $request, $liveClassId) {
+    \Log::info('Test signaling route called', [
+        'liveClassId' => $liveClassId,
+        'request_data' => $request->all(),
+        'headers' => $request->headers->all()
+    ]);
+    
+    return response()->json([
+        'message' => 'Test signaling works!',
+        'liveClassId' => $liveClassId,
+        'request_data' => $request->all()
+    ]);
 });
+
+// Live Class Signaling (polling-based WebRTC) - NO WEB MIDDLEWARE
+Route::prefix('live-signaling')->name('live-signaling.')->group(function () {
+    Route::post('/{liveClassId}/send', function(Request $request, $liveClassId) {
+        \Log::info('Live signaling send route called', [
+            'liveClassId' => $liveClassId,
+            'request_data' => $request->all()
+        ]);
+        return response()->json(['message' => 'send route works!', 'liveClassId' => $liveClassId]);
+    })->name('send');
+    
+    Route::get('/{liveClassId}/poll', function(Request $request, $liveClassId) {
+        return response()->json(['message' => 'poll route works!', 'liveClassId' => $liveClassId]);
+    })->name('poll');
+    
+    Route::get('/{liveClassId}/participants', function(Request $request, $liveClassId) {
+        return response()->json(['message' => 'participants route works!', 'liveClassId' => $liveClassId]);
+    })->name('participants');
+})->withoutMiddleware(['web']);
 // Public Resource Routes
 // Public Resources Routes
 Route::prefix('resources')->name('public.resources.')->group(function () {

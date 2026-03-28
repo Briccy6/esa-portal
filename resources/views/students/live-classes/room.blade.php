@@ -481,9 +481,9 @@ let participantCount = 1;
 
 // WebRTC configuration
 const roomId = '{{ $liveClass->id }}';
-const signalingUrl = '{{ route("live-signaling.poll", $liveClass->id) }}';
-const chatUrl = '{{ route("webrtc.chat", $liveClass->id) }}';
-const participantsUrl = '{{ route("webrtc.participants", $liveClass->id) }}';
+const signalingUrl = '/live-signaling/{{ $liveClass->id }}';
+const chatUrl = '/live-signaling/{{ $liveClass->id }}/poll';
+const participantsUrl = '/live-signaling/{{ $liveClass->id }}/participants';
 
 // Toggle audio
 function toggleAudio() {
@@ -492,7 +492,7 @@ function toggleAudio() {
     icon.className = audioEnabled ? 'fas fa-microphone' : 'fas fa-microphone-slash';
     
     // Send signal to other participants
-    sendSignal('audio', { enabled: audioEnabled });
+    postSignal({ type: 'audio', enabled: audioEnabled });
 }
 
 // Toggle video
@@ -502,7 +502,7 @@ function toggleVideo() {
     icon.className = videoEnabled ? 'fas fa-video' : 'fas fa-video-slash';
     
     // Send signal to other participants
-    sendSignal('video', { enabled: videoEnabled });
+    postSignal({ type: 'video', enabled: videoEnabled });
 }
 
 // Toggle fullscreen
@@ -537,7 +537,7 @@ function leaveClass() {
         })
         .finally(() => {
             // Leave WebRTC room
-            fetch(`{{ route('webrtc.leave', $liveClass->id) }}`, {
+            fetch(`/live-signaling/{{ $liveClass->id }}/leave`, {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': '{{ csrf_token() }}',
@@ -596,36 +596,45 @@ function addChatMessage(author, message, time = null) {
 }
 
 // Send WebRTC signal
-function sendSignal(type, data) {
-    fetch(`{{ route('webrtc.signaling', $liveClass->id) }}`, {
+function postSignal(data) {
+    fetch(signalingUrl + '/send', {
         method: 'POST',
         headers: {
             'X-CSRF-TOKEN': '{{ csrf_token() }}',
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            type: type,
-            data: data
+            from_peer: '{{ auth()->guard('student')->user()->full_name }}',
+            to_peer: 'teacher',
+            type: data.type,
+            payload: {
+                sdp: data.sdp,
+                candidate: data.candidate,
+                role: data.role,
+                sessionId: data.sessionId
+            }
         })
-    }).catch(err => console.error('Error sending signal:', err));
+    }).catch(console.warn);
 }
 
 // Poll for new chat messages
-function pollChat() {
-    fetch(chatUrl, {
-        headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            'Accept': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(messages => {
-        // Update chat with new messages
-        messages.forEach(msg => {
-            addChatMessage(msg.user, msg.message, msg.time);
+async function pollChat() {
+    try {
+        const r = await fetch(chatUrl + '?peer={{ auth()->guard('student')->user()->full_name }}&since=0', {
+            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
         });
-    })
-    .catch(err => console.error('Error polling chat:', err));
+        if (!r.ok) return;
+        const response = await r.json();
+        const signals = response.signals || [];
+        
+        // Filter for chat signals only
+        const chatSignals = signals.filter(sig => sig.type === 'chat');
+        
+        for (const sig of chatSignals) {
+            if (sig.from_peer === '{{ auth()->guard('student')->user()->full_name }}') { continue; }
+            addChatMessage(sig.payload?.sender, sig.payload?.message, false, sig.from_peer === 'teacher');
+        }
+    } catch(e) { /* silent */ }
 }
 
 // Poll for participants
@@ -667,20 +676,28 @@ function pollParticipants() {
 
 // Join WebRTC room
 function joinRoom() {
-    fetch(`{{ route('webrtc.join', $liveClass->id) }}`, {
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            user: '{{ auth()->guard('student')->user()->full_name }}',
-            role: 'student'
-        })
+    // Start polling immediately instead of separate join endpoint
+    fetch(chatUrl + '?peer={{ auth()->guard('student')->user()->full_name }}&since=0', {
+        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
     })
     .then(response => response.json())
     .then(data => {
         console.log('Joined room successfully:', data);
+        
+        // Send viewer_ready signal to host
+        fetch(signalingUrl + '/send', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                from_peer: '{{ auth()->guard('student')->user()->full_name }}',
+                to_peer: 'teacher',
+                type: 'viewer_ready',
+                payload: { name: '{{ auth()->guard('student')->user()->full_name }}' }
+            })
+        }).catch(console.warn);
     })
     .catch(err => console.error('Error joining room:', err));
 }

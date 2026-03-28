@@ -946,6 +946,89 @@ function decrementBadge() {
     else b.textContent = n;
 }
 
+/* ════ WEBRTC SIGNALING ════ */
+// Teacher peer ID is always "teacher" for consistent convention
+const TEACHER_PEER_ID = 'teacher';
+const ROOM_ID = 'class-{{ $liveClass->id ?? 1 }}';
+const CSRF_TOKEN = document.querySelector('meta[name=csrf-token]').content;
+
+// Track the highest signal ID seen for signaling
+let lastSignalId = 0;
+
+// Poll for WebRTC signals from students
+async function pollSignals() {
+    try {
+        console.log('🔍 Teacher polling with peer:', TEACHER_PEER_ID, 'since:', lastSignalId);
+        const r = await fetch(
+            `/live-signaling/${ROOM_ID}/poll?peer=${TEACHER_PEER_ID}&since=${lastSignalId}`,
+            { headers: { 'X-CSRF-TOKEN': CSRF_TOKEN } }
+        );
+        if (!r.ok) { console.error('Signal poll failed:', r.status); return; }
+        const response = await r.json();
+        const signals = response.signals || [];
+        
+        // Update the last signal ID
+        if (signals.length > 0) {
+            lastSignalId = Math.max(...signals.map(s => s.id));
+        }
+        
+        if (signals.length) console.log('🔍 Teacher poll: received', signals.length, 'signals:', signals.map(s => ({type: s.type, from: s.from_peer, to: s.to_peer})));
+        for (const sig of signals) await handleSignal(sig);
+    } catch(e) {
+        console.error('Signal poll error:', e);
+    }
+}
+
+async function handleSignal(sig) {
+    console.log('🎯 Teacher handling signal:', sig.type, 'from:', sig.from_peer);
+
+    if (sig.type === 'viewer_ready') {
+        console.log('👋 Student joined:', sig.payload?.name, 'sessionId:', sig.from_peer);
+        addStudentToParticipants(sig.from_peer, sig.payload?.name || 'Student');
+        return;
+    }
+
+    if (sig.type === 'chat') {
+        // Handle chat messages if needed
+        return;
+    }
+
+    // Handle other WebRTC signals (offer, answer, ice) here
+    // This would be expanded with full WebRTC implementation
+    console.log('🔧 WebRTC signal:', sig.type, 'from student:', sig.from_peer);
+}
+
+function addStudentToParticipants(sessionId, name) {
+    const list = document.getElementById('participantsList');
+    if (!list) return;
+    
+    // Check if student already exists
+    if (list.querySelector(`[data-student="${sessionId}"]`)) return;
+    
+    const studentEl = document.createElement('div');
+    studentEl.className = 'lc-pax-row';
+    studentEl.setAttribute('data-student', sessionId);
+    studentEl.innerHTML = `
+        <div class="lc-pax-av" style="background:linear-gradient(135deg, #10b981, #3ecfb8);">${name.charAt(0).toUpperCase()}</div>
+        <div class="lc-pax-info">
+            <div class="lc-pax-name">${name}</div>
+            <span class="lc-host-tag" style="background:rgba(16,185,129,0.08);color:var(--green);border-color:rgba(16,185,129,0.18);">Student</span>
+        </div>
+        <div style="display:flex;gap:4px;">
+            <div class="lc-pax-ind" title="Mic"><i class="fas fa-microphone-slash"></i></div>
+            <div class="lc-pax-ind" title="Camera"><i class="fas fa-video-slash"></i></div>
+        </div>
+    `;
+    list.appendChild(studentEl);
+    
+    // Update participant count
+    const countEl = document.getElementById('paxBadge');
+    if (countEl) {
+        const currentCount = parseInt(countEl.textContent) || 1;
+        countEl.textContent = currentCount + 1;
+    }
+}
+
 /* ════ POLL for new requests ════ */
 function pollRequests() {
     console.log('Polling requests from:', LC_POLL_URL);
@@ -1036,6 +1119,10 @@ window.addEventListener('beforeunload', () => {
 /* ════ INIT ════ */
 document.addEventListener('DOMContentLoaded', () => {
     initializeWebRTC();
+
+    // Start WebRTC signaling polling immediately (no delay needed)
+    pollSignals();
+    setInterval(pollSignals, 2000);
 
     @if((is_array($studentRequests) ? count($studentRequests) : $studentRequests->count()) > 0)
     switchTab('requests');   // open requests tab automatically if there are pending ones

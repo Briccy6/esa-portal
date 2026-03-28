@@ -30,29 +30,70 @@
 
             <!-- Report Card Header -->
             <div class="card shadow-sm mb-4 border-2 border-success">
-                <div class="card-body text-center">
-                    <h3 class="text-success fw-bold mb-3">ACADEMIC REPORT CARD</h3>
-                    <div class="row">
-                        <div class="col-md-4">
+                <div class="card-body">
+                    <h3 class="text-success fw-bold mb-4 text-center">ACADEMIC REPORT CARD</h3>
+                    
+                    <!-- Horizontal Layout with Logo and Passport -->
+                    <div class="row align-items-center">
+                        <!-- School Logo on Left -->
+                        <div class="col-md-3 text-center">
                             <div class="bg-success bg-opacity-10 rounded p-3">
-                                <i class="fas fa-user-circle fs-1 text-success mb-2"></i>
-                                <h5 class="fw-bold">{{ $student->name }}</h5>
-                                <p class="mb-0">Student ID: {{ $student->id }}</p>
+                                @if(file_exists(public_path('images/esa.png')))
+                                    <img src="{{ asset('images/esa.png') }}" alt="School Logo" style="max-width: 120px; max-height: 120px;" class="img-fluid mb-2">
+                                @else
+                                    <div style="width: 120px; height: 120px;" class="bg-light rounded border border-3 border-success d-flex align-items-center justify-content-center mb-2">
+                                        <i class="fas fa-school fs-1 text-success"></i>
+                                    </div>
+                                @endif
+                                <h6 class="fw-bold mb-0">{{ env('APP_NAME', 'Excellent Servant Academy') }}</h6>
+                                <small class="text-muted">{{ config('app.school_motto', 'Excellence in Education') }}</small>
                             </div>
                         </div>
-                        <div class="col-md-4">
-                            <div class="py-3">
-                                <h6 class="text-muted">ACADEMIC YEAR</h6>
-                                <h4 class="fw-bold">{{ request('academic_year') ?? date('Y') . '-' . (date('Y') + 1) }}</h4>
-                                <h6 class="text-muted mt-2">{{ request('term') ?? 'Current Term' }}</h6>
+                        
+                        <!-- Student and School Information in Center -->
+                        <div class="col-md-6">
+                            <div class="text-center">
+                                <!-- Student Information -->
+                                <div class="mb-3">
+                                    <h5 class="fw-bold text-primary mb-1">{{ $student->name }}</h5>
+                                    <p class="mb-1"><strong>Student ID:</strong> {{ $student->id }}</p>
+                                    <p class="mb-1"><strong>Course:</strong> {{ $student->course->course_name ?? 'N/A' }}</p>
+                                    <p class="mb-1"><strong>Branch:</strong> {{ $student->branch->name ?? 'N/A' }}</p>
+                                    <p class="mb-0"><strong>Academic Year:</strong> {{ $student->academicYear->year ?? 'N/A' }}</p>
+                                </div>
+                                
+                                <!-- Academic Year Divider -->
+                                <div class="border-top border-bottom py-2 my-3">
+                                    <h6 class="text-muted mb-0">ACADEMIC YEAR</h6>
+                                    <h4 class="fw-bold mb-0">{{ request('academic_year') ?? date('Y') . '-' . (date('Y') + 1) }}</h4>
+                                    <h6 class="text-muted mb-0">{{ request('term') ?? 'Current Term' }}</h6>
+                                </div>
+                                
+                                <!-- School Information -->
+                                <div>
+                                    <h6 class="fw-bold text-success mb-1">SCHOOL INFORMATION</h6>
+                                    <p class="mb-1"><strong>Address:</strong> {{ config('app.school_address', 'School Address, City, Country') }}</p>
+                                    <p class="mb-1"><strong>Phone:</strong> {{ config('app.school_phone', '+250 123 456 789') }}</p>
+                                    <p class="mb-1"><strong>Email:</strong> {{ config('app.school_email', 'info@school.rw') }}</p>
+                                    <p class="mb-0"><strong>Website:</strong> {{ config('app.school_website', 'www.school.rw') }}</p>
+                                </div>
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        
+                        <!-- Student Passport Photo on Right -->
+                        <div class="col-md-3 text-center">
                             <div class="bg-success bg-opacity-10 rounded p-3">
-                                <h6 class="text-muted">CLASS INFORMATION</h6>
-                                <p class="mb-1"><strong>Course:</strong> {{ $student->course->course_name ?? 'N/A' }}</p>
-                                <p class="mb-1"><strong>Branch:</strong> {{ $student->branch->name ?? 'N/A' }}</p>
-                                <p class="mb-0"><strong>Academic Year:</strong> {{ $student->academicYear->year ?? 'N/A' }}</p>
+                                <div class="passport-container mb-2">
+                                    @if($student->profile_image)
+                                        <img src="{{ asset('storage/' . $student->profile_image) }}" alt="Student Passport" style="max-width: 120px; max-height: 120px;" class="img-fluid rounded border border-3 border-success">
+                                    @else
+                                        <div style="width: 120px; height: 120px;" class="bg-light rounded border border-3 border-success d-flex align-items-center justify-content-center">
+                                            <i class="fas fa-user fs-1 text-muted"></i>
+                                        </div>
+                                    @endif
+                                </div>
+                                <h6 class="fw-bold mb-0">STUDENT PHOTO</h6>
+                                <small class="text-muted">{{ $student->name }}</small>
                             </div>
                         </div>
                     </div>
@@ -416,6 +457,39 @@
         
         .badge {
             border: 1px solid #dee2e6;
+        }
+        
+        /* Print-specific styles for horizontal layout */
+        .row.align-items-center {
+            align-items: center !important;
+        }
+        
+        .col-md-3, .col-md-6 {
+            float: left !important;
+        }
+        
+        .passport-container img,
+        .passport-container div {
+            max-width: 100px !important;
+            max-height: 100px !important;
+            width: 100px !important;
+            height: 100px !important;
+        }
+        
+        .bg-success.bg-opacity-10 {
+            background-color: #f0f9f0 !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        
+        /* Ensure proper spacing in print */
+        .border-top.border-bottom {
+            border-top: 1px solid #dee2e6 !important;
+            border-bottom: 1px solid #dee2e6 !important;
+            padding-top: 8px !important;
+            padding-bottom: 8px !important;
+            margin-top: 8px !important;
+            margin-bottom: 8px !important;
         }
     }
 </style>

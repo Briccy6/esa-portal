@@ -8,8 +8,11 @@
                 <div class="card-header">
                     <h3 class="card-title">Report Card Details</h3>
                     <div class="card-tools">
+                        <a href="{{ route('admin.report-cards.print-view', $reportCard) }}" class="btn btn-success btn-sm" target="_blank">
+                            <i class="fas fa-eye"></i> Quick View
+                        </a>
                         <a href="{{ route('admin.report-cards.print', $reportCard) }}" class="btn btn-primary btn-sm" target="_blank">
-                            <i class="fas fa-print"></i> Print Report
+                            <i class="fas fa-print"></i> Print PDF
                         </a>
                         <a href="{{ route('admin.report-cards.index') }}" class="btn btn-secondary btn-sm">
                             <i class="fas fa-arrow-left"></i> Back

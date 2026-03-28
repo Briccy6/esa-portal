@@ -332,13 +332,13 @@ async function createPeerForViewer(viewerSessionId) {
 
     pc.onicecandidate = (e) => {
         if (e.candidate) {
-            postSignal({
-                type:       'ice',
-                candidate:  e.candidate,
-                role:       'host',
-                sessionId:  SESSION_ID,
-                forSession: viewerSessionId,  // targeted — only this student receives it
-            });
+        postSignal({
+            type:       'ice',
+            candidate:  e.candidate,
+            role:       'host',
+            sessionId:  SESSION_ID,
+            forSession: viewerSessionId,  // targeted — only this student receives it
+        });
             console.log('🧊 Sent ICE candidate to:', viewerSessionId);
         }
     };
@@ -378,26 +378,56 @@ async function createPeerForViewer(viewerSessionId) {
 // SIGNAL HELPERS
 // ═══════════════════════════════════════════════════════════
 function postSignal(data) {
-    fetch('/webrtc/signaling/' + ROOM_ID, {
+    fetch(`/live-signaling/${ROOM_ID}/send`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
-        body: JSON.stringify(data)
+        body: JSON.stringify({
+            from_peer: 'teacher',
+            to_peer: data.forSession || 'all',
+            type: data.type,
+            payload: {
+                sdp: data.sdp,
+                candidate: data.candidate,
+                role: data.role,
+                sessionId: data.sessionId
+            }
+        })
     }).catch(console.warn);
 }
 
 // Alternative function to try teacher-specific routes
 function postSignalTeacher(data) {
-    fetch('/webrtc/signaling/' + ROOM_ID, {
+    fetch(`/live-signaling/${ROOM_ID}/send`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
-        body: JSON.stringify(data)
+        body: JSON.stringify({
+            from_peer: 'teacher',
+            to_peer: data.forSession || 'all',
+            type: data.type,
+            payload: {
+                sdp: data.sdp,
+                candidate: data.candidate,
+                role: data.role,
+                sessionId: data.sessionId
+            }
+        })
     }).catch(error => {
         console.error('❌ Teacher signaling failed, trying fallback:', error);
         // Fallback to generic route
-        fetch('/webrtc/signaling/' + ROOM_ID, {
+        fetch(`/live-signaling/${ROOM_ID}/send`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
-            body: JSON.stringify(data)
+            body: JSON.stringify({
+                from_peer: 'teacher',
+                to_peer: data.forSession || 'all',
+                type: data.type,
+                payload: {
+                    sdp: data.sdp,
+                    candidate: data.candidate,
+                    role: data.role,
+                    sessionId: data.sessionId
+                }
+            })
         }).catch(console.warn);
     });
 }
@@ -405,20 +435,29 @@ function postSignalTeacher(data) {
 // ═══════════════════════════════════════════════════════════
 // POLL SIGNALS (host reads from host queue)
 // ═══════════════════════════════════════════════════════════
+// Track the highest signal ID seen
+let lastSignalId = 0;
+
 async function pollSignals() {
     try {
-        const r = await fetch(`/webrtc/signaling/${ROOM_ID}?role=host&sessionId=${SESSION_ID}`, {
+        const r = await fetch(`/live-signaling/${ROOM_ID}/poll?peer=teacher&since=${lastSignalId}`, {
             headers: { 'X-CSRF-TOKEN': CSRF }
         });
         if (!r.ok) {
             console.error('🔍 Teacher poll failed:', r.status, r.statusText);
             return;
         }
-        const signals = await r.json();
+        const response = await r.json();
+        const signals = response.signals || [];
         
         console.log('🔍 Teacher poll: received', signals.length, 'signals:', signals);
         
-        for (const sig of (signals || [])) {
+        // Update the last signal ID
+        if (signals.length > 0) {
+            lastSignalId = Math.max(...signals.map(s => s.id));
+        }
+        
+        for (const sig of signals) {
             await handleSignal(sig);
         }
     } catch(e) {
@@ -427,67 +466,73 @@ async function pollSignals() {
 }
 
 async function handleSignal(sig) {
-    const from = sig.fromSession || sig.sessionId;
-    console.log('🎯 Teacher handling signal:', sig.type, 'from:', from);
+    console.log('🎯 Teacher handling signal:', sig.type, 'from:', sig.from_peer);
+
+    if (sig.type === 'join') {
+        console.log('👋 Student join signal from:', sig.from_peer);
+        // Add student to participants list
+        addParticipant(sig.from_peer, sig.payload?.name || 'Student');
+        // Create peer connection and send offer
+        if (!peers[sig.from_peer]) {
+            await createPeerForViewer(sig.from_peer);
+        }
+        return;
+    }
 
     if (sig.type === 'viewer_ready') {
-        // ── FIX #2a: Only create peer on viewer_ready (the authoritative join signal).
-        // participant_joined is handled separately below just for the UI list.
-        console.log('👋 viewer_ready from:', from);
-        if (!peers[from]) {
-            await createPeerForViewer(from);
+        console.log('👋 viewer_ready from:', sig.from_peer);
+        if (!peers[sig.from_peer]) {
+            await createPeerForViewer(sig.from_peer);
         } else {
-            console.log('🔄 Peer already exists for viewer_ready, skipping createPeer:', from);
+            console.log('🔄 Peer already exists for viewer_ready, skipping createPeer:', sig.from_peer);
         }
-        addParticipant(from, sig.name || 'Student');
+        addParticipant(sig.from_peer, sig.payload?.name || 'Student');
         return;
     }
 
     if (sig.type === 'participant_joined') {
-        // ── FIX #2b: participant_joined only updates the UI list; it does NOT
-        // create a new peer (that was already done by viewer_ready above).
-        console.log('👤 participant_joined from:', from);
-        addParticipant(from, sig.name || 'Student');
+        console.log('👤 participant_joined from:', sig.from_peer);
+        addParticipant(sig.from_peer, sig.payload?.name || 'Student');
         return;
     }
 
     if (sig.type === 'participant_left') {
-        console.log('👋 Participant left:', from);
-        removeParticipant(from);
-        if (peers[from]) {
-            peers[from].close();
-            delete peers[from];
+        console.log('👋 Participant left:', sig.from_peer);
+        removeParticipant(sig.from_peer);
+        if (peers[sig.from_peer]) {
+            peers[sig.from_peer].close();
+            delete peers[sig.from_peer];
         }
         return;
     }
 
     if (sig.type === 'raise_hand') {
-        handleRaisedHand(sig.name, sig.raised, from);
+        handleRaisedHand(sig.payload?.name, sig.payload?.raised, sig.from_peer);
         return;
     }
 
     if (sig.type === 'chat') {
-        appendChat(sig.sender, sig.message, false);
+        appendChat(sig.payload?.sender, sig.payload?.message, false);
         return;
     }
 
     // WebRTC answer / ICE from a viewer
-    const pc = peers[from];
+    const pc = peers[sig.from_peer];
     if (!pc) {
-        console.warn('⚠️ No peer connection found for:', from, 'available peers:', Object.keys(peers));
+        console.warn('⚠️ No peer connection found for:', sig.from_peer, 'available peers:', Object.keys(peers));
         return;
     }
 
     if (sig.type === 'answer') {
-        console.log('📞 Received answer from:', from);
+        console.log('📞 Received answer from:', sig.from_peer);
         if (pc.signalingState === 'have-local-offer') {
-            await pc.setRemoteDescription({ type: 'answer', sdp: sig.sdp }).catch(console.warn);
+            await pc.setRemoteDescription({ type: 'answer', sdp: sig.payload?.sdp }).catch(console.warn);
         } else {
             console.warn('⚠️ Peer not in have-local-offer state:', pc.signalingState);
         }
-    } else if (sig.type === 'ice' && sig.candidate) {
-        console.log('🧊 Received ICE candidate from:', from);
-        await pc.addIceCandidate(new RTCIceCandidate(sig.candidate)).catch(() => {});
+    } else if (sig.type === 'ice' && sig.payload?.candidate) {
+        console.log('🧊 Received ICE candidate from:', sig.from_peer);
+        await pc.addIceCandidate(new RTCIceCandidate(sig.payload.candidate)).catch(() => {});
     }
 }
 
@@ -498,19 +543,31 @@ setInterval(pollSignals, 2000);
 // sees student messages even if they were not in the signaling
 // queue at the moment of polling (e.g. after a page refresh).
 // ═══════════════════════════════════════════════════════════
+// Track the highest signal ID seen for chat
+let lastChatSignalId = 0;
+
+// Poll for chat messages through the signaling endpoint
 async function pollChat() {
     try {
-        const url = lastChatTime
-            ? `/webrtc/chat/${ROOM_ID}?after=${encodeURIComponent(lastChatTime)}`
-            : `/webrtc/chat/${ROOM_ID}`;
-        const r = await fetch(url, { headers: { 'X-CSRF-TOKEN': CSRF } });
+        const r = await fetch(`/live-signaling/${ROOM_ID}/poll?peer=teacher&since=${lastChatSignalId}`, {
+            headers: { 'X-CSRF-TOKEN': CSRF }
+        });
         if (!r.ok) return;
-        const data = await r.json();
-        for (const msg of (data.messages || [])) {
+        const response = await r.json();
+        const signals = response.signals || [];
+        
+        // Filter for chat signals only
+        const chatSignals = signals.filter(sig => sig.type === 'chat');
+        
+        // Update the last signal ID
+        if (signals.length > 0) {
+            lastChatSignalId = Math.max(...signals.map(s => s.id));
+        }
+        
+        for (const sig of chatSignals) {
             // Skip messages sent by the teacher themselves (already shown locally)
-            if (msg.sessionId === SESSION_ID) { lastChatTime = msg.timestamp; continue; }
-            appendChat(msg.sender, msg.message, false);
-            lastChatTime = msg.timestamp;
+            if (sig.from_peer === 'teacher') { continue; }
+            appendChat(sig.payload?.sender, sig.payload?.message, false);
         }
     } catch(e) { /* silent */ }
 }
@@ -712,10 +769,19 @@ function sendChat() {
     const txt = chatInput.value.trim(); if (!txt) return;
     appendChat(SELF_NAME + ' (You)', txt, true);
     chatInput.value = '';
-    fetch('/webrtc/chat/' + ROOM_ID, {
+    // Send chat message through signaling endpoint
+    fetch(`/live-signaling/${ROOM_ID}/send`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
-        body: JSON.stringify({ message: txt, role: 'host', sessionId: SESSION_ID })
+        body: JSON.stringify({
+            from_peer: 'teacher',
+            to_peer: 'all',
+            type: 'chat',
+            payload: {
+                message: txt,
+                sender: SELF_NAME
+            }
+        })
     }).catch(console.warn);
 }
 

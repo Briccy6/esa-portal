@@ -13,24 +13,44 @@ class LiveClassSignalingController extends Controller
      */
     public function send(Request $request, $liveClassId)
     {
-        $request->validate([
-            'from_peer' => 'required|string|max:100',
-            'to_peer'   => 'required|string|max:100',
-            'type'      => 'required|string|max:50',
-            'payload'   => 'required',
+        // Debug logging
+        \Log::info('LiveClassSignalingController::send called', [
+            'liveClassId' => $liveClassId,
+            'request_data' => $request->all(),
+            'headers' => $request->headers->all()
         ]);
 
-        LiveClassSignal::create([
-            'live_class_id' => $liveClassId,
-            'from_peer'     => $request->from_peer,
-            'to_peer'       => $request->to_peer,
-            'type'          => $request->type,
-            'payload'       => is_array($request->payload)
-                                ? json_encode($request->payload)
-                                : $request->payload,
-        ]);
+        try {
+            $request->validate([
+                'from_peer' => 'required|string|max:100',
+                'to_peer'   => 'required|string|max:100',
+                'type'      => 'required|string|max:50',
+                'payload'   => 'required',
+            ]);
 
-        return response()->json(['ok' => true]);
+            \Log::info('Validation passed');
+
+            LiveClassSignal::create([
+                'live_class_id' => $liveClassId,
+                'from_peer'     => $request->from_peer,
+                'to_peer'       => $request->to_peer,
+                'type'          => $request->type,
+                'payload'       => is_array($request->payload)
+                                    ? json_encode($request->payload)
+                                    : $request->payload,
+            ]);
+
+            \Log::info('Signal created successfully');
+
+            return response()->json(['ok' => true]);
+        } catch (\Exception $e) {
+            \Log::error('Error in LiveClassSignalingController::send', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'request_data' => $request->all()
+            ]);
+            throw $e;
+        }
     }
 
     /**
