@@ -41,6 +41,7 @@ use App\Http\Controllers\AdminProfileController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\LiveClassController;
+use App\Http\Controllers\WebRTCController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\QuestionBankController;
 use App\Http\Controllers\ExamTakingController;
@@ -389,6 +390,21 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::get('nesa/{student}/download', [\App\Http\Controllers\Admin\NesaRegistrationController::class, 'downloadDocument'])->name('nesa.download');
     Route::get('nesa/export/registered', [\App\Http\Controllers\Admin\NesaRegistrationController::class, 'exportRegistered'])->name('nesa.export');
 
+    // Accounting Reports
+    Route::middleware(['role:admin,accountant'])->group(function () {
+        Route::get('/accounting', [\App\Http\Controllers\AccountingController::class, 'index'])->name('accounting.index');
+        Route::get('/accounting/cashbook', [\App\Http\Controllers\AccountingController::class, 'cashbook'])->name('accounting.cashbook');
+        Route::get('/accounting/balance-sheet', [\App\Http\Controllers\AccountingController::class, 'balanceSheet'])->name('accounting.balance-sheet');
+        Route::get('/accounting/trial-balance', [\App\Http\Controllers\AccountingController::class, 'trialBalance'])->name('accounting.trial-balance');
+        Route::get('/accounting/cash-flow-statement', [\App\Http\Controllers\AccountingController::class, 'cashFlowStatement'])->name('accounting.cash-flow-statement');
+        Route::get('/accounting/income-statement', [\App\Http\Controllers\AccountingController::class, 'incomeStatement'])->name('accounting.income-statement');
+        Route::get('/accounting/general-ledger', [\App\Http\Controllers\AccountingController::class, 'generalLedger'])->name('accounting.general-ledger');
+        Route::get('/accounting/export/cashbook', [\App\Http\Controllers\AccountingController::class, 'exportCashbook'])->name('accounting.export.cashbook');
+        Route::get('/accounting/export/balance-sheet', [\App\Http\Controllers\AccountingController::class, 'exportBalanceSheet'])->name('accounting.export.balance-sheet');
+        Route::get('/accounting/export/trial-balance', [\App\Http\Controllers\AccountingController::class, 'exportTrialBalance'])->name('accounting.export.trial-balance');
+        Route::get('/accounting/export/cash-flow-statement', [\App\Http\Controllers\AccountingController::class, 'exportCashFlowStatement'])->name('accounting.export.cash-flow-statement');
+    });
+
     // Document Management
     Route::get('documents', [\App\Http\Controllers\Admin\DocumentManagementController::class, 'index'])->name('documents.index');
     Route::get('documents/{id}/edit', [\App\Http\Controllers\Admin\DocumentManagementController::class, 'edit'])->name('documents.edit');
@@ -429,21 +445,6 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::get('chat-test', function() {
         return view('admin.profile.test');
     })->name('chat.test');
-
-    // Accounting Reports
-    Route::prefix('accounting')->name('accounting.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\AccountingController::class, 'index'])->name('index');
-        Route::get('/cashbook', [\App\Http\Controllers\AccountingController::class, 'cashbook'])->name('cashbook');
-        Route::get('/balance-sheet', [\App\Http\Controllers\AccountingController::class, 'balanceSheet'])->name('balance-sheet');
-        Route::get('/trial-balance', [\App\Http\Controllers\AccountingController::class, 'trialBalance'])->name('trial-balance');
-        Route::get('/cash-flow-statement', [\App\Http\Controllers\AccountingController::class, 'cashFlowStatement'])->name('cash-flow-statement');
-        Route::get('/income-statement', [\App\Http\Controllers\AccountingController::class, 'incomeStatement'])->name('income-statement');
-        Route::get('/general-ledger', [\App\Http\Controllers\AccountingController::class, 'generalLedger'])->name('general-ledger');
-        Route::get('/export/cashbook', [\App\Http\Controllers\AccountingController::class, 'exportCashbook'])->name('export.cashbook');
-        Route::get('/export/balance-sheet', [\App\Http\Controllers\AccountingController::class, 'exportBalanceSheet'])->name('export.balance-sheet');
-        Route::get('/export/trial-balance', [\App\Http\Controllers\AccountingController::class, 'exportTrialBalance'])->name('export.trial-balance');
-        Route::get('/export/cash-flow-statement', [\App\Http\Controllers\AccountingController::class, 'exportCashFlowStatement'])->name('export.cash-flow-statement');
-    });
 
 });
 
@@ -1029,6 +1030,26 @@ Route::middleware(['auth:admin,staff,teacher'])->group(function () {
 });
 
 
+// WebRTC Routes - NO AUTHENTICATION REQUIRED
+// This allows live streaming to work without authentication issues
+Route::prefix('webrtc')->name('webrtc.')->group(function () {
+
+    // Signaling — POST sends a signal, GET polls pending signals
+    Route::post ('/signaling/{roomId}',  [WebRTCController::class, 'signaling'])     ->name('signaling');
+    Route::get  ('/signaling/{roomId}',  [WebRTCController::class, 'pollSignaling']) ->name('pollSignaling');
+
+    // Room lifecycle
+    Route::post ('/join/{roomId}',       [WebRTCController::class, 'joinRoom'])      ->name('join');
+    Route::post ('/leave/{roomId}',      [WebRTCController::class, 'leaveRoom'])     ->name('leave');
+
+    // Chat — POST sends, GET polls history
+    Route::post ('/chat/{roomId}',       [WebRTCController::class, 'chatMessage'])   ->name('chat');
+    Route::get  ('/chat/{roomId}',       [WebRTCController::class, 'pollChat'])      ->name('chat.poll');
+
+    // Participants list
+    Route::get  ('/participants/{roomId}', [WebRTCController::class, 'participants'])->name('participants');
+});
+
 Route::get('/student/pay/', [StudentController::class, 'payFees'])->name('student.pay');
 
 Route::get('/staff/one-time-login/{staff}', [StaffController::class, 'oneTimeLogin'])
@@ -1291,7 +1312,24 @@ Route::middleware(['auth:admin,staff'])->prefix('tokens')->name('tokens.')->grou
     Route::get('/history/{student?}', [TokenController::class, 'transactionHistory'])->name('history');
 });
 
-// Admin Subscription Management Routes are defined inside the admin.* prefix group above.
+// Admin Subscription Management Routes
+Route::middleware(['auth:admin'])->prefix('admin/subscriptions')->name('subscriptions.')->group(function () {
+    Route::get('/', [SubscriptionController::class, 'adminIndex'])->name('admin-index');
+    Route::get('/create', [SubscriptionController::class, 'adminCreate'])->name('admin-create');
+    Route::post('/', [SubscriptionController::class, 'adminStore'])->name('admin-store');
+    Route::get('/{subscription}/edit', [SubscriptionController::class, 'adminEdit'])->name('admin-edit');
+    Route::put('/{subscription}', [SubscriptionController::class, 'adminUpdate'])->name('admin-update');
+    Route::post('/{subscription}/toggle', [SubscriptionController::class, 'adminToggle'])->name('admin-toggle');
+    Route::delete('/{subscription}', [SubscriptionController::class, 'adminDestroy'])->name('admin-destroy');
+    Route::get('/student-subscriptions', [SubscriptionController::class, 'studentSubscriptions'])->name('student-subscriptions');
+    Route::post('/extend/{studentSubscription}', [SubscriptionController::class, 'extendSubscription'])->name('extend');
+});
+// Live Class Signaling (polling-based WebRTC)
+Route::prefix('live-signaling')->name('live-signaling.')->group(function () {
+    Route::post('/{liveClassId}/send', [App\Http\Controllers\LiveClassSignalingController::class, 'send'])->name('send');
+    Route::get('/{liveClassId}/poll', [App\Http\Controllers\LiveClassSignalingController::class, 'poll'])->name('poll');
+    Route::get('/{liveClassId}/participants', [App\Http\Controllers\LiveClassSignalingController::class, 'participants'])->name('participants');
+});
 // Public Resource Routes
 // Public Resources Routes
 Route::prefix('resources')->name('public.resources.')->group(function () {

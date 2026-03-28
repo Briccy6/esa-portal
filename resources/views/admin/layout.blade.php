@@ -959,7 +959,7 @@
                     
                                         
                     <div class="nav-item">
-                        <a href="{{ route('admin.subscriptions.index') }}" class="nav-link {{ request()->routeIs('admin.subscriptions.*') ? 'active' : '' }}">
+                        <a href="{{ route('subscriptions.admin-index') }}" class="nav-link {{ request()->routeIs('admin.subscriptions.*') ? 'active' : '' }}">
                             <i class="fas fa-crown"></i>
                             <span class="nav-text">Subscriptions</span>
                         </a>
@@ -979,14 +979,12 @@
                         </a>
                     </div>
                     
-                    @if(Route::has('admin.accounting.index'))
                     <div class="nav-item">
                         <a href="{{ route('admin.accounting.index') }}" class="nav-link {{ request()->routeIs('admin.accounting.*') ? 'active' : '' }}">
                             <i class="fas fa-balance-scale"></i>
                             <span class="nav-text">Accounting Reports</span>
                         </a>
                     </div>
-                    @endif
                 </div>
             </div>
 
@@ -1013,21 +1011,21 @@
                     </div>
                     
                     <div class="nav-item">
-                        <a href="{{ route('accounting.cashbook') }}" class="nav-link {{ request()->routeIs('accounting.cashbook') ? 'active' : '' }}">
+                        <a href="{{ route('admin.accounting.cashbook') }}" class="nav-link {{ request()->routeIs('admin.accounting.cashbook') ? 'active' : '' }}">
                             <i class="fas fa-book"></i>
                             <span class="nav-text">Cash Book</span>
                         </a>
                     </div>
                     
                     <div class="nav-item">
-                        <a href="{{ route('accounting.balance-sheet') }}" class="nav-link {{ request()->routeIs('accounting.balance-sheet') ? 'active' : '' }}">
+                        <a href="{{ route('admin.accounting.balance-sheet') }}" class="nav-link {{ request()->routeIs('admin.accounting.balance-sheet') ? 'active' : '' }}">
                             <i class="fas fa-balance-scale"></i>
                             <span class="nav-text">Balance Sheet</span>
                         </a>
                     </div>
                     
                     <div class="nav-item">
-                        <a href="{{ route('accounting.trial-balance') }}" class="nav-link {{ request()->routeIs('accounting.trial-balance') ? 'active' : '' }}">
+                        <a href="{{ route('admin.accounting.trial-balance') }}" class="nav-link {{ request()->routeIs('admin.accounting.trial-balance') ? 'active' : '' }}">
                             <i class="fas fa-list-alt"></i>
                             <span class="nav-text">Trial Balance</span>
                         </a>
