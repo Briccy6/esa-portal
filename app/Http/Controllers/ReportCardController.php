@@ -154,23 +154,6 @@ class ReportCardController extends Controller
             ->with('success', "Generated {$generated} report cards. Skipped {$skipped} that already exist.");
     }
 
-   public function printView(ReportCard $reportCard)
-{
-    // Load only essential relationships for HTML view
-    $reportCard->load([
-        'student',
-        'course', 
-        'academicYear',
-        'term',
-        'subjects.lesson'
-    ]);
-
-    // Get school info without heavy processing
-    $schoolInfo = SchoolInformation::getActive();
-
-    return view('admin.report-cards.print', compact('reportCard', 'schoolInfo'));
-}
-
    public function printReport(ReportCard $reportCard)
 {
     $reportCard->load([

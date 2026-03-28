@@ -199,73 +199,22 @@
     <div class="print-area">
         <!-- Header Section -->
         <div class="header-section">
-            <!-- School Logo on Left -->
             <div class="header-cell">
-                <div class="logo-container">
-                    @if(file_exists(public_path('images/esa.png')))
-                        <img src="{{ asset('images/esa.png') }}" alt="School Logo" class="school-logo">
-                    @else
-                        <div style="width: 100px; height: 100px; background: #ecf0f1; border: 2px dashed #bdc3c7; display: flex; align-items: center; justify-content: center;">
-                            <div style="text-align: center;">
-                                <div style="color: #7f8c8d; font-size: 8px; font-weight: bold;">LOGO</div>
-                            </div>
+                @if($schoolInfo && $schoolInfo->logo_url)
+                    <img src="{{ $schoolInfo->logo_url }}" alt="School Logo" class="school-logo">
+                @else
+                    <div style="width: 100px; height: 100px; background: #ecf0f1; border: 2px dashed #bdc3c7; display: flex; align-items: center; justify-content: center;">
+                        <div style="text-align: center;">
+                            <div style="color: #7f8c8d; font-size: 8px; font-weight: bold;">LOGO</div>
                         </div>
-                    @endif
-                </div>
-                <div style="text-align: center; margin-top: 4px; font-size: 8px;">
-                    <div class="font-bold">{{ env('APP_NAME', 'Excellent Servant Academy') }}</div>
-                    <div style="font-size: 6px; color: #666;">Excellence in Education</div>
-                </div>
+                    </div>
+                @endif
             </div>
             
-            <!-- Student and School Information in Center -->
-            <div class="header-cell">
-                <!-- Student Information -->
-                <div style="text-align: center; margin-bottom: 8px; font-size: 9px;">
-                    <div class="font-bold" style="font-size: 10px; margin-bottom: 4px;">STUDENT INFORMATION</div>
-                    <div><span class="font-bold">NAME:</span> {{ $reportCard->student->full_name }}</div>
-                    <div><span class="font-bold">REG NO:</span> {{ $reportCard->student->reg_number ?? 'N/A' }}</div>
-                    <div><span class="font-bold">CLASS:</span> {{ $reportCard->course->course_name }}</div>
-                    <div><span class="font-bold">YEAR:</span> {{ $reportCard->academicYear->year }}</div>
-                </div>
-                
-                <!-- Divider -->
-                <div style="border-top: 1px solid #ccc; margin: 8px 0;"></div>
-                
-                <!-- School Information -->
-                <div style="text-align: center; font-size: 8px;">
-                    <div class="font-bold" style="font-size: 10px; margin-bottom: 4px;">SCHOOL INFORMATION</div>
-                    @if($schoolInfo)
-                        <div><span class="font-bold">{{ $schoolInfo->school_name ?? env('APP_NAME', 'Excellent Servant Academy') }}</span></div>
-                        @if($schoolInfo->address)
-                            <div><span class="font-bold">Address:</span> {{ $schoolInfo->address }}</div>
-                        @endif
-                        @if($schoolInfo->phone)
-                            <div><span class="font-bold">Phone:</span> {{ $schoolInfo->phone }}</div>
-                        @endif
-                        @if($schoolInfo->email)
-                            <div><span class="font-bold">E-mail:</span> {{ $schoolInfo->email }}</div>
-                        @endif
-                        @if($schoolInfo->website)
-                            <div><span class="font-bold">Website:</span> {{ $schoolInfo->website }}</div>
-                        @endif
-                    @else
-                        <div><span class="font-bold">{{ env('APP_NAME', 'Excellent Servant Academy') }}</span></div>
-                        <div><span class="font-bold">Address:</span> Kigali, NdamaGE House, 2nd Floor</div>
-                        <div><span class="font-bold">Phone:</span> {{ env('SCHOOL_CONTACT', '0788525247') }}</div>
-                        <div><span class="font-bold">E-mail:</span> {{ env('SCHOOL_EMAIL', 'info@excellentservantacademy.com') }}</div>
-                        <div><span class="font-bold">Website:</span> www.excellentservantacademy.com</div>
-                    @endif
-                </div>
-            </div>
-            
-            <!-- Student Passport Photo on Right -->
             <div class="header-cell">
                 <div class="logo-container">
                     @if($reportCard->student->passport_photo)
                         <img src="data:image/jpeg;base64,{{ base64_encode($reportCard->student->passport_photo) }}" alt="Student Photo" class="student-photo">
-                    @elseif($reportCard->student->profile_image)
-                        <img src="{{ asset('storage/' . $reportCard->student->profile_image) }}" alt="Student Photo" class="student-photo">
                     @else
                         <div style="width: 100px; height: 100px; background: #ecf0f1; border: 2px dashed #bdc3c7; display: flex; align-items: center; justify-content: center;">
                             <div style="text-align: center;">
@@ -274,10 +223,50 @@
                         </div>
                     @endif
                 </div>
-                <div style="text-align: center; margin-top: 4px; font-size: 8px;">
-                    <div class="font-bold">STUDENT PHOTO</div>
-                    <div style="font-size: 6px; color: #666;">{{ $reportCard->student->full_name }}</div>
+                <!-- Student Information -->
+                <div style="text-align: center; margin-top: 8px; font-size: 9px;">
+                    <div><span class="font-bold">NAME:</span> {{ $reportCard->student->full_name }}</div>
+                    <div><span class="font-bold">REG NO:</span> {{ $reportCard->student->reg_number ?? 'N/A' }}</div>
+                    <div><span class="font-bold">CLASS:</span> {{ $reportCard->course->course_name }}</div>
+                    <div><span class="font-bold">YEAR:</span> {{ $reportCard->academicYear->year }}</div>
                 </div>
+            </div>
+            
+            <div class="header-cell">
+                @if($schoolInfo)
+                    <div class="font-bold">{{ $schoolInfo->school_name ?? 'SCHOOL NAME' }}</div>
+                    @if($schoolInfo->address)
+                        <div style="margin-top: 2px;">
+                            <span class="font-bold">Address:</span> {{ $schoolInfo->address }}
+                        </div>
+                    @endif
+                    @if($schoolInfo->phone)
+                        <div style="margin-top: 2px;">
+                            <span class="font-bold">Phone:</span> {{ $schoolInfo->phone }}
+                        </div>
+                    @endif
+                    @if($schoolInfo->email)
+                        <div style="margin-top: 2px;">
+                            <span class="font-bold">E-mail:</span> {{ $schoolInfo->email }}
+                        </div>
+                    @endif
+                    @if($schoolInfo->website)
+                        <div style="margin-top: 2px;">
+                            <span class="font-bold">Website:</span> {{ $schoolInfo->website }}
+                        </div>
+                    @endif
+                @else
+                    <div class="font-bold">SCHOOL NAME</div>
+                    <div style="margin-top: 2px;">
+                        <span class="font-bold">Phone:</span> School Phone
+                    </div>
+                    <div>
+                        <span class="font-bold">E-mail:</span> school@email.com
+                    </div>
+                    <div>
+                        <span class="font-bold">Website:</span> www.schoolwebsite.rw
+                    </div>
+                @endif
             </div>
         </div>
 
