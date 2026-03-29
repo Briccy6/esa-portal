@@ -51,6 +51,13 @@
                                                 <a href="{{ route('staff.lesson-units.create', $lesson->id) }}" class="btn btn-sm btn-outline-success">
                                                     <i class="bi bi-diagram-3"></i> Units
                                                 </a>
+                                                <form action="{{ route('staff.lessons.destroy', $lesson->id) }}" method="POST" style="display: inline-block;" onsubmit="return confirm('Are you sure you want to delete this lesson? This will permanently delete the lesson and ALL related data including units, marks, attendance, and exam associations. This action cannot be undone.');">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                        <i class="bi bi-trash"></i> Delete
+                                                    </button>
+                                                </form>
                                             </td>
                                         </tr>
                                     @endforeach

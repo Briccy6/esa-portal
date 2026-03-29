@@ -9,6 +9,8 @@ use App\Models\Lesson;
 use App\Models\Term;
 use Illuminate\Support\Facades\DB;
 use App\Models\AcademicYear;
+use App\Models\TimetableSession;
+use App\Models\ReportCardSubject;
 
 class LessonController extends Controller
 {
@@ -228,5 +230,59 @@ public function createDetails(Request $request, $lessonId)
 
         return redirect()->route('staff.lessons.show', $lessonId)
                          ->with('success', 'Lesson updated successfully.');
+    }
+
+    /**
+     * Remove the specified lesson from storage with cascade deletion.
+     */
+    public function destroy($lessonId)
+    {
+        try {
+            DB::beginTransaction();
+            
+            $lesson = Lesson::findOrFail($lessonId);
+            
+            // Delete in proper order to avoid foreign key constraint issues
+            
+            // 1. Delete lesson-term relationships (pivot table)
+            $lesson->terms()->detach();
+            
+            // 2. Delete lesson-exam relationships (pivot table)
+            $lesson->exams()->detach();
+            
+            // 3. Delete lesson units (they have cascade foreign key to lesson)
+            \App\Models\LessonUnit::where('lesson_id', $lessonId)->delete();
+            
+            // 4. Delete timetable sessions (they have cascade foreign key to lesson)
+            TimetableSession::where('lesson_id', $lessonId)->delete();
+            
+            // 5. Delete report card subjects (they have foreign key to lesson)
+            ReportCardSubject::where('lesson_id', $lessonId)->delete();
+            
+            // 6. Delete any marks related to this lesson
+            \App\Models\Marks::where('lesson_id', $lessonId)->delete();
+            
+            // 7. Delete any attendance records related to this lesson
+            \App\Models\Attendance::where('lesson_id', $lessonId)->delete();
+            
+            // 8. Delete any teacher dailies related to this lesson
+            \App\Models\TeacherDaily::where('lesson_id', $lessonId)->delete();
+            
+            // 9. Finally delete the lesson
+            $lesson->delete();
+            
+            DB::commit();
+            
+            return redirect()->route('staff.lessons.index')
+                             ->with('success', 'Lesson and all related data deleted successfully.');
+            
+        } catch (\Exception $e) {
+            DB::rollback();
+            
+            \Log::error('Error deleting lesson: ' . $e->getMessage());
+            
+            return redirect()->route('staff.lessons.index')
+                             ->with('error', 'Error deleting lesson: ' . $e->getMessage());
+        }
     }
 }
