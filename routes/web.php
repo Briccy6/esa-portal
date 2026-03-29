@@ -1343,21 +1343,9 @@ Route::post('/test-signaling/{liveClassId}', function(Request $request, $liveCla
 
 // Live Class Signaling (polling-based WebRTC) - NO WEB MIDDLEWARE
 Route::prefix('live-signaling')->name('live-signaling.')->group(function () {
-    Route::post('/{liveClassId}/send', function(Request $request, $liveClassId) {
-        \Log::info('Live signaling send route called', [
-            'liveClassId' => $liveClassId,
-            'request_data' => $request->all()
-        ]);
-        return response()->json(['message' => 'send route works!', 'liveClassId' => $liveClassId]);
-    })->name('send');
-    
-    Route::get('/{liveClassId}/poll', function(Request $request, $liveClassId) {
-        return response()->json(['message' => 'poll route works!', 'liveClassId' => $liveClassId]);
-    })->name('poll');
-    
-    Route::get('/{liveClassId}/participants', function(Request $request, $liveClassId) {
-        return response()->json(['message' => 'participants route works!', 'liveClassId' => $liveClassId]);
-    })->name('participants');
+    Route::post('/{liveClassId}/send', [\App\Http\Controllers\LiveClassSignalingController::class, 'send'])->name('send');
+    Route::get('/{liveClassId}/poll', [\App\Http\Controllers\LiveClassSignalingController::class, 'poll'])->name('poll');
+    Route::get('/{liveClassId}/participants', [\App\Http\Controllers\LiveClassSignalingController::class, 'participants'])->name('participants');
 })->withoutMiddleware(['web']);
 // Public Resource Routes
 // Public Resources Routes

@@ -9,6 +9,21 @@ use Illuminate\Support\Facades\Auth;
 class LiveClassSignalingController extends Controller
 {
     /**
+     * Clients use /live-signaling/class-{id}/... but live_class_id in DB is numeric.
+     */
+    private function resolveNumericLiveClassId($liveClassId): int
+    {
+        if (is_numeric($liveClassId)) {
+            return (int) $liveClassId;
+        }
+        if (is_string($liveClassId) && preg_match('/^class-(\d+)$/i', $liveClassId, $m)) {
+            return (int) $m[1];
+        }
+
+        return (int) $liveClassId;
+    }
+
+    /**
      * Teacher or student sends a signal (offer, answer, ICE, chat, hand-raise)
      */
     public function send(Request $request, $liveClassId)
@@ -30,8 +45,10 @@ class LiveClassSignalingController extends Controller
 
             \Log::info('Validation passed');
 
+            $classId = $this->resolveNumericLiveClassId($liveClassId);
+
             LiveClassSignal::create([
-                'live_class_id' => $liveClassId,
+                'live_class_id' => $classId,
                 'from_peer'     => $request->from_peer,
                 'to_peer'       => $request->to_peer,
                 'type'          => $request->type,
@@ -61,7 +78,9 @@ class LiveClassSignalingController extends Controller
         $peer    = $request->query('peer');
         $since   = (int) $request->query('since', 0);
 
-        $signals = LiveClassSignal::where('live_class_id', $liveClassId)
+        $classId = $this->resolveNumericLiveClassId($liveClassId);
+
+        $signals = LiveClassSignal::where('live_class_id', $classId)
             ->where(function($q) use ($peer) {
                 $q->where('to_peer', $peer)
                   ->orWhere('to_peer', 'all');
@@ -72,9 +91,9 @@ class LiveClassSignalingController extends Controller
             ->get(['id', 'from_peer', 'to_peer', 'type', 'payload', 'created_at']);
 
         // Clean old signals (keep last 500 per class)
-        $maxId = LiveClassSignal::where('live_class_id', $liveClassId)->max('id');
+        $maxId = LiveClassSignal::where('live_class_id', $classId)->max('id');
         if ($maxId > 500) {
-            LiveClassSignal::where('live_class_id', $liveClassId)
+            LiveClassSignal::where('live_class_id', $classId)
                 ->where('id', '<', $maxId - 500)
                 ->delete();
         }
@@ -96,14 +115,20 @@ class LiveClassSignalingController extends Controller
      */
     public function participants($liveClassId)
     {
-        // Get the last "participant-update" signal of type "all"
-        $signal = LiveClassSignal::where('live_class_id', $liveClassId)
-            ->where('type', 'participant-list')
-            ->orderByDesc('id')
-            ->first();
+        $classId = $this->resolveNumericLiveClassId($liveClassId);
 
-        return response()->json([
-            'participants' => $signal ? json_decode($signal->payload, true) : []
-        ]);
+        $participants = \App\Models\LiveClassParticipant::where('live_class_id', $classId)
+            ->where('is_active', true)
+            ->whereNull('left_at')
+            ->get()
+            ->map(function ($p) {
+                return [
+                    'name' => $p->name ?? 'Unknown',
+                    'role' => ucfirst($p->user_type),
+                    'socketId' => $p->id,
+                ];
+            });
+
+        return response()->json($participants);
     }
 }

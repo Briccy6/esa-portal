@@ -604,10 +604,10 @@ async function startCamera() {
         // addTrack if no sender exists yet for that kind.
         Object.entries(peers).forEach(([sid, pc]) => {
             localStream.getTracks().forEach(track => {
-                const sender = pc.getSenders().find(s => s.track && s.track.kind === track.kind);
-                if (sender) {
+                const transceiver = pc.getTransceivers().find(t => t.receiver && t.receiver.track && t.receiver.track.kind === track.kind);
+                if (transceiver && transceiver.sender) {
                     // Transceiver already exists — replace the null/old track with the live one
-                    sender.replaceTrack(track).catch(e => console.warn('replaceTrack error:', e));
+                    transceiver.sender.replaceTrack(track).catch(e => console.warn('replaceTrack error:', e));
                 } else {
                     // No sender for this kind yet — add the track
                     try { pc.addTrack(track, localStream); } catch(e) { console.warn('addTrack error:', e); }
@@ -669,8 +669,8 @@ screenCtrl.addEventListener('click', async () => {
         // Replace video track in all peers
         const senderReplacement = ss.getVideoTracks()[0];
         Object.values(peers).forEach(pc => {
-            const sender = pc.getSenders().find(s => s.track?.kind === 'video');
-            if (sender) sender.replaceTrack(senderReplacement).catch(() => {});
+            const transceiver = pc.getTransceivers().find(t => t.receiver && t.receiver.track && t.receiver.track.kind === 'video');
+            if (transceiver && transceiver.sender) transceiver.sender.replaceTrack(senderReplacement).catch(() => {});
             else pc.addTrack(senderReplacement, ss);
         });
         localVideo.srcObject = ss;
@@ -693,47 +693,87 @@ screenCtrl.addEventListener('click', async () => {
 });
 
 // ═══════════════════════════════════════════════════════════
-// PARTICIPANTS
+// ═══════════════════════════════════════════════════════════
+// PARTICIPANTS (DOM driven by Server Polling)
 // ═══════════════════════════════════════════════════════════
 function addParticipant(sessionId, name) {
-    if (participants[sessionId]) return;
-    participants[sessionId] = { name };
-    updateCount();
-    // Add thumb
-    const initial = name.charAt(0).toUpperCase();
-    const colors  = ['rgba(16,185,129,.2)', 'rgba(245,158,11,.2)', 'rgba(239,68,68,.2)', 'rgba(99,102,241,.2)'];
-    const fcolors = ['#10b981','#f59e0b','#ef4444','#6366f1'];
-    const ci      = Object.keys(participants).length % colors.length;
-    document.getElementById('thumbsRow').insertAdjacentHTML('beforeend', `
-        <div class="thumb" id="thumb-${sessionId}">
-            <div class="thumb-av" style="background:${colors[ci]};color:${fcolors[ci]}">${initial}</div>
-            <div class="thumb-name">${name}</div>
-        </div>`);
-    // Add to people panel
-    document.getElementById('pplList').insertAdjacentHTML('beforeend', `
-        <div class="person" id="person-${sessionId}">
-            <div class="pav" style="background:rgba(16,185,129,.15);color:var(--green)">${initial}</div>
-            <div class="pinfo"><div class="pname">${name}</div><div class="prole">Student · Viewing</div></div>
-            <span class="ptag student">Student</span>
-        </div>`);
-    toast(`${name} joined`);
+    if (!participants[sessionId]) {
+        participants[sessionId] = { name };
+        toast(`${name} joined`);
+    }
 }
 
 function removeParticipant(sessionId) {
-    if (!participants[sessionId]) return;
-    const name = participants[sessionId].name;
-    delete participants[sessionId];
-    document.getElementById('thumb-' + sessionId)?.remove();
-    document.getElementById('person-' + sessionId)?.remove();
-    updateCount();
-    toast(`${name} left`);
+    if (participants[sessionId]) {
+        const name = participants[sessionId].name;
+        delete participants[sessionId];
+        toast(`${name} left`);
+    }
 }
 
-function updateCount() {
-    const n = Object.keys(participants).length;
-    document.getElementById('pcount').textContent = n;
-    document.getElementById('ppl-cnt').textContent = (n + 1) + ' people';
+// Dynamically refresh student list from server
+async function pollParticipants() {
+    try {
+        const response = await fetch(`/live-signaling/{{ $liveClass->id }}/participants`, {
+            headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' }
+        });
+        if (!response.ok) return;
+        
+        const ptList = await response.json();
+        const pcount = ptList.length;
+        
+        // Update counts
+        document.getElementById('pcount').textContent = pcount;
+        document.getElementById('ppl-cnt').textContent = pcount;
+        
+        const thumbsRow = document.getElementById('thumbsRow');
+        const pplList = document.getElementById('pplList');
+        
+        const colors  = ['rgba(16,185,129,.2)', 'rgba(245,158,11,.2)', 'rgba(239,68,68,.2)', 'rgba(99,102,241,.2)'];
+        const fcolors = ['#10b981','#f59e0b','#ef4444','#6366f1'];
+        
+        let htmlThumbs = `
+            <div class="thumb">
+                <div class="thumb-av" style="background:rgba(59,130,246,.2);color:var(--accent)">${SELF_INIT}</div>
+                <div class="thumb-name">You (Host)</div>
+            </div>`;
+            
+        let htmlPpl = `
+            <div class="person">
+                <div class="pav" style="background:rgba(59,130,246,.15);color:var(--accent)">${SELF_INIT}</div>
+                <div class="pinfo"><div class="pname">${SELF_NAME} (You)</div><div class="prole">Host · Broadcasting</div></div>
+                <span class="ptag host">Host</span>
+            </div>`;
+            
+        ptList.forEach((p, idx) => {
+            // Server might return teacher themselves, skip them
+            if (p.role === 'Teacher' || p.name === SELF_NAME) return;
+            
+            const init = p.name ? p.name.charAt(0).toUpperCase() : '?';
+            const ci = idx % colors.length;
+            
+            htmlThumbs += `
+            <div class="thumb" id="thumb-${p.socketId}">
+                <div class="thumb-av" style="background:${colors[ci]};color:${fcolors[ci]}">${init}</div>
+                <div class="thumb-name">${p.name}</div>
+            </div>`;
+            
+            htmlPpl += `
+            <div class="person" id="person-${p.socketId}">
+                <div class="pav" style="background:rgba(16,185,129,.15);color:var(--green)">${init}</div>
+                <div class="pinfo"><div class="pname">${p.name}</div><div class="prole">Student · Viewing</div></div>
+                <span class="ptag student" style="background:rgba(16,185,129,.15);color:var(--green)">Student</span>
+            </div>`;
+        });
+        
+        thumbsRow.innerHTML = htmlThumbs;
+        pplList.innerHTML = htmlPpl;
+        
+    } catch(e) { /* silent */ }
 }
+
+pollParticipants();
+setInterval(pollParticipants, 4000);
 
 // ═══════════════════════════════════════════════════════════
 // CHAT

@@ -147,8 +147,8 @@
         </div>
         <div style="display:flex;align-items:center;gap:10px">
             <div class="viewer-pill">
-                <div class="av">{{ strtoupper(substr($guestName ?? auth()->user()->name ?? 'G', 0, 1)) }}</div>
-                <div><div class="vname">{{ $guestName ?? auth()->user()->name ?? 'Guest' }}</div><div class="vrole">Student · Viewer</div></div>
+                <div class="av">{{ strtoupper(substr($participantName ?? 'G', 0, 1)) }}</div>
+                <div><div class="vname">{{ $participantName ?? 'Guest' }}</div><div class="vrole">Student · Viewer</div></div>
             </div>
             <button class="btn-leave" id="leaveBtn"><i class="fas fa-sign-out-alt"></i> Leave</button>
         </div>
@@ -235,8 +235,8 @@
                     <span class="ptag host">Host</span>
                 </div>
                 <div class="person">
-                    <div class="pav" style="background:rgba(34,211,238,.15);color:var(--cyan)">{{ strtoupper(substr($guestName ?? auth()->user()->name ?? 'G', 0, 1)) }}</div>
-                    <div class="pinfo"><div class="pname">{{ $guestName ?? auth()->user()->name ?? 'Guest' }} (You)</div><div class="prole">Student · Viewing</div></div>
+                    <div class="pav" style="background:rgba(34,211,238,.15);color:var(--cyan)">{{ strtoupper(substr($participantName ?? 'G', 0, 1)) }}</div>
+                    <div class="pinfo"><div class="pname">{{ $participantName ?? 'Guest' }} (You)</div><div class="prole">Student · Viewing</div></div>
                     <span class="ptag you">You</span>
                 </div>
             </div>
@@ -253,8 +253,8 @@
 const ROOM_ID       = 'class-{{ $liveClass->id ?? 1 }}';
 const REFERRER_URL  = document.referrer || '/live-classes';
 const CSRF          = document.querySelector('meta[name=csrf-token]').content;
-const SELF_NAME     = '{{ addslashes($guestName ?? auth()->user()->name ?? "Guest") }}';
-const SELF_INIT     = '{{ strtoupper(substr($guestName ?? auth()->user()->name ?? "G", 0, 1)) }}';
+const SELF_NAME     = '{{ addslashes($participantName ?? "Guest") }}';
+const SELF_INIT     = '{{ strtoupper(substr($participantName ?? "G", 0, 1)) }}';
 const HOST_NAME     = '{{ addslashes($liveClass->teacher->name ?? "Instructor") }}';
 
 // ── KEY FIX: Capture the PHP session ID exactly once at page render time.
@@ -262,6 +262,7 @@ const HOST_NAME     = '{{ addslashes($liveClass->teacher->name ?? "Instructor") 
 // The server uses session()->getId() in Blade, so this will always match
 // what the server uses when it stores/reads from the cache.
 const SESSION_ID = '{{ session()->getId() }}';
+const VIEWER_PARTICIPANT_DB_ID = @json(isset($viewerParticipantId) ? (int) $viewerParticipantId : null);
 
 console.log('🆔 Student SESSION_ID:', SESSION_ID);
 
@@ -616,6 +617,59 @@ async function pollChat() {
     } catch(e) { /* silent */ }
 }
 setInterval(pollChat, 3000);
+
+// ═══════════════════════════════════════════════════════════
+// POLL PARTICIPANTS — dynamically refresh student list
+// ═══════════════════════════════════════════════════════════
+async function pollParticipants() {
+    try {
+        const response = await fetch(`/live-signaling/{{ $liveClass->id }}/participants`, {
+            headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' }
+        });
+        if (!response.ok) return;
+        
+        const participants = await response.json();
+        // API = active viewer rows; host is shown separately in the list → total heads = 1 + viewers
+        const totalInClass = 1 + participants.length;
+        
+        // Update top bar count
+        document.getElementById('pcount').textContent = totalInClass;
+        document.getElementById('pplCnt').textContent = totalInClass;
+        
+        // Re-render participant list elements
+        const pplList = document.getElementById('pplList');
+        let html = `
+            <div class="person">
+                <div class="pav" style="background:rgba(99,102,241,.18);color:var(--accent)">{{ strtoupper(substr($liveClass->teacher->name ?? 'I', 0, 1)) }}</div>
+                <div class="pinfo"><div class="pname">{{ $liveClass->teacher->name ?? 'Instructor' }}</div><div class="prole">Host · Broadcasting</div></div>
+                <span class="ptag host">Host</span>
+            </div>`;
+            
+        participants.forEach(p => {
+            const isSelf = (VIEWER_PARTICIPANT_DB_ID !== null && Number(p.socketId) === VIEWER_PARTICIPANT_DB_ID)
+                || p.name === SELF_NAME;
+            const init = p.name ? p.name.charAt(0).toUpperCase() : '?';
+            const bgStr = isSelf ? 'rgba(34,211,238,.15)' : 'rgba(16,185,129,.15)';
+            const colorStr = isSelf ? 'var(--cyan)' : 'var(--green)';
+            const roleStr = isSelf ? 'Student · Viewing' : 'Student';
+            const tagStr = isSelf ? '<span class="ptag you">You</span>' : '<span class="ptag student" style="background:rgba(16,185,129,.15);color:var(--green)">Student</span>';
+            const nameStr = isSelf ? `${p.name} (You)` : p.name;
+            
+            html += `
+            <div class="person">
+                <div class="pav" style="background:${bgStr};color:${colorStr}">${init}</div>
+                <div class="pinfo"><div class="pname">${nameStr}</div><div class="prole">${roleStr}</div></div>
+                ${tagStr}
+            </div>`;
+        });
+        
+        pplList.innerHTML = html;
+        
+    } catch(e) { /* silent */ }
+}
+// Initial fetch, then poll every 5s
+pollParticipants();
+setInterval(pollParticipants, 5000);
 
 // ═══════════════════════════════════════════════════════════
 // MIC

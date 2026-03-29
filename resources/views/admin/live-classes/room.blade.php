@@ -395,7 +395,7 @@
                     Requests ({{ $studentRequests->count() }})
                 </button>
                 <button class="sidebar-tab" data-tab="participants">
-                    Participants
+                    Participants <span id="adminTabPaxBadge" style="opacity:.85;font-size:12px;font-weight:600;"></span>
                 </button>
                 <button class="sidebar-tab" data-tab="chat">
                     Chat
@@ -433,11 +433,10 @@
                     @endif
                 </div>
 
-                <!-- Participants Panel -->
+                <!-- Participants Panel (live list from live_class_participants API) -->
                 <div class="sidebar-panel" id="participants-panel">
-                    <div class="center-placeholder">
-                        <p>Participants will appear here</p>
-                    </div>
+                    <p id="adminPaxSummary" style="margin:0 0 14px;font-size:13px;color:var(--text-2);">Loading participant list…</p>
+                    <div id="adminParticipantsList"></div>
                 </div>
 
                 <!-- Chat Panel -->
@@ -454,6 +453,77 @@
 
 @section('scripts')
 <script>
+const ADMIN_LC_ID = {{ (int) $liveClass->id }};
+const ADMIN_HOST_NAME = @json($liveClass->teacher ? ($liveClass->teacher->full_name ?? $liveClass->teacher->teacher_name ?? 'Instructor') : 'Instructor');
+
+function adminEscapeHtml(text) {
+    if (text == null || text === '') return '';
+    const d = document.createElement('div');
+    d.textContent = text;
+    return d.innerHTML;
+}
+
+async function pollAdminParticipants() {
+    const listEl = document.getElementById('adminParticipantsList');
+    const summaryEl = document.getElementById('adminPaxSummary');
+    const badgeEl = document.getElementById('adminTabPaxBadge');
+    if (!listEl) return;
+
+    try {
+        const r = await fetch('/live-signaling/' + ADMIN_LC_ID + '/participants', {
+            headers: { 'Accept': 'application/json' }
+        });
+        if (!r.ok) {
+            if (summaryEl) summaryEl.textContent = 'Could not load participants (' + r.status + ').';
+            return;
+        }
+        const viewers = await r.json();
+        const n = Array.isArray(viewers) ? viewers.length : 0;
+        const total = 1 + n;
+
+        if (summaryEl) {
+            summaryEl.textContent = total + ' in room — host plus ' + n + ' registered viewer' + (n === 1 ? '' : 's') + '.';
+        }
+        if (badgeEl) {
+            badgeEl.textContent = '(' + total + ')';
+        }
+
+        let html = `
+            <div class="request-item" style="border-color:rgba(91,164,212,0.35);">
+                <div class="request-header">
+                    <div class="request-name">${adminEscapeHtml(ADMIN_HOST_NAME)}</div>
+                    <div class="request-time" style="color:var(--teal);font-weight:600;">HOST</div>
+                </div>
+                <div style="font-size:12px;color:var(--text-2);margin-top:6px;">Teacher / broadcast source</div>
+            </div>`;
+
+        viewers.forEach(function (p) {
+            const name = adminEscapeHtml(p.name || 'Unknown');
+            const role = adminEscapeHtml(p.role || 'Viewer');
+            html += `
+            <div class="request-item" style="margin-top:10px;">
+                <div class="request-header">
+                    <div class="request-name">${name}</div>
+                    <div class="request-time" style="text-transform:capitalize;">${role}</div>
+                </div>
+                <div style="font-size:11px;color:var(--text-3);margin-top:4px;">ID #${adminEscapeHtml(String(p.socketId != null ? p.socketId : ''))}</div>
+            </div>`;
+        });
+
+        if (n === 0) {
+            html += '<p style="margin-top:16px;font-size:13px;color:var(--text-2);">No viewers in the registry yet. They appear after each guest or student opens the class room.</p>';
+        }
+
+        listEl.innerHTML = html;
+    } catch (e) {
+        console.warn('pollAdminParticipants', e);
+        if (summaryEl) summaryEl.textContent = 'Failed to refresh participant list.';
+    }
+}
+
+pollAdminParticipants();
+setInterval(pollAdminParticipants, 4000);
+
 // Tab switching
 document.querySelectorAll('.sidebar-tab').forEach(tab => {
     tab.addEventListener('click', function() {

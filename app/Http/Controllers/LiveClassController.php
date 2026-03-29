@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\LiveClass;
+use App\Models\LiveClassParticipant;
 use App\Models\Branch;
 use App\Models\Course;
 use App\Models\Lesson;
@@ -908,7 +909,12 @@ class LiveClassController extends Controller
             }
         }
 
-        $this->recordPublicParticipant($liveClass, $request->email, $request->name, $request->phone);
+        $participant = $this->recordPublicParticipant($liveClass, $request->email, $request->name, $request->phone);
+
+        session([
+            'public_user_email' => $request->email,
+            'lc_viewer_participant_' . $liveClass->id => $participant->id,
+        ]);
 
         return redirect()->route('live-classes.room', $liveClass);
     }
@@ -997,8 +1003,93 @@ class LiveClassController extends Controller
         return 'desktop';
     }
 
+    /**
+     * Guests who open /live-classes/{id}/room directly never hit join/publicJoin, so the
+     * participants API was empty. Link this browser session to a LiveClassParticipant row.
+     */
+    private function ensureViewerParticipantRecord(LiveClass $liveClass, bool $isPublicUser, string $participantName): void
+    {
+        $sessionKey = 'lc_viewer_participant_' . $liveClass->id;
+
+        $pid = session($sessionKey);
+        if ($pid && LiveClassParticipant::where('id', $pid)
+            ->where('live_class_id', $liveClass->id)
+            ->where('is_active', true)
+            ->whereNull('left_at')
+            ->exists()) {
+            return;
+        }
+
+        $paySess = session('live_class_payment_' . $liveClass->id);
+        if (is_array($paySess) && ! empty($paySess['email'])) {
+            $row = $liveClass->participants()
+                ->where('email', $paySess['email'])
+                ->where('user_type', 'public')
+                ->where('is_active', true)
+                ->whereNull('left_at')
+                ->first();
+            if ($row) {
+                session([$sessionKey => $row->id]);
+
+                return;
+            }
+        }
+
+        $pubEmail = session('public_user_email');
+        if ($pubEmail) {
+            $row = $liveClass->participants()
+                ->where('email', $pubEmail)
+                ->where('is_active', true)
+                ->whereNull('left_at')
+                ->first();
+            if ($row) {
+                session([$sessionKey => $row->id]);
+
+                return;
+            }
+        }
+
+        if (Auth::guard('student')->check()) {
+            $student = Auth::guard('student')->user();
+            $row = $liveClass->participants()
+                ->where('user_id', $student->id)
+                ->where('user_type', 'student')
+                ->where('is_active', true)
+                ->whereNull('left_at')
+                ->first();
+            if ($row) {
+                session([$sessionKey => $row->id]);
+
+                return;
+            }
+        }
+
+        if (! $isPublicUser) {
+            return;
+        }
+
+        $tag = substr((string) session()->getId(), 0, 8);
+        $displayName = ($participantName === 'Guest' || $participantName === '') ? 'Guest ' . $tag : $participantName;
+
+        $row = $liveClass->participants()->create([
+            'user_type' => 'public',
+            'email' => $pubEmail,
+            'name' => $displayName,
+            'joined_at' => now(),
+            'is_active' => true,
+            'ip_address' => request()->ip(),
+            'browser_info' => request()->userAgent(),
+        ]);
+
+        session([$sessionKey => $row->id]);
+    }
+
     public function room(LiveClass $liveClass)
     {
+        $paymentSession = null;
+        $previousPayment = null;
+        $payment = null;
+
         // Handle email parameter for direct room access (returning users)
         $userEmail = request()->get('email');
         if ($userEmail) {
@@ -1166,19 +1257,33 @@ class LiveClassController extends Controller
             $isPublicUser = true;
         }
         
-        // Determine the correct view based on user type
+        $participantName = 'Guest';
         if (Auth::guard('student')->check()) {
-            // Student gets the student-specific room view
-            $viewName = 'students.live-classes.room';
-        } elseif ($isPublicUser) {
-            // Public users get the public room view
+            $participantName = Auth::guard('student')->user()->full_name;
+        } elseif (isset($paymentSession['name'])) {
+            $participantName = $paymentSession['name'];
+        } elseif (isset($previousPayment)) {
+            $participantName = $previousPayment->name;
+        } elseif (isset($payment)) {
+            $participantName = $payment->name;
+        }
+
+        if ($liveClass->status === 'active' && (Auth::guard('student')->check() || $isPublicUser)) {
+            $this->ensureViewerParticipantRecord($liveClass, $isPublicUser, $participantName);
+        }
+
+        $viewerParticipantId = session('lc_viewer_participant_' . $liveClass->id);
+        
+        // Determine the correct view based on user type
+        if (Auth::guard('student')->check() || $isPublicUser) {
+            // Student and Public users get the WebRTC viewer room
             $viewName = 'live-classes.public-room';
         } else {
             // Admin/teacher/staff get the admin room view
             $viewName = 'live-classes.room';
         }
         
-        return view($viewName, compact('liveClass', 'isTeacher', 'studentRequests'));
+        return view($viewName, compact('liveClass', 'isTeacher', 'studentRequests', 'participantName', 'viewerParticipantId'));
     }
 
     public function end(LiveClass $liveClass)

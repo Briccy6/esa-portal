@@ -2,7 +2,7 @@
 
 try {
     # Connect to database
-    $connectionString = "server=127.0.0.1;port=3308;database=esa;uid=root;pwd="
+    $connectionString = "server=127.0.0.1;port=3307;database=esa;uid=root;pwd="
     $connection = New-Object MySql.Data.MySqlClient.MySqlConnection($connectionString)
     $connection.Open()
     
@@ -49,7 +49,7 @@ try {
     Write-Host "❌ Error: $($_.Exception.Message)" -ForegroundColor Red
     Write-Host ""
     Write-Host "Possible solutions:" -ForegroundColor Yellow
-    Write-Host "1. Make sure MySQL is running on 127.0.0.1:3308" -ForegroundColor White
+    Write-Host "1. Make sure MySQL is running on 127.0.0.1:3307" -ForegroundColor White
     Write-Host "2. Check your .env file database settings" -ForegroundColor White
     Write-Host "3. Run: php artisan migrate" -ForegroundColor White
     Write-Host "4. Install MySQL Connector for PowerShell if needed" -ForegroundColor White
