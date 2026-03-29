@@ -61,6 +61,11 @@ class ReportCardController extends Controller
 
         $reportCard = ReportCard::create($request->all());
         $this->generateReportCardData($reportCard);
+        ReportCard::recalculatePositionsForCohort(
+            (int) $reportCard->course_id,
+            (int) $reportCard->academic_year_id,
+            (int) $reportCard->term_id
+        );
 
         return redirect()->route('admin.report-cards.show', $reportCard)
             ->with('success', 'Report card generated successfully!');
@@ -149,6 +154,12 @@ class ReportCardController extends Controller
                 $skipped++;
             }
         }
+
+        ReportCard::recalculatePositionsForCohort(
+            (int) $request->course_id,
+            (int) $request->academic_year_id,
+            (int) $request->term_id
+        );
 
         return redirect()->back()
             ->with('success', "Generated {$generated} report cards. Skipped {$skipped} that already exist.");
@@ -394,10 +405,7 @@ class ReportCardController extends Controller
             $reportCard->total_marks = $totalMarks;
             $reportCard->average_marks = $totalMarks / $subjectCount;
             $reportCard->save();
-            
-            // Calculate class position based on average marks
-            $reportCard->calculateClassPosition();
-            
+
             \Log::info('Report card totals updated: ' . json_encode([
                 'report_card_id' => $reportCard->id,
                 'total_marks' => $totalMarks,
@@ -405,5 +413,6 @@ class ReportCardController extends Controller
                 'subject_count' => $subjectCount
             ]));
         }
+        // Class position is computed in recalculatePositionsForCohort() after generation (store / bulk).
     }
 }

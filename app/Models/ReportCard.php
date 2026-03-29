@@ -116,28 +116,46 @@ class ReportCard extends Model
         return $query->where('status', 'pending');
     }
 
-    public function calculateClassPosition()
+    /**
+     * Competition-style ranks for one cohort (same course, year, term).
+     * Call once after bulk generation so every card exists before ranking.
+     * Ties share the same rank; next rank skips (e.g. 1, 1, 3).
+     */
+    public static function recalculatePositionsForCohort(int $courseId, int $academicYearId, int $termId): void
     {
-        // Get all students in the same course, academic year, and term
-        // Include all report cards regardless of status to get accurate positioning
-        $classmates = static::where('academic_year_id', $this->academic_year_id)
-            ->where('term_id', $this->term_id)
-            ->where('course_id', $this->course_id)
+        $cards = static::where('course_id', $courseId)
+            ->where('academic_year_id', $academicYearId)
+            ->where('term_id', $termId)
             ->orderByDesc('average_marks')
+            ->orderBy('id')
             ->get();
 
-        $this->total_students = $classmates->count();
-        
-        $position = 1;
-        foreach ($classmates as $classmate) {
-            if ($classmate->average_marks > $this->average_marks) {
-                $position++;
-            } elseif ($classmate->id === $this->id) {
-                break;
-            }
+        $total = $cards->count();
+        if ($total === 0) {
+            return;
         }
-        
-        $this->class_position = $position;
-        $this->save();
+
+        $rank = 1;
+        foreach ($cards as $i => $card) {
+            if ($i > 0) {
+                $prev = $cards[$i - 1];
+                $cmp = (float) $card->average_marks <=> (float) $prev->average_marks;
+                if ($cmp < 0) {
+                    $rank = $i + 1;
+                }
+            }
+            $card->total_students = $total;
+            $card->class_position = $rank;
+            $card->saveQuietly();
+        }
+    }
+
+    public function calculateClassPosition(): void
+    {
+        static::recalculatePositionsForCohort(
+            (int) $this->course_id,
+            (int) $this->academic_year_id,
+            (int) $this->term_id
+        );
     }
 }
