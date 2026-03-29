@@ -301,6 +301,32 @@ async function ensureStream(video = true, audio = true) {
 }
 
 // ═══════════════════════════════════════════════════════════
+// OUTBOUND SENDERS (never use receiver.track to find video — on the host PC the
+// video receiver is often null until the viewer sends video, so replaceTrack
+// was skipped and students stayed on “waiting for stream”.)
+// ═══════════════════════════════════════════════════════════
+function getOutboundVideoSender(pc) {
+    const senders = pc.getSenders();
+    const withVid = senders.find(s => s.track && s.track.kind === 'video');
+    if (withVid) return withVid;
+    const noTrack = senders.filter(s => !s.track);
+    if (noTrack.length) return noTrack[0];
+    return senders[0] || null;
+}
+
+function getOutboundAudioSender(pc) {
+    const senders = pc.getSenders();
+    const withAud = senders.find(s => s.track && s.track.kind === 'audio');
+    if (withAud) return withAud;
+    const noTrack = senders.filter(s => !s.track);
+    if (noTrack.length >= 2) return noTrack[1];
+    return senders[1] || null;
+}
+
+// Screen/camera switches use replaceTrack only (Unified Plan). Extra createOffer rounds
+// pollute the HTTP signaling queue and cause m-line / ICE mismatches for viewers.
+
+// ═══════════════════════════════════════════════════════════
 // PEER CONNECTION — create one per viewer
 // ═══════════════════════════════════════════════════════════
 async function createPeerForViewer(viewerSessionId) {
@@ -313,9 +339,17 @@ async function createPeerForViewer(viewerSessionId) {
     const pc = new RTCPeerConnection(ICE_SERVERS);
     peers[viewerSessionId] = pc;
 
-    // Add all existing local tracks if camera/screen is already on
+    // Add all existing local tracks if camera/screen is already on.
+    // Order matters: subsequent offers after replaceTrack MUST keep the same m-line order
+    // (audio then video) or the student's setRemoteDescription fails.
     if (localStream) {
-        localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+        const tracks = localStream.getTracks();
+        tracks.filter(function (t) { return t.kind === 'audio'; }).forEach(function (t) {
+            pc.addTrack(t, localStream);
+        });
+        tracks.filter(function (t) { return t.kind === 'video'; }).forEach(function (t) {
+            pc.addTrack(t, localStream);
+        });
         console.log('📹 Added local tracks to peer for:', viewerSessionId);
     } else {
         // ── FIX #1: NO local stream yet (camera not started).
@@ -323,10 +357,9 @@ async function createPeerForViewer(viewerSessionId) {
         //   "Failed to parse SessionDescription. a=msid-semantic: WMS Expects m line."
         // Adding sendrecv transceivers guarantees valid audio + video m= lines
         // in the offer even before the teacher clicks "Start Camera".
-        // When the teacher later starts the camera, addTrack() will reuse these
-        // transceivers automatically and renegotiation is handled via replaceTrack.
-        pc.addTransceiver('video', { direction: 'sendrecv' });
+        // Audio before video — must match getUserMedia addTrack order above.
         pc.addTransceiver('audio', { direction: 'sendrecv' });
+        pc.addTransceiver('video', { direction: 'sendrecv' });
         console.log('📡 Added sendrecv transceivers (camera not yet started) for:', viewerSessionId);
     }
 
@@ -479,6 +512,19 @@ async function handleSignal(sig) {
         return;
     }
 
+    if (sig.type === 'webrtc_resync') {
+        console.log('🔁 WebRTC resync from:', sig.from_peer, '(new viewer PC — host must re-offer)');
+        addParticipant(sig.from_peer, sig.payload?.name || 'Student');
+        if (peers[sig.from_peer]) {
+            try {
+                peers[sig.from_peer].close();
+            } catch (e) {}
+            delete peers[sig.from_peer];
+        }
+        await createPeerForViewer(sig.from_peer);
+        return;
+    }
+
     if (sig.type === 'viewer_ready') {
         console.log('👋 viewer_ready from:', sig.from_peer);
         if (!peers[sig.from_peer]) {
@@ -525,8 +571,13 @@ async function handleSignal(sig) {
 
     if (sig.type === 'answer') {
         console.log('📞 Received answer from:', sig.from_peer);
+        const sdp = sig.payload?.sdp;
+        if (!sdp) return;
         if (pc.signalingState === 'have-local-offer') {
-            await pc.setRemoteDescription({ type: 'answer', sdp: sig.payload?.sdp }).catch(console.warn);
+            await pc.setRemoteDescription({ type: 'answer', sdp }).catch(console.warn);
+        } else if (pc.signalingState === 'stable') {
+            // Duplicate or late answer after glare — ignore
+            console.log('📞 Ignoring answer (already stable) from:', sig.from_peer);
         } else {
             console.warn('⚠️ Peer not in have-local-offer state:', pc.signalingState);
         }
@@ -536,7 +587,7 @@ async function handleSignal(sig) {
     }
 }
 
-setInterval(pollSignals, 2000);
+setInterval(pollSignals, 1000);
 
 // ═══════════════════════════════════════════════════════════
 // POLL CHAT — fetch persistent chat log every 3 s so teacher
@@ -604,12 +655,12 @@ async function startCamera() {
         // addTrack if no sender exists yet for that kind.
         Object.entries(peers).forEach(([sid, pc]) => {
             localStream.getTracks().forEach(track => {
-                const transceiver = pc.getTransceivers().find(t => t.receiver && t.receiver.track && t.receiver.track.kind === track.kind);
-                if (transceiver && transceiver.sender) {
-                    // Transceiver already exists — replace the null/old track with the live one
-                    transceiver.sender.replaceTrack(track).catch(e => console.warn('replaceTrack error:', e));
+                const sender = track.kind === 'video'
+                    ? getOutboundVideoSender(pc)
+                    : getOutboundAudioSender(pc);
+                if (sender) {
+                    sender.replaceTrack(track).catch(e => console.warn('replaceTrack error:', e));
                 } else {
-                    // No sender for this kind yet — add the track
                     try { pc.addTrack(track, localStream); } catch(e) { console.warn('addTrack error:', e); }
                 }
             });
@@ -653,25 +704,45 @@ const screenBanner = document.getElementById('screenBanner');
 
 screenCtrl.addEventListener('click', async () => {
     if (sharing) {
-        // Stop screen share — revert to camera
-        localStream?.getVideoTracks().forEach(t => t.stop());
+        const cur = localVideo.srcObject;
+        if (cur instanceof MediaStream) {
+            cur.getTracks().forEach(t => t.stop());
+        }
         sharing = false;
         screenCtrl.classList.remove('on');
         screenCtrl.querySelector('span').textContent = 'Share';
         screenBanner.classList.remove('show');
-        localVideo.style.display = 'none';
-        camOff.style.display = 'flex';
+        const camVid = localStream && localStream.getVideoTracks()[0];
+        Object.values(peers).forEach(pc => {
+            const vs = getOutboundVideoSender(pc);
+            if (vs && camVid) vs.replaceTrack(camVid).catch(() => {});
+        });
+        if (localStream && camVid) {
+            localVideo.srcObject = localStream;
+            localVideo.style.display = camOn ? 'block' : 'none';
+            camOff.style.display = camOn ? 'none' : 'flex';
+        } else {
+            localVideo.srcObject = null;
+            localVideo.style.display = 'none';
+            camOff.style.display = 'flex';
+        }
         toast('Screen sharing stopped');
         return;
     }
     try {
         const ss = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
-        // Replace video track in all peers
         const senderReplacement = ss.getVideoTracks()[0];
+        if (!senderReplacement) {
+            toast('No display video track');
+            return;
+        }
         Object.values(peers).forEach(pc => {
-            const transceiver = pc.getTransceivers().find(t => t.receiver && t.receiver.track && t.receiver.track.kind === 'video');
-            if (transceiver && transceiver.sender) transceiver.sender.replaceTrack(senderReplacement).catch(() => {});
-            else pc.addTrack(senderReplacement, ss);
+            const vs = getOutboundVideoSender(pc);
+            if (vs) {
+                vs.replaceTrack(senderReplacement).catch(e => console.warn('replaceTrack screen', e));
+            } else {
+                try { pc.addTrack(senderReplacement, ss); } catch(e) { console.warn('addTrack screen', e); }
+            }
         });
         localVideo.srcObject = ss;
         localVideo.style.display = 'block';
@@ -680,13 +751,24 @@ screenCtrl.addEventListener('click', async () => {
         screenCtrl.classList.add('on');
         screenCtrl.querySelector('span').textContent = 'Sharing';
         screenBanner.classList.add('show');
-        ss.getVideoTracks()[0].addEventListener('ended', () => {
+        senderReplacement.addEventListener('ended', async () => {
             sharing = false;
             screenCtrl.classList.remove('on');
             screenCtrl.querySelector('span').textContent = 'Share';
             screenBanner.classList.remove('show');
-            localVideo.style.display = 'none';
-            camOff.style.display = 'flex';
+            const camVid2 = localStream && localStream.getVideoTracks()[0];
+            Object.values(peers).forEach(pc => {
+                const vs = getOutboundVideoSender(pc);
+                if (vs && camVid2) vs.replaceTrack(camVid2).catch(() => {});
+            });
+            if (localStream && camVid2) {
+                localVideo.srcObject = localStream;
+                localVideo.style.display = camOn ? 'block' : 'none';
+                camOff.style.display = camOn ? 'none' : 'flex';
+            } else {
+                localVideo.style.display = 'none';
+                camOff.style.display = 'flex';
+            }
         });
         toast('Screen sharing started');
     } catch(e) { toast('Screen share cancelled'); }

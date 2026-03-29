@@ -35,14 +35,14 @@
         /* VIDEO COL */
         .vcol{display:flex;flex-direction:column;padding:14px 14px 0;gap:10px;overflow:hidden;background:var(--bg)}
 
-        /* STAGE */
-        .stage{flex:1;position:relative;background:var(--surface);border-radius:var(--r);border:1px solid var(--border);overflow:hidden;display:flex;align-items:center;justify-content:center}
-        .stage::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(99,102,241,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,.04) 1px,transparent 1px);background-size:28px 28px;pointer-events:none}
+        /* STAGE — children must stack; flex row placed video + waiting side‑by‑side and hid the stream */
+        .stage{flex:1;position:relative;background:var(--surface);border-radius:var(--r);border:1px solid var(--border);overflow:hidden;min-height:220px}
+        .stage::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(99,102,241,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,.04) 1px,transparent 1px);background-size:28px 28px;pointer-events:none;z-index:0}
 
-        #remoteVideo{width:100%;height:100%;object-fit:contain;display:none;border-radius:var(--r)}
+        #remoteVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:none;border-radius:var(--r);z-index:1;background:#000}
 
         /* WAITING STATE */
-        .waiting{display:flex;flex-direction:column;align-items:center;gap:14px;z-index:2;text-align:center}
+        .waiting{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:2;text-align:center;padding:16px;background:rgba(15,23,36,.35)}
         .waiting-icon{width:88px;height:88px;border-radius:50%;background:rgba(99,102,241,.1);border:2px dashed rgba(99,102,241,.25);display:flex;align-items:center;justify-content:center;font-size:34px;color:var(--accent);animation:float 3s ease-in-out infinite}
         @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
         .waiting h2{font-family:'Syne',sans-serif;font-size:18px;font-weight:700}
@@ -55,7 +55,7 @@
         .screen-banner.show{display:flex}
         .instructor-tag{position:absolute;bottom:14px;left:14px;background:rgba(0,0,0,.65);backdrop-filter:blur(6px);border-radius:var(--rsm);padding:6px 12px;font-size:12px;font-weight:600;display:none;align-items:center;gap:7px}
         .instructor-tag.show{display:flex}
-        .self-preview{position:absolute;bottom:14px;right:14px;width:150px;height:94px;background:var(--s2);border-radius:8px;border:2px solid var(--border);overflow:hidden;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;font-size:11px;color:var(--muted)}
+        .self-preview{position:absolute;bottom:14px;right:14px;width:150px;height:94px;background:var(--s2);border-radius:8px;border:2px solid var(--border);overflow:hidden;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;font-size:11px;color:var(--muted);z-index:6}
         #localPreview{width:100%;height:100%;object-fit:cover;display:none}
         .fs-btn{position:absolute;top:12px;right:12px;background:rgba(0,0,0,.5);border:1px solid var(--border);color:var(--text);border-radius:var(--rsm);width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;z-index:5;transition:background .15s}
         .fs-btn:hover{background:rgba(0,0,0,.8)}
@@ -166,7 +166,8 @@
             </div>
 
             {{-- Remote stream --}}
-            <video id="remoteVideo" autoplay playsinline></video>
+            {{-- muted + JS volume: unblocks autoplay; audio follows vol slider (muted only at 0) --}}
+            <video id="remoteVideo" autoplay playsinline muted></video>
 
             {{-- Waiting state --}}
             <div class="waiting" id="waitingState" style="display:none">
@@ -276,6 +277,8 @@ const ICE_SERVERS = { iceServers: [
 // ═══════════════════════════════════════════════════════════
 let pc          = null;
 let localStream = null;
+/** Single stream for all instructor tracks — never assign e.streams[0] per ontrack or a later audio-only stream replaces video (black screen). */
+let remoteInstructorStream = null;
 let micOn       = false;
 let camOn       = false;
 let sharing     = false;
@@ -287,6 +290,76 @@ let lastChatTS  = '';
 let chatUnread  = 0;
 let secs        = 0;
 let pendingIceCandidates = [];
+const handledSignalIds = new Set();
+
+/**
+ * Poll queue can contain many obsolete offers (old renegotiation). Applying them in order mixes ICE
+ * ufrags → failed. Only the newest offer in this batch counts; drop ICE until after that offer.
+ */
+async function dispatchPolledSignals(raw) {
+    if (!raw || raw.length === 0) return;
+    const sorted = raw.slice().sort(function (a, b) { return (a.id || 0) - (b.id || 0); });
+    const offerIds = sorted.filter(function (s) { return s.type === 'offer' && s.id != null; }).map(function (s) { return s.id; });
+    const maxOfferId = offerIds.length ? Math.max.apply(null, offerIds) : null;
+    let pastWinningOffer = maxOfferId == null;
+
+    for (let i = 0; i < sorted.length; i++) {
+        const sig = sorted[i];
+        if (sig.type === 'chat') {
+            await handleSignal(sig);
+            continue;
+        }
+        if (sig.type === 'offer' && maxOfferId != null && sig.id !== maxOfferId) {
+            if (sig.id != null) handledSignalIds.add(sig.id);
+            continue;
+        }
+        if (sig.type === 'offer' && maxOfferId != null && sig.id === maxOfferId) {
+            pendingIceCandidates = [];
+            await handleSignal(sig);
+            pastWinningOffer = true;
+            continue;
+        }
+        if (sig.type === 'ice' && maxOfferId != null && !pastWinningOffer) {
+            continue;
+        }
+        await handleSignal(sig);
+    }
+}
+
+function postWebRtcResync() {
+    console.log('🔁 Requesting host WebRTC resync (fresh offer/ICE)');
+    return fetch('/live-signaling/' + ROOM_ID + '/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
+        body: JSON.stringify({
+            from_peer: SESSION_ID,
+            to_peer: 'teacher',
+            type: 'webrtc_resync',
+            payload: { name: SELF_NAME }
+        })
+    }).catch(console.warn);
+}
+
+function sanitizeRemoteOfferSdp(raw) {
+    if (!raw || typeof raw !== 'string') return raw;
+    // Literal "\n" from double-encoded JSON
+    let s = raw.replace(/^\uFEFF/, '').replace(/\\n/g, '\n').replace(/\\r\\n/g, '\n');
+    const lines = s.split(/\r?\n/);
+    const out = [];
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].replace(/\r$/, '');
+        const t = line.trim();
+        // Only drop Plan-B SSRC lines (malformed msid after storage). Do not strip rtpmap / fmtp / candidate.
+        if (t.startsWith('a=ssrc-group:')) continue;
+        if (t.startsWith('a=ssrc:')) continue;
+        out.push(line);
+    }
+    let sdp = out.join('\r\n');
+    if (sdp.length > 0 && !sdp.endsWith('\r\n')) {
+        sdp += '\r\n';
+    }
+    return sdp;
+}
 
 // ═══════════════════════════════════════════════════════════
 // TIMER
@@ -325,56 +398,44 @@ let lastSignalId = 0;
 async function joinRoom() {
     try {
         console.log('🚪 Joining room:', ROOM_ID, 'sessionId:', SESSION_ID);
-        // Start polling immediately instead of separate join endpoint
-        const res = await fetch(`/live-signaling/${ROOM_ID}/poll?peer=${SESSION_ID}&since=0`, {
-            headers: { 'X-CSRF-TOKEN': CSRF }
-        });
-        if (res.ok) {
-            const result = await res.json();
-            console.log('✅ Joined room:', result);
-            document.getElementById('connOverlay').style.display = 'none';
-            if (!connected) document.getElementById('waitingState').style.display = 'flex';
-            
-            // BUG 1 FIX: Send join signal to announce presence to teacher
-            console.log('📤 Student sending join signal to teacher, from_peer:', SESSION_ID, 'to_peer: teacher');
-            try {
-                const joinResponse = await fetch(`/live-signaling/${ROOM_ID}/send`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
-                    body: JSON.stringify({
-                        from_peer: SESSION_ID,
-                        to_peer: 'teacher',
-                        type: 'join',
-                        payload: {
-                            sessionId: SESSION_ID,
-                            name: SELF_NAME
-                        }
-                    })
-                });
-                if (!joinResponse.ok) {
-                    console.error('❌ Join signal failed:', joinResponse.status, joinResponse.statusText);
-                } else {
-                    console.log('✅ Join signal sent successfully');
-                }
-            } catch(e) {
-                console.error('❌ Join signal error:', e);
-            }
-            
-            // Also send viewer_ready signal for compatibility
-            console.log('📤 Student sending viewer_ready to teacher, from_peer:', SESSION_ID, 'to_peer: teacher');
-            fetch(`/live-signaling/${ROOM_ID}/send`, {
+        document.getElementById('connOverlay').style.display = 'none';
+        if (!connected) document.getElementById('waitingState').style.display = 'flex';
+
+        console.log('📤 Student sending join signal to teacher, from_peer:', SESSION_ID, 'to_peer: teacher');
+        try {
+            const joinResponse = await fetch(`/live-signaling/${ROOM_ID}/send`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
                 body: JSON.stringify({
                     from_peer: SESSION_ID,
                     to_peer: 'teacher',
-                    type: 'viewer_ready',
-                    payload: { name: SELF_NAME }
+                    type: 'join',
+                    payload: {
+                        sessionId: SESSION_ID,
+                        name: SELF_NAME
+                    }
                 })
-            }).catch(console.warn);
-        } else {
-            console.error('❌ Join failed:', res.status);
+            });
+            if (!joinResponse.ok) {
+                console.error('❌ Join signal failed:', joinResponse.status, joinResponse.statusText);
+            } else {
+                console.log('✅ Join signal sent successfully');
+            }
+        } catch(e) {
+            console.error('❌ Join signal error:', e);
         }
+
+        console.log('📤 Student sending viewer_ready to teacher, from_peer:', SESSION_ID, 'to_peer: teacher');
+        fetch(`/live-signaling/${ROOM_ID}/send`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
+            body: JSON.stringify({
+                from_peer: SESSION_ID,
+                to_peer: 'teacher',
+                type: 'viewer_ready',
+                payload: { name: SELF_NAME }
+            })
+        }).catch(console.warn);
     } catch(e) {
         console.error('❌ Join error:', e);
     }
@@ -386,31 +447,80 @@ async function joinRoom() {
 function createPC() {
     if (pc) { pc.close(); }
     console.log('🔧 Creating peer connection');
+    remoteInstructorStream = new MediaStream();
+    const remoteVideo = document.getElementById('remoteVideo');
+    remoteVideo.srcObject = remoteInstructorStream;
     pc = new RTCPeerConnection(ICE_SERVERS);
 
-    pc.ontrack = (e) => {
-        console.log('🎥 Received track:', e.track.kind);
+    function showRemotePlaying() {
         const remoteVideo = document.getElementById('remoteVideo');
-        if (e.streams && e.streams[0]) {
-            remoteVideo.srcObject = e.streams[0];
-        } else {
-            if (!remoteVideo.srcObject) remoteVideo.srcObject = new MediaStream();
-            remoteVideo.srcObject.addTrack(e.track);
-        }
         remoteVideo.style.display = 'block';
         document.getElementById('waitingState').style.display = 'none';
-        document.getElementById('connOverlay').style.display  = 'none';
+        document.getElementById('connOverlay').style.display = 'none';
         document.getElementById('instrTag').classList.add('show');
         document.getElementById('qualChip').style.display = 'flex';
         connected = true;
-        console.log('✅ Video stream active!');
+        const v = parseFloat(document.getElementById('volSlider').value);
+        remoteVideo.volume = v;
+        remoteVideo.muted = true;
+        remoteVideo.play().then(function () {
+            if (v > 0) remoteVideo.muted = false;
+        }).catch(function () {
+            remoteVideo.play().catch(function () {});
+        });
+    }
 
-        if (e.track.kind === 'video') {
-            e.track.addEventListener('unmute', () => {
-                setTimeout(() => {
-                    const s = e.track.getSettings();
+    pc.ontrack = (e) => {
+        const track = e.track;
+        console.log('🎥 Received track:', track.kind, 'muted=', track.muted);
+        const rv = document.getElementById('remoteVideo');
+
+        // Replace prior track of same kind (screen share / camera swap) so we do not keep a dead video track on top.
+        if (track.kind === 'video') {
+            remoteInstructorStream.getVideoTracks().forEach(function (oldT) {
+                if (oldT.id !== track.id) {
+                    remoteInstructorStream.removeTrack(oldT);
+                }
+            });
+        } else if (track.kind === 'audio') {
+            remoteInstructorStream.getAudioTracks().forEach(function (oldT) {
+                if (oldT.id !== track.id) {
+                    remoteInstructorStream.removeTrack(oldT);
+                }
+            });
+        }
+
+        if (!remoteInstructorStream.getTracks().some(function (t) { return t.id === track.id; })) {
+            remoteInstructorStream.addTrack(track);
+        }
+        rv.srcObject = remoteInstructorStream;
+
+        track.addEventListener('ended', function () {
+            try {
+                remoteInstructorStream.removeTrack(track);
+            } catch (_) {}
+            if (track.kind === 'video') {
+                document.getElementById('screenBanner').classList.remove('show');
+            }
+        });
+
+        showRemotePlaying();
+        if (track.muted) {
+            track.addEventListener('unmute', function () { showRemotePlaying(); }, { once: true });
+        }
+        console.log('✅ Remote track attached');
+
+        if (track.kind === 'video') {
+            const checkScreenShare = function () {
+                try {
+                    const s = track.getSettings();
                     if (s.width > 1400) document.getElementById('screenBanner').classList.add('show');
-                }, 500);
+                    else document.getElementById('screenBanner').classList.remove('show');
+                } catch (_) {}
+            };
+            track.addEventListener('unmute', function () {
+                showRemotePlaying();
+                setTimeout(checkScreenShare, 400);
             });
         }
     };
@@ -471,7 +581,7 @@ async function pollSignals() {
     try {
         console.log('📨 Student polling with peer:', SESSION_ID, 'since:', lastSignalId);
         const r = await fetch(
-            `/live-signaling/${ROOM_ID}/poll?peer=${SESSION_ID}&since=${lastSignalId}`,
+            `/live-signaling/${ROOM_ID}/poll?peer=${encodeURIComponent(SESSION_ID)}&since=${lastSignalId}`,
             { headers: { 'X-CSRF-TOKEN': CSRF } }
         );
         if (!r.ok) { console.error('Poll failed:', r.status); return; }
@@ -495,29 +605,34 @@ async function pollSignals() {
         }
         
         if (signals.length) console.log('📨 Student received', signals.length, 'signals');
-        for (const sig of signals) await handleSignal(sig);
+        await dispatchPolledSignals(signals);
     } catch(e) {
         console.error('Poll error:', e);
     }
 }
 
 async function handleSignal(sig) {
-    console.log('🎯 Handling signal:', sig.type);
+    if (sig.id != null && handledSignalIds.has(sig.id)) {
+        return;
+    }
+
+    console.log('🎯 Handling signal:', sig.type, sig.id != null ? '#' + sig.id : '');
 
     if (sig.type === 'chat') {
         appendChat(sig.payload?.sender, sig.payload?.message, false, sig.from_peer === 'teacher');
+        if (sig.id != null) handledSignalIds.add(sig.id);
         return;
     }
 
     if (!pc) pc = createPC();
 
     if (sig.type === 'offer') {
-        console.log('📥 Received offer');
+        console.log('📥 Received offer (signalingState=', pc.signalingState, ')');
         if (!sig.payload?.sdp || (!sig.payload.sdp.includes('m=video') && !sig.payload.sdp.includes('m=audio'))) {
             console.error('❌ Invalid SDP'); return;
         }
 
-        // Recreate peer if not in stable state
+        // Keep existing PC when stable (renegotiation after host replaces screen / camera).
         if (pc.signalingState !== 'stable') {
             console.warn('⚠️ Recreating peer — was in state:', pc.signalingState);
             pc.close();
@@ -525,20 +640,18 @@ async function handleSignal(sig) {
             pendingIceCandidates = [];
         }
 
-        // Strip ssrc-group:FID lines that cause parser errors on some browsers
-        const sdp = sig.payload.sdp.split('\n').filter(l => !l.startsWith('a=ssrc-group:FID')).join('\n');
+        const sdp = sanitizeRemoteOfferSdp(sig.payload.sdp);
 
-        try {
+        async function applyOfferAnswer() {
             await pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp }));
             console.log('✅ Remote description set');
+            if (sig.id != null) handledSignalIds.add(sig.id);
 
-            // Drain queued ICE candidates
             for (const c of pendingIceCandidates) {
                 await pc.addIceCandidate(new RTCIceCandidate(c)).catch(() => {});
             }
             pendingIceCandidates = [];
 
-            // Add any local tracks (mic/cam already on)
             if (localStream) {
                 localStream.getTracks().forEach(t => {
                     if (!pc.getSenders().find(s => s.track === t)) pc.addTrack(t, localStream);
@@ -549,8 +662,26 @@ async function handleSignal(sig) {
             await pc.setLocalDescription(answer);
             postSignal({ type: 'answer', sdp: answer.sdp, role: 'client', sessionId: SESSION_ID });
             console.log('📤 Answer sent');
-        } catch(e) {
+        }
+
+        try {
+            await applyOfferAnswer();
+        } catch (e) {
             console.error('❌ Offer handling failed:', e.name, e.message);
+            const msg = (e && e.message) ? String(e.message) : '';
+            const needsHostResync =
+                (/m-line|order.*previous offer|doesn't match/i.test(msg) &&
+                    (e.name === 'InvalidAccessError' || e.name === 'OperationError')) ||
+                e.name === 'InvalidStateError';
+            if (needsHostResync) {
+                try {
+                    pc.close();
+                } catch (_) {}
+                pc = createPC();
+                pendingIceCandidates = [];
+                if (sig.id != null) handledSignalIds.add(sig.id);
+                postWebRtcResync();
+            }
         }
 
     } else if (sig.type === 'ice' && sig.payload?.candidate) {
@@ -569,21 +700,11 @@ function reconnect() {
     console.log('🔄 Reconnecting…');
     pendingIceCandidates = [];
     createPC();
-    // Re-register with server so teacher sends a new offer
-    fetch(`/live-signaling/${ROOM_ID}/send`, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
-        body:    JSON.stringify({
-            from_peer: SESSION_ID,
-            to_peer: 'teacher',
-            type: 'viewer_ready',
-            payload: { name: SELF_NAME }
-        }),
-    }).catch(console.warn);
+    postWebRtcResync();
 }
 
-// Start polling, then join
-setInterval(pollSignals, 2000);
+// Start polling, then join (1s = lower latency than 2s for HTTP signaling)
+setInterval(pollSignals, 1000);
 joinRoom().then(() => pollSignals());
 
 // ═══════════════════════════════════════════════════════════
@@ -595,7 +716,7 @@ let lastChatSignalId = 0;
 // Poll for chat messages through the signaling endpoint
 async function pollChat() {
     try {
-        const r = await fetch(`/live-signaling/${ROOM_ID}/poll?peer=${SESSION_ID}&since=${lastChatSignalId}`, {
+        const r = await fetch(`/live-signaling/${ROOM_ID}/poll?peer=${encodeURIComponent(SESSION_ID)}&since=${lastChatSignalId}`, {
             headers: { 'X-CSRF-TOKEN': CSRF }
         });
         if (!r.ok) return;
@@ -774,8 +895,10 @@ document.getElementById('raiseCtrl').addEventListener('click', function() {
 // VOLUME
 // ═══════════════════════════════════════════════════════════
 document.getElementById('volSlider').addEventListener('input', function() {
-    document.getElementById('remoteVideo').volume = this.value;
+    const rv = document.getElementById('remoteVideo');
     const v = parseFloat(this.value);
+    rv.volume = v;
+    rv.muted = v === 0;
     document.getElementById('volIcon').className =
         v === 0 ? 'fas fa-volume-mute' : v < 0.5 ? 'fas fa-volume-down' : 'fas fa-volume-up';
 });
