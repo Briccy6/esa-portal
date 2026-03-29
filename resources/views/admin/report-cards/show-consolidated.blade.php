@@ -4,11 +4,17 @@
 @php
     $first = $reportCards->first();
     $overallAvg = (float) $reportCards->avg('average_marks');
+    $terms = $assessmentMatrix['terms'];
+    $mRows = $assessmentMatrix['rows'];
+    $totalsByTerm = $assessmentMatrix['totals_by_term'];
+    $positionByTerm = $assessmentMatrix['position_by_term'];
+    $averageByTerm = $assessmentMatrix['average_by_term'];
+    $termCount = count($terms);
 @endphp
 <div class="container-fluid px-4 py-4">
     <div class="d-flex flex-wrap justify-content-between align-items-start mb-4">
         <div>
-            <h1 class="h4 mb-1">Report card — all terms</h1>
+            <h1 class="h4 mb-1">Report card — all terms (one table)</h1>
             <p class="text-muted mb-0 small">
                 {{ $first->student->full_name }} · {{ $first->course->course_name }} · {{ $first->academicYear->year }}
                 · Overall avg <strong>{{ number_format($overallAvg, 1) }}%</strong>
@@ -19,7 +25,7 @@
                 <i class="fas fa-arrow-left"></i> Back
             </a>
             <a href="{{ route('admin.report-cards.consolidated-print', ['student_id' => $first->student_id, 'course_id' => $first->course_id, 'academic_year_id' => $first->academic_year_id]) }}" class="btn btn-primary btn-sm" target="_blank" rel="noopener">
-                <i class="fas fa-print"></i> Print all terms
+                <i class="fas fa-print"></i> Print PDF
             </a>
         </div>
     </div>
@@ -31,73 +37,87 @@
         </div>
     @endif
 
-    <div class="row mb-3">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header py-2"><strong>Student</strong></div>
-                <div class="card-body py-2 small">
-                    <div><strong>Name:</strong> {{ $first->student->full_name }}</div>
-                    <div><strong>Reg:</strong> {{ $first->student->reg_number ?? '—' }}</div>
-                </div>
-            </div>
+    <div class="card mb-4">
+        <div class="card-header py-2 d-flex flex-wrap justify-content-between align-items-center">
+            <strong>Subject performance by term</strong>
+            <span class="small text-muted">Each term has TEST, EXAM, and TOT (subject total that term)</span>
         </div>
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header py-2"><strong>Terms included</strong></div>
-                <div class="card-body py-2">
-                    @foreach($reportCards as $rc)
-                        <span class="badge badge-secondary mr-1 mb-1">{{ $rc->term?->name ?? '—' }}</span>
-                    @endforeach
-                </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered mb-0 text-center" style="font-size: 0.85rem;">
+                    <thead class="thead-light">
+                        <tr>
+                            <th colspan="3" class="text-left">Module / competence / credits</th>
+                            @foreach($terms as $t)
+                                <th colspan="3">{{ $t['name'] }}</th>
+                            @endforeach
+                        </tr>
+                        <tr>
+                            <th class="text-left">Module</th>
+                            <th class="text-left">Competence</th>
+                            <th>Cr</th>
+                            @foreach($terms as $t)
+                                <th>Test</th>
+                                <th>Exam</th>
+                                <th>Tot</th>
+                            @endforeach
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($mRows as $row)
+                            <tr>
+                                <td class="text-left">{{ Str::limit($row['module_code'], 32) }}</td>
+                                <td class="text-left">{{ Str::limit($row['competence_title'], 36) }}</td>
+                                <td>{{ $row['credits'] }}</td>
+                                @foreach($terms as $t)
+                                    @php $cell = $row['by_term_id'][$t['id']] ?? ['test' => '—', 'exam' => '—', 'total' => '—']; @endphp
+                                    <td>{{ $cell['test'] }}</td>
+                                    <td>{{ $cell['exam'] }}</td>
+                                    <td><strong>{{ $cell['total'] }}</strong></td>
+                                @endforeach
+                            </tr>
+                        @empty
+                            <tr><td colspan="{{ 3 + 3 * $termCount }}" class="text-muted">No subjects</td></tr>
+                        @endforelse
+                        @if(count($mRows) > 0)
+                            <tr class="table-secondary font-weight-bold">
+                                <td colspan="3" class="text-left">TOTAL</td>
+                                @foreach($terms as $t)
+                                    @php $tot = $totalsByTerm[$t['id']] ?? null; @endphp
+                                    <td>{{ $tot['test_sum'] ?? '—' }}</td>
+                                    <td>{{ $tot['exam_sum'] ?? '—' }}</td>
+                                    <td>{{ $tot['total_sum'] ?? '—' }}</td>
+                                @endforeach
+                            </tr>
+                            <tr class="table-warning small">
+                                <td colspan="3" class="text-left">Position</td>
+                                @foreach($terms as $t)
+                                    <td colspan="3">{{ $positionByTerm[$t['id']] ?? '—' }}</td>
+                                @endforeach
+                            </tr>
+                            <tr class="table-light small">
+                                <td colspan="3" class="text-left">Average %</td>
+                                @foreach($terms as $t)
+                                    @php $avg = $averageByTerm[$t['id']] ?? null; @endphp
+                                    <td colspan="3">{{ $avg !== null ? number_format((float) $avg, 1).'%' : '—' }}</td>
+                                @endforeach
+                            </tr>
+                        @endif
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 
-    @foreach($reportCards as $reportCard)
-        <div class="card mb-4">
-            <div class="card-header d-flex justify-content-between align-items-center py-2">
-                <span><i class="fas fa-calendar-alt mr-1"></i> <strong>{{ $reportCard->term?->name ?? 'Term' }}</strong></span>
-                <div>
-                    <span class="badge badge-{{ $reportCard->status === 'approved' ? 'success' : ($reportCard->status === 'printed' ? 'info' : 'warning') }}">
-                        {{ ucfirst($reportCard->status) }}
-                    </span>
-                    <a href="{{ route('admin.report-cards.show', $reportCard) }}" class="btn btn-sm btn-outline-primary ml-2">Single term</a>
-                </div>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-sm table-bordered mb-0">
-                        <thead class="thead-light">
-                            <tr>
-                                <th>Subject</th>
-                                <th class="text-center">Exam</th>
-                                <th class="text-center">Test avg</th>
-                                <th class="text-center">Total</th>
-                                <th class="text-center">Grade</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($reportCard->subjects as $subject)
-                                <tr>
-                                    <td>{{ $subject->subject_name }}</td>
-                                    <td class="text-center">{{ number_format($subject->exam_mark, 2) }}</td>
-                                    <td class="text-center">{{ number_format($subject->test_average, 2) }}</td>
-                                    <td class="text-center"><strong>{{ number_format($subject->total_mark, 2) }}</strong></td>
-                                    <td class="text-center">{{ $subject->grade }}</td>
-                                </tr>
-                            @empty
-                                <tr><td colspan="5" class="text-center text-muted">No subjects</td></tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-                <div class="p-3 border-top bg-light small">
-                    <strong>Term average:</strong> {{ number_format($reportCard->average_marks ?? 0, 2) }}%
-                    · <strong>Grade:</strong> {{ $reportCard->grade }}
-                    · <strong>Position:</strong> {{ $reportCard->position_display }}
-                </div>
-            </div>
+    <div class="card">
+        <div class="card-header py-2"><strong>Open a single term</strong></div>
+        <div class="card-body py-2 small">
+            @foreach($reportCards as $rc)
+                <a href="{{ route('admin.report-cards.show', $rc) }}" class="btn btn-sm btn-outline-primary mr-1 mb-1">
+                    {{ $rc->term?->name ?? 'Term' }} · {{ ucfirst($rc->status) }}
+                </a>
+            @endforeach
         </div>
-    @endforeach
+    </div>
 </div>
 @endsection

@@ -33,8 +33,11 @@
             <a href="{{ route('admin.report-cards.index') }}" class="rc-btn rc-btn--ghost">
                 <i class="fas fa-arrow-left"></i> Back to list
             </a>
-            <a href="{{ route('admin.report-cards.print', $reportCard) }}" class="rc-btn rc-btn--primary" target="_blank" rel="noopener">
-                <i class="fas fa-print"></i> Print
+            <a href="{{ route('admin.report-cards.consolidated-print', ['student_id' => $reportCard->student_id, 'course_id' => $reportCard->course_id, 'academic_year_id' => $reportCard->academic_year_id]) }}" class="rc-btn rc-btn--primary" target="_blank" rel="noopener">
+                <i class="fas fa-print"></i> Print (all terms)
+            </a>
+            <a href="{{ route('admin.report-cards.print', $reportCard) }}" class="rc-btn rc-btn--ghost" target="_blank" rel="noopener" title="PDF for this term only">
+                <i class="fas fa-file-alt"></i> This term only
             </a>
         </div>
     </div>
@@ -323,8 +326,11 @@
                 <i class="fas fa-check"></i> Approve
             </button>
         </form>
-        <a href="{{ route('admin.report-cards.print', $reportCard) }}" class="rc-btn rc-btn--primary" target="_blank" rel="noopener">
-            <i class="fas fa-print"></i> Print
+        <a href="{{ route('admin.report-cards.consolidated-print', ['student_id' => $reportCard->student_id, 'course_id' => $reportCard->course_id, 'academic_year_id' => $reportCard->academic_year_id]) }}" class="rc-btn rc-btn--primary" target="_blank" rel="noopener">
+            <i class="fas fa-print"></i> Print (all terms)
+        </a>
+        <a href="{{ route('admin.report-cards.print', $reportCard) }}" class="rc-btn rc-btn--ghost" target="_blank" rel="noopener" title="This term only">
+            <i class="fas fa-file-alt"></i> This term only
         </a>
     </div>
 </div>

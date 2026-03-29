@@ -1,94 +1,192 @@
+@php
+    $first = $reportCards->first();
+    $terms = $assessmentMatrix['terms'];
+    $mRows = $assessmentMatrix['rows'];
+    $totalsByTerm = $assessmentMatrix['totals_by_term'];
+    $positionByTerm = $assessmentMatrix['position_by_term'];
+    $averageByTerm = $assessmentMatrix['average_by_term'];
+    $termCount = count($terms);
+    $hdrSchoolName = optional($schoolInfo)->school_name ?: 'SCHOOL NAME';
+    $hdrPhone = optional($schoolInfo)->phone ?: 'School Phone';
+    $hdrEmail = optional($schoolInfo)->email ?: 'school@email.com';
+    $hdrWebsite = optional($schoolInfo)->website ?: 'www.schoolwebsite.rw';
+    $hasLogo = $schoolInfo && !empty($schoolInfo->logo_url);
+    $termNames = collect($terms)->pluck('name')->implode(', ');
+@endphp
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trainee Assessment — {{ $reportCards->first()->student->full_name }} — all terms</title>
+    <title>Assessment — {{ $first->student->full_name }} — all terms</title>
     <style>
-        @page { size: A4; margin: 0.5cm; }
-        body {
-            font-family: Arial, sans-serif;
-            font-size: 12px;
-            line-height: 1.4;
-            color: #333;
-            background: white;
-            margin: 0;
-            padding: 0;
-        }
-        .print-area { border: 1px solid black; }
-        .print-header-table {
-            width: 100%;
-            border-collapse: collapse;
-            border-bottom: 1px solid #000;
-        }
-        .print-header-table td {
-            vertical-align: middle;
-            padding: 10px 8px;
-        }
-        .print-header-logo { width: 22%; text-align: center; border-right: 1px solid #000; }
-        .print-header-logo--right { border-right: none; border-left: 1px solid #000; }
-        .print-header-center { width: 56%; text-align: center; padding: 12px 14px !important; }
-        .print-header-logo img, .school-logo-img {
-            max-height: 88px; max-width: 110px; width: auto; height: auto; object-fit: contain;
-        }
-        .print-logo-placeholder {
-            width: 88px; height: 88px; margin: 0 auto; background: #ecf0f1;
-            border: 2px dashed #bdc3c7; text-align: center; font-size: 8px; color: #7f8c8d;
-            font-weight: bold; line-height: 84px;
-        }
-        .hdr-line { font-size: 10px; line-height: 1.45; margin: 0 0 3px 0; }
+        @page { size: A4 landscape; margin: 8mm; }
+        html, body { margin: 0; padding: 0; font-family: DejaVu Sans, Arial, sans-serif; font-size: 7px; color: #111; }
+        .print-wrap { width: 100%; box-sizing: border-box; }
+        .print-header-table { width: 100%; border-collapse: collapse; border-bottom: 1px solid #000; margin-bottom: 4px; }
+        .print-header-table td { vertical-align: middle; padding: 6px; font-size: 8px; }
+        .print-header-logo { width: 18%; text-align: center; border-right: 1px solid #000; }
+        .print-header-logo--right { border-left: 1px solid #000; border-right: none; }
+        .print-header-center { width: 64%; text-align: center; }
+        .school-logo-img { max-height: 70px; max-width: 90px; object-fit: contain; }
+        .print-logo-placeholder { width: 70px; height: 70px; margin: 0 auto; background: #ecf0f1; border: 1px dashed #999; font-size: 7px; line-height: 68px; text-align: center; color: #888; }
+        .hdr-line { margin: 0 0 2px 0; }
         .hdr-line .lbl { font-weight: bold; }
-        .hdr-school-name { font-size: 12px; font-weight: bold; margin: 10px 0 6px 0; letter-spacing: 0.3px; }
-        .hdr-contact { font-size: 9px; line-height: 1.5; margin: 2px 0; }
-        .title-section {
-            background: #f0f0f0; border-bottom: 1px solid black; padding: 4px; text-align: center;
-        }
-        .title-section h2 { font-size: 12px; font-weight: bold; margin: 0; }
-        .qualification-section { border-bottom: 1px solid black; }
-        .qualification-row {
-            display: grid; grid-template-columns: 1fr 2fr 1fr; font-size: 10px;
-        }
-        .qualification-cell { padding: 4px; }
-        .qualification-cell:not(:last-child) { border-right: 1px solid black; }
-        .legend-section { border-bottom: 1px solid black; padding: 4px; font-size: 8px; }
-        .assessment-table {
-            width: 100%; border-collapse: collapse; font-size: 8px;
-        }
-        .assessment-table th, .assessment-table td {
-            border: 1px solid black; padding: 2px; text-align: center;
-        }
-        .assessment-table .text-left { text-align: left; }
-        .assessment-table .bg-gray { background: #f0f0f0; }
-        .assessment-table .bg-blue { background: #e6f3ff; }
-        .assessment-table .bg-yellow { background: #ffffe6; }
-        .assessment-table .font-bold { font-weight: bold; }
-        .deliberation-table { width: 100%; border-collapse: collapse; font-size: 8px; margin-top: 1px; }
-        .deliberation-table th, .deliberation-table td {
-            border: 1px solid black; padding: 2px; text-align: center;
-        }
-        .deliberation-table .text-left { text-align: left; }
-        .deliberation-table .bg-gray { background: #f0f0f0; }
-        .footer {
-            background: #f0f0f0; padding: 2px; text-align: right; font-size: 7px; border-top: 1px solid black;
-        }
-        .checkbox { width: 16px; height: 16px; }
-        body.print-consolidated .print-area {
-            position: relative !important;
-            left: auto !important;
-            top: auto !important;
-            width: auto !important;
-        }
-        .print-sheet { page-break-after: always; }
-        .print-sheet:last-child { page-break-after: auto; }
+        .hdr-school-name { font-size: 10px; font-weight: bold; margin: 6px 0; }
+        .hdr-contact { font-size: 7px; }
+        .title-section { background: #f0f0f0; border: 1px solid #000; border-bottom: none; padding: 4px; text-align: center; }
+        .title-section h2 { font-size: 10px; margin: 0; }
+        .legend-section { border: 1px solid #000; border-top: none; padding: 3px 6px; font-size: 6px; margin-bottom: 0; }
+        .matrix-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 6.5px; }
+        .matrix-table th, .matrix-table td { border: 1px solid #000; padding: 2px 3px; text-align: center; vertical-align: middle; word-wrap: break-word; }
+        .matrix-table .text-left { text-align: left; }
+        .matrix-table .bg-gray { background: #f0f0f0; font-weight: bold; }
+        .matrix-table .bg-blue { background: #e6f3ff; }
+        .matrix-table .bg-yellow { background: #ffffe6; }
+        .term-head { background: #e0e0e0; font-weight: bold; font-size: 6.5px; }
+        .sub-head { background: #f5f5f5; font-size: 6px; }
+        .footer { margin-top: 6px; font-size: 6px; text-align: right; color: #555; }
+        .deliberation-table { width: 100%; border-collapse: collapse; font-size: 6px; margin-top: 4px; }
+        .deliberation-table th, .deliberation-table td { border: 1px solid #000; padding: 2px; }
     </style>
 </head>
-<body class="print-consolidated">
-@foreach($reportCards as $reportCard)
-    <div class="print-sheet">
-        <div class="print-area">
-            @include('admin.report-cards.partials.print-assessment-inner', ['reportCard' => $reportCard, 'schoolInfo' => $schoolInfo])
-        </div>
+<body>
+<div class="print-wrap">
+    <table class="print-header-table" cellspacing="0">
+        <tr>
+            <td class="print-header-logo">
+                @if($hasLogo)
+                    <img src="{{ $schoolInfo->logo_url }}" alt="" class="school-logo-img">
+                @else
+                    <div class="print-logo-placeholder">LOGO</div>
+                @endif
+            </td>
+            <td class="print-header-center">
+                <div class="hdr-line"><span class="lbl">NAME:</span> {{ $first->student->full_name }}</div>
+                <div class="hdr-line"><span class="lbl">REG NO:</span> {{ $first->student->reg_number ?? 'N/A' }}</div>
+                <div class="hdr-line"><span class="lbl">CLASS:</span> {{ $first->course->course_name }}</div>
+                <div class="hdr-line"><span class="lbl">YEAR:</span> {{ $first->academicYear->year }}</div>
+                <div class="hdr-line"><span class="lbl">TERMS:</span> {{ $termNames }}</div>
+                <div class="hdr-school-name">{{ $hdrSchoolName }}</div>
+                <div class="hdr-contact"><span class="lbl">Phone:</span> {{ $hdrPhone }} &nbsp; <span class="lbl">E-mail:</span> {{ $hdrEmail }}</div>
+            </td>
+            <td class="print-header-logo print-header-logo--right">
+                @if($hasLogo)
+                    <img src="{{ $schoolInfo->logo_url }}" alt="" class="school-logo-img">
+                @else
+                    <div class="print-logo-placeholder">LOGO</div>
+                @endif
+            </td>
+        </tr>
+    </table>
+
+    <div class="title-section">
+        <h2>TRAINEE'S ASSESSMENT REPORT (ALL TERMS)</h2>
     </div>
-@endforeach
+    <div class="legend-section">
+        <strong>TEST</strong> = test average · <strong>EXAM</strong> = exam mark · <strong>TOT</strong> = total for the subject in that term
+    </div>
+
+    <table class="matrix-table">
+        <thead>
+            <tr class="bg-gray">
+                <th colspan="3" class="text-left">Module / Competence / Credits</th>
+                @foreach($terms as $t)
+                    <th colspan="3" class="term-head">{{ $t['name'] }}</th>
+                @endforeach
+            </tr>
+            <tr class="sub-head">
+                <th>Module</th>
+                <th>Competence</th>
+                <th>Cr</th>
+                @foreach($terms as $t)
+                    <th>TEST</th>
+                    <th>EXAM</th>
+                    <th>TOT</th>
+                @endforeach
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="bg-blue">
+                <td colspan="{{ 3 + 3 * $termCount }}" class="text-left font-bold" style="font-weight: bold;">Core competencies — specific</td>
+            </tr>
+            @forelse($mRows as $row)
+                <tr>
+                    <td class="text-left">{{ Str::limit($row['module_code'], 24) }}</td>
+                    <td class="text-left">{{ Str::limit($row['competence_title'], 28) }}</td>
+                    <td>{{ $row['credits'] }}</td>
+                    @foreach($terms as $t)
+                        @php $cell = $row['by_term_id'][$t['id']] ?? ['test' => '—', 'exam' => '—', 'total' => '—']; @endphp
+                        <td>{{ $cell['test'] }}</td>
+                        <td>{{ $cell['exam'] }}</td>
+                        <td style="font-weight: bold;">{{ $cell['total'] }}</td>
+                    @endforeach
+                </tr>
+            @empty
+                <tr>
+                    <td colspan="{{ 3 + 3 * $termCount }}" style="padding: 12px; color: #666;">No assessment data</td>
+                </tr>
+            @endforelse
+
+            @if(count($mRows) > 0)
+                <tr class="bg-white">
+                    <td colspan="{{ 3 + 3 * $termCount }}"></td>
+                </tr>
+                <tr class="bg-blue" style="font-weight: bold;">
+                    <td colspan="3" class="text-left">TOTAL</td>
+                    @foreach($terms as $t)
+                        @php $tot = $totalsByTerm[$t['id']] ?? null; @endphp
+                        <td>{{ $tot['test_sum'] ?? '—' }}</td>
+                        <td>{{ $tot['exam_sum'] ?? '—' }}</td>
+                        <td>{{ $tot['total_sum'] ?? '—' }}</td>
+                    @endforeach
+                </tr>
+                <tr class="bg-yellow" style="font-weight: bold;">
+                    <td colspan="3" class="text-left">POSITION</td>
+                    @foreach($terms as $t)
+                        <td colspan="3">{{ $positionByTerm[$t['id']] ?? '—' }}</td>
+                    @endforeach
+                </tr>
+                <tr class="bg-gray">
+                    <td colspan="3" class="text-left">Percentage %</td>
+                    @foreach($terms as $t)
+                        @php $avg = $averageByTerm[$t['id']] ?? null; @endphp
+                        <td colspan="3">{{ $avg !== null ? number_format((float) $avg, 1).'%' : '—' }}</td>
+                    @endforeach
+                </tr>
+            @endif
+        </tbody>
+    </table>
+
+    <table class="deliberation-table">
+        <thead>
+            <tr class="bg-gray">
+                <th class="text-left">Deliberation</th>
+                <th>Promotion</th>
+                <th>2nd Sitting</th>
+                <th>Re-assessment</th>
+                <th>Repeat</th>
+                <th>Dismissed</th>
+                <th>Manager / SIGNATURE / {{ date('Y') }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="footer">
+        @if($schoolInfo)
+            {{ $schoolInfo->school_name ?? '' }} — consolidated report (all terms)
+        @endif
+    </div>
+</div>
 </body>
 </html>

@@ -95,6 +95,102 @@ class ReportCardController extends Controller
             ->values();
     }
 
+    /**
+     * One logical table: subjects as rows; each term has TEST / EXAM / TOT columns.
+     *
+     * @return array{terms: array, rows: array, totals_by_term: array, position_by_term: array, average_by_term: array}
+     */
+    protected function buildConsolidatedAssessmentMatrix(Collection $reportCards): array
+    {
+        $terms = $reportCards->map(fn (ReportCard $rc) => [
+            'id' => (int) $rc->term_id,
+            'name' => $rc->term?->name ?? 'Term #'.$rc->term_id,
+            'report_card' => $rc,
+        ])->values()->all();
+
+        $rowMap = [];
+        foreach ($reportCards as $rc) {
+            foreach ($rc->subjects as $sub) {
+                $key = $sub->lesson_id ? 'l'.$sub->lesson_id : 'n'.md5((string) $sub->subject_name);
+                if (! isset($rowMap[$key])) {
+                    $rowMap[$key] = [
+                        'module_code' => $sub->subject_code ?? $sub->subject_name,
+                        'competence_title' => $sub->subject_name,
+                        'credits' => (int) ($sub->credits ?? 3),
+                        'sort' => (string) $sub->subject_name,
+                    ];
+                }
+            }
+        }
+        uasort($rowMap, fn ($a, $b) => strcmp($a['sort'], $b['sort']));
+
+        $rows = [];
+        foreach ($rowMap as $key => $meta) {
+            $byTermId = [];
+            foreach ($reportCards as $rc) {
+                $tid = (int) $rc->term_id;
+                $sub = $rc->subjects->first(function ($s) use ($key) {
+                    $k = $s->lesson_id ? 'l'.$s->lesson_id : 'n'.md5((string) $s->subject_name);
+
+                    return $k === $key;
+                });
+                if ($sub) {
+                    $byTermId[$tid] = [
+                        'test' => $this->formatMarkForMatrix($sub->test_average),
+                        'exam' => $this->formatMarkForMatrix($sub->exam_mark),
+                        'total' => $this->formatMarkForMatrix($sub->total_mark),
+                        'obs' => ($sub->grade === 'A' || $sub->grade === 'B' ? 'C' : 'NYC'),
+                    ];
+                } else {
+                    $byTermId[$tid] = [
+                        'test' => '—',
+                        'exam' => '—',
+                        'total' => '—',
+                        'obs' => '—',
+                    ];
+                }
+            }
+            $rows[] = [
+                'module_code' => $meta['module_code'],
+                'competence_title' => $meta['competence_title'],
+                'credits' => $meta['credits'],
+                'by_term_id' => $byTermId,
+            ];
+        }
+
+        $totalsByTerm = [];
+        $positionByTerm = [];
+        $averageByTerm = [];
+        foreach ($reportCards as $rc) {
+            $tid = (int) $rc->term_id;
+            $totalsByTerm[$tid] = [
+                'credits_sum' => (int) $rc->subjects->sum(fn ($s) => (int) ($s->credits ?? 3)),
+                'test_sum' => $this->formatMarkForMatrix($rc->subjects->sum('test_average')),
+                'exam_sum' => $this->formatMarkForMatrix($rc->subjects->sum('exam_mark')),
+                'total_sum' => $this->formatMarkForMatrix($rc->subjects->sum('total_mark')),
+            ];
+            $positionByTerm[$tid] = $rc->position_display;
+            $averageByTerm[$tid] = $rc->average_marks;
+        }
+
+        return [
+            'terms' => $terms,
+            'rows' => $rows,
+            'totals_by_term' => $totalsByTerm,
+            'position_by_term' => $positionByTerm,
+            'average_by_term' => $averageByTerm,
+        ];
+    }
+
+    protected function formatMarkForMatrix(mixed $value): string
+    {
+        if ($value === null || $value === '') {
+            return '—';
+        }
+
+        return number_format((float) $value, 1);
+    }
+
     public function showConsolidated(Request $request)
     {
         $reportCards = $this->consolidatedReportCards($request);
@@ -104,8 +200,9 @@ class ReportCardController extends Controller
         }
 
         $schoolInfo = SchoolInformation::getActive();
+        $assessmentMatrix = $this->buildConsolidatedAssessmentMatrix($reportCards);
 
-        return view('admin.report-cards.show-consolidated', compact('reportCards', 'schoolInfo'));
+        return view('admin.report-cards.show-consolidated', compact('reportCards', 'schoolInfo', 'assessmentMatrix'));
     }
 
     public function printConsolidated(Request $request)
@@ -117,15 +214,21 @@ class ReportCardController extends Controller
         }
 
         $schoolInfo = SchoolInformation::getActive();
+        $assessmentMatrix = $this->buildConsolidatedAssessmentMatrix($reportCards);
+
+        ini_set('memory_limit', '256M');
 
         $pdf = Pdf::loadView('admin.report-cards.print-consolidated', compact(
             'reportCards',
             'schoolInfo',
+            'assessmentMatrix',
         ))
-            ->setPaper('a4')
+            ->setPaper('a4', 'landscape')
             ->setOption([
-                'margin-top' => 10,
-                'margin-bottom' => 10,
+                'margin-top' => 8,
+                'margin-bottom' => 8,
+                'margin-left' => 8,
+                'margin-right' => 8,
                 'isRemoteEnabled' => true,
                 'isHtml5ParserEnabled' => true,
             ]);
