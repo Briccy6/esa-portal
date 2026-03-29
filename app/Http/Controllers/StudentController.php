@@ -2628,6 +2628,245 @@ class StudentController extends Controller
     }
 
     /**
+     * Download NESA document for student
+     */
+    public function downloadNesaDocument(Student $student)
+    {
+        if (!auth()->guard('staff')->check()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        if (!$student->nesa_document) {
+            abort(404, 'No NESA document found for this student.');
+        }
+
+        try {
+            $documentPath = storage_path('app/public/' . $student->nesa_document);
+            
+            if (!file_exists($documentPath)) {
+                abort(404, 'Document file not found.');
+            }
+
+            // Create filename with student name and registration number
+            $studentName = str_replace(' ', '_', $student->full_name);
+            $regNumber = str_replace('/', '_', $student->reg_number);
+            $originalName = pathinfo($documentPath, PATHINFO_FILENAME);
+            $extension = pathinfo($documentPath, PATHINFO_EXTENSION);
+            
+            $filename = "NESA_{$studentName}_{$regNumber}_{$originalName}.{$extension}";
+
+            return response()->download($documentPath, $filename);
+            
+        } catch (\Exception $e) {
+            Log::error('Failed to download NESA document', [
+                'student_id' => $student->id,
+                'error' => $e->getMessage()
+            ]);
+            
+            return redirect()->back()->with('error', 'Failed to download document: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Download all NESA documents as ZIP
+     */
+    public function downloadAllNesaDocuments(Request $request)
+    {
+        if (!auth()->guard('staff')->check()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        try {
+            // Get registered students with NESA documents
+            $students = Student::where('nesa_registered', true)
+                ->whereNotNull('nesa_document')
+                ->with(['branch', 'course'])
+                ->get();
+
+            if ($students->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No NESA documents found.'
+                ], 404);
+            }
+
+            // Create ZIP file
+            $zip = new \ZipArchive();
+            $zipFileName = 'All_NESA_Documents_' . date('Y-m-d_H-i-s') . '.zip';
+            $zipPath = storage_path('app/temp/' . $zipFileName);
+
+            if ($zip->open($zipPath, \ZipArchive::CREATE) !== TRUE) {
+                throw new \Exception('Cannot create ZIP file');
+            }
+
+            $documentCount = 0;
+            foreach ($students as $student) {
+                $documentPath = storage_path('app/public/' . $student->nesa_document);
+                
+                if (file_exists($documentPath)) {
+                    // Create filename with student details
+                    $studentName = str_replace(' ', '_', $student->full_name);
+                    $regNumber = str_replace('/', '_', $student->reg_number);
+                    $originalName = pathinfo($documentPath, PATHINFO_BASENAME);
+                    
+                    $zipFileNameInArchive = "NESA_{$studentName}_{$regNumber}_{$originalName}";
+                    $zip->addFile($documentPath, $zipFileNameInArchive);
+                    $documentCount++;
+                }
+            }
+
+            $zip->close();
+
+            if ($documentCount === 0) {
+                unlink($zipPath);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No valid NESA documents found.'
+                ], 404);
+            }
+
+            Log::info('Bulk NESA documents download', [
+                'document_count' => $documentCount,
+                'user' => auth()->guard('staff')->user()->full_name
+            ]);
+
+            return response()->download($zipPath)->deleteFileAfterSend();
+
+        } catch (\Exception $e) {
+            Log::error('Failed to download all NESA documents', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to download documents: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Export NESA registration report to Excel
+     */
+    public function exportNesaReport(Request $request)
+    {
+        if (!auth()->guard('staff')->check()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        try {
+            // Apply same filters as the index method
+            $students = Student::with(['branch', 'course', 'academicYear'])
+                ->when($request->name, function ($query, $name) {
+                    $query->where('full_name', 'like', '%' . $name . '%');
+                })
+                ->when($request->reg_number, function ($query, $regNumber) {
+                    $query->where('reg_number', 'like', '%' . $regNumber . '%');
+                })
+                ->when($request->email, function ($query, $email) {
+                    $query->where('email', 'like', '%' . $email . '%');
+                })
+                ->when($request->telephone, function ($query, $telephone) {
+                    $query->where('telephone', 'like', '%' . $telephone . '%');
+                })
+                ->when($request->course, function ($query, $course) {
+                    $query->whereHas('course', function ($q) use ($course) {
+                        $q->where('name', 'like', '%' . $course . '%');
+                    });
+                })
+                ->when($request->branch, function ($query, $branch) {
+                    $query->where('branch_id', $branch);
+                })
+                ->orderBy('full_name', 'asc')
+                ->get();
+
+            // Create spreadsheet
+            $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+            $sheet = $spreadsheet->getActiveSheet();
+            $sheet->setTitle('NESA Registration Report');
+
+            // Headers
+            $headers = [
+                'Student Name',
+                'Registration Number',
+                'Email',
+                'Telephone',
+                'Branch',
+                'Course',
+                'Academic Year',
+                'NESA Status',
+                'SDMS Code',
+                'NESA Registration Number',
+                'Registration Date',
+                'Has Document',
+                'Remarks'
+            ];
+
+            $sheet->fromArray($headers, null, 'A1');
+
+            // Style headers
+            $headerStyle = [
+                'font' => ['bold' => true],
+                'fill' => [
+                    'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                    'startColor' => ['rgb' => '4285F4']
+                ],
+                'font' => ['color' => ['rgb' => 'FFFFFF']]
+            ];
+            $sheet->getStyle('A1:M1')->applyFromArray($headerStyle);
+
+            // Data
+            $row = 2;
+            foreach ($students as $student) {
+                $sheet->setCellValue('A' . $row, $student->full_name);
+                $sheet->setCellValue('B' . $row, $student->reg_number);
+                $sheet->setCellValue('C' . $row, $student->email);
+                $sheet->setCellValue('D' . $row, $student->telephone);
+                $sheet->setCellValue('E' . $row, $student->branch->name ?? 'N/A');
+                $sheet->setCellValue('F' . $row, $student->course->name ?? 'N/A');
+                $sheet->setCellValue('G' . $row, $student->academicYear->name ?? 'N/A');
+                $sheet->setCellValue('H' . $row, $student->nesa_registered ? 'Registered' : 'Not Registered');
+                $sheet->setCellValue('I' . $row, $student->nesa_sdms_code ?? 'N/A');
+                $sheet->setCellValue('J' . $row, $student->nesa_reg_number ?? 'N/A');
+                $sheet->setCellValue('K' . $row, $student->nesa_registration_date ? $student->nesa_registration_date->format('d M Y') : 'N/A');
+                $sheet->setCellValue('L' . $row, $student->nesa_document ? 'Yes' : 'No');
+                $sheet->setCellValue('M' . $row, $student->nesa_remarks ?? 'N/A');
+                $row++;
+            }
+
+            // Auto-size columns
+            foreach (range('A', 'M') as $column) {
+                $sheet->getColumnDimension($column)->setAutoSize(true);
+            }
+
+            // Create file
+            $fileName = 'NESA_Registration_Report_' . date('Y-m-d_H-i-s') . '.xlsx';
+            $filePath = storage_path('app/temp/' . $fileName);
+
+            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+            $writer->save($filePath);
+
+            Log::info('NESA report exported', [
+                'student_count' => $students->count(),
+                'user' => auth()->guard('staff')->user()->full_name
+            ]);
+
+            return response()->download($filePath)->deleteFileAfterSend();
+
+        } catch (\Exception $e) {
+            Log::error('Failed to export NESA report', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to export report: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Send NESA status email to student
      */
     public function sendNesaStatusEmail(Request $request, Student $student)

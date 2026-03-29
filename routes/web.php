@@ -591,6 +591,9 @@ Route::prefix('staff')->name('staff.')->group(function () {
         Route::put('/students/{student}', [StudentController::class, 'updateByStaff'])->name('students.update');
         Route::put('/students/{student}/nesa', [StudentController::class, 'registerNesa'])->name('students.nesa');
         Route::post('/students/{student}/send-nesa-email', [StudentController::class, 'sendNesaStatusEmail'])->name('students.send-nesa-email');
+        Route::get('/students/{student}/download-nesa-document', [StudentController::class, 'downloadNesaDocument'])->name('students.download-nesa-document');
+        Route::get('/students/download-all-nesa-documents', [StudentController::class, 'downloadAllNesaDocuments'])->name('students.download-all-nesa-documents');
+        Route::get('/students/export-nesa-report', [StudentController::class, 'exportNesaReport'])->name('students.export-nesa-report');
         Route::post('/students/{student}/complete-registration', [StudentController::class, 'completeRegistration'])->name('students.complete_registration');
         Route::get('/students/{student}/view-document/{documentType}', [StudentController::class, 'viewDocument'])->name('students.view_document');
 

@@ -743,6 +743,17 @@
                                     </div>
                                     @endif
 
+                                    @if($student->nesa_document)
+                                    <div class="row">
+                                        <div class="col-md-12 mb-3">
+                                            <strong>NESA Document:</strong><br>
+                                            <button type="button" class="btn btn-success btn-sm" onclick="downloadNesaDocument({{ $student->id }})">
+                                                <i class="fas fa-download me-1"></i>Download Document
+                                            </button>
+                                        </div>
+                                    </div>
+                                    @endif
+
                                     <hr>
 
                                     <div class="d-flex gap-2">
@@ -1269,6 +1280,56 @@ function editNesaRegistration(studentId) {
         console.error('NESA update error:', err);
         showAlert('danger', 'Failed to update NESA registration. Please check your connection and try again.');
     });
+}
+
+// ─── Download NESA Document ───────────────────────────────────────────────────
+
+function downloadNesaDocument(studentId) {
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Downloading...';
+
+    fetch(`/staff/students/${studentId}/download-nesa-document`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Download failed');
+            }
+            return response.blob();
+        })
+        .then(blob => {
+            // Get filename from response headers or create one
+            const contentDisposition = response.headers.get('content-disposition');
+            let filename = 'nesa_document.pdf';
+            
+            if (contentDisposition) {
+                const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+                if (filenameMatch) {
+                    filename = filenameMatch[1];
+                }
+            }
+            
+            // Create download link
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            showAlert('success', 'NESA document downloaded successfully');
+        })
+        .catch(error => {
+            console.error('Download error:', error);
+            showAlert('danger', 'Failed to download NESA document. Please try again.');
+        })
+        .finally(() => {
+            button.disabled = false;
+            button.innerHTML = originalText;
+        });
 }
 
 // ─── Transcript lazy-load ────────────────────────────────────────────────────

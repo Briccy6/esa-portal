@@ -37,6 +37,16 @@
                 <span class="badge bg-primary fs-6">
                     <i class="fas fa-database me-1"></i>{{ $students->total() }} Total Students
                 </span>
+                @if(request('nesa') == 'true')
+                    <div class="mt-2">
+                        <button type="button" class="btn btn-success btn-sm" onclick="downloadAllNesaDocuments()">
+                            <i class="fas fa-download me-1"></i>Download All NESA Documents
+                        </button>
+                        <button type="button" class="btn btn-info btn-sm" onclick="downloadNesaReport()">
+                            <i class="fas fa-file-excel me-1"></i>Export NESA Report
+                        </button>
+                    </div>
+                @endif
             </div>
         </div>
     </div>
@@ -239,5 +249,129 @@ $(function() {
         $('.alert').fadeOut('slow');
     }, 5000);
 });
+
+// ─── NESA Bulk Functions ───────────────────────────────────────────────────────
+
+function downloadAllNesaDocuments() {
+    if (!confirm('Download all NESA documents for registered students? This may take some time if there are many documents.')) return;
+    
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Preparing...';
+    
+    fetch('/staff/students/download-all-nesa-documents', {
+        method: 'GET',
+        headers: { 
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Download failed');
+        }
+        return response.blob();
+    })
+    .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = 'All_NESA_Documents.zip';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        showAlert('success', 'All NESA documents downloaded successfully');
+    })
+    .catch(error => {
+        console.error('Bulk download error:', error);
+        showAlert('danger', 'Failed to download NESA documents. Please try again.');
+    })
+    .finally(() => {
+        button.disabled = false;
+        button.innerHTML = originalText;
+    });
+}
+
+function downloadNesaReport() {
+    if (!confirm('Export NESA registration report to Excel?')) return;
+    
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Exporting...';
+    
+    // Get current search parameters
+    const searchParams = new URLSearchParams(window.location.search);
+    
+    fetch('/staff/students/export-nesa-report?' + searchParams.toString(), {
+        method: 'GET',
+        headers: { 
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Export failed');
+        }
+        return response.blob();
+    })
+    .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = 'NESA_Registration_Report.xlsx';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        showAlert('success', 'NESA report exported successfully');
+    })
+    .catch(error => {
+        console.error('Report export error:', error);
+        showAlert('danger', 'Failed to export NESA report. Please try again.');
+    })
+    .finally(() => {
+        button.disabled = false;
+        button.innerHTML = originalText;
+    });
+}
+
+function showAlert(type, message) {
+    const icons = { success: 'check-circle', danger: 'exclamation-circle', warning: 'exclamation-triangle' };
+    const titles = { success: 'Success', danger: 'Error', warning: 'Warning' };
+
+    const html = `
+        <div class="alert alert-${type} alert-dismissible fade show alert-enhanced d-flex align-items-start" role="alert">
+            <div class="alert-icon"><i class="fas fa-${icons[type] || 'info-circle'}"></i></div>
+            <div class="alert-content">
+                <div class="alert-title">${titles[type] || type}</div>
+                <p class="alert-message mb-0">${message}</p>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>`;
+
+    let container = document.querySelector('.alert-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.className = 'alert-container';
+        document.body.insertBefore(container, document.body.firstChild);
+    }
+    container.innerHTML = html;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    setTimeout(() => {
+        const alert = container.querySelector('.alert');
+        if (alert) { alert.classList.remove('show'); setTimeout(() => alert.remove(), 300); }
+    }, 5000);
+}
 </script>
 @endsection
