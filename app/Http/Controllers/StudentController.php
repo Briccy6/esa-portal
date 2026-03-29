@@ -1342,15 +1342,28 @@ class StudentController extends Controller
         $subscriptions = \App\Models\Subscription::active()->orderBy('price')->get();
         $activeSubscription = $student->activeSubscription;
 
-        // Get active timetables for the student
+        // Get active and upcoming timetables for the student
         $timetables = \App\Models\Timetable::where(function($query) {
-            $query->whereNull('valid_from')
-                  ->orWhere('valid_from', '<=', now());
+            // Include timetables that are currently active
+            $query->where(function($activeQuery) {
+                $activeQuery->whereNull('valid_from')
+                          ->orWhere('valid_from', '<=', now());
+            })
+            ->where(function($activeUntilQuery) {
+                $activeUntilQuery->whereNull('valid_until')
+                               ->orWhere('valid_until', '>=', now());
+            });
         })
-        ->where(function($query) {
-            $query->whereNull('valid_until')
-                  ->orWhere('valid_until', '>=', now());
+        ->orWhere(function($query) {
+            // Include upcoming timetables (valid_from is in the future)
+            $query->whereNotNull('valid_from')
+                  ->where('valid_from', '>', now())
+                  ->where(function($upcomingUntilQuery) {
+                      $upcomingUntilQuery->whereNull('valid_until')
+                                        ->orWhere('valid_until', '>', now());
+                  });
         })
+        ->orderBy('valid_from', 'asc') // Order by start date to show upcoming first
         ->orderBy('created_at', 'desc')
         ->get();
 

@@ -31,12 +31,22 @@
                     <td>{{ $timetable->valid_until ? \Carbon\Carbon::parse($timetable->valid_until)->format('M d, Y') : 'N/A' }}</td>
                     <td>
                         @if($timetable->valid_from && $timetable->valid_until)
-                            @if(\Carbon\Carbon::now()->between($timetable->valid_from, $timetable->valid_until))
+                            @php
+                                $nowKigali = \Carbon\Carbon::now('Africa/Kigali');
+                                $validFrom = \Carbon\Carbon::parse($timetable->valid_from);
+                                $validUntil = \Carbon\Carbon::parse($timetable->valid_until);
+                            @endphp
+                            @if($nowKigali->between($validFrom, $validUntil))
                                 <span class="badge bg-success">Valid</span>
-                                <small class="text-muted d-block">Valid until {{ \Carbon\Carbon::parse($timetable->valid_until)->diffForHumans() }}</small>
+                                <small class="text-muted d-block">Valid until {{ $validUntil->diffForHumans($nowKigali) }}</small>
                             @else
-                                <span class="badge bg-danger">Expired</span>
-                                <small class="text-muted d-block">Expired {{ \Carbon\Carbon::parse($timetable->valid_until)->diffForHumans() }}</small>
+                                @if($nowKigali->lt($validFrom))
+                                    <span class="badge bg-warning">Not Yet Active</span>
+                                    <small class="text-muted d-block">Starts in {{ $validFrom->diffForHumans($nowKigali) }}</small>
+                                @else
+                                    <span class="badge bg-danger">Expired</span>
+                                    <small class="text-muted d-block">Expired {{ $validUntil->diffForHumans($nowKigali) }}</small>
+                                @endif
                             @endif
                         @else
                             <span class="badge bg-secondary">No Dates Set</span>

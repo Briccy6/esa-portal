@@ -680,79 +680,56 @@
         <div class="col-12">
             <div class="info-card">
                 <div class="info-card-header">
-                    <h4><i class="bi bi-calendar2-week me-2"></i>Current Timetables</h4>
-                    <span class="badge bg-info">{{ $timetables->count() }} Active</span>
+                    <h4><i class="bi bi-calendar2-week me-2"></i>Timetables</h4>
+                    <span class="badge bg-info">{{ $timetables->count() }} Total</span>
                 </div>
                 <div class="info-card-body">
-                    @forelse($timetables as $timetable)
-                        <div class="timetable-card">
-                            <div class="timetable-header">
-                                <h5 class="timetable-title">{{ $timetable->title }}</h5>
-                                <div class="timetable-status">
-                                    @if($timetable->valid_from && $timetable->valid_until)
-                                        <span class="badge bg-success">
-                                            <i class="bi bi-check-circle me-1"></i>Valid
-                                        </span>
-                                    @else
-                                        <span class="badge bg-primary">
-                                            <i class="bi bi-infinity me-1"></i>Always Valid
-                                        </span>
-                                    @endif
-                                </div>
-                            </div>
-                            <div class="timetable-body">
-                                @if($timetable->image)
-                                    <div class="timetable-image">
-                                        <img src="data:image/jpeg;base64,{{ $timetable->image }}" 
-                                             alt="Timetable: {{ $timetable->title }}" 
-                                             class="img-fluid rounded"
-                                             style="max-height: 200px; cursor: pointer;"
-                                             onclick="viewTimetableImage('{{ $timetable->title }}', 'data:image/jpeg;base64,{{ $timetable->image }}')">
-                                    </div>
-                                @endif
-                                <div class="timetable-details">
-                                    @if($timetable->valid_from && $timetable->valid_until)
-                                        <div class="timetable-dates">
-                                            <i class="bi bi-calendar-range me-2"></i>
-                                            <strong>Valid Period:</strong>
-                                            {{ \Carbon\Carbon::parse($timetable->valid_from)->format('M d, Y') }} - 
-                                            {{ \Carbon\Carbon::parse($timetable->valid_until)->format('M d, Y') }}
-                                        </div>
-                                        <div class="timetable-time-remaining">
-                                            <i class="bi bi-clock me-2"></i>
-                                            <small class="text-muted">
-                                                {{ \Carbon\Carbon::now()->between($timetable->valid_from, $timetable->valid_until) 
-                                                    ? 'Expires in ' . \Carbon\Carbon::now()->diffForHumans($timetable->valid_until, true)
-                                                    : 'Valid for ' . \Carbon\Carbon::now()->diffForHumans($timetable->valid_from, true) . ' from now'
-                                                }}
-                                            </small>
-                                        </div>
-                                    @else
-                                        <div class="timetable-dates">
-                                            <i class="bi bi-infinity me-2"></i>
-                                            <strong>No expiry date set</strong>
-                                        </div>
-                                    @endif
-                                    <div class="timetable-actions">
-                                        <button onclick="viewTimetableImage('{{ $timetable->title }}', 'data:image/jpeg;base64,{{ $timetable->image }}')" 
-                                                class="btn btn-primary btn-sm">
-                                            <i class="bi bi-eye me-1"></i>View Full Size
-                                        </button>
-                                        <button onclick="downloadTimetable('{{ $timetable->title }}', 'data:image/jpeg;base64,{{ $timetable->image }}')" 
-                                                class="btn btn-outline-secondary btn-sm">
-                                            <i class="bi bi-download me-1"></i>Download
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
+                    @php
+                        $nowKigali = \Carbon\Carbon::now('Africa/Kigali');
+                        $activeTimetables = $timetables->filter(function($t) use ($nowKigali) {
+                            if ($t->valid_from && $t->valid_until) {
+                                return $nowKigali->between(\Carbon\Carbon::parse($t->valid_from), \Carbon\Carbon::parse($t->valid_until));
+                            }
+                            return true; // Always valid if no dates set
+                        });
+                        
+                        $upcomingTimetables = $timetables->filter(function($t) use ($nowKigali) {
+                            if ($t->valid_from) {
+                                return $nowKigali->lt(\Carbon\Carbon::parse($t->valid_from));
+                            }
+                            return false;
+                        });
+                    @endphp
+                    
+                    @if($activeTimetables->count() > 0)
+                        <div class="mb-4">
+                            <h5 class="text-success mb-3">
+                                <i class="bi bi-check-circle me-2"></i>Currently Active ({{ $activeTimetables->count() }})
+                            </h5>
+                            @foreach($activeTimetables as $timetable)
+                                @include('partials.timetable-card', ['timetable' => $timetable, 'showStatus' => false])
+                            @endforeach
                         </div>
-                    @empty
+                    @endif
+                    
+                    @if($upcomingTimetables->count() > 0)
+                        <div class="mb-4">
+                            <h5 class="text-warning mb-3">
+                                <i class="bi bi-clock me-2"></i>Upcoming ({{ $upcomingTimetables->count() }})
+                            </h5>
+                            @foreach($upcomingTimetables as $timetable)
+                                @include('partials.timetable-card', ['timetable' => $timetable, 'showStatus' => true])
+                            @endforeach
+                        </div>
+                    @endif
+                    
+                    @if($timetables->count() === 0)
                         <div class="text-center py-5">
                             <i class="bi bi-calendar-x text-muted" style="font-size: 3rem;"></i>
-                            <h5 class="text-muted mt-3">No Active Timetables</h5>
+                            <h5 class="text-muted mt-3">No Timetables Available</h5>
                             <p class="text-muted">There are currently no timetables available. Please check back later.</p>
                         </div>
-                    @endforelse
+                    @endif
                 </div>
             </div>
         </div>
