@@ -25,6 +25,7 @@ use Illuminate\Support\Facades\Mail;
 use App\Mail\StudentWelcomeMail;
 use App\Mail\StudentEmailVerificationMail;
 use App\Mail\StudentInformationEmail;
+use App\Mail\NesaRegistrationStatusMail;
 use Illuminate\Support\Facades\Storage;
 use App\Models\StudentTransaction;
 use App\Models\Exam;
@@ -2903,7 +2904,7 @@ class StudentController extends Controller
 
         $request->validate([
             'status' => 'required|in:registered,failed',
-            'send_email' => 'boolean',
+            'send_email' => 'sometimes|boolean',
             'reason' => 'required_if:status,failed|string|max:500',
             'nesa_document' => 'required_if:status,registered|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120'
         ]);

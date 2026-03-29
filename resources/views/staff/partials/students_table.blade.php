@@ -1380,7 +1380,8 @@ function updateNesaStatus(studentId) {
     
     if (!confirm(`Update NESA status to "${status}" for this student?`)) return;
     
-    const button = event.target;
+    // Find the button that was clicked
+    const button = event.target.closest('button') || event.target;
     const originalText = button.innerHTML;
     button.disabled = true;
     button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Updating...';
@@ -1437,27 +1438,6 @@ function updateNesaStatus(studentId) {
         button.innerHTML = originalText;
     });
 }
-
-// ─── NESA Status Modal Event Listeners ───────────────────────────────────────────
-
-document.addEventListener('DOMContentLoaded', function() {
-    // Add event listeners for NESA status radio buttons
-    document.querySelectorAll('[id^="registered_"], [id^="failed_"]').forEach(radio => {
-        radio.addEventListener('change', function() {
-            const studentId = this.id.split('_').pop();
-            const reasonSection = document.getElementById(`reason_section_${studentId}`);
-            const documentSection = document.getElementById(`document_section_${studentId}`);
-            
-            if (this.value === 'failed') {
-                reasonSection.style.display = 'block';
-                documentSection.style.display = 'none';
-            } else {
-                reasonSection.style.display = 'none';
-                documentSection.style.display = 'block';
-            }
-        });
-    });
-});
 
 // ─── Transcript lazy-load ────────────────────────────────────────────────────
 

@@ -876,7 +876,11 @@
                             <p class="text-muted mb-0">Check your NESA registration status and download forms</p>
                         </div>
                         <div class="text-end">
-                            <span id="nesa-status-badge" class="badge bg-secondary">Checking...</span>
+                            @if($student->nesa_registered)
+                                <span id="nesa-status-badge" class="badge bg-success">Registered</span>
+                            @else
+                                <span id="nesa-status-badge" class="badge bg-warning text-dark">Not Registered</span>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -1503,14 +1507,63 @@ function showNesaModal() {
         const nesaLoading = document.getElementById('nesa-loading');
         const nesaFooter  = document.getElementById('nesa-modal-footer');
         const nesaBadge   = document.getElementById('nesa-status-badge');
-        const isRegistered = Math.random() > 0.5;
+        
+        // Use actual NESA registration status from student data
+        const isRegistered = {{ $student->nesa_registered ? 'true' : 'false' }};
+        const regNumber = '{{ $student->nesa_reg_number ?? 'N/A' }}';
+        const sdmsCode = '{{ $student->nesa_sdms_code ?? 'N/A' }}';
+        const regDate = '{{ $student->nesa_registration_date ? $student->nesa_registration_date->format('M d, Y') : 'N/A' }}';
+        const remarks = '{{ $student->nesa_remarks ?? 'N/A' }}';
+        
         if (isRegistered) {
-            nesaContent.innerHTML = `<div class="alert alert-success"><i class="bi bi-check-circle-fill me-2"></i>NESA Registration Complete. You are registered for the current academic year.</div>`;
+            nesaContent.innerHTML = `
+                <div class="alert alert-success">
+                    <i class="bi bi-check-circle-fill me-2"></i>
+                    <strong>NESA Registration Complete</strong><br>
+                    <small>You are registered for the current academic year.</small>
+                </div>
+                <div class="mt-3">
+                    <h6>Registration Details:</h6>
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>Registration Number:</strong></td>
+                            <td>${regNumber}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>SDMS Code:</strong></td>
+                            <td>${sdmsCode}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Registration Date:</strong></td>
+                            <td>${regDate}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Remarks:</strong></td>
+                            <td>${remarks}</td>
+                        </tr>
+                    </table>
+                </div>
+            `;
             if (nesaFooter) nesaFooter.innerHTML = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button><button type="button" class="btn btn-success" onclick="window.print()"><i class="bi bi-printer me-1"></i> Print Certificate</button>`;
             if (nesaBadge) { nesaBadge.className = 'badge bg-success'; nesaBadge.textContent = 'Registered'; }
         } else {
-            nesaContent.innerHTML = `<div class="alert alert-warning"><i class="bi bi-exclamation-triangle-fill me-2"></i>NESA Registration Required. You are not currently registered for this academic year.</div>`;
-            if (nesaFooter) nesaFooter.innerHTML = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button><button type="button" class="btn btn-warning"><i class="bi bi-envelope me-1"></i> Submit Appeal</button>`;
+            nesaContent.innerHTML = `
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <strong>NESA Registration Required</strong><br>
+                    <small>You are not currently registered for this academic year. Please complete your NESA registration.</small>
+                </div>
+                <div class="mt-3">
+                    <h6>Registration Requirements:</h6>
+                    <ul class="small">
+                        <li>Complete student identification form</li>
+                        <li>Submit required documents (ID, passport photo)</li>
+                        <li>Pay registration fees</li>
+                        <li>Receive NESA registration number</li>
+                    </ul>
+                </div>
+            `;
+            if (nesaFooter) nesaFooter.innerHTML = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button><button type="button" class="btn btn-warning"><i class="bi bi-envelope me-1"></i> Contact Support</button>`;
             if (nesaBadge) { nesaBadge.className = 'badge bg-warning text-dark'; nesaBadge.textContent = 'Not Registered'; }
         }
         if (nesaLoading) nesaLoading.classList.add('d-none');

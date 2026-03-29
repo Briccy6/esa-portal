@@ -238,6 +238,33 @@ $(function() {
                 body.html('<div class="alert alert-danger">Failed to load transcript.</div>');
             });
         });
+        
+        // NESA Status modal radio button listeners
+        initializeNesaModalListeners();
+    }
+    
+    // Initialize NESA modal listeners
+    function initializeNesaModalListeners() {
+        // Add event listeners for NESA status radio buttons
+        document.querySelectorAll('[id^="registered_"], [id^="failed_"]').forEach(radio => {
+            radio.removeEventListener('change', handleNesaRadioChange);
+            radio.addEventListener('change', handleNesaRadioChange);
+        });
+    }
+    
+    // Handle NESA radio button change
+    function handleNesaRadioChange() {
+        const studentId = this.id.split('_').pop();
+        const reasonSection = document.getElementById(`reason_section_${studentId}`);
+        const documentSection = document.getElementById(`document_section_${studentId}`);
+        
+        if (this.value === 'failed') {
+            reasonSection.style.display = 'block';
+            documentSection.style.display = 'none';
+        } else {
+            reasonSection.style.display = 'none';
+            documentSection.style.display = 'block';
+        }
     }
 
     // Initialize on page load
