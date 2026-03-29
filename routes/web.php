@@ -416,6 +416,8 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::get('report-cards', [ReportCardController::class, 'index'])->name('report-cards.index');
     Route::get('report-cards/create', [ReportCardController::class, 'create'])->name('report-cards.create');
     Route::post('report-cards', [ReportCardController::class, 'store'])->name('report-cards.store');
+    Route::get('report-cards/consolidated', [ReportCardController::class, 'showConsolidated'])->name('report-cards.consolidated');
+    Route::get('report-cards/consolidated/print', [ReportCardController::class, 'printConsolidated'])->name('report-cards.consolidated-print');
     Route::get('report-cards/{reportCard}', [ReportCardController::class, 'show'])->name('report-cards.show');
     Route::get('report-cards/{reportCard}/edit', [ReportCardController::class, 'edit'])->name('report-cards.edit');
     Route::put('report-cards/{reportCard}', [ReportCardController::class, 'update'])->name('report-cards.update');

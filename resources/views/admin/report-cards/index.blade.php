@@ -54,10 +54,19 @@
                     </div>
                     <div class="rc-field rc-field--terms">
                         <label class="rc-label">Term(s) — one report card per student per term</label>
-                        <select name="term_ids[]" class="rc-select rc-select--multi" multiple size="5" required>
-                            @foreach(\App\Models\Term::with('academicYear')->orderBy('academic_year_id')->orderBy('id')->get() as $term)
-                                <option value="{{ $term->id }}">{{ $term->name ?? 'Term #'.$term->id }} @if($term->academicYear) ({{ $term->academicYear->year }}) @endif</option>
-                            @endforeach
+                        <select name="term_ids[]" class="rc-select rc-select--multi" multiple size="10" required>
+                            @forelse($terms->groupBy('academic_year_id') as $yearId => $yearTerms)
+                                @php
+                                    $ogLabel = optional($yearTerms->first()->academicYear)->year ?? ('Year #'.$yearId);
+                                @endphp
+                                <optgroup label="{{ $ogLabel }}">
+                                    @foreach($yearTerms as $term)
+                                        <option value="{{ $term->id }}">{{ $term->name ?: 'Term #'.$term->id }}</option>
+                                    @endforeach
+                                </optgroup>
+                            @empty
+                                <option value="" disabled>No terms in database — add terms first</option>
+                            @endforelse
                         </select>
                         <span class="rc-hint">Hold <kbd>Ctrl</kbd> / <kbd>Cmd</kbd> to select multiple terms.</span>
                     </div>
@@ -70,10 +79,10 @@
     <div class="rc-card">
         <div class="rc-card__header rc-card__header--green">
             <i class="fas fa-table me-2"></i> Generated Report Cards
-            <span class="rc-card__header-count">{{ $reportCards->total() }} records</span>
+            <span class="rc-card__header-count">{{ $reportCardGroups->total() }} {{ Str::plural('student', $reportCardGroups->total()) }}</span>
         </div>
         <div class="rc-card__body p-0">
-            @if($reportCards->isEmpty())
+            @if($reportCardGroups->isEmpty())
                 <div class="rc-empty">
                     <div class="rc-empty__icon"><i class="fas fa-id-card"></i></div>
                     <div class="rc-empty__title">No Report Cards Found</div>
@@ -86,7 +95,7 @@
                             <tr>
                                 <th><i class="fas fa-user me-1 text-primary"></i> Student</th>
                                 <th><i class="fas fa-book me-1 text-info"></i> Course</th>
-                                <th class="text-center"><i class="fas fa-calendar me-1 text-secondary"></i> Year / Term</th>
+                                <th class="text-center"><i class="fas fa-calendar me-1 text-secondary"></i> Year / terms</th>
                                 <th class="text-center"><i class="fas fa-percentage me-1 text-primary"></i> Average</th>
                                 <th class="text-center"><i class="fas fa-medal me-1 text-warning"></i> Grade</th>
                                 <th class="text-center"><i class="fas fa-trophy me-1 text-info"></i> Position</th>
@@ -95,28 +104,48 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($reportCards as $reportCard)
-                            <tr class="rc-table__row">
-                                {{-- Student --}}
+                            @foreach($reportCardGroups as $group)
+                            @php
+                                $first = $group->first();
+                                $overallAvg = (float) $group->avg('average_marks');
+                                $overallGrade = match (true) {
+                                    $overallAvg >= 90 => 'A+',
+                                    $overallAvg >= 80 => 'A',
+                                    $overallAvg >= 70 => 'B+',
+                                    $overallAvg >= 60 => 'B',
+                                    $overallAvg >= 50 => 'C',
+                                    $overallAvg >= 40 => 'D',
+                                    default => 'F',
+                                };
+                                $ogc = match (true) {
+                                    in_array($overallGrade, ['A+','A'], true) => 'rc-badge--green',
+                                    in_array($overallGrade, ['B+','B'], true) => 'rc-badge--blue',
+                                    $overallGrade === 'C' => 'rc-badge--yellow',
+                                    $overallGrade === 'D' => 'rc-badge--gray',
+                                    default => 'rc-badge--red',
+                                };
+                            @endphp
+                            <tr class="rc-table__row rc-table__row--grouped">
+                                {{-- Student (once per group) --}}
                                 <td>
                                     <div class="rc-student-cell">
-                                        <div class="rc-avatar @if(!$reportCard->student->passport_photo) rc-avatar--blue @endif">
-                                            @if($reportCard->student->passport_photo)
-                                                @if(str_contains($reportCard->student->passport_photo, 'http'))
-                                                    <img src="{{ $reportCard->student->passport_photo }}" alt="{{ $reportCard->student->full_name }}">
+                                        <div class="rc-avatar @if(!$first->student->passport_photo) rc-avatar--blue @endif">
+                                            @if($first->student->passport_photo)
+                                                @if(str_contains($first->student->passport_photo, 'http'))
+                                                    <img src="{{ $first->student->passport_photo }}" alt="{{ $first->student->full_name }}">
                                                 @else
-                                                    <img src="{{ asset($reportCard->student->passport_photo) }}" alt="{{ $reportCard->student->full_name }}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                                    <img src="{{ asset($first->student->passport_photo) }}" alt="{{ $first->student->full_name }}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                                                     <div style="display: none; width: 34px; height: 34px; background: linear-gradient(135deg,#0d6efd,#0a58ca); border-radius: 50%; align-items: center; justify-content: center;">
-                                                        <div style="color: #fff; font-size: 0.8rem; font-weight: 700;">{{ strtoupper(substr($reportCard->student->full_name, 0, 1)) }}</div>
+                                                        <div style="color: #fff; font-size: 0.8rem; font-weight: 700;">{{ strtoupper(substr($first->student->full_name, 0, 1)) }}</div>
                                                     </div>
                                                 @endif
                                             @else
-                                                {{ strtoupper(substr($reportCard->student->full_name, 0, 1)) }}
+                                                {{ strtoupper(substr($first->student->full_name, 0, 1)) }}
                                             @endif
                                         </div>
                                         <div class="rc-student-cell__info">
-                                            <span class="rc-student-cell__name">{{ $reportCard->student->full_name }}</span>
-                                            <span class="rc-student-cell__id">ID: {{ $reportCard->student->id }}</span>
+                                            <span class="rc-student-cell__name">{{ $first->student->full_name }}</span>
+                                            <span class="rc-student-cell__id">ID: {{ $first->student->id }}</span>
                                         </div>
                                     </div>
                                 </td>
@@ -125,88 +154,113 @@
                                 <td>
                                     <div class="rc-course-cell">
                                         <i class="fas fa-graduation-cap text-info me-1"></i>
-                                        <span title="{{ $reportCard->course->course_name }}">
-                                            {{ Str::limit($reportCard->course->course_name, 22) }}
+                                        <span title="{{ $first->course->course_name }}">
+                                            {{ Str::limit($first->course->course_name, 22) }}
                                         </span>
                                     </div>
                                 </td>
 
-                                {{-- Year / Term --}}
-                                <td class="text-center">
-                                    <div class="rc-meta">
-                                        <span class="rc-meta__year">{{ $reportCard->academicYear->year ?? '—' }}</span>
-                                        <span class="rc-meta__term">Term {{ $reportCard->term->term ?? '—' }}</span>
+                                {{-- Year + all terms --}}
+                                <td class="text-center rc-cell-stack">
+                                    <div class="rc-meta rc-meta--block">
+                                        <span class="rc-meta__year">{{ $first->academicYear->year ?? '—' }}</span>
                                     </div>
+                                    @foreach($group as $reportCard)
+                                        <div class="rc-term-pill">{{ $reportCard->term?->name ?? '—' }}</div>
+                                    @endforeach
                                 </td>
 
-                                {{-- Average --}}
-                                <td class="text-center">
-                                    @php $avg = $reportCard->average_marks; @endphp
-                                    <span class="rc-avg {{ $avg >= 70 ? 'rc-avg--high' : ($avg >= 50 ? 'rc-avg--mid' : 'rc-avg--low') }}">
-                                        {{ number_format($avg, 1) }}%
+                                {{-- Average: overall + per term --}}
+                                <td class="text-center rc-cell-stack">
+                                    <span class="rc-avg rc-avg--overall {{ $overallAvg >= 70 ? 'rc-avg--high' : ($overallAvg >= 50 ? 'rc-avg--mid' : 'rc-avg--low') }}">
+                                        {{ number_format($overallAvg, 1) }}%
                                     </span>
+                                    <span class="rc-stack-label">overall</span>
+                                    @foreach($group as $reportCard)
+                                        @php $avg = $reportCard->average_marks; @endphp
+                                        <div class="rc-term-metric">
+                                            <span class="rc-term-metric__t">{{ Str::limit($reportCard->term?->name ?? '—', 8) }}</span>
+                                            <span class="rc-avg rc-avg--small {{ $avg >= 70 ? 'rc-avg--high' : ($avg >= 50 ? 'rc-avg--mid' : 'rc-avg--low') }}">{{ number_format($avg, 1) }}%</span>
+                                        </div>
+                                    @endforeach
                                 </td>
 
-                                {{-- Grade --}}
-                                <td class="text-center">
+                                {{-- Grade: overall + per term --}}
+                                <td class="text-center rc-cell-stack">
+                                    <span class="rc-badge {{ $ogc }} rc-badge--overall">{{ $overallGrade }}</span>
+                                    @foreach($group as $reportCard)
+                                        @php
+                                            $g = $reportCard->grade;
+                                            $gc = match(true) {
+                                                in_array($g, ['A+','A']) => 'rc-badge--green',
+                                                in_array($g, ['B+','B']) => 'rc-badge--blue',
+                                                $g === 'C'              => 'rc-badge--yellow',
+                                                $g === 'D'              => 'rc-badge--gray',
+                                                default                 => 'rc-badge--red',
+                                            };
+                                        @endphp
+                                        <div class="rc-term-metric rc-term-metric--center">
+                                            <span class="rc-badge rc-badge--tiny {{ $gc }}">{{ $g }}</span>
+                                        </div>
+                                    @endforeach
+                                </td>
+
+                                {{-- Position per term --}}
+                                <td class="text-center rc-cell-stack">
+                                    @foreach($group as $reportCard)
+                                        <div class="rc-term-metric rc-term-metric--center">
+                                            @if($reportCard->position_display !== 'N/A')
+                                                <span class="rc-position rc-position--small">{{ $reportCard->position_display }}</span>
+                                            @else
+                                                <span class="rc-dash">—</span>
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                </td>
+
+                                {{-- Status per term --}}
+                                <td class="text-center rc-cell-stack">
+                                    @foreach($group as $reportCard)
+                                        @php
+                                            $sc = match($reportCard->status) {
+                                                'approved' => 'rc-badge--green',
+                                                'printed'  => 'rc-badge--blue',
+                                                default    => 'rc-badge--yellow',
+                                            };
+                                        @endphp
+                                        <div class="rc-term-metric rc-term-metric--center">
+                                            <span class="rc-badge rc-badge--tiny {{ $sc }}">{{ ucfirst($reportCard->status) }}</span>
+                                        </div>
+                                    @endforeach
+                                </td>
+
+                                {{-- One Actions control per student (all terms); menu: view + print --}}
+                                <td class="text-center rc-table__actions">
                                     @php
-                                        $g = $reportCard->grade;
-                                        $gc = match(true) {
-                                            in_array($g, ['A+','A']) => 'rc-badge--green',
-                                            in_array($g, ['B+','B']) => 'rc-badge--blue',
-                                            $g === 'C'              => 'rc-badge--yellow',
-                                            $g === 'D'              => 'rc-badge--gray',
-                                            default                 => 'rc-badge--red',
-                                        };
+                                        $consolidatedQuery = [
+                                            'student_id' => $first->student_id,
+                                            'course_id' => $first->course_id,
+                                            'academic_year_id' => $first->academic_year_id,
+                                        ];
                                     @endphp
-                                    <span class="rc-badge {{ $gc }}">{{ $g }}</span>
-                                </td>
-
-                                {{-- Position --}}
-                                <td class="text-center">
-                                    @if($reportCard->position_display !== 'N/A')
-                                        <span class="rc-position">{{ $reportCard->position_display }}</span>
-                                    @else
-                                        <span class="rc-dash">—</span>
-                                    @endif
-                                </td>
-
-                                {{-- Status --}}
-                                <td class="text-center">
-                                    @php
-                                        $sc = match($reportCard->status) {
-                                            'approved' => 'rc-badge--green',
-                                            'printed'  => 'rc-badge--blue',
-                                            default    => 'rc-badge--yellow',
-                                        };
-                                    @endphp
-                                    <span class="rc-badge {{ $sc }}">{{ ucfirst($reportCard->status) }}</span>
-                                </td>
-
-                                {{-- Actions --}}
-                                <td class="text-center">
-                                    <div class="rc-actions">
-                                        <a href="{{ route('admin.report-cards.show', $reportCard) }}"
-                                           class="rc-action-btn rc-action-btn--view" title="View">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        <a href="{{ route('admin.report-cards.print', $reportCard) }}"
-                                           class="rc-action-btn rc-action-btn--print" target="_blank" title="Print PDF">
-                                            <i class="fas fa-print"></i>
-                                        </a>
-                                        @if($reportCard->status !== 'approved')
-                                            <a href="{{ route('admin.report-cards.edit', $reportCard) }}"
-                                               class="rc-action-btn rc-action-btn--edit" title="Edit">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                        @endif
-                                        <form method="POST" action="{{ route('admin.report-cards.destroy', $reportCard) }}" style="display:inline">
-                                            @csrf @method('DELETE')
-                                            <button type="submit" class="rc-action-btn rc-action-btn--delete" title="Delete"
-                                                    onclick="return confirm('Delete this report card?')">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </form>
+                                    <div class="dropdown rc-student-actions">
+                                        <button class="btn btn-sm btn-primary dropdown-toggle" type="button"
+                                                data-bs-toggle="dropdown" data-bs-auto-close="true"
+                                                aria-expanded="false">
+                                            Actions
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                            <li>
+                                                <a class="dropdown-item" href="{{ route('admin.report-cards.consolidated', $consolidatedQuery) }}">
+                                                    <i class="fas fa-eye text-primary me-2"></i> View report (all terms)
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item" href="{{ route('admin.report-cards.consolidated-print', $consolidatedQuery) }}" target="_blank" rel="noopener">
+                                                    <i class="fas fa-print text-success me-2"></i> Print PDF (all terms)
+                                                </a>
+                                            </li>
+                                        </ul>
                                     </div>
                                 </td>
                             </tr>
@@ -216,9 +270,9 @@
                 </div>
 
                 {{-- Pagination --}}
-                @if($reportCards->hasPages())
+                @if($reportCardGroups->hasPages())
                     <div class="rc-pagination">
-                        {{ $reportCards->links() }}
+                        {{ $reportCardGroups->links() }}
                     </div>
                 @endif
             @endif
@@ -491,6 +545,14 @@
 
 /* ACTION BUTTONS */
 .rc-actions { display: flex; align-items: center; justify-content: center; gap: 5px; flex-wrap: nowrap; }
+.rc-table__actions {
+    overflow: visible !important;
+    vertical-align: middle;
+}
+.rc-student-actions .dropdown-menu {
+    min-width: 15rem;
+    z-index: 1055;
+}
 .rc-action-btn {
     display: inline-flex; align-items: center; justify-content: center;
     width: 30px; height: 30px;
@@ -528,6 +590,80 @@
     border-top: 1px solid #f1f3f5;
 }
 
+/* GROUPED ROW (one row per student / course / year; all terms stacked) */
+.rc-table__row--grouped td {
+    vertical-align: top;
+    padding-top: 0.85rem;
+    padding-bottom: 0.85rem;
+}
+.rc-cell-stack {
+    min-width: 88px;
+}
+.rc-meta--block {
+    margin-bottom: 6px;
+}
+.rc-term-pill {
+    display: inline-block;
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #495057;
+    background: #f1f3f5;
+    border-radius: 6px;
+    padding: 2px 8px;
+    margin: 2px 2px 0 0;
+}
+.rc-avg--overall {
+    font-size: 0.95rem;
+}
+.rc-stack-label {
+    display: block;
+    font-size: 0.62rem;
+    color: #868e96;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    margin: 0 0 6px 0;
+    line-height: 1.2;
+}
+.rc-avg--small {
+    font-size: 0.72rem;
+    padding: 2px 6px;
+    font-weight: 600;
+}
+.rc-term-metric {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 4px;
+    font-size: 0.72rem;
+}
+.rc-term-metric--center {
+    justify-content: center;
+    flex-direction: column;
+    gap: 2px;
+}
+.rc-term-metric__t {
+    color: #868e96;
+    max-width: 52px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.rc-badge--overall {
+    font-size: 0.78rem;
+    padding: 4px 12px;
+    margin-bottom: 6px;
+}
+.rc-badge--tiny {
+    font-size: 0.62rem;
+    padding: 2px 7px;
+    border-radius: 10px;
+    font-weight: 700;
+}
+.rc-position--small {
+    font-size: 0.72rem;
+    padding: 2px 8px;
+}
 /* RESPONSIVE */
 @media (max-width: 1200px) {
     .rc-student-cell__name { max-width: 140px; }

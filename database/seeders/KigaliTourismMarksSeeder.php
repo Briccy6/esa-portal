@@ -30,21 +30,29 @@ class KigaliTourismMarksSeeder extends Seeder
             ]
         );
 
-        // Create three standard terms if they don't exist
-        $term1 = Term::firstOrCreate(
-            ['academic_year_id' => $year->id, 'name' => 'Term 1'],
-            ['start_date' => '2025-09-01', 'end_date' => '2025-12-31']
-        );
+        // All terms for this year (e.g. from TermsSeeder) get demo marks so multi-term reports are complete
+        $terms = Term::query()
+            ->where('academic_year_id', $year->id)
+            ->orderBy('start_date')
+            ->orderBy('id')
+            ->get();
 
-        $term2 = Term::firstOrCreate(
-            ['academic_year_id' => $year->id, 'name' => 'Term 2'],
-            ['start_date' => '2026-01-01', 'end_date' => '2026-04-30']
-        );
-
-        $term3 = Term::firstOrCreate(
-            ['academic_year_id' => $year->id, 'name' => 'Term 3'],
-            ['start_date' => '2026-05-01', 'end_date' => '2026-08-31']
-        );
+        if ($terms->isEmpty()) {
+            $terms = collect([
+                Term::firstOrCreate(
+                    ['academic_year_id' => $year->id, 'name' => 'Term 1'],
+                    ['start_date' => '2025-09-01', 'end_date' => '2025-12-31']
+                ),
+                Term::firstOrCreate(
+                    ['academic_year_id' => $year->id, 'name' => 'Term 2'],
+                    ['start_date' => '2026-01-01', 'end_date' => '2026-04-30']
+                ),
+                Term::firstOrCreate(
+                    ['academic_year_id' => $year->id, 'name' => 'Term 3'],
+                    ['start_date' => '2026-05-01', 'end_date' => '2026-08-31']
+                ),
+            ]);
+        }
 
         // Ensure Kigali branch exists
         $branch = Branch::firstOrCreate(
@@ -98,10 +106,11 @@ class KigaliTourismMarksSeeder extends Seeder
             );
         }
 
-        // Helper to create exams and marks for a given term
-        $this->seedMarksForTerm($term1, $year, $branch, $course, $student, $lessons, 65, 85);
-        $this->seedMarksForTerm($term2, $year, $branch, $course, $student, $lessons, 70, 88);
-        $this->seedMarksForTerm($term3, $year, $branch, $course, $student, $lessons, 75, 90);
+        foreach ($terms as $index => $term) {
+            $baseTest = min(95, 65 + ($index * 5));
+            $baseExam = min(100, 85 + ($index * 2));
+            $this->seedMarksForTerm($term, $year, $branch, $course, $student, $lessons, $baseTest, $baseExam);
+        }
     }
 
     protected function seedMarksForTerm(

@@ -15,17 +15,125 @@ use App\Models\Term;
 use App\Models\SchoolInformation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Collection;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Str;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 class ReportCardController extends Controller
 {
     public function index()
     {
-        $reportCards = ReportCard::with(['student', 'course', 'academicYear', 'term'])
-            ->orderBy('created_at', 'desc')
-            ->paginate(20);
+        $all = ReportCard::query()
+            ->with(['student', 'course', 'academicYear', 'term'])
+            ->orderByDesc('created_at')
+            ->get();
 
-        return view('admin.report-cards.index', compact('reportCards'));
+        $groups = $all
+            ->groupBy(fn (ReportCard $rc) => $rc->student_id.'-'.$rc->course_id.'-'.$rc->academic_year_id)
+            ->map(function ($items) {
+                return $items->sortBy(function (ReportCard $rc) {
+                    return $rc->term?->start_date?->timestamp ?? $rc->term_id;
+                })->values();
+            })
+            ->sortByDesc(function ($items) {
+                return $items->max('updated_at') ?? $items->max('created_at');
+            })
+            ->values();
+
+        $perPage = 20;
+        $page = max(1, (int) request()->get('page', 1));
+        $total = $groups->count();
+        $slice = $groups->slice(($page - 1) * $perPage, $perPage)->values();
+
+        $reportCardGroups = new LengthAwarePaginator(
+            $slice,
+            $total,
+            $perPage,
+            $page,
+            [
+                'path' => request()->url(),
+                'query' => request()->query(),
+            ]
+        );
+
+        $terms = Term::query()
+            ->with('academicYear')
+            ->orderByDesc('academic_year_id')
+            ->orderBy('id')
+            ->get();
+
+        return view('admin.report-cards.index', compact('reportCardGroups', 'terms'));
+    }
+
+    /**
+     * All report cards for one student + course + academic year (every term).
+     */
+    protected function consolidatedReportCards(Request $request): Collection
+    {
+        $request->validate([
+            'student_id' => 'required|exists:students,id',
+            'course_id' => 'required|exists:courses,id',
+            'academic_year_id' => 'required|exists:academic_years,id',
+        ]);
+
+        return ReportCard::query()
+            ->where('student_id', $request->integer('student_id'))
+            ->where('course_id', $request->integer('course_id'))
+            ->where('academic_year_id', $request->integer('academic_year_id'))
+            ->with([
+                'student',
+                'course',
+                'academicYear',
+                'term',
+                'approvedBy',
+                'subjects.lesson',
+                'subjects.testMarks.exam',
+            ])
+            ->get()
+            ->sortBy(fn (ReportCard $rc) => $rc->term?->start_date?->timestamp ?? $rc->term_id)
+            ->values();
+    }
+
+    public function showConsolidated(Request $request)
+    {
+        $reportCards = $this->consolidatedReportCards($request);
+
+        if ($reportCards->isEmpty()) {
+            abort(404);
+        }
+
+        $schoolInfo = SchoolInformation::getActive();
+
+        return view('admin.report-cards.show-consolidated', compact('reportCards', 'schoolInfo'));
+    }
+
+    public function printConsolidated(Request $request)
+    {
+        $reportCards = $this->consolidatedReportCards($request);
+
+        if ($reportCards->isEmpty()) {
+            abort(404);
+        }
+
+        $schoolInfo = SchoolInformation::getActive();
+
+        $pdf = Pdf::loadView('admin.report-cards.print-consolidated', compact(
+            'reportCards',
+            'schoolInfo',
+        ))
+            ->setPaper('a4')
+            ->setOption([
+                'margin-top' => 10,
+                'margin-bottom' => 10,
+                'isRemoteEnabled' => true,
+                'isHtml5ParserEnabled' => true,
+            ]);
+
+        $student = $reportCards->first()->student;
+        $year = $reportCards->first()->academicYear->year ?? 'year';
+
+        return $pdf->stream('report-card-'.Str::slug($student->full_name).'-'.$year.'-all-terms.pdf');
     }
 
     public function create()
@@ -33,7 +141,11 @@ class ReportCardController extends Controller
         $students = Student::all();
         $courses = Course::all();
         $academicYears = AcademicYear::all();
-        $terms = Term::with('academicYear')->orderBy('academic_year_id')->orderBy('id')->get();
+        $terms = Term::query()
+            ->with('academicYear')
+            ->orderByDesc('academic_year_id')
+            ->orderBy('id')
+            ->get();
 
         return view('admin.report-cards.create', compact('students', 'courses', 'academicYears', 'terms'));
     }
@@ -117,13 +229,23 @@ class ReportCardController extends Controller
             'course',
             'academicYear',
             'term',
+            'approvedBy',
             'subjects.lesson',
-            'subjects.testMarks.exam'
+            'subjects.testMarks.exam',
         ]);
 
         $schoolInfo = SchoolInformation::getActive();
 
-        return view('admin.report-cards.show', compact('reportCard', 'schoolInfo'));
+        $siblingReportCards = ReportCard::query()
+            ->where('student_id', $reportCard->student_id)
+            ->where('course_id', $reportCard->course_id)
+            ->where('academic_year_id', $reportCard->academic_year_id)
+            ->where('id', '!=', $reportCard->id)
+            ->with('term')
+            ->orderBy('term_id')
+            ->get();
+
+        return view('admin.report-cards.show', compact('reportCard', 'schoolInfo', 'siblingReportCards'));
     }
 
     public function edit(ReportCard $reportCard)
@@ -223,8 +345,9 @@ class ReportCardController extends Controller
         'course',
         'academicYear',
         'term',
+        'approvedBy',
         'subjects.lesson',
-        'subjects.testMarks.exam'
+        'subjects.testMarks.exam',
     ]);
 
     $schoolInfo = SchoolInformation::getActive();
@@ -282,7 +405,11 @@ class ReportCardController extends Controller
             'isHtml5ParserEnabled' => true,
         ]);
 
-    return $pdf->stream("report-card-{$reportCard->student->full_name}-{$reportCard->academicYear->year}-term-{$reportCard->term->term}.pdf");
+    $termSlug = Str::slug($reportCard->term->name ?? 'term');
+
+    return $pdf->stream(
+        'report-card-'.Str::slug($reportCard->student->full_name).'-'.$reportCard->academicYear->year.'-'.$termSlug.'.pdf'
+    );
 }
 
     public function printClassReports(Request $request)

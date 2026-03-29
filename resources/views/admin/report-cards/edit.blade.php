@@ -41,7 +41,7 @@
                                     </tr>
                                     <tr>
                                         <td><strong>Term:</strong></td>
-                                        <td>Term {{ $reportCard->term->term }}</td>
+                                        <td>{{ $reportCard->term?->name ?? '—' }}</td>
                                     </tr>
                                     <tr>
                                         <td><strong>Class Position:</strong></td>

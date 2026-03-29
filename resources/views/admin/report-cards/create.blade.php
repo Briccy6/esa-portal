@@ -67,12 +67,21 @@
                             <div class="col-md-5">
                                 <div class="form-group">
                                     <label for="term_ids">Term(s) * <small class="text-muted">(one report card per term)</small></label>
-                                    <select name="term_ids[]" id="term_ids" class="form-control @error('term_ids') is-invalid @enderror" multiple size="6" required>
-                                        @foreach($terms as $term)
-                                            <option value="{{ $term->id }}" {{ collect(old('term_ids', []))->contains($term->id) ? 'selected' : '' }}>
-                                                {{ $term->name ?? 'Term #'.$term->id }}@if($term->academicYear) — {{ $term->academicYear->year }} @endif
-                                            </option>
-                                        @endforeach
+                                    <select name="term_ids[]" id="term_ids" class="form-control @error('term_ids') is-invalid @enderror" multiple size="10" required>
+                                        @forelse($terms->groupBy('academic_year_id') as $yearId => $yearTerms)
+                                            @php
+                                                $ogLabel = optional($yearTerms->first()->academicYear)->year ?? ('Year #'.$yearId);
+                                            @endphp
+                                            <optgroup label="{{ $ogLabel }}">
+                                                @foreach($yearTerms as $term)
+                                                    <option value="{{ $term->id }}" {{ collect(old('term_ids', []))->contains($term->id) ? 'selected' : '' }}>
+                                                        {{ $term->name ?: 'Term #'.$term->id }}
+                                                    </option>
+                                                @endforeach
+                                            </optgroup>
+                                        @empty
+                                            <option value="" disabled>No terms found — create terms under Academic Years first</option>
+                                        @endforelse
                                     </select>
                                     <small class="form-text text-muted">Hold Ctrl (Windows) or Cmd (Mac) to select multiple terms. Each term generates a separate report card.</small>
                                     @error('term_ids')
