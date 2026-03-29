@@ -79,51 +79,6 @@
         margin-bottom: 20px;
         border-radius: 0 8px 8px 0;
     }
-    
-    /* Alert Styling */
-    .alert {
-        border-radius: 12px;
-        border: none;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        margin-bottom: 25px;
-    }
-    
-    .alert-danger {
-        background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
-        color: #721c24;
-        border-left: 4px solid #dc3545;
-    }
-    
-    .alert-success {
-        background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
-        color: #155724;
-        border-left: 4px solid #28a745;
-    }
-    
-    .alert-heading {
-        font-size: 1.1rem;
-        font-weight: 600;
-        margin-bottom: 0.5rem;
-    }
-    
-    .alert ul {
-        margin: 0;
-        padding-left: 20px;
-    }
-    
-    .alert ul li {
-        margin-bottom: 0.5rem;
-    }
-    
-    .btn-close {
-        background: none;
-        border: none;
-        opacity: 0.7;
-    }
-    
-    .btn-close:hover {
-        opacity: 1;
-    }
 </style>
 
 <div class="edit-container">
@@ -134,39 +89,6 @@
         </div>
         
         <div class="edit-body">
-            <!-- Error Messages Display -->
-            @if($errors->any())
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    <div class="d-flex align-items-start">
-                        <i class="bi bi-exclamation-triangle-fill me-3 fs-4"></i>
-                        <div class="flex-grow-1">
-                            <h6 class="alert-heading mb-2">
-                                <strong>Please fix the following errors:</strong>
-                            </h6>
-                            <ul class="mb-0">
-                                @foreach($errors->all() as $error)
-                                    <li>{{ $error }}</li>
-                                @endforeach
-                            </ul>
-                        </div>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                </div>
-            @endif
-            
-            <!-- Success Message Display -->
-            @if(session('success'))
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    <div class="d-flex align-items-start">
-                        <i class="bi bi-check-circle-fill me-3 fs-4"></i>
-                        <div class="flex-grow-1">
-                            <strong>Success!</strong> {{ session('success') }}
-                        </div>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                </div>
-            @endif
-
             <!-- Current Lesson Information -->
             <div class="current-info">
                 <h5 class="mb-2">Current Lesson Information</h5>
@@ -382,112 +304,84 @@
 let unitCount = {{ $lesson->units ? $lesson->units->count() : 0 }};
 
 function addUnit() {
-    try {
-        const container = document.getElementById('units-container');
-        const unitHtml = `
-            <div class="unit-item">
-                <button type="button" class="btn-remove-unit" onclick="removeUnit(this)">×</button>
-                <div class="row">
-                    <div class="col-md-8">
-                        <label class="form-label required">Unit Name</label>
-                        <input type="text" class="form-control" name="units[${unitCount}][name]" placeholder="Enter unit name" required>
-                        <input type="hidden" name="units[${unitCount}][id]" value="">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label required">Hours</label>
-                        <input type="number" class="form-control" name="units[${unitCount}][hours]" placeholder="Hours" min="1" required>
-                    </div>
+    const container = document.getElementById('units-container');
+    const unitHtml = `
+        <div class="unit-item">
+            <button type="button" class="btn-remove-unit" onclick="removeUnit(this)">×</button>
+            <div class="row">
+                <div class="col-md-8">
+                    <label class="form-label required">Unit Name</label>
+                    <input type="text" class="form-control" name="units[${unitCount}][name]" placeholder="Enter unit name" required>
+                    <input type="hidden" name="units[${unitCount}][id]" value="">
                 </div>
-                <div class="row mt-2">
-                    <div class="col-md-6">
-                        <label class="form-label">Term</label>
-                        <select class="form-select" name="units[${unitCount}][term_id]">
-                            @foreach($terms as $term)
-                                <option value="{{ $term->id }}">{{ $term->name }} {{ $term->academicYear ? '(' . $term->academicYear->year . ')' : '' }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Course Level</label>
-                        <select class="form-select" name="units[${unitCount}][course_level]">
-                            <option value="beginner">Beginner</option>
-                            <option value="intermediate">Intermediate</option>
-                            <option value="advanced">Advanced</option>
-                        </select>
-                    </div>
+                <div class="col-md-4">
+                    <label class="form-label required">Hours</label>
+                    <input type="number" class="form-control" name="units[${unitCount}][hours]" placeholder="Hours" min="1" required>
                 </div>
             </div>
-        `;
-        container.insertAdjacentHTML('beforeend', unitHtml);
-        unitCount++;
-    } catch (error) {
-        console.error('Error adding unit:', error);
-        alert('Error adding new unit: ' + error.message + '. Please try again.');
-    }
+            <div class="row mt-2">
+                <div class="col-md-6">
+                    <label class="form-label">Term</label>
+                    <select class="form-select" name="units[${unitCount}][term_id]">
+                        @foreach($terms as $term)
+                            <option value="{{ $term->id }}">{{ $term->name }} {{ $term->academicYear ? '(' . $term->academicYear->year . ')' : '' }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Course Level</label>
+                    <select class="form-select" name="units[${unitCount}][course_level]">
+                        <option value="beginner">Beginner</option>
+                        <option value="intermediate">Intermediate</option>
+                        <option value="advanced">Advanced</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    `;
+    container.insertAdjacentHTML('beforeend', unitHtml);
+    unitCount++;
 }
 
 function removeUnit(button) {
-    try {
-        const unitItem = button.closest('.unit-item');
-        const unitId = unitItem.dataset.unitId;
-        
-        if (unitId) {
-            // This is an existing unit, mark for deletion
-            const deleteInput = document.createElement('input');
-            deleteInput.type = 'hidden';
-            deleteInput.name = `delete_units[]`;
-            deleteInput.value = unitId;
-            unitItem.appendChild(deleteInput);
-            unitItem.style.display = 'none';
-        } else {
-            // This is a new unit, just remove it
-            unitItem.remove();
-        }
-    } catch (error) {
-        console.error('Error removing unit:', error);
-        alert('Error removing unit: ' + error.message + '. Please try again.');
+    const unitItem = button.closest('.unit-item');
+    const unitId = unitItem.dataset.unitId;
+    
+    if (unitId) {
+        // This is an existing unit, mark for deletion
+        const deleteInput = document.createElement('input');
+        deleteInput.type = 'hidden';
+        deleteInput.name = `delete_units[]`;
+        deleteInput.value = unitId;
+        unitItem.appendChild(deleteInput);
+        unitItem.style.display = 'none';
+    } else {
+        // This is a new unit, just remove it
+        unitItem.remove();
     }
 }
 
 // Load teachers based on selected course
 document.getElementById('course_id').addEventListener('change', function() {
-    try {
-        const courseId = this.value;
-        const teacherSelect = document.getElementById('teacher_id');
-        
-        // Clear current options except the first one
-        teacherSelect.innerHTML = '<option value="">Select Teacher</option>';
-        
-        if (courseId) {
-            // Show loading state
-            teacherSelect.innerHTML = '<option value="">Loading teachers...</option>';
-            
-            // Fetch teachers for this course via AJAX
-            fetch(`/staff/lessons/get-teachers/${courseId}`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(teachers => {
-                    teacherSelect.innerHTML = '<option value="">Select Teacher</option>';
-                    teachers.forEach(teacher => {
-                        const option = document.createElement('option');
-                        option.value = teacher.id;
-                        option.textContent = teacher.teacher_name;
-                        teacherSelect.appendChild(option);
-                    });
-                })
-                .catch(error => {
-                    console.error('Error loading teachers:', error);
-                    teacherSelect.innerHTML = '<option value="">Error loading teachers</option>';
-                    alert('Error loading teachers: ' + error.message + '. Please refresh the page and try again.');
+    const courseId = this.value;
+    const teacherSelect = document.getElementById('teacher_id');
+    
+    // Clear current options except the first one
+    teacherSelect.innerHTML = '<option value="">Select Teacher</option>';
+    
+    if (courseId) {
+        // Fetch teachers for this course via AJAX
+        fetch(`/staff/lessons/get-teachers/${courseId}`)
+            .then(response => response.json())
+            .then(teachers => {
+                teachers.forEach(teacher => {
+                    const option = document.createElement('option');
+                    option.value = teacher.id;
+                    option.textContent = teacher.teacher_name;
+                    teacherSelect.appendChild(option);
                 });
-        }
-    } catch (error) {
-        console.error('Error in teacher loading:', error);
-        alert('Error loading teachers: ' + error.message + '. Please try again.');
+            })
+            .catch(error => console.error('Error loading teachers:', error));
     }
 });
 
