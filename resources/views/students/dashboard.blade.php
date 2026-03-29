@@ -3,6 +3,123 @@
 @section('title', 'Dashboard')
 
 @section('content')
+<style>
+.timetable-card {
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.timetable-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+
+.timetable-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.timetable-title {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.timetable-body {
+    padding: 1.5rem;
+}
+
+.timetable-image {
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.timetable-image img {
+    border: 2px solid #f0f0f0;
+    transition: transform 0.2s ease;
+}
+
+.timetable-image img:hover {
+    transform: scale(1.02);
+}
+
+.timetable-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.timetable-dates {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.timetable-time-remaining {
+    font-size: 0.85rem;
+}
+
+.timetable-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+/* Modal styles for timetable image */
+.timetable-modal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.9);
+    cursor: pointer;
+}
+
+.timetable-modal-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    max-width: 90%;
+    max-height: 90%;
+}
+
+.timetable-modal-content img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border: 4px solid white;
+    border-radius: 8px;
+}
+
+.timetable-modal-close {
+    position: absolute;
+    top: 20px;
+    right: 35px;
+    color: #f1f1f1;
+    font-size: 40px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.timetable-modal-close:hover {
+    color: #bbb;
+}
+</style>
+
 <div class="container-fluid">
 
     <!-- Welcome Header -->
@@ -550,6 +667,92 @@
                             <p class="mt-2 text-muted">Loading live classes...</p>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Timetables Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h3 class="section-title"><i class="bi bi-calendar2-week me-2"></i>Timetables</h3>
+        </div>
+        <div class="col-12">
+            <div class="info-card">
+                <div class="info-card-header">
+                    <h4><i class="bi bi-calendar2-week me-2"></i>Current Timetables</h4>
+                    <span class="badge bg-info">{{ $timetables->count() }} Active</span>
+                </div>
+                <div class="info-card-body">
+                    @forelse($timetables as $timetable)
+                        <div class="timetable-card">
+                            <div class="timetable-header">
+                                <h5 class="timetable-title">{{ $timetable->title }}</h5>
+                                <div class="timetable-status">
+                                    @if($timetable->valid_from && $timetable->valid_until)
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check-circle me-1"></i>Valid
+                                        </span>
+                                    @else
+                                        <span class="badge bg-primary">
+                                            <i class="bi bi-infinity me-1"></i>Always Valid
+                                        </span>
+                                    @endif
+                                </div>
+                            </div>
+                            <div class="timetable-body">
+                                @if($timetable->image)
+                                    <div class="timetable-image">
+                                        <img src="data:image/jpeg;base64,{{ $timetable->image }}" 
+                                             alt="Timetable: {{ $timetable->title }}" 
+                                             class="img-fluid rounded"
+                                             style="max-height: 200px; cursor: pointer;"
+                                             onclick="viewTimetableImage('{{ $timetable->title }}', 'data:image/jpeg;base64,{{ $timetable->image }}')">
+                                    </div>
+                                @endif
+                                <div class="timetable-details">
+                                    @if($timetable->valid_from && $timetable->valid_until)
+                                        <div class="timetable-dates">
+                                            <i class="bi bi-calendar-range me-2"></i>
+                                            <strong>Valid Period:</strong>
+                                            {{ \Carbon\Carbon::parse($timetable->valid_from)->format('M d, Y') }} - 
+                                            {{ \Carbon\Carbon::parse($timetable->valid_until)->format('M d, Y') }}
+                                        </div>
+                                        <div class="timetable-time-remaining">
+                                            <i class="bi bi-clock me-2"></i>
+                                            <small class="text-muted">
+                                                {{ \Carbon\Carbon::now()->between($timetable->valid_from, $timetable->valid_until) 
+                                                    ? 'Expires in ' . \Carbon\Carbon::now()->diffForHumans($timetable->valid_until, true)
+                                                    : 'Valid for ' . \Carbon\Carbon::now()->diffForHumans($timetable->valid_from, true) . ' from now'
+                                                }}
+                                            </small>
+                                        </div>
+                                    @else
+                                        <div class="timetable-dates">
+                                            <i class="bi bi-infinity me-2"></i>
+                                            <strong>No expiry date set</strong>
+                                        </div>
+                                    @endif
+                                    <div class="timetable-actions">
+                                        <button onclick="viewTimetableImage('{{ $timetable->title }}', 'data:image/jpeg;base64,{{ $timetable->image }}')" 
+                                                class="btn btn-primary btn-sm">
+                                            <i class="bi bi-eye me-1"></i>View Full Size
+                                        </button>
+                                        <button onclick="downloadTimetable('{{ $timetable->title }}', 'data:image/jpeg;base64,{{ $timetable->image }}')" 
+                                                class="btn btn-outline-secondary btn-sm">
+                                            <i class="bi bi-download me-1"></i>Download
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="text-center py-5">
+                            <i class="bi bi-calendar-x text-muted" style="font-size: 3rem;"></i>
+                            <h5 class="text-muted mt-3">No Active Timetables</h5>
+                            <p class="text-muted">There are currently no timetables available. Please check back later.</p>
+                        </div>
+                    @endforelse
                 </div>
             </div>
         </div>
@@ -1377,6 +1580,45 @@ function shareResource(resourceId, resourceName) {
     } else {
         navigator.clipboard.writeText(url).then(() => alert('Resource link copied to clipboard!'));
     }
+}
+
+// Timetable functions
+function viewTimetableImage(title, imageData) {
+    // Create modal if it doesn't exist
+    let modal = document.getElementById('timetableModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'timetableModal';
+        modal.className = 'timetable-modal';
+        modal.innerHTML = `
+            <span class="timetable-modal-close">&times;</span>
+            <div class="timetable-modal-content">
+                <img id="timetableModalImage" src="" alt="">
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        // Add close functionality
+        modal.onclick = function(event) {
+            if (event.target === modal || event.target.className === 'timetable-modal-close') {
+                modal.style.display = 'none';
+            }
+        };
+    }
+
+    // Set image and show modal
+    document.getElementById('timetableModalImage').src = imageData;
+    document.getElementById('timetableModalImage').alt = title;
+    modal.style.display = 'block';
+}
+
+function downloadTimetable(title, imageData) {
+    const link = document.createElement('a');
+    link.href = imageData;
+    link.download = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_timetable.jpg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
 </script>
 @endsection

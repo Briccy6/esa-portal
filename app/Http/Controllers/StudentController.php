@@ -1342,6 +1342,18 @@ class StudentController extends Controller
         $subscriptions = \App\Models\Subscription::active()->orderBy('price')->get();
         $activeSubscription = $student->activeSubscription;
 
+        // Get active timetables for the student
+        $timetables = \App\Models\Timetable::where(function($query) {
+            $query->whereNull('valid_from')
+                  ->orWhere('valid_from', '<=', now());
+        })
+        ->where(function($query) {
+            $query->whereNull('valid_until')
+                  ->orWhere('valid_until', '>=', now());
+        })
+        ->orderBy('created_at', 'desc')
+        ->get();
+
         return view('students.dashboard', compact(
             'student',
             'approvedAttendances',
@@ -1368,7 +1380,8 @@ class StudentController extends Controller
             'announcements',
             'exams',
             'subscriptions',
-            'activeSubscription'
+            'activeSubscription',
+            'timetables'
         ));
     }
 

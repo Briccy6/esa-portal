@@ -7,10 +7,14 @@ use App\Models\Course;
 use App\Models\Teacher;
 use App\Models\Lesson;
 use App\Models\Term;
+use App\Models\LessonUnit;
 use Illuminate\Support\Facades\DB;
 use App\Models\AcademicYear;
 use App\Models\TimetableSession;
 use App\Models\ReportCardSubject;
+use App\Models\Mark;
+use App\Models\Attendance;
+use App\Models\TeacherDaily;
 
 class LessonController extends Controller
 {
@@ -242,34 +246,75 @@ public function createDetails(Request $request, $lessonId)
             
             $lesson = Lesson::findOrFail($lessonId);
             
-            // Delete in proper order to avoid foreign key constraint issues
+            \Log::info('Attempting to delete lesson: ' . $lesson->title . ' (ID: ' . $lessonId . ')');
             
             // 1. Delete lesson-term relationships (pivot table)
-            $lesson->terms()->detach();
+            try {
+                $lesson->terms()->detach();
+                \Log::info('Detached terms from lesson');
+            } catch (\Exception $e) {
+                \Log::warning('Could not detach terms: ' . $e->getMessage());
+            }
             
             // 2. Delete lesson-exam relationships (pivot table)
-            $lesson->exams()->detach();
+            try {
+                $lesson->exams()->detach();
+                \Log::info('Detached exams from lesson');
+            } catch (\Exception $e) {
+                \Log::warning('Could not detach exams: ' . $e->getMessage());
+            }
             
-            // 3. Delete lesson units (they have cascade foreign key to lesson)
-            \App\Models\LessonUnit::where('lesson_id', $lessonId)->delete();
+            // 3. Delete lesson units
+            try {
+                $unitsDeleted = LessonUnit::where('lesson_id', $lessonId)->delete();
+                \Log::info('Deleted ' . $unitsDeleted . ' lesson units');
+            } catch (\Exception $e) {
+                \Log::warning('Could not delete lesson units: ' . $e->getMessage());
+            }
             
-            // 4. Delete timetable sessions (they have cascade foreign key to lesson)
-            TimetableSession::where('lesson_id', $lessonId)->delete();
+            // 4. Delete timetable sessions
+            try {
+                $sessionsDeleted = TimetableSession::where('lesson_id', $lessonId)->delete();
+                \Log::info('Deleted ' . $sessionsDeleted . ' timetable sessions');
+            } catch (\Exception $e) {
+                \Log::warning('Could not delete timetable sessions: ' . $e->getMessage());
+            }
             
-            // 5. Delete report card subjects (they have foreign key to lesson)
-            ReportCardSubject::where('lesson_id', $lessonId)->delete();
+            // 5. Delete report card subjects
+            try {
+                $subjectsDeleted = ReportCardSubject::where('lesson_id', $lessonId)->delete();
+                \Log::info('Deleted ' . $subjectsDeleted . ' report card subjects');
+            } catch (\Exception $e) {
+                \Log::warning('Could not delete report card subjects: ' . $e->getMessage());
+            }
             
-            // 6. Delete any marks related to this lesson
-            \App\Models\Marks::where('lesson_id', $lessonId)->delete();
+            // 6. Delete marks
+            try {
+                $marksDeleted = Mark::where('lesson_id', $lessonId)->delete();
+                \Log::info('Deleted ' . $marksDeleted . ' marks');
+            } catch (\Exception $e) {
+                \Log::warning('Could not delete marks: ' . $e->getMessage());
+            }
             
-            // 7. Delete any attendance records related to this lesson
-            \App\Models\Attendance::where('lesson_id', $lessonId)->delete();
+            // 7. Delete attendance
+            try {
+                $attendanceDeleted = Attendance::where('lesson_id', $lessonId)->delete();
+                \Log::info('Deleted ' . $attendanceDeleted . ' attendance records');
+            } catch (\Exception $e) {
+                \Log::warning('Could not delete attendance: ' . $e->getMessage());
+            }
             
-            // 8. Delete any teacher dailies related to this lesson
-            \App\Models\TeacherDaily::where('lesson_id', $lessonId)->delete();
+            // 8. Delete teacher dailies
+            try {
+                $dailiesDeleted = TeacherDaily::where('lesson_id', $lessonId)->delete();
+                \Log::info('Deleted ' . $dailiesDeleted . ' teacher dailies');
+            } catch (\Exception $e) {
+                \Log::warning('Could not delete teacher dailies: ' . $e->getMessage());
+            }
             
             // 9. Finally delete the lesson
             $lesson->delete();
+            \Log::info('Deleted lesson successfully');
             
             DB::commit();
             
@@ -280,6 +325,7 @@ public function createDetails(Request $request, $lessonId)
             DB::rollback();
             
             \Log::error('Error deleting lesson: ' . $e->getMessage());
+            \Log::error('Stack trace: ' . $e->getTraceAsString());
             
             return redirect()->route('staff.lessons.index')
                              ->with('error', 'Error deleting lesson: ' . $e->getMessage());

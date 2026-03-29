@@ -4,6 +4,10 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Timetable;
+use App\Models\Student;
+use App\Mail\TimetableCreatedMail;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 
 class DosTimetableController extends Controller
 {
@@ -23,14 +27,40 @@ class DosTimetableController extends Controller
 
         $imageData = base64_encode(file_get_contents($request->file('image')->getRealPath()));
 
-        Timetable::create([
+        $timetable = Timetable::create([
             'title' => $request->title,
             'image' => $imageData,
             'valid_from' => $request->valid_from,
             'valid_until' => $request->valid_until,
         ]);
 
-        return redirect()->route('dos.timetable.create')->with('success', 'Timetable uploaded successfully!');
+        // Send email notifications to all students
+        try {
+            $students = Student::all(); // Get all students since there's no status column
+            $emailCount = 0;
+            
+            foreach ($students as $student) {
+                if ($student->email) {
+                    try {
+                        Mail::to($student->email)->send(new TimetableCreatedMail($timetable, $student));
+                        $emailCount++;
+                    } catch (\Exception $e) {
+                        Log::warning("Failed to send timetable email to student {$student->id}: " . $e->getMessage());
+                    }
+                }
+            }
+            
+            Log::info("Timetable {$timetable->id} created and notifications sent to {$emailCount} students");
+            
+        } catch (\Exception $e) {
+            Log::error("Failed to send timetable notifications: " . $e->getMessage());
+            // Don't fail the request if emails fail
+        }
+
+        return redirect()->route('dos.timetable.create')->with('success', 
+            "Timetable uploaded successfully! " . 
+            (isset($emailCount) && $emailCount > 0 ? "Email notifications sent to {$emailCount} students." : "")
+        );
     }
 
     public function index()
