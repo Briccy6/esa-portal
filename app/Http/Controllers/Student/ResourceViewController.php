@@ -37,21 +37,22 @@ class ResourceViewController extends Controller
         }
 
         // Decide which file to serve (video preferred)
-        if ($resource->video_path && Storage::disk('public')->exists($resource->video_path)) {
-            $path = $resource->video_path;
-            $mime = Storage::disk('public')->mimeType($path);
-        } elseif ($resource->document_path && Storage::disk('public')->exists($resource->document_path)) {
-            $path = $resource->document_path;
-            $mime = Storage::disk('public')->mimeType($path);
+        if ($resource->video_blob) {
+            $content = $resource->video_blob;
+            $mime = $resource->video_mime ?: 'video/mp4';
+            $filename = $resource->video_name ?: 'video.mp4';
+        } elseif ($resource->document_blob) {
+            $content = $resource->document_blob;
+            $mime = $resource->document_mime ?: 'application/pdf';
+            $filename = $resource->document_name ?: 'document.pdf';
         } else {
             abort(404, 'Resource file not found.');
         }
 
         // Serve file inline (e.g., video or PDF in browser)
-        return Storage::disk('public')->response($path, null, [
-            'Content-Type' => $mime,
-            'Content-Disposition' => 'inline; filename="' . basename($path) . '"',
-        ]);
+        return response($content)
+            ->header('Content-Type', $mime)
+            ->header('Content-Disposition', 'inline; filename="' . $filename . '"');
     }
 
     public function download(Resource $resource, Request $request)
@@ -77,16 +78,20 @@ class ResourceViewController extends Controller
         }
 
         // Decide which file to serve (video preferred)
-        if ($resource->video_path && Storage::disk('public')->exists($resource->video_path)) {
-            $path = $resource->video_path;
-        } elseif ($resource->document_path && Storage::disk('public')->exists($resource->document_path)) {
-            $path = $resource->document_path;
+        if ($resource->video_blob) {
+            $content = $resource->video_blob;
+            $filename = $resource->video_name ?: 'video.mp4';
+        } elseif ($resource->document_blob) {
+            $content = $resource->document_blob;
+            $filename = $resource->document_name ?: 'document.pdf';
         } else {
             abort(404, 'Resource file not found.');
         }
 
         // Serve file as download
-        return Storage::disk('public')->download($path, basename($path));
+        return response($content)
+            ->header('Content-Type', 'application/octet-stream')
+            ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
     }
 
     public function payment(Resource $resource, Request $request)

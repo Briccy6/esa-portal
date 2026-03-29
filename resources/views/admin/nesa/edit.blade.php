@@ -113,6 +113,16 @@
                                     <textarea name="nesa_remarks" id="nesa_remarks" class="form-control" rows="3">{{ old('nesa_remarks', $student->nesa_remarks) }}</textarea>
                                     <small class="form-text text-muted">Additional notes about the NESA registration</small>
                                 </div>
+
+                                <div class="form-group">
+                                    <div class="form-check">
+                                        <input type="checkbox" name="send_email" id="send_email" class="form-check-input" value="1" checked>
+                                        <label class="form-check-label" for="send_email">
+                                            <i class="fas fa-envelope mr-1"></i>Send email notification to student
+                                        </label>
+                                    </div>
+                                    <small class="form-text text-muted">Student will receive an email about their NESA registration status update</small>
+                                </div>
                             </div>
                         </div>
 
@@ -154,7 +164,7 @@
                     <span>&times;</span>
                 </button>
             </div>
-            <form method="POST" action="{{ route('admin.nesa.mark-registered', $student) }}" enctype="multipart/form-data">
+            <form method="POST" action="{{ route('admin.nesa.markAsRegistered', $student) }}" enctype="multipart/form-data">
                 @csrf
                 <div class="modal-body">
                     <div class="alert alert-info">
@@ -180,6 +190,16 @@
                     <div class="form-group">
                         <label for="quick_nesa_remarks" class="form-label">Remarks</label>
                         <textarea name="nesa_remarks" id="quick_nesa_remarks" class="form-control" rows="2"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <div class="form-check">
+                            <input type="checkbox" name="send_email" id="quick_send_email" class="form-check-input" value="1" checked>
+                            <label class="form-check-label" for="quick_send_email">
+                                <i class="fas fa-envelope mr-1"></i>Send email notification to student
+                            </label>
+                        </div>
+                        <small class="form-text text-info">Student will receive an email confirmation of their NESA registration</small>
                     </div>
                 </div>
                 <div class="modal-footer">

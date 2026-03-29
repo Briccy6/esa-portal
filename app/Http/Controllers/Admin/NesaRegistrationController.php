@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Student;
+use App\Mail\NesaRegistrationStatusMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Mail;
 
 class NesaRegistrationController extends Controller
 {
@@ -53,6 +55,7 @@ class NesaRegistrationController extends Controller
             'nesa_document' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120',
             'nesa_remarks' => 'nullable|string|max:500',
             'nesa_registered' => 'boolean',
+            'send_email' => 'boolean',
         ]);
 
         if ($validator->fails()) {
@@ -63,6 +66,8 @@ class NesaRegistrationController extends Controller
         }
 
         $data = $request->except('nesa_document');
+        $oldStatus = $student->nesa_registered;
+        $newStatus = $request->nesa_registered;
 
         // Handle file upload
         if ($request->hasFile('nesa_document')) {
@@ -84,6 +89,30 @@ class NesaRegistrationController extends Controller
 
         $student->update($data);
 
+        // Send email notification if status changed and email sending is requested
+        if ($request->send_email && $oldStatus != $newStatus && $student->email) {
+            try {
+                $status = $newStatus ? 'approved' : 'rejected';
+                $emailContent = $status === 'rejected' ? ($request->nesa_remarks ?? 'Your registration could not be processed at this time.') : null;
+                $documentPath = $status === 'approved' && $student->nesa_document ? storage_path('app/public/' . $student->nesa_document) : null;
+                
+                Mail::to($student->email)->send(new NesaRegistrationStatusMail(
+                    $student,
+                    $status,
+                    $emailContent,
+                    $documentPath
+                ));
+                
+                return redirect()
+                    ->route('admin.students.index')
+                    ->with('success', 'NESA registration updated and email notification sent to ' . $student->full_name);
+            } catch (\Exception $e) {
+                return redirect()
+                    ->route('admin.students.index')
+                    ->with('warning', 'NESA registration updated for ' . $student->full_name . ' but email notification failed: ' . $e->getMessage());
+            }
+        }
+
         return redirect()
             ->route('admin.students.index')
             ->with('success', 'NESA registration updated successfully for ' . $student->full_name);
@@ -96,6 +125,7 @@ class NesaRegistrationController extends Controller
             'nesa_reg_number' => 'required|string|max:50',
             'nesa_document' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120',
             'nesa_remarks' => 'nullable|string|max:500',
+            'send_email' => 'boolean',
         ]);
 
         if ($validator->fails()) {
@@ -120,6 +150,28 @@ class NesaRegistrationController extends Controller
             $documentPath,
             $request->nesa_remarks
         );
+
+        // Send email notification if requested
+        if ($request->send_email && $student->email) {
+            try {
+                $fullDocumentPath = $documentPath ? storage_path('app/public/' . $documentPath) : null;
+                
+                Mail::to($student->email)->send(new NesaRegistrationStatusMail(
+                    $student,
+                    'approved',
+                    null,
+                    $fullDocumentPath
+                ));
+                
+                return redirect()
+                    ->route('admin.students.index')
+                    ->with('success', $student->full_name . ' has been successfully registered for NESA examination and email notification sent.');
+            } catch (\Exception $e) {
+                return redirect()
+                    ->route('admin.students.index')
+                    ->with('warning', $student->full_name . ' has been successfully registered for NESA examination but email notification failed: ' . $e->getMessage());
+            }
+        }
 
         return redirect()
             ->route('admin.students.index')
