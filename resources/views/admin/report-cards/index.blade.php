@@ -52,23 +52,87 @@
                             <i class="fas fa-bolt me-1"></i> Generate for Class
                         </button>
                     </div>
-                    <div class="rc-field rc-field--terms">
+
+                    {{-- ── CUSTOM MULTI-SELECT TERMS ── --}}
+                    <div class="rc-field">
                         <label class="rc-label">Term(s) — one report card per student per term</label>
-                        <select name="term_ids[]" class="rc-select rc-select--multi" multiple size="10" required>
+
+                        {{-- Hidden native select that actually submits --}}
+                        <select name="term_ids[]" id="termNativeSelect" multiple hidden required>
                             @forelse($terms->groupBy('academic_year_id') as $yearId => $yearTerms)
-                                @php
-                                    $ogLabel = optional($yearTerms->first()->academicYear)->year ?? ('Year #'.$yearId);
-                                @endphp
-                                <optgroup label="{{ $ogLabel }}">
-                                    @foreach($yearTerms as $term)
-                                        <option value="{{ $term->id }}">{{ $term->name ?: 'Term #'.$term->id }}</option>
-                                    @endforeach
-                                </optgroup>
+                                @foreach($yearTerms as $term)
+                                    <option value="{{ $term->id }}">{{ $term->name ?: 'Term #'.$term->id }}</option>
+                                @endforeach
                             @empty
-                                <option value="" disabled>No terms in database — add terms first</option>
                             @endforelse
                         </select>
-                        <span class="rc-hint">Hold <kbd>Ctrl</kbd> / <kbd>Cmd</kbd> to select multiple terms.</span>
+
+                        {{-- Custom styled dropdown --}}
+                        <div class="ms-dropdown" id="termDropdown">
+                            <button type="button" class="ms-trigger" id="termTrigger" aria-haspopup="listbox" aria-expanded="false">
+                                <span class="ms-trigger__label" id="termTriggerLabel">
+                                    <span class="ms-placeholder">Select terms…</span>
+                                </span>
+                                <span class="ms-trigger__icons">
+                                    <span class="ms-clear-all" id="termClearAll" title="Clear all" style="display:none">
+                                        <i class="fas fa-times-circle"></i>
+                                    </span>
+                                    <i class="fas fa-chevron-down ms-chevron" id="termChevron"></i>
+                                </span>
+                            </button>
+
+                            <div class="ms-panel" id="termPanel" role="listbox" aria-multiselectable="true" style="display:none">
+                                {{-- Search --}}
+                                <div class="ms-search-wrap">
+                                    <i class="fas fa-search ms-search-icon"></i>
+                                    <input type="text" class="ms-search" id="termSearch" placeholder="Search terms…" autocomplete="off">
+                                </div>
+
+                                {{-- Select All / Clear All row --}}
+                                <div class="ms-bulk-row">
+                                    <button type="button" class="ms-bulk-btn" id="termSelectAll">
+                                        <i class="fas fa-check-double me-1"></i> Select All
+                                    </button>
+                                    <button type="button" class="ms-bulk-btn ms-bulk-btn--danger" id="termDeselectAll">
+                                        <i class="fas fa-ban me-1"></i> Clear All
+                                    </button>
+                                    <span class="ms-count-badge" id="termCountBadge">0 selected</span>
+                                </div>
+
+                                {{-- Option list --}}
+                                <ul class="ms-list" id="termList" role="listbox">
+                                    @forelse($terms->groupBy('academic_year_id') as $yearId => $yearTerms)
+                                        @php
+                                            $ogLabel = optional($yearTerms->first()->academicYear)->year ?? ('Year #'.$yearId);
+                                        @endphp
+                                        <li class="ms-group-label" data-group="{{ $yearId }}">
+                                            <i class="fas fa-layer-group me-1"></i> {{ $ogLabel }}
+                                        </li>
+                                        @foreach($yearTerms as $term)
+                                            <li class="ms-option"
+                                                role="option"
+                                                aria-selected="false"
+                                                data-value="{{ $term->id }}"
+                                                data-label="{{ $term->name ?: 'Term #'.$term->id }}"
+                                                data-group="{{ $yearId }}"
+                                                data-search="{{ strtolower($term->name ?: 'Term #'.$term->id) }} {{ strtolower($ogLabel) }}">
+                                                <span class="ms-checkbox">
+                                                    <i class="fas fa-check ms-check-icon"></i>
+                                                </span>
+                                                <span class="ms-option__text">{{ $term->name ?: 'Term #'.$term->id }}</span>
+                                            </li>
+                                        @endforeach
+                                    @empty
+                                        <li class="ms-empty">No terms in database — add terms first</li>
+                                    @endforelse
+                                </ul>
+                            </div>
+                        </div>
+
+                        {{-- Selected pills (visible below the dropdown) --}}
+                        <div class="ms-pills" id="termPills"></div>
+
+                        <span class="rc-hint">💡 Click items to select/deselect. Use <strong>Select All</strong> or search to filter.</span>
                     </div>
                 </div>
             </form>
@@ -283,8 +347,6 @@
 <style>
 /* ════════════════════════════════════════════
    REPORT CARDS — scoped component styles
-   (all classes prefixed with rc- to avoid
-    collisions with the admin layout)
 ════════════════════════════════════════════ */
 
 /* PAGE HEADER */
@@ -322,7 +384,7 @@
     background: #fff;
     border-radius: 14px;
     box-shadow: 0 2px 16px rgba(0,0,0,.07);
-    overflow: hidden;
+    overflow: visible;
     border: 1px solid #e9ecef;
 }
 .rc-card__header {
@@ -333,6 +395,7 @@
     font-size: 0.92rem;
     color: #fff;
     gap: 0.4rem;
+    border-radius: 14px 14px 0 0;
 }
 .rc-card__header--blue  { background: linear-gradient(135deg,#0d6efd,#0a58ca); }
 .rc-card__header--green { background: linear-gradient(135deg,#198754,#0f5132); }
@@ -350,16 +413,9 @@
 /* GENERATION FORM */
 .rc-gen-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr minmax(140px, 180px);
+    grid-template-columns: 1fr 1fr 1fr minmax(140px, 180px);
     gap: 1rem;
     align-items: end;
-}
-.rc-field--terms {
-    grid-column: 1 / -1;
-}
-.rc-select--multi {
-    width: 100%;
-    min-height: 110px;
 }
 .rc-hint {
     display: block;
@@ -374,9 +430,8 @@
     background: #f1f3f5;
     border: 1px solid #dee2e6;
 }
-@media (max-width: 992px) {
+@media (max-width: 1100px) {
     .rc-gen-grid { grid-template-columns: 1fr 1fr; }
-    .rc-field--action { grid-column: 1 / -1; }
 }
 @media (max-width: 576px) {
     .rc-gen-grid { grid-template-columns: 1fr; }
@@ -422,6 +477,335 @@
     box-shadow: 0 3px 10px rgba(13,202,240,.3);
 }
 .rc-btn--teal:hover { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(13,202,240,.4); color:#fff; }
+
+/* ════════════════════════════════════════════
+   CUSTOM MULTI-SELECT DROPDOWN  (ms- prefix)
+════════════════════════════════════════════ */
+.ms-dropdown {
+    position: relative;
+    width: 100%;
+    font-size: 0.875rem;
+    user-select: none;
+}
+
+/* Trigger button */
+.ms-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 42px;
+    padding: 0.45rem 0.75rem;
+    border: 1.5px solid #dee2e6;
+    border-radius: 10px;
+    background: #fff;
+    cursor: pointer;
+    color: #212529;
+    font-size: 0.875rem;
+    text-align: left;
+    transition: border-color .2s, box-shadow .2s, background .15s;
+    gap: 8px;
+}
+.ms-trigger:hover {
+    border-color: #86b7fe;
+    background: #fafcff;
+}
+.ms-trigger.ms-open {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 3px rgba(13,110,253,.12);
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    background: #fafcff;
+}
+.ms-trigger__label {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+}
+.ms-placeholder { color: #adb5bd; font-style: italic; }
+.ms-trigger__icons {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+.ms-chevron {
+    color: #6c757d;
+    font-size: 0.72rem;
+    transition: transform .25s cubic-bezier(.4,0,.2,1);
+}
+.ms-open .ms-chevron { transform: rotate(180deg); }
+.ms-clear-all {
+    color: #adb5bd;
+    font-size: 0.82rem;
+    cursor: pointer;
+    line-height: 1;
+    transition: color .15s;
+}
+.ms-clear-all:hover { color: #dc3545; }
+
+/* Trigger pills (selected items shown inside the button) */
+.ms-trigger-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #e7f1ff;
+    color: #084298;
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    white-space: nowrap;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.ms-trigger-overflow {
+    background: #f1f3f5;
+    color: #495057;
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* Panel */
+.ms-panel {
+    position: absolute;
+    top: calc(100% - 1px);
+    left: 0; right: 0;
+    z-index: 9999;
+    background: #fff;
+    border: 1.5px solid #0d6efd;
+    border-top: none;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+    box-shadow: 0 8px 24px rgba(13,110,253,.12), 0 2px 8px rgba(0,0,0,.08);
+    overflow: hidden;
+    animation: msSlideDown .18s cubic-bezier(.4,0,.2,1);
+}
+@keyframes msSlideDown {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Search */
+.ms-search-wrap {
+    position: relative;
+    padding: 10px 10px 6px;
+    border-bottom: 1px solid #f1f3f5;
+}
+.ms-search-icon {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%) translateY(2px);
+    color: #adb5bd;
+    font-size: 0.72rem;
+    pointer-events: none;
+}
+.ms-search {
+    width: 100%;
+    border: 1.5px solid #dee2e6;
+    border-radius: 7px;
+    padding: 6px 10px 6px 28px;
+    font-size: 0.815rem;
+    color: #212529;
+    background: #f8f9fa;
+    outline: none;
+    transition: border-color .2s, background .2s;
+}
+.ms-search:focus {
+    border-color: #0d6efd;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(13,110,253,.1);
+}
+.ms-search::placeholder { color: #adb5bd; }
+
+/* Bulk row */
+.ms-bulk-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-bottom: 1px solid #f1f3f5;
+    background: #fafafa;
+}
+.ms-bulk-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: none;
+    border: 1.5px solid #dee2e6;
+    border-radius: 6px;
+    padding: 3px 10px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #495057;
+    cursor: pointer;
+    transition: all .15s;
+    white-space: nowrap;
+}
+.ms-bulk-btn:hover {
+    background: #e9ecef;
+    border-color: #adb5bd;
+    color: #212529;
+}
+.ms-bulk-btn--danger { color: #842029; border-color: #f5c2c7; }
+.ms-bulk-btn--danger:hover { background: #f8d7da; border-color: #f1aeb5; color: #58151c; }
+.ms-count-badge {
+    margin-left: auto;
+    background: #0d6efd;
+    color: #fff;
+    border-radius: 20px;
+    padding: 2px 10px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    white-space: nowrap;
+    transition: background .2s;
+}
+.ms-count-badge.ms-count-zero { background: #dee2e6; color: #6c757d; }
+
+/* Option list */
+.ms-list {
+    list-style: none;
+    margin: 0;
+    padding: 6px 6px;
+    max-height: 240px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #dee2e6 transparent;
+}
+.ms-list::-webkit-scrollbar { width: 5px; }
+.ms-list::-webkit-scrollbar-track { background: transparent; }
+.ms-list::-webkit-scrollbar-thumb { background: #dee2e6; border-radius: 99px; }
+
+/* Group label */
+.ms-group-label {
+    padding: 6px 10px 3px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    pointer-events: none;
+    margin-top: 4px;
+}
+.ms-group-label:first-child { margin-top: 0; }
+
+/* Option item */
+.ms-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 10px;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: background .12s;
+    color: #212529;
+}
+.ms-option:hover {
+    background: #f0f7ff;
+}
+.ms-option.ms-selected {
+    background: #e7f1ff;
+    color: #084298;
+}
+.ms-option.ms-selected:hover { background: #dbeafe; }
+.ms-option.ms-hidden { display: none; }
+
+/* Checkbox */
+.ms-checkbox {
+    width: 18px; height: 18px;
+    border-radius: 5px;
+    border: 2px solid #dee2e6;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    background: #fff;
+    transition: border-color .15s, background .15s;
+}
+.ms-option:hover .ms-checkbox { border-color: #86b7fe; }
+.ms-option.ms-selected .ms-checkbox {
+    background: #0d6efd;
+    border-color: #0d6efd;
+}
+.ms-check-icon {
+    font-size: 0.62rem;
+    color: #fff;
+    opacity: 0;
+    transform: scale(0.6);
+    transition: opacity .12s, transform .12s;
+}
+.ms-option.ms-selected .ms-check-icon {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.ms-option__text {
+    font-size: 0.845rem;
+    line-height: 1.3;
+    min-width: 0;
+}
+
+/* Empty */
+.ms-empty {
+    padding: 16px 10px;
+    text-align: center;
+    color: #adb5bd;
+    font-size: 0.82rem;
+    font-style: italic;
+    pointer-events: none;
+}
+
+/* No-results */
+.ms-no-results {
+    padding: 12px 10px;
+    text-align: center;
+    color: #adb5bd;
+    font-size: 0.815rem;
+    font-style: italic;
+}
+
+/* Pills row below dropdown */
+.ms-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 8px;
+    min-height: 0;
+}
+.ms-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: linear-gradient(135deg,#e7f1ff,#dbeafe);
+    color: #084298;
+    border: 1px solid #bfdbfe;
+    border-radius: 20px;
+    padding: 3px 10px 3px 10px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    animation: pillPop .18s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes pillPop {
+    from { opacity: 0; transform: scale(0.7); }
+    to   { opacity: 1; transform: scale(1); }
+}
+.ms-pill__remove {
+    cursor: pointer;
+    color: #6ea8fe;
+    font-size: 0.65rem;
+    line-height: 1;
+    transition: color .12s;
+    display: flex;
+    align-items: center;
+}
+.ms-pill__remove:hover { color: #dc3545; }
 
 /* TABLE */
 .rc-table-wrap {
@@ -590,18 +974,14 @@
     border-top: 1px solid #f1f3f5;
 }
 
-/* GROUPED ROW (one row per student / course / year; all terms stacked) */
+/* GROUPED ROW */
 .rc-table__row--grouped td {
     vertical-align: top;
     padding-top: 0.85rem;
     padding-bottom: 0.85rem;
 }
-.rc-cell-stack {
-    min-width: 88px;
-}
-.rc-meta--block {
-    margin-bottom: 6px;
-}
+.rc-cell-stack { min-width: 88px; }
+.rc-meta--block { margin-bottom: 6px; }
 .rc-term-pill {
     display: inline-block;
     font-size: 0.68rem;
@@ -612,9 +992,7 @@
     padding: 2px 8px;
     margin: 2px 2px 0 0;
 }
-.rc-avg--overall {
-    font-size: 0.95rem;
-}
+.rc-avg--overall { font-size: 0.95rem; }
 .rc-stack-label {
     display: block;
     font-size: 0.62rem;
@@ -664,6 +1042,7 @@
     font-size: 0.72rem;
     padding: 2px 8px;
 }
+
 /* RESPONSIVE */
 @media (max-width: 1200px) {
     .rc-student-cell__name { max-width: 140px; }
@@ -678,4 +1057,226 @@
     .rc-student-cell__name { max-width: 110px; }
 }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // ── State ──────────────────────────────────────────────
+    const selected = new Set(); // set of string values
+
+    // ── Element refs ──────────────────────────────────────
+    const dropdown      = document.getElementById('termDropdown');
+    const trigger       = document.getElementById('termTrigger');
+    const triggerLabel  = document.getElementById('termTriggerLabel');
+    const panel         = document.getElementById('termPanel');
+    const chevron       = document.getElementById('termChevron');
+    const searchInput   = document.getElementById('termSearch');
+    const list          = document.getElementById('termList');
+    const pillsWrap     = document.getElementById('termPills');
+    const nativeSelect  = document.getElementById('termNativeSelect');
+    const clearAllBtn   = document.getElementById('termClearAll');
+    const selectAllBtn  = document.getElementById('termSelectAll');
+    const deselectAllBtn= document.getElementById('termDeselectAll');
+    const countBadge    = document.getElementById('termCountBadge');
+    const options       = list.querySelectorAll('.ms-option');
+
+    // ── Helpers ────────────────────────────────────────────
+    function getLabel(val) {
+        const el = list.querySelector(`.ms-option[data-value="${val}"]`);
+        return el ? el.dataset.label : val;
+    }
+
+    function syncNative() {
+        Array.from(nativeSelect.options).forEach(o => {
+            o.selected = selected.has(o.value);
+        });
+    }
+
+    function renderTriggerLabel() {
+        triggerLabel.innerHTML = '';
+        if (selected.size === 0) {
+            triggerLabel.innerHTML = '<span class="ms-placeholder">Select terms…</span>';
+            clearAllBtn.style.display = 'none';
+            return;
+        }
+        clearAllBtn.style.display = 'flex';
+        const vals = Array.from(selected);
+        const maxShow = 3;
+        const shown = vals.slice(0, maxShow);
+        shown.forEach(v => {
+            const pill = document.createElement('span');
+            pill.className = 'ms-trigger-pill';
+            pill.textContent = getLabel(v);
+            triggerLabel.appendChild(pill);
+        });
+        if (vals.length > maxShow) {
+            const overflow = document.createElement('span');
+            overflow.className = 'ms-trigger-overflow';
+            overflow.textContent = `+${vals.length - maxShow} more`;
+            triggerLabel.appendChild(overflow);
+        }
+    }
+
+    function renderPills() {
+        pillsWrap.innerHTML = '';
+        selected.forEach(v => {
+            const pill = document.createElement('span');
+            pill.className = 'ms-pill';
+            pill.innerHTML = `<span>${getLabel(v)}</span><span class="ms-pill__remove" data-value="${v}" title="Remove"><i class="fas fa-times"></i></span>`;
+            pillsWrap.appendChild(pill);
+        });
+    }
+
+    function renderCount() {
+        countBadge.textContent = `${selected.size} selected`;
+        if (selected.size === 0) {
+            countBadge.classList.add('ms-count-zero');
+        } else {
+            countBadge.classList.remove('ms-count-zero');
+        }
+    }
+
+    function renderAll() {
+        options.forEach(opt => {
+            const val = opt.dataset.value;
+            if (selected.has(val)) {
+                opt.classList.add('ms-selected');
+                opt.setAttribute('aria-selected', 'true');
+            } else {
+                opt.classList.remove('ms-selected');
+                opt.setAttribute('aria-selected', 'false');
+            }
+        });
+        renderTriggerLabel();
+        renderPills();
+        renderCount();
+        syncNative();
+    }
+
+    function toggleValue(val) {
+        if (selected.has(val)) {
+            selected.delete(val);
+        } else {
+            selected.add(val);
+        }
+        renderAll();
+    }
+
+    function openPanel() {
+        panel.style.display = 'block';
+        trigger.classList.add('ms-open');
+        trigger.setAttribute('aria-expanded', 'true');
+        searchInput.focus();
+    }
+
+    function closePanel() {
+        panel.style.display = 'none';
+        trigger.classList.remove('ms-open');
+        trigger.setAttribute('aria-expanded', 'false');
+        searchInput.value = '';
+        filterOptions('');
+    }
+
+    function filterOptions(q) {
+        const query = q.toLowerCase().trim();
+        let hasVisible = false;
+        const groupLabels = list.querySelectorAll('.ms-group-label');
+
+        // Track which groups have visible children
+        const groupVisibility = {};
+
+        options.forEach(opt => {
+            const searchText = opt.dataset.search || '';
+            const match = !query || searchText.includes(query);
+            opt.classList.toggle('ms-hidden', !match);
+            if (match) {
+                hasVisible = true;
+                const gid = opt.dataset.group;
+                groupVisibility[gid] = true;
+            }
+        });
+
+        // Show/hide group labels based on whether they have visible children
+        groupLabels.forEach(gl => {
+            const gid = gl.dataset.group;
+            gl.style.display = groupVisibility[gid] ? '' : 'none';
+        });
+
+        // No-results message
+        let noRes = list.querySelector('.ms-no-results');
+        if (!hasVisible && query) {
+            if (!noRes) {
+                noRes = document.createElement('li');
+                noRes.className = 'ms-no-results';
+                noRes.textContent = 'No terms match your search';
+                list.appendChild(noRes);
+            }
+            noRes.style.display = '';
+        } else if (noRes) {
+            noRes.style.display = 'none';
+        }
+    }
+
+    // ── Events ─────────────────────────────────────────────
+
+    // Toggle panel
+    trigger.addEventListener('click', function (e) {
+        if (clearAllBtn.contains(e.target)) return; // handled separately
+        panel.style.display === 'none' ? openPanel() : closePanel();
+    });
+
+    // Click outside to close
+    document.addEventListener('click', function (e) {
+        if (!dropdown.contains(e.target)) closePanel();
+    });
+
+    // Select option
+    list.addEventListener('click', function (e) {
+        const opt = e.target.closest('.ms-option');
+        if (!opt) return;
+        toggleValue(opt.dataset.value);
+    });
+
+    // Remove via pill (outside panel)
+    pillsWrap.addEventListener('click', function (e) {
+        const btn = e.target.closest('.ms-pill__remove');
+        if (!btn) return;
+        selected.delete(btn.dataset.value);
+        renderAll();
+    });
+
+    // Clear all (trigger icon)
+    clearAllBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        selected.clear();
+        renderAll();
+    });
+
+    // Select all (visible)
+    selectAllBtn.addEventListener('click', function () {
+        options.forEach(opt => {
+            if (!opt.classList.contains('ms-hidden')) {
+                selected.add(opt.dataset.value);
+            }
+        });
+        renderAll();
+    });
+
+    // Deselect all
+    deselectAllBtn.addEventListener('click', function () {
+        selected.clear();
+        renderAll();
+    });
+
+    // Search
+    searchInput.addEventListener('input', function () {
+        filterOptions(this.value);
+    });
+    searchInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closePanel();
+    });
+
+    // Init
+    renderAll();
+});
+</script>
 @endsection

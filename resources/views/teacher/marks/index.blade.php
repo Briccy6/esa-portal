@@ -930,16 +930,17 @@ body {
         var examId = document.getElementById('exam_id').value;
         var examDate = document.getElementById('exam_date').value;
         var marksOutOf = document.getElementById('marks_out_of').value;
+        var testDate = document.getElementById('test_date').value;
         var btn = document.getElementById('showStudentsBtn');
         if (!branchId || !courseId || !lessonId || !termId || !assessmentType ||
             (assessmentType === 'exam' && (!examId || !examDate)) ||
-            (assessmentType === 'test' && !marksOutOf)) {
+            (assessmentType === 'test' && (!marksOutOf || !testDate))) {
             btn.disabled = true;
         } else {
             btn.disabled = false;
         }
     }
-    ['branch_id', 'course_id', 'lesson_id', 'assessment_type', 'exam_id', 'marks_out_of', 'exam_date', 'term_id'].forEach(function(id) {
+    ['branch_id', 'course_id', 'lesson_id', 'assessment_type', 'exam_id', 'marks_out_of', 'exam_date', 'term_id', 'test_date'].forEach(function(id) {
         var el = document.getElementById(id);
         if (el) el.addEventListener('change', updateShowStudentsBtn);
     });

@@ -742,9 +742,9 @@ Route::get('/api/lessons/{lesson}/marks', function($lessonId) {
 });
 
 Route::middleware('auth:teacher')->prefix('teacher')->name('teacher.')->group(function () {
-    Route::get('marks', [\App\Http\Controllers\MarksController::class, 'index'])->name('marks.index');
-    Route::get('marks/create', [\App\Http\Controllers\MarksController::class, 'create'])->name('marks.create');
-    Route::post('marks', [\App\Http\Controllers\MarksController::class, 'store'])->name('marks.store');
+    Route::get('marks', [\App\Http\Controllers\Teacher\MarksController::class, 'index'])->name('marks.index');
+    Route::get('marks/create', [\App\Http\Controllers\Teacher\MarksController::class, 'create'])->name('marks.create');
+    Route::post('marks', [\App\Http\Controllers\Teacher\MarksController::class, 'store'])->name('marks.store');
     Route::get('marks/view', [\App\Http\Controllers\Teacher\MarksController::class, 'viewMarks'])->name('marks.view');
     Route::get('marks/edit/{lessonId}/{testDate}', [\App\Http\Controllers\Teacher\MarksController::class, 'editMarks'])->name('marks.edit');
     Route::put('marks/update/{lessonId}/{testDate}', [\App\Http\Controllers\Teacher\MarksController::class, 'updateMarks'])->name('marks.update');
