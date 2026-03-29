@@ -400,5 +400,93 @@ function showAlert(type, message) {
         if (alert) { alert.classList.remove('show'); setTimeout(() => alert.remove(), 300); }
     }, 5000);
 }
+
+// ─── Update NESA Status ─────────────────────────────────────────────────────
+
+function updateNesaStatus(studentId) {
+    const registeredRadio = document.getElementById(`registered_${studentId}`);
+    const failedRadio = document.getElementById(`failed_${studentId}`);
+    const reasonSection = document.getElementById(`reason_section_${studentId}`);
+    const documentSection = document.getElementById(`document_section_${studentId}`);
+    const sendEmailCheckbox = document.getElementById(`send_email_${studentId}`);
+    
+    const status = registeredRadio.checked ? 'registered' : 'failed';
+    const reason = document.getElementById(`failure_reason_${studentId}`).value;
+    const sendEmail = sendEmailCheckbox.checked;
+    
+    // Validation
+    if (status === 'failed' && !reason.trim()) {
+        showAlert('danger', 'Please provide a reason for failure');
+        return;
+    }
+    
+    if (status === 'registered') {
+        const documentInput = document.getElementById(`nesa_document_${studentId}`);
+        if (!documentInput.files.length) {
+            showAlert('danger', 'Please upload the NESA document as proof of registration');
+            return;
+        }
+    }
+    
+    if (!confirm(`Update NESA status to "${status}" for this student?`)) return;
+    
+    // Find the button that was clicked
+    const button = event.target.closest('button') || event.target;
+    const originalText = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Updating...';
+    
+    const formData = new FormData();
+    formData.append('status', status);
+    formData.append('send_email', sendEmail);
+    
+    if (status === 'failed') {
+        formData.append('reason', reason);
+    } else {
+        const documentInput = document.getElementById(`nesa_document_${studentId}`);
+        if (documentInput.files.length > 0) {
+            formData.append('nesa_document', documentInput.files[0]);
+        }
+    }
+    
+    fetch(`/staff/students/${studentId}/update-nesa-status`, {
+        method: 'POST',
+        headers: { 
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: formData,
+        credentials: 'same-origin'
+    })
+    .then(async response => {
+        const ct = response.headers.get('content-type') || '';
+        let data;
+        if (ct.includes('application/json')) {
+            data = await response.json();
+        } else {
+            const text = await response.text();
+            try { data = JSON.parse(text); } catch { data = { success: response.ok, message: response.ok ? 'Status updated successfully' : 'Update failed' }; }
+        }
+        return { ok: response.ok, data };
+    })
+    .then(({ ok, data }) => {
+        if (ok && data.success !== false) {
+            bootstrap.Modal.getInstance(document.getElementById(`nesaStatusModal${studentId}`))?.hide();
+            showAlert('success', data.message || 'NESA status updated successfully');
+            setTimeout(() => window.location.reload(), 1500);
+        } else {
+            showAlert('danger', data.message || data.error || 'Failed to update NESA status. Please try again.');
+        }
+    })
+    .catch(err => {
+        console.error('NESA status update error:', err);
+        showAlert('danger', 'Failed to update NESA status. Please check your connection and try again.');
+    })
+    .finally(() => {
+        button.disabled = false;
+        button.innerHTML = originalText;
+    });
+}
 </script>
 @endsection

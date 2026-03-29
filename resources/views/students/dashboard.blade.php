@@ -754,7 +754,7 @@
                             <div class="col-lg-6 col-xl-4 mb-4">
                                 <div class="alx-card">
                                     <div class="alx-card-header resources">
-                                        <button onclick="shareResource({{ $resource->id }}, '{{ Str::limit($resource->document_name ?: $resource->video_name ?: 'Resource', 30) }}')"
+                                        <button onclick="shareResource({{ $resource->id }}, @json(Str::limit($resource->document_name ?: $resource->video_name ?: 'Resource', 30)))"
                                                 class="alx-share-btn" title="Share this resource">
                                             <i class="fas fa-share-alt"></i>
                                         </button>
@@ -1509,11 +1509,11 @@ function showNesaModal() {
         const nesaBadge   = document.getElementById('nesa-status-badge');
         
         // Use actual NESA registration status from student data
-        const isRegistered = {{ $student->nesa_registered ? 'true' : 'false' }};
-        const regNumber = '{{ $student->nesa_reg_number ?? 'N/A' }}';
-        const sdmsCode = '{{ $student->nesa_sdms_code ?? 'N/A' }}';
-        const regDate = '{{ $student->nesa_registration_date ? $student->nesa_registration_date->format('M d, Y') : 'N/A' }}';
-        const remarks = '{{ $student->nesa_remarks ?? 'N/A' }}';
+        const isRegistered = @json($student->nesa_registered);
+        const regNumber = @json($student->nesa_reg_number ?? 'N/A');
+        const sdmsCode = @json($student->nesa_sdms_code ?? 'N/A');
+        const regDate = @json($student->nesa_registration_date ? $student->nesa_registration_date->format('M d, Y') : 'N/A');
+        const remarks = @json($student->nesa_remarks ?? 'N/A');
         
         if (isRegistered) {
             nesaContent.innerHTML = `
