@@ -433,6 +433,7 @@
 </div>
 
 <style>
+    /* Enhanced CSS for Student Edit Page */
     .bg-gradient-primary {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     }
@@ -440,136 +441,570 @@
     .page-header {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
-        padding: 2rem;
-        border-radius: 15px;
+        padding: 2.5rem;
+        border-radius: 20px;
         margin-bottom: 2rem;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        border: 1px solid rgba(255,255,255,0.1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .page-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+        pointer-events: none;
     }
 
     .page-title {
-        font-size: 2.5rem;
+        font-size: 2.8rem;
         font-weight: 700;
         margin-bottom: 0.5rem;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        position: relative;
+        z-index: 1;
     }
 
     .page-subtitle {
-        font-size: 1.1rem;
-        opacity: 0.9;
+        font-size: 1.2rem;
+        opacity: 0.95;
         margin-bottom: 0;
+        position: relative;
+        z-index: 1;
     }
 
     .header-actions .btn {
-        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.2);
         transition: all 0.3s ease;
+        border-radius: 12px;
+        padding: 12px 24px;
+        font-weight: 600;
+        position: relative;
+        z-index: 1;
     }
 
     .header-actions .btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        transform: translateY(-3px);
+        box-shadow: 0 12px 30px rgba(0,0,0,0.3);
     }
 
     .form-section {
-        background: #f8f9fa;
-        border-radius: 12px;
-        padding: 2rem;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 16px;
+        padding: 2.5rem;
         height: 100%;
-        border: 1px solid #e9ecef;
+        border: 1px solid #dee2e6;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .form-section:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 35px rgba(0,0,0,0.12);
     }
 
     .section-title {
         color: #2c3e50;
-        font-weight: 600;
-        margin-bottom: 1.5rem;
-        padding-bottom: 0.5rem;
-        border-bottom: 2px solid #e9ecef;
+        font-weight: 700;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 3px solid #e9ecef;
+        font-size: 1.3rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .section-title i {
+        font-size: 1.5rem;
     }
 
     .form-control, .form-select {
-        border-radius: 8px;
+        border-radius: 12px;
         border: 2px solid #e9ecef;
         transition: all 0.3s ease;
+        padding: 12px 16px;
+        font-size: 1rem;
+        background: white;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
 
     .form-control:focus, .form-select:focus {
-        border-color: #007bff;
-        box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
+        transform: translateY(-1px);
     }
 
     .form-control.is-invalid, .form-select.is-invalid {
         border-color: #dc3545;
+        box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25);
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .form-label::after {
+        content: '';
+        width: 4px;
+        height: 4px;
+        background: #667eea;
+        border-radius: 50%;
+        display: inline-block;
     }
 
     .btn {
-        border-radius: 8px;
+        border-radius: 12px;
         transition: all 0.3s ease;
+        font-weight: 600;
+        padding: 12px 24px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     }
 
     .btn:hover {
-        transform: translateY(-1px);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+    }
+
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
     }
 
     .card {
-        border-radius: 15px;
+        border-radius: 20px;
         overflow: hidden;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        border: 1px solid rgba(0,0,0,0.05);
     }
 
+    .card-header {
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        position: relative;
+    }
+
+    .card-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+        pointer-events: none;
+    }
+
+    .card-body {
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    }
+
+    .alert {
+        border-radius: 12px;
+        border: none;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    .alert-danger {
+        background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+        color: #721c24;
+    }
+
+    .invalid-feedback {
+        font-weight: 500;
+        margin-top: 0.5rem;
+        color: #dc3545;
+    }
+
+    .form-text {
+        color: #6c757d;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+        font-style: italic;
+    }
+
+    .alert-dismissible .btn-close {
+        padding: 1rem;
+    }
+
+    /* Responsive Design */
     @media (max-width: 768px) {
         .page-title {
-            font-size: 1.8rem;
+            font-size: 2rem;
+        }
+
+        .page-header {
+            padding: 1.5rem;
         }
 
         .form-section {
             padding: 1.5rem;
+            margin-bottom: 1rem;
         }
 
         .header-actions {
             flex-direction: column;
             gap: 1rem;
         }
+
+        .header-actions .btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .page-subtitle {
+            font-size: 1rem;
+        }
+    }
+
+    /* Animation for form sections */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .form-section {
+        animation: fadeInUp 0.6s ease-out;
+    }
+
+    .form-section:nth-child(2) {
+        animation-delay: 0.1s;
+    }
+
+    .form-section:nth-child(3) {
+        animation-delay: 0.2s;
+    }
+
+    .form-section:nth-child(4) {
+        animation-delay: 0.3s;
+    }
+
+    /* File input styling */
+    input[type="file"] {
+        background: white;
+        cursor: pointer;
+    }
+
+    input[type="file"]:hover {
+        border-color: #667eea;
+    }
+
+    /* Password field styling */
+    input[type="password"] {
+        font-family: 'Courier New', monospace;
+    }
+
+    /* Readonly field styling */
+    input[readonly] {
+        background: #f8f9fa;
+        cursor: not-allowed;
+        opacity: 0.8;
+    }
+
+    /* Focus states for accessibility */
+    .btn:focus {
+        outline: 2px solid #667eea;
+        outline-offset: 2px;
+    }
+
+    /* Loading state */
+    .btn.loading {
+        opacity: 0.7;
+        pointer-events: none;
+    }
+
+    .btn.loading::after {
+        content: '';
+        width: 16px;
+        height: 16px;
+        border: 2px solid transparent;
+        border-top: 2px solid currentColor;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        display: inline-block;
+        margin-left: 8px;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
     }
 </style>
 
 <script>
-    // Password confirmation validation
-    document.getElementById('password_confirmation').addEventListener('input', function() {
-        const password = document.getElementById('password').value;
-        const confirmation = this.value;
+    // Enhanced JavaScript for Student Edit Page
+    
+    // Password confirmation validation with visual feedback
+    const passwordInput = document.getElementById('password');
+    const passwordConfirmationInput = document.getElementById('password_confirmation');
+    
+    function validatePasswordMatch() {
+        const password = passwordInput.value;
+        const confirmation = passwordConfirmationInput.value;
         
-        if (password && confirmation && password !== confirmation) {
-            this.setCustomValidity('Passwords do not match');
+        if (password && confirmation) {
+            if (password === confirmation) {
+                passwordConfirmationInput.setCustomValidity('');
+                passwordConfirmationInput.classList.remove('is-invalid');
+                passwordConfirmationInput.classList.add('is-valid');
+            } else {
+                passwordConfirmationInput.setCustomValidity('Passwords do not match');
+                passwordConfirmationInput.classList.remove('is-valid');
+                passwordConfirmationInput.classList.add('is-invalid');
+            }
         } else {
-            this.setCustomValidity('');
+            passwordConfirmationInput.setCustomValidity('');
+            passwordConfirmationInput.classList.remove('is-valid', 'is-invalid');
         }
-    });
-
-    document.getElementById('password').addEventListener('input', function() {
-        const confirmation = document.getElementById('password_confirmation');
-        if (confirmation.value) {
-            confirmation.dispatchEvent(new Event('input'));
-        }
-    });
-
-    // File size validation
+    }
+    
+    if (passwordConfirmationInput) {
+        passwordConfirmationInput.addEventListener('input', validatePasswordMatch);
+        passwordConfirmationInput.addEventListener('blur', validatePasswordMatch);
+    }
+    
+    if (passwordInput) {
+        passwordInput.addEventListener('input', function() {
+            if (passwordConfirmationInput.value) {
+                validatePasswordMatch();
+            }
+            
+            // Password strength indicator
+            const password = this.value;
+            let strength = 0;
+            
+            if (password.length >= 8) strength++;
+            if (password.match(/[a-z]+/)) strength++;
+            if (password.match(/[A-Z]+/)) strength++;
+            if (password.match(/[0-9]+/)) strength++;
+            if (password.match(/[$@#&!]+/)) strength++;
+            
+            // Add visual feedback for password strength
+            this.classList.remove('bg-danger', 'bg-warning', 'bg-success', 'bg-info');
+            if (password.length > 0) {
+                if (strength < 2) this.classList.add('bg-danger');
+                else if (strength < 3) this.classList.add('bg-warning');
+                else if (strength < 4) this.classList.add('bg-info');
+                else this.classList.add('bg-success');
+            }
+        });
+    }
+    
+    // Enhanced file size validation with visual feedback
     document.querySelectorAll('input[type="file"]').forEach(input => {
         input.addEventListener('change', function() {
             const file = this.files[0];
             const maxSize = 2 * 1024 * 1024; // 2MB
             
-            if (file && file.size > maxSize) {
-                alert('File size must be less than 2MB');
-                this.value = '';
+            // Remove previous validation states
+            this.classList.remove('is-valid', 'is-invalid');
+            
+            if (file) {
+                if (file.size > maxSize) {
+                    this.classList.add('is-invalid');
+                    showNotification(`File "${file.name}" is too large. Maximum size is 2MB.`, 'danger');
+                    this.value = '';
+                } else {
+                    this.classList.add('is-valid');
+                    showNotification(`File "${file.name}" is valid (${(file.size / 1024).toFixed(1)}KB)`, 'success');
+                }
             }
         });
     });
-
-    // Initialize tooltips
+    
+    // Notification system
+    function showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+        notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px; max-width: 500px;';
+        notification.innerHTML = `
+            <div class="d-flex align-items-center">
+                <i class="bi bi-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
+                <div class="flex-grow-1">${message}</div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 5000);
+    }
+    
+    // Form submission with loading state
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const submitBtn = this.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.classList.add('loading');
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Updating...';
+            }
+            
+            // Show loading notification
+            showNotification('Updating student information...', 'info');
+        });
+    }
+    
+    // Auto-save functionality for draft data
+    let autoSaveTimer;
+    const formInputs = form.querySelectorAll('input, select, textarea');
+    
+    formInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            clearTimeout(autoSaveTimer);
+            autoSaveTimer = setTimeout(() => {
+                // Save to localStorage as draft
+                const formData = new FormData(form);
+                const draftData = {};
+                
+                for (let [key, value] of formData.entries()) {
+                    if (value) draftData[key] = value;
+                }
+                
+                localStorage.setItem('studentEditDraft', JSON.stringify(draftData));
+                console.log('Draft saved automatically');
+            }, 2000); // Auto-save after 2 seconds of inactivity
+        });
+    });
+    
+    // Restore draft on page load
+    window.addEventListener('load', function() {
+        const draftData = localStorage.getItem('studentEditDraft');
+        if (draftData) {
+            const draft = JSON.parse(draftData);
+            let hasDraftData = false;
+            
+            Object.keys(draft).forEach(key => {
+                const input = document.querySelector(`[name="${key}"]`);
+                if (input && !input.value) {
+                    input.value = draft[key];
+                    hasDraftData = true;
+                }
+            });
+            
+            if (hasDraftData) {
+                showNotification('Draft data restored from previous session', 'info');
+            }
+        }
+    });
+    
+    // Clear draft on successful submission
+    window.addEventListener('beforeunload', function() {
+        const submitBtn = document.querySelector('button[type="submit"]');
+        if (submitBtn && submitBtn.classList.contains('loading')) {
+            localStorage.removeItem('studentEditDraft');
+        }
+    });
+    
+    // Initialize tooltips and popovers
     document.addEventListener('DOMContentLoaded', function() {
+        // Initialize Bootstrap tooltips
         if (typeof bootstrap !== 'undefined') {
             const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
             tooltipTriggerList.map(function (tooltipTriggerEl) {
                 return new bootstrap.Tooltip(tooltipTriggerEl);
             });
+            
+            // Initialize Bootstrap popovers
+            const popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
+            popoverTriggerList.map(function (popoverTriggerEl) {
+                return new bootstrap.Popover(popoverTriggerEl);
+            });
         }
+        
+        // Add smooth scroll behavior
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+        
+        // Add keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            // Ctrl+S to save (prevent default browser save)
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                const submitBtn = document.querySelector('button[type="submit"]');
+                if (submitBtn && !submitBtn.disabled) {
+                    form.dispatchEvent(new Event('submit'));
+                }
+            }
+        });
+        
+        // Add form field focus animations
+        formInputs.forEach(input => {
+            input.addEventListener('focus', function() {
+                this.parentElement.classList.add('focused');
+            });
+            
+            input.addEventListener('blur', function() {
+                this.parentElement.classList.remove('focused');
+            });
+        });
     });
+    
+    // Add CSS for focused state animations
+    const style = document.createElement('style');
+    style.textContent = `
+        .focused {
+            transform: scale(1.02);
+            transition: transform 0.2s ease;
+        }
+        
+        .bg-success, .bg-danger, .bg-warning, .bg-info {
+            transition: background-color 0.3s ease;
+        }
+        
+        .is-valid {
+            border-color: #28a745 !important;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%2328a745' d='M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right calc(0.375em + 0.1875rem) center;
+            background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+        }
+        
+        .is-invalid {
+            border-color: #dc3545 !important;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right calc(0.375em + 0.1875rem) center;
+            background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+        }
+    `;
+    document.head.appendChild(style);
 </script>
-@endsection 
+@endsection
