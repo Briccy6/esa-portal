@@ -127,7 +127,6 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     // Check if Chart.js is loaded
@@ -136,83 +135,119 @@ document.addEventListener('DOMContentLoaded', function () {
         return;
     }
     
+    // Debug: Log the data values
+    console.log('NESA Registered: {{ $nesaRegistered ?? 0 }}');
+    console.log('NESA Not Registered: {{ $nesaNotRegistered ?? 0 }}');
+    console.log('Approved Students: {{ $approvedStudents ?? 0 }}');
+    console.log('Not Approved Students: {{ $notApprovedStudents ?? 0 }}');
+    
     // Chart defaults
     Chart.defaults.font.family = "'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
     Chart.defaults.color = '#858796';
 
     // NESA Registration Status Chart
-    const nesaCtx = document.getElementById('nesaRegistrationChart').getContext('2d');
-    new Chart(nesaCtx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Registered for NESA', 'Not Registered'],
-            datasets: [{
-                data: [
-                    {{ $nesaRegistered ?? 0 }},
-                    {{ $nesaNotRegistered ?? 0 }}
-                ],
-                backgroundColor: ['#1cc88a', '#e74a3b'],
-                borderWidth: 3,
-                borderColor: '#fff'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: { padding: 15, font: { size: 11 } }
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = total > 0 ? ((context.parsed / total) * 100).toFixed(1) : 0;
-                            return context.label + ': ' + context.parsed.toLocaleString() + ' (' + percentage + '%)';
+    try {
+        const nesaCanvas = document.getElementById('nesaRegistrationChart');
+        console.log('NESA Canvas element:', nesaCanvas);
+        
+        if (!nesaCanvas) {
+            console.error('NESA Registration Chart canvas not found!');
+            return;
+        }
+        
+        const nesaCtx = nesaCanvas.getContext('2d');
+        console.log('NESA Canvas context:', nesaCtx);
+        
+        new Chart(nesaCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Registered for NESA', 'Not Registered'],
+                datasets: [{
+                    data: [
+                        {{ $nesaRegistered ?? 0 }},
+                        {{ $nesaNotRegistered ?? 0 }}
+                    ],
+                    backgroundColor: ['#1cc88a', '#e74a3b'],
+                    borderWidth: 3,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { padding: 15, font: { size: 11 } }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = total > 0 ? ((context.parsed / total) * 100).toFixed(1) : 0;
+                                return context.label + ': ' + context.parsed.toLocaleString() + ' (' + percentage + '%)';
+                            }
                         }
                     }
                 }
             }
-        }
-    });
+        });
+        console.log('NESA Registration Chart created successfully');
+    } catch (error) {
+        console.error('Error creating NESA Registration Chart:', error);
+    }
 
     // Student Approval Status Chart  
-    const approvalCtx = document.getElementById('studentApprovalChart').getContext('2d');
-    new Chart(approvalCtx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Approved (Registration Fees Paid)', 'Not Approved'],
-            datasets: [{
-                data: [
-                    {{ $approvedStudents ?? 0 }},
-                    {{ $notApprovedStudents ?? 0 }}
-                ],
-                backgroundColor: ['#4e73df', '#f6c23e'],
-                borderWidth: 3,
-                borderColor: '#fff'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: { padding: 15, font: { size: 11 } }
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = total > 0 ? ((context.parsed / total) * 100).toFixed(1) : 0;
-                            return context.label + ': ' + context.parsed.toLocaleString() + ' (' + percentage + '%)';
+    try {
+        const approvalCanvas = document.getElementById('studentApprovalChart');
+        console.log('Approval Canvas element:', approvalCanvas);
+        
+        if (!approvalCanvas) {
+            console.error('Student Approval Chart canvas not found!');
+            return;
+        }
+        
+        const approvalCtx = approvalCanvas.getContext('2d');
+        console.log('Approval Canvas context:', approvalCtx);
+        
+        new Chart(approvalCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Approved (Registration Fees Paid)', 'Not Approved'],
+                datasets: [{
+                    data: [
+                        {{ $approvedStudents ?? 0 }},
+                        {{ $notApprovedStudents ?? 0 }}
+                    ],
+                    backgroundColor: ['#4e73df', '#f6c23e'],
+                    borderWidth: 3,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { padding: 15, font: { size: 11 } }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = total > 0 ? ((context.parsed / total) * 100).toFixed(1) : 0;
+                                return context.label + ': ' + context.parsed.toLocaleString() + ' (' + percentage + '%)';
+                            }
                         }
                     }
                 }
             }
-        }
-    });
+        });
+        console.log('Student Approval Chart created successfully');
+    } catch (error) {
+        console.error('Error creating Student Approval Chart:', error);
+    }
 });
 </script>
 @endsection

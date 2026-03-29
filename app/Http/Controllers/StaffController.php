@@ -120,13 +120,60 @@ class StaffController extends Controller
 
     public function destroy(Staff $staff)
     {
-        if ($staff->photo) Storage::disk('public')->delete($staff->photo);
-        if ($staff->staff_card) Storage::disk('public')->delete($staff->staff_card);
-        if ($staff->qr_code) Storage::disk('public')->delete($staff->qr_code);
-
-        $staff->delete();
-
-        return redirect()->route('admin.staff.index')->with('success', 'Staff member deleted successfully.');
+        try {
+            \DB::beginTransaction();
+            
+            // Log the deletion attempt
+            \Log::info('Attempting to delete staff member', ['staff_id' => $staff->id, 'staff_name' => $staff->name]);
+            
+            // Handle the many-to-many branch relationships (cascade is handled by DB, but let's be explicit)
+            $staff->branches()->detach();
+            
+            // Note: photo, qr_code, and staff_card are stored as base64 strings in the database,
+            // not as file paths, so no need to delete from storage
+            
+            // Delete the staff member (this will cascade delete staff_branch records due to foreign key constraint)
+            $deleted = $staff->delete();
+            
+            if ($deleted) {
+                \Log::info('Staff member deleted successfully', ['staff_id' => $staff->id, 'staff_name' => $staff->name]);
+            } else {
+                \Log::error('Failed to delete staff member', ['staff_id' => $staff->id]);
+                throw new \Exception('Failed to delete staff member');
+            }
+            
+            \DB::commit();
+            
+            return redirect()->route('admin.staff.index')->with('success', 'Staff member deleted successfully.');
+            
+        } catch (\Illuminate\Database\QueryException $e) {
+            \DB::rollBack();
+            \Log::error('Database error while deleting staff member', [
+                'staff_id' => $staff->id,
+                'error' => $e->getMessage(),
+                'code' => $e->getCode()
+            ]);
+            
+            // Check if it's a foreign key constraint error
+            if (str_contains($e->getMessage(), 'foreign key constraint')) {
+                return redirect()->route('admin.staff.index')
+                    ->with('error', 'Cannot delete staff member. They may be referenced by other records in the system. Please check dependencies first.');
+            }
+            
+            return redirect()->route('admin.staff.index')
+                ->with('error', 'Database error occurred while deleting staff member: ' . $e->getMessage());
+                
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            \Log::error('General error while deleting staff member', [
+                'staff_id' => $staff->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()->route('admin.staff.index')
+                ->with('error', 'Error occurred while deleting staff member: ' . $e->getMessage());
+        }
     }
 
     public function show(Staff $staff, Request $request)
