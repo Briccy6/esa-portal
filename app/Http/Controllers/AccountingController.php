@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AccountingReport;
 use App\Models\Account;
+use App\Models\Student;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -16,7 +17,20 @@ class AccountingController extends Controller
 
     public function index()
     {
-        return view('admin.accounting.index');
+        // NESA Registration Statistics
+        $nesaRegistered = Student::where('nesa_registered', true)->count();
+        $nesaNotRegistered = Student::where('nesa_registered', false)->count();
+        
+        // Student Approval Statistics (using registration fee payment as approval indicator)
+        $approvedStudents = Student::where('payed_registration_fees', true)->count();
+        $notApprovedStudents = Student::where('payed_registration_fees', false)->count();
+
+        return view('admin.accounting.index', compact(
+            'nesaRegistered',
+            'nesaNotRegistered', 
+            'approvedStudents',
+            'notApprovedStudents'
+        ));
     }
 
     public function cashbook(Request $request)

@@ -2867,6 +2867,96 @@ class StudentController extends Controller
     }
 
     /**
+     * Update NESA status for student
+     */
+    public function updateNesaStatus(Request $request, Student $student)
+    {
+        if (!auth()->guard('staff')->check()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $request->validate([
+            'status' => 'required|in:registered,failed',
+            'send_email' => 'boolean',
+            'reason' => 'required_if:status,failed|string|max:500',
+            'nesa_document' => 'required_if:status,registered|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120'
+        ]);
+
+        try {
+            $status = $request->input('status');
+            $sendEmail = $request->input('send_email', false);
+            
+            if ($status === 'registered') {
+                // Handle document upload
+                if ($request->hasFile('nesa_document')) {
+                    if ($student->nesa_document) {
+                        Storage::disk('public')->delete($student->nesa_document);
+                    }
+                    $file = $request->file('nesa_document');
+                    $filename = 'nesa_document_' . $student->reg_number . '_' . time() . '.' . $file->getClientOriginalExtension();
+                    $path = $file->storeAs('nesa_documents', $filename, 'public');
+                    
+                    $student->update([
+                        'nesa_registered' => true,
+                        'nesa_document' => $path,
+                        'nesa_registration_date' => now(),
+                    ]);
+                }
+                
+                // Generate email content for successful registration
+                $emailContent = $this->generateNesaStatusEmailContent($student, 'approved');
+                
+                if ($sendEmail && $student->email) {
+                    // Attach document to email
+                    $documentPath = storage_path('app/public/' . $student->nesa_document);
+                    Mail::to($student->email)->send(new NesaRegistrationStatusMail($student, 'approved', $emailContent, $documentPath));
+                }
+                
+                $message = 'Student marked as registered with NESA successfully.';
+                
+            } else {
+                // Mark as failed
+                $student->update([
+                    'nesa_registered' => false,
+                    'nesa_remarks' => $request->input('reason'),
+                ]);
+                
+                // Generate email content for failed registration
+                $emailContent = $this->generateNesaStatusEmailContent($student, 'rejected', $request->input('reason'));
+                
+                if ($sendEmail && $student->email) {
+                    Mail::to($student->email)->send(new NesaRegistrationStatusMail($student, 'rejected', $emailContent));
+                }
+                
+                $message = 'Student marked as failed for NESA registration.';
+            }
+
+            Log::info('NESA status updated', [
+                'student_id' => $student->id,
+                'status' => $status,
+                'user' => auth()->guard('staff')->user()->full_name,
+                'email_sent' => $sendEmail
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => $message . ($sendEmail ? ' Email notification sent.' : '')
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to update NESA status', [
+                'student_id' => $student->id,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update NESA status: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Send NESA status email to student
      */
     public function sendNesaStatusEmail(Request $request, Student $student)
@@ -2922,31 +3012,37 @@ class StudentController extends Controller
     /**
      * Generate email content for NESA status
      */
-    private function generateNesaStatusEmailContent(Student $student, string $status): string
+    private function generateNesaStatusEmailContent(Student $student, string $status, string $reason = null): string
     {
         if ($status === 'approved') {
             return "
-                <h2>Congratulations - NESA Registration Approved!</h2>
+                <h2>Congratulations - NESA Registration Successful!</h2>
                 <p>Dear {$student->full_name},</p>
-                <p>We are pleased to inform you that your NESA registration has been approved.</p>
+                <p>We are pleased to inform you that your NESA registration has been successfully completed.</p>
                 <p><strong>Registration Details:</strong></p>
                 <ul>
-                    <li>SDMS Code: {$student->nesa_sdms_code}</li>
-                    <li>Registration Number: {$student->nesa_reg_number}</li>
-                    <li>Registration Date: {$student->nesa_registration_date->format('d M Y')}</li>
+                    <li>Registration Date: " . ($student->nesa_registration_date ? $student->nesa_registration_date->format('d M Y') : now()->format('d M Y')) . "</li>
+                    <li>Registration Number: {$student->reg_number}</li>
                 </ul>
-                <p>You can now proceed with your examination preparations. Please keep this information safe for future reference.</p>
+                <p>Your NESA registration document is attached to this email as proof of your successful registration.</p>
+                <p>Please keep this document safe for future reference and examination purposes.</p>
                 <p>If you have any questions, please don't hesitate to contact us.</p>
                 <p>Best regards,<br>Examination Department</p>
             ";
         } else {
             return "
-                <h2>NESA Registration Update</h2>
+                <h2>NESA Registration - Update Required</h2>
                 <p>Dear {$student->full_name},</p>
-                <p>We regret to inform you that there is an issue with your NESA registration.</p>
+                <p>We regret to inform you that your NESA registration could not be completed at this time.</p>
+                " . ($reason ? "<p><strong>Reason:</strong> {$reason}</p>" : "") . "
                 <p>Please contact the administration office immediately to resolve this matter.</p>
-                <p>You may need to provide additional documentation or information to complete your registration.</p>
-                <p>If you have any questions or need assistance, please visit our office or contact us.</p>
+                <p>You may need to:</p>
+                <ul>
+                    <li>Provide additional documentation</li>
+                    <li>Complete missing requirements</li>
+                    <li>Correct information in your registration</li>
+                </ul>
+                <p>Please visit our office or call us for assistance with completing your NESA registration.</p>
                 <p>We appreciate your understanding and cooperation.</p>
                 <p>Best regards,<br>Examination Department</p>
             ";

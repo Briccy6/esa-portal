@@ -121,6 +121,14 @@ class AdminAuthController extends Controller
             $totalClientRevenue = ClientTransaction::where('type', 'purchase')->sum('amount') ?? 0;
             $recentClients = Client::with(['activeSubscription'])->latest()->take(5)->get();
 
+            // NESA Registration Statistics
+            $nesaRegistered = Student::where('nesa_registered', true)->count();
+            $nesaNotRegistered = Student::where('nesa_registered', false)->count();
+            
+            // Student Approval Statistics (using registration fee payment as approval indicator)
+            $approvedStudents = Student::where('payed_registration_fees', true)->count();
+            $notApprovedStudents = Student::where('payed_registration_fees', false)->count();
+
             // Student demographics
             $studentsByGender = Student::select('sex', DB::raw('count(*) as total'))
                 ->groupBy('sex')
@@ -268,7 +276,11 @@ class AdminAuthController extends Controller
                 'inactiveClients',
                 'totalClientTokens',
                 'totalClientRevenue',
-                'recentClients'
+                'recentClients',
+                'nesaRegistered',
+                'nesaNotRegistered',
+                'approvedStudents',
+                'notApprovedStudents'
             );
             
             return view('admin.dashboard', $dashboardData);

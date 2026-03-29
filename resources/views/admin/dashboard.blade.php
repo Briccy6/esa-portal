@@ -876,7 +876,34 @@
         </div>
     </div>
 
-    <!-- Row 7: Recent Students with NESA Status -->
+    <!-- Row 7: NESA Registration & Student Approval Status -->
+    <div class="row mb-4">
+        <div class="col-xl-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">NESA Registration Status</h6>
+                    <i class="fas fa-graduation-cap"></i>
+                </div>
+                <div class="card-body">
+                    <canvas id="nesaRegistrationChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-success">Student Approval Status</h6>
+                    <i class="fas fa-user-check"></i>
+                </div>
+                <div class="card-body">
+                    <canvas id="studentApprovalChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Row 8: Recent Students with NESA Status -->
     <div class="row mb-4">
         <div class="col-xl-12 mb-4">
             <div class="card shadow h-100">
@@ -1655,6 +1682,80 @@ const genderCounts = genderData.map(g => g.total);
                 }
             }
         });
+    }
+});
+
+// 7. NESA Registration Status Chart
+const nesaCtx = document.getElementById('nesaRegistrationChart').getContext('2d');
+new Chart(nesaCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Registered for NESA', 'Not Registered'],
+        datasets: [{
+            data: [
+                {{ $nesaRegistered ?? 0 }},
+                {{ $nesaNotRegistered ?? 0 }}
+            ],
+            backgroundColor: ['#1cc88a', '#e74a3b'],
+            borderWidth: 3,
+            borderColor: '#fff'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: { padding: 15, font: { size: 11 } }
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                        const percentage = total > 0 ? ((context.parsed / total) * 100).toFixed(1) : 0;
+                        return context.label + ': ' + context.parsed.toLocaleString() + ' (' + percentage + '%)';
+                    }
+                }
+            }
+        }
+    }
+});
+
+// 8. Student Approval Status Chart  
+const approvalCtx = document.getElementById('studentApprovalChart').getContext('2d');
+new Chart(approvalCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Approved (Registration Fees Paid)', 'Not Approved'],
+        datasets: [{
+            data: [
+                {{ $approvedStudents ?? 0 }},
+                {{ $notApprovedStudents ?? 0 }}
+            ],
+            backgroundColor: ['#4e73df', '#f6c23e'],
+            borderWidth: 3,
+            borderColor: '#fff'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: { padding: 15, font: { size: 11 } }
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                        const percentage = total > 0 ? ((context.parsed / total) * 100).toFixed(1) : 0;
+                        return context.label + ': ' + context.parsed.toLocaleString() + ' (' + percentage + '%)';
+                    }
+                }
+            }
+        }
     }
 });
 

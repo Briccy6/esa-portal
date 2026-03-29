@@ -267,24 +267,14 @@
                                     <i class="fas fa-envelope"></i>
                                 </a>
 
-                                {{-- NESA Registration Management --}}
-                                @if(!$student->nesa_registered)
-                                    <button type="button"
-                                            class="btn btn-sm btn-info action-btn-icon"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#nesaRegistrationModal{{ $student->id }}"
-                                            title="Register for NESA">
-                                        <i class="fas fa-award"></i>
-                                    </button>
-                                @else
-                                    <button type="button"
-                                            class="btn btn-sm btn-outline-success action-btn-icon"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#nesaStatusModal{{ $student->id }}"
-                                            title="View NESA Status">
-                                        <i class="fas fa-check-circle"></i>
-                                    </button>
-                                @endif
+                                {{-- NESA Status Management --}}
+                                <button type="button"
+                                        class="btn btn-sm @if($student->nesa_registered) btn-outline-success @else btn-warning @endif action-btn-icon"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#nesaStatusModal{{ $student->id }}"
+                                        title="@if($student->nesa_registered) Update NESA Status @else Set NESA Status @endif">
+                                    <i class="fas @if($student->nesa_registered) fa-check-circle @else fa-exclamation-triangle @endif"></i>
+                                </button>
 
                                 {{-- Delete (admin only) --}}
                                 @if(auth()->user() && auth()->user()->email === 'hirwabran9@gmail.com')
@@ -697,84 +687,113 @@
                     @endif
 
                     {{-- NESA Status Modal --}}
-                    @if($student->nesa_registered)
                     <div class="modal fade" id="nesaStatusModal{{ $student->id }}" tabindex="-1" aria-labelledby="nesaStatusLabel{{ $student->id }}" aria-hidden="true">
                         <div class="modal-dialog modal-lg modal-dialog-centered">
                             <div class="modal-content">
-                                <div class="modal-header bg-success text-white">
+                                <div class="modal-header @if($student->nesa_registered) bg-success @else bg-warning @endif text-white">
                                     <h5 class="modal-title" id="nesaStatusLabel{{ $student->id }}">
                                         <i class="fas fa-award me-2"></i>
-                                        NESA Registration Status — {{ $student->full_name }}
+                                        NESA Status Management — {{ $student->full_name }}
                                     </h5>
                                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                                 </div>
                                 <div class="modal-body">
-                                    <div class="alert alert-success">
-                                        <i class="fas fa-check-circle me-2"></i>
-                                        This student is registered with NESA
-                                    </div>
-                                    
-                                    <div class="row">
-                                        <div class="col-md-6 mb-3">
-                                            <strong>SDMS Code:</strong><br>
-                                            <span class="text-success">{{ $student->nesa_sdms_code ?? 'N/A' }}</span>
+                                    @if($student->nesa_registered)
+                                        <div class="alert alert-success">
+                                            <i class="fas fa-check-circle me-2"></i>
+                                            Current Status: Registered with NESA
                                         </div>
-                                        <div class="col-md-6 mb-3">
-                                            <strong>Registration Number:</strong><br>
-                                            <span class="text-success">{{ $student->nesa_reg_number ?? 'N/A' }}</span>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <strong>SDMS Code:</strong><br>
+                                                <span class="text-success">{{ $student->nesa_sdms_code ?? 'N/A' }}</span>
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <strong>Registration Number:</strong><br>
+                                                <span class="text-success">{{ $student->nesa_reg_number ?? 'N/A' }}</span>
+                                            </div>
                                         </div>
-                                    </div>
 
-                                    @if($student->nesa_registration_date)
-                                    <div class="row">
-                                        <div class="col-md-12 mb-3">
-                                            <strong>Registration Date:</strong><br>
-                                            <span>{{ $student->nesa_registration_date->format('d M Y') }}</span>
+                                        @if($student->nesa_registration_date)
+                                        <div class="row">
+                                            <div class="col-md-12 mb-3">
+                                                <strong>Registration Date:</strong><br>
+                                                <span>{{ $student->nesa_registration_date->format('d M Y') }}</span>
+                                            </div>
                                         </div>
-                                    </div>
-                                    @endif
+                                        @endif
 
-                                    @if($student->nesa_remarks)
-                                    <div class="row">
-                                        <div class="col-md-12 mb-3">
-                                            <strong>Remarks:</strong><br>
-                                            <span>{{ $student->nesa_remarks }}</span>
+                                        @if($student->nesa_document)
+                                        <div class="row">
+                                            <div class="col-md-12 mb-3">
+                                                <strong>NESA Document:</strong><br>
+                                                <button type="button" class="btn btn-success btn-sm" onclick="downloadNesaDocument({{ $student->id }})">
+                                                    <i class="fas fa-download me-1"></i>Download Document
+                                                </button>
+                                            </div>
                                         </div>
-                                    </div>
-                                    @endif
-
-                                    @if($student->nesa_document)
-                                    <div class="row">
-                                        <div class="col-md-12 mb-3">
-                                            <strong>NESA Document:</strong><br>
-                                            <button type="button" class="btn btn-success btn-sm" onclick="downloadNesaDocument({{ $student->id }})">
-                                                <i class="fas fa-download me-1"></i>Download Document
-                                            </button>
+                                        @endif
+                                    @else
+                                        <div class="alert alert-warning">
+                                            <i class="fas fa-exclamation-triangle me-2"></i>
+                                            Current Status: Not registered with NESA
                                         </div>
-                                    </div>
                                     @endif
 
                                     <hr>
 
-                                    <div class="d-flex gap-2">
-                                        <button type="button" class="btn btn-warning" onclick="editNesaRegistration({{ $student->id }})">
-                                            <i class="fas fa-edit me-1"></i>Edit Registration
-                                        </button>
-                                        <button type="button" class="btn btn-primary" onclick="sendNesaStatusEmail({{ $student->id }}, 'approved')">
-                                            <i class="fas fa-envelope me-1"></i>Send Approval Email
-                                        </button>
-                                        <button type="button" class="btn btn-danger" onclick="sendNesaStatusEmail({{ $student->id }}, 'rejected')">
-                                            <i class="fas fa-times-circle me-1"></i>Send Rejection Email
-                                        </button>
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <h6 class="mb-3">Update NESA Status</h6>
+                                            
+                                            <div class="form-check mb-3">
+                                                <input class="form-check-input" type="radio" name="nesa_status" id="registered_{{ $student->id }}" value="registered" @if($student->nesa_registered) checked @endif>
+                                                <label class="form-check-label" for="registered_{{ $student->id }}">
+                                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                                    <strong>Registered</strong> - Student successfully registered with NESA
+                                                </label>
+                                            </div>
+
+                                            <div class="form-check mb-3">
+                                                <input class="form-check-input" type="radio" name="nesa_status" id="failed_{{ $student->id }}" value="failed" @if(!$student->nesa_registered) checked @endif>
+                                                <label class="form-check-label" for="failed_{{ $student->id }}">
+                                                    <i class="fas fa-times-circle text-danger me-2"></i>
+                                                    <strong>Failed</strong> - Student registration was not successful
+                                                </label>
+                                            </div>
+
+                                            <div class="mb-3" id="reason_section_{{ $student->id }}" style="display: none;">
+                                                <label for="failure_reason_{{ $student->id }}" class="form-label">Reason for Failure</label>
+                                                <textarea class="form-control" id="failure_reason_{{ $student->id }}" rows="3" placeholder="Please explain why the registration failed..."></textarea>
+                                            </div>
+
+                                            <div class="mb-3" id="document_section_{{ $student->id }}" style="display: none;">
+                                                <label for="nesa_document_{{ $student->id }}" class="form-label">NESA Document (Proof of Registration)</label>
+                                                <input type="file" class="form-control" id="nesa_document_{{ $student->id }}" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+                                                <div class="form-text">Upload the NESA registration document as proof</div>
+                                            </div>
+
+                                            <div class="mb-3" id="email_section_{{ $student->id }}">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="send_email_{{ $student->id }}" checked>
+                                                    <label class="form-check-label" for="send_email_{{ $student->id }}">
+                                                        Send email notification to student
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="button" class="btn btn-primary" onclick="updateNesaStatus({{ $student->id }})">
+                                        <i class="fas fa-save me-1"></i>Update Status
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    @endif
 
                 @empty
                     <tr class="no-data-row">
@@ -1331,6 +1350,114 @@ function downloadNesaDocument(studentId) {
             button.innerHTML = originalText;
         });
 }
+
+// ─── Update NESA Status ─────────────────────────────────────────────────────
+
+function updateNesaStatus(studentId) {
+    const registeredRadio = document.getElementById(`registered_${studentId}`);
+    const failedRadio = document.getElementById(`failed_${studentId}`);
+    const reasonSection = document.getElementById(`reason_section_${studentId}`);
+    const documentSection = document.getElementById(`document_section_${studentId}`);
+    const sendEmailCheckbox = document.getElementById(`send_email_${studentId}`);
+    
+    const status = registeredRadio.checked ? 'registered' : 'failed';
+    const reason = document.getElementById(`failure_reason_${studentId}`).value;
+    const sendEmail = sendEmailCheckbox.checked;
+    
+    // Validation
+    if (status === 'failed' && !reason.trim()) {
+        showAlert('danger', 'Please provide a reason for failure');
+        return;
+    }
+    
+    if (status === 'registered') {
+        const documentInput = document.getElementById(`nesa_document_${studentId}`);
+        if (!documentInput.files.length) {
+            showAlert('danger', 'Please upload the NESA document as proof of registration');
+            return;
+        }
+    }
+    
+    if (!confirm(`Update NESA status to "${status}" for this student?`)) return;
+    
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Updating...';
+    
+    const formData = new FormData();
+    formData.append('status', status);
+    formData.append('send_email', sendEmail);
+    
+    if (status === 'failed') {
+        formData.append('reason', reason);
+    } else {
+        const documentInput = document.getElementById(`nesa_document_${studentId}`);
+        if (documentInput.files.length > 0) {
+            formData.append('nesa_document', documentInput.files[0]);
+        }
+    }
+    
+    fetch(`/staff/students/${studentId}/update-nesa-status`, {
+        method: 'POST',
+        headers: { 
+            'X-CSRF-TOKEN': getCsrfToken(),
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: formData,
+        credentials: 'same-origin'
+    })
+    .then(async response => {
+        const ct = response.headers.get('content-type') || '';
+        let data;
+        if (ct.includes('application/json')) {
+            data = await response.json();
+        } else {
+            const text = await response.text();
+            try { data = JSON.parse(text); } catch { data = { success: response.ok, message: response.ok ? 'Status updated successfully' : 'Update failed' }; }
+        }
+        return { ok: response.ok, data };
+    })
+    .then(({ ok, data }) => {
+        if (ok && data.success !== false) {
+            bootstrap.Modal.getInstance(document.getElementById(`nesaStatusModal${studentId}`))?.hide();
+            showAlert('success', data.message || 'NESA status updated successfully');
+            setTimeout(() => window.location.reload(), 1500);
+        } else {
+            showAlert('danger', data.message || data.error || 'Failed to update NESA status. Please try again.');
+        }
+    })
+    .catch(err => {
+        console.error('NESA status update error:', err);
+        showAlert('danger', 'Failed to update NESA status. Please check your connection and try again.');
+    })
+    .finally(() => {
+        button.disabled = false;
+        button.innerHTML = originalText;
+    });
+}
+
+// ─── NESA Status Modal Event Listeners ───────────────────────────────────────────
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Add event listeners for NESA status radio buttons
+    document.querySelectorAll('[id^="registered_"], [id^="failed_"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const studentId = this.id.split('_').pop();
+            const reasonSection = document.getElementById(`reason_section_${studentId}`);
+            const documentSection = document.getElementById(`document_section_${studentId}`);
+            
+            if (this.value === 'failed') {
+                reasonSection.style.display = 'block';
+                documentSection.style.display = 'none';
+            } else {
+                reasonSection.style.display = 'none';
+                documentSection.style.display = 'block';
+            }
+        });
+    });
+});
 
 // ─── Transcript lazy-load ────────────────────────────────────────────────────
 
