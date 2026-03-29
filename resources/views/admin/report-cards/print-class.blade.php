@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Class Reports - {{ $reportCards->first()->course->course_name }}</title>
+    <title>Class Reports - {{ $reportCards->first()?->course->course_name ?? 'Class' }}</title>
     <style>
         @page {
             size: A4;
@@ -91,6 +91,21 @@
         
         .student-report:last-child {
             page-break-after: auto;
+        }
+
+        .term-section-banner {
+            text-align: center;
+            padding: 10px 12px;
+            margin: 0 0 14px 0;
+            background: #e9ecef;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+        }
+        .term-section-banner strong {
+            font-size: 12px;
+            color: #212529;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         
         .student-header {
@@ -240,7 +255,20 @@
     </style>
 </head>
 <body>
-    @foreach($reportCards as $reportCard)
+    @php
+        $byTerm = $reportCards->sortBy(function ($r) {
+            return ($r->student->full_name ?? '').'_'.$r->term_id;
+        })->groupBy('term_id');
+    @endphp
+    @foreach($byTerm as $termId => $cardsForTerm)
+        @if(!$loop->first)
+            <div style="page-break-before: always;"></div>
+        @endif
+        @php $bannerTerm = $cardsForTerm->first()->term; @endphp
+        <div class="term-section-banner">
+            <strong>{{ $bannerTerm->name ?? ('Term #'.$termId) }}</strong>
+        </div>
+        @foreach($cardsForTerm as $reportCard)
         <div class="student-report">
             <div class="header">
                 <div class="school-info">
@@ -273,7 +301,7 @@
                 </div>
                 
                 <div class="class-info">
-                    {{ $reportCard->course->course_name }} | {{ $reportCard->academicYear->year }} | Term {{ $reportCard->term->term }}
+                    {{ $reportCard->course->course_name }} | {{ $reportCard->academicYear->year }} | {{ $reportCard->term->name ?? ('Term #'.$reportCard->term_id) }}
                 </div>
             </div>
 
@@ -368,7 +396,7 @@
                     </div>
                     <div class="summary-item">
                         <span>Term:</span>
-                        <strong>{{ $reportCard->term->term }}</strong>
+                        <strong>{{ $reportCard->term->name ?? ('#'.$reportCard->term_id) }}</strong>
                     </div>
                 </div>
             </div>
@@ -405,6 +433,7 @@
                 </div>
             </div>
         </div>
+        @endforeach
     @endforeach
 </body>
 </html>

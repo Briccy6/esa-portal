@@ -33,7 +33,7 @@ class ReportCardController extends Controller
         $students = Student::all();
         $courses = Course::all();
         $academicYears = AcademicYear::all();
-        $terms = Term::all();
+        $terms = Term::with('academicYear')->orderBy('academic_year_id')->orderBy('id')->get();
 
         return view('admin.report-cards.create', compact('students', 'courses', 'academicYears', 'terms'));
     }
@@ -43,32 +43,71 @@ class ReportCardController extends Controller
         $request->validate([
             'student_id' => 'required|exists:students,id',
             'academic_year_id' => 'required|exists:academic_years,id',
-            'term_id' => 'required|exists:terms,id',
             'course_id' => 'required|exists:courses,id',
+            'term_ids' => 'nullable|array',
+            'term_ids.*' => 'exists:terms,id',
+            'term_id' => 'nullable|exists:terms,id',
         ]);
 
-        // Check if report card already exists
-        $existing = ReportCard::where('student_id', $request->student_id)
-            ->where('academic_year_id', $request->academic_year_id)
-            ->where('term_id', $request->term_id)
-            ->where('course_id', $request->course_id)
-            ->first();
-
-        if ($existing) {
+        $termIds = $this->normalizeTermIds($request);
+        if ($termIds === []) {
             return redirect()->back()
-                ->with('error', 'Report card already exists for this student, academic year, term, and course combination.');
+                ->withInput()
+                ->withErrors(['term_ids' => 'Select at least one term.']);
         }
 
-        $reportCard = ReportCard::create($request->all());
-        $this->generateReportCardData($reportCard);
-        ReportCard::recalculatePositionsForCohort(
-            (int) $reportCard->course_id,
-            (int) $reportCard->academic_year_id,
-            (int) $reportCard->term_id
-        );
+        $created = 0;
+        $skipped = 0;
+        $firstId = null;
 
-        return redirect()->route('admin.report-cards.show', $reportCard)
-            ->with('success', 'Report card generated successfully!');
+        foreach ($termIds as $termId) {
+            $existing = ReportCard::where('student_id', $request->student_id)
+                ->where('academic_year_id', $request->academic_year_id)
+                ->where('term_id', $termId)
+                ->where('course_id', $request->course_id)
+                ->first();
+
+            if ($existing) {
+                $skipped++;
+
+                continue;
+            }
+
+            $reportCard = ReportCard::create([
+                'student_id' => $request->student_id,
+                'academic_year_id' => $request->academic_year_id,
+                'term_id' => $termId,
+                'course_id' => $request->course_id,
+            ]);
+            $this->generateReportCardData($reportCard);
+            ReportCard::recalculatePositionsForCohort(
+                (int) $reportCard->course_id,
+                (int) $reportCard->academic_year_id,
+                (int) $reportCard->term_id
+            );
+            $created++;
+            $firstId = $firstId ?? $reportCard->id;
+        }
+
+        if ($created === 0) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Report cards already exist for all selected terms.');
+        }
+
+        $msg = "Created {$created} report card(s)";
+        if ($skipped > 0) {
+            $msg .= "; skipped {$skipped} (already exist)";
+        }
+        $msg .= '.';
+
+        if ($created === 1 && $firstId) {
+            return redirect()->route('admin.report-cards.show', $firstId)
+                ->with('success', $msg);
+        }
+
+        return redirect()->route('admin.report-cards.index')
+            ->with('success', $msg);
     }
 
     public function show(ReportCard $reportCard)
@@ -124,8 +163,16 @@ class ReportCardController extends Controller
         $request->validate([
             'course_id' => 'required|exists:courses,id',
             'academic_year_id' => 'required|exists:academic_years,id',
-            'term_id' => 'required|exists:terms,id',
+            'term_ids' => 'nullable|array',
+            'term_ids.*' => 'exists:terms,id',
+            'term_id' => 'nullable|exists:terms,id',
         ]);
+
+        $termIds = $this->normalizeTermIds($request);
+        if ($termIds === []) {
+            return redirect()->back()
+                ->withErrors(['term_ids' => 'Select at least one term.']);
+        }
 
         $students = Student::where('course_id', $request->course_id)
             ->where('academic_year_id', $request->academic_year_id)
@@ -134,35 +181,39 @@ class ReportCardController extends Controller
         $generated = 0;
         $skipped = 0;
 
-        foreach ($students as $student) {
-            $existing = ReportCard::where('student_id', $student->id)
-                ->where('academic_year_id', $request->academic_year_id)
-                ->where('term_id', $request->term_id)
-                ->where('course_id', $request->course_id)
-                ->first();
+        foreach ($termIds as $termId) {
+            foreach ($students as $student) {
+                $existing = ReportCard::where('student_id', $student->id)
+                    ->where('academic_year_id', $request->academic_year_id)
+                    ->where('term_id', $termId)
+                    ->where('course_id', $request->course_id)
+                    ->first();
 
-            if (!$existing) {
-                $reportCard = ReportCard::create([
-                    'student_id' => $student->id,
-                    'academic_year_id' => $request->academic_year_id,
-                    'term_id' => $request->term_id,
-                    'course_id' => $request->course_id,
-                ]);
-                $this->generateReportCardData($reportCard);
-                $generated++;
-            } else {
-                $skipped++;
+                if (! $existing) {
+                    $reportCard = ReportCard::create([
+                        'student_id' => $student->id,
+                        'academic_year_id' => $request->academic_year_id,
+                        'term_id' => $termId,
+                        'course_id' => $request->course_id,
+                    ]);
+                    $this->generateReportCardData($reportCard);
+                    $generated++;
+                } else {
+                    $skipped++;
+                }
             }
+
+            ReportCard::recalculatePositionsForCohort(
+                (int) $request->course_id,
+                (int) $request->academic_year_id,
+                (int) $termId
+            );
         }
 
-        ReportCard::recalculatePositionsForCohort(
-            (int) $request->course_id,
-            (int) $request->academic_year_id,
-            (int) $request->term_id
-        );
+        $termCount = count($termIds);
 
         return redirect()->back()
-            ->with('success', "Generated {$generated} report cards. Skipped {$skipped} that already exist.");
+            ->with('success', "Generated {$generated} report card(s) across {$termCount} term(s). Skipped {$skipped} duplicate(s).");
     }
 
    public function printReport(ReportCard $reportCard)
@@ -239,8 +290,16 @@ class ReportCardController extends Controller
         $request->validate([
             'course_id' => 'required|exists:courses,id',
             'academic_year_id' => 'required|exists:academic_years,id',
-            'term_id' => 'required|exists:terms,id',
+            'term_ids' => 'nullable|array',
+            'term_ids.*' => 'exists:terms,id',
+            'term_id' => 'nullable|exists:terms,id',
         ]);
+
+        $termIds = $this->normalizeTermIds($request);
+        if ($termIds === []) {
+            return redirect()->back()
+                ->withErrors(['term_ids' => 'Select at least one term.']);
+        }
 
         $reportCards = ReportCard::with([
                 'student',
@@ -252,12 +311,18 @@ class ReportCardController extends Controller
             ])
             ->where('course_id', $request->course_id)
             ->where('academic_year_id', $request->academic_year_id)
-            ->where('term_id', $request->term_id)
+            ->whereIn('term_id', $termIds)
             ->where('status', 'approved')
             ->join('students', 'report_cards.student_id', '=', 'students.id')
+            ->orderBy('report_cards.term_id')
             ->orderBy('students.full_name')
             ->select('report_cards.*')
             ->get();
+
+        if ($reportCards->isEmpty()) {
+            return redirect()->back()
+                ->with('error', 'No approved report cards found for the selected course, year, and term(s).');
+        }
 
         $schoolInfo = SchoolInformation::getActive();
 
@@ -267,9 +332,25 @@ class ReportCardController extends Controller
 
         $course = Course::find($request->course_id);
         $academicYear = AcademicYear::find($request->academic_year_id);
-        $term = Term::find($request->term_id);
+        $termsSlug = count($termIds) > 1 ? 'terms-'.implode('-', $termIds) : 'term-'.$termIds[0];
 
-        return $pdf->stream("class-reports-{$course->course_name}-{$academicYear->year}-term-{$term->term}.pdf");
+        return $pdf->stream("class-reports-{$course->course_name}-{$academicYear->year}-{$termsSlug}.pdf");
+    }
+
+    /**
+     * @return int[]
+     */
+    protected function normalizeTermIds(Request $request): array
+    {
+        $raw = $request->input('term_ids');
+        if (is_array($raw) && count($raw) > 0) {
+            return array_values(array_unique(array_filter(array_map('intval', $raw))));
+        }
+        if ($request->filled('term_id')) {
+            return [(int) $request->term_id];
+        }
+
+        return [];
     }
 
     public function generateReportCardData(ReportCard $reportCard)

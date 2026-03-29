@@ -46,20 +46,20 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="rc-field">
-                        <label class="rc-label">Term</label>
-                        <select name="term_id" class="rc-select" required>
-                            <option value="">Select Term</option>
-                            @foreach(\App\Models\Term::all() as $term)
-                                <option value="{{ $term->id }}">{{ $term->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
                     <div class="rc-field rc-field--action">
                         <label class="rc-label">&nbsp;</label>
                         <button type="submit" class="rc-btn rc-btn--teal w-100">
                             <i class="fas fa-bolt me-1"></i> Generate for Class
                         </button>
+                    </div>
+                    <div class="rc-field rc-field--terms">
+                        <label class="rc-label">Term(s) — one report card per student per term</label>
+                        <select name="term_ids[]" class="rc-select rc-select--multi" multiple size="5" required>
+                            @foreach(\App\Models\Term::with('academicYear')->orderBy('academic_year_id')->orderBy('id')->get() as $term)
+                                <option value="{{ $term->id }}">{{ $term->name ?? 'Term #'.$term->id }} @if($term->academicYear) ({{ $term->academicYear->year }}) @endif</option>
+                            @endforeach
+                        </select>
+                        <span class="rc-hint">Hold <kbd>Ctrl</kbd> / <kbd>Cmd</kbd> to select multiple terms.</span>
                     </div>
                 </div>
             </form>
@@ -296,12 +296,33 @@
 /* GENERATION FORM */
 .rc-gen-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr auto;
+    grid-template-columns: 1fr 1fr minmax(140px, 180px);
     gap: 1rem;
     align-items: end;
 }
+.rc-field--terms {
+    grid-column: 1 / -1;
+}
+.rc-select--multi {
+    width: 100%;
+    min-height: 110px;
+}
+.rc-hint {
+    display: block;
+    font-size: 0.72rem;
+    color: #6c757d;
+    margin-top: 6px;
+}
+.rc-hint kbd {
+    font-size: 0.68rem;
+    padding: 1px 4px;
+    border-radius: 3px;
+    background: #f1f3f5;
+    border: 1px solid #dee2e6;
+}
 @media (max-width: 992px) {
     .rc-gen-grid { grid-template-columns: 1fr 1fr; }
+    .rc-field--action { grid-column: 1 / -1; }
 }
 @media (max-width: 576px) {
     .rc-gen-grid { grid-template-columns: 1fr; }

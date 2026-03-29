@@ -64,23 +64,23 @@
                                     @enderror
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-5">
                                 <div class="form-group">
-                                    <label for="term_id">Term *</label>
-                                    <select name="term_id" id="term_id" class="form-control @error('term_id') is-invalid @enderror" required>
-                                        <option value="">Select Term</option>
+                                    <label for="term_ids">Term(s) * <small class="text-muted">(one report card per term)</small></label>
+                                    <select name="term_ids[]" id="term_ids" class="form-control @error('term_ids') is-invalid @enderror" multiple size="6" required>
                                         @foreach($terms as $term)
-                                            <option value="{{ $term->id }}" {{ old('term_id') == $term->id ? 'selected' : '' }}>
-                                                Term {{ $term->term }}
+                                            <option value="{{ $term->id }}" {{ collect(old('term_ids', []))->contains($term->id) ? 'selected' : '' }}>
+                                                {{ $term->name ?? 'Term #'.$term->id }}@if($term->academicYear) — {{ $term->academicYear->year }} @endif
                                             </option>
                                         @endforeach
                                     </select>
-                                    @error('term_id')
-                                        <span class="invalid-feedback" role="alert">{{ $message }}</span>
+                                    <small class="form-text text-muted">Hold Ctrl (Windows) or Cmd (Mac) to select multiple terms. Each term generates a separate report card.</small>
+                                    @error('term_ids')
+                                        <span class="invalid-feedback d-block" role="alert">{{ $message }}</span>
                                     @enderror
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <div class="form-group">
                                     <label>System Information</label>
                                     <div class="alert alert-info">

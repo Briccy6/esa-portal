@@ -187,6 +187,7 @@ class KigaliTourismMarksSeeder extends Seeder
 
             // Create marks (stored as raw values; normalization happens in report logic)
             $examScore = min(100, $baseExam + ($index * 2)); // slight variation
+            // lesson_id, term_id, assessment_type required for ReportCardController + marks screens
             Mark::updateOrCreate(
                 [
                     'student_id' => $student->id,
@@ -195,6 +196,10 @@ class KigaliTourismMarksSeeder extends Seeder
                     'exam_id' => $exam->id,
                 ],
                 [
+                    'lesson_id' => $lesson->id,
+                    'term_id' => $term->id,
+                    'assessment_type' => 'exam',
+                    'marks_out_of' => 100,
                     'value' => $examScore,
                     'status' => 'recorded',
                 ]
@@ -211,6 +216,10 @@ class KigaliTourismMarksSeeder extends Seeder
                     'exam_id' => $test1->id,
                 ],
                 [
+                    'lesson_id' => $lesson->id,
+                    'term_id' => $term->id,
+                    'assessment_type' => 'test',
+                    'marks_out_of' => 20,
                     'value' => $test1Score,
                     'status' => 'recorded',
                 ]
@@ -224,6 +233,10 @@ class KigaliTourismMarksSeeder extends Seeder
                     'exam_id' => $test2->id,
                 ],
                 [
+                    'lesson_id' => $lesson->id,
+                    'term_id' => $term->id,
+                    'assessment_type' => 'test',
+                    'marks_out_of' => 20,
                     'value' => $test2Score,
                     'status' => 'recorded',
                 ]
@@ -325,6 +338,12 @@ class KigaliTourismMarksSeeder extends Seeder
             $reportCard->total_marks = $totalMarks;
             $reportCard->average_marks = $totalMarks / $subjectCount;
             $reportCard->save();
+
+            ReportCard::recalculatePositionsForCohort(
+                (int) $reportCard->course_id,
+                (int) $reportCard->academic_year_id,
+                (int) $reportCard->term_id
+            );
         }
     }
 }

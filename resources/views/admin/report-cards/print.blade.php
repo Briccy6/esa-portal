@@ -24,40 +24,68 @@
             border: 1px solid black;
         }
         
-        .header-section {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            border-bottom: 1px solid black;
+        /* Header: logo | details | logo (table layout for DomPDF) */
+        .print-header-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-bottom: 1px solid #000;
         }
-        
-        .header-cell {
-            padding: 8px;
-            font-size: 10px;
+        .print-header-table td {
+            vertical-align: middle;
+            padding: 10px 8px;
         }
-        
-        .header-cell:not(:last-child) {
-            border-right: 1px solid black;
+        .print-header-logo {
+            width: 22%;
+            text-align: center;
+            border-right: 1px solid #000;
         }
-        
-        .logo-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100px;
+        .print-header-logo--right {
+            border-right: none;
+            border-left: 1px solid #000;
         }
-        
-        .student-photo {
-            height: 100px;
-            width: 100px;
-            object-fit: cover;
+        .print-header-center {
+            width: 56%;
+            text-align: center;
+            padding: 12px 14px !important;
         }
-        
-        .school-logo {
-            height: 100px;
+        .print-header-logo img,
+        .school-logo-img {
+            max-height: 88px;
+            max-width: 110px;
             width: auto;
-            max-width: 100px;
+            height: auto;
             object-fit: contain;
+        }
+        .print-logo-placeholder {
+            width: 88px;
+            height: 88px;
+            margin: 0 auto;
+            background: #ecf0f1;
+            border: 2px dashed #bdc3c7;
+            text-align: center;
+            font-size: 8px;
+            color: #7f8c8d;
+            font-weight: bold;
+            line-height: 84px;
+        }
+        .hdr-line {
+            font-size: 10px;
+            line-height: 1.45;
+            margin: 0 0 3px 0;
+        }
+        .hdr-line .lbl {
+            font-weight: bold;
+        }
+        .hdr-school-name {
+            font-size: 12px;
+            font-weight: bold;
+            margin: 10px 0 6px 0;
+            letter-spacing: 0.3px;
+        }
+        .hdr-contact {
+            font-size: 9px;
+            line-height: 1.5;
+            margin: 2px 0;
         }
         
         .title-section {
@@ -197,78 +225,45 @@
 </head>
 <body>
     <div class="print-area">
-        <!-- Header Section -->
-        <div class="header-section">
-            <div class="header-cell">
-                @if($schoolInfo && $schoolInfo->logo_url)
-                    <img src="{{ $schoolInfo->logo_url }}" alt="School Logo" class="school-logo">
-                @else
-                    <div style="width: 100px; height: 100px; background: #ecf0f1; border: 2px dashed #bdc3c7; display: flex; align-items: center; justify-content: center;">
-                        <div style="text-align: center;">
-                            <div style="color: #7f8c8d; font-size: 8px; font-weight: bold;">LOGO</div>
-                        </div>
-                    </div>
-                @endif
-            </div>
-            
-            <div class="header-cell">
-                <div class="logo-container">
-                    @if($reportCard->student->passport_photo)
-                        <img src="data:image/jpeg;base64,{{ base64_encode($reportCard->student->passport_photo) }}" alt="Student Photo" class="student-photo">
+        @php
+            $hdrSchoolName = optional($schoolInfo)->school_name ?: 'SCHOOL NAME';
+            $hdrPhone = optional($schoolInfo)->phone ?: 'School Phone';
+            $hdrEmail = optional($schoolInfo)->email ?: 'school@email.com';
+            $hdrWebsite = optional($schoolInfo)->website ?: 'www.schoolwebsite.rw';
+            $hasLogo = $schoolInfo && !empty($schoolInfo->logo_url);
+        @endphp
+
+        <!-- Header: left logo | student + school details | right logo -->
+        <table class="print-header-table" cellspacing="0" cellpadding="0">
+            <tr>
+                <td class="print-header-logo">
+                    @if($hasLogo)
+                        <img src="{{ $schoolInfo->logo_url }}" alt="" class="school-logo-img">
                     @else
-                        <div style="width: 100px; height: 100px; background: #ecf0f1; border: 2px dashed #bdc3c7; display: flex; align-items: center; justify-content: center;">
-                            <div style="text-align: center;">
-                                <div style="color: #7f8c8d; font-size: 8px; font-weight: bold;">STUDENT<br>PHOTO</div>
-                            </div>
-                        </div>
+                        <div class="print-logo-placeholder">LOGO</div>
                     @endif
-                </div>
-                <!-- Student Information -->
-                <div style="text-align: center; margin-top: 8px; font-size: 9px;">
-                    <div><span class="font-bold">NAME:</span> {{ $reportCard->student->full_name }}</div>
-                    <div><span class="font-bold">REG NO:</span> {{ $reportCard->student->reg_number ?? 'N/A' }}</div>
-                    <div><span class="font-bold">CLASS:</span> {{ $reportCard->course->course_name }}</div>
-                    <div><span class="font-bold">YEAR:</span> {{ $reportCard->academicYear->year }}</div>
-                </div>
-            </div>
-            
-            <div class="header-cell">
-                @if($schoolInfo)
-                    <div class="font-bold">{{ $schoolInfo->school_name ?? 'SCHOOL NAME' }}</div>
-                    @if($schoolInfo->address)
-                        <div style="margin-top: 2px;">
-                            <span class="font-bold">Address:</span> {{ $schoolInfo->address }}
-                        </div>
+                </td>
+                <td class="print-header-center">
+                    <div class="hdr-line"><span class="lbl">NAME:</span> {{ $reportCard->student->full_name }}</div>
+                    <div class="hdr-line"><span class="lbl">REG NO:</span> {{ $reportCard->student->reg_number ?? 'N/A' }}</div>
+                    <div class="hdr-line"><span class="lbl">CLASS:</span> {{ $reportCard->course->course_name }}</div>
+                    <div class="hdr-line"><span class="lbl">YEAR:</span> {{ $reportCard->academicYear->year }}</div>
+
+                    <div class="hdr-school-name">{{ $hdrSchoolName }}</div>
+
+                    <div class="hdr-contact"><span class="lbl">Phone:</span> {{ $hdrPhone }}</div>
+                    <div class="hdr-contact"><span class="lbl">E-mail:</span> {{ $hdrEmail }}</div>
+                    <div class="hdr-contact"><span class="lbl">Website:</span> {{ $hdrWebsite }}</div>
+                </td>
+                <td class="print-header-logo print-header-logo--right">
+                    @if($hasLogo)
+                        <img src="{{ $schoolInfo->logo_url }}" alt="" class="school-logo-img">
+                    @else
+                        <div class="print-logo-placeholder">LOGO</div>
                     @endif
-                    @if($schoolInfo->phone)
-                        <div style="margin-top: 2px;">
-                            <span class="font-bold">Phone:</span> {{ $schoolInfo->phone }}
-                        </div>
-                    @endif
-                    @if($schoolInfo->email)
-                        <div style="margin-top: 2px;">
-                            <span class="font-bold">E-mail:</span> {{ $schoolInfo->email }}
-                        </div>
-                    @endif
-                    @if($schoolInfo->website)
-                        <div style="margin-top: 2px;">
-                            <span class="font-bold">Website:</span> {{ $schoolInfo->website }}
-                        </div>
-                    @endif
-                @else
-                    <div class="font-bold">SCHOOL NAME</div>
-                    <div style="margin-top: 2px;">
-                        <span class="font-bold">Phone:</span> School Phone
-                    </div>
-                    <div>
-                        <span class="font-bold">E-mail:</span> school@email.com
-                    </div>
-                    <div>
-                        <span class="font-bold">Website:</span> www.schoolwebsite.rw
-                    </div>
-                @endif
-            </div>
-        </div>
+                </td>
+            </tr>
+        </table>
 
         <!-- Title -->
         <div class="title-section">
