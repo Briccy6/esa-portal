@@ -267,6 +267,25 @@
                                     <i class="fas fa-envelope"></i>
                                 </a>
 
+                                {{-- NESA Registration Management --}}
+                                @if(!$student->nesa_registered)
+                                    <button type="button"
+                                            class="btn btn-sm btn-info action-btn-icon"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#nesaRegistrationModal{{ $student->id }}"
+                                            title="Register for NESA">
+                                        <i class="fas fa-award"></i>
+                                    </button>
+                                @else
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-success action-btn-icon"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#nesaStatusModal{{ $student->id }}"
+                                            title="View NESA Status">
+                                        <i class="fas fa-check-circle"></i>
+                                    </button>
+                                @endif
+
                                 {{-- Delete (admin only) --}}
                                 @if(auth()->user() && auth()->user()->email === 'hirwabran9@gmail.com')
                                     <button type="button"
@@ -597,6 +616,154 @@
                             </div>
                         </div>
                     </div>
+
+                    {{-- NESA Registration Modal --}}
+                    @if(!$student->nesa_registered)
+                    <div class="modal fade" id="nesaRegistrationModal{{ $student->id }}" tabindex="-1" aria-labelledby="nesaRegistrationLabel{{ $student->id }}" aria-hidden="true">
+                        <div class="modal-dialog modal-lg modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header bg-info text-white">
+                                    <h5 class="modal-title" id="nesaRegistrationLabel{{ $student->id }}">
+                                        <i class="fas fa-award me-2"></i>
+                                        NESA Registration — {{ $student->full_name }}
+                                    </h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                </div>
+                                <form id="nesaRegistrationForm{{ $student->id }}"
+                                      action="{{ route('staff.students.nesa', $student) }}"
+                                      method="POST"
+                                      onsubmit="handleNesaRegistration(event, {{ $student->id }})">
+                                    @csrf
+                                    <div class="modal-body">
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            Register this student for NESA examination and send notification email.
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label for="nesa_sdms_code_{{ $student->id }}" class="form-label required">NESA SDMS Code</label>
+                                                <input type="text" name="nesa_sdms_code" id="nesa_sdms_code_{{ $student->id }}" 
+                                                       class="form-control" required maxlength="50"
+                                                       placeholder="Enter SDMS code">
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label for="nesa_reg_number_{{ $student->id }}" class="form-label required">NESA Registration Number</label>
+                                                <input type="text" name="nesa_reg_number" id="nesa_reg_number_{{ $student->id }}" 
+                                                       class="form-control" required maxlength="50"
+                                                       placeholder="Enter registration number">
+                                            </div>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-md-12 mb-3">
+                                                <label for="nesa_document_{{ $student->id }}" class="form-label">NESA Document</label>
+                                                <input type="file" name="nesa_document" id="nesa_document_{{ $student->id }}" 
+                                                       class="form-control" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+                                                <div class="form-text">Accepted formats: PDF, DOC, DOCX, JPG, JPEG, PNG (Max: 5MB)</div>
+                                            </div>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-md-12 mb-3">
+                                                <label for="nesa_remarks_{{ $student->id }}" class="form-label">Remarks</label>
+                                                <textarea name="nesa_remarks" id="nesa_remarks_{{ $student->id }}" 
+                                                          class="form-control" rows="3" maxlength="500" 
+                                                          placeholder="Any additional remarks..."></textarea>
+                                            </div>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-md-12 mb-3">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="send_email" id="send_email_{{ $student->id }}" checked>
+                                                    <label class="form-check-label" for="send_email_{{ $student->id }}">
+                                                        Send registration confirmation email to student
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn btn-info" id="nesaSubmitBtn{{ $student->id }}">
+                                            <i class="fas fa-award me-1"></i>Register for NESA
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+
+                    {{-- NESA Status Modal --}}
+                    @if($student->nesa_registered)
+                    <div class="modal fade" id="nesaStatusModal{{ $student->id }}" tabindex="-1" aria-labelledby="nesaStatusLabel{{ $student->id }}" aria-hidden="true">
+                        <div class="modal-dialog modal-lg modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header bg-success text-white">
+                                    <h5 class="modal-title" id="nesaStatusLabel{{ $student->id }}">
+                                        <i class="fas fa-award me-2"></i>
+                                        NESA Registration Status — {{ $student->full_name }}
+                                    </h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="alert alert-success">
+                                        <i class="fas fa-check-circle me-2"></i>
+                                        This student is registered with NESA
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <strong>SDMS Code:</strong><br>
+                                            <span class="text-success">{{ $student->nesa_sdms_code ?? 'N/A' }}</span>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <strong>Registration Number:</strong><br>
+                                            <span class="text-success">{{ $student->nesa_reg_number ?? 'N/A' }}</span>
+                                        </div>
+                                    </div>
+
+                                    @if($student->nesa_registration_date)
+                                    <div class="row">
+                                        <div class="col-md-12 mb-3">
+                                            <strong>Registration Date:</strong><br>
+                                            <span>{{ $student->nesa_registration_date->format('d M Y') }}</span>
+                                        </div>
+                                    </div>
+                                    @endif
+
+                                    @if($student->nesa_remarks)
+                                    <div class="row">
+                                        <div class="col-md-12 mb-3">
+                                            <strong>Remarks:</strong><br>
+                                            <span>{{ $student->nesa_remarks }}</span>
+                                        </div>
+                                    </div>
+                                    @endif
+
+                                    <hr>
+
+                                    <div class="d-flex gap-2">
+                                        <button type="button" class="btn btn-warning" onclick="editNesaRegistration({{ $student->id }})">
+                                            <i class="fas fa-edit me-1"></i>Edit Registration
+                                        </button>
+                                        <button type="button" class="btn btn-primary" onclick="sendNesaStatusEmail({{ $student->id }}, 'approved')">
+                                            <i class="fas fa-envelope me-1"></i>Send Approval Email
+                                        </button>
+                                        <button type="button" class="btn btn-danger" onclick="sendNesaStatusEmail({{ $student->id }}, 'rejected')">
+                                            <i class="fas fa-times-circle me-1"></i>Send Rejection Email
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
 
                 @empty
                     <tr class="no-data-row">
@@ -938,10 +1105,175 @@ function viewDocument(documentType, studentId) {
         });
 }
 
+// ─── Handle NESA Registration ─────────────────────────────────────────────────────
+
+function handleNesaRegistration(event, studentId) {
+    event.preventDefault();
+
+    const form      = event.target;
+    const formData  = new FormData(form);
+    const submitBtn = document.getElementById(`nesaSubmitBtn${studentId}`);
+
+    const sdmsCode = formData.get('nesa_sdms_code');
+    const regNumber = formData.get('nesa_reg_number');
+
+    if (!sdmsCode) { showAlert('danger', 'Please enter NESA SDMS code'); return; }
+    if (!regNumber) { showAlert('danger', 'Please enter NESA registration number'); return; }
+
+    if (!confirm(`Register this student for NESA examination?`)) return;
+
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Registering…';
+
+    fetch(form.action, {
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN': getCsrfToken(), 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        body: formData,
+        credentials: 'same-origin'
+    })
+    .then(async response => {
+        const ct = response.headers.get('content-type') || '';
+        let data;
+        if (ct.includes('application/json')) {
+            data = await response.json();
+        } else {
+            const text = await response.text();
+            try { data = JSON.parse(text); } catch { data = { success: response.ok, message: response.ok ? 'NESA registration successful' : 'NESA registration failed' }; }
+        }
+        return { ok: response.ok, data };
+    })
+    .then(({ ok, data }) => {
+        if (ok && data.success !== false) {
+            bootstrap.Modal.getInstance(document.getElementById(`nesaRegistrationModal${studentId}`))?.hide();
+            showAlert('success', data.message || 'NESA registration successful');
+            setTimeout(() => window.location.reload(), 1500);
+        } else {
+            showAlert('danger', data.message || data.error || 'NESA registration failed. Please try again.');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-award me-1"></i>Register for NESA';
+        }
+    })
+    .catch(err => {
+        console.error('NESA registration error:', err);
+        showAlert('danger', 'NESA registration failed. Please check your connection and try again.');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-award me-1"></i>Register for NESA';
+    });
+}
+
+// ─── Send NESA Status Email ─────────────────────────────────────────────────────
+
+function sendNesaStatusEmail(studentId, status) {
+    const confirmation = status === 'approved' 
+        ? 'Send NESA approval email to this student?' 
+        : 'Send NESA rejection email to this student?';
+    
+    if (!confirm(confirmation)) return;
+
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Sending...';
+
+    fetch(`/staff/students/${studentId}/send-nesa-email`, {
+        method: 'POST',
+        headers: { 
+            'X-CSRF-TOKEN': getCsrfToken(), 
+            'Accept': 'application/json', 
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: status }),
+        credentials: 'same-origin'
+    })
+    .then(async response => {
+        const ct = response.headers.get('content-type') || '';
+        let data;
+        if (ct.includes('application/json')) {
+            data = await response.json();
+        } else {
+            const text = await response.text();
+            try { data = JSON.parse(text); } catch { data = { success: response.ok, message: response.ok ? 'Email sent successfully' : 'Email sending failed' }; }
+        }
+        return { ok: response.ok, data };
+    })
+    .then(({ ok, data }) => {
+        if (ok && data.success !== false) {
+            showAlert('success', data.message || `${status === 'approved' ? 'Approval' : 'Rejection'} email sent successfully`);
+        } else {
+            showAlert('danger', data.message || data.error || 'Failed to send email. Please try again.');
+        }
+        button.disabled = false;
+        button.innerHTML = originalText;
+    })
+    .catch(err => {
+        console.error('Email sending error:', err);
+        showAlert('danger', 'Failed to send email. Please check your connection and try again.');
+        button.disabled = false;
+        button.innerHTML = originalText;
+    });
+}
+
+// ─── Edit NESA Registration ─────────────────────────────────────────────────────
+
+function editNesaRegistration(studentId) {
+    // Close the status modal
+    bootstrap.Modal.getInstance(document.getElementById(`nesaStatusModal${studentId}`))?.hide();
+    
+    // Show a simple edit form (could be enhanced to open a new modal)
+    const sdmsCode = prompt('Enter new SDMS code:');
+    if (sdmsCode === null) return;
+    
+    const regNumber = prompt('Enter new registration number:');
+    if (regNumber === null) return;
+    
+    if (!sdmsCode.trim() || !regNumber.trim()) {
+        showAlert('danger', 'Both SDMS code and registration number are required');
+        return;
+    }
+
+    fetch(`/staff/students/${studentId}/nesa`, {
+        method: 'PUT',
+        headers: { 
+            'X-CSRF-TOKEN': getCsrfToken(), 
+            'Accept': 'application/json', 
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+            nesa_sdms_code: sdmsCode.trim(),
+            nesa_reg_number: regNumber.trim()
+        }),
+        credentials: 'same-origin'
+    })
+    .then(async response => {
+        const ct = response.headers.get('content-type') || '';
+        let data;
+        if (ct.includes('application/json')) {
+            data = await response.json();
+        } else {
+            const text = await response.text();
+            try { data = JSON.parse(text); } catch { data = { success: response.ok, message: response.ok ? 'NESA registration updated' : 'Update failed' }; }
+        }
+        return { ok: response.ok, data };
+    })
+    .then(({ ok, data }) => {
+        if (ok && data.success !== false) {
+            showAlert('success', data.message || 'NESA registration updated successfully');
+            setTimeout(() => window.location.reload(), 1500);
+        } else {
+            showAlert('danger', data.message || data.error || 'Failed to update NESA registration. Please try again.');
+        }
+    })
+    .catch(err => {
+        console.error('NESA update error:', err);
+        showAlert('danger', 'Failed to update NESA registration. Please check your connection and try again.');
+    });
+}
+
 // ─── Transcript lazy-load ────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', function () {
-
     // Transcript modals — lazy-load content on open
     document.querySelectorAll('[id^="transcriptModal"]').forEach(modal => {
         modal.addEventListener('show.bs.modal', function () {
@@ -961,4 +1293,3 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 });
-</script>

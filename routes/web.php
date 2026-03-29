@@ -590,6 +590,7 @@ Route::prefix('staff')->name('staff.')->group(function () {
         Route::get('/students/{student}/edit', [StudentController::class, 'editByStaff'])->name('students.edit');
         Route::put('/students/{student}', [StudentController::class, 'updateByStaff'])->name('students.update');
         Route::put('/students/{student}/nesa', [StudentController::class, 'registerNesa'])->name('students.nesa');
+        Route::post('/students/{student}/send-nesa-email', [StudentController::class, 'sendNesaStatusEmail'])->name('students.send-nesa-email');
         Route::post('/students/{student}/complete-registration', [StudentController::class, 'completeRegistration'])->name('students.complete_registration');
         Route::get('/students/{student}/view-document/{documentType}', [StudentController::class, 'viewDocument'])->name('students.view_document');
 

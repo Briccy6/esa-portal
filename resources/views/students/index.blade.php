@@ -21,10 +21,17 @@
     <div class="page-header mb-4">
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
             <div>
-                <h2 class="page-title mb-2">
-                    <i class="fas fa-users me-2"></i>All Students
-                </h2>
-                <p class="page-subtitle mb-0">Manage student records and payments</p>
+                @if(request('nesa') == 'true')
+                    <h2 class="page-title mb-2">
+                        <i class="fas fa-award me-2"></i>NESA Registration Management
+                    </h2>
+                    <p class="page-subtitle mb-0">Register students for NESA examination and manage approval status</p>
+                @else
+                    <h2 class="page-title mb-2">
+                        <i class="fas fa-users me-2"></i>All Students
+                    </h2>
+                    <p class="page-subtitle mb-0">Manage student records and payments</p>
+                @endif
             </div>
             <div>
                 <span class="badge bg-primary fs-6">

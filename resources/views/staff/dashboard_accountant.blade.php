@@ -172,7 +172,7 @@
                 @endif
 
                 <!-- Action Buttons -->
-                <div class="mt-3 d-flex gap-2">
+                <div class="mt-3 d-flex gap-2 flex-wrap">
                     <button class="btn btn-sm btn-primary" onclick="viewBranchDetails({{ $branchData['branch']->id }})">
                         <i class="fas fa-eye me-1"></i>View Details
                     </button>
@@ -181,6 +181,9 @@
                     </button>
                     <button class="btn btn-sm btn-warning" onclick="viewExpenses({{ $branchData['branch']->id }})">
                         <i class="fas fa-receipt me-1"></i>Expenses
+                    </button>
+                    <button class="btn btn-sm btn-info" onclick="manageNesaRegistrations({{ $branchData['branch']->id }})">
+                        <i class="fas fa-award me-1"></i>NESA Registration
                     </button>
                 </div>
             </div>
@@ -303,6 +306,10 @@
 
     function viewExpenses(branchId) {
         window.location.href = `/staff/expenses?branch=${branchId}`;
+    }
+
+    function manageNesaRegistrations(branchId) {
+        window.location.href = `/staff/students?branch=${branchId}&nesa=true`;
     }
 
     function generateReport() {

@@ -109,6 +109,180 @@
         </div>
     </div>
 
+    {{-- Student Documents Section --}}
+    <div class="card mb-4">
+        <div class="card-header py-2">
+            <strong><i class="fas fa-file-image me-2"></i> Student Documents</strong>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {{-- ID Photo --}}
+                <div class="col-md-6 mb-3">
+                    <div class="rc-document-card">
+                        <div class="rc-document-card__header">
+                            <i class="fas fa-id-card me-2"></i> ID Photo
+                        </div>
+                        <div class="rc-document-card__body">
+                            @if($first->student->id_photo)
+                                @if(str_contains($first->student->id_photo, 'http'))
+                                    <img src="{{ $first->student->id_photo }}" alt="ID Photo" class="rc-document-img">
+                                @else
+                                    <img src="{{ asset($first->student->id_photo) }}" alt="ID Photo" class="rc-document-img"
+                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                    <div class="rc-document-error" style="display:none;">
+                                        <i class="fas fa-exclamation-triangle text-warning"></i>
+                                        <span>Image not found</span>
+                                    </div>
+                                @endif
+                            @else
+                                <div class="rc-document-placeholder">
+                                    <i class="fas fa-image text-muted"></i>
+                                    <span class="text-muted">No ID photo uploaded</span>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Passport Photo --}}
+                <div class="col-md-6 mb-3">
+                    <div class="rc-document-card">
+                        <div class="rc-document-card__header">
+                            <i class="fas fa-user me-2"></i> Passport Photo
+                        </div>
+                        <div class="rc-document-card__body">
+                            @if($first->student->passport_photo)
+                                @if(str_contains($first->student->passport_photo, 'http'))
+                                    <img src="{{ $first->student->passport_photo }}" alt="Passport Photo" class="rc-document-img">
+                                @else
+                                    <img src="{{ asset($first->student->passport_photo) }}" alt="Passport Photo" class="rc-document-img"
+                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                    <div class="rc-document-error" style="display:none;">
+                                        <i class="fas fa-exclamation-triangle text-warning"></i>
+                                        <span>Image not found</span>
+                                    </div>
+                                @endif
+                            @else
+                                <div class="rc-document-placeholder">
+                                    <i class="fas fa-user-circle text-muted"></i>
+                                    <span class="text-muted">No passport photo uploaded</span>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Senior 6 Document --}}
+                <div class="col-md-6 mb-3">
+                    <div class="rc-document-card">
+                        <div class="rc-document-card__header">
+                            <i class="fas fa-graduation-cap me-2"></i> Senior 6 Document
+                        </div>
+                        <div class="rc-document-card__body">
+                            @if($first->student->senior6_document)
+                                @if(str_contains($first->student->senior6_document, 'http'))
+                                    <a href="{{ $first->student->senior6_document }}" target="_blank" class="rc-document-link">
+                                        <i class="fas fa-file-pdf me-2"></i> View Senior 6 Document
+                                    </a>
+                                @else
+                                    <a href="{{ asset($first->student->senior6_document) }}" target="_blank" class="rc-document-link">
+                                        <i class="fas fa-file-pdf me-2"></i> View Senior 6 Document
+                                    </a>
+                                @endif
+                            @else
+                                <div class="rc-document-placeholder">
+                                    <i class="fas fa-file-alt text-muted"></i>
+                                    <span class="text-muted">No Senior 6 document uploaded</span>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Senior 3 Document --}}
+                <div class="col-md-6 mb-3">
+                    <div class="rc-document-card">
+                        <div class="rc-document-card__header">
+                            <i class="fas fa-school me-2"></i> Senior 3 Document
+                        </div>
+                        <div class="rc-document-card__body">
+                            @if($first->student->senior3_document)
+                                @if(str_contains($first->student->senior3_document, 'http'))
+                                    <a href="{{ $first->student->senior3_document }}" target="_blank" class="rc-document-link">
+                                        <i class="fas fa-file-pdf me-2"></i> View Senior 3 Document
+                                    </a>
+                                @else
+                                    <a href="{{ asset($first->student->senior3_document) }}" target="_blank" class="rc-document-link">
+                                        <i class="fas fa-file-pdf me-2"></i> View Senior 3 Document
+                                    </a>
+                                @endif
+                            @else
+                                <div class="rc-document-placeholder">
+                                    <i class="fas fa-file-alt text-muted"></i>
+                                    <span class="text-muted">No Senior 3 document uploaded</span>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Other Supporting Document --}}
+                <div class="col-md-6 mb-3">
+                    <div class="rc-document-card">
+                        <div class="rc-document-card__header">
+                            <i class="fas fa-paperclip me-2"></i> Other Supporting Document
+                        </div>
+                        <div class="rc-document-card__body">
+                            @if($first->student->other_supporting_document)
+                                @if(str_contains($first->student->other_supporting_document, 'http'))
+                                    <a href="{{ $first->student->other_supporting_document }}" target="_blank" class="rc-document-link">
+                                        <i class="fas fa-file me-2"></i> View Supporting Document
+                                    </a>
+                                @else
+                                    <a href="{{ asset($first->student->other_supporting_document) }}" target="_blank" class="rc-document-link">
+                                        <i class="fas fa-file me-2"></i> View Supporting Document
+                                    </a>
+                                @endif
+                            @else
+                                <div class="rc-document-placeholder">
+                                    <i class="fas fa-file text-muted"></i>
+                                    <span class="text-muted">No supporting document uploaded</span>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+
+                {{-- NESA Document --}}
+                <div class="col-md-6 mb-3">
+                    <div class="rc-document-card">
+                        <div class="rc-document-card__header">
+                            <i class="fas fa-certificate me-2"></i> NESA Document
+                        </div>
+                        <div class="rc-document-card__body">
+                            @if($first->student->nesa_document)
+                                @if(str_contains($first->student->nesa_document, 'http'))
+                                    <a href="{{ $first->student->nesa_document }}" target="_blank" class="rc-document-link">
+                                        <i class="fas fa-file-pdf me-2"></i> View NESA Document
+                                    </a>
+                                @else
+                                    <a href="{{ asset($first->student->nesa_document) }}" target="_blank" class="rc-document-link">
+                                        <i class="fas fa-file-pdf me-2"></i> View NESA Document
+                                    </a>
+                                @endif
+                            @else
+                                <div class="rc-document-placeholder">
+                                    <i class="fas fa-certificate text-muted"></i>
+                                    <span class="text-muted">No NESA document uploaded</span>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="card">
         <div class="card-header py-2"><strong>Open a single term</strong></div>
         <div class="card-body py-2 small">
@@ -120,4 +294,92 @@
         </div>
     </div>
 </div>
+
+<style>
+/* Document Cards Styles */
+.rc-document-card {
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    overflow: hidden;
+    height: 100%;
+}
+.rc-document-card__header {
+    background: linear-gradient(135deg,#f8f9fa,#e9ecef);
+    padding: 0.6rem 0.9rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #495057;
+    border-bottom: 1px solid #e9ecef;
+}
+.rc-document-card__body {
+    padding: 1rem;
+    min-height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.rc-document-img {
+    max-width: 100%;
+    max-height: 150px;
+    border-radius: 6px;
+    object-fit: cover;
+    box-shadow: 0 2px 8px rgba(0,0,0,.1);
+}
+.rc-document-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: linear-gradient(135deg,#e7f1ff,#dbeafe);
+    color: #084298;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    border: 1px solid #bfdbfe;
+    transition: all .2s;
+}
+.rc-document-link:hover {
+    background: linear-gradient(135deg,#dbeafe,#bfdbfe);
+    color: #0a58ca;
+    transform: translateY(-1px);
+    text-decoration: none;
+}
+.rc-document-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    text-align: center;
+    color: #6c757d;
+}
+.rc-document-placeholder i {
+    font-size: 2rem;
+    opacity: 0.6;
+}
+.rc-document-placeholder span {
+    font-size: 0.8rem;
+}
+.rc-document-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    text-align: center;
+    color: #856404;
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 6px;
+}
+.rc-document-error i {
+    font-size: 1.5rem;
+}
+.rc-document-error span {
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+</style>
 @endsection

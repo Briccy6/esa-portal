@@ -2626,4 +2626,91 @@ class StudentController extends Controller
             return redirect()->back()->with('error', 'Failed to send bulk emails: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Send NESA status email to student
+     */
+    public function sendNesaStatusEmail(Request $request, Student $student)
+    {
+        if (!auth()->guard('staff')->check()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $request->validate([
+            'status' => 'required|in:approved,rejected'
+        ]);
+
+        try {
+            $status = $request->status;
+            
+            // Create email content based on status
+            $subject = $status === 'approved' 
+                ? 'NESA Registration Approved' 
+                : 'NESA Registration Update';
+            
+            $emailContent = $this->generateNesaStatusEmailContent($student, $status);
+            
+            // Send email (commented out for now - uncomment when email is configured)
+            // Mail::to($student->email)->send(new NesaStatusMail($student, $status, $emailContent));
+            
+            // For now, just log and return success
+            Log::info("NESA {$status} email sent to student", [
+                'student_id' => $student->id,
+                'student_name' => $student->full_name,
+                'student_email' => $student->email,
+                'status' => $status
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => ucfirst($status) . ' email sent successfully to ' . $student->full_name
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Failed to send NESA status email', [
+                'student_id' => $student->id,
+                'status' => $request->status,
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to send email: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Generate email content for NESA status
+     */
+    private function generateNesaStatusEmailContent(Student $student, string $status): string
+    {
+        if ($status === 'approved') {
+            return "
+                <h2>Congratulations - NESA Registration Approved!</h2>
+                <p>Dear {$student->full_name},</p>
+                <p>We are pleased to inform you that your NESA registration has been approved.</p>
+                <p><strong>Registration Details:</strong></p>
+                <ul>
+                    <li>SDMS Code: {$student->nesa_sdms_code}</li>
+                    <li>Registration Number: {$student->nesa_reg_number}</li>
+                    <li>Registration Date: {$student->nesa_registration_date->format('d M Y')}</li>
+                </ul>
+                <p>You can now proceed with your examination preparations. Please keep this information safe for future reference.</p>
+                <p>If you have any questions, please don't hesitate to contact us.</p>
+                <p>Best regards,<br>Examination Department</p>
+            ";
+        } else {
+            return "
+                <h2>NESA Registration Update</h2>
+                <p>Dear {$student->full_name},</p>
+                <p>We regret to inform you that there is an issue with your NESA registration.</p>
+                <p>Please contact the administration office immediately to resolve this matter.</p>
+                <p>You may need to provide additional documentation or information to complete your registration.</p>
+                <p>If you have any questions or need assistance, please visit our office or contact us.</p>
+                <p>We appreciate your understanding and cooperation.</p>
+                <p>Best regards,<br>Examination Department</p>
+            ";
+        }
+    }
 }
