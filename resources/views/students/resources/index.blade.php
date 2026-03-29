@@ -42,7 +42,9 @@
                     <tr>
                         <th>Title</th>
                         <th>Course</th>
-                        <th>Description</th>
+                        <th>Teacher</th>
+                        <th>Type</th>
+                        <th>Price</th>
                         <th>Uploaded</th>
                         <th>Actions</th>
                     </tr>
@@ -50,31 +52,50 @@
                 <tbody>
                     @foreach($resources as $resource)
                         @php
-                            $enrolled = $student && $student->courses && $student->courses->contains($resource->course_id);
-                            $resourceTitle = $resource->title ?? $resource->lesson->title ?? 'Untitled';
+                            $resourceTitle = $resource->document_name ?: $resource->video_name ?: 'Educational Resource';
+                            $resourceType = $resource->document_blob ? 'Document' : ($resource->video_blob ? 'Video' : 'Link');
                         @endphp
-                        @if($enrolled)
-                            <tr>
-                                <td class="resource-title">{{ $resourceTitle }}</td>
-                                <td class="resource-course">{{ $resource->course->course_name ?? 'N/A' }}</td>
-                                <td class="resource-description">
-                                    {{ Str::limit($resource->description ?? '', 80) }}
-                                </td>
-                                <td class="resource-uploaded">{{ $resource->created_at->format('M d, Y') }}</td>
-                                <td>
-                                    <a href="{{ route('student.resources.show', $resource->id) }}" 
-                                       class="btn btn-primary btn-sm" target="_blank" rel="noopener">
-                                        <i class="bi bi-eye"></i> View
+                        <tr>
+                            <td class="resource-title">{{ Str::limit($resourceTitle, 50) }}</td>
+                            <td class="resource-course">{{ $resource->course->course_name ?? 'General Course' }}</td>
+                            <td class="resource-teacher">{{ $resource->teacher->teacher_name ?? 'Expert Teacher' }}</td>
+                            <td class="resource-type">
+                                @if($resource->document_blob)
+                                    <span class="badge bg-blue-100 text-blue-800">
+                                        <i class="fas fa-file-alt me-1"></i>Document
+                                    </span>
+                                @elseif($resource->video_blob)
+                                    <span class="badge bg-red-100 text-red-800">
+                                        <i class="fas fa-video me-1"></i>Video
+                                    </span>
+                                @elseif($resource->youtube_link)
+                                    <span class="badge bg-red-100 text-red-800">
+                                        <i class="fab fa-youtube me-1"></i>YouTube
+                                    </span>
+                                @endif
+                            </td>
+                            <td class="resource-price">
+                                @if($resource->is_free)
+                                    <span class="badge bg-success">FREE</span>
+                                @else
+                                    <span class="badge bg-info">RWF {{ number_format($resource->price, 0) }}</span>
+                                @endif
+                            </td>
+                            <td class="resource-uploaded">{{ $resource->created_at->format('M d, Y') }}</td>
+                            <td>
+                                <a href="{{ route('student.resources.show', $resource->id) }}" 
+                                   class="btn btn-primary btn-sm" target="_blank" rel="noopener">
+                                    <i class="bi bi-eye"></i> View
+                                </a>
+                                @if($resource->document_blob || $resource->video_blob)
+                                    <a href="{{ $resource->is_free ? route('student.resources.download', $resource->id) : route('student.resources.payment', $resource->id) }}"
+                                       class="btn btn-{{ $resource->is_free ? 'success' : 'warning' }} btn-sm ms-1">
+                                        <i class="bi bi-{{ $resource->is_free ? 'download' : 'shopping-cart' }}"></i> 
+                                        {{ $resource->is_free ? 'Download' : 'Purchase' }}
                                     </a>
-                                    @if($resource->document_path)
-                                        <a href="{{ asset('storage/' . $resource->document_path) }}" 
-                                           class="btn btn-outline-secondary btn-sm ms-1" download>
-                                            <i class="bi bi-download"></i> Download
-                                        </a>
-                                    @endif
-                                </td>
-                            </tr>
-                        @endif
+                                @endif
+                            </td>
+                        </tr>
                     @endforeach
                 </tbody>
             </table>
@@ -93,6 +114,7 @@ document.addEventListener('DOMContentLoaded', function () {
         return {
             title: row.querySelector('.resource-title')?.innerText.toLowerCase() || '',
             course: row.querySelector('.resource-course')?.innerText.toLowerCase() || '',
+            teacher: row.querySelector('.resource-teacher')?.innerText.toLowerCase() || '',
             uploaded: row.querySelector('.resource-uploaded')?.innerText || '',
             row: row
         };
@@ -106,7 +128,9 @@ document.addEventListener('DOMContentLoaded', function () {
         // Filter rows
         rows.forEach(row => {
             const data = getRowData(row);
-            const visible = data.title.includes(query) || data.course.includes(query);
+            const visible = data.title.includes(query) || 
+                          data.course.includes(query) || 
+                          data.teacher.includes(query);
             row.style.display = visible ? '' : 'none';
         });
 

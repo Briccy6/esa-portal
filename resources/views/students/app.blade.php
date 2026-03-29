@@ -403,14 +403,7 @@
                                 My Subscriptions
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a href="{{ route('student.payment') }}" 
-                               class="nav-link {{ request()->routeIs('student.payment') ? 'active' : '' }}">
-                                <i class="bi bi-credit-card"></i>
-                                Payments
-                            </a>
-                        </li>
-                        <li class="nav-item">
+                                                <li class="nav-item">
                             <a href="{{route('student.invoices')}}" class="nav-link">
                                 <i class="bi bi-receipt"></i>
                                 Invoices

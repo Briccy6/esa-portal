@@ -13,7 +13,15 @@ class ResourceViewController extends Controller
         $student = auth('student')->user();
         $student->load('course'); // Load the course relationship
 
-        $resources = Resource::with(['course', 'lesson'])->get();
+        // Get resources for the student's course and branch (same logic as dashboard)
+        $resources = \App\Models\Resource::where(function($query) use ($student) {
+            $query->orWhere('course_id', $student->course_id)
+                  ->orWhere('branch_id', $student->branch_id);
+        })
+        ->with(['teacher', 'course', 'branch'])
+        ->orderByDesc('created_at')
+        ->get();
+
         $course = $student->course; // Now this will work
 
         return view('students.resources.index', compact('resources', 'student', 'course'));
