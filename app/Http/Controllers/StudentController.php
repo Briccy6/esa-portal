@@ -2902,16 +2902,36 @@ class StudentController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
+        // Log incoming request data for debugging
+        \Log::info('NESA status update request', [
+            'student_id' => $student->id,
+            'request_data' => $request->all(),
+            'files' => $request->allFiles()
+        ]);
+
         $request->validate([
             'status' => 'required|in:registered,failed',
             'send_email' => 'sometimes|boolean',
             'reason' => 'required_if:status,failed|string|max:500',
             'nesa_document' => 'required_if:status,registered|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120'
+        ], [
+            'status.required' => 'Status is required',
+            'status.in' => 'Invalid status value',
+            'reason.required_if' => 'Reason is required when status is failed',
+            'nesa_document.required_if' => 'NESA document is required when status is registered',
+            'nesa_document.mimes' => 'Document must be a PDF, DOC, DOCX, JPG, JPEG or PNG file',
+            'nesa_document.max' => 'Document size must not exceed 5MB'
         ]);
 
         try {
             $status = $request->input('status');
             $sendEmail = $request->input('send_email', false);
+            
+            \Log::info('Processing NESA status update', [
+                'status' => $status,
+                'send_email' => $sendEmail,
+                'has_document' => $request->hasFile('nesa_document')
+            ]);
             
             if ($status === 'registered') {
                 // Handle document upload
@@ -2928,15 +2948,25 @@ class StudentController extends Controller
                         'nesa_document' => $path,
                         'nesa_registration_date' => now(),
                     ]);
+                    
+                    \Log::info('NESA document uploaded', ['path' => $path]);
                 }
                 
                 // Generate email content for successful registration
                 $emailContent = $this->generateNesaStatusEmailContent($student, 'approved');
                 
                 if ($sendEmail && $student->email) {
-                    // Attach document to email
-                    $documentPath = storage_path('app/public/' . $student->nesa_document);
-                    Mail::to($student->email)->send(new NesaRegistrationStatusMail($student, 'approved', $emailContent, $documentPath));
+                    try {
+                        // Attach document to email
+                        $documentPath = storage_path('app/public/' . $student->nesa_document);
+                        Mail::to($student->email)->send(new NesaRegistrationStatusMail($student, 'approved', $emailContent, $documentPath));
+                        \Log::info('NESA approval email sent', ['student_id' => $student->id, 'email' => $student->email]);
+                    } catch (\Exception $e) {
+                        \Log::error('Failed to send NESA approval email', [
+                            'student_id' => $student->id,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
                 }
                 
                 $message = 'Student marked as registered with NESA successfully.';
@@ -2952,13 +2982,21 @@ class StudentController extends Controller
                 $emailContent = $this->generateNesaStatusEmailContent($student, 'rejected', $request->input('reason'));
                 
                 if ($sendEmail && $student->email) {
-                    Mail::to($student->email)->send(new NesaRegistrationStatusMail($student, 'rejected', $emailContent));
+                    try {
+                        Mail::to($student->email)->send(new NesaRegistrationStatusMail($student, 'rejected', $emailContent));
+                        \Log::info('NESA rejection email sent', ['student_id' => $student->id, 'email' => $student->email]);
+                    } catch (\Exception $e) {
+                        \Log::error('Failed to send NESA rejection email', [
+                            'student_id' => $student->id,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
                 }
                 
                 $message = 'Student marked as failed for NESA registration.';
             }
 
-            Log::info('NESA status updated', [
+            Log::info('NESA status updated successfully', [
                 'student_id' => $student->id,
                 'status' => $status,
                 'user' => auth()->guard('staff')->user()->full_name,
@@ -2973,7 +3011,8 @@ class StudentController extends Controller
         } catch (\Exception $e) {
             Log::error('Failed to update NESA status', [
                 'student_id' => $student->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
 
             return response()->json([
