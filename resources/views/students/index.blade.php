@@ -257,7 +257,18 @@ window.updateNesaStatus = function(studentId) {
             setTimeout(() => window.location.reload(), 1500);
         } else {
             console.error('Update failed:', data);
-            showAlert('danger', data.message || data.error || 'Failed to update NESA status. Please try again.');
+            
+            // Handle validation errors specifically
+            if (data.errors) {
+                let errorMessage = 'Validation errors:\n';
+                for (const [field, messages] of Object.entries(data.errors)) {
+                    errorMessage += `${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}\n`;
+                }
+                console.error('Validation errors:', data.errors);
+                showAlert('danger', errorMessage || 'Validation failed. Please check all required fields.');
+            } else {
+                showAlert('danger', data.message || data.error || 'Failed to update NESA status. Please try again.');
+            }
         }
     })
     .catch(err => {

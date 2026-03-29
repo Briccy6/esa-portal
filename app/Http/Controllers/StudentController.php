@@ -2909,7 +2909,11 @@ class StudentController extends Controller
             'files' => $request->allFiles()
         ]);
 
-        $request->validate([
+        // Convert checkbox to boolean properly
+        $requestData = $request->all();
+        $requestData['send_email'] = isset($requestData['send_email']) && ($requestData['send_email'] === '1' || $requestData['send_email'] === 'true' || $requestData['send_email'] === true);
+
+        $validator = \Validator::make($requestData, [
             'status' => 'required|in:registered,failed',
             'send_email' => 'sometimes|boolean',
             'reason' => 'required_if:status,failed|string|max:500',
@@ -2923,9 +2927,23 @@ class StudentController extends Controller
             'nesa_document.max' => 'Document size must not exceed 5MB'
         ]);
 
+        if ($validator->fails()) {
+            \Log::error('NESA status validation failed', [
+                'student_id' => $student->id,
+                'errors' => $validator->errors()->toArray(),
+                'request_data' => $requestData
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()->toArray()
+            ], 422);
+        }
+
         try {
-            $status = $request->input('status');
-            $sendEmail = $request->input('send_email', false);
+            $status = $requestData['status'];
+            $sendEmail = $requestData['send_email'] ?? false;
             
             \Log::info('Processing NESA status update', [
                 'status' => $status,
@@ -2975,11 +2993,11 @@ class StudentController extends Controller
                 // Mark as failed
                 $student->update([
                     'nesa_registered' => false,
-                    'nesa_remarks' => $request->input('reason'),
+                    'nesa_remarks' => $requestData['reason'],
                 ]);
                 
                 // Generate email content for failed registration
-                $emailContent = $this->generateNesaStatusEmailContent($student, 'rejected', $request->input('reason'));
+                $emailContent = $this->generateNesaStatusEmailContent($student, 'rejected', $requestData['reason']);
                 
                 if ($sendEmail && $student->email) {
                     try {
