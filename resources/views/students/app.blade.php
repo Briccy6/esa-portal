@@ -363,6 +363,12 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a href="{{ route('student.dashboard') }}#timetables" class="nav-link">
+                                <i class="bi bi-calendar2-week"></i>
+                                Timetables
+                            </a>
+                        </li>
+                        <li class="nav-item">
        
 <a href="{{ route('student.resources.index') }}" class="nav-link {{ request()->routeIs('student.resources.index') ? 'active' : '' }}">
     <i class="bi bi-file-earmark-text"></i>

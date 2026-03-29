@@ -673,7 +673,7 @@
     </div>
 
     <!-- Timetables Section -->
-    <div class="row mb-4">
+    <div class="row mb-4" id="timetables">
         <div class="col-12">
             <h3 class="section-title"><i class="bi bi-calendar2-week me-2"></i>Timetables</h3>
         </div>
