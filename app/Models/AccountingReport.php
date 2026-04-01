@@ -10,39 +10,69 @@ class AccountingReport extends Model
 {
     public static function getCashBookData($startDate = null, $endDate = null)
     {
-        $query = DB::table('journal_items as ji')
-            ->join('journal_entries as je', 'ji.journal_entry_id', '=', 'je.id')
-            ->join('accounts as a', 'ji.account_id', '=', 'a.id')
+        // Get student transactions (receipts)
+        $studentTransactionsQuery = DB::table('student_transactions as st')
+            ->join('students as s', 'st.student_id', '=', 's.id')
             ->select([
-                'je.id',
-                'je.reference_number as tx_ref',
-                'je.entry_date',
-                DB::raw('CASE WHEN ji.debit_amount > 0 THEN ji.debit_amount ELSE ji.credit_amount END as amount'),
+                'st.id',
+                'st.tx_ref',
+                'st.paid_at as entry_date',
+                'st.amount',
                 DB::raw("'RWF' as currency"),
-                'je.status',
-                'je.entry_date as paid_at',
-                'a.account_name as transaction_type',
-                DB::raw("CASE WHEN ji.debit_amount > 0 THEN 'Cash Receipt' ELSE 'Cash Payment' END as entry_type"),
-                'je.description',
-                DB::raw("CASE WHEN ji.debit_amount > 0 THEN '+' ELSE '-' END as direction")
+                'st.status',
+                'st.paid_at',
+                DB::raw("CONCAT('Registration - ', s.full_name) as transaction_type"),
+                DB::raw("'Cash Receipt' as entry_type"),
+                DB::raw("CONCAT('Payment from student: ', s.full_name, ' (', st.tx_ref, ')') as description"),
+                DB::raw("'+' as direction")
             ])
-            ->where('je.status', 'Posted')
-            ->where('a.is_cash_account', true)
-            ->orderBy('je.entry_date');
+            ->whereIn('st.status', ['paid', 'successful'])
+            ->orderBy('st.paid_at');
 
+        // Get expenses (payments)
+        $expensesQuery = DB::table('expenses as e')
+            ->select([
+                'e.id',
+                DB::raw("'EXP-' || e.id as tx_ref"),
+                'e.expense_date as entry_date',
+                'e.amount',
+                DB::raw("'RWF' as currency"),
+                DB::raw("'paid' as status"),
+                'e.expense_date as paid_at',
+                'e.expense_type as transaction_type',
+                DB::raw("'Cash Payment' as entry_type"),
+                DB::raw("CONCAT('Payment to: ', e.paid_to, ' - ', e.description) as description"),
+                DB::raw("'-' as direction")
+            ])
+            ->orderBy('e.expense_date');
+
+        // Apply date filters to student transactions
         if ($startDate) {
-            $query->whereDate('je.entry_date', '>=', $startDate);
+            $studentTransactionsQuery->whereDate('st.paid_at', '>=', $startDate);
         }
         if ($endDate) {
-            $query->whereDate('je.entry_date', '<=', $endDate);
+            $studentTransactionsQuery->whereDate('st.paid_at', '<=', $endDate);
         }
 
-        $transactions = $query->get();
+        // Apply date filters to expenses
+        if ($startDate) {
+            $expensesQuery->whereDate('e.expense_date', '>=', $startDate);
+        }
+        if ($endDate) {
+            $expensesQuery->whereDate('e.expense_date', '<=', $endDate);
+        }
+
+        // Get both sets of transactions
+        $studentTransactions = $studentTransactionsQuery->get();
+        $expenses = $expensesQuery->get();
+
+        // Combine and sort all transactions by date
+        $allTransactions = $studentTransactions->concat($expenses)->sortBy('entry_date');
 
         $runningBalance = 0;
         $transactionsWithBalance = collect();
 
-        foreach ($transactions as $transaction) {
+        foreach ($allTransactions as $transaction) {
             if ($transaction->direction === '+') {
                 $runningBalance += $transaction->amount;
             } else {
@@ -52,30 +82,34 @@ class AccountingReport extends Model
             $transactionsWithBalance->push($transaction);
         }
 
-        $totalReceipts = $transactions->where('direction', '+')->sum('amount');
-        $totalPayments = $transactions->where('direction', '-')->sum('amount');
+        $totalReceipts = $transactionsWithBalance->where('direction', '+')->sum('amount');
+        $totalPayments = $transactionsWithBalance->where('direction', '-')->sum('amount');
 
         return [
             'transactions' => $transactionsWithBalance,
             'total_receipts' => $totalReceipts,
             'total_payments' => $totalPayments,
             'net_cash' => $runningBalance,
-            'opening_balance' => self::getOpeningCashBalance($startDate)
+            'opening_balance' => self::getOpeningCashBalanceFromTransactions($startDate)
         ];
     }
 
-    private static function getOpeningCashBalance($startDate)
+    private static function getOpeningCashBalanceFromTransactions($startDate)
     {
         if (!$startDate) return 0;
 
-        return DB::table('journal_items as ji')
-            ->join('journal_entries as je', 'ji.journal_entry_id', '=', 'je.id')
-            ->join('accounts as a', 'ji.account_id', '=', 'a.id')
-            ->where('je.status', 'Posted')
-            ->where('a.is_cash_account', true)
-            ->whereDate('je.entry_date', '<', $startDate)
-            ->selectRaw('SUM(ji.debit_amount - ji.credit_amount) as balance')
-            ->value('balance') ?? 0;
+        // Get sum of student transactions before start date
+        $studentTotal = DB::table('student_transactions')
+            ->whereIn('status', ['paid', 'successful'])
+            ->whereDate('paid_at', '<', $startDate)
+            ->sum('amount') ?? 0;
+
+        // Get sum of expenses before start date
+        $expenseTotal = DB::table('expenses')
+            ->whereDate('expense_date', '<', $startDate)
+            ->sum('amount') ?? 0;
+
+        return $studentTotal - $expenseTotal;
     }
 
     public static function getBalanceSheetData($asOfDate = null)

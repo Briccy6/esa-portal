@@ -23,7 +23,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('student_subscriptions', function (Blueprint $table) {
-            //
+            $table->dropColumn(['amount', 'tokens_included']);
         });
     }
 };
