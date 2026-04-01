@@ -235,7 +235,9 @@ class Student extends Authenticatable
 
         $studentSubscription = $this->subscriptions()->create([
             'subscription_id' => $subscriptionId,
+            'amount' => $subscription->price,
             'paid_amount' => $subscription->price,
+            'tokens_included' => $subscription->tokens_included,
             'payment_reference' => $paymentReference,
             'payment_status' => $paymentReference ? 'paid' : 'pending',
             'starts_at' => now(),

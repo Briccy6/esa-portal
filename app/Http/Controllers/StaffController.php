@@ -129,26 +129,8 @@ class StaffController extends Controller
             // Log the deletion attempt
             \Log::info('Attempting to delete staff member', ['staff_id' => $staff->id, 'staff_name' => $staff->name]);
             
-            // Comprehensive dependency checking
-            $dependencies = $this->checkStaffDependencies($staff);
-            
-            if (!empty($dependencies)) {
-                \DB::rollBack();
-                \Log::warning('Cannot delete staff member - has dependencies', [
-                    'staff_id' => $staff->id,
-                    'dependencies' => $dependencies
-                ]);
-                
-                $dependencyMessage = 'Cannot delete staff member. They have the following dependencies:\n';
-                foreach ($dependencies as $table => $count) {
-                    $dependencyMessage .= "- {$table}: {$count} record(s)\n";
-                }
-                $dependencyMessage .= 'Please reassign or delete these records first.';
-                
-                return redirect()->route('admin.staff.index')
-                    ->with('error', $dependencyMessage)
-                    ->with('dependency_details', $dependencies);
-            }
+            // Handle dependencies with cascade deletion
+            $this->handleStaffDependencies($staff);
             
             // Delete the staff member (branch assignments will be automatically deleted by CASCADE)
             $deleted = $staff->delete();
@@ -205,6 +187,121 @@ class StaffController extends Controller
     }
     
     /**
+     * Handle staff dependencies by cleaning up related records
+     */
+    private function handleStaffDependencies(Staff $staff): void
+    {
+        // Handle expenses - update paid_by to indicate deleted staff
+        if (Schema::hasTable('expenses')) {
+            // Update expenses where paid_by references this staff member
+            \DB::table('expenses')
+                ->where('paid_by', $staff->id)
+                ->update(['paid_by' => 'Deleted Staff (ID: ' . $staff->id . ')']);
+                
+            \DB::table('expenses')
+                ->where('paid_by', $staff->name)
+                ->update(['paid_by' => 'Deleted Staff: ' . $staff->name]);
+        }
+        
+        // Handle journal entries - set created_by to null or system user
+        if (Schema::hasTable('journal_entries') && Schema::hasColumn('journal_entries', 'created_by')) {
+            \DB::table('journal_entries')
+                ->where('created_by', $staff->id)
+                ->update(['created_by' => null]);
+        }
+        
+        // Handle live_class_participants - delete or reassign
+        if (Schema::hasTable('live_class_participants') && Schema::hasColumn('live_class_participants', 'user_id') && Schema::hasColumn('live_class_participants', 'user_type')) {
+            \DB::table('live_class_participants')
+                ->where('user_type', 'staff')
+                ->where('user_id', $staff->id)
+                ->delete();
+        }
+        
+        // Handle live_class_requests - delete or reassign
+        if (Schema::hasTable('live_class_requests') && Schema::hasColumn('live_class_requests', 'user_id') && Schema::hasColumn('live_class_requests', 'user_type')) {
+            \DB::table('live_class_requests')
+                ->where('user_type', 'staff')
+                ->where('user_id', $staff->id)
+                ->delete();
+        }
+        
+        // Handle sessions - delete or reassign
+        if (Schema::hasTable('sessions') && Schema::hasColumn('sessions', 'user_id') && Schema::hasColumn('sessions', 'user_type')) {
+            \DB::table('sessions')
+                ->where('user_type', 'staff')
+                ->where('user_id', $staff->id)
+                ->delete();
+        }
+        
+        // Handle course_user - delete staff from courses
+        if (Schema::hasTable('course_user') && Schema::hasColumn('course_user', 'user_id') && Schema::hasColumn('course_user', 'user_type')) {
+            \DB::table('course_user')
+                ->where('user_type', 'staff')
+                ->where('user_id', $staff->id)
+                ->delete();
+        }
+        
+        // Handle live_class_conditions - delete staff conditions
+        if (Schema::hasTable('live_class_conditions')) {
+            \DB::table('live_class_conditions')
+                ->where('user_type', 'staff')
+                ->where(function($query) use ($staff) {
+                    $query->where('user_id', $staff->id)
+                          ->orWhere('email', $staff->email)
+                          ->orWhere('name', $staff->name);
+                })
+                ->delete();
+        }
+        
+        // Handle any other foreign key constraints
+        try {
+            $foreignKeyTables = \DB::select("
+                SELECT DISTINCT TABLE_NAME, COLUMN_NAME
+                FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE 
+                WHERE REFERENCED_TABLE_NAME = 'staff' 
+                AND TABLE_SCHEMA = DATABASE()
+            ");
+            
+            foreach ($foreignKeyTables as $table) {
+                $tableName = $table->TABLE_NAME;
+                $columnName = $table->COLUMN_NAME;
+                
+                // Skip tables we already handled
+                if (in_array($tableName, ['staff_branch', 'journal_entries', 'live_class_participants', 'live_class_requests', 'sessions', 'course_user', 'expenses', 'live_class_conditions'])) {
+                    continue;
+                }
+                
+                // Handle based on table type
+                if (Schema::hasColumn($tableName, $columnName)) {
+                    // For most tables, we'll set the foreign key to null
+                    if (Schema::hasColumn($tableName, 'deleted_at')) {
+                        // Soft deletable table - soft delete the records
+                        \DB::table($tableName)
+                            ->where($columnName, $staff->id)
+                            ->update(['deleted_at' => now()]);
+                    } else {
+                        // Regular table - set foreign key to null if possible
+                        try {
+                            \DB::table($tableName)
+                                ->where($columnName, $staff->id)
+                                ->update([$columnName => null]);
+                        } catch (\Exception $e) {
+                            // If we can't set to null (due to NOT NULL constraint), delete the record
+                            \DB::table($tableName)
+                                ->where($columnName, $staff->id)
+                                ->delete();
+                        }
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            // If we can't query information_schema, continue with what we have
+            \Log::warning('Could not handle all foreign key constraints during staff deletion', ['error' => $e->getMessage()]);
+        }
+    }
+    
+    /**
      * Check for all possible dependencies on a staff member
      */
     private function checkStaffDependencies(Staff $staff): array
@@ -235,6 +332,30 @@ class StaffController extends Controller
             }
         }
         
+        // Check expenses table - this is the main issue based on the error
+        if (Schema::hasTable('expenses')) {
+            // Check by staff ID (if paid_by column stores ID)
+            $expenseCountById = \DB::table('expenses')
+                ->where('paid_by', $staff->id)
+                ->count();
+            if ($expenseCountById > 0) {
+                $dependencies['Expenses'] = $expenseCountById;
+            }
+            
+            // Check by staff name (if paid_by column stores name)
+            $expenseCountByName = \DB::table('expenses')
+                ->where('paid_by', $staff->name)
+                ->count();
+            if ($expenseCountByName > 0) {
+                // Add to existing count or create new entry
+                if (isset($dependencies['Expenses'])) {
+                    $dependencies['Expenses'] += $expenseCountByName;
+                } else {
+                    $dependencies['Expenses'] = $expenseCountByName;
+                }
+            }
+        }
+        
         // Check live_class_conditions table for staff user_type
         if (Schema::hasTable('live_class_conditions')) {
             $liveClassCount = \DB::table('live_class_conditions')
@@ -248,6 +369,51 @@ class StaffController extends Controller
             if ($liveClassCount > 0) {
                 $dependencies['Live Class Conditions'] = $liveClassCount;
             }
+        }
+        
+        // Check for any other foreign key constraints by querying information_schema
+        try {
+            $foreignKeyTables = \DB::select("
+                SELECT DISTINCT TABLE_NAME
+                FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE 
+                WHERE REFERENCED_TABLE_NAME = 'staff' 
+                AND TABLE_SCHEMA = DATABASE()
+            ");
+            
+            foreach ($foreignKeyTables as $table) {
+                $tableName = $table->TABLE_NAME;
+                
+                // Skip tables we already checked
+                if (in_array($tableName, ['staff_branch', 'journal_entries', 'live_class_participants', 'live_class_requests', 'sessions', 'course_user', 'expenses'])) {
+                    continue;
+                }
+                
+                // Get the foreign key column name
+                $columnInfo = \DB::select("
+                    SELECT COLUMN_NAME
+                    FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE 
+                    WHERE REFERENCED_TABLE_NAME = 'staff' 
+                    AND TABLE_NAME = ?
+                    AND TABLE_SCHEMA = DATABASE()
+                    LIMIT 1
+                ", [$tableName]);
+                
+                if (!empty($columnInfo)) {
+                    $columnName = $columnInfo[0]->COLUMN_NAME;
+                    
+                    if (Schema::hasColumn($tableName, $columnName)) {
+                        $count = \DB::table($tableName)
+                            ->where($columnName, $staff->id)
+                            ->count();
+                        if ($count > 0) {
+                            $dependencies[ucfirst(str_replace('_', ' ', $tableName))] = $count;
+                        }
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            // If we can't query information_schema, continue with what we have
+            \Log::warning('Could not check foreign key constraints', ['error' => $e->getMessage()]);
         }
         
         return $dependencies;
