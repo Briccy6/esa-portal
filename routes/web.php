@@ -266,6 +266,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::get('/dashboard', [\App\Http\Controllers\AdminAuthController::class, 'dashboard'])->name('dashboard');
 
     Route::resource('students', StudentController::class);
+    Route::get('/students/export', [StudentController::class, 'export'])->name('students.export');
     Route::post('/students/send-bulk-information-emails', [StudentController::class, 'sendBulkStudentInformationEmails'])->name('students.sendBulkInformationEmails');
     // NESA student endpoints removed
 

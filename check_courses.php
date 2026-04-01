@@ -23,7 +23,11 @@ if ($courses->count() > 0) {
     echo "No courses found. Creating a default course...\n";
     DB::table('courses')->insert([
         'course_name' => 'General Course',
-        'description' => 'Default course for testing',
+        'abbreviation' => 'GC',
+        'course_type' => 'Regular',
+        'course_code' => 'GC001',
+        'registration_fee' => 10000.00,
+        'tuition_fee' => 50000.00,
         'academic_year_id' => 1,
         'created_at' => now(),
         'updated_at' => now(),
