@@ -1064,6 +1064,13 @@
                             <span class="nav-text">Cash Book</span>
                         </a>
                     </div>
+
+                    <div class="nav-item">
+                        <a href="{{ route('admin.accounting.cash-flow-forecast') }}" class="nav-link {{ request()->routeIs('admin.accounting.cash-flow-forecast') ? 'active' : '' }}">
+                            <i class="fas fa-chart-area"></i>
+                            <span class="nav-text">Cash Flow Forecast</span>
+                        </a>
+                    </div>
                     
                     <div class="nav-item">
                         <a href="{{ route('admin.accounting.balance-sheet') }}" class="nav-link {{ request()->routeIs('admin.accounting.balance-sheet') ? 'active' : '' }}">

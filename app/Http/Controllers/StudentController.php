@@ -35,6 +35,7 @@ use App\Models\Timetable;
 use App\Models\CourseMaterial;
 use App\Models\StudentCard;
 use App\Models\Attendance;
+use App\Support\StudentPaymentTranscript;
 
 class StudentController extends Controller
 {
@@ -1193,6 +1194,10 @@ class StudentController extends Controller
 
             $student = Student::where('reg_number', $request->reg_number)->first();
             if (!$student) {
+                if (DismissedStudent::isRegNumberDismissed($request->reg_number)) {
+                    return back()->withInput()->with('error', 'This registration number belongs to a dismissed student. You can no longer access the portal. Please refer to the dismissal email sent to your address on file.');
+                }
+
                 return back()->withInput()->with('error', 'Invalid registration number.');
             }
 
@@ -1229,7 +1234,15 @@ class StudentController extends Controller
 
         $student = Student::where('reg_number', $request->reg_number)->first();
 
-        if (!$student || !Hash::check($request->password, $student->password)) {
+        if (!$student) {
+            if (DismissedStudent::isRegNumberDismissed($request->reg_number)) {
+                return back()->withInput()->with('error', 'Your account has been dismissed. You can no longer access the student portal. Please check your email for the reason and further information.');
+            }
+
+            return back()->withInput()->with('error', 'Invalid credentials.');
+        }
+
+        if (!Hash::check($request->password, $student->password)) {
             return back()->withInput()->with('error', 'Invalid credentials.');
         }
 
@@ -2112,6 +2125,30 @@ class StudentController extends Controller
         return view('students.transcript', compact('student', 'payments'));
     }
 
+    /**
+     * Official printable payment transcript for the logged-in student (same document as accounting print).
+     */
+    public function paymentTranscriptPrint()
+    {
+        $authStudent = auth('student')->user();
+        $data        = StudentPaymentTranscript::build($authStudent);
+
+        return view('admin.accounting.print-payment-transcript', [
+            'student'            => $authStudent,
+            'schoolInfo'         => $data['school'],
+            'feeRows'            => $data['feeRows'],
+            'totalExpected'      => $data['totalExpected'],
+            'totalPaid'          => $data['totalPaid'],
+            'totalPaidAllTypes'  => $data['totalPaidAllTypes'],
+            'totalOutstanding'   => $data['totalOutstanding'],
+            'discountPct'        => $data['discountPct'],
+            'discountAmount'     => $data['discountAmount'],
+            'transactions'       => $data['transactions'],
+            'printedByName'      => null,
+            'printedAt'          => now(),
+        ]);
+    }
+
     public function getNESADetails($studentId)
     {
         $student = Student::findOrFail($studentId);
@@ -2483,64 +2520,57 @@ class StudentController extends Controller
                 'dismissal_notes.max' => 'Dismissal notes cannot exceed 2000 characters',
             ]);
 
-            // Create dismissed student record
+            DB::beginTransaction();
+
             $dismissedStudent = DismissedStudent::dismissStudent(
                 $student,
                 $request->dismissal_reason,
                 $request->dismissal_notes,
-                auth('admin')->id() ?? auth('staff')->id()
+                auth('admin')->id()
             );
 
-            DB::beginTransaction();
-
-            // Save the dismissed student record first
             $dismissedStudent->save();
 
-            // Handle related records
-            $transactionCount = $student->transactions()->count();
-            if ($transactionCount > 0) {
-                // Update transactions to reference dismissed student
-                $student->transactions()->update(['student_dismissed' => true]);
-            }
+            $student->loadMissing(['course', 'branch']);
 
-            // Send dismissal email to student
             try {
-                Mail::to($student->email)->send(new \App\Mail\StudentDismissalMail($student, $request->dismissal_reason, $request->dismissal_notes));
-                Log::info("Dismissal email sent to student", [
+                Mail::to($student->email)->send(new StudentDismissalMail(
+                    $student,
+                    $request->dismissal_reason,
+                    $request->dismissal_notes
+                ));
+                Log::info('Dismissal email sent to student', [
                     'student_email' => $student->email,
-                    'student_name' => $studentName,
+                    'student_name'  => $studentName,
                 ]);
             } catch (\Exception $mailException) {
-                Log::error("Failed to send dismissal email", [
+                Log::error('Failed to send dismissal email', [
                     'student_email' => $student->email,
-                    'error' => $mailException->getMessage(),
+                    'error'         => $mailException->getMessage(),
                 ]);
-                // Continue with dismissal even if email fails
             }
 
-            // Delete the original student record
             $student->delete();
 
             DB::commit();
 
-            Log::info("Student dismissed successfully", [
-                'student_id'         => $id,
-                'student_name'       => $studentName,
-                'dismissed_by'       => auth('admin')->id() ?? auth('staff')->id() ?? 'system',
-                'dismissal_reason'   => $request->dismissal_reason,
+            Log::info('Student dismissed successfully', [
+                'student_id'           => $id,
+                'student_name'         => $studentName,
+                'dismissed_by'         => auth('admin')->id(),
+                'dismissal_reason'     => $request->dismissal_reason,
                 'dismissed_student_id' => $dismissedStudent->id,
             ]);
 
             return redirect()->back()
                 ->with('success', "Student '{$studentName}' has been dismissed and moved to dismissed records.");
-
         } catch (\Illuminate\Validation\ValidationException $e) {
             return redirect()->back()
                 ->withErrors($e->validator())
                 ->withInput();
         } catch (\Exception $e) {
-            DB::rollback();
-            Log::error("Error during student dismissal", [
+            DB::rollBack();
+            Log::error('Error during student dismissal', [
                 'student_id' => $id,
                 'error'      => $e->getMessage(),
             ]);

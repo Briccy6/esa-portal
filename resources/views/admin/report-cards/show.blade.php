@@ -1,6 +1,16 @@
 @extends('admin.layout')
 
 @section('content')
+@php
+    $allTermIdsForStudent = $siblingReportCards->pluck('term_id')->push($reportCard->term_id)->unique()->sort()->values();
+    $hasMultipleTerms = $allTermIdsForStudent->count() > 1;
+    $consolidatedQueryForStudent = [
+        'student_id' => $reportCard->student_id,
+        'course_id' => $reportCard->course_id,
+        'academic_year_id' => $reportCard->academic_year_id,
+        'term_ids' => $allTermIdsForStudent->all(),
+    ];
+@endphp
 <div class="container-fluid px-4 py-4">
 
     @if(session('success'))
@@ -33,12 +43,18 @@
             <a href="{{ route('admin.report-cards.index') }}" class="rc-btn rc-btn--ghost">
                 <i class="fas fa-arrow-left"></i> Back to list
             </a>
-            <a href="{{ route('admin.report-cards.consolidated-print', ['student_id' => $reportCard->student_id, 'course_id' => $reportCard->course_id, 'academic_year_id' => $reportCard->academic_year_id]) }}" class="rc-btn rc-btn--primary" target="_blank" rel="noopener">
-                <i class="fas fa-print"></i> Print (all terms)
-            </a>
-            <a href="{{ route('admin.report-cards.print', $reportCard) }}" class="rc-btn rc-btn--ghost" target="_blank" rel="noopener" title="PDF for this term only">
-                <i class="fas fa-file-alt"></i> This term only
-            </a>
+            @if($hasMultipleTerms)
+                <a href="{{ route('admin.report-cards.consolidated-print', $consolidatedQueryForStudent) }}" class="rc-btn rc-btn--primary" target="_blank" rel="noopener">
+                    <i class="fas fa-print"></i> Print PDF ({{ $allTermIdsForStudent->count() }} terms)
+                </a>
+                <a href="{{ route('admin.report-cards.print', $reportCard) }}" class="rc-btn rc-btn--ghost" target="_blank" rel="noopener" title="PDF for this term only">
+                    <i class="fas fa-file-alt"></i> This term only
+                </a>
+            @else
+                <a href="{{ route('admin.report-cards.print', $reportCard) }}" class="rc-btn rc-btn--primary" target="_blank" rel="noopener">
+                    <i class="fas fa-print"></i> Print PDF
+                </a>
+            @endif
         </div>
     </div>
 
@@ -500,12 +516,18 @@
                 <i class="fas fa-check"></i> Approve
             </button>
         </form>
-        <a href="{{ route('admin.report-cards.consolidated-print', ['student_id' => $reportCard->student_id, 'course_id' => $reportCard->course_id, 'academic_year_id' => $reportCard->academic_year_id]) }}" class="rc-btn rc-btn--primary" target="_blank" rel="noopener">
-            <i class="fas fa-print"></i> Print (all terms)
-        </a>
-        <a href="{{ route('admin.report-cards.print', $reportCard) }}" class="rc-btn rc-btn--ghost" target="_blank" rel="noopener" title="This term only">
-            <i class="fas fa-file-alt"></i> This term only
-        </a>
+        @if($hasMultipleTerms)
+            <a href="{{ route('admin.report-cards.consolidated-print', $consolidatedQueryForStudent) }}" class="rc-btn rc-btn--primary" target="_blank" rel="noopener">
+                <i class="fas fa-print"></i> Print PDF ({{ $allTermIdsForStudent->count() }} terms)
+            </a>
+            <a href="{{ route('admin.report-cards.print', $reportCard) }}" class="rc-btn rc-btn--ghost" target="_blank" rel="noopener" title="This term only">
+                <i class="fas fa-file-alt"></i> This term only
+            </a>
+        @else
+            <a href="{{ route('admin.report-cards.print', $reportCard) }}" class="rc-btn rc-btn--primary" target="_blank" rel="noopener">
+                <i class="fas fa-print"></i> Print PDF
+            </a>
+        @endif
     </div>
 </div>
 

@@ -10,7 +10,10 @@
     $hdrPhone = optional($schoolInfo)->phone ?: 'School Phone';
     $hdrEmail = optional($schoolInfo)->email ?: 'school@email.com';
     $hdrWebsite = optional($schoolInfo)->website ?: 'www.schoolwebsite.rw';
+    $hdrPrincipal = optional($schoolInfo)->principal_name ?: 'School Manager';
     $hasLogo = $schoolInfo && !empty($schoolInfo->logo_url);
+    $hasPrincipalSignature = $schoolInfo && !empty($schoolInfo->principal_signature_url);
+    $hasStampSignature = $schoolInfo && !empty($schoolInfo->stamp_signature_url);
     $termNames = collect($terms)->pluck('name')->implode(', ');
 @endphp
 <!DOCTYPE html>
@@ -166,7 +169,7 @@
                 <th>Re-assessment</th>
                 <th>Repeat</th>
                 <th>Dismissed</th>
-                <th>Manager / SIGNATURE / {{ date('Y') }}</th>
+                <th>School Manager<br>{{ $hdrPrincipal }}<br>SIGNATURE<br>____/____/{{ date('Y') }}</th>
             </tr>
         </thead>
         <tbody>
@@ -177,7 +180,14 @@
                 <td></td>
                 <td></td>
                 <td></td>
-                <td></td>
+                <td style="text-align: center;">
+                    @if($hasPrincipalSignature)
+                        <img src="{{ $schoolInfo->principal_signature_url }}" alt="" style="max-height: 28px; max-width: 96px; margin-right: 4px;">
+                    @endif
+                    @if($hasStampSignature)
+                        <img src="{{ $schoolInfo->stamp_signature_url }}" alt="" style="max-height: 32px; max-width: 70px;">
+                    @endif
+                </td>
             </tr>
         </tbody>
     </table>

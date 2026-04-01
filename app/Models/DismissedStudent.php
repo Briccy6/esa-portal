@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Facades\Schema;
 
 class DismissedStudent extends Model
 {
@@ -19,6 +20,7 @@ class DismissedStudent extends Model
         'course_id',
         'reg_number',
         'password',
+        'payed_registration_fees',
         'academic_year_id',
         'id_number',
         'identification_type',
@@ -46,6 +48,7 @@ class DismissedStudent extends Model
 
     protected $casts = [
         'nesa_registered' => 'boolean',
+        'payed_registration_fees' => 'boolean',
         'nesa_registration_date' => 'date',
         'dismissal_date' => 'date',
         'discount' => 'decimal:2',
@@ -117,24 +120,38 @@ class DismissedStudent extends Model
     /**
      * Static method to create dismissed student from existing student
      */
+    public static function isRegNumberDismissed(string $regNumber): bool
+    {
+        return static::where('reg_number', $regNumber)->exists();
+    }
+
     public static function dismissStudent(Student $student, $dismissalReason, $dismissalNotes = null, $dismissedById = null)
     {
         $dismissedStudent = new self();
-        
-        // Copy all student attributes
+
+        $table = (new self())->getTable();
+        $columns = Schema::hasTable($table)
+            ? array_flip(Schema::getColumnListing($table))
+            : [];
+
+        $skip = array_flip(['id', 'created_at', 'updated_at', 'dismissal_reason', 'dismissal_notes', 'dismissed_by', 'dismissal_date', 'original_student_id']);
+
         foreach ($student->getAttributes() as $key => $value) {
-            if ($key !== 'id' && $key !== 'created_at' && $key !== 'updated_at') {
-                $dismissedStudent->$key = $value;
+            if (isset($skip[$key])) {
+                continue;
             }
+            if ($columns !== [] && !isset($columns[$key])) {
+                continue;
+            }
+            $dismissedStudent->$key = $value;
         }
-        
-        // Set dismissal specific fields
+
         $dismissedStudent->dismissal_reason = $dismissalReason;
         $dismissedStudent->dismissal_notes = $dismissalNotes;
         $dismissedStudent->dismissed_by = $dismissedById ?? auth('admin')->id();
         $dismissedStudent->dismissal_date = now();
         $dismissedStudent->original_student_id = $student->id;
-        
+
         return $dismissedStudent;
     }
 }

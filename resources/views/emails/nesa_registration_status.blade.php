@@ -165,7 +165,7 @@
                 @if(isset($emailContent) && $emailContent)
                     <div class="info-item">
                         <span class="info-label">📝 Reason:</span>
-                        {{ $emailContent }}
+                        {!! $emailContent !!}
                     </div>
                 @endif
                 

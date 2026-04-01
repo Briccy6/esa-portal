@@ -1,158 +1,254 @@
 @extends('admin.layout')
 
-@section('title', 'Balance Sheet Report')
+@section('title', 'Balance Sheet')
 
 @section('content')
+<style>
+    .balance-sheet-print {
+        background: #fff;
+        color: #1a1a1a;
+    }
+    .balance-sheet-print .bs-org-name {
+        font-size: 1.35rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+    }
+    .balance-sheet-print .bs-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        margin-top: 0.25rem;
+    }
+    .balance-sheet-print .bs-asof {
+        font-size: 0.95rem;
+        color: #444;
+        margin-bottom: 1.25rem;
+    }
+    .balance-sheet-print .bs-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.92rem;
+    }
+    .balance-sheet-print .bs-table th,
+    .balance-sheet-print .bs-table td {
+        padding: 0.35rem 0.5rem;
+        vertical-align: top;
+    }
+    .balance-sheet-print .bs-table .bs-num {
+        text-align: right;
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+    }
+    .balance-sheet-print .bs-section-head {
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        font-size: 0.8rem;
+        padding-top: 0.75rem;
+        border-bottom: 2px solid #2c3e50;
+        margin-bottom: 0.35rem;
+    }
+    .balance-sheet-print .bs-total-row td {
+        font-weight: 700;
+        border-top: 2px solid #2c3e50;
+        padding-top: 0.5rem;
+    }
+    .balance-sheet-print .bs-grand td {
+        font-weight: 700;
+        font-size: 1.02rem;
+        border-top: 3px double #2c3e50;
+        padding-top: 0.6rem;
+    }
+    .balance-sheet-print .bs-muted {
+        color: #6c757d;
+        font-size: 0.85rem;
+    }
+    @media print {
+        .main-sidebar, .main-header, .card-tools, .no-print, .filter-form, footer, .nav-section { display: none !important; }
+        .content-wrapper, .content { margin: 0 !important; padding: 0 !important; }
+        .card { border: none !important; box-shadow: none !important; }
+        .balance-sheet-print { padding: 1rem; }
+    }
+</style>
+
 <div class="container-fluid">
     <div class="row">
         <div class="col-12">
             <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Balance Sheet Report</h3>
-                    <div class="card-tools">
-                        <a href="{{ route('admin.accounting.export.balance-sheet', request()->query()) }}" class="btn btn-success btn-sm">
+                <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <h3 class="card-title mb-0">Balance Sheet</h3>
+                    <div class="card-tools no-print">
+                        <button type="button" class="btn btn-primary btn-sm" onclick="window.print()">
+                            <i class="fas fa-print mr-1"></i> Print
+                        </button>
+                        <a href="{{ route('admin.accounting.export.balance-sheet', request()->query()) }}" class="btn btn-success btn-sm ml-1">
                             <i class="fas fa-download"></i> Export CSV
                         </a>
                     </div>
                 </div>
                 <div class="card-body">
-                    <!-- Filter Form -->
-                    <form method="GET" action="{{ route('admin.accounting.balance-sheet') }}" class="mb-3">
-                        <div class="row">
+                    <form method="GET" action="{{ route('admin.accounting.balance-sheet') }}" class="mb-4 no-print">
+                        <div class="row align-items-end">
                             <div class="col-md-4">
-                                <label for="as_of_date">As of Date</label>
+                                <label for="as_of_date" class="form-label">As at (report date)</label>
                                 <input type="date" id="as_of_date" name="as_of_date" class="form-control" value="{{ $asOfDate->format('Y-m-d') }}">
                             </div>
                             <div class="col-md-4">
-                                <label>&nbsp;</label><br>
                                 <button type="submit" class="btn btn-primary">Generate</button>
-                                <a href="{{ route('admin.accounting.balance-sheet') }}" class="btn btn-secondary">Reset to Today</a>
+                                <a href="{{ route('admin.accounting.balance-sheet') }}" class="btn btn-secondary">Today</a>
                             </div>
                         </div>
                     </form>
 
-                    <div class="row">
-                        <!-- Assets Section -->
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-header bg-primary text-white">
-                                    <h5 class="mb-0">ASSETS</h5>
+                    <div class="balance-sheet-print p-2 p-md-3">
+                        <div class="text-center mb-3">
+                            @if($school && $school->logo_url)
+                                <div class="mb-2">
+                                    <img src="{{ $school->logo_url }}" alt="" style="max-height: 56px;">
                                 </div>
-                                <div class="card-body">
-                                    <table class="table table-sm">
-                                        @foreach($data['assets']['details'] as $asset)
-                                        <tr>
-                                            <td>{{ $asset['name'] }}</td>
-                                            <td class="text-right">{{ number_format($asset['balance'], 2) }} RWF</td>
+                            @endif
+                            <div class="bs-org-name">{{ $school ? $school->school_name : config('app.name', 'School') }}</div>
+                            @if($school && ($school->address || $school->phone || $school->email))
+                                <div class="bs-muted">
+                                    @if($school->address){{ $school->address }}@endif
+                                    @if($school->phone) · {{ $school->phone }}@endif
+                                    @if($school->email) · {{ $school->email }}@endif
+                                </div>
+                            @endif
+                            <div class="bs-title">Statement of Financial Position</div>
+                            <div class="bs-asof">As at {{ $asOfDate->format('j F Y') }}</div>
+                        </div>
+
+                        <p class="bs-muted small no-print mb-3">
+                            Built from your live tables: <code>student_transactions</code> (paid / successful, through the report date),
+                            <code>expenses</code> (through the report date), and expected fees from <code>students</code> + <code>courses</code>
+                            (same fee rules as the student portal). This matches the cash book cash figure plus fees still owed (or advances if students overpaid).
+                        </p>
+                        @if(!empty($data['meta']))
+                            <p class="bs-muted small no-print mb-3">
+                                Receipts to date: <strong>{{ number_format($data['meta']['total_student_receipts'], 2) }}</strong> RWF ·
+                                Expenses to date: <strong>{{ number_format($data['meta']['total_expenses'], 2) }}</strong> RWF
+                            </p>
+                        @endif
+
+                        <div class="row">
+                            <div class="col-lg-6 mb-4 mb-lg-0">
+                                <div class="bs-section-head">Assets</div>
+                                <table class="bs-table">
+                                    <tbody>
+                                        @forelse($data['assets']['details'] as $row)
+                                            <tr>
+                                                <td>
+                                                    @if(!empty($row['account_code']))
+                                                        <span class="text-muted">{{ $row['account_code'] }}</span>
+                                                        —
+                                                    @endif
+                                                    {{ $row['name'] }}
+                                                </td>
+                                                <td class="bs-num">{{ number_format($row['balance'], 2) }}</td>
+                                            </tr>
+                                        @empty
+                                            <tr>
+                                                <td colspan="2" class="bs-muted">No asset lines (unexpected — check data).</td>
+                                            </tr>
+                                        @endforelse
+                                        <tr class="bs-total-row">
+                                            <td>Total assets</td>
+                                            <td class="bs-num">{{ number_format($data['assets']['total'], 2) }}</td>
                                         </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="col-lg-6">
+                                <div class="bs-section-head">Liabilities</div>
+                                <table class="bs-table">
+                                    <tbody>
+                                        @forelse($data['liabilities']['details'] as $row)
+                                            <tr>
+                                                <td>
+                                                    @if(!empty($row['account_code']))
+                                                        <span class="text-muted">{{ $row['account_code'] }}</span>
+                                                        —
+                                                    @endif
+                                                    {{ $row['name'] }}
+                                                </td>
+                                                <td class="bs-num">{{ number_format($row['balance'], 2) }}</td>
+                                            </tr>
+                                        @empty
+                                            <tr>
+                                                <td colspan="2" class="bs-muted">No student fee advances (no overpayments vs expected fees).</td>
+                                            </tr>
+                                        @endforelse
+                                        <tr class="bs-total-row">
+                                            <td>Total liabilities</td>
+                                            <td class="bs-num">{{ number_format($data['liabilities']['total'], 2) }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+
+                                <div class="bs-section-head mt-3">Equity</div>
+                                <table class="bs-table">
+                                    <tbody>
+                                        @foreach($data['equity']['details'] as $row)
+                                            <tr>
+                                                <td>
+                                                    @if(!empty($row['account_code']))
+                                                        <span class="text-muted">{{ $row['account_code'] }}</span>
+                                                        —
+                                                    @endif
+                                                    {{ $row['name'] }}
+                                                </td>
+                                                <td class="bs-num">{{ number_format($row['balance'], 2) }}</td>
+                                            </tr>
                                         @endforeach
-                                        <tr class="font-weight-bold border-top">
-                                            <td>Total Assets</td>
-                                            <td class="text-right">{{ number_format($data['assets']['total'], 2) }} RWF</td>
+                                        <tr class="bs-total-row">
+                                            <td>Total equity</td>
+                                            <td class="bs-num">{{ number_format($data['equity']['total'], 2) }}</td>
                                         </tr>
-                                    </table>
+                                    </tbody>
+                                </table>
+
+                                <table class="bs-table mt-2">
+                                    <tbody>
+                                        <tr class="bs-grand">
+                                            <td>Total liabilities and equity</td>
+                                            <td class="bs-num">{{ number_format($data['liabilities']['total'] + $data['equity']['total'], 2) }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="row mt-4 pt-3 border-top align-items-end">
+                            <div class="col-md-6 mb-2 mb-md-0">
+                                <div class="d-flex justify-content-between bs-grand px-1">
+                                    <span>Total assets</span>
+                                    <span class="bs-num">{{ number_format($data['assets']['total'], 2) }} RWF</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-flex justify-content-between bs-grand px-1">
+                                    <span>Total liabilities and equity</span>
+                                    <span class="bs-num">{{ number_format($data['liabilities']['total'] + $data['equity']['total'], 2) }} RWF</span>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Liabilities Section -->
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-header bg-warning text-white">
-                                    <h5 class="mb-0">LIABILITIES</h5>
-                                </div>
-                                <div class="card-body">
-                                    <table class="table table-sm">
-                                        @foreach($data['liabilities']['details'] as $liability)
-                                        <tr>
-                                            <td>{{ $liability['name'] }}</td>
-                                            <td class="text-right">{{ number_format($liability['balance'], 2) }} RWF</td>
-                                        </tr>
-                                        @endforeach
-                                        <tr class="font-weight-bold border-top">
-                                            <td>Total Liabilities</td>
-                                            <td class="text-right">{{ number_format($data['liabilities']['total'], 2) }} RWF</td>
-                                        </tr>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Equity Section -->
-                    <div class="row mt-3">
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-header bg-success text-white">
-                                    <h5 class="mb-0">EQUITY</h5>
-                                </div>
-                                <div class="card-body">
-                                    <table class="table table-sm">
-                                        @foreach($data['equity']['details'] as $equity_item)
-                                        <tr>
-                                            <td>{{ $equity_item['name'] }}</td>
-                                            <td class="text-right">{{ number_format($equity_item['balance'], 2) }} RWF</td>
-                                        </tr>
-                                        @endforeach
-                                        <tr class="font-weight-bold border-top">
-                                            <td>Total Equity</td>
-                                            <td class="text-right">{{ number_format($data['equity']['total'], 2) }} RWF</td>
-                                        </tr>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Summary Section -->
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-header bg-info text-white">
-                                    <h5 class="mb-0">SUMMARY</h5>
-                                </div>
-                                <div class="card-body">
-                                    <table class="table table-sm">
-                                        <tr>
-                                            <td>Total Liabilities & Equity</td>
-                                            <td class="text-right">
-                                                {{ number_format($data['liabilities']['total'] + $data['equity']['total'], 2) }} RWF
-                                            </td>
-                                        </tr>
-                                        <tr class="font-weight-bold border-top">
-                                            <td>Balance Check</td>
-                                            <td class="text-right">
-                                                <span class="{{ $data['is_balanced'] ? 'text-success' : 'text-danger' }}">
-                                                    {{ $data['is_balanced'] ? '✓ Balanced' : '✗ Not Balanced' }}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Balance Sheet Visualization -->
-                    <div class="row mt-4">
-                        <div class="col-12">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5 class="mb-0">Balance Sheet Overview</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row text-center">
-                                        <div class="col-md-4">
-                                            <h4 class="text-primary">{{ number_format($data['assets']['total'], 2) }} RWF</h4>
-                                            <p class="text-muted">Total Assets</p>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <h4 class="text-warning">{{ number_format($data['liabilities']['total'], 2) }} RWF</h4>
-                                            <p class="text-muted">Total Liabilities</p>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <h4 class="text-success">{{ number_format($data['equity']['total'], 2) }} RWF</h4>
-                                            <p class="text-muted">Total Equity</p>
-                                        </div>
-                                    </div>
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <div class="mt-1 d-flex flex-wrap align-items-center gap-3">
+                                    <span class="font-weight-bold">Accounting equation:</span>
+                                    @if($data['is_balanced'])
+                                        <span class="badge badge-success">Balanced</span>
+                                        <span class="text-muted small">Assets equal liabilities plus equity.</span>
+                                    @else
+                                        <span class="badge badge-danger">Out of balance</span>
+                                        <span class="text-danger small">
+                                            Difference: {{ number_format($data['difference'] ?? 0, 2) }} RWF — check posted journals and account types.
+                                        </span>
+                                    @endif
                                 </div>
                             </div>
                         </div>

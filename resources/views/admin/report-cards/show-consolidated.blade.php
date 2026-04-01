@@ -14,7 +14,7 @@
 <div class="container-fluid px-4 py-4">
     <div class="d-flex flex-wrap justify-content-between align-items-start mb-4">
         <div>
-            <h1 class="h4 mb-1">Report card — all terms (one table)</h1>
+            <h1 class="h4 mb-1">Report card — multiple terms (one table)</h1>
             <p class="text-muted mb-0 small">
                 {{ $first->student->full_name }} · {{ $first->course->course_name }} · {{ $first->academicYear->year }}
                 · Overall avg <strong>{{ number_format($overallAvg, 1) }}%</strong>
@@ -24,8 +24,8 @@
             <a href="{{ route('admin.report-cards.index') }}" class="btn btn-outline-secondary btn-sm">
                 <i class="fas fa-arrow-left"></i> Back
             </a>
-            <a href="{{ route('admin.report-cards.consolidated-print', ['student_id' => $first->student_id, 'course_id' => $first->course_id, 'academic_year_id' => $first->academic_year_id]) }}" class="btn btn-primary btn-sm" target="_blank" rel="noopener">
-                <i class="fas fa-print"></i> Print PDF
+            <a href="{{ route('admin.report-cards.consolidated-print', $consolidatedRouteParams ?? ['student_id' => $first->student_id, 'course_id' => $first->course_id, 'academic_year_id' => $first->academic_year_id]) }}" class="btn btn-primary btn-sm" target="_blank" rel="noopener">
+                <i class="fas fa-print"></i> Print PDF ({{ $termCount }} {{ Str::plural('term', $termCount) }})
             </a>
         </div>
     </div>

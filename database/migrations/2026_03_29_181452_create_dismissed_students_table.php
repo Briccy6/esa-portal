@@ -16,13 +16,14 @@ return new class extends Migration
             
             // Student information (copied from students table)
             $table->string('full_name');
-            $table->string('sex');
+            $table->string('sex')->nullable();
             $table->string('email')->unique();
-            $table->string('phone');
+            $table->string('phone')->nullable();
             $table->unsignedBigInteger('branch_id');
             $table->unsignedBigInteger('course_id');
             $table->string('reg_number')->unique();
             $table->string('password');
+            $table->boolean('payed_registration_fees')->default(0);
             $table->unsignedBigInteger('academic_year_id');
             $table->string('id_number')->nullable();
             $table->string('identification_type')->nullable();

@@ -332,11 +332,14 @@
                                 {{-- One Actions control per student (all terms); menu: view + print --}}
                                 <td class="text-center rc-table__actions">
                                     @php
+                                        $termIdsInGroup = $group->pluck('term_id')->unique()->sort()->values()->all();
                                         $consolidatedQuery = [
                                             'student_id' => $first->student_id,
                                             'course_id' => $first->course_id,
                                             'academic_year_id' => $first->academic_year_id,
+                                            'term_ids' => $termIdsInGroup,
                                         ];
+                                        $multipleTermsInGroup = count($termIdsInGroup) > 1;
                                     @endphp
                                     <div class="dropdown rc-student-actions">
                                         <button class="btn btn-sm btn-primary dropdown-toggle" type="button"
@@ -346,14 +349,26 @@
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end shadow-sm">
                                             <li>
-                                                <a class="dropdown-item" href="{{ route('admin.report-cards.consolidated', $consolidatedQuery) }}">
-                                                    <i class="fas fa-eye text-primary me-2"></i> View report (all terms)
-                                                </a>
+                                                @if($multipleTermsInGroup)
+                                                    <a class="dropdown-item" href="{{ route('admin.report-cards.consolidated', $consolidatedQuery) }}">
+                                                        <i class="fas fa-eye text-primary me-2"></i> View report ({{ count($termIdsInGroup) }} terms)
+                                                    </a>
+                                                @else
+                                                    <a class="dropdown-item" href="{{ route('admin.report-cards.show', $first) }}">
+                                                        <i class="fas fa-eye text-primary me-2"></i> View report
+                                                    </a>
+                                                @endif
                                             </li>
                                             <li>
-                                                <a class="dropdown-item" href="{{ route('admin.report-cards.consolidated-print', $consolidatedQuery) }}" target="_blank" rel="noopener">
-                                                    <i class="fas fa-print text-success me-2"></i> Print PDF (all terms)
-                                                </a>
+                                                @if($multipleTermsInGroup)
+                                                    <a class="dropdown-item" href="{{ route('admin.report-cards.consolidated-print', $consolidatedQuery) }}" target="_blank" rel="noopener">
+                                                        <i class="fas fa-print text-success me-2"></i> Print PDF ({{ count($termIdsInGroup) }} terms)
+                                                    </a>
+                                                @else
+                                                    <a class="dropdown-item" href="{{ route('admin.report-cards.print', $first) }}" target="_blank" rel="noopener">
+                                                        <i class="fas fa-print text-success me-2"></i> Print PDF
+                                                    </a>
+                                                @endif
                                             </li>
                                         </ul>
                                     </div>

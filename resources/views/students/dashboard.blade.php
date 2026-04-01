@@ -255,10 +255,13 @@
 
     <!-- Fee Overview Cards -->
     <div class="row mb-5">
-        <div class="col-12">
-            <h3 class="section-title">
+        <div class="col-12 d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+            <h3 class="section-title mb-0">
                 <i class="bi bi-credit-card-2-front me-2"></i>Fee Overview
             </h3>
+            <a href="{{ route('student.payment-transcript') }}" target="_blank" rel="noopener" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-printer me-1"></i> View &amp; print payment transcript
+            </a>
         </div>
 
         {{-- Registration Fee --}}

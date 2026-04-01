@@ -6,7 +6,7 @@
     <title>Trainee Assessment Report - {{ $reportCard->student->full_name }}</title>
     <style>
         @page {
-            size: A4;
+            size: A4 portrait;
             margin: 0.5cm;
         }
         

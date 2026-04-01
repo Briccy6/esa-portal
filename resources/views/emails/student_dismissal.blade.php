@@ -102,17 +102,23 @@
 
             <div class="reason-box">
                 <h4>Reason for Dismissal</h4>
-                <p>{{ $dismissal_reason }}</p>
-                @if($dismissalNotes)
+                <p>{{ $dismissalReason }}</p>
+                @if(!empty($dismissalNotes))
                     <p><strong>Additional Notes:</strong></p>
                     <p>{{ $dismissalNotes }}</p>
                 @endif
             </div>
 
+            @php
+                $sexNorm = strtolower(trim((string) ($student->sex ?? '')));
+                $isFemale = str_contains($sexNorm, 'female') || $sexNorm === 'f';
+                $isMale = str_contains($sexNorm, 'male') || $sexNorm === 'm';
+            @endphp
+
             <div class="wishes">
                 <h4>Message for Your Future Journey</h4>
                 <p>Dear {{ $student->full_name }},</p>
-                <p>We regret to inform you that you are no longer part of the ESA Education System community due to the circumstances mentioned above. However, we want to take this opportunity to wish you the very best in your future endeavors.</p>
+                <p>We regret to inform you that you are no longer enrolled in the ESA Education System and your portal access has been closed, for the reasons stated above. This email confirms that you cannot sign in to the student system with this registration.</p>
                 
                 <p>Education is a continuous journey, and we encourage you to:</p>
                 <ul>
@@ -129,7 +135,13 @@
 
             <div class="wishes">
                 <h4>Wishes for Your Success</h4>
-                <p>We sincerely wish you:</p>
+                @if($isFemale)
+                    <p>From all of us at ESA: we wish you the very best of luck in your next steps. May your future be filled with learning, growth, and fulfillment.</p>
+                @elseif($isMale)
+                    <p>From all of us at ESA: we wish you the very best of luck in your next steps. May your future be filled with purpose, resilience, and success.</p>
+                @else
+                    <p>From all of us at ESA: we wish you the very best of luck in your next steps. May your future be filled with opportunity and growth.</p>
+                @endif
                 <ul>
                     <li>Success in your learning journey ahead</li>
                     <li>Wisdom to make the right choices</li>
@@ -137,8 +149,7 @@
                     <li>Happiness and fulfillment in all your endeavors</li>
                     <li>A bright and promising future</li>
                 </ul>
-                
-                <p>May you find the right path that leads to your personal and professional growth. Remember that every setback is a setup for a comeback!</p>
+                <p>Remember that every setback can be a setup for a comeback.</p>
             </div>
         </div>
 

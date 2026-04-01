@@ -6,6 +6,7 @@ use App\Models\AccountingReport;
 use App\Models\Account;
 use App\Models\Student;
 use App\Models\SchoolInformation;
+use App\Support\StudentPaymentTranscript;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -51,8 +52,9 @@ class AccountingController extends Controller
         $asOfDate = $request->get('as_of_date') ? Carbon::parse($request->get('as_of_date')) : now();
 
         $data = AccountingReport::getBalanceSheetData($asOfDate);
+        $school = SchoolInformation::getActive();
 
-        return view('admin.accounting.balance-sheet', compact('data', 'asOfDate'));
+        return view('admin.accounting.balance-sheet', compact('data', 'asOfDate', 'school'));
     }
 
     public function trialBalance(Request $request)
@@ -124,30 +126,37 @@ class AccountingController extends Controller
             
             fputcsv($file, ['Balance Sheet as of ' . $asOfDate->format('M d, Y')]);
             fputcsv($file, []);
+            fputcsv($file, ['Account Code', 'Description', 'Amount (RWF)']);
+            fputcsv($file, []);
             
             fputcsv($file, ['ASSETS']);
             foreach ($data['assets']['details'] as $asset) {
-                fputcsv($file, [$asset['name'], $asset['balance']]);
+                fputcsv($file, [$asset['account_code'] ?? '', $asset['name'], $asset['balance']]);
             }
             fputcsv($file, ['Total Assets', $data['assets']['total']]);
             fputcsv($file, []);
             
             fputcsv($file, ['LIABILITIES']);
             foreach ($data['liabilities']['details'] as $liability) {
-                fputcsv($file, [$liability['name'], $liability['balance']]);
+                fputcsv($file, [$liability['account_code'] ?? '', $liability['name'], $liability['balance']]);
             }
             fputcsv($file, ['Total Liabilities', $data['liabilities']['total']]);
             fputcsv($file, []);
             
             fputcsv($file, ['EQUITY']);
             foreach ($data['equity']['details'] as $equity) {
-                fputcsv($file, [$equity['name'], $equity['balance']]);
+                fputcsv($file, [$equity['account_code'] ?? '', $equity['name'], $equity['balance']]);
             }
             fputcsv($file, ['Total Equity', $data['equity']['total']]);
             fputcsv($file, []);
             
             fputcsv($file, ['Total Liabilities & Equity', $data['liabilities']['total'] + $data['equity']['total']]);
             fputcsv($file, ['Balanced', $data['is_balanced'] ? 'YES' : 'NO']);
+            if (!empty($data['meta'])) {
+                fputcsv($file, []);
+                fputcsv($file, ['Total student receipts (basis)', $data['meta']['total_student_receipts']]);
+                fputcsv($file, ['Total expenses (basis)', $data['meta']['total_expenses']]);
+            }
             
             fclose($file);
         };
@@ -203,6 +212,82 @@ class AccountingController extends Controller
         $data = AccountingReport::getCashFlowStatementData($startDate, $endDate);
 
         return view('admin.accounting.cash-flow', compact('data', 'startDate', 'endDate'));
+    }
+
+    public function cashFlowForecast(Request $request)
+    {
+        $year = (int) $request->get('year', now()->year);
+        $year = max(2000, min(2100, $year));
+
+        $data = AccountingReport::getCashFlowForecastData($year);
+        $school = SchoolInformation::getActive();
+
+        return view('admin.accounting.cash-flow-forecast', compact('data', 'year', 'school'));
+    }
+
+    public function exportCashFlowForecast(Request $request)
+    {
+        $year = (int) $request->get('year', now()->year);
+        $year = max(2000, min(2100, $year));
+
+        $data = AccountingReport::getCashFlowForecastData($year);
+
+        $filename = 'cash_flow_forecast_' . $year . '_' . now()->format('Y-m-d') . '.csv';
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ];
+
+        $callback = function () use ($data, $year) {
+            $file = fopen('php://output', 'w');
+
+            fputcsv($file, ['Cash flow forecast', $year]);
+            fputcsv($file, ['Source: student_transactions (paid / successful) and expenses']);
+            fputcsv($file, []);
+
+            $monthLabels = array_map(fn ($m) => $m['label'], $data['months']);
+            fputcsv($file, array_merge(['Line'], $monthLabels, ['Year total']));
+
+            $sumRow = function (array $values) {
+                return array_sum($values);
+            };
+
+            $opening = array_map(fn ($m) => $m['opening'], $data['months']);
+            fputcsv($file, array_merge(['Opening balance (start of each month)'], $opening, ['']));
+
+            $cashIn = array_map(fn ($m) => $m['cash_in'], $data['months']);
+            fputcsv($file, array_merge(['Cash in — student receipts (sum of amount)'], $cashIn, [$sumRow($cashIn)]));
+
+            foreach ($data['in_types'] as $type) {
+                $row = [];
+                foreach ($data['months'] as $m) {
+                    $row[] = $m['cash_in_by_type'][$type] ?? 0;
+                }
+                fputcsv($file, array_merge(['  └ by type: ' . $type], $row, [$sumRow($row)]));
+            }
+
+            $cashOut = array_map(fn ($m) => $m['cash_out'], $data['months']);
+            fputcsv($file, array_merge(['Cash out — expenses (sum of amount)'], $cashOut, [$sumRow($cashOut)]));
+
+            foreach ($data['expense_types'] as $expType) {
+                $row = [];
+                foreach ($data['months'] as $m) {
+                    $row[] = $m['cash_out_by_expense_type'][$expType] ?? 0;
+                }
+                fputcsv($file, array_merge(['  └ by expense_type: ' . $expType], $row, [$sumRow($row)]));
+            }
+
+            $net = array_map(fn ($m) => $m['net'], $data['months']);
+            fputcsv($file, array_merge(['Net cash movement'], $net, [$sumRow($net)]));
+
+            $closing = array_map(fn ($m) => $m['closing'], $data['months']);
+            fputcsv($file, array_merge(['Closing balance (end of month)'], $closing, [$data['year_end_closing']]));
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 
     public function exportCashFlowStatement(Request $request)
@@ -276,5 +361,32 @@ class AccountingController extends Controller
             'endDate',
             'ledgerData'
         ));
+    }
+
+    /**
+     * Printable fee / payment transcript for a student (school header, transactions, signatures).
+     */
+    public function printPaymentTranscript(Student $student)
+    {
+        $data = StudentPaymentTranscript::build($student);
+        $printedBy = auth('admin')->user();
+        $printedByName = $printedBy
+            ? (trim(($printedBy->first_name ?? '') . ' ' . ($printedBy->last_name ?? '')) ?: $printedBy->email)
+            : null;
+
+        return view('admin.accounting.print-payment-transcript', [
+            'student'            => $student,
+            'schoolInfo'         => $data['school'],
+            'feeRows'            => $data['feeRows'],
+            'totalExpected'      => $data['totalExpected'],
+            'totalPaid'          => $data['totalPaid'],
+            'totalPaidAllTypes'  => $data['totalPaidAllTypes'],
+            'totalOutstanding'   => $data['totalOutstanding'],
+            'discountPct'        => $data['discountPct'],
+            'discountAmount'     => $data['discountAmount'],
+            'transactions'       => $data['transactions'],
+            'printedByName'      => $printedByName,
+            'printedAt'          => now(),
+        ]);
     }
 }

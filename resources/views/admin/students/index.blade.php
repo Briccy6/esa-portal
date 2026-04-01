@@ -1223,11 +1223,9 @@ function confirmDelete(studentId, studentName, studentRegNumber) {
         studentRegNumberElement.textContent = studentRegNumber;
     }
     
-    // Set form action
     const form = document.getElementById('deleteForm');
     if (form) {
-        form.action = form.action.replace(':id', studentId);
-        console.log('Form action set to:', form.action);
+        form.action = '{{ url('/admin/students') }}/' + studentId;
     }
     
     // Clear previous values

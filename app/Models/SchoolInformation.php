@@ -18,15 +18,15 @@ class SchoolInformation extends Model
         'email',
         'website',
         'logo_path',
-        'logo', // For database storage
+        'logo', // BLOB in database (admin uploads store here, not on disk)
         'motto',
         'vision',
         'mission',
         'principal_name',
         'principal_signature',
-        'principal_signature_data', // For database storage
+        'principal_signature_data', // BLOB in database
         'stamp_signature',
-        'stamp_signature_data', // For database storage
+        'stamp_signature_data', // BLOB in database
         'is_active',
     ];
 
@@ -63,39 +63,24 @@ class SchoolInformation extends Model
         return 'data:'.$mime.';base64,'.base64_encode($binary);
     }
 
-    public function getLogoUrlAttribute()
+    public function getLogoUrlAttribute(): ?string
     {
         $logo = $this->attributes['logo'] ?? null;
-        if ($logo) {
-            return $this->toImageDataUrl($logo);
-        } elseif ($this->logo_path) {
-            // File storage
-            return asset('storage/' . $this->logo_path);
-        }
-        return null;
+
+        return $logo ? $this->toImageDataUrl($logo) : null;
     }
 
-    public function getPrincipalSignatureUrlAttribute()
+    public function getPrincipalSignatureUrlAttribute(): ?string
     {
         $signature = $this->attributes['principal_signature_data'] ?? null;
-        if ($signature) {
-            return $this->toImageDataUrl($signature);
-        } elseif ($this->principal_signature) {
-            // File storage
-            return asset('storage/' . $this->principal_signature);
-        }
-        return null;
+
+        return $signature ? $this->toImageDataUrl($signature) : null;
     }
 
-    public function getStampSignatureUrlAttribute()
+    public function getStampSignatureUrlAttribute(): ?string
     {
         $signature = $this->attributes['stamp_signature_data'] ?? null;
-        if ($signature) {
-            return $this->toImageDataUrl($signature);
-        } elseif ($this->stamp_signature) {
-            // File storage
-            return asset('storage/' . $this->stamp_signature);
-        }
-        return null;
+
+        return $signature ? $this->toImageDataUrl($signature) : null;
     }
 }

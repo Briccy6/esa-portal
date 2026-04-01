@@ -6,7 +6,7 @@
     <title>Class Reports - {{ $reportCards->first()?->course->course_name ?? 'Class' }}</title>
     <style>
         @page {
-            size: A4;
+            size: A4 portrait;
             margin: 1cm;
         }
         

@@ -392,12 +392,15 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::get('/accounting/balance-sheet', [\App\Http\Controllers\AccountingController::class, 'balanceSheet'])->name('accounting.balance-sheet');
         Route::get('/accounting/trial-balance', [\App\Http\Controllers\AccountingController::class, 'trialBalance'])->name('accounting.trial-balance');
         Route::get('/accounting/cash-flow-statement', [\App\Http\Controllers\AccountingController::class, 'cashFlowStatement'])->name('accounting.cash-flow-statement');
+        Route::get('/accounting/cash-flow-forecast', [\App\Http\Controllers\AccountingController::class, 'cashFlowForecast'])->name('accounting.cash-flow-forecast');
         Route::get('/accounting/income-statement', [\App\Http\Controllers\AccountingController::class, 'incomeStatement'])->name('accounting.income-statement');
         Route::get('/accounting/general-ledger', [\App\Http\Controllers\AccountingController::class, 'generalLedger'])->name('accounting.general-ledger');
         Route::get('/accounting/export/cashbook', [\App\Http\Controllers\AccountingController::class, 'exportCashbook'])->name('accounting.export.cashbook');
         Route::get('/accounting/export/balance-sheet', [\App\Http\Controllers\AccountingController::class, 'exportBalanceSheet'])->name('accounting.export.balance-sheet');
         Route::get('/accounting/export/trial-balance', [\App\Http\Controllers\AccountingController::class, 'exportTrialBalance'])->name('accounting.export.trial-balance');
         Route::get('/accounting/export/cash-flow-statement', [\App\Http\Controllers\AccountingController::class, 'exportCashFlowStatement'])->name('accounting.export.cash-flow-statement');
+        Route::get('/accounting/export/cash-flow-forecast', [\App\Http\Controllers\AccountingController::class, 'exportCashFlowForecast'])->name('accounting.export.cash-flow-forecast');
+        Route::get('/accounting/payment-transcript/{student}', [\App\Http\Controllers\AccountingController::class, 'printPaymentTranscript'])->name('accounting.payment-transcript');
     });
 
     // Document Management
@@ -817,6 +820,7 @@ Route::post('/students/send-verification-code', [StudentController::class, 'send
 Route::post('/students/verify-email-code', [StudentController::class, 'verifyEmailCode'])->name('students.verifyEmailCode');
 
 Route::middleware('auth:student')->get('/student/dashboard', [StudentController::class, 'dashboard'])->name('student.dashboard');
+Route::middleware('auth:student')->get('/student/payment-transcript', [StudentController::class, 'paymentTranscriptPrint'])->name('student.payment-transcript');
 Route::post('/student/login/submit', [StudentController::class, 'loginWithPassword'])->name('student.login.submit');
 Route::post('/student/login/validate-reg-number', [StudentController::class, 'validateRegNumber'])->name('student.login.validateRegNumber');
 Route::post('/student/login/validate-id-value', [StudentController::class, 'validateIdValue'])->name('student.login.validateIdValue');

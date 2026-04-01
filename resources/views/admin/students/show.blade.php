@@ -210,10 +210,15 @@
                     <!-- School Fees Breakdown -->
                     <div class="section-divider"></div>
                     <div class="fee-section">
-                        <h4 class="section-title">
-                            <i class="bi bi-cash-coin text-success me-2"></i>
-                            School Fees Breakdown
-                        </h4>
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                            <h4 class="section-title mb-0">
+                                <i class="bi bi-cash-coin text-success me-2"></i>
+                                School Fees Breakdown
+                            </h4>
+                            <a href="{{ route('admin.accounting.payment-transcript', $student) }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-printer me-1"></i> Print payment transcript
+                            </a>
+                        </div>
                         @php
                             $course = $student->course;
                             $discount = $student->discount ?? 0;

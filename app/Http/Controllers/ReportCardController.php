@@ -67,7 +67,9 @@ class ReportCardController extends Controller
     }
 
     /**
-     * All report cards for one student + course + academic year (every term).
+     * All report cards for one student + course + academic year.
+     * Optional query: term_ids[] or term_id — when set, only those terms are included
+     * (matches what the admin selected for generation or what you pass from the list/detail screen).
      */
     protected function consolidatedReportCards(Request $request): Collection
     {
@@ -75,9 +77,12 @@ class ReportCardController extends Controller
             'student_id' => 'required|exists:students,id',
             'course_id' => 'required|exists:courses,id',
             'academic_year_id' => 'required|exists:academic_years,id',
+            'term_ids' => 'nullable|array',
+            'term_ids.*' => 'integer|exists:terms,id',
+            'term_id' => 'nullable|integer|exists:terms,id',
         ]);
 
-        return ReportCard::query()
+        $query = ReportCard::query()
             ->where('student_id', $request->integer('student_id'))
             ->where('course_id', $request->integer('course_id'))
             ->where('academic_year_id', $request->integer('academic_year_id'))
@@ -89,10 +94,36 @@ class ReportCardController extends Controller
                 'approvedBy',
                 'subjects.lesson',
                 'subjects.testMarks.exam',
-            ])
-            ->get()
+            ]);
+
+        $termIds = $this->normalizeTermIds($request);
+        if ($termIds !== []) {
+            $query->whereIn('term_id', $termIds);
+        }
+
+        return $query->get()
             ->sortBy(fn (ReportCard $rc) => $rc->term?->start_date?->timestamp ?? $rc->term_id)
             ->values();
+    }
+
+    /**
+     * Query params to reuse for consolidated view ↔ print links (preserves term filter).
+     *
+     * @return array<string, mixed>
+     */
+    protected function consolidatedRouteParams(Request $request): array
+    {
+        $params = [
+            'student_id' => $request->integer('student_id'),
+            'course_id' => $request->integer('course_id'),
+            'academic_year_id' => $request->integer('academic_year_id'),
+        ];
+        $termIds = $this->normalizeTermIds($request);
+        if ($termIds !== []) {
+            $params['term_ids'] = $termIds;
+        }
+
+        return $params;
     }
 
     /**
@@ -199,10 +230,15 @@ class ReportCardController extends Controller
             abort(404);
         }
 
+        if ($reportCards->count() === 1) {
+            return redirect()->route('admin.report-cards.show', $reportCards->first());
+        }
+
         $schoolInfo = SchoolInformation::getActive();
         $assessmentMatrix = $this->buildConsolidatedAssessmentMatrix($reportCards);
+        $consolidatedRouteParams = $this->consolidatedRouteParams($request);
 
-        return view('admin.report-cards.show-consolidated', compact('reportCards', 'schoolInfo', 'assessmentMatrix'));
+        return view('admin.report-cards.show-consolidated', compact('reportCards', 'schoolInfo', 'assessmentMatrix', 'consolidatedRouteParams'));
     }
 
     public function printConsolidated(Request $request)
@@ -211,6 +247,10 @@ class ReportCardController extends Controller
 
         if ($reportCards->isEmpty()) {
             abort(404);
+        }
+
+        if ($reportCards->count() === 1) {
+            return $this->printReport($reportCards->first());
         }
 
         $schoolInfo = SchoolInformation::getActive();
@@ -518,7 +558,7 @@ class ReportCardController extends Controller
     $pdf = Pdf::loadView('admin.report-cards.print', compact(
             'reportCard', 'schoolInfo', 'studentPhotoBase64', 'studentPhotoMime'
         ))
-        ->setPaper('a4')
+        ->setPaper('a4', 'portrait')
         ->setOption([
             'margin-top'        => 10,
             'margin-bottom'     => 10,
@@ -579,7 +619,7 @@ class ReportCardController extends Controller
         }
 
         $pdf = Pdf::loadView('admin.report-cards.print-class', compact('reportCards', 'schoolInfo', 'studentPhotosByReportId'))
-            ->setPaper('a4')
+            ->setPaper('a4', 'portrait')
             ->setOption(['margin-top' => 10, 'margin-bottom' => 10]);
 
         $course = Course::find($request->course_id);

@@ -62,6 +62,11 @@
                     <h3 class="card-title">Accounting Reports</h3>
                 </div>
                 <div class="card-body">
+                    <p class="text-muted small mb-4">
+                        <i class="fas fa-file-invoice me-1"></i>
+                        For an official <strong>student payment transcript</strong> (print / PDF with school letterhead and stamp), open a student profile and use <strong>Print payment transcript</strong>, or go to
+                        <a href="{{ route('admin.students.index') }}">Students</a> and choose a student.
+                    </p>
                     <div class="row">
                         <div class="col-md-4">
                             <div class="card bg-primary">
@@ -116,6 +121,17 @@
                                     <p class="card-text text-white">View detailed movements per account</p>
                                     <a href="{{ route('admin.accounting.general-ledger') }}" class="btn btn-light">
                                         <i class="fas fa-book-open"></i> View General Ledger
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card" style="background: linear-gradient(135deg, #1a5f7a 0%, #159895 100%);">
+                                <div class="card-body">
+                                    <h5 class="card-title text-white">Cash Flow Forecast</h5>
+                                    <p class="card-text text-white">Monthly cash in, out and balance from receipts and expenses</p>
+                                    <a href="{{ route('admin.accounting.cash-flow-forecast') }}" class="btn btn-light">
+                                        <i class="fas fa-chart-area"></i> View Forecast
                                     </a>
                                 </div>
                             </div>

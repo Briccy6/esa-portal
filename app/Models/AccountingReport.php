@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Illuminate\Database\Query\Builder;
 
 class AccountingReport extends Model
 {
@@ -112,114 +113,168 @@ class AccountingReport extends Model
         return $studentTotal - $expenseTotal;
     }
 
+    /**
+     * Balance sheet from operational tables: student_transactions, expenses, students, courses
+     * (same basis as the cash book), not from journal_entries / journal_items.
+     */
     public static function getBalanceSheetData($asOfDate = null)
     {
         $asOfDate = $asOfDate ?: now()->endOfDay();
 
-        // Get account balances as of date
-        $accountBalances = DB::table('journal_items as ji')
-            ->join('journal_entries as je', 'ji.journal_entry_id', '=', 'je.id')
-            ->join('accounts as a', 'ji.account_id', '=', 'a.id')
-            ->where('je.status', 'Posted')
-            ->whereDate('je.entry_date', '<=', $asOfDate)
-            ->where('a.is_active', true)
-            ->select(
-                'a.account_name',
-                'a.account_type',
-                'a.normal_balance',
-                DB::raw('SUM(ji.debit_amount - ji.credit_amount) as raw_balance')
-            )
-            ->groupBy('a.id', 'a.account_name', 'a.account_type', 'a.normal_balance')
-            ->get();
+        $totalReceipts = self::sumStudentReceiptsThrough($asOfDate);
+        $totalExpenses = self::sumExpensesThrough($asOfDate);
+        $cash = $totalReceipts - $totalExpenses;
 
-        // Calculate final balances based on normal balance
-        $assets = 0;
-        $liabilities = 0;
-        $equity = 0;
-        $detailedAssets = [];
+        $feePosition = self::aggregateStudentFeePositionThrough($asOfDate);
+        $receivable = $feePosition['receivable'];
+        $deferred = $feePosition['deferred'];
+
+        $assets = $cash + $receivable;
+        $liabilities = $deferred;
+        $equity = $assets - $liabilities;
+
+        $detailedAssets = [
+            [
+                'account_code' => 'CASH',
+                'name' => 'Cash and cash equivalents (student receipts less expenses)',
+                'balance' => (float) $cash,
+            ],
+            [
+                'account_code' => 'AR',
+                'name' => 'Student fees receivable',
+                'balance' => (float) $receivable,
+            ],
+        ];
+
         $detailedLiabilities = [];
-        $detailedEquity = [];
-
-        foreach ($accountBalances as $balance) {
-            $finalBalance = $balance->normal_balance === 'Debit' 
-                ? $balance->raw_balance 
-                : -$balance->raw_balance;
-
-            if ($finalBalance == 0) continue;
-
-            switch ($balance->account_type) {
-                case 'Asset':
-                    $assets += $finalBalance;
-                    $detailedAssets[] = [
-                        'name' => $balance->account_name,
-                        'balance' => $finalBalance
-                    ];
-                    break;
-                case 'Liability':
-                    $liabilities += $finalBalance;
-                    $detailedLiabilities[] = [
-                        'name' => $balance->account_name,
-                        'balance' => $finalBalance
-                    ];
-                    break;
-                case 'Equity':
-                    $equity += $finalBalance;
-                    $detailedEquity[] = [
-                        'name' => $balance->account_name,
-                        'balance' => $finalBalance
-                    ];
-                    break;
-            }
+        if ($deferred > 0.005) {
+            $detailedLiabilities[] = [
+                'account_code' => 'DEF',
+                'name' => 'Student fee advances (deferred income)',
+                'balance' => (float) $deferred,
+            ];
         }
 
-        // Calculate retained earnings (Revenue - Expenses)
-        $retainedEarnings = self::calculateRetainedEarnings($asOfDate);
-        $equity += $retainedEarnings;
-
-        $detailedEquity[] = [
-            'name' => 'Retained Earnings',
-            'balance' => $retainedEarnings
+        $detailedEquity = [
+            [
+                'account_code' => '',
+                'name' => 'Net assets (unrestricted)',
+                'balance' => (float) $equity,
+            ],
         ];
+
+        $difference = (float) ($assets - ($liabilities + $equity));
 
         return [
             'as_of_date' => $asOfDate,
+            'source' => 'student_transactions_expenses',
             'assets' => [
-                'total' => $assets,
-                'details' => $detailedAssets
+                'total' => (float) $assets,
+                'details' => $detailedAssets,
             ],
             'liabilities' => [
-                'total' => $liabilities,
-                'details' => $detailedLiabilities
+                'total' => (float) $liabilities,
+                'details' => $detailedLiabilities,
             ],
             'equity' => [
-                'total' => $equity,
-                'details' => $detailedEquity
+                'total' => (float) $equity,
+                'details' => $detailedEquity,
             ],
-            'is_balanced' => abs($assets - ($liabilities + $equity)) < 0.01
+            'is_balanced' => abs($difference) < 0.02,
+            'difference' => $difference,
+            'meta' => [
+                'total_student_receipts' => (float) $totalReceipts,
+                'total_expenses' => (float) $totalExpenses,
+            ],
         ];
     }
 
-    private static function calculateRetainedEarnings($asOfDate)
+    private static function applyStudentTransactionThroughDate(Builder $query, Carbon $asOfDate): void
     {
-        $revenue = DB::table('journal_items as ji')
-            ->join('journal_entries as je', 'ji.journal_entry_id', '=', 'je.id')
-            ->join('accounts as a', 'ji.account_id', '=', 'a.id')
-            ->where('je.status', 'Posted')
-            ->whereDate('je.entry_date', '<=', $asOfDate)
-            ->where('a.account_type', 'Revenue')
-            ->selectRaw('SUM(ji.credit_amount - ji.debit_amount) as amount')
-            ->value('amount') ?? 0;
+        $query->where(function ($q) use ($asOfDate) {
+            $q->where(function ($q2) use ($asOfDate) {
+                $q2->whereNotNull('paid_at')->whereDate('paid_at', '<=', $asOfDate);
+            })->orWhere(function ($q2) use ($asOfDate) {
+                $q2->whereNull('paid_at')->whereDate('created_at', '<=', $asOfDate);
+            });
+        });
+    }
 
-        $expenses = DB::table('journal_items as ji')
-            ->join('journal_entries as je', 'ji.journal_entry_id', '=', 'je.id')
-            ->join('accounts as a', 'ji.account_id', '=', 'a.id')
-            ->where('je.status', 'Posted')
-            ->whereDate('je.entry_date', '<=', $asOfDate)
-            ->where('a.account_type', 'Expense')
-            ->selectRaw('SUM(ji.debit_amount - ji.credit_amount) as amount')
-            ->value('amount') ?? 0;
+    private static function sumStudentReceiptsThrough(Carbon $asOfDate): float
+    {
+        $q = DB::table('student_transactions')
+            ->whereIn('status', ['paid', 'successful']);
+        self::applyStudentTransactionThroughDate($q, $asOfDate);
 
-        return $revenue - $expenses;
+        return (float) ($q->sum('amount') ?? 0);
+    }
+
+    private static function sumExpensesThrough(Carbon $asOfDate): float
+    {
+        return (float) (DB::table('expenses')
+            ->whereDate('expense_date', '<=', $asOfDate)
+            ->sum('amount') ?? 0);
+    }
+
+    /**
+     * Expected fee total per student (aligned with student fee dashboard logic).
+     */
+    private static function expectedTotalFeesForStudent(Student $student): float
+    {
+        $course = $student->course;
+        if (!$course) {
+            return 0.0;
+        }
+
+        $registrationFee = (float) ($course->registration_fee ?? 0);
+        $tripFee = (float) ($course->trip_fee ?? 0);
+        $tuitionFee = (float) ($course->tuition_fee ?? 0);
+        $practicalFee = (float) ($course->practical_fee ?? $course->pratical_fee ?? 0);
+        $studentCardFee = 2000.0;
+        $discount = (float) ($student->discount ?? 0);
+        $discountableFees = $tripFee + $tuitionFee + $practicalFee;
+        $discountAmount = ($discount > 0) ? ($discountableFees * ($discount / 100)) : 0.0;
+
+        return $registrationFee + $studentCardFee + ($discountableFees - $discountAmount);
+    }
+
+    private static function studentPaidThrough(Student $student, Carbon $asOfDate): float
+    {
+        $q = DB::table('student_transactions')
+            ->where('student_id', $student->id)
+            ->whereIn('status', ['paid', 'successful']);
+        self::applyStudentTransactionThroughDate($q, $asOfDate);
+
+        return (float) ($q->sum('amount') ?? 0);
+    }
+
+    /**
+     * @return array{receivable: float, deferred: float}
+     */
+    private static function aggregateStudentFeePositionThrough(Carbon $asOfDate): array
+    {
+        $receivable = 0.0;
+        $deferred = 0.0;
+
+        Student::query()
+            ->with('course')
+            ->chunkById(200, function ($students) use ($asOfDate, &$receivable, &$deferred) {
+                foreach ($students as $student) {
+                    $expected = self::expectedTotalFeesForStudent($student);
+                    if ($expected <= 0) {
+                        continue;
+                    }
+                    $paid = self::studentPaidThrough($student, $asOfDate);
+                    $diff = $expected - $paid;
+                    if ($diff > 0) {
+                        $receivable += $diff;
+                    } elseif ($diff < 0) {
+                        $deferred += abs($diff);
+                    }
+                }
+            });
+
+        return ['receivable' => $receivable, 'deferred' => $deferred];
     }
 
     public static function getTrialBalanceData($asOfDate = null)
@@ -289,6 +344,98 @@ class AccountingReport extends Model
             'total_credits' => $totalCredits,
             'difference' => abs($totalDebits - $totalCredits),
             'is_balanced' => abs($totalDebits - $totalCredits) < 0.01
+        ];
+    }
+
+    /**
+     * Monthly cash flow forecast-style grid from operational tables:
+     * student_transactions (receipts) and expenses (payments).
+     * Uses the same opening-cash logic as the cash book.
+     */
+    public static function getCashFlowForecastData(?int $year = null): array
+    {
+        $year = $year ?? (int) now()->year;
+
+        $startOfYear = Carbon::create($year, 1, 1)->startOfDay();
+        $openingBeforeYear = self::getOpeningCashBalanceFromTransactions($startOfYear);
+
+        $txRows = DB::table('student_transactions')
+            ->whereIn('status', ['paid', 'successful'])
+            ->whereNotNull('paid_at')
+            ->whereYear('paid_at', $year)
+            ->select('paid_at', 'amount', 'type', 'currency')
+            ->get();
+
+        $expRows = DB::table('expenses')
+            ->whereYear('expense_date', $year)
+            ->select('expense_date', 'amount', 'expense_type', 'payment_method')
+            ->get();
+
+        $inTypes = $txRows->pluck('type')->unique()->filter()->sort()->values()->all();
+        $expTypes = $expRows->pluck('expense_type')->unique()->filter()->sort()->values()->all();
+
+        $months = [];
+        $running = $openingBeforeYear;
+
+        for ($m = 1; $m <= 12; $m++) {
+            $cashIn = 0.0;
+            $cashOut = 0.0;
+            $inDetail = array_fill_keys($inTypes, 0.0);
+            $outDetail = array_fill_keys($expTypes, 0.0);
+
+            foreach ($txRows as $r) {
+                if ((int) Carbon::parse($r->paid_at)->month === $m) {
+                    $amt = (float) $r->amount;
+                    $cashIn += $amt;
+                    if (array_key_exists($r->type, $inDetail)) {
+                        $inDetail[$r->type] += $amt;
+                    }
+                }
+            }
+
+            foreach ($expRows as $r) {
+                if ((int) Carbon::parse($r->expense_date)->month === $m) {
+                    $amt = (float) $r->amount;
+                    $cashOut += $amt;
+                    if (array_key_exists($r->expense_type, $outDetail)) {
+                        $outDetail[$r->expense_type] += $amt;
+                    }
+                }
+            }
+
+            $opening = $running;
+            $net = $cashIn - $cashOut;
+            $closing = $opening + $net;
+            $running = $closing;
+
+            $months[] = [
+                'month' => $m,
+                'label' => Carbon::create($year, $m, 1)->format('M Y'),
+                'opening' => $opening,
+                'cash_in' => $cashIn,
+                'cash_out' => $cashOut,
+                'net' => $net,
+                'closing' => $closing,
+                'cash_in_by_type' => $inDetail,
+                'cash_out_by_expense_type' => $outDetail,
+            ];
+        }
+
+        $yearEndClosing = $running;
+
+        return [
+            'year' => $year,
+            'opening_before_year' => $openingBeforeYear,
+            'year_end_closing' => $yearEndClosing,
+            'months' => $months,
+            'in_types' => $inTypes,
+            'expense_types' => $expTypes,
+            'totals' => [
+                'cash_in' => collect($months)->sum('cash_in'),
+                'cash_out' => collect($months)->sum('cash_out'),
+                'net' => collect($months)->sum('net'),
+            ],
+            'currency' => 'RWF',
         ];
     }
 
