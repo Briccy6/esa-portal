@@ -292,7 +292,7 @@
                 </tr>
                 
                 <tr>
-                    <th rowspan="2" class="bg-gray">Lesson Name</th>
+                    <th colspan="3" rowspan="2" class="bg-gray">Lesson Name</th>
                     <th rowspan="2" class="bg-gray">Credits</th>
                     <th class="bg-gray">F.A</th>
                     <th class="bg-gray">LA</th>
@@ -308,7 +308,7 @@
                     <th class="bg-gray">AVG</th>
                     <th class="bg-gray">A.A</th>
                     <th class="bg-gray">R.E</th>
-                    <th class="bg-gray">Observation</th>
+                    <th class="bg-gray">Comments</th>
                 </tr>
             </thead>
             <tbody>
@@ -489,7 +489,14 @@
                         <td><input type="checkbox" class="checkbox"></td>
                         <td><input type="checkbox" class="checkbox"></td>
                         <td><input type="checkbox" class="checkbox"></td>
-                        <td></td>
+                        <td style="text-align:center;">
+                            @if(isset($schoolInfo) && $schoolInfo->principal_signature_url)
+                                <img src="{{ $schoolInfo->principal_signature_url }}" alt="Principal Signature" style="max-height: 48px; max-width: 140px; margin-right: 6px;">
+                            @endif
+                            @if(isset($schoolInfo) && $schoolInfo->stamp_signature_url)
+                                <img src="{{ $schoolInfo->stamp_signature_url }}" alt="School Stamp" style="max-height: 64px; max-width: 90px;">
+                            @endif
+                        </td>
                     </tr>
                 </tbody>
             </table>

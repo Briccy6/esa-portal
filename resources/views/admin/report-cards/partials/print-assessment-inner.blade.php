@@ -88,19 +88,12 @@
         <tr class="bg-gray font-bold">
             <td colspan="4" class="text-left">Behaviour</td>
             <td>100</td>
-            <td colspan="2">-</td>
-            <td colspan="3">-</td>
-        </tr>
-
-        <tr>
-            <th rowspan="2" class="bg-gray">Lesson Name</th>
-            <th rowspan="2" class="bg-gray">Credits</th>
-            <th class="bg-gray">TEST</th>
-            <th class="bg-gray">EXAM</th>
-            <th class="bg-gray">AVG</th>
-            <th class="bg-gray">A.A</th>
-            <th class="bg-gray">R.E</th>
-            <th class="bg-gray">Observation</th>
+            <td class="bg-gray">TEST</td>
+            <td class="bg-gray">EXAM</td>
+            <td class="bg-gray">AVG</td>
+            <td class="bg-gray">A.A</td>
+            <td class="bg-gray">R.E</td>
+            <td class="bg-gray">Comments</td>
         </tr>
     </thead>
     <tbody>
@@ -110,14 +103,14 @@
             </tr>
             @foreach($reportCard->subjects as $subject)
                 <tr>
-                    <td class="text-left">{{ $subject->subject_name }}</td>
+                    <td colspan="4" class="text-left">{{ $subject->subject_name }}</td>
                     <td>{{ $subject->credits ?? 3 }}</td>
                     <td>{{ $subject->test_average ?? '-' }}</td>
                     <td>{{ $subject->exam_mark ?? '-' }}</td>
                     <td class="font-bold">{{ $subject->total_mark ?? '-' }}</td>
-                    <td class="font-bold">{{ $subject->total_mark ?? '-' }}</td>
-                    <td class="font-bold"></td>
+                    <td class="font-bold">{{ number_format($subject->total_mark ?? 0, 2) }}%</td>
                     <td class="font-bold">{{ $subject->grade === 'A' || $subject->grade === 'B' ? 'C' : 'NYC' }}</td>
+                    <td class="font-bold">{{ $subject->comments ?? '-' }}</td>
                 </tr>
             @endforeach
         @else
@@ -133,47 +126,56 @@
                 <td colspan="7" class="text-left"></td>
             </tr>
             <tr class="bg-blue font-bold">
-                <td colspan="3" class="text-left">TOTAL</td>
-                <td>{{ $reportCard->subjects->count() * 3 }}</td>
+                <td colspan="5" class="text-left">TOTAL</td>
                 <td>{{ number_format($reportCard->subjects->sum('test_average'), 1) }}</td>
                 <td>{{ number_format($reportCard->subjects->sum('exam_mark'), 1) }}</td>
-                <td>{{ number_format($reportCard->subjects->sum('total_mark'), 1) }}</td>
-                <td>{{ number_format($reportCard->subjects->sum('total_mark'), 1) }}</td>
-                <td></td>
+                <td class="font-bold">{{ number_format($reportCard->subjects->sum('total_mark'), 1) }}</td>
+                <td class="font-bold">{{ number_format($reportCard->subjects->sum('total_mark'), 1) }}%</td>
+                <td class="font-bold">{{ $reportCard->average_marks >= 50 ? 'C' : 'NYC' }}</td>
                 <td></td>
             </tr>
 
             <tr class="bg-yellow font-bold">
-                <td colspan="3" class="text-left">POSITION</td>
+                <td colspan="5" class="text-left">POSITION</td>
+                <td></td>
+                <td></td>
+                <td></td>
                 <td></td>
                 <td colspan="2">{{ $reportCard->class_position ?? '-' }} out of {{ $reportCard->total_students ?? '-' }}</td>
-                <td colspan="3">{{ $reportCard->class_position ?? '-' }} out of {{ $reportCard->total_students ?? '-' }}</td>
+                <td></td>
             </tr>
 
             <tr class="bg-gray font-bold">
-                <td colspan="3" class="text-left">Percentage %</td>
+                <td colspan="5" class="text-left">Percentage %</td>
                 <td>100</td>
-                <td colspan="2">{{ number_format($reportCard->average_marks, 1) }}%</td>
-                <td colspan="3">{{ number_format($reportCard->average_marks, 1) }}%</td>
+                <td>100</td>
+                <td>100</td>
+                <td class="font-bold">{{ number_format($reportCard->average_marks, 1) }}%</td>
+                <td></td>
+                <td></td>
             </tr>
         @endif
 
         <tr class="bg-white font-bold">
-            <td colspan="3" class="text-left">Class Trainer's Comments & Signature</td>
+            <td colspan="5" class="text-left">Class Trainer's Comments & Signature</td>
             <td></td>
-            <td colspan="2">
-                @if($reportCard->approvedBy)
-                    {{ $reportCard->approvedBy->email ?? $reportCard->approvedBy->name ?? 'Class Teacher' }}
-                @endif
-            </td>
-            <td colspan="3"></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
         </tr>
 
         <tr class="bg-white font-bold">
-            <td colspan="3" class="text-left">Parents signature</td>
+            <td colspan="5" class="text-left">Parents signature</td>
             <td></td>
-            <td colspan="2"></td>
-            <td colspan="3"></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
         </tr>
     </tbody>
 </table>
@@ -202,10 +204,10 @@
                 <td><input type="checkbox" class="checkbox"></td>
                 <td style="text-align:center;">
                     @if($hasPrincipalSignature)
-                        <img src="{{ $schoolInfo->principal_signature_url }}" alt="Principal Signature" style="max-height: 28px; max-width: 96px; margin-right: 4px;">
+                        <img src="{{ $schoolInfo->principal_signature_url }}" alt="Principal Signature" style="max-height: 48px; max-width: 140px; margin-right: 6px;">
                     @endif
                     @if($hasStampSignature)
-                        <img src="{{ $schoolInfo->stamp_signature_url }}" alt="School Stamp" style="max-height: 32px; max-width: 70px;">
+                        <img src="{{ $schoolInfo->stamp_signature_url }}" alt="School Stamp" style="max-height: 64px; max-width: 90px;">
                     @endif
                 </td>
             </tr>

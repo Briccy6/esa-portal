@@ -39,13 +39,14 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 160px;
+            height: 140px;
         }
         
         .student-photo {
-            height: 160px;
-            width: 160px;
+            height: 140px;
+            width: 140px;
             object-fit: cover;
+            border: 1px solid #000;
         }
         
         .school-logo {
@@ -254,14 +255,14 @@
                             <img src="{{ $photoPath }}" alt="Student Photo" class="student-photo">
                         @else
                             <img src="{{ asset($photoPath) }}" alt="Student Photo" class="student-photo" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                            <div style="display: none; width: 160px; height: 160px; background: #fff; border: 1px solid #000; align-items: center; justify-content: center;">
+                            <div style="display: none; width: 140px; height: 140px; background: #fff; border: 1px solid #000; align-items: center; justify-content: center;">
                                 <div style="text-align: center;">
                                     <div style="color: #000; font-size: 12px; font-weight: bold;">STUDENT<br>PHOTO</div>
                                 </div>
                             </div>
                         @endif
                     @else
-                        <div style="width: 160px; height: 160px; background: #fff; border: 1px solid #000; display: flex; align-items: center; justify-content: center;">
+                        <div style="width: 140px; height: 140px; background: #fff; border: 1px solid #000; display: flex; align-items: center; justify-content: center;">
                             <div style="text-align: center;">
                                 <div style="color: #000; font-size: 12px; font-weight: bold;">STUDENT<br>PHOTO</div>
                             </div>
@@ -326,19 +327,12 @@
                 <tr class="bg-gray font-bold">
                     <td colspan="4" class="text-left">Behaviour</td>
                     <td>100</td>
-                    <td colspan="3">-</td>
-                    <td colspan="3">-</td>
-                </tr>
-                
-                <tr>
-                    <th rowspan="2" class="bg-gray">Lesson Name</th>
-                    <th rowspan="2" class="bg-gray">Credits</th>
-                    <th class="bg-gray">TEST</th>
-                    <th class="bg-gray">EXAM</th>
-                    <th class="bg-gray">AVG</th>
-                    <th class="bg-gray">A.A</th>
-                    <th class="bg-gray">R.E</th>
-                    <th class="bg-gray">Observation</th>
+                    <td class="bg-gray">TEST</td>
+                    <td class="bg-gray">EXAM</td>
+                    <td class="bg-gray">AVG</td>
+                    <td class="bg-gray">A.A</td>
+                    <td class="bg-gray">R.E</td>
+                    <td class="bg-gray">Comments</td>
                 </tr>
             </thead>
             <tbody>
@@ -349,14 +343,14 @@
                     </tr>
                     @foreach($reportCard->subjects as $subject)
                         <tr>
-                            <td class="text-left">{{ $subject->subject_name }}</td>
+                            <td colspan="4" class="text-left">{{ $subject->subject_name }}</td>
                             <td>{{ $subject->credits ?? 3 }}</td>
                             <td>{{ number_format($subject->test_average ?? 0, 2) }}</td>
                             <td>{{ number_format($subject->exam_mark ?? 0, 2) }}</td>
                             <td>{{ number_format($subject->total_mark ?? 0, 2) }}</td>
-                            <td class="font-bold">{{ number_format($subject->total_mark ?? 0, 2) }}</td>
-                            <td class="font-bold"></td>
+                            <td class="font-bold">{{ number_format($subject->total_mark ?? 0, 2) }}%</td>
                             <td class="font-bold">{{ $subject->grade === 'A' || $subject->grade === 'B' || $subject->grade === 'C' ? 'C' : 'NYC' }}</td>
+                            <td class="font-bold">{{ $subject->comments ?? '-' }}</td>
                         </tr>
                     @endforeach
                 @else
@@ -373,48 +367,60 @@
                         <td colspan="8" class="text-left"></td>
                     </tr>
                     <tr class="bg-blue font-bold">
-                        <td colspan="3" class="text-left">TOTAL</td>
-                        <td>{{ $reportCard->subjects->count() * 3 }}</td>
+                        <td colspan="5" class="text-left">TOTAL</td>
                         <td>{{ number_format($reportCard->subjects->sum('test_average'), 1) }}</td>
                         <td>{{ number_format($reportCard->subjects->sum('exam_mark'), 1) }}</td>
                         <td>{{ number_format($reportCard->subjects->sum('total_mark'), 1) }}</td>
-                        <td>{{ number_format($reportCard->subjects->sum('total_mark'), 1) }}</td>
-                        <td></td>
+                        <td class="font-bold">{{ number_format($reportCard->subjects->sum('total_mark'), 1) }}%</td>
+                        <td class="font-bold">{{ $reportCard->average_marks >= 50 ? 'C' : 'NYC' }}</td>
                         <td></td>
                     </tr>
 
                     <!-- Position Row -->
                     <tr class="bg-yellow font-bold">
-                        <td colspan="3" class="text-left">POSITION</td>
+                        <td colspan="5" class="text-left">POSITION</td>
                         <td></td>
-                        <td colspan="4">{{ $reportCard->class_position ?? '-' }} out of {{ $reportCard->total_students ?? '-' }}</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
                         <td colspan="2">{{ $reportCard->class_position ?? '-' }} out of {{ $reportCard->total_students ?? '-' }}</td>
                         <td></td>
                     </tr>
                     
                     <!-- Percentage Row -->
                     <tr class="bg-gray font-bold">
-                        <td colspan="3" class="text-left">Percentage %</td>
+                        <td colspan="5" class="text-left">Percentage %</td>
                         <td>100</td>
-                        <td colspan="3">{{ number_format($reportCard->average_marks, 1) }}%</td>
-                        <td colspan="3">{{ number_format($reportCard->average_marks, 1) }}%</td>
+                        <td>100</td>
+                        <td>100</td>
+                        <td class="font-bold">{{ number_format($reportCard->average_marks, 1) }}%</td>
+                        <td></td>
+                        <td></td>
                     </tr>
                 @endif
 
                 <!-- Class Trainer's Comments & Signature -->
                 <tr class="bg-white font-bold">
-                    <td colspan="3" class="text-left">Class Trainer's Comments & Signature</td>
+                    <td colspan="5" class="text-left">Class Trainer's Comments & Signature</td>
                     <td></td>
-                    <td colspan="3"></td>
-                    <td colspan="3"></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
                 </tr>
                 
                 <!-- Parents signature -->
                 <tr class="bg-white font-bold">
-                    <td colspan="3" class="text-left">Parents signature</td>
+                    <td colspan="5" class="text-left">Parents signature</td>
                     <td></td>
-                    <td colspan="3"></td>
-                    <td colspan="3"></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
                 </tr>
             </tbody>
         </table>
@@ -441,7 +447,14 @@
                         <td><input type="checkbox" class="checkbox"></td>
                         <td><input type="checkbox" class="checkbox"></td>
                         <td><input type="checkbox" class="checkbox"></td>
-                        <td></td>
+                        <td style="text-align:center;">
+                            @if(isset($schoolInfo) && $schoolInfo->principal_signature_url)
+                                <img src="{{ $schoolInfo->principal_signature_url }}" alt="Principal Signature" style="max-height: 48px; max-width: 140px; margin-right: 6px;">
+                            @endif
+                            @if(isset($schoolInfo) && $schoolInfo->stamp_signature_url)
+                                <img src="{{ $schoolInfo->stamp_signature_url }}" alt="School Stamp" style="max-height: 64px; max-width: 90px;">
+                            @endif
+                        </td>
                     </tr>
                 </tbody>
             </table>
