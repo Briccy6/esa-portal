@@ -56,7 +56,7 @@ class DismissedStudentController extends Controller
         $totalDismissed = DismissedStudent::count();
         $monthlyDismissed = DismissedStudent::whereMonth('dismissal_date', now()->month)
             ->whereYear('dismissal_date', now()->year)->count();
-        $dismissedThisYear = DismissedStudent::whereYear('dismissal_date', now()->year)->count();
+        $yearlyDismissed = DismissedStudent::whereYear('dismissal_date', now()->year)->count();
 
         return view('admin.dismissed-students.index', compact(
             'dismissedStudents',
@@ -65,7 +65,7 @@ class DismissedStudentController extends Controller
             'academicYears',
             'totalDismissed',
             'monthlyDismissed',
-            'dismissedThisYear'
+            'yearlyDismissed'
         ));
     }
 

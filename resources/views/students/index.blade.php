@@ -191,27 +191,43 @@ window.updateNesaStatus = function(studentId) {
     
     if (status === 'registered') {
         const documentInput = document.getElementById(`nesa_document_${studentId}`);
-        console.log('Document input:', documentInput, 'Files:', documentInput?.files?.length);
+        const documentSection = document.getElementById(`document_section_${studentId}`);
         
-        // Check if document input exists and is visible
+        console.log('Document input:', documentInput, 'Files:', documentInput?.files?.length);
+        console.log('Document section:', documentSection, 'Display style:', documentSection?.style.display);
+        
+        // Check if document input exists
         if (!documentInput) {
             showAlert('danger', 'Document upload field not found. Please refresh the page and try again.');
             return;
         }
         
-        // Check if document input is visible (not display: none)
-        const documentSection = document.getElementById(`document_section_${studentId}`);
-        if (documentSection && documentSection.style.display === 'none') {
-            showAlert('danger', 'Please select "Registered" status to enable document upload, then upload the NESA document as proof of registration.');
-            return;
+        // Force document section to be visible for registered status
+        if (documentSection) {
+            documentSection.style.display = 'block';
+            console.log('Force showing document section for registered status');
         }
         
-        if (!documentInput.files || documentInput.files.length === 0) {
-            showAlert('danger', 'Please upload the NESA document as proof of registration');
-            return;
-        }
+        // Small delay to ensure the section is visible before checking files
+        setTimeout(() => {
+            if (!documentInput.files || documentInput.files.length === 0) {
+                showAlert('danger', 'Please upload the NESA document as proof of registration');
+                return;
+            }
+            
+            // Continue with form submission if document is uploaded
+            submitNesaStatusForm(studentId, status, sendEmail, reason, documentInput);
+        }, 100);
+        
+        return; // Exit early, we'll continue in the timeout
     }
     
+    // For failed status, proceed directly
+    submitNesaStatusForm(studentId, status, sendEmail, reason, null);
+}
+
+// Separate function to handle the actual form submission
+function submitNesaStatusForm(studentId, status, sendEmail, reason, documentInput) {
     if (!confirm(`Update NESA status to "${status}" for this student?`)) return;
     
     // Find the button that was clicked
@@ -226,12 +242,9 @@ window.updateNesaStatus = function(studentId) {
     
     if (status === 'failed') {
         formData.append('reason', reason);
-    } else {
-        const documentInput = document.getElementById(`nesa_document_${studentId}`);
-        if (documentInput && documentInput.files && documentInput.files.length > 0) {
-            formData.append('nesa_document', documentInput.files[0]);
-            console.log('Appending document:', documentInput.files[0].name);
-        }
+    } else if (documentInput && documentInput.files && documentInput.files.length > 0) {
+        formData.append('nesa_document', documentInput.files[0]);
+        console.log('Appending document:', documentInput.files[0].name);
     }
     
     // Log FormData contents for debugging
@@ -396,7 +409,20 @@ $(function() {
         // Initialize visibility based on current selection for both registered and failed
         document.querySelectorAll('[id^="registered_"], [id^="failed_"]').forEach(radio => {
             if (radio.checked) {
+                console.log('Initializing radio:', radio.id, 'checked:', radio.checked);
                 handleNesaRadioChange.call(radio);
+            }
+        });
+        
+        // Additional check: ensure document section is visible if registered is checked
+        document.querySelectorAll('[id^="registered_"]').forEach(radio => {
+            if (radio.checked) {
+                const studentId = radio.id.split('_').pop();
+                const documentSection = document.getElementById(`document_section_${studentId}`);
+                if (documentSection) {
+                    documentSection.style.display = 'block';
+                    console.log('Force showing document section on modal open for student:', studentId);
+                }
             }
         });
     }
@@ -407,12 +433,17 @@ $(function() {
         const reasonSection = document.getElementById(`reason_section_${studentId}`);
         const documentSection = document.getElementById(`document_section_${studentId}`);
         
+        console.log('Radio button changed:', this.id, this.value, 'studentId:', studentId);
+        
         if (this.value === 'failed') {
-            reasonSection.style.display = 'block';
-            documentSection.style.display = 'none';
+            if (reasonSection) reasonSection.style.display = 'block';
+            if (documentSection) documentSection.style.display = 'none';
         } else {
-            reasonSection.style.display = 'none';
-            documentSection.style.display = 'block';
+            if (reasonSection) reasonSection.style.display = 'none';
+            if (documentSection) {
+                documentSection.style.display = 'block';
+                console.log('Document section made visible for student:', studentId);
+            }
         }
     }
 

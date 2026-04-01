@@ -44,13 +44,14 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 160px;
+            height: 180px;
         }
         
         .student-photo {
-            height: 160px;
-            width: 160px;
+            height: 180px;
+            width: 150px;
             object-fit: cover;
+            border: 2px solid #333;
         }
         
         .school-logo {

@@ -39,14 +39,14 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 140px;
+            height: 180px;
         }
         
         .student-photo {
-            height: 140px;
-            width: 140px;
+            height: 180px;
+            width: 150px;
             object-fit: cover;
-            border: 1px solid #000;
+            border: 2px solid #333;
         }
         
         .school-logo {
@@ -255,16 +255,16 @@
                             <img src="{{ $photoPath }}" alt="Student Photo" class="student-photo">
                         @else
                             <img src="{{ asset($photoPath) }}" alt="Student Photo" class="student-photo" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                            <div style="display: none; width: 140px; height: 140px; background: #fff; border: 1px solid #000; align-items: center; justify-content: center;">
+                            <div style="display: none; width: 150px; height: 180px; background: #fff; border: 2px solid #333; align-items: center; justify-content: center;">
                                 <div style="text-align: center;">
-                                    <div style="color: #000; font-size: 12px; font-weight: bold;">STUDENT<br>PHOTO</div>
+                                    <div style="color: #000; font-size: 14px; font-weight: bold;">STUDENT<br>PHOTO</div>
                                 </div>
                             </div>
                         @endif
                     @else
-                        <div style="width: 140px; height: 140px; background: #fff; border: 1px solid #000; display: flex; align-items: center; justify-content: center;">
+                        <div style="width: 150px; height: 180px; background: #fff; border: 2px solid #333; display: flex; align-items: center; justify-content: center;">
                             <div style="text-align: center;">
-                                <div style="color: #000; font-size: 12px; font-weight: bold;">STUDENT<br>PHOTO</div>
+                                <div style="color: #000; font-size: 14px; font-weight: bold;">STUDENT<br>PHOTO</div>
                             </div>
                         </div>
                     @endif

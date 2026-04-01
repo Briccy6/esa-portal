@@ -38,9 +38,9 @@
         </td>
         <td class="print-header-logo print-header-logo--right">
             @if(!empty($studentPhotoBase64))
-                <img src="data:{{ $studentPhotoMime ?? 'image/jpeg' }};base64,{{ $studentPhotoBase64 }}" alt="Student Photo" class="school-logo-img">
+                <img src="data:{{ $studentPhotoMime ?? 'image/jpeg' }};base64,{{ $studentPhotoBase64 }}" alt="Student Photo" style="width: 120px; height: 150px; object-fit: cover; border: 2px solid #333;">
             @else
-                <div class="print-logo-placeholder">PHOTO</div>
+                <div class="print-logo-placeholder" style="width: 120px; height: 150px; font-size: 14px;">PHOTO</div>
             @endif
         </td>
     </tr>
