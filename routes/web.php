@@ -1169,6 +1169,7 @@ Route::middleware(['auth:staff'])->prefix('dos')->name('dos.')->group(function (
     Route::get('/courses/{course}/edit', [\App\Http\Controllers\DosCourseController::class, 'edit'])->name('courses.edit');
     Route::put('/courses/{course}', [\App\Http\Controllers\DosCourseController::class, 'update'])->name('courses.update');
     Route::delete('/courses/{course}', [\App\Http\Controllers\DosCourseController::class, 'destroy'])->name('courses.destroy');
+    Route::post('/courses/assign-lesson', [\App\Http\Controllers\DosCourseController::class, 'assignLesson'])->name('courses.assignLesson');
     
     // Live Classes Management
     Route::get('/live-classes', [\App\Http\Controllers\DOS\LiveClassController::class, 'index'])->name('live-classes.index');
