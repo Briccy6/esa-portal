@@ -14,8 +14,10 @@ public function index()
 {
     $teacher = auth('teacher')->user();
     
-    // Get only lessons assigned to this teacher
-    $lessons = Lesson::where('teacher_id', $teacher->id)->get();
+    // Get all lessons for the teacher's courses (with course relationship)
+    $lessons = Lesson::where('teacher_id', $teacher->id)
+        ->with('course')
+        ->get();
     
     // Get only courses assigned to this teacher
     $courses = \App\Models\Course::whereHas('teachersManyToMany', function($query) use ($teacher) {

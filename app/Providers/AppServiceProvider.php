@@ -31,9 +31,9 @@ class AppServiceProvider extends ServiceProvider
             }
         }
 
-        View::composer('teacher.layout', function ($view) {
-            $announcements = Announcement::latest()->take(5)->get();
-            $view->with('announcements', $announcements);
-        });
+        // View::composer('teacher.layout', function ($view) {
+        //     $announcements = Announcement::latest()->take(5)->get();
+        //     $view->with('announcements', $announcements);
+        // });
     }
 }

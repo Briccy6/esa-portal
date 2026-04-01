@@ -49,6 +49,17 @@
                 </div>
             </div>
         </div>
+        <!-- Courses Card -->
+        <div class="col-md-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-book fs-1 text-warning"></i>
+                    <h5 class="card-title mt-2">Courses</h5>
+                    <p class="card-text">View your assigned courses and details.</p>
+                    <a href="{{ route('teacher.courses.details') }}" class="btn btn-outline-warning btn-sm">View Courses</a>
+                </div>
+            </div>
+        </div>
         <!-- Question Banks Card -->
         <div class="col-md-3">
             <div class="card shadow-sm h-100">

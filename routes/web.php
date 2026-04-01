@@ -50,6 +50,7 @@ use App\Http\Controllers\TokenController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\SecretaryAuthController;
 use App\Http\Controllers\ReportCardController;
+use App\Http\Controllers\PublicExamController;
 use Illuminate\Http\Request;
 
 /*
@@ -126,17 +127,11 @@ Route::middleware('auth:student')->get('/student/exams/{exam}/marks', [\App\Http
     ->name('student.exams.marks');
 
 Route::get('/', function () {
-    $systemName = Cache::get('esa_system_name', 'ESA-Parnel');
-    $systemLogo = Cache::get('esa_system_logo');
+    $publicAnnouncements = \App\Models\Announcement::where('audience', 'public')
+        ->orderBy('created_at', 'desc')
+        ->get();
     
-    // Handle missing announcements table gracefully
-    try {
-        $publicAnnouncements = Announcement::where('audience', 'public')->latest()->take(10)->get();
-    } catch (\Exception $e) {
-        $publicAnnouncements = collect(); // Return empty collection if table doesn't exist
-    }
-
-    return view('welcome', compact('systemName', 'systemLogo', 'publicAnnouncements'));
+    return view('welcome', compact('publicAnnouncements'));
 })->name('welcome');
 
 // Public Exam Routes
@@ -418,13 +413,14 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::post('report-cards', [ReportCardController::class, 'store'])->name('report-cards.store');
     Route::get('report-cards/consolidated', [ReportCardController::class, 'showConsolidated'])->name('report-cards.consolidated');
     Route::get('report-cards/consolidated/print', [ReportCardController::class, 'printConsolidated'])->name('report-cards.consolidated-print');
+    Route::post('report-cards/generate-class', [ReportCardController::class, 'generateForClass'])->name('report-cards.generate-class');
+    Route::post('report-cards/bulk-approve', [ReportCardController::class, 'bulkApprove'])->name('report-cards.bulk-approve');
+    Route::get('report-cards/print-class', [ReportCardController::class, 'printClassReports'])->name('report-cards.print-class');
     Route::get('report-cards/{reportCard}', [ReportCardController::class, 'show'])->name('report-cards.show');
     Route::get('report-cards/{reportCard}/edit', [ReportCardController::class, 'edit'])->name('report-cards.edit');
     Route::put('report-cards/{reportCard}', [ReportCardController::class, 'update'])->name('report-cards.update');
     Route::delete('report-cards/{reportCard}', [ReportCardController::class, 'destroy'])->name('report-cards.destroy');
     Route::get('report-cards/{reportCard}/print', [ReportCardController::class, 'printReport'])->name('report-cards.print');
-    Route::post('report-cards/generate-class', [ReportCardController::class, 'generateForClass'])->name('report-cards.generate-class');
-    Route::get('report-cards/print-class', [ReportCardController::class, 'printClassReports'])->name('report-cards.print-class');
 
     // School Information
     Route::get('school-information', [\App\Http\Controllers\SchoolInformationController::class, 'edit'])->name('school-information.edit');
@@ -446,6 +442,11 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::get('chat-test', function() {
         return view('admin.profile.test');
     })->name('chat.test');
+
+    // Dismissed Students Routes
+    Route::get('dismissed-students', [\App\Http\Controllers\DismissedStudentController::class, 'index'])->name('dismissed-students.index');
+    Route::get('dismissed-students/{dismissedStudent}', [\App\Http\Controllers\DismissedStudentController::class, 'show'])->name('dismissed-students.show');
+    Route::post('dismissed-students/{dismissedStudent}/restore', [\App\Http\Controllers\DismissedStudentController::class, 'restore'])->name('dismissed-students.restore');
 
 });
 
@@ -635,15 +636,6 @@ Route::prefix('staff')->name('staff.')->group(function () {
         Route::delete('/lesson-units/{unit}', [LessonDetailsController::class, 'destroy'])->name('lesson-units.destroy');
         Route::get('/lessons/{lesson}/details/create', [LessonDetailsController::class, 'create'])->name('lesson.details.create');
         Route::post('/lessons/{lesson}/details', [LessonDetailsController::class, 'store'])->name('lesson.details.store');
-
-        // Subscription Management Routes for Staff
-        Route::prefix('subscriptions')->name('subscriptions.')->group(function () {
-            Route::get('/', [SubscriptionController::class, 'staffIndex'])->name('index');
-            Route::get('/create', [SubscriptionController::class, 'staffCreate'])->name('create');
-            Route::post('/', [SubscriptionController::class, 'staffStore'])->name('store');
-            Route::get('/{studentSubscription}', [SubscriptionController::class, 'staffShow'])->name('show');
-            Route::get('/reports', [SubscriptionController::class, 'staffReports'])->name('reports');
-        });
     });
 });
 

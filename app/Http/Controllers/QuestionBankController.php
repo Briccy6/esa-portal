@@ -466,9 +466,9 @@ class QuestionBankController extends Controller
                         'biology_topic' => isset($questionData['biology_topic']) ? substr(trim($questionData['biology_topic']), 0, 100) : null,
                         'diagram_labels' => isset($questionData['diagram_labels']) ? substr(trim($questionData['diagram_labels']), 0, 500) : null,
                         'keywords' => isset($questionData['keywords']) ? substr(trim($questionData['keywords']), 0, 500) : null,
-                        'difficulty_level' => is_numeric($questionData['difficulty_level'] ?? 1) && $questionData['difficulty_level'] >= 1 && $questionData['difficulty_level'] <= 5 
+                        'difficulty_level' => isset($questionData['difficulty_level']) && is_numeric($questionData['difficulty_level']) && $questionData['difficulty_level'] >= 1 && $questionData['difficulty_level'] <= 5 
                             ? (int)$questionData['difficulty_level'] : 1,
-                        'weight' => is_numeric($questionData['weight'] ?? 1.0) && $questionData['weight'] > 0 && $questionData['weight'] <= 10 
+                        'weight' => isset($questionData['weight']) && is_numeric($questionData['weight']) && $questionData['weight'] > 0 && $questionData['weight'] <= 10 
                             ? (float)$questionData['weight'] : 1.0,
                     ];
                     

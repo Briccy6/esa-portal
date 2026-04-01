@@ -447,6 +447,8 @@
 
         {{-- Main Content --}}
         <div class="main-content">
+            <!-- Laravel Flash Messages -->
+            @include('components.laravel-flash')
             <div class="content-wrapper p-4">
                 @yield('content')
             </div>

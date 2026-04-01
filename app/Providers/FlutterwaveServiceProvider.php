@@ -3,7 +3,8 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use Flutterwavedev\Flutterwave\Flutterwave;
+use Flutterwave\Config\ForkConfig;
+use Flutterwave\Flutterwave;
 
 class FlutterwaveServiceProvider extends ServiceProvider
 {
@@ -23,11 +24,17 @@ class FlutterwaveServiceProvider extends ServiceProvider
         // Only configure Flutterwave if all required keys are present
         if (config('services.flutterwave.secret_key') && config('services.flutterwave.public_key')) {
             try {
-                Flutterwave::configure([
-                    'secret_key' => config('services.flutterwave.secret_key'),
-                    'public_key' => config('services.flutterwave.public_key'),
-                    'encryption_key' => config('services.flutterwave.encryption_key'),
-                ]);
+                $config = ForkConfig::setUp(
+                    config('services.flutterwave.secret_key'),
+                    config('services.flutterwave.public_key'),
+                    config('services.flutterwave.encryption_key'),
+                    'staging' // Use staging environment
+                );
+                
+                Flutterwave::bootstrap($config);
+                
+                \Log::info('Flutterwave configured successfully');
+                
             } catch (\Exception $e) {
                 // Log the error but don't break the application
                 \Log::warning('Flutterwave configuration failed: ' . $e->getMessage());

@@ -239,22 +239,29 @@ class ExamQuestionController extends Controller
 
         $questions = [];
         while (($row = fgetcsv($handle)) !== false) {
+            // Map CSV columns to database fields
+            // CSV format: question_type,text,option_a,option_b,option_c,option_d,correct_answer,marks,difficulty_level,subject_area,explanation,keywords,weight
             $questions[] = [
-                'text' => $row[0],
-                'option_a' => $row[1],
-                'option_b' => $row[2],
-                'option_c' => $row[3],
-                'option_d' => $row[4],
-                'correct_answer' => $row[5],
-                'marks' => $row[6],
-                'exam_id' => $request->exam_id, // Make sure to pass exam_id in your form
+                'text' => $row[1] ?? '', // text column (index 1)
+                'option_a' => $row[2] ?? '', // option_a column (index 2)
+                'option_b' => $row[3] ?? '', // option_b column (index 3)
+                'option_c' => $row[4] ?? '', // option_c column (index 4)
+                'option_d' => $row[5] ?? '', // option_d column (index 5)
+                'correct_answer' => $row[6] ?? '', // correct_answer column (index 6)
+                'marks' => $row[7] ?? 1, // marks column (index 7)
+                'exam_id' => $request->exam_id,
+                'created_at' => now(),
+                'updated_at' => now(),
             ];
         }
         fclose($handle);
 
-        // Bulk insert
-        \App\Models\Question::insert($questions);
+        if (!empty($questions)) {
+            // Bulk insert
+            \App\Models\Question::insert($questions);
+            return back()->with('success', count($questions) . ' questions imported successfully!');
+        }
 
-        return back()->with('success', 'Questions imported successfully!');
+        return back()->with('error', 'No questions found in the CSV file.');
     }
 }

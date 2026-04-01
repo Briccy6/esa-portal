@@ -759,6 +759,47 @@
 
     <!-- Top Navbar -->
     <div class="top-navbar">
+        <!-- Laravel Flash Messages -->
+    @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            {{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
+    @if(session('warning'))
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            {{ session('warning') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
+    @if(session('info'))
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            {{ session('info') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
+    <!-- Laravel Validation Errors -->
+    @if($errors->any())
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <strong>Validation Error:</strong>
+            <ul class="mb-0 mt-2">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
         <div class="navbar-left">
             <button class="menu-toggle d-none d-md-block" id="menuToggle">
                 <i class="fas fa-bars"></i>
@@ -906,14 +947,21 @@
                     </div>
                     
                     <div class="nav-item">
-                        <a href="{{ route('admin.teachers.create') }}" class="nav-link {{ request()->routeIs('admin.teachers.create') ? 'active' : '' }}">
+                        <a href="{{ route('admin.dismissed-students.index') }}" class="nav-link {{ request()->routeIs('admin.dismissed-students.*') ? 'active' : '' }}">
+                            <i class="fas fa-user-times"></i>
+                            <span class="nav-text">Dismissed Students</span>
+                        </a>
+                    </div>
+                    
+                    <div class="nav-item">
+                        <a href="{{ route('admin.teachers.index') }}" class="nav-link {{ request()->routeIs('admin.teachers.*') ? 'active' : '' }}">
                             <i class="fas fa-chalkboard-teacher"></i>
                             <span class="nav-text">Teachers</span>
                         </a>
                     </div>
                     
                     <div class="nav-item">
-                        <a href="{{ route('admin.staff.create') }}" class="nav-link {{ request()->routeIs('admin.staff.create') ? 'active' : '' }}">
+                        <a href="{{ route('admin.staff.index') }}" class="nav-link {{ request()->routeIs('admin.staff.*') ? 'active' : '' }}">
                             <i class="fas fa-users"></i>
                             <span class="nav-text">Staff Members</span>
                         </a>

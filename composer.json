@@ -30,6 +30,9 @@
         "symfony/process": "^6.3|^7.0",
         "tecnickcom/tcpdf": "^6.11"
     },
+    "suggest": {
+        "ext-pdo_sqlite": "Required to run PHPUnit/Pest tests with the default sqlite :memory: configuration in phpunit.xml."
+    },
     "require-dev": {
         "fakerphp/faker": "^1.23",
         "laravel/pail": "^1.2.2",

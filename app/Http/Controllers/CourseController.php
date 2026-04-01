@@ -78,13 +78,6 @@ class CourseController extends Controller
         return redirect()->back()->withErrors(['academic_year' => 'No ongoing academic year is set.']);
     }
 
-    $totalCost = $this->calculateTotalCost(
-        $request->tuition_fee,
-        $request->practical_fee,
-        $request->trip_fee,
-        $request->discount_fee
-    );
-
     $course = Course::create([
         'course_name'      => $validated['course_name'],
         'abbreviation'     => $validated['abbreviation'],
@@ -95,7 +88,6 @@ class CourseController extends Controller
         'practical_fee'    => $request->input('practical_fee', 0),
         'trip_fee'         => $request->input('trip_fee', 0),
         'discount_fee'     => $request->input('discount_fee', 0),
-        'total_cost'      => $totalCost,
     ]);
 
     $randomNumber = rand(100, 999);
@@ -154,16 +146,6 @@ public function update(Request $request, $id)
         }
     }
 
-    $totalCost = $course->total_cost;
-    if ($feeChanged) {
-        $totalCost = $this->calculateTotalCost(
-            $request->input('tuition_fee', 0),
-            $request->input('practical_fee', 0),
-            $request->input('trip_fee', 0),
-            $request->input('discount_fee', 0)
-        );
-    }
-
     $course->update([
         'course_name'      => $validated['course_name'],
         'abbreviation'     => $validated['abbreviation'],
@@ -174,7 +156,6 @@ public function update(Request $request, $id)
         'practical_fee'    => $request->input('practical_fee', null),
         'trip_fee'         => $request->input('trip_fee', null),
         'discount_fee'     => $request->input('discount_fee', null),
-        'total_cost' => $totalCost,
     ]);
 
     // Sync branches
@@ -313,17 +294,4 @@ public function getBranchesByCourse(Request $request) {
 }
 
 
-private function calculateTotalCost($tuition, $practical, $trip, $discount)
-{
-    $tuition = floatval($tuition ?? 0);
-    $practical = floatval($practical ?? 0);
-    $trip = floatval($trip ?? 0);
-    $discount = floatval($discount ?? 0);
-    
-    $subtotal = $tuition + $practical + $trip;
-    if ($discount > 0 && $discount <= 100) {
-        return round($subtotal - ($subtotal * ($discount / 100)), 2);
-    }
-    return round($subtotal, 2);
-}
 }

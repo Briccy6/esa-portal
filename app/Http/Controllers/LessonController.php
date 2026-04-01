@@ -84,7 +84,13 @@ return view('staff.lessons.create', compact('courses', 'teachers', 'ongoingAcade
         // Attach terms
         $lesson->terms()->attach($validated['terms']);
 
-        // Redirect to lesson details creation page with lesson ID, course ID, and term IDs
+        // Check if user is staff/DOS and redirect appropriately
+        if (auth('staff')->check()) {
+            return redirect()->route('staff.lessons.index')
+                             ->with('success', 'Lesson created successfully.');
+        }
+        
+        // For admin users, redirect to lesson details creation
         return redirect()->route('staff.lesson.details.create', [
             'lesson' => $lesson->id,
             'course_id' => $lesson->course_id,

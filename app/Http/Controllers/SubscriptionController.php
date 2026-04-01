@@ -55,19 +55,59 @@ class SubscriptionController extends Controller
 
     public function completePayment(Request $request, StudentSubscription $studentSubscription)
     {
-        // Ensure user owns this subscription
-        if ($studentSubscription->student_id !== Auth::id()) {
-            abort(403);
+        try {
+            // Ensure user owns this subscription
+            if ($studentSubscription->student_id !== Auth::id()) {
+                abort(403, 'Unauthorized access to subscription');
+            }
+
+            // Validate the request with custom error messages
+            $validated = $request->validate([
+                'payment_reference' => 'required|string|max:255|min:3',
+            ], [
+                'payment_reference.required' => 'Payment reference number is required.',
+                'payment_reference.string' => 'Payment reference must be a valid text.',
+                'payment_reference.max' => 'Payment reference cannot exceed 255 characters.',
+                'payment_reference.min' => 'Payment reference must be at least 3 characters long.',
+            ]);
+
+            // Check if already paid
+            if ($studentSubscription->payment_status === 'completed') {
+                return redirect()->route('subscriptions.index')
+                    ->with('warning', 'This subscription has already been paid for.');
+            }
+
+            // Process the payment
+            DB::beginTransaction();
+            
+            $studentSubscription->markAsPaid($validated['payment_reference']);
+            
+            DB::commit();
+
+            return redirect()->route('dashboard')
+                ->with('success', 'Subscription activated successfully! Tokens have been added to your account.');
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Laravel will automatically redirect back with validation errors
+            return redirect()->back()
+                ->withErrors($e->errors())
+                ->withInput()
+                ->with('error', 'Please correct the errors below.');
+                
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            // Log the error for debugging
+            Log::error('Subscription payment error', [
+                'student_subscription_id' => $studentSubscription->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()->back()
+                ->with('error', 'An error occurred while processing your payment. Please try again.')
+                ->withInput();
         }
-
-        $request->validate([
-            'payment_reference' => 'required|string|max:255',
-        ]);
-
-        $studentSubscription->markAsPaid($request->payment_reference);
-
-        return redirect()->route('dashboard')
-            ->with('success', 'Subscription activated successfully! Tokens have been added to your account.');
     }
 
     public function adminIndex()

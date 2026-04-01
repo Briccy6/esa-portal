@@ -1,7 +1,7 @@
 @php
-    $systemName = \Illuminate\Support\Facades\Cache::get('esa_system_name', 'ESA-Parnel');
-    $logoUrl = \App\Helpers\LogoHelper::getLogoUrl();
-    $systemLogo = \App\Helpers\LogoHelper::getSystemLogo();
+    $systemName = 'ESA-Parnel'; // Static value to avoid cache dependency
+    $logoUrl = asset('images/esa.jpg'); // Static logo URL
+    $systemLogo = 'images/esa.jpg'; // Static system logo
 @endphp
 <!DOCTYPE html>
 <html lang="en">
@@ -10,7 +10,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{$systemName}}</title>
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <link rel="icon" type="image/png" href="{{ \App\Helpers\LogoHelper::getFaviconUrl() }}">
+    <link rel="icon" type="image/png" href="{{ asset('images/esa.jpg') }}">
 
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>

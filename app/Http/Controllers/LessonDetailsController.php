@@ -65,7 +65,8 @@ public function index() {
     public function show($id)
     {
         $detail = LessonUnit::with('lesson', 'term')->findOrFail($id);
-        return view('details.show', compact('detail'));
+
+        return redirect()->route('staff.lessons.show', $detail->lesson_id);
     }
 
     /**
@@ -73,8 +74,8 @@ public function index() {
      */
     public function edit($id)
     {
-        $detail = LessonUnit::findOrFail($id);
-        $terms = Term::all();
+        $detail = LessonUnit::with('lesson.course')->findOrFail($id);
+        $terms = Term::with('academicYear')->orderBy('name')->get();
         return view('details.edit', compact('detail', 'terms'));
     }
 
@@ -93,7 +94,7 @@ public function index() {
 
     $detail->update($request->only('unit_name', 'hours', 'term_id'));
 
-    return redirect()->route('lessons.show', $detail->lesson_id)
+    return redirect()->route('staff.lessons.show', $detail->lesson_id)
                      ->with('success', 'Lesson detail updated successfully.');
 }
 
@@ -107,7 +108,7 @@ public function index() {
         $lessonId = $detail->lesson_id;
         $detail->delete();
 
-        return redirect()->route('lessons.show', $lessonId)
+        return redirect()->route('staff.lessons.show', $lessonId)
                          ->with('success', 'Lesson detail deleted successfully.');
     }
 }

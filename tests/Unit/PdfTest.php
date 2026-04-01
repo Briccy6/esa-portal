@@ -1,7 +1,9 @@
 <?php
 
-use Illuminate\Support\Facades\App;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Tests\TestCase;
+
+uses(TestCase::class);
 
 test('pdf generation works', function () {
     try {

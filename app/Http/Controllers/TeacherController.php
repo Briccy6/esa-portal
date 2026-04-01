@@ -92,7 +92,7 @@ class TeacherController extends Controller
         Mail::to($teacher->email)->send(new \App\Mail\TeacherWelcomeMail($teacher, $randomPassword));
 
         return redirect()
-            ->route('teachers.index')
+            ->route('admin.teachers.index')
             ->with('success', 'Teacher created successfully!')
             ->with('temp_password', $randomPassword);
     }
@@ -116,58 +116,97 @@ class TeacherController extends Controller
     public function update(Request $request, Teacher $teacher)
     {
         $data = $request->validate([
-            // Personal Information
-            'teacher_name' => 'required|string|max:255',
+            // Personal Information - all optional for partial updates
+            'teacher_name' => 'sometimes|string|max:255',
             'teacher_id_number' => [
-                'required',
+                'sometimes',
                 'string',
                 'max:50',
                 Rule::unique('teachers', 'teacher_id_number')->ignore($teacher->id)
             ],
             'id_number' => [
-                'required',
+                'sometimes',
                 'string',
                 'max:20',
                 Rule::unique('teachers', 'id_number')->ignore($teacher->id)
             ],
-            'telephone' => 'required|string|max:20',
+            'telephone' => 'sometimes|string|max:20',
             'email' => [
-                'required',
+                'sometimes',
                 'email',
                 'max:255',
                 Rule::unique('teachers', 'email')->ignore($teacher->id)
             ],
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:100', // Max 100KB, nullable for updates
 
-            // Professional Information
-            'branch_ids' => 'required|array',
+            // Professional Information - all optional for partial updates
+            'branch_ids' => 'sometimes|array',
             'branch_ids.*' => 'exists:branches,id',
-            'department' => ['required', Rule::in(['All', 'REB Combinations', 'RTB Trades', 'Training', 'Internship'])],
-            'employment_type' => ['required', Rule::in(['Permanent', 'Short Term', 'Casual'])],
-            'level_of_education' => ['required', Rule::in(['Bachelor\'s Degree', 'Master\'s Degree', 'PhD', 'Diploma', 'Certificate', 'Other'])],
+            'department' => ['sometimes', Rule::in(['All', 'REB Combinations', 'RTB Trades', 'Training', 'Internship'])],
+            'employment_type' => ['sometimes', Rule::in(['Permanent', 'Short Term', 'Casual'])],
+            'level_of_education' => ['sometimes', Rule::in(['Bachelor\'s Degree', 'Master\'s Degree', 'PhD', 'Diploma', 'Certificate', 'Other'])],
 
-            // Financial Information
-            'salary' => 'required|numeric|min:0|max:99999999.99',
+            // Financial Information - optional for partial updates
+            'salary' => 'sometimes|numeric|min:0|max:99999999.99',
 
-            // Course Assignment
+            // Course Assignment - optional
             'courses' => 'nullable|array',
             'courses.*' => 'exists:courses,id',
         ]);
 
-        // Handle photo upload as base64
-        if ($request->hasFile('photo')) {
-            $data['photo'] = base64_encode(file_get_contents($request->file('photo')->getRealPath()));
-        } else {
-            unset($data['photo']);
+        // Only update fields that were actually provided in the request
+        $updateData = [];
+        
+        // Personal Information - only update if provided
+        if ($request->filled('teacher_name')) {
+            $updateData['teacher_name'] = $data['teacher_name'];
+        }
+        if ($request->filled('teacher_id_number')) {
+            $updateData['teacher_id_number'] = $data['teacher_id_number'];
+        }
+        if ($request->filled('id_number')) {
+            $updateData['id_number'] = $data['id_number'];
+        }
+        if ($request->filled('telephone')) {
+            $updateData['telephone'] = $data['telephone'];
+        }
+        if ($request->filled('email')) {
+            $updateData['email'] = $data['email'];
         }
 
-        $teacher->update($data);
+        // Handle photo upload as base64 - only if new photo provided
+        if ($request->hasFile('photo')) {
+            $updateData['photo'] = base64_encode(file_get_contents($request->file('photo')->getRealPath()));
+        }
 
-        // Sync courses and branches
-        $teacher->courses()->sync($request->input('courses', []));
-        $teacher->branches()->sync($request->input('branch_ids', []));
+        // Professional Information - only update if provided
+        if ($request->filled('department')) {
+            $updateData['department'] = $data['department'];
+        }
+        if ($request->filled('employment_type')) {
+            $updateData['employment_type'] = $data['employment_type'];
+        }
+        if ($request->filled('level_of_education')) {
+            $updateData['level_of_education'] = $data['level_of_education'];
+        }
+        if ($request->filled('salary')) {
+            $updateData['salary'] = $data['salary'];
+        }
 
-        return redirect()->route('teachers.index')->with('success', 'Teacher updated successfully.');
+        // Only update if there's actually data to update
+        if (!empty($updateData)) {
+            $teacher->update($updateData);
+        }
+
+        // Sync relationships - only if provided
+        if ($request->has('courses')) {
+            $teacher->courses()->sync($request->input('courses', []));
+        }
+        if ($request->has('branch_ids')) {
+            $teacher->branches()->sync($request->input('branch_ids', []));
+        }
+
+        return redirect()->route('admin.teachers.index')->with('success', 'Teacher updated successfully.');
     }
 
     public function destroy(Teacher $teacher)

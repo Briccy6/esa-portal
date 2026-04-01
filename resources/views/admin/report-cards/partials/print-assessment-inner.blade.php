@@ -1,12 +1,16 @@
 @php
     $hdrSchoolName = optional($schoolInfo)->school_name ?: 'SCHOOL NAME';
+    $hdrAddress = optional($schoolInfo)->address ?: 'School Address';
     $hdrPhone = optional($schoolInfo)->phone ?: 'School Phone';
     $hdrEmail = optional($schoolInfo)->email ?: 'school@email.com';
-    $hdrWebsite = optional($schoolInfo)->website ?: 'www.schoolwebsite.rw';
+    $hdrWebsite = optional($schoolInfo)->website;
+    $hdrPrincipal = optional($schoolInfo)->principal_name ?: 'School Manager';
     $hasLogo = $schoolInfo && !empty($schoolInfo->logo_url);
+    $hasPrincipalSignature = $schoolInfo && !empty($schoolInfo->principal_signature_url);
+    $hasStampSignature = $schoolInfo && !empty($schoolInfo->stamp_signature_url);
 @endphp
 
-<!-- Header: left logo | student + school details | right logo -->
+<!-- Header: left logo | student + school details | passport photo -->
 <table class="print-header-table" cellspacing="0" cellpadding="0">
     <tr>
         <td class="print-header-logo">
@@ -25,15 +29,18 @@
 
             <div class="hdr-school-name">{{ $hdrSchoolName }}</div>
 
+            <div class="hdr-contact"><span class="lbl">Address:</span> {{ $hdrAddress }}</div>
             <div class="hdr-contact"><span class="lbl">Phone:</span> {{ $hdrPhone }}</div>
             <div class="hdr-contact"><span class="lbl">E-mail:</span> {{ $hdrEmail }}</div>
-            <div class="hdr-contact"><span class="lbl">Website:</span> {{ $hdrWebsite }}</div>
+            @if(!empty($hdrWebsite))
+                <div class="hdr-contact"><span class="lbl">Website:</span> {{ $hdrWebsite }}</div>
+            @endif
         </td>
         <td class="print-header-logo print-header-logo--right">
-            @if($hasLogo)
-                <img src="{{ $schoolInfo->logo_url }}" alt="" class="school-logo-img">
+            @if(!empty($studentPhotoBase64))
+                <img src="data:{{ $studentPhotoMime ?? 'image/jpeg' }};base64,{{ $studentPhotoBase64 }}" alt="Student Photo" class="school-logo-img">
             @else
-                <div class="print-logo-placeholder">LOGO</div>
+                <div class="print-logo-placeholder">PHOTO</div>
             @endif
         </td>
     </tr>
@@ -187,7 +194,7 @@
                 <th>Promoted after re-assessment</th>
                 <th>Advised to Repeat</th>
                 <th>Dismissed</th>
-                <th>School Manager<br>Hirwa Alain Brian<br>SIGNATURE<br>____/____/{{ date('Y') }}</th>
+                    <th>School Manager<br>{{ $hdrPrincipal }}<br>SIGNATURE<br>____/____/{{ date('Y') }}</th>
             </tr>
         </thead>
         <tbody>
@@ -198,7 +205,14 @@
                 <td><input type="checkbox" class="checkbox"></td>
                 <td><input type="checkbox" class="checkbox"></td>
                 <td><input type="checkbox" class="checkbox"></td>
-                <td></td>
+                <td style="text-align:center;">
+                    @if($hasPrincipalSignature)
+                        <img src="{{ $schoolInfo->principal_signature_url }}" alt="Principal Signature" style="max-height: 28px; max-width: 96px; margin-right: 4px;">
+                    @endif
+                    @if($hasStampSignature)
+                        <img src="{{ $schoolInfo->stamp_signature_url }}" alt="School Stamp" style="max-height: 32px; max-width: 70px;">
+                    @endif
+                </td>
             </tr>
         </tbody>
     </table>

@@ -382,7 +382,7 @@ body {
                                 <select name="lesson_id" id="lesson_id" class="form-select" required>
                                     <option value="">Select Lesson</option>
                                     @foreach($lessons as $lesson)
-                                        <option value="{{ $lesson->id }}" data-course="{{ $lesson->course_id }}" {{ old('lesson_id') == $lesson->id ? 'selected' : '' }}>
+                                        <option value="{{ $lesson->id }}" data-course-id="{{ $lesson->course_id }}" {{ old('lesson_id') == $lesson->id ? 'selected' : '' }}>
                                             {{ $lesson->title ?? $lesson->name }}
                                         </option>
                                     @endforeach
@@ -663,9 +663,9 @@ body {
         var lessonSelect = document.getElementById('lesson_id');
         Array.from(lessonSelect.options).forEach(function(option) {
             if (!option.value) return;
-            option.style.display = option.getAttribute('data-course') == courseId ? 'block' : 'none';
+            option.style.display = option.getAttribute('data-course-id') == courseId ? 'block' : 'none';
         });
-        if (lessonSelect.selectedOptions.length && lessonSelect.selectedOptions[0].getAttribute('data-course') != courseId) {
+        if (lessonSelect.selectedOptions.length && lessonSelect.selectedOptions[0].getAttribute('data-course-id') != courseId) {
             lessonSelect.value = '';
         }
         updateShowStudentsBtn();

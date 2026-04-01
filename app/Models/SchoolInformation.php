@@ -36,15 +36,38 @@ class SchoolInformation extends Model
 
     public static function getActive()
     {
-        return static::where('is_active', true)->first();
+        return static::query()
+            ->orderByDesc('is_active')
+            ->orderByDesc('updated_at')
+            ->first();
+    }
+
+    protected function toImageDataUrl(?string $binary, string $fallbackMime = 'image/jpeg'): ?string
+    {
+        if (empty($binary)) {
+            return null;
+        }
+
+        $mime = $fallbackMime;
+        if (function_exists('finfo_open')) {
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $detected = $finfo ? finfo_buffer($finfo, $binary) : null;
+            if ($finfo) {
+                finfo_close($finfo);
+            }
+            if (is_string($detected) && str_starts_with($detected, 'image/')) {
+                $mime = $detected;
+            }
+        }
+
+        return 'data:'.$mime.';base64,'.base64_encode($binary);
     }
 
     public function getLogoUrlAttribute()
     {
         $logo = $this->attributes['logo'] ?? null;
         if ($logo) {
-            // Database storage - return base64 data URL
-            return 'data:image/jpeg;base64,' . base64_encode($logo);
+            return $this->toImageDataUrl($logo);
         } elseif ($this->logo_path) {
             // File storage
             return asset('storage/' . $this->logo_path);
@@ -56,8 +79,7 @@ class SchoolInformation extends Model
     {
         $signature = $this->attributes['principal_signature_data'] ?? null;
         if ($signature) {
-            // Database storage - return base64 data URL
-            return 'data:image/jpeg;base64,' . base64_encode($signature);
+            return $this->toImageDataUrl($signature);
         } elseif ($this->principal_signature) {
             // File storage
             return asset('storage/' . $this->principal_signature);
@@ -69,8 +91,7 @@ class SchoolInformation extends Model
     {
         $signature = $this->attributes['stamp_signature_data'] ?? null;
         if ($signature) {
-            // Database storage - return base64 data URL
-            return 'data:image/jpeg;base64,' . base64_encode($signature);
+            return $this->toImageDataUrl($signature);
         } elseif ($this->stamp_signature) {
             // File storage
             return asset('storage/' . $this->stamp_signature);

@@ -35,8 +35,8 @@ class ReportController extends Controller
         $students = Student::with(['course', 'branch'])->latest()->take(10)->get();
 
         // Teacher Dailies
-        $approvedDailies = TeacherDaily::where('approved', true)->count();
-        $pendingDailies = TeacherDaily::where('approved', false)->count();
+        $totalDailies = TeacherDaily::count();
+        $recentDailies = TeacherDaily::latest()->take(5)->get();
 
         $from = $request->input('from', \Carbon\Carbon::now()->startOfMonth()->toDateString());
         $to = $request->input('to', \Carbon\Carbon::now()->toDateString());
@@ -106,8 +106,8 @@ class ReportController extends Controller
             'studentCount',
             'paymentTotal',
             'students',
-            'approvedDailies',
-            'pendingDailies',
+            'totalDailies',
+            'recentDailies',
             'expenses',
             'expenseTotal',
             'attendanceRecords',

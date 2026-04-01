@@ -313,7 +313,7 @@ window.MathJax = {
       <div class="modal-body">
         <div class="mb-3">
           <label for="questionsFile" class="form-label">Upload CSV or Excel File</label>
-          <input type="file" class="form-control" id="questionsFile" name="questions_file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" required>
+          <input type="file" class="form-control" id="questionsFile" name="file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" required>
           <div class="form-text">
               Download a <a href="{{ asset('questions_template.csv') }}" download>sample template</a>.
           </div>

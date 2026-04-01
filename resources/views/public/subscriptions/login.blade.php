@@ -51,18 +51,12 @@
                     <input id="email" name="email" type="email" required autocomplete="email"
                            class="mt-1 block w-full px-3 py-2 border border-slate-300 bg-white text-slate-800 rounded-md shadow-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                            value="{{ old('email') }}">
-                    @error('email')
-                        <span class="text-rose-300 text-xs">{{ $message }}</span>
-                    @enderror
                 </div>
 
                 <div>
                     <label for="password" class="block text-sm font-medium text-slate-800">Password</label>
                     <input id="password" name="password" type="password" required autocomplete="current-password"
                            class="mt-1 block w-full px-3 py-2 border border-slate-300 bg-white text-slate-800 rounded-md shadow-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
-                    @error('password')
-                        <span class="text-rose-300 text-xs">{{ $message }}</span>
-                    @enderror
                 </div>
 
                 <div class="flex items-center justify-between">

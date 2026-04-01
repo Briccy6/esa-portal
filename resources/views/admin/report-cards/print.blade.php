@@ -225,7 +225,7 @@
 </head>
 <body>
     <div class="print-area">
-        @include('admin.report-cards.partials.print-assessment-inner', compact('reportCard', 'schoolInfo'))
+        @include('admin.report-cards.partials.print-assessment-inner', compact('reportCard', 'schoolInfo', 'studentPhotoBase64', 'studentPhotoMime'))
     </div>
 </body>
 </html>

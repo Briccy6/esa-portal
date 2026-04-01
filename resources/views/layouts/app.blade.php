@@ -60,52 +60,32 @@
 <body class="bg-gray-50 min-h-screen">
     @include('components.public-navbar')
 
-    <!-- Flash Messages -->
+    <!-- Laravel Flash Messages -->
     @if(session('success'))
-        <div class="bg-green-50 border-b border-green-200" id="flash-success">
-            <div class="container mx-auto px-4 py-3">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center">
-                        <i class="fas fa-check-circle text-green-600 mr-3"></i>
-                        <p class="text-green-800">{{ session('success') }}</p>
-                    </div>
-                    <button onclick="this.parentElement.parentElement.parentElement.remove()" class="text-green-600 hover:text-green-800 ml-4">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            </div>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     @endif
 
     @if(session('error'))
-        <div class="bg-red-50 border-b border-red-200" id="flash-error">
-            <div class="container mx-auto px-4 py-3">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center">
-                        <i class="fas fa-exclamation-circle text-red-600 mr-3"></i>
-                        <p class="text-red-800">{{ session('error') }}</p>
-                    </div>
-                    <button onclick="this.parentElement.parentElement.parentElement.remove()" class="text-red-600 hover:text-red-800 ml-4">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            </div>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            {{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     @endif
 
     @if(session('warning'))
-        <div class="bg-yellow-50 border-b border-yellow-200" id="flash-warning">
-            <div class="container mx-auto px-4 py-3">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center">
-                        <i class="fas fa-exclamation-triangle text-yellow-600 mr-3"></i>
-                        <p class="text-yellow-800">{{ session('warning') }}</p>
-                    </div>
-                    <button onclick="this.parentElement.parentElement.parentElement.remove()" class="text-yellow-600 hover:text-yellow-800 ml-4">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            </div>
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            {{ session('warning') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
+    @if(session('info'))
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            {{ session('info') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     @endif
 
@@ -211,6 +191,9 @@
             }, 5000);
         });
     </script>
+    
+    <!-- Extension Error Handler -->
+    <script src="{{ asset('js/extension-error-handler.js') }}"></script>
     
     @stack('scripts')
 </body>

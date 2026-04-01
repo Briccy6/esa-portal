@@ -35,9 +35,6 @@
                             <input id="first_name" name="first_name" type="text" required
                                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                                    value="{{ old('first_name') }}">
-                            @error('first_name')
-                                <span class="text-red-600 text-xs">{{ $message }}</span>
-                            @enderror
                         </div>
                         
                         <div>
@@ -45,9 +42,6 @@
                             <input id="last_name" name="last_name" type="text" required
                                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                                    value="{{ old('last_name') }}">
-                            @error('last_name')
-                                <span class="text-red-600 text-xs">{{ $message }}</span>
-                            @enderror
                         </div>
                     </div>
 
@@ -56,9 +50,6 @@
                         <input id="email" name="email" type="email" required
                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                                value="{{ old('email') }}">
-                        @error('email')
-                            <span class="text-red-600 text-xs">{{ $message }}</span>
-                        @enderror
                     </div>
 
                     <div>
@@ -66,9 +57,6 @@
                         <input id="phone" name="phone" type="tel" required
                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                                value="{{ old('phone') }}">
-                        @error('phone')
-                            <span class="text-red-600 text-xs">{{ $message }}</span>
-                        @enderror
                     </div>
 
                     <div>
@@ -76,9 +64,6 @@
                         <input id="date_of_birth" name="date_of_birth" type="date"
                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                                value="{{ old('date_of_birth') }}">
-                        @error('date_of_birth')
-                            <span class="text-red-600 text-xs">{{ $message }}</span>
-                        @enderror
                     </div>
 
                     <div>
@@ -90,9 +75,6 @@
                             <option value="female" {{ old('gender') == 'female' ? 'selected' : '' }}>Female</option>
                             <option value="other" {{ old('gender') == 'other' ? 'selected' : '' }}>Other</option>
                         </select>
-                        @error('gender')
-                            <span class="text-red-600 text-xs">{{ $message }}</span>
-                        @enderror
                     </div>
                 </div>
 
@@ -104,9 +86,6 @@
                         <label for="address" class="block text-sm font-medium text-gray-700">Address</label>
                         <textarea id="address" name="address" rows="3"
                                   class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">{{ old('address') }}</textarea>
-                        @error('address')
-                            <span class="text-red-600 text-xs">{{ $message }}</span>
-                        @enderror
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
@@ -115,9 +94,6 @@
                             <input id="city" name="city" type="text"
                                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                                    value="{{ old('city') }}">
-                            @error('city')
-                                <span class="text-red-600 text-xs">{{ $message }}</span>
-                            @enderror
                         </div>
                         
                         <div>
@@ -125,9 +101,6 @@
                             <input id="country" name="country" type="text"
                                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                                    value="{{ old('country') }}">
-                            @error('country')
-                                <span class="text-red-600 text-xs">{{ $message }}</span>
-                            @enderror
                         </div>
                     </div>
                 </div>
@@ -140,18 +113,12 @@
                         <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
                         <input id="password" name="password" type="password" required
                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                        @error('password')
-                            <span class="text-red-600 text-xs">{{ $message }}</span>
-                        @enderror
                     </div>
 
                     <div>
                         <label for="password_confirmation" class="block text-sm font-medium text-gray-700">Confirm Password</label>
                         <input id="password_confirmation" name="password_confirmation" type="password" required
                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                        @error('password_confirmation')
-                            <span class="text-red-600 text-xs">{{ $message }}</span>
-                        @enderror
                     </div>
                 </div>
 
@@ -165,9 +132,6 @@
                             and <a href="#" class="text-blue-600 hover:text-blue-500">Privacy Policy</a>
                         </label>
                     </div>
-                    @error('terms')
-                        <span class="text-red-600 text-xs">{{ $message }}</span>
-                    @enderror
                 </div>
 
                 <!-- Submit Button -->

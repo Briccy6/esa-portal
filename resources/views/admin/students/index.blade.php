@@ -254,7 +254,7 @@
                                         class="btn btn-sm btn-outline-danger action-btn" 
                                         data-bs-toggle="tooltip" 
                                         title="Delete Student"
-                                        onclick="confirmDelete({{ $student->id }}, '{{ addslashes($student->full_name) }}')">
+                                        onclick="confirmDelete({{ $student->id }}, '{{ addslashes($student->full_name) }}', '{{ $student->reg_number }}')">
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </div>
@@ -648,34 +648,62 @@
 
 <!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deleteModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
             <div class="modal-header border-0">
                 <h5 class="modal-title text-danger">
-                    <i class="bi bi-exclamation-triangle me-2"></i>Confirm Deletion
+                    <i class="bi bi-exclamation-triangle me-2"></i>Dismiss Student
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body text-center py-4">
-                <div class="delete-icon mb-3">
-                    <i class="bi bi-trash3 display-4 text-danger"></i>
+            <form id="deleteForm" method="POST">
+                @csrf
+                @method('DELETE')
+                <div class="modal-body py-4">
+                    <div class="row">
+                        <div class="col-md-4 text-center">
+                            <div class="delete-icon mb-3">
+                                <i class="bi bi-person-x display-4 text-danger"></i>
+                            </div>
+                            <h6 class="text-danger">Dismiss Student</h6>
+                            <p class="text-muted small">This will remove the student from active records</p>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="alert alert-warning mb-3">
+                                <strong>Student Information:</strong><br>
+                                <span id="studentName"></span><br>
+                                <small class="text-muted">Reg #: <span id="studentRegNumber"></span></small>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="dismissal_reason" class="form-label fw-bold required">
+                                    <i class="bi bi-chat-left-text me-1"></i>Dismissal Reason *
+                                </label>
+                                <textarea name="dismissal_reason" id="dismissal_reason" class="form-control" 
+                                    rows="3" placeholder="Please provide the reason for dismissal..." required></textarea>
+                                <div class="form-text">Minimum 5 characters. This will be recorded in the student's dismissal record.</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="dismissal_notes" class="form-label fw-bold">
+                                    <i class="bi bi-journal-text me-1"></i>Additional Notes (Optional)
+                                </label>
+                                <textarea name="dismissal_notes" id="dismissal_notes" class="form-control" 
+                                    rows="2" placeholder="Any additional information about the dismissal..."></textarea>
+                                <div class="form-text">Maximum 2000 characters</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <h6>Are you sure you want to delete this student?</h6>
-                <p class="text-muted mb-0">
-                    Student: <strong id="studentName"></strong><br>
-                    This action cannot be undone.
-                </p>
-            </div>
-            <div class="modal-footer border-0 justify-content-center">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <form id="deleteForm" method="POST" class="d-inline">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="btn btn-danger">
-                        <i class="bi bi-trash me-1"></i>Delete Student
+                <div class="modal-footer border-0 justify-content-center">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-1"></i>Cancel
                     </button>
-                </form>
-            </div>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-person-x me-1"></i>Dismiss Student
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -1178,6 +1206,106 @@ function showProgressNotification(message) {
             document.getElementById('progressNotification').remove();
         }
     }, 10000);
+}
+
+function confirmDelete(studentId, studentName, studentRegNumber) {
+    console.log('Confirm delete called for:', studentId, studentName, studentRegNumber);
+    
+    // Set modal values
+    const studentNameElement = document.getElementById('studentName');
+    const studentRegNumberElement = document.getElementById('studentRegNumber');
+    
+    if (studentNameElement) {
+        studentNameElement.textContent = studentName;
+    }
+    
+    if (studentRegNumberElement) {
+        studentRegNumberElement.textContent = studentRegNumber;
+    }
+    
+    // Set form action
+    const form = document.getElementById('deleteForm');
+    if (form) {
+        form.action = form.action.replace(':id', studentId);
+        console.log('Form action set to:', form.action);
+    }
+    
+    // Clear previous values
+    const dismissalReasonField = document.getElementById('dismissal_reason');
+    const dismissalNotesField = document.getElementById('dismissal_notes');
+    
+    if (dismissalReasonField) {
+        dismissalReasonField.value = '';
+    }
+    
+    if (dismissalNotesField) {
+        dismissalNotesField.value = '';
+    }
+    
+    // Show modal
+    try {
+        const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+        modal.show();
+        console.log('Modal should be shown');
+    } catch (error) {
+        console.error('Error showing modal:', error);
+        // Fallback to basic confirm
+        if (confirm(`Are you sure you want to dismiss student "${studentName}" (${studentRegNumber})?`)) {
+            // Submit form directly
+            if (form) {
+                form.submit();
+            }
+        }
+    }
+}
+
+function showPasswordModal(regNumber, password) {
+    console.log('Show password modal for:', regNumber);
+    
+    const modalRegNumber = document.getElementById('modalRegNumber');
+    const modalPassword = document.getElementById('modalPassword');
+    
+    if (modalRegNumber) {
+        modalRegNumber.value = regNumber;
+    }
+    
+    if (modalPassword) {
+        modalPassword.value = password;
+    }
+    
+    try {
+        const modal = new bootstrap.Modal(document.getElementById('passwordModal'));
+        modal.show();
+    } catch (error) {
+        console.error('Error showing password modal:', error);
+        alert(`Registration Number: ${regNumber}\nPassword: ${password}`);
+    }
+}
+
+function togglePasswordVisibility() {
+    const passwordField = document.getElementById('modalPassword');
+    const toggleIcon = document.getElementById('togglePasswordIcon');
+    
+    if (passwordField && toggleIcon) {
+        if (passwordField.type === 'password') {
+            passwordField.type = 'text';
+            toggleIcon.className = 'bi bi-eye-slash';
+        } else {
+            passwordField.type = 'password';
+            toggleIcon.className = 'bi bi-eye';
+        }
+    }
+}
+
+function exportToCSV() {
+    console.log('Export to CSV function called');
+    // This would typically trigger a CSV download
+    window.location.href = '{{ route('admin.students.export') }}';
+}
+
+function printTable() {
+    console.log('Print table function called');
+    window.print();
 }
 
 </script>

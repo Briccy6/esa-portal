@@ -536,13 +536,7 @@
                                     <td>{{ $daily->teacher->teacher_name ?? '' }}</td>
                                     <td><span class="badge bg-info">{{ $daily->course->course_name ?? '' }}</span></td>
                                     <td class="text-center fw-bold">{{ $daily->hours_studied }}h</td>
-                                    <td>
-                                        @if($daily->approved)
-                                            <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Approved</span>
-                                        @else
-                                            <span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i>Pending</span>
-                                        @endif
-                                    </td>
+                                    <td>Teacher Daily Entry</td>
                                     <td class="text-center"><span class="badge bg-success">{{ $attendedCount }}</span></td>
                                     <td class="text-center"><span class="badge bg-danger">{{ $absentCount }}</span></td>
                                     <td>
@@ -578,12 +572,12 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="total-summary text-center">
-                                <i class="bi bi-check-circle me-2"></i>Approved: {{ $approvedDailies }}
+                                <i class="bi bi-calendar-check me-2"></i>Total Dailies: {{ $totalDailies }}
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <div class="total-summary text-center" style="background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);">
-                                <i class="bi bi-clock me-2"></i>Pending: {{ $pendingDailies }}
+                            <div class="total-summary text-center" style="background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);">
+                                <i class="bi bi-clock-history me-2"></i>Recent: {{ $recentDailies->count() }}
                             </div>
                         </div>
                     </div>

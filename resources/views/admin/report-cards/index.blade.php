@@ -48,9 +48,14 @@
                     </div>
                     <div class="rc-field rc-field--action">
                         <label class="rc-label">&nbsp;</label>
-                        <button type="submit" class="rc-btn rc-btn--teal w-100">
-                            <i class="fas fa-bolt me-1"></i> Generate for Class
-                        </button>
+                        <div class="d-flex flex-column gap-2 w-100">
+                            <button type="submit" class="rc-btn rc-btn--teal w-100">
+                                <i class="fas fa-bolt me-1"></i> Generate for Class
+                            </button>
+                            <button type="button" class="rc-btn rc-btn--primary w-100" id="btnDownloadClassReportCards" title="PDF of all approved report cards for the selected class, year, and term(s)">
+                                <i class="fas fa-download me-1"></i> Download class report cards (PDF)
+                            </button>
+                        </div>
                     </div>
 
                     {{-- ── CUSTOM MULTI-SELECT TERMS ── --}}
@@ -133,6 +138,7 @@
                         <div class="ms-pills" id="termPills"></div>
 
                         <span class="rc-hint">💡 Click items to select/deselect. Use <strong>Select All</strong> or search to filter.</span>
+                        <span class="rc-hint d-block mt-1"><strong>Download class PDF</strong> builds one file with every <em>approved</em> student report for the course, year, and term(s) you select.</span>
                     </div>
                 </div>
             </form>
@@ -153,10 +159,25 @@
                     <div class="rc-empty__sub">Generate report cards for students to see them here</div>
                 </div>
             @else
+                <form method="POST" action="{{ route('admin.report-cards.bulk-approve') }}" id="bulkApproveForm">
+                    @csrf
+                    <div class="d-flex align-items-center justify-content-between p-3 border-bottom bg-light">
+                        <div class="d-flex align-items-center gap-3">
+                            <label class="mb-0 d-flex align-items-center gap-2">
+                                <input type="checkbox" id="selectAllReportCards">
+                                <span>Select all on this page</span>
+                            </label>
+                            <span class="text-muted"><strong id="selectedReportsCount">0</strong> selected</span>
+                        </div>
+                        <button type="submit" class="rc-btn rc-btn--teal" onclick="return confirm('Approve selected report cards?')">
+                            <i class="fas fa-check-circle"></i> Approve Selected
+                        </button>
+                    </div>
                 <div class="rc-table-wrap">
                     <table class="rc-table">
                         <thead>
                             <tr>
+                                <th class="text-center"><i class="fas fa-check-square me-1 text-success"></i> Select</th>
                                 <th><i class="fas fa-user me-1 text-primary"></i> Student</th>
                                 <th><i class="fas fa-book me-1 text-info"></i> Course</th>
                                 <th class="text-center"><i class="fas fa-calendar me-1 text-secondary"></i> Year / terms</th>
@@ -190,6 +211,16 @@
                                 };
                             @endphp
                             <tr class="rc-table__row rc-table__row--grouped">
+                                <td class="text-center rc-cell-stack">
+                                    @foreach($group as $reportCard)
+                                        <div class="rc-term-metric rc-term-metric--center">
+                                            <label class="mb-0 d-flex align-items-center gap-1">
+                                                <input type="checkbox" class="report-card-checkbox" name="report_card_ids[]" value="{{ $reportCard->id }}">
+                                                <span class="rc-term-pill">{{ $reportCard->term?->name ?? '—' }}</span>
+                                            </label>
+                                        </div>
+                                    @endforeach
+                                </td>
                                 {{-- Student (once per group) --}}
                                 <td>
                                     <div class="rc-student-cell">
@@ -332,6 +363,7 @@
                         </tbody>
                     </table>
                 </div>
+                </form>
 
                 {{-- Pagination --}}
                 @if($reportCardGroups->hasPages())
@@ -1277,6 +1309,69 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Init
     renderAll();
+});
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const selectAll = document.getElementById('selectAllReportCards');
+    const checkboxes = Array.from(document.querySelectorAll('.report-card-checkbox'));
+    const selectedCount = document.getElementById('selectedReportsCount');
+    const bulkForm = document.getElementById('bulkApproveForm');
+
+    function refreshCount() {
+        const checked = checkboxes.filter(cb => cb.checked).length;
+        selectedCount.textContent = String(checked);
+        if (selectAll) {
+            selectAll.checked = checked > 0 && checked === checkboxes.length;
+            selectAll.indeterminate = checked > 0 && checked < checkboxes.length;
+        }
+    }
+
+    if (selectAll) {
+        selectAll.addEventListener('change', function () {
+            checkboxes.forEach(cb => { cb.checked = selectAll.checked; });
+            refreshCount();
+        });
+    }
+
+    checkboxes.forEach(cb => cb.addEventListener('change', refreshCount));
+
+    if (bulkForm) {
+        bulkForm.addEventListener('submit', function (e) {
+            const checked = checkboxes.some(cb => cb.checked);
+            if (!checked) {
+                e.preventDefault();
+                alert('Select at least one report card to approve.');
+            }
+        });
+    }
+
+    refreshCount();
+});
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const btn = document.getElementById('btnDownloadClassReportCards');
+    if (!btn) return;
+    const printClassUrl = @json(route('admin.report-cards.print-class'));
+    btn.addEventListener('click', function () {
+        const form = btn.closest('form');
+        if (!form) return;
+        const courseId = form.querySelector('[name="course_id"]')?.value;
+        const yearId = form.querySelector('[name="academic_year_id"]')?.value;
+        const termSelect = document.getElementById('termNativeSelect');
+        const terms = termSelect ? Array.from(termSelect.selectedOptions).map(function (o) { return o.value; }) : [];
+        if (!courseId || !yearId || terms.length === 0) {
+            alert('Select course, academic year, and at least one term.');
+            return;
+        }
+        const params = new URLSearchParams();
+        params.set('course_id', courseId);
+        params.set('academic_year_id', yearId);
+        params.set('download', '1');
+        terms.forEach(function (t) { params.append('term_ids[]', t); });
+        window.location.href = printClassUrl + '?' + params.toString();
+    });
 });
 </script>
 @endsection

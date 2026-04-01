@@ -190,6 +190,57 @@ class StaffController extends Controller
         return view('staff.course_fees', compact('courses'));
     }
 
+    // Staff login methods
+    public function showLoginForm()
+    {
+        return view('staff.auth.login');
+    }
+
+    public function login(Request $request)
+    {
+        $credentials = $request->validate([
+            'email' => 'required|email',
+            'password' => 'required',
+        ]);
+
+        if (auth()->guard('staff')->attempt($credentials)) {
+            $request->session()->regenerate();
+            
+            return redirect()->route('staff.dashboard')->with('success', 'Welcome back!');
+        }
+
+        return back()->withErrors([
+            'email' => 'The provided credentials do not match our records.',
+        ]);
+    }
+
+    public function logout(Request $request)
+    {
+        auth()->guard('staff')->logout();
+        
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+        
+        return redirect()->route('welcome')->with('success', 'You have been logged out successfully.');
+    }
+
+    public function dashboard()
+    {
+        $staff = auth()->guard('staff')->user();
+        
+        // Get dashboard data based on staff role
+        if ($staff->role === 'DOS') {
+            return redirect()->route('dos.dashboard');
+        } elseif ($staff->role === 'Secretary') {
+            return redirect()->route('secretary.dashboard');
+        } elseif ($staff->role === 'Accountant') {
+            return redirect()->route('accountant.dashboard');
+        }
+        
+        // Default staff dashboard
+        return view('staff.dashboard', compact('staff'));
+    }
+
     // One-time login method
     public function oneTimeLogin(Request $request, Staff $staff)
     {

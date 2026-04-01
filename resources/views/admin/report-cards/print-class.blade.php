@@ -272,7 +272,7 @@
         <div class="student-report">
             <div class="header">
                 <div class="school-info">
-                    @if($schoolInfo && $schoolInfo->logo_path)
+                    @if($schoolInfo && $schoolInfo->logo_url)
                         <img src="{{ $schoolInfo->logo_url }}" alt="School Logo" class="logo">
                     @else
                         <div style="width: 60px; height: 60px; background: #ecf0f1; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
@@ -307,8 +307,11 @@
 
             <div class="student-header">
                 <div class="student-header-left">
-                    @if($reportCard->student->passport_photo)
-                        <img src="data:image/jpeg;base64,{{ base64_encode($reportCard->student->passport_photo) }}" alt="Student Photo" class="student-photo">
+                    @php
+                        $studentPhoto = $studentPhotosByReportId[$reportCard->id] ?? null;
+                    @endphp
+                    @if(!empty($studentPhoto['base64']))
+                        <img src="data:{{ $studentPhoto['mime'] ?? 'image/jpeg' }};base64,{{ $studentPhoto['base64'] }}" alt="Student Photo" class="student-photo">
                     @else
                         <div class="student-photo-placeholder">
                             PHOTO
@@ -410,8 +413,11 @@
             <div class="signature-section">
                 <div class="signature-box">
                     <div class="signature-line">
-                        @if($schoolInfo && $schoolInfo->principal_signature)
+                        @if($schoolInfo && $schoolInfo->principal_signature_url)
                             <img src="{{ $schoolInfo->principal_signature_url }}" alt="Principal Signature" style="max-height: 20px;">
+                        @endif
+                        @if($schoolInfo && $schoolInfo->stamp_signature_url)
+                            <img src="{{ $schoolInfo->stamp_signature_url }}" alt="School Stamp" style="max-height: 20px; margin-left: 6px;">
                         @endif
                     </div>
                     <div>

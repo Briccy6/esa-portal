@@ -18,6 +18,13 @@ class BasicDataSeeder extends Seeder
         // Clear existing data
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
         
+        // Truncate tables to avoid duplicates
+        DB::table('teachers')->truncate();
+        DB::table('branches')->truncate();
+        DB::table('courses')->truncate();
+        DB::table('academic_years')->truncate();
+        DB::table('terms')->truncate();
+        
         // Create basic courses
         $courses = [
             ['course_code' => 'MATH001', 'course_name' => 'Mathematics', 'abbreviation' => 'MATH', 'course_type' => 'Core', 'registration_fee' => 50000, 'tuition_fee' => 200000, 'practical_fee' => 0, 'trip_fee' => 0, 'discount_fee' => 0],
@@ -43,9 +50,9 @@ class BasicDataSeeder extends Seeder
 
         // Create basic teachers
         $teachers = [
-            ['teacher_name' => 'John Doe', 'email' => 'john.doe@esa.rw', 'phone' => '07881234567', 'address' => 'Kigali, Rwanda', 'qualification' => 'Masters in Education', 'branch_id' => 1],
-            ['teacher_name' => 'Jane Smith', 'email' => 'jane.smith@esa.rw', 'phone' => '07881234568', 'address' => 'Kigali, Rwanda', 'qualification' => 'Bachelors in Education', 'branch_id' => 1],
-            ['teacher_name' => 'Robert Johnson', 'email' => 'robert.johnson@esa.rw', 'phone' => '07881234569', 'address' => 'Kigali, Rwanda', 'qualification' => 'Masters in Computer Science', 'branch_id' => 2],
+            ['teacher_name' => 'John Doe', 'email' => 'john.doe@esa.rw', 'telephone' => '07881234567', 'teacher_id_number' => 'TID001', 'id_number' => 'ID001', 'photo' => '', 'department' => 'All', 'level_of_education' => 'Masters in Education', 'branch_id' => 1, 'salary' => 500000],
+            ['teacher_name' => 'Jane Smith', 'email' => 'jane.smith@esa.rw', 'telephone' => '07881234568', 'teacher_id_number' => 'TID002', 'id_number' => 'ID002', 'photo' => '', 'department' => 'All', 'level_of_education' => 'Bachelors in Education', 'branch_id' => 1, 'salary' => 450000],
+            ['teacher_name' => 'Robert Johnson', 'email' => 'robert.johnson@esa.rw', 'telephone' => '07881234569', 'teacher_id_number' => 'TID003', 'id_number' => 'ID003', 'photo' => '', 'department' => 'Training', 'level_of_education' => 'Masters in Computer Science', 'branch_id' => 2, 'salary' => 600000],
         ];
 
         foreach ($teachers as $teacher) {
@@ -58,9 +65,9 @@ class BasicDataSeeder extends Seeder
 
         // Create academic years
         $years = [
-            ['year' => 2026, 'start_date' => '2026-01-01', 'end_date' => '2026-12-31'],
-            ['year' => 2025, 'start_date' => '2025-01-01', 'end_date' => '2025-12-31'],
-            ['year' => 2024, 'start_date' => '2024-01-01', 'end_date' => '2024-12-31'],
+            ['year' => 2026, 'starting_date' => '2026-01-01', 'expiry_date' => '2026-12-31', 'is_ongoing' => 1],
+            ['year' => 2025, 'starting_date' => '2025-01-01', 'expiry_date' => '2025-12-31', 'is_ongoing' => 0],
+            ['year' => 2024, 'starting_date' => '2024-01-01', 'expiry_date' => '2024-12-31', 'is_ongoing' => 0],
         ];
 
         foreach ($years as $year) {

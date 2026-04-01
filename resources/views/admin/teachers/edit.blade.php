@@ -364,13 +364,22 @@
 
                 <!-- Form Section -->
                 <div class="form-section">
+                    <div class="alert alert-info" style="margin-bottom: 2rem; border-radius: 12px; background: linear-gradient(135deg, #e6f3ff, #f0f9ff); border: 1px solid #9ae6b4;">
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <i class="fas fa-info-circle" style="font-size: 1.2rem; color: #1e40af;"></i>
+                            <div>
+                                <strong>Partial Update Enabled:</strong> You can update only the fields you need. Unchanged fields will retain their existing values.
+                            </div>
+                        </div>
+                    </div>
+                    
                     <form method="POST" action="{{ route('admin.teachers.update', $teacher->id) }}" id="editTeacherForm" enctype="multipart/form-data">
                         @csrf
                         @method('PUT')
 
                         <!-- Teacher Name Field -->
                         <div class="form-group">
-                            <label for="name" class="form-label">
+                            <label for="teacher_name" class="form-label">
                                 <span class="label-icon">
                                     <i class="fas fa-user"></i>
                                 </span>
@@ -378,14 +387,85 @@
                             </label>
                             <div class="input-wrapper">
                                 <input type="text" 
-                                       class="form-control @error('name') is-invalid @enderror" 
-                                       name="name" 
-                                       id="name" 
-                                       value="{{ old('name', $teacher->teacher_name) }}" 
-                                       placeholder="Enter teacher's full name"
-                                       required>
+                                       class="form-control @error('teacher_name') is-invalid @enderror" 
+                                       name="teacher_name" 
+                                       id="teacher_name" 
+                                       value="{{ old('teacher_name', $teacher->teacher_name) }}" 
+                                       placeholder="Enter teacher's full name">
                             </div>
-                            @error('name')
+                            @error('teacher_name')
+                                <div class="error-message">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                    {{ $message }}
+                                </div>
+                            @enderror
+                        </div>
+
+                        <!-- Teacher ID Number Field -->
+                        <div class="form-group">
+                            <label for="teacher_id_number" class="form-label">
+                                <span class="label-icon">
+                                    <i class="fas fa-id-card"></i>
+                                </span>
+                                Teacher ID Number
+                            </label>
+                            <div class="input-wrapper">
+                                <input type="text" 
+                                       class="form-control @error('teacher_id_number') is-invalid @enderror" 
+                                       name="teacher_id_number" 
+                                       id="teacher_id_number" 
+                                       value="{{ old('teacher_id_number', $teacher->teacher_id_number) }}" 
+                                       placeholder="Enter teacher ID number">
+                            </div>
+                            @error('teacher_id_number')
+                                <div class="error-message">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                    {{ $message }}
+                                </div>
+                            @enderror
+                        </div>
+
+                        <!-- National ID Number Field -->
+                        <div class="form-group">
+                            <label for="id_number" class="form-label">
+                                <span class="label-icon">
+                                    <i class="fas fa-address-card"></i>
+                                </span>
+                                National ID Number
+                            </label>
+                            <div class="input-wrapper">
+                                <input type="text" 
+                                       class="form-control @error('id_number') is-invalid @enderror" 
+                                       name="id_number" 
+                                       id="id_number" 
+                                       value="{{ old('id_number', $teacher->id_number) }}" 
+                                       placeholder="Enter national ID number">
+                            </div>
+                            @error('id_number')
+                                <div class="error-message">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                    {{ $message }}
+                                </div>
+                            @enderror
+                        </div>
+
+                        <!-- Telephone Field -->
+                        <div class="form-group">
+                            <label for="telephone" class="form-label">
+                                <span class="label-icon">
+                                    <i class="fas fa-phone"></i>
+                                </span>
+                                Telephone
+                            </label>
+                            <div class="input-wrapper">
+                                <input type="tel" 
+                                       class="form-control @error('telephone') is-invalid @enderror" 
+                                       name="telephone" 
+                                       id="telephone" 
+                                       value="{{ old('telephone', $teacher->telephone) }}" 
+                                       placeholder="Enter telephone number">
+                            </div>
+                            @error('telephone')
                                 <div class="error-message">
                                     <i class="fas fa-exclamation-circle"></i>
                                     {{ $message }}
@@ -407,8 +487,7 @@
                                        name="email" 
                                        id="email" 
                                        value="{{ old('email', $teacher->email) }}" 
-                                       placeholder="Enter teacher's email address"
-                                       required>
+                                       placeholder="Enter teacher's email address">
                             </div>
                             @error('email')
                                 <div class="error-message">
@@ -440,6 +519,114 @@
                             <div class="help-text">
                                 Upload a new photo to replace the current one (JPEG/PNG, max 100KB).
                             </div>
+                        </div>
+
+                        <div class="section-divider"></div>
+
+                        <!-- Professional Information Section -->
+                        <div class="form-group">
+                            <label for="department" class="form-label">
+                                <span class="label-icon">
+                                    <i class="fas fa-building"></i>
+                                </span>
+                                Department
+                            </label>
+                            <div class="input-wrapper">
+                                <select class="form-control @error('department') is-invalid @enderror" 
+                                        name="department" 
+                                        id="department">
+                                    <option value="">Select Department</option>
+                                    <option value="All" {{ old('department', $teacher->department) == 'All' ? 'selected' : '' }}>All</option>
+                                    <option value="REB Combinations" {{ old('department', $teacher->department) == 'REB Combinations' ? 'selected' : '' }}>REB Combinations</option>
+                                    <option value="RTB Trades" {{ old('department', $teacher->department) == 'RTB Trades' ? 'selected' : '' }}>RTB Trades</option>
+                                    <option value="Training" {{ old('department', $teacher->department) == 'Training' ? 'selected' : '' }}>Training</option>
+                                    <option value="Internship" {{ old('department', $teacher->department) == 'Internship' ? 'selected' : '' }}>Internship</option>
+                                </select>
+                            </div>
+                            @error('department')
+                                <div class="error-message">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                    {{ $message }}
+                                </div>
+                            @enderror
+                        </div>
+
+                        <div class="form-group">
+                            <label for="employment_type" class="form-label">
+                                <span class="label-icon">
+                                    <i class="fas fa-briefcase"></i>
+                                </span>
+                                Employment Type
+                            </label>
+                            <div class="input-wrapper">
+                                <select class="form-control @error('employment_type') is-invalid @enderror" 
+                                        name="employment_type" 
+                                        id="employment_type">
+                                    <option value="">Select Employment Type</option>
+                                    <option value="Permanent" {{ old('employment_type', $teacher->employment_type) == 'Permanent' ? 'selected' : '' }}>Permanent</option>
+                                    <option value="Short Term" {{ old('employment_type', $teacher->employment_type) == 'Short Term' ? 'selected' : '' }}>Short Term</option>
+                                    <option value="Casual" {{ old('employment_type', $teacher->employment_type) == 'Casual' ? 'selected' : '' }}>Casual</option>
+                                </select>
+                            </div>
+                            @error('employment_type')
+                                <div class="error-message">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                    {{ $message }}
+                                </div>
+                            @enderror
+                        </div>
+
+                        <div class="form-group">
+                            <label for="level_of_education" class="form-label">
+                                <span class="label-icon">
+                                    <i class="fas fa-graduation-cap"></i>
+                                </span>
+                                Level of Education
+                            </label>
+                            <div class="input-wrapper">
+                                <select class="form-control @error('level_of_education') is-invalid @enderror" 
+                                        name="level_of_education" 
+                                        id="level_of_education">
+                                    <option value="">Select Education Level</option>
+                                    <option value="Bachelor's Degree" {{ old('level_of_education', $teacher->level_of_education) == "Bachelor's Degree" ? 'selected' : '' }}>Bachelor's Degree</option>
+                                    <option value="Master's Degree" {{ old('level_of_education', $teacher->level_of_education) == "Master's Degree" ? 'selected' : '' }}>Master's Degree</option>
+                                    <option value="PhD" {{ old('level_of_education', $teacher->level_of_education) == 'PhD' ? 'selected' : '' }}>PhD</option>
+                                    <option value="Diploma" {{ old('level_of_education', $teacher->level_of_education) == 'Diploma' ? 'selected' : '' }}>Diploma</option>
+                                    <option value="Certificate" {{ old('level_of_education', $teacher->level_of_education) == 'Certificate' ? 'selected' : '' }}>Certificate</option>
+                                    <option value="Other" {{ old('level_of_education', $teacher->level_of_education) == 'Other' ? 'selected' : '' }}>Other</option>
+                                </select>
+                            </div>
+                            @error('level_of_education')
+                                <div class="error-message">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                    {{ $message }}
+                                </div>
+                            @enderror
+                        </div>
+
+                        <div class="form-group">
+                            <label for="salary" class="form-label">
+                                <span class="label-icon">
+                                    <i class="fas fa-money-bill-wave"></i>
+                                </span>
+                                Salary
+                            </label>
+                            <div class="input-wrapper">
+                                <input type="number" 
+                                       class="form-control @error('salary') is-invalid @enderror" 
+                                       name="salary" 
+                                       id="salary" 
+                                       value="{{ old('salary', $teacher->salary) }}" 
+                                       placeholder="Enter salary amount"
+                                       step="0.01"
+                                       min="0">
+                            </div>
+                            @error('salary')
+                                <div class="error-message">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                    {{ $message }}
+                                </div>
+                            @enderror
                         </div>
 
                         <div class="section-divider"></div>

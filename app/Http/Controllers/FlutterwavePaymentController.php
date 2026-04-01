@@ -75,8 +75,21 @@ class FlutterwavePaymentController extends Controller
         ];
 
         try {
-            // Initialize Flutterwave payment
-            $payment = Flutterwave::initializePayment($paymentData);
+            // Use direct API call instead of SDK
+            $client = new \GuzzleHttp\Client();
+            
+            $response = $client->post('https://api.flutterwave.com/v3/payments', [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . config('services.flutterwave.secret_key'),
+                    'Content-Type' => 'application/json',
+                ],
+                'json' => $paymentData,
+                'timeout' => 30,
+                'verify' => false, // Disable SSL verification for testing
+            ]);
+            
+            $body = $response->getBody()->getContents();
+            $payment = json_decode($body, true);
 
             if (isset($payment['status']) && $payment['status'] === 'success') {
                 // Update student subscription with transaction reference
@@ -171,8 +184,21 @@ class FlutterwavePaymentController extends Controller
         ];
 
         try {
-            // Initialize Flutterwave payment
-            $payment = Flutterwave::initializePayment($paymentData);
+            // Use direct API call instead of SDK
+            $client = new \GuzzleHttp\Client();
+            
+            $response = $client->post('https://api.flutterwave.com/v3/payments', [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . config('services.flutterwave.secret_key'),
+                    'Content-Type' => 'application/json',
+                ],
+                'json' => $paymentData,
+                'timeout' => 30,
+                'verify' => false, // Disable SSL verification for testing
+            ]);
+            
+            $body = $response->getBody()->getContents();
+            $payment = json_decode($body, true);
 
             if (isset($payment['status']) && $payment['status'] === 'success') {
                 // Create pending transaction record
@@ -229,10 +255,22 @@ class FlutterwavePaymentController extends Controller
         }
 
         try {
-            // Verify transaction with Flutterwave
-            $transaction = Flutterwave::verifyTransaction($tx_ref);
+            // Use direct API call to verify transaction
+            $client = new \GuzzleHttp\Client();
+            
+            $response = $client->get("https://api.flutterwave.com/v3/transactions/{$tx_ref}/verify", [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . config('services.flutterwave.secret_key'),
+                    'Content-Type' => 'application/json',
+                ],
+                'timeout' => 30,
+                'verify' => false, // Disable SSL verification for testing
+            ]);
+            
+            $body = $response->getBody()->getContents();
+            $transaction = json_decode($body, true);
 
-            if ($transaction['status'] === 'success') {
+            if ($transaction['status'] === 'success' && isset($transaction['data']) && $transaction['data']['status'] === 'successful') {
                 $txData = $transaction['data'];
                 $meta = $txData['meta'] ?? [];
                 $paymentType = $meta['type'] ?? '';

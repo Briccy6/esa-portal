@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AccountingReport;
 use App\Models\Account;
 use App\Models\Student;
+use App\Models\SchoolInformation;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -38,8 +39,11 @@ class AccountingController extends Controller
         $startDate = $request->get('start_date') ? Carbon::parse($request->get('start_date')) : null;
         $endDate = $request->get('end_date') ? Carbon::parse($request->get('end_date')) : null;
         $data = AccountingReport::getCashBookData($startDate, $endDate);
+        
+        // Get school information
+        $school = SchoolInformation::getActive();
 
-        return view('admin.accounting.cashbook', compact('data', 'startDate', 'endDate'));
+        return view('admin.accounting.cashbook', compact('data', 'startDate', 'endDate', 'school'));
     }
 
     public function balanceSheet(Request $request)

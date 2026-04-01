@@ -223,7 +223,7 @@ class ReportCardController extends Controller
             'schoolInfo',
             'assessmentMatrix',
         ))
-            ->setPaper('a4', 'landscape')
+            ->setPaper('a4', 'portrait')
             ->setOption([
                 'margin-top' => 8,
                 'margin-bottom' => 8,
@@ -383,6 +383,63 @@ class ReportCardController extends Controller
             ->with('success', 'Report card deleted successfully!');
     }
 
+    public function bulkApprove(Request $request)
+    {
+        $validated = $request->validate([
+            'report_card_ids' => 'required|array|min:1',
+            'report_card_ids.*' => 'integer|exists:report_cards,id',
+        ]);
+
+        $reportCards = ReportCard::query()
+            ->whereIn('id', $validated['report_card_ids'])
+            ->get();
+
+        if ($reportCards->isEmpty()) {
+            return redirect()->route('admin.report-cards.index')
+                ->with('error', 'No report cards selected.');
+        }
+
+        $approved = 0;
+        $alreadyApproved = 0;
+        $cohortsToRecalculate = [];
+
+        foreach ($reportCards as $reportCard) {
+            if ($reportCard->status === 'approved') {
+                $alreadyApproved++;
+                continue;
+            }
+
+            $reportCard->status = 'approved';
+            $reportCard->approved_by = auth('admin')->id();
+            $reportCard->approved_at = now();
+            $reportCard->calculateClassPosition();
+            $reportCard->save();
+            $approved++;
+
+            $cohortKey = $reportCard->course_id.'-'.$reportCard->academic_year_id.'-'.$reportCard->term_id;
+            $cohortsToRecalculate[$cohortKey] = [
+                'course_id' => (int) $reportCard->course_id,
+                'academic_year_id' => (int) $reportCard->academic_year_id,
+                'term_id' => (int) $reportCard->term_id,
+            ];
+        }
+
+        foreach ($cohortsToRecalculate as $cohort) {
+            ReportCard::recalculatePositionsForCohort(
+                $cohort['course_id'],
+                $cohort['academic_year_id'],
+                $cohort['term_id']
+            );
+        }
+
+        $message = "Approved {$approved} report card(s).";
+        if ($alreadyApproved > 0) {
+            $message .= " {$alreadyApproved} were already approved.";
+        }
+
+        return redirect()->route('admin.report-cards.index')->with('success', $message);
+    }
+
     public function generateForClass(Request $request)
     {
         $request->validate([
@@ -454,48 +511,9 @@ class ReportCardController extends Controller
     ]);
 
     $schoolInfo = SchoolInformation::getActive();
-
-    // Resolve student passport photo to base64 for DomPDF
-    $studentPhotoBase64 = null;
-    $studentPhotoMime   = 'image/jpeg';
-
-    if ($reportCard->student->passport_photo) {
-        $photoPath = $reportCard->student->passport_photo;
-
-        // If it's already a full URL (e.g. stored on S3 / external)
-        if (filter_var($photoPath, FILTER_VALIDATE_URL)) {
-            try {
-                $imageData = file_get_contents($photoPath);
-                if ($imageData !== false) {
-                    $studentPhotoMime   = mime_content_type('data://application/octet-stream;base64,' . base64_encode($imageData)) ?? 'image/jpeg';
-                    $studentPhotoBase64 = base64_encode($imageData);
-                }
-            } catch (\Exception $e) {
-                \Log::warning('Could not load remote student photo: ' . $e->getMessage());
-            }
-        } else {
-            // Local file — resolve absolute path
-            // Strip leading slash if present, then resolve via storage or public
-            $localPath = public_path($photoPath);
-
-            if (!file_exists($localPath)) {
-                // Try storage path
-                $localPath = storage_path('app/public/' . ltrim($photoPath, '/'));
-            }
-
-            if (file_exists($localPath)) {
-                $imageData = file_get_contents($localPath);
-                $ext = strtolower(pathinfo($localPath, PATHINFO_EXTENSION));
-                $studentPhotoMime   = match($ext) {
-                    'png'  => 'image/png',
-                    'gif'  => 'image/gif',
-                    'webp' => 'image/webp',
-                    default => 'image/jpeg',
-                };
-                $studentPhotoBase64 = base64_encode($imageData);
-            }
-        }
-    }
+    ['base64' => $studentPhotoBase64, 'mime' => $studentPhotoMime] = $this->resolveStudentPhotoData(
+        $reportCard->student->passport_photo
+    );
 
     $pdf = Pdf::loadView('admin.report-cards.print', compact(
             'reportCard', 'schoolInfo', 'studentPhotoBase64', 'studentPhotoMime'
@@ -555,16 +573,78 @@ class ReportCardController extends Controller
         }
 
         $schoolInfo = SchoolInformation::getActive();
+        $studentPhotosByReportId = [];
+        foreach ($reportCards as $reportCard) {
+            $studentPhotosByReportId[$reportCard->id] = $this->resolveStudentPhotoData($reportCard->student->passport_photo);
+        }
 
-        $pdf = Pdf::loadView('admin.report-cards.print-class', compact('reportCards', 'schoolInfo'))
+        $pdf = Pdf::loadView('admin.report-cards.print-class', compact('reportCards', 'schoolInfo', 'studentPhotosByReportId'))
             ->setPaper('a4')
             ->setOption(['margin-top' => 10, 'margin-bottom' => 10]);
 
         $course = Course::find($request->course_id);
         $academicYear = AcademicYear::find($request->academic_year_id);
         $termsSlug = count($termIds) > 1 ? 'terms-'.implode('-', $termIds) : 'term-'.$termIds[0];
+        $filename = 'class-reports-'.Str::slug($course->course_name).'-'.$academicYear->year.'-'.$termsSlug.'.pdf';
 
-        return $pdf->stream("class-reports-{$course->course_name}-{$academicYear->year}-{$termsSlug}.pdf");
+        if ($request->boolean('download')) {
+            return $pdf->download($filename);
+        }
+
+        return $pdf->stream($filename);
+    }
+
+    /**
+     * @return array{base64: ?string, mime: string}
+     */
+    protected function resolveStudentPhotoData(?string $photoPath): array
+    {
+        $studentPhotoBase64 = null;
+        $studentPhotoMime = 'image/jpeg';
+
+        if (empty($photoPath)) {
+            return ['base64' => null, 'mime' => $studentPhotoMime];
+        }
+
+        if (filter_var($photoPath, FILTER_VALIDATE_URL)) {
+            try {
+                $imageData = file_get_contents($photoPath);
+                if ($imageData !== false) {
+                    $detectedMime = mime_content_type('data://application/octet-stream;base64,'.base64_encode($imageData));
+                    $studentPhotoMime = is_string($detectedMime) ? $detectedMime : 'image/jpeg';
+                    $studentPhotoBase64 = base64_encode($imageData);
+                }
+            } catch (\Exception $e) {
+                \Log::warning('Could not load remote student photo: '.$e->getMessage());
+            }
+
+            return ['base64' => $studentPhotoBase64, 'mime' => $studentPhotoMime];
+        }
+
+        $localPath = public_path($photoPath);
+        if (! file_exists($localPath)) {
+            $localPath = storage_path('app/public/'.ltrim($photoPath, '/'));
+        }
+
+        if (! file_exists($localPath)) {
+            return ['base64' => null, 'mime' => $studentPhotoMime];
+        }
+
+        $imageData = file_get_contents($localPath);
+        if ($imageData === false) {
+            return ['base64' => null, 'mime' => $studentPhotoMime];
+        }
+
+        $ext = strtolower(pathinfo($localPath, PATHINFO_EXTENSION));
+        $studentPhotoMime = match ($ext) {
+            'png' => 'image/png',
+            'gif' => 'image/gif',
+            'webp' => 'image/webp',
+            default => 'image/jpeg',
+        };
+        $studentPhotoBase64 = base64_encode($imageData);
+
+        return ['base64' => $studentPhotoBase64, 'mime' => $studentPhotoMime];
     }
 
     /**

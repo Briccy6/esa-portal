@@ -13,6 +13,7 @@ use App\Models\PaymentRecord;
 use App\Models\EmailVerification;
 use App\Models\Transcript;
 use App\Models\Announcement;
+use App\Models\DismissedStudent;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -25,7 +26,11 @@ use Illuminate\Support\Facades\Mail;
 use App\Mail\StudentWelcomeMail;
 use App\Mail\StudentEmailVerificationMail;
 use App\Mail\StudentInformationEmail;
+<<<<<<< HEAD
 use App\Mail\NesaRegistrationStatusMail;
+=======
+use App\Mail\StudentDismissalMail;
+>>>>>>> f2a8efb (added new files correcting the issue with the existing ones)
 use Illuminate\Support\Facades\Storage;
 use App\Models\StudentTransaction;
 use App\Models\Exam;
@@ -121,11 +126,17 @@ class StudentController extends Controller
             abort(403, 'Unauthorized: Not logged in as staff or admin.');
         }
 
+        // Get dismissed student IDs to exclude them from active list
+        $dismissedStudentIds = DismissedStudent::pluck('original_student_id')->toArray();
+
         if ($admin) {
-            $students = Student::with(['course', 'branch', 'academicYear']);
+            $students = Student::with(['course', 'branch', 'academicYear'])
+                ->whereNotIn('id', $dismissedStudentIds);
         } else {
             $branchIds = $staff->branches()->pluck('branches.id')->toArray();
-            $students = Student::whereIn('branch_id', $branchIds)->with(['course', 'branch', 'academicYear']);
+            $students = Student::whereIn('branch_id', $branchIds)
+                ->with(['course', 'branch', 'academicYear'])
+                ->whereNotIn('id', $dismissedStudentIds);
         }
 
         if ($request->filled('name')) {
@@ -156,6 +167,7 @@ class StudentController extends Controller
         }
 
         $allStudents = Student::with(['branch', 'course'])
+            ->whereNotIn('id', $dismissedStudentIds)
             ->orderBy('full_name', 'asc')
             ->get();
 
@@ -2457,42 +2469,160 @@ class StudentController extends Controller
         abort(403);
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         try {
             $student     = Student::findOrFail($id);
             $studentName = $student->full_name;
 
+            // Validate dismissal reason
+            $request->validate([
+                'dismissal_reason' => 'required|string|min:5|max:1000',
+                'dismissal_notes' => 'nullable|string|max:2000',
+            ], [
+                'dismissal_reason.required' => 'Please provide a reason for dismissal',
+                'dismissal_reason.min' => 'Dismissal reason must be at least 5 characters',
+                'dismissal_reason.max' => 'Dismissal reason cannot exceed 1000 characters',
+                'dismissal_notes.max' => 'Dismissal notes cannot exceed 2000 characters',
+            ]);
+
+            // Create dismissed student record
+            $dismissedStudent = DismissedStudent::dismissStudent(
+                $student,
+                $request->dismissal_reason,
+                $request->dismissal_notes,
+                auth('admin')->id() ?? auth('staff')->id()
+            );
+
+            DB::beginTransaction();
+
+            // Save the dismissed student record first
+            $dismissedStudent->save();
+
+            // Handle related records
             $transactionCount = $student->transactions()->count();
-
             if ($transactionCount > 0) {
-                return redirect()->back()->with('error',
-                    "Cannot delete student '{$studentName}'. Student has {$transactionCount} transaction(s). Please contact admin.");
+                // Update transactions to reference dismissed student
+                $student->transactions()->update(['student_dismissed' => true]);
             }
 
-            if ($student->id_photo && Storage::disk('public')->exists($student->id_photo)) {
-                Storage::disk('public')->delete($student->id_photo);
+            // Send dismissal email to student
+            try {
+                Mail::to($student->email)->send(new \App\Mail\StudentDismissalMail($student, $request->dismissal_reason, $request->dismissal_notes));
+                Log::info("Dismissal email sent to student", [
+                    'student_email' => $student->email,
+                    'student_name' => $studentName,
+                ]);
+            } catch (\Exception $mailException) {
+                Log::error("Failed to send dismissal email", [
+                    'student_email' => $student->email,
+                    'error' => $mailException->getMessage(),
+                ]);
+                // Continue with dismissal even if email fails
             }
 
+            // Delete the original student record
             $student->delete();
 
-            Log::info("Student deleted successfully", [
-                'student_id'   => $id,
-                'student_name' => $studentName,
-                'deleted_by'   => auth('staff')->user()->id ?? auth('admin')->user()->id ?? 'system',
+            DB::commit();
+
+            Log::info("Student dismissed successfully", [
+                'student_id'         => $id,
+                'student_name'       => $studentName,
+                'dismissed_by'       => auth('admin')->id() ?? auth('staff')->id() ?? 'system',
+                'dismissal_reason'   => $request->dismissal_reason,
+                'dismissed_student_id' => $dismissedStudent->id,
             ]);
 
             return redirect()->back()
-                ->with('success', "Student '{$studentName}' has been successfully deleted.");
+                ->with('success', "Student '{$studentName}' has been dismissed and moved to dismissed records.");
 
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return redirect()->back()
+                ->withErrors($e->validator())
+                ->withInput();
         } catch (\Exception $e) {
-            Log::error("Error during student deletion", [
+            DB::rollback();
+            Log::error("Error during student dismissal", [
                 'student_id' => $id,
                 'error'      => $e->getMessage(),
             ]);
 
             return redirect()->back()
-                ->with('error', 'An error occurred while deleting the student: ' . $e->getMessage());
+                ->with('error', 'An error occurred while dismissing the student: ' . $e->getMessage());
+        }
+    }
+
+    public function export(Request $request)
+    {
+        try {
+            $students = Student::with(['branch', 'course', 'academicYear'])
+                ->when($request->branch_id, function ($query, $branchId) {
+                    return $query->where('branch_id', $branchId);
+                })
+                ->when($request->course_id, function ($query, $courseId) {
+                    return $query->where('course_id', $courseId);
+                })
+                ->when($request->academic_year_id, function ($query, $academicYearId) {
+                    return $query->where('academic_year_id', $academicYearId);
+                })
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            $filename = "students_export_" . date('Y-m-d_H-i-s') . ".csv";
+            
+            $headers = [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => "attachment; filename=\"$filename\"",
+            ];
+
+            $callback = function () use ($students) {
+                $file = fopen('php://output', 'w');
+                
+                // CSV Header
+                fputcsv($file, [
+                    'Registration Number',
+                    'Full Name',
+                    'Email',
+                    'Phone',
+                    'Gender',
+                    'Branch',
+                    'Course',
+                    'Academic Year',
+                    'ID Number',
+                    'NESA Registered',
+                    'Created At'
+                ]);
+
+                // CSV Data
+                foreach ($students as $student) {
+                    fputcsv($file, [
+                        $student->reg_number,
+                        $student->full_name,
+                        $student->email,
+                        $student->phone,
+                        $student->sex,
+                        $student->branch->name ?? 'N/A',
+                        $student->course->abbreviation ?? $student->course->course_name ?? 'N/A',
+                        $student->academicYear->year ?? 'N/A',
+                        $student->id_number ?? 'N/A',
+                        $student->nesa_registered ? 'Yes' : 'No',
+                        $student->created_at->format('Y-m-d H:i:s')
+                    ]);
+                }
+
+                fclose($file);
+            };
+
+            return response()->stream($callback, 200, $headers);
+
+        } catch (\Exception $e) {
+            Log::error("Error exporting students", [
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()->back()
+                ->with('error', 'An error occurred while exporting students: ' . $e->getMessage());
         }
     }
 

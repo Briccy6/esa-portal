@@ -98,7 +98,7 @@
             <!-- Lesson Information -->
             <div class="lesson-info">
                 <h5 class="mb-2">Lesson Information</h5>
-                <p class="mb-1"><strong>Course:</strong> {{ $lesson->course->name }}</p>
+                <p class="mb-1"><strong>Course:</strong> {{ $lesson->course->course_name ?? 'N/A' }}</p>
                 <p class="mb-1"><strong>Lesson:</strong> {{ $lesson->title }}</p>
                 <p class="mb-0"><strong>Max Test Marks:</strong> {{ $lesson->max_test_marks }} | <strong>Max Exam Marks:</strong> {{ $lesson->max_exam_marks }}</p>
             </div>
