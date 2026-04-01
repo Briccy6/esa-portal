@@ -8,9 +8,12 @@ use App\Models\Student;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class StaffController extends Controller
 {
@@ -126,25 +129,42 @@ class StaffController extends Controller
             // Log the deletion attempt
             \Log::info('Attempting to delete staff member', ['staff_id' => $staff->id, 'staff_name' => $staff->name]);
             
-            // Handle the many-to-many branch relationships (cascade is handled by DB, but let's be explicit)
+            // Comprehensive dependency checking
+            $dependencies = $this->checkStaffDependencies($staff);
+            
+            if (!empty($dependencies)) {
+                \DB::rollBack();
+                \Log::warning('Cannot delete staff member - has dependencies', [
+                    'staff_id' => $staff->id,
+                    'dependencies' => $dependencies
+                ]);
+                
+                $dependencyMessage = 'Cannot delete staff member. They have the following dependencies:\n';
+                foreach ($dependencies as $table => $count) {
+                    $dependencyMessage .= "- {$table}: {$count} record(s)\n";
+                }
+                $dependencyMessage .= 'Please reassign or delete these records first.';
+                
+                return redirect()->route('admin.staff.index')
+                    ->with('error', $dependencyMessage)
+                    ->with('dependency_details', $dependencies);
+            }
+            
+            // Handle the many-to-many branch relationships
             $staff->branches()->detach();
             
-            // Note: photo, qr_code, and staff_card are stored as base64 strings in the database,
-            // not as file paths, so no need to delete from storage
-            
-            // Delete the staff member (this will cascade delete staff_branch records due to foreign key constraint)
+            // Delete the staff member
             $deleted = $staff->delete();
             
             if ($deleted) {
                 \Log::info('Staff member deleted successfully', ['staff_id' => $staff->id, 'staff_name' => $staff->name]);
+                \DB::commit();
+                
+                return redirect()->route('admin.staff.index')
+                    ->with('success', 'Staff member "' . $staff->name . '" deleted successfully.');
             } else {
-                \Log::error('Failed to delete staff member', ['staff_id' => $staff->id]);
                 throw new \Exception('Failed to delete staff member');
             }
-            
-            \DB::commit();
-            
-            return redirect()->route('admin.staff.index')->with('success', 'Staff member deleted successfully.');
             
         } catch (\Illuminate\Database\QueryException $e) {
             \DB::rollBack();
@@ -157,23 +177,88 @@ class StaffController extends Controller
             // Check if it's a foreign key constraint error
             if (str_contains($e->getMessage(), 'foreign key constraint')) {
                 return redirect()->route('admin.staff.index')
-                    ->with('error', 'Cannot delete staff member. They may be referenced by other records in the system. Please check dependencies first.');
+                    ->with('error', 'Cannot delete staff member due to database constraints. They may be referenced by other records. Please check dependencies first.')
+                    ->with('technical_error', $e->getMessage());
             }
             
             return redirect()->route('admin.staff.index')
-                ->with('error', 'Database error occurred while deleting staff member: ' . $e->getMessage());
+                ->with('error', 'Database error occurred while deleting staff member: ' . $e->getMessage())
+                ->with('technical_error', $e->getMessage());
+                
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            \DB::rollBack();
+            \Log::error('Staff member not found for deletion', ['error' => $e->getMessage()]);
+            
+            return redirect()->route('admin.staff.index')
+                ->with('error', 'Staff member not found. They may have already been deleted.')
+                ->with('technical_error', $e->getMessage());
                 
         } catch (\Exception $e) {
             \DB::rollBack();
             \Log::error('General error while deleting staff member', [
-                'staff_id' => $staff->id,
+                'staff_id' => $staff->id ?? 'unknown',
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
             
             return redirect()->route('admin.staff.index')
-                ->with('error', 'Error occurred while deleting staff member: ' . $e->getMessage());
+                ->with('error', 'Error occurred while deleting staff member: ' . $e->getMessage())
+                ->with('technical_error', $e->getMessage());
         }
+    }
+    
+    /**
+     * Check for all possible dependencies on a staff member
+     */
+    private function checkStaffDependencies(Staff $staff): array
+    {
+        $dependencies = [];
+        
+        // Check branch assignments
+        $branchCount = \DB::table('staff_branch')
+            ->where('staff_id', $staff->id)
+            ->count();
+        if ($branchCount > 0) {
+            $dependencies['Branch Assignments'] = $branchCount;
+        }
+        
+        // Check for any records that might reference this staff member
+        // as a user_id in various tables
+        $tablesToCheck = [
+            'journal_entries' => 'created_by',
+            'live_class_participants' => 'user_id',
+            'live_class_requests' => 'user_id',
+            'sessions' => 'user_id',
+            'course_user' => 'user_id',
+        ];
+        
+        foreach ($tablesToCheck as $table => $column) {
+            if (Schema::hasTable($table) && Schema::hasColumn($table, $column)) {
+                $count = \DB::table($table)
+                    ->where($column, $staff->id)
+                    ->count();
+                if ($count > 0) {
+                    $dependencies[ucfirst(str_replace('_', ' ', $table))] = $count;
+                }
+            }
+        }
+        
+        // Check live_class_conditions table for staff user_type
+        if (Schema::hasTable('live_class_conditions')) {
+            $liveClassCount = \DB::table('live_class_conditions')
+                ->where('user_type', 'staff')
+                ->where(function($query) use ($staff) {
+                    $query->where('user_id', $staff->id)
+                          ->orWhere('email', $staff->email)
+                          ->orWhere('name', $staff->name);
+                })
+                ->count();
+            if ($liveClassCount > 0) {
+                $dependencies['Live Class Conditions'] = $liveClassCount;
+            }
+        }
+        
+        return $dependencies;
     }
 
     public function show(Staff $staff, Request $request)

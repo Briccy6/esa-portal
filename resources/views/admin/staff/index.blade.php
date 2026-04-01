@@ -15,6 +15,32 @@
         <div class="alert alert-success">{{ session('success') }}</div>
     @endif
 
+    @if(session('error'))
+        <div class="alert alert-danger">
+            <h5><i class="bi bi-exclamation-triangle me-2"></i>Deletion Error</h5>
+            <p class="mb-2">{{ session('error') }}</p>
+            
+            @if(session('dependency_details'))
+                <div class="mt-3">
+                    <h6>Dependency Details:</h6>
+                    <ul class="mb-0">
+                        @foreach(session('dependency_details') as $table => $count)
+                            <li><strong>{{ $table }}:</strong> {{ $count }} record(s)</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+            
+            @if(session('technical_error'))
+                <div class="mt-2">
+                    <small class="text-muted">
+                        <strong>Technical Details:</strong> {{ session('technical_error') }}
+                    </small>
+                </div>
+            @endif
+        </div>
+    @endif
+
     <table class="table table-bordered">
         <thead>
             <tr>
