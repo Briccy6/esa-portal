@@ -383,6 +383,12 @@
 </a>
                         </li>
                         <li class="nav-item">
+                            <a href="{{ route('student.report-cards') }}" class="nav-link {{ request()->routeIs('student.report-cards.*') ? 'active' : '' }}">
+                                <i class="bi bi-file-earmark-text"></i>
+                                Report Cards
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a href="#" class="nav-link">
                                 <i class="bi bi-clipboard-check"></i>
                                 Assignments

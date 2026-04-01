@@ -1300,17 +1300,12 @@ class StudentController extends Controller
             ->whereIn('status', ['successful', 'paid'])
             ->sum('amount');
 
-        $paidTrip = StudentTransaction::where('student_id', $student->id)
-            ->where('type', 'trip_fee')
-            ->whereIn('status', ['successful', 'paid'])
-            ->sum('amount');
-
         $paidStudentCard = StudentTransaction::where('student_id', $student->id)
             ->where('type', 'student_card')
             ->whereIn('status', ['successful', 'paid'])
             ->sum('amount');
 
-        $totalPaid   = $paidRegistration + $paidTrip + $paidTuition + $paidPractical;
+        $totalPaid   = $paidRegistration + $paidTrip + $paidTuition + $paidPractical + $paidStudentCard;
         $outstanding = $totalFees - $totalPaid;
 
         // Get resources for the student's course and branch
@@ -2123,6 +2118,160 @@ class StudentController extends Controller
             ->get();
 
         return view('students.transcript', compact('student', 'payments'));
+    }
+
+    public function reportCards(Request $request)
+    {
+        $student = auth()->guard('student')->user();
+        
+        // Get current date and time in Rwanda
+        $now = \Carbon\Carbon::now('Africa/Kigali');
+        
+        // Calculate outstanding fees
+        $registrationFee = $student->course->registration_fee ?? 0;
+        $tripFee = $student->course->trip_fee ?? 0;
+        $tuitionFee = $student->course->tuition_fee ?? 0;
+        $praticalFee = $student->course->pratical_fee ?? 0;
+        $studentCardFee = 2000;
+        
+        $discountableFees = $tripFee + $tuitionFee + $praticalFee;
+        $discountAmount = ($student->discount ?? 0) > 0 ? ($discountableFees * ($student->discount / 100)) : 0;
+        $totalFees = $registrationFee + $studentCardFee + ($discountableFees - $discountAmount);
+        
+        $paidRegistration = \App\Models\StudentTransaction::where('student_id', $student->id)
+            ->where('type', 'registration_fee')
+            ->whereIn('status', ['successful', 'paid'])
+            ->sum('amount');
+            
+        $paidTrip = \App\Models\StudentTransaction::where('student_id', $student->id)
+            ->where('type', 'trip_fee')
+            ->whereIn('status', ['successful', 'paid'])
+            ->sum('amount');
+            
+        $paidTuition = \App\Models\StudentTransaction::where('student_id', $student->id)
+            ->where('type', 'school_fee')
+            ->whereIn('status', ['successful', 'paid'])
+            ->sum('amount');
+            
+        $paidPractical = \App\Models\StudentTransaction::where('student_id', $student->id)
+            ->where('type', 'practical_fee')
+            ->whereIn('status', ['successful', 'paid'])
+            ->sum('amount');
+            
+        $paidStudentCard = \App\Models\StudentTransaction::where('student_id', $student->id)
+            ->where('type', 'student_card')
+            ->whereIn('status', ['successful', 'paid'])
+            ->sum('amount');
+            
+        $totalPaid = $paidRegistration + $paidTrip + $paidTuition + $paidPractical + $paidStudentCard;
+        $outstanding = max(0, $totalFees - $totalPaid);
+        
+        // Get report card release date from school information
+        $schoolInfo = \App\Models\SchoolInformation::first();
+        $reportCardReleaseDate = $schoolInfo ? $schoolInfo->report_card_release_date : null;
+        
+        // Check if student has any outstanding fees
+        $hasOutstandingFees = $outstanding > 0;
+        
+        // Check if report card release date has passed
+        $releaseDatePassed = $reportCardReleaseDate ? $now->isAfter(\Carbon\Carbon::parse($reportCardReleaseDate)) : false;
+        
+        // Get student's approved report cards
+        $reportCards = \App\Models\ReportCard::where('student_id', $student->id)
+            ->where('status', 'approved')
+            ->with(['academicYear', 'term', 'course'])
+            ->orderByDesc('created_at')
+            ->get();
+            
+        // Calculate countdown if release date is in future
+        $countdown = null;
+        if ($reportCardReleaseDate && !$releaseDatePassed) {
+            $releaseDate = \Carbon\Carbon::parse($reportCardReleaseDate);
+            $countdown = $now->diff($releaseDate);
+        }
+        
+        return view('students.report-cards', compact(
+            'student',
+            'reportCards',
+            'hasOutstandingFees',
+            'outstanding',
+            'reportCardReleaseDate',
+            'releaseDatePassed',
+            'countdown'
+        ));
+    }
+
+    public function downloadReportCard($reportCardId)
+    {
+        $student = auth()->guard('student')->user();
+        
+        // Get current date and time in Rwanda
+        $now = \Carbon\Carbon::now('Africa/Kigali');
+        
+        // Calculate outstanding fees (same logic as above)
+        $registrationFee = $student->course->registration_fee ?? 0;
+        $tripFee = $student->course->trip_fee ?? 0;
+        $tuitionFee = $student->course->tuition_fee ?? 0;
+        $praticalFee = $student->course->pratical_fee ?? 0;
+        $studentCardFee = 2000;
+        
+        $discountableFees = $tripFee + $tuitionFee + $praticalFee;
+        $discountAmount = ($student->discount ?? 0) > 0 ? ($discountableFees * ($student->discount / 100)) : 0;
+        $totalFees = $registrationFee + $studentCardFee + ($discountableFees - $discountAmount);
+        
+        $paidRegistration = \App\Models\StudentTransaction::where('student_id', $student->id)
+            ->where('type', 'registration_fee')
+            ->whereIn('status', ['successful', 'paid'])
+            ->sum('amount');
+            
+        $paidTrip = \App\Models\StudentTransaction::where('student_id', $student->id)
+            ->where('type', 'trip_fee')
+            ->whereIn('status', ['successful', 'paid'])
+            ->sum('amount');
+            
+        $paidTuition = \App\Models\StudentTransaction::where('student_id', $student->id)
+            ->where('type', 'school_fee')
+            ->whereIn('status', ['successful', 'paid'])
+            ->sum('amount');
+            
+        $paidPractical = \App\Models\StudentTransaction::where('student_id', $student->id)
+            ->where('type', 'practical_fee')
+            ->whereIn('status', ['successful', 'paid'])
+            ->sum('amount');
+            
+        $paidStudentCard = \App\Models\StudentTransaction::where('student_id', $student->id)
+            ->where('type', 'student_card')
+            ->whereIn('status', ['successful', 'paid'])
+            ->sum('amount');
+            
+        $totalPaid = $paidRegistration + $paidTrip + $paidTuition + $paidPractical + $paidStudentCard;
+        $outstanding = max(0, $totalFees - $totalPaid);
+        
+        // Check if student has outstanding fees
+        if ($outstanding > 0) {
+            return redirect()->route('student.report-cards')
+                ->with('error', 'You cannot download the report card until all outstanding fees are paid. Remaining amount: ' . number_format($outstanding, 2) . ' Rwf. Please reach our office for support.');
+        }
+        
+        // Check if report card release date has passed
+        $schoolInfo = \App\Models\SchoolInformation::first();
+        $reportCardReleaseDate = $schoolInfo ? $schoolInfo->report_card_release_date : null;
+        
+        if ($reportCardReleaseDate && !$now->isAfter(\Carbon\Carbon::parse($reportCardReleaseDate))) {
+            return redirect()->route('student.report-cards')
+                ->with('error', 'Report cards are not yet available. They will be released on ' . \Carbon\Carbon::parse($reportCardReleaseDate)->format('d M Y H:i') . '.');
+        }
+        
+        // Get the report card
+        $reportCard = \App\Models\ReportCard::where('id', $reportCardId)
+            ->where('student_id', $student->id)
+            ->where('status', 'approved')
+            ->with(['student', 'course', 'academicYear', 'term', 'approvedBy', 'subjects.lesson', 'subjects.testMarks.exam'])
+            ->firstOrFail();
+            
+        // Generate PDF using existing ReportCardController method
+        $reportCardController = new \App\Http\Controllers\ReportCardController();
+        return $reportCardController->printReport($reportCard);
     }
 
     /**

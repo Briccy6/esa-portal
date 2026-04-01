@@ -820,6 +820,8 @@ Route::post('/students/send-verification-code', [StudentController::class, 'send
 Route::post('/students/verify-email-code', [StudentController::class, 'verifyEmailCode'])->name('students.verifyEmailCode');
 
 Route::middleware('auth:student')->get('/student/dashboard', [StudentController::class, 'dashboard'])->name('student.dashboard');
+Route::middleware('auth:student')->get('/student/report-cards', [StudentController::class, 'reportCards'])->name('student.report-cards');
+Route::middleware('auth:student')->get('/student/report-cards/{reportCardId}/download', [StudentController::class, 'downloadReportCard'])->name('student.report-cards.download');
 Route::middleware('auth:student')->get('/student/payment-transcript', [StudentController::class, 'paymentTranscriptPrint'])->name('student.payment-transcript');
 Route::post('/student/login/submit', [StudentController::class, 'loginWithPassword'])->name('student.login.submit');
 Route::post('/student/login/validate-reg-number', [StudentController::class, 'validateRegNumber'])->name('student.login.validateRegNumber');

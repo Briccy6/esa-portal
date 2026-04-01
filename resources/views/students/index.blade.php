@@ -192,7 +192,21 @@ window.updateNesaStatus = function(studentId) {
     if (status === 'registered') {
         const documentInput = document.getElementById(`nesa_document_${studentId}`);
         console.log('Document input:', documentInput, 'Files:', documentInput?.files?.length);
-        if (!documentInput || !documentInput.files || documentInput.files.length === 0) {
+        
+        // Check if document input exists and is visible
+        if (!documentInput) {
+            showAlert('danger', 'Document upload field not found. Please refresh the page and try again.');
+            return;
+        }
+        
+        // Check if document input is visible (not display: none)
+        const documentSection = document.getElementById(`document_section_${studentId}`);
+        if (documentSection && documentSection.style.display === 'none') {
+            showAlert('danger', 'Please select "Registered" status to enable document upload, then upload the NESA document as proof of registration.');
+            return;
+        }
+        
+        if (!documentInput.files || documentInput.files.length === 0) {
             showAlert('danger', 'Please upload the NESA document as proof of registration');
             return;
         }
@@ -361,6 +375,12 @@ $(function() {
             });
         });
         
+        // NESA Status modal - re-initialize radio button listeners when opened
+        $('[id^=nesaStatusModal]').off('show.bs.modal').on('show.bs.modal', function (event) {
+            // Re-initialize NESA modal listeners for this specific modal
+            initializeNesaModalListeners();
+        });
+        
         // NESA Status modal radio button listeners
         initializeNesaModalListeners();
     }
@@ -371,6 +391,13 @@ $(function() {
         document.querySelectorAll('[id^="registered_"], [id^="failed_"]').forEach(radio => {
             radio.removeEventListener('change', handleNesaRadioChange);
             radio.addEventListener('change', handleNesaRadioChange);
+        });
+        
+        // Initialize visibility based on current selection for both registered and failed
+        document.querySelectorAll('[id^="registered_"], [id^="failed_"]').forEach(radio => {
+            if (radio.checked) {
+                handleNesaRadioChange.call(radio);
+            }
         });
     }
     

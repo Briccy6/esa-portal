@@ -64,9 +64,6 @@
         <div class="qualification-cell">
             <span class="font-bold">Trade:</span> {{ $reportCard->course->course_name ?? 'SOFTWARE DEVELOPMENT' }}
         </div>
-        <div class="qualification-cell">
-            <span class="font-bold">RQF Level:</span> LEVEL III
-        </div>
         <div class="qualification-cell"></div>
     </div>
 </div>
@@ -96,8 +93,8 @@
         </tr>
 
         <tr>
-            <th colspan="3" rowspan="2" class="bg-gray">Module Code</th>
-            <th rowspan="2" class="bg-gray">Competence Title</th>
+            <th colspan="3" rowspan="2" class="bg-gray">Lesson</th>
+            <th rowspan="2" class="bg-gray">Lesson Name</th>
             <th rowspan="2" class="bg-gray">Credits</th>
             <th class="bg-gray">TEST</th>
             <th class="bg-gray">EXAM</th>
