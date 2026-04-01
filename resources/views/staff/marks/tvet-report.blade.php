@@ -331,7 +331,6 @@
                 </tr>
                 
                 <tr>
-                    <th colspan="3" rowspan="2" class="bg-gray">Lesson</th>
                     <th rowspan="2" class="bg-gray">Lesson Name</th>
                     <th rowspan="2" class="bg-gray">Credits</th>
                     <th class="bg-gray">TEST</th>
@@ -346,11 +345,10 @@
                 @if($reportCard->subjects->count() > 0)
                     <!-- Core Competencies - Specific -->
                     <tr class="bg-blue">
-                        <td colspan="11" class="font-bold">Core competencies - Specific</td>
+                        <td colspan="8" class="font-bold">Core competencies - Specific</td>
                     </tr>
                     @foreach($reportCard->subjects as $subject)
                         <tr>
-                            <td colspan="3">{{ $subject->subject_code ?? 'N/A' }}</td>
                             <td class="text-left">{{ $subject->subject_name }}</td>
                             <td>{{ $subject->credits ?? 3 }}</td>
                             <td>{{ number_format($subject->test_average ?? 0, 2) }}</td>
@@ -363,7 +361,7 @@
                     @endforeach
                 @else
                     <tr>
-                        <td colspan="11" class="text-center" style="padding: 20px; color: #666;">
+                        <td colspan="8" class="text-center" style="padding: 20px; color: #666;">
                             No assessment data available for this student
                         </td>
                     </tr>
@@ -372,10 +370,10 @@
                 @if($reportCard->subjects->count() > 0)
                     <!-- Term Totals Row -->
                     <tr class="bg-white font-bold">
-                        <td colspan="11" class="text-left"></td>
+                        <td colspan="8" class="text-left"></td>
                     </tr>
                     <tr class="bg-blue font-bold">
-                        <td colspan="4" class="text-left">TOTAL</td>
+                        <td colspan="3" class="text-left">TOTAL</td>
                         <td>{{ $reportCard->subjects->count() * 3 }}</td>
                         <td>{{ number_format($reportCard->subjects->sum('test_average'), 1) }}</td>
                         <td>{{ number_format($reportCard->subjects->sum('exam_mark'), 1) }}</td>
@@ -387,7 +385,7 @@
 
                     <!-- Position Row -->
                     <tr class="bg-yellow font-bold">
-                        <td colspan="4" class="text-left">POSITION</td>
+                        <td colspan="3" class="text-left">POSITION</td>
                         <td></td>
                         <td colspan="4">{{ $reportCard->class_position ?? '-' }} out of {{ $reportCard->total_students ?? '-' }}</td>
                         <td colspan="2">{{ $reportCard->class_position ?? '-' }} out of {{ $reportCard->total_students ?? '-' }}</td>
@@ -396,7 +394,7 @@
                     
                     <!-- Percentage Row -->
                     <tr class="bg-gray font-bold">
-                        <td colspan="4" class="text-left">Percentage %</td>
+                        <td colspan="3" class="text-left">Percentage %</td>
                         <td>100</td>
                         <td colspan="3">{{ number_format($reportCard->average_marks, 1) }}%</td>
                         <td colspan="3">{{ number_format($reportCard->average_marks, 1) }}%</td>
@@ -405,7 +403,7 @@
 
                 <!-- Class Trainer's Comments & Signature -->
                 <tr class="bg-white font-bold">
-                    <td colspan="4" class="text-left">Class Trainer's Comments & Signature</td>
+                    <td colspan="3" class="text-left">Class Trainer's Comments & Signature</td>
                     <td></td>
                     <td colspan="3"></td>
                     <td colspan="3"></td>
@@ -413,41 +411,13 @@
                 
                 <!-- Parents signature -->
                 <tr class="bg-white font-bold">
-                    <td colspan="4" class="text-left">Parents signature</td>
+                    <td colspan="3" class="text-left">Parents signature</td>
                     <td></td>
                     <td colspan="3"></td>
                     <td colspan="3"></td>
                 </tr>
             </tbody>
         </table>
-
-        <!-- Deliberation Table -->
-        <div style="border-top: 1px solid black;">
-            <table class="deliberation-table">
-                <thead>
-                    <tr class="bg-gray">
-                        <th class="text-left">Deliberation</th>
-                        <th>Promotion at 1st Sitting</th>
-                        <th>2nd Sitting</th>
-                        <th>Promoted after re-assessment</th>
-                        <th>Advised to Repeat</th>
-                        <th>Dismissed</th>
-                        <th>School Manager<br>@if($schoolInfo && $schoolInfo->principal_name){{ $schoolInfo->principal_name }}@else School Manager @endif<br>SIGNATURE<br>____/____/{{ date('Y') }}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td></td>
-                        <td><input type="checkbox" class="checkbox"></td>
-                        <td><input type="checkbox" class="checkbox"></td>
-                        <td><input type="checkbox" class="checkbox"></td>
-                        <td><input type="checkbox" class="checkbox"></td>
-                        <td><input type="checkbox" class="checkbox"></td>
-                        <td></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
 
         <!-- Footer -->
         <div class="footer">
