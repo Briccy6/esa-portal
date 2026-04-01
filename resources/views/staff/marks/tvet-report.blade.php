@@ -419,6 +419,34 @@
             </tbody>
         </table>
 
+        <!-- Deliberation Table -->
+        <div style="border-top: 1px solid black;">
+            <table class="deliberation-table">
+                <thead>
+                    <tr class="bg-gray">
+                        <th class="text-left">Deliberation</th>
+                        <th>Promotion at 1st Sitting</th>
+                        <th>2nd Sitting</th>
+                        <th>Promoted after re-assessment</th>
+                        <th>Advised to Repeat</th>
+                        <th>Dismissed</th>
+                        <th>School Manager<br>@if($schoolInfo && $schoolInfo->principal_name){{ $schoolInfo->principal_name }}@else School Manager @endif<br>SIGNATURE<br>____/____/{{ date('Y') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td></td>
+                        <td><input type="checkbox" class="checkbox"></td>
+                        <td><input type="checkbox" class="checkbox"></td>
+                        <td><input type="checkbox" class="checkbox"></td>
+                        <td><input type="checkbox" class="checkbox"></td>
+                        <td><input type="checkbox" class="checkbox"></td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
         <!-- Footer -->
         <div class="footer">
             Powered by SmartCampus360
