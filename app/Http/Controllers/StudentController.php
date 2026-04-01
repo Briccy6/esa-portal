@@ -26,11 +26,8 @@ use Illuminate\Support\Facades\Mail;
 use App\Mail\StudentWelcomeMail;
 use App\Mail\StudentEmailVerificationMail;
 use App\Mail\StudentInformationEmail;
-<<<<<<< HEAD
 use App\Mail\NesaRegistrationStatusMail;
-=======
 use App\Mail\StudentDismissalMail;
->>>>>>> f2a8efb (added new files correcting the issue with the existing ones)
 use Illuminate\Support\Facades\Storage;
 use App\Models\StudentTransaction;
 use App\Models\Exam;
