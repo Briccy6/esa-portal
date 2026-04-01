@@ -386,17 +386,17 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
 
     // Accounting Reports
     Route::middleware(['role:admin,accountant'])->group(function () {
-        Route::get('/accounting', [\App\Http\Controllers\AccountingController::class, 'index'])->name('admin.accounting.index');
-        Route::get('/accounting/cashbook', [\App\Http\Controllers\AccountingController::class, 'cashbook'])->name('admin.accounting.cashbook');
-        Route::get('/accounting/balance-sheet', [\App\Http\Controllers\AccountingController::class, 'balanceSheet'])->name('admin.accounting.balance-sheet');
-        Route::get('/accounting/trial-balance', [\App\Http\Controllers\AccountingController::class, 'trialBalance'])->name('admin.accounting.trial-balance');
-        Route::get('/accounting/cash-flow-statement', [\App\Http\Controllers\AccountingController::class, 'cashFlowStatement'])->name('admin.accounting.cash-flow-statement');
-        Route::get('/accounting/income-statement', [\App\Http\Controllers\AccountingController::class, 'incomeStatement'])->name('admin.accounting.income-statement');
-        Route::get('/accounting/general-ledger', [\App\Http\Controllers\AccountingController::class, 'generalLedger'])->name('admin.accounting.general-ledger');
-        Route::get('/accounting/export/cashbook', [\App\Http\Controllers\AccountingController::class, 'exportCashbook'])->name('admin.accounting.export.cashbook');
-        Route::get('/accounting/export/balance-sheet', [\App\Http\Controllers\AccountingController::class, 'exportBalanceSheet'])->name('admin.accounting.export.balance-sheet');
-        Route::get('/accounting/export/trial-balance', [\App\Http\Controllers\AccountingController::class, 'exportTrialBalance'])->name('admin.accounting.export.trial-balance');
-        Route::get('/accounting/export/cash-flow-statement', [\App\Http\Controllers\AccountingController::class, 'exportCashFlowStatement'])->name('admin.accounting.export.cash-flow-statement');
+        Route::get('/accounting', [\App\Http\Controllers\AccountingController::class, 'index'])->name('accounting.index');
+        Route::get('/accounting/cashbook', [\App\Http\Controllers\AccountingController::class, 'cashbook'])->name('accounting.cashbook');
+        Route::get('/accounting/balance-sheet', [\App\Http\Controllers\AccountingController::class, 'balanceSheet'])->name('accounting.balance-sheet');
+        Route::get('/accounting/trial-balance', [\App\Http\Controllers\AccountingController::class, 'trialBalance'])->name('accounting.trial-balance');
+        Route::get('/accounting/cash-flow-statement', [\App\Http\Controllers\AccountingController::class, 'cashFlowStatement'])->name('accounting.cash-flow-statement');
+        Route::get('/accounting/income-statement', [\App\Http\Controllers\AccountingController::class, 'incomeStatement'])->name('accounting.income-statement');
+        Route::get('/accounting/general-ledger', [\App\Http\Controllers\AccountingController::class, 'generalLedger'])->name('accounting.general-ledger');
+        Route::get('/accounting/export/cashbook', [\App\Http\Controllers\AccountingController::class, 'exportCashbook'])->name('accounting.export.cashbook');
+        Route::get('/accounting/export/balance-sheet', [\App\Http\Controllers\AccountingController::class, 'exportBalanceSheet'])->name('accounting.export.balance-sheet');
+        Route::get('/accounting/export/trial-balance', [\App\Http\Controllers\AccountingController::class, 'exportTrialBalance'])->name('accounting.export.trial-balance');
+        Route::get('/accounting/export/cash-flow-statement', [\App\Http\Controllers\AccountingController::class, 'exportCashFlowStatement'])->name('accounting.export.cash-flow-statement');
     });
 
     // Document Management

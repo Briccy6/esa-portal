@@ -19,6 +19,58 @@
     $outstanding = $totalToPay - $totalPaid;
 @endphp
 
+<style>
+/* Print-specific styles to hide Actions column */
+@media print {
+    /* Hide the Actions column header */
+    .transcript-container table th:nth-child(7),
+    .transcript-container table td:nth-child(7) {
+        display: none !important;
+    }
+    
+    /* Hide the Edit Mode badge */
+    .transcript-container .badge.bg-warning {
+        display: none !important;
+    }
+    
+    /* Ensure proper table formatting for print */
+    .transcript-container table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+    }
+    
+    .transcript-container table th,
+    .transcript-container table td {
+        border: 1px solid #000 !important;
+        padding: 8px !important;
+        text-align: left !important;
+    }
+    
+    /* Remove card shadows and backgrounds for clean printing */
+    .transcript-container .card {
+        border: 1px solid #000 !important;
+        box-shadow: none !important;
+        margin-bottom: 1rem !important;
+    }
+    
+    .transcript-container .card-header {
+        background: #f8f9fa !important;
+        border-bottom: 1px solid #000 !important;
+    }
+    
+    /* Ensure text is black for printing */
+    .transcript-container * {
+        color: #000 !important;
+    }
+    
+    /* Hide modals and other interactive elements */
+    .transcript-container .modal,
+    .transcript-container button {
+        display: none !important;
+    }
+}
+</style>
+
 <div class="transcript-container">
     <!-- Student Information -->
     <div class="card mb-3">
