@@ -150,10 +150,7 @@ class StaffController extends Controller
                     ->with('dependency_details', $dependencies);
             }
             
-            // Handle the many-to-many branch relationships
-            $staff->branches()->detach();
-            
-            // Delete the staff member
+            // Delete the staff member (branch assignments will be automatically deleted by CASCADE)
             $deleted = $staff->delete();
             
             if ($deleted) {
@@ -214,13 +211,8 @@ class StaffController extends Controller
     {
         $dependencies = [];
         
-        // Check branch assignments
-        $branchCount = \DB::table('staff_branch')
-            ->where('staff_id', $staff->id)
-            ->count();
-        if ($branchCount > 0) {
-            $dependencies['Branch Assignments'] = $branchCount;
-        }
+        // Note: Branch assignments are handled by CASCADE delete in the database,
+        // so we don't need to check them as blocking dependencies
         
         // Check for any records that might reference this staff member
         // as a user_id in various tables

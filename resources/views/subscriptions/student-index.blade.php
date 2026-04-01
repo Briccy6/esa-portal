@@ -73,7 +73,7 @@
                                 <div class="text-center mb-3">
                                     <h5 class="card-title">{{ $subscription->name }}</h5>
                                     <div class="h3 text-primary mb-2">
-                                        ${{ number_format($subscription->price, 0) }}
+                                        Rwf {{ number_format($subscription->price, 0) }}
                                     </div>
                                     <div class="text-muted">
                                         {{ $subscription->duration_days }} days

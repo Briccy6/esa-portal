@@ -1294,6 +1294,7 @@ Route::middleware('auth:student')->prefix('subscriptions')->name('subscriptions.
     Route::get('/', [SubscriptionController::class, 'index'])->name('index');
     Route::post('/purchase', [SubscriptionController::class, 'purchase'])->name('purchase');
     Route::get('/payment/{studentSubscription}', [SubscriptionController::class, 'payment'])->name('payment');
+    Route::post('/payment/complete/{studentSubscription}', [SubscriptionController::class, 'completePayment'])->name('payment.complete');
 });
 
 // Secretary Token Management Routes
