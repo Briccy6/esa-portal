@@ -394,7 +394,7 @@ public function storeFees(Request $request, $courseId)
         }
 
         DB::commit();
-        return redirect()->route('admin.course.index')->with('success', 'Course fees assigned successfully!');
+        return redirect()->route('course.index')->with('success', 'Course fees assigned successfully!');
     } catch (\Exception $e) {
         DB::rollBack();
         return redirect()->back()->withInput()->withErrors(['error' => 'Failed to assign fees: ' . $e->getMessage()]);
