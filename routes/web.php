@@ -1315,10 +1315,10 @@ Route::middleware('auth:student')->prefix('subscriptions')->name('subscriptions.
 });
 
 // Student Report Card Routes
-Route::middleware('auth:student')->prefix('student/report-cards')->name('student.report-cards.')->group(function () {
-    Route::get('/', [ReportCardController::class, 'studentIndex'])->name('index');
-    Route::get('/{reportCard}', [ReportCardController::class, 'studentShow'])->name('show');
-    Route::get('/{reportCard}/download', [ReportCardController::class, 'studentDownload'])->name('download');
+Route::prefix('student/report-cards')->name('student.report-cards.')->group(function () {
+    Route::get('/', [ReportCardController::class, 'studentIndex'])->name('index')->middleware('auth:student');
+    Route::get('/{reportCard}', [ReportCardController::class, 'studentShow'])->name('show')->middleware('auth:student');
+    Route::get('/{reportCard}/download', [ReportCardController::class, 'studentDownload'])->name('download')->middleware('auth:student');
     Route::get('/countdown', [ReportCardController::class, 'getCountdown'])->name('countdown');
 });
 

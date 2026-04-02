@@ -957,22 +957,57 @@ class ReportCardController extends Controller
      */
     public function getCountdown()
     {
-        $student = auth('student')->user();
-        
-        if (!$student) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+        try {
+            $student = auth('student')->user();
+            
+            // If no student is authenticated, return general availability info
+            if (!$student) {
+                $countdownData = ReportCardService::getCountdownData();
+                $setting = \App\Models\ReportCardSetting::getActive();
+                
+                if (!$setting) {
+                    return response()->json([
+                        'can_access' => false,
+                        'reason' => 'Report card access not configured by administration',
+                        'countdown_data' => null,
+                        'available_date' => null,
+                        'server_time' => now()->toISOString(),
+                        'requires_auth' => true
+                    ]);
+                }
+                
+                return response()->json([
+                    'can_access' => $setting->isAvailable(),
+                    'reason' => $setting->isAvailable() ? 'Report cards available' : 'Report cards not yet available',
+                    'countdown_data' => $setting->isAvailable() ? null : $countdownData,
+                    'available_date' => $setting->report_card_available_at,
+                    'server_time' => now()->toISOString(),
+                    'requires_auth' => true
+                ]);
+            }
+
+            $countdownData = ReportCardService::getCountdownData();
+            $accessStatus = ReportCardService::getAccessStatus($student);
+
+            return response()->json([
+                'countdown_data' => $countdownData,
+                'can_access' => $accessStatus['can_access'],
+                'reason' => $accessStatus['reason'],
+                'payment_status' => $accessStatus['payment_status'],
+                'available_date' => $accessStatus['available_date'],
+                'server_time' => now()->toISOString(),
+                'requires_auth' => false
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error in getCountdown: ' . $e->getMessage());
+            return response()->json([
+                'can_access' => false,
+                'reason' => 'Unable to check report card status. Please try again later.',
+                'countdown_data' => null,
+                'available_date' => null,
+                'server_time' => now()->toISOString(),
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        $countdownData = ReportCardService::getCountdownData();
-        $accessStatus = ReportCardService::getAccessStatus($student);
-
-        return response()->json([
-            'countdown_data' => $countdownData,
-            'can_access' => $accessStatus['can_access'],
-            'reason' => $accessStatus['reason'],
-            'payment_status' => $accessStatus['payment_status'],
-            'available_date' => $accessStatus['available_date'],
-            'server_time' => now()->toISOString()
-        ]);
     }
 }

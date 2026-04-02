@@ -22,12 +22,20 @@ class ToWhomLetterController extends Controller
         $user = auth()->user();
         
         if ($user->isStudent()) {
-            // Students can only see their own letters
-            $letters = ToWhomLetter::where('student_id', $user->student->id)
-                ->where('is_active', true)
-                ->with(['student', 'generator'])
-                ->orderBy('created_at', 'desc')
-                ->paginate(10);
+            // For student users, find their student record by email
+            $student = Student::where('email', $user->email)->first();
+            
+            if (!$student) {
+                // Student user without corresponding student record
+                $letters = collect(); // Empty collection
+            } else {
+                // Students can only see their own letters
+                $letters = ToWhomLetter::where('student_id', $student->id)
+                    ->where('is_active', true)
+                    ->with(['student', 'generator'])
+                    ->orderBy('created_at', 'desc')
+                    ->paginate(10);
+            }
                 
             return view('to-whom.student-index', compact('letters'));
         } else {
@@ -53,8 +61,9 @@ class ToWhomLetterController extends Controller
 
         if ($user->isStudent()) {
             // Students can only create letters for themselves
-            if ($user->student) {
-                $students = collect([$user->student]);
+            $student = Student::where('email', $user->email)->first();
+            if ($student) {
+                $students = collect([$student]);
             }
             return view('to-whom.student-create', compact('students', 'letterTypes', 'recipientTitles'));
         } else {
@@ -109,8 +118,11 @@ class ToWhomLetterController extends Controller
         $user = auth()->user();
         
         // Check permissions
-        if ($user->isStudent() && $letter->student_id != $user->student->id) {
-            abort(403, 'Unauthorized');
+        if ($user->isStudent()) {
+            $student = Student::where('email', $user->email)->first();
+            if (!$student || $letter->student_id != $student->id) {
+                abort(403, 'Unauthorized');
+            }
         }
 
         $schoolInfo = SchoolInformation::getActive();

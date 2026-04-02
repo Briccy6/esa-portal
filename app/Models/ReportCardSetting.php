@@ -68,13 +68,13 @@ class ReportCardSetting extends Model
         }
 
         return [
-            'months' => $target->diffInMonths($now),
-            'weeks' => $target->diffInWeeks($now) % 4,
-            'days' => $target->diffInDays($now) % 7,
-            'hours' => $target->diffInHours($now) % 24,
-            'minutes' => $target->diffInMinutes($now) % 60,
-            'seconds' => $target->diffInSeconds($now) % 60,
-            'total_seconds' => $target->diffInSeconds($now),
+            'months' => $now->diffInMonths($target),
+            'weeks' => $now->diffInWeeks($target) % 4,
+            'days' => $now->diffInDays($target) % 7,
+            'hours' => $now->diffInHours($target) % 24,
+            'minutes' => $now->diffInMinutes($target) % 60,
+            'seconds' => $now->diffInSeconds($target) % 60,
+            'total_seconds' => $now->diffInSeconds($target),
             'target_date' => $target->toISOString()
         ];
     }

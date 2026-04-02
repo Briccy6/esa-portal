@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Models\Student;
-use App\Models\Subscription;
+use App\Models\StudentSubscription;
 use App\Models\StudentTransaction;
 use App\Models\SchoolFee;
 use Carbon\Carbon;
@@ -18,19 +18,19 @@ class FeePaymentService
         $academicYear = config('app.academic_year', '2025-2026');
         $currentTerm = config('app.current_term', 'Term 1');
         
+        // Define academic year date range
+        $academicYearStart = '2025-09-01'; // Adjust based on your academic year start
+        $academicYearEnd = '2026-08-31';   // Adjust based on your academic year end
+        
         // Check if student has an active subscription for the current academic year
-        $activeSubscription = Subscription::where('student_id', $student->id)
-                                        ->where('academic_year', $academicYear)
-                                        ->where('status', 'active')
-                                        ->first();
+        $activeSubscription = StudentSubscription::where('student_id', $student->id)
+                                                ->where('payment_status', 'paid')
+                                                ->where('is_active', true)
+                                                ->where('starts_at', '<=', $academicYearEnd)
+                                                ->where('ends_at', '>=', $academicYearStart)
+                                                ->first();
         
         if (!$activeSubscription) {
-            return false;
-        }
-        
-        // Check if subscription covers the current term
-        $subscriptionTerms = explode(',', $activeSubscription->terms);
-        if (!in_array($currentTerm, $subscriptionTerms)) {
             return false;
         }
         
@@ -59,9 +59,16 @@ class FeePaymentService
         $academicYear = config('app.academic_year', '2025-2026');
         $currentTerm = config('app.current_term', 'Term 1');
         
-        $subscription = Subscription::where('student_id', $student->id)
-                                  ->where('academic_year', $academicYear)
-                                  ->first();
+        // Define academic year date range
+        $academicYearStart = '2025-09-01'; // Adjust based on your academic year start
+        $academicYearEnd = '2026-08-31';   // Adjust based on your academic year end
+        
+        $subscription = StudentSubscription::where('student_id', $student->id)
+                                        ->where('payment_status', 'paid')
+                                        ->where('is_active', true)
+                                        ->where('starts_at', '<=', $academicYearEnd)
+                                        ->where('ends_at', '>=', $academicYearStart)
+                                        ->first();
         
         $requiredFees = SchoolFee::where('academic_year', $academicYear)
                                 ->where('term', $currentTerm)
@@ -76,8 +83,8 @@ class FeePaymentService
         $outstanding = max(0, $requiredFees - $totalPaid);
         
         return [
-            'has_subscription' => $subscription && $subscription->status === 'active',
-            'subscription_terms' => $subscription ? $subscription->terms : null,
+            'has_subscription' => $subscription && $subscription->payment_status === 'paid',
+            'subscription_terms' => null, // Not applicable in new structure
             'required_fees' => $requiredFees,
             'total_paid' => $totalPaid,
             'outstanding' => $outstanding,
