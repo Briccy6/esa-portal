@@ -213,22 +213,33 @@
     <thead>
         <tr>
             <th>Fee</th>
+            <th>Term</th>
             <th class="num">Amount due (RWF)</th>
             <th class="num">Paid (RWF)</th>
             <th class="num">Balance (RWF)</th>
         </tr>
     </thead>
     <tbody>
-        @foreach($feeRows as $row)
+        @foreach($feeRowsWithTerms as $row)
             <tr>
                 <td>{{ $row['label'] }}</td>
+                <td>
+                    @if($row['term'])
+                        {{ $row['term_name'] }}
+                        @if($row['term']->start_date && $row['term']->end_date)
+                            <br><span style="font-size:9px;color:#666;">({{ $row['term']->start_date->format('M Y') }} - {{ $row['term']->end_date->format('M Y') }})</span>
+                        @endif
+                    @else
+                        <span style="color:#666;">{{ $row['term_name'] }}</span>
+                    @endif
+                </td>
                 <td class="num">{{ number_format($row['expected'], 2) }}</td>
                 <td class="num">{{ number_format($row['paid'], 2) }}</td>
                 <td class="num">{{ number_format($row['balance'], 2) }}</td>
             </tr>
         @endforeach
         <tr>
-            <th>Totals</th>
+            <th colspan="2">Totals</th>
             <th class="num">{{ number_format($totalExpected, 2) }}</th>
             <th class="num">{{ number_format($totalPaid, 2) }}</th>
             <th class="num">{{ number_format($totalOutstanding, 2) }}</th>
