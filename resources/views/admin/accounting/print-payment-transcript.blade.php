@@ -341,7 +341,7 @@
                             {{ ucfirst($tx->status) }}
                         @endif
                     </td>
-                    <td style="font-size:10px;">{{ $tx->tx_ref ?? '—' }}</td>
+                    <td style="font-size:8px;">{{ $tx->tx_ref ?? '—' }}</td>
                 </tr>
             @empty
                 <tr>
