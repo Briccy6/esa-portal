@@ -356,6 +356,14 @@ public function assignFees($courseId)
     return view('admin.course.assign_fees', compact('course', 'terms'));
 }
 
+public function testAssignFees($courseId)
+{
+    $course = Course::with(['branches', 'courseTermFees.term', 'courseTermFees.term.academicYear'])->findOrFail($courseId);
+    $terms = \App\Models\Term::with('academicYear')->orderBy('start_date', 'desc')->get();
+    
+    return view('admin.course.test_assign_fees', compact('course', 'terms'));
+}
+
 public function storeFees(Request $request, $courseId)
 {
     $course = Course::findOrFail($courseId);

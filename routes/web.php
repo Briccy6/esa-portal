@@ -312,6 +312,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     
     // Course Fee Assignment routes
     Route::get('/course/{id}/assign-fees', [CourseController::class, 'assignFees'])->name('course.assign-fees');
+    Route::get('/course/{id}/test-assign-fees', [CourseController::class, 'testAssignFees'])->name('course.test-assign-fees');
     Route::post('/course/{id}/store-fees', [CourseController::class, 'storeFees'])->name('course.store-fees');
     Route::get('/course/{id}/edit-fees', [CourseController::class, 'editFees'])->name('course.edit-fees');
     Route::put('/course/{id}/update-fees', [CourseController::class, 'updateFees'])->name('course.update-fees');

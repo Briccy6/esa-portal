@@ -9,7 +9,7 @@
             <h2><i class="fas fa-money-bill-wave me-2"></i>Assign Fees - {{ $course->course_name }}</h2>
             <p class="text-muted">Set up fee structure for different terms</p>
         </div>
-        <a href="{{ route('course.index') }}" class="btn btn-outline-secondary">
+        <a href="{{ route('admin.course.index') }}" class="btn btn-outline-secondary">
             <i class="fas fa-arrow-left me-1"></i> Back to Courses
         </a>
     </div>
@@ -137,7 +137,7 @@
             <button type="submit" class="btn btn-primary">
                 <i class="fas fa-save me-1"></i> Assign Fees
             </button>
-            <a href="{{ route('course.index') }}" class="btn btn-secondary">
+            <a href="{{ route('admin.course.index') }}" class="btn btn-secondary">
                 <i class="fas fa-times me-1"></i> Cancel
             </a>
         </div>

@@ -216,15 +216,23 @@
 <script>
     let allTranscripts = [];
 
+    console.log('Course fees script loaded');
+
     // Load all transcripts when modal opens
     document.getElementById('transcriptModal').addEventListener('show.bs.modal', function () {
+        console.log('Transcript modal opening');
         loadAllTranscripts();
     });
 
     function loadAllTranscripts() {
+        console.log('Loading all transcripts...');
         fetch('/api/transcripts/all')
-            .then(response => response.json())
+            .then(response => {
+                console.log('Response received:', response);
+                return response.json();
+            })
             .then(data => {
+                console.log('Data loaded:', data);
                 allTranscripts = data;
                 displayTranscripts(data);
             })
@@ -236,23 +244,34 @@
     }
 
     function loadCourseTranscripts(courseId) {
-        const modal = new bootstrap.Modal(document.getElementById('courseTranscriptsModal'));
-        const courseName = {{ json_encode($courses->pluck('name', 'id')->toArray()) }}[courseId];
-        document.getElementById('courseTranscriptsModalLabel').innerHTML = 
-            '<i class="fas fa-file-invoice"></i> Transcripts: ' + courseName;
-        
-        modal.show();
-        
-        fetch('/api/transcripts/course/' + courseId)
-            .then(response => response.json())
-            .then(data => {
-                displayCourseTranscripts(data);
-            })
-            .catch(error => {
-                console.error('Error loading course transcripts:', error);
-                document.getElementById('courseTranscriptContent').innerHTML = 
-                    '<div class="alert alert-danger">Error loading transcripts. Please try again.</div>';
-            });
+        console.log('Loading course transcripts for course:', courseId);
+        try {
+            const modal = new bootstrap.Modal(document.getElementById('courseTranscriptsModal'));
+            const courseNames = {{ json_encode($courses->pluck('name', 'id')->toArray()) }};
+            const courseName = courseNames[courseId];
+            document.getElementById('courseTranscriptsModalLabel').innerHTML = 
+                '<i class="fas fa-file-invoice"></i> Transcripts: ' + courseName;
+            
+            modal.show();
+            
+            fetch('/api/transcripts/course/' + courseId)
+                .then(response => {
+                    console.log('Course transcripts response:', response);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Course transcripts data:', data);
+                    displayCourseTranscripts(data);
+                })
+                .catch(error => {
+                    console.error('Error loading course transcripts:', error);
+                    document.getElementById('courseTranscriptContent').innerHTML = 
+                        '<div class="alert alert-danger">Error loading transcripts. Please try again.</div>';
+                });
+        } catch (error) {
+            console.error('Error in loadCourseTranscripts:', error);
+            alert('Error loading course transcripts. Please check console for details.');
+        }
     }
 
     function displayTranscripts(transcripts) {
@@ -352,24 +371,34 @@
     }
 
     function printStudentTranscript(courseId) {
-        // Show student selection modal
-        const modal = new bootstrap.Modal(document.getElementById('studentSelectionModal'));
-        document.getElementById('studentSelectionModalLabel').innerHTML = 
-            '<i class="fas fa-users"></i> Select Student for Transcript';
-        
-        modal.show();
-        
-        // Load students for this course
-        fetch('/api/courses/' + courseId + '/students')
-            .then(response => response.json())
-            .then(data => {
-                displayStudentSelection(data, courseId);
-            })
-            .catch(error => {
-                console.error('Error loading students:', error);
-                document.getElementById('studentSelectionContent').innerHTML = 
-                    '<div class="alert alert-danger">Error loading students. Please try again.</div>';
-            });
+        console.log('Print student transcript for course:', courseId);
+        try {
+            // Show student selection modal
+            const modal = new bootstrap.Modal(document.getElementById('studentSelectionModal'));
+            document.getElementById('studentSelectionModalLabel').innerHTML = 
+                '<i class="fas fa-users"></i> Select Student for Transcript';
+            
+            modal.show();
+            
+            // Load students for this course
+            fetch('/api/courses/' + courseId + '/students')
+                .then(response => {
+                    console.log('Students response:', response);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Students data:', data);
+                    displayStudentSelection(data, courseId);
+                })
+                .catch(error => {
+                    console.error('Error loading students:', error);
+                    document.getElementById('studentSelectionContent').innerHTML = 
+                        '<div class="alert alert-danger">Error loading students. Please try again.</div>';
+                });
+        } catch (error) {
+            console.error('Error in printStudentTranscript:', error);
+            alert('Error opening student selection. Please check console for details.');
+        }
     }
 
     function displayStudentSelection(students, courseId) {
