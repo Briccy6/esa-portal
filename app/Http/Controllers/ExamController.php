@@ -40,7 +40,11 @@ class ExamController extends Controller
                 ->paginate(10);
 
             $courses = $teacher->courses ?? collect();
-            return view('teacher.exams.index', compact('exams', 'courses'));
+            
+            // Get announcements for teacher layout
+            $announcements = \App\Models\Announcement::latest()->take(5)->get();
+            
+            return view('teacher.exams.index', compact('exams', 'courses', 'announcements'));
         } elseif (auth('staff')->check()) {
             $staff = auth('staff')->user();
             if ($staff->role === 'DOS') {
@@ -113,9 +117,12 @@ class ExamController extends Controller
                 \Log::error('Question banks table not available: ' . $e->getMessage());
             }
             
+            // Get announcements for teacher layout
+            $announcements = \App\Models\Announcement::latest()->take(5)->get();
+            
             return view('teacher.exams.create', compact(
                 'courses', 'lessons', 'branches', 'teachers', 
-                'academicYears', 'terms', 'questionBanks', 'examPassword'
+                'academicYears', 'terms', 'questionBanks', 'examPassword', 'announcements'
             ));
         } elseif (auth('staff')->check()) {
             $user = auth('staff')->user();
@@ -321,7 +328,9 @@ class ExamController extends Controller
 
         // Return appropriate view based on authentication
         if (auth('teacher')->check()) {
-            return view('teacher.exams.show', compact('exam', 'marks', 'testMarks'));
+            // Get announcements for teacher layout
+            $announcements = \App\Models\Announcement::latest()->take(5)->get();
+            return view('teacher.exams.show', compact('exam', 'marks', 'testMarks', 'announcements'));
         } elseif (auth('staff')->check() && auth('staff')->user()->role === 'DOS') {
             return view('exams.dos_show', compact('exam', 'marks', 'testMarks'));
         } else {
@@ -345,7 +354,10 @@ class ExamController extends Controller
             $terms = \App\Models\Term::all();
             $exam->load(['courses', 'lessons', 'academic_year', 'term', 'teacher', 'branch']);
             
-            return view('teacher.exams.edit', compact('exam', 'courses', 'lessons', 'branches', 'teachers', 'academicYears', 'terms'));
+            // Get announcements for teacher layout
+            $announcements = \App\Models\Announcement::latest()->take(5)->get();
+            
+            return view('teacher.exams.edit', compact('exam', 'courses', 'lessons', 'branches', 'teachers', 'academicYears', 'terms', 'announcements'));
         } elseif (auth('staff')->check() && auth('staff')->user()->role === 'DOS') {
             $courses = Course::all();
             $lessons = Lesson::all();

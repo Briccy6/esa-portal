@@ -21,7 +21,11 @@ class MarksController extends Controller
             $courses = $teacher->courses ?? Course::whereIn('id', $lessons->pluck('course_id'))->get();
             $branches = $teacher->branches; // <-- FIXED
             $terms = \App\Models\Term::all(); // Add missing terms variable
-            return view('teacher.marks.index', compact('lessons', 'courses', 'branches', 'terms'));
+            
+            // Get announcements for teacher layout
+            $announcements = \App\Models\Announcement::latest()->take(5)->get();
+            
+            return view('teacher.marks.index', compact('lessons', 'courses', 'branches', 'terms', 'announcements'));
         }
 
         // Staff/Admin logic as before

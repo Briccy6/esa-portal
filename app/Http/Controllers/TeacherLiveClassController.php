@@ -12,13 +12,16 @@ class TeacherLiveClassController extends Controller
     {
         $teacher = Auth::guard('teacher')->user();
         
+        // Get announcements for teacher layout
+        $announcements = \App\Models\Announcement::latest()->take(5)->get();
+        
         // Get only live classes assigned to this teacher
         $liveClasses = LiveClass::where('teacher_id', $teacher->id)
             ->with(['branches', 'courses', 'lessons'])
             ->orderBy('start_time', 'desc')
             ->paginate(10);
         
-        return view('teacher.live-classes.index', compact('liveClasses'));
+        return view('teacher.live-classes.index', compact('liveClasses', 'announcements'));
     }
 
     public function show(LiveClass $liveClass)
@@ -29,12 +32,15 @@ class TeacherLiveClassController extends Controller
         if ($liveClass->teacher_id !== $teacher->id) {
             abort(403, 'You are not authorized to view this live class');
         }
+        
+        // Get announcements for teacher layout
+        $announcements = \App\Models\Announcement::latest()->take(5)->get();
 
         $liveClass->load(['branches', 'courses', 'lessons', 'participants' => function($query) {
             $query->where('is_active', true)->latest();
         }]);
         
-        return view('teacher.live-classes.show', compact('liveClass'));
+        return view('teacher.live-classes.show', compact('liveClass', 'announcements'));
     }
 
     public function start(LiveClass $liveClass)
@@ -66,6 +72,9 @@ class TeacherLiveClassController extends Controller
 
         $liveClass->load(['branches', 'courses', 'lessons', 'teacher']);
         
+        // Get announcements for teacher layout
+        $announcements = \App\Models\Announcement::latest()->take(5)->get();
+        
         // Load student requests for teachers
         $studentRequests = $liveClass->requests()
             ->with(['user' => function($query) {
@@ -76,7 +85,7 @@ class TeacherLiveClassController extends Controller
             ->latest()
             ->get();
         
-        return view('teacher.live-classes.room', compact('liveClass', 'studentRequests'));
+        return view('teacher.live-classes.room', compact('liveClass', 'studentRequests', 'announcements'));
     }
 
     public function end(LiveClass $liveClass)
@@ -105,13 +114,16 @@ class TeacherLiveClassController extends Controller
         if ($liveClass->teacher_id !== $teacher->id) {
             abort(403, 'You are not authorized to manage requests for this live class');
         }
+        
+        // Get announcements for teacher layout
+        $announcements = \App\Models\Announcement::latest()->take(5)->get();
 
         $requests = $liveClass->requests()
             ->with('user')
             ->latest()
             ->get();
         
-        return view('teacher.live-classes.requests', compact('liveClass', 'requests'));
+        return view('teacher.live-classes.requests', compact('liveClass', 'requests', 'announcements'));
     }
 
     public function approveRequest(Request $request, LiveClass $liveClass, $requestId)

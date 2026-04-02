@@ -3,6 +3,9 @@
     $systemLogo = \App\Helpers\LogoHelper::getSystemLogo();
 
         $courses = $courses ?? (Auth::guard('teacher')->check() ? Auth::guard('teacher')->user()->courses()->with('lessons.units')->get() : collect());
+        
+        // Ensure announcements is always available
+        $announcements = $announcements ?? \App\Models\Announcement::latest()->take(5)->get();
     
 @endphp
 <!DOCTYPE html>

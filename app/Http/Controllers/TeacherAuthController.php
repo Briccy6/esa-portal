@@ -55,6 +55,10 @@ class TeacherAuthController extends Controller
     {
         $teacher = Auth::guard('teacher')->user();
         $systemName = config('app.name', 'School System');
+        
+        // Get announcements for teacher layout
+        $announcements = \App\Models\Announcement::latest()->take(5)->get();
+        
         $courses = $teacher->courses()->with([
             // Only lessons where teacher_id matches the logged-in teacher
             'lessons' => function ($query) use ($teacher) {
@@ -82,7 +86,7 @@ class TeacherAuthController extends Controller
             ->pluck('total_hours', 'unit_id')
             ->toArray();
 
-        return view('teacher.courses.details', compact('teacher', 'systemName', 'courses', 'unitDailyHours'));
+        return view('teacher.courses.details', compact('teacher', 'systemName', 'courses', 'unitDailyHours', 'announcements'));
     }
     public function showForceLogout()
     {

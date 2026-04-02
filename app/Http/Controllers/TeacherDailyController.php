@@ -157,6 +157,9 @@ class TeacherDailyController extends Controller
             ->orderByDesc('date')
             ->paginate(20);
 
-        return view('teacher.dailies.index', compact('dailies'));
+        // Get announcements for teacher layout
+        $announcements = \App\Models\Announcement::latest()->take(5)->get();
+
+        return view('teacher.dailies.index', compact('dailies', 'announcements'));
     }
 }
