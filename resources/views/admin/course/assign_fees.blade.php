@@ -145,127 +145,109 @@
 </div>
 
 <script>
+    // ✅ FIX 1: Collect terms from Blade into a JS array ONCE at page load
+    const termsData = [
+        @foreach($terms as $term)
+        { id: '{{ $term->id }}', label: '{{ $term->name }} - {{ $term->academicYear->year ?? '' }}' },
+        @endforeach
+    ];
+
     let termFeeRowIndex = 0;
     const usedTerms = new Set();
 
+    function buildSelectOptions(currentValue) {
+        let html = '<option value="">Select Term</option>';
+        termsData.forEach(term => {
+            const disabled = usedTerms.has(term.id) && term.id !== currentValue ? 'disabled' : '';
+            const selected  = term.id === currentValue ? 'selected' : '';
+            html += `<option value="${term.id}" ${disabled} ${selected}>${term.label}</option>`;
+        });
+        return html;
+    }
+
     function addTermFeeRow() {
         const tbody = document.querySelector('#term-fees-table tbody');
-        const template = document.getElementById('term-fee-row-template');
-        
-        // Clone the template row
-        const newRow = template.cloneNode(true);
-        newRow.style.display = '';
-        newRow.id = '';
-        
-        // Replace {index} with actual index
-        const index = termFeeRowIndex++;
-        newRow.innerHTML = newRow.innerHTML.replace(/{index}/g, index);
-        
-        // Add event listeners
-        const termSelect = newRow.querySelector('.term-select');
-        const removeBtn = newRow.querySelector('.remove-term-fee');
-        const feeInputs = newRow.querySelectorAll('input[type="number"]');
-        
-        termSelect.addEventListener('change', function() {
+        const index  = termFeeRowIndex++;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>
+                <select name="term_fees[${index}][term_id]" class="form-select term-select" required>
+                    ${buildSelectOptions('')}
+                </select>
+            </td>
+            <td><input type="number" name="term_fees[${index}][registration_fee]" class="form-control" min="0" step="0.01" value="0"></td>
+            <td><input type="number" name="term_fees[${index}][tuition_fee]" class="form-control" min="0" step="0.01" value="0"></td>
+            <td><input type="number" name="term_fees[${index}][practical_fee]" class="form-control" min="0" step="0.01" value="0"></td>
+            <td><input type="number" name="term_fees[${index}][trip_fee]" class="form-control" min="0" step="0.01" value="0"></td>
+            <td>
+                <button type="button" class="btn btn-sm btn-danger remove-term-fee">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        `;
+
+        const termSelect = tr.querySelector('.term-select');
+        const feeInputs  = tr.querySelectorAll('input[type="number"]');
+
+        termSelect.addEventListener('change', function () {
             updateUsedTerms();
             calculateTotalYearFees();
         });
-        
+
         feeInputs.forEach(input => {
             input.addEventListener('input', calculateTotalYearFees);
         });
-        
-        removeBtn.addEventListener('click', function() {
-            const termId = termSelect.value;
-            if (termId) {
-                usedTerms.delete(termId);
-                updateTermSelectOptions();
-            }
-            newRow.remove();
+
+        tr.querySelector('.remove-term-fee').addEventListener('click', function () {
+            tr.remove();
+            updateUsedTerms();
             calculateTotalYearFees();
         });
-        
-        tbody.appendChild(newRow);
-        updateTermSelectOptions();
+
+        tbody.appendChild(tr);
     }
 
     function updateUsedTerms() {
         usedTerms.clear();
-        document.querySelectorAll('.term-select').forEach(select => {
-            if (select.value) {
-                usedTerms.add(select.value);
-            }
+        document.querySelectorAll('.term-select').forEach(sel => {
+            if (sel.value) usedTerms.add(sel.value);
         });
-        updateTermSelectOptions();
-    }
-
-    function updateTermSelectOptions() {
-        document.querySelectorAll('.term-select').forEach(select => {
-            const currentValue = select.value;
-            select.innerHTML = '<option value="">Select Term</option>';
-            
-            @foreach($terms as $term)
-                const option = document.createElement('option');
-                option.value = '{{ $term->id }}';
-                option.textContent = '{{ $term->name }} - {{ $term->academicYear->year ?? '' }}';
-                
-                // Disable if term is already used elsewhere
-                if (usedTerms.has('{{ $term->id }}') && '{{ $term->id }}' !== currentValue) {
-                    option.disabled = true;
-                }
-                
-                // Select current value
-                if ('{{ $term->id }}' === currentValue) {
-                    option.selected = true;
-                }
-                
-                select.appendChild(option);
-            @endforeach
+        // Rebuild options in every select to reflect newly used/freed terms
+        document.querySelectorAll('.term-select').forEach(sel => {
+            const current = sel.value;
+            sel.innerHTML = buildSelectOptions(current);
         });
     }
 
     function calculateTotalYearFees() {
+        const studentCardFee = 2000;
         let totalFees = 0;
-        const studentCardFee = 2000; // Fixed per term
-        let termCount = 0;
-        
-        document.querySelectorAll('#term-fees-table tbody tr:not([style*="display: none"])').forEach(row => {
+
+        document.querySelectorAll('#term-fees-table tbody tr').forEach(row => {
             const termSelect = row.querySelector('.term-select');
-            if (termSelect.value) {
-                termCount++;
-                const registration = parseFloat(row.querySelector('input[name$="[registration_fee]"]').value) || 0;
-                const tuition = parseFloat(row.querySelector('input[name$="[tuition_fee"]').value) || 0;
-                const practical = parseFloat(row.querySelector('input[name$="[practical_fee"]').value) || 0;
-                const trip = parseFloat(row.querySelector('input[name$="[trip_fee"]').value) || 0;
-                
-                totalFees += registration + tuition + practical + trip + studentCardFee;
-            }
+            if (!termSelect || !termSelect.value) return;
+
+            // ✅ FIX 2: corrected selector — closing ] was missing
+            const registration = parseFloat(row.querySelector('input[name$="[registration_fee]"]').value) || 0;
+            const tuition      = parseFloat(row.querySelector('input[name$="[tuition_fee]"]').value)      || 0;
+            const practical    = parseFloat(row.querySelector('input[name$="[practical_fee]"]').value)    || 0;
+            const trip         = parseFloat(row.querySelector('input[name$="[trip_fee]"]').value)         || 0;
+
+            totalFees += registration + tuition + practical + trip + studentCardFee;
         });
-        
+
         document.getElementById('total_year_fees').value = totalFees.toFixed(2);
     }
 
-    // Initialize with one empty row on page load
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         addTermFeeRow();
-        
-        // Handle form submission validation
-        const form = document.querySelector('form');
-        form.addEventListener('submit', function(e) {
-            const termRows = document.querySelectorAll('#term-fees-table tbody tr:not([style*="display: none"])');
-            let hasValidTerm = false;
-            
-            termRows.forEach(row => {
-                const termSelect = row.querySelector('.term-select');
-                if (termSelect.value) {
-                    hasValidTerm = true;
-                }
-            });
-            
-            if (!hasValidTerm) {
+
+        document.querySelector('form').addEventListener('submit', function (e) {
+            const hasValid = [...document.querySelectorAll('.term-select')].some(s => s.value);
+            if (!hasValid) {
                 e.preventDefault();
                 alert('Please add at least one term with fee configuration.');
-                return false;
             }
         });
     });
