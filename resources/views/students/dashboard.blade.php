@@ -290,6 +290,11 @@
                             onclick="showPaymentModal(this)">
                         <i class="bi bi-credit-card me-1"></i>Pay Now
                     </button>
+                    @if(($paidRegistration ?? 0) > 0)
+                    <a href="{{ route('student.payment-transcript') }}" target="_blank" class="btn btn-sm btn-outline-info mt-2">
+                        <i class="bi bi-printer me-1"></i>Print Receipt
+                    </a>
+                    @endif
                 </div>
                 <div class="progress-bar">
                     <div class="progress-fill" style="width: {{ $registrationFee > 0 ? (($paidRegistration ?? 0) / $registrationFee) * 100 : 0 }}%"></div>
@@ -324,6 +329,11 @@
                             onclick="showPaymentModal(this)">
                         <i class="bi bi-credit-card me-1"></i>Pay Now
                     </button>
+                    @if(($paidTrip ?? 0) > 0)
+                    <a href="{{ route('student.payment-transcript') }}" target="_blank" class="btn btn-sm btn-outline-info mt-2">
+                        <i class="bi bi-printer me-1"></i>Print Receipt
+                    </a>
+                    @endif
                 </div>
                 <div class="progress-bar">
                     <div class="progress-fill" style="width: {{ $tripFee > 0 ? (($paidTrip ?? 0) / $tripFee) * 100 : 0 }}%"></div>
@@ -358,6 +368,11 @@
                             onclick="showPaymentModal(this)">
                         <i class="bi bi-credit-card me-1"></i>Pay Now
                     </button>
+                    @if(($paidTuition ?? 0) > 0)
+                    <a href="{{ route('student.payment-transcript') }}" target="_blank" class="btn btn-sm btn-outline-info mt-2">
+                        <i class="bi bi-printer me-1"></i>Print Receipt
+                    </a>
+                    @endif
                 </div>
                 <div class="progress-bar">
                     <div class="progress-fill" style="width: {{ $tuitionFee > 0 ? (($paidTuition ?? 0) / $tuitionFee) * 100 : 0 }}%"></div>
@@ -392,6 +407,11 @@
                             onclick="showPaymentModal(this)">
                         <i class="bi bi-credit-card me-1"></i>Pay Now
                     </button>
+                    @if(($paidPractical ?? 0) > 0)
+                    <a href="{{ route('student.payment-transcript') }}" target="_blank" class="btn btn-sm btn-outline-info mt-2">
+                        <i class="bi bi-printer me-1"></i>Print Receipt
+                    </a>
+                    @endif
                 </div>
                 <div class="progress-bar">
                     <div class="progress-fill" style="width: {{ $praticalFee > 0 ? (($paidPractical ?? 0) / $praticalFee) * 100 : 0 }}%"></div>
@@ -426,6 +446,11 @@
                             onclick="showPaymentModal(this)">
                         <i class="bi bi-credit-card me-1"></i>Pay Now
                     </button>
+                    @if($paidStudentCard > 0)
+                    <a href="{{ route('student.payment-transcript') }}" target="_blank" class="btn btn-sm btn-outline-info mt-2">
+                        <i class="bi bi-printer me-1"></i>Print Receipt
+                    </a>
+                    @endif
                 </div>
                 <div class="progress-bar">
                     <div class="progress-fill" style="width: {{ $studentCardFee > 0 ? ($paidStudentCard / $studentCardFee) * 100 : 0 }}%"></div>

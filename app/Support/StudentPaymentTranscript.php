@@ -32,7 +32,7 @@ class StudentPaymentTranscript
         $netTrip      = $discountable > 0 ? $trip - ($trip / $discountable * $discountAmt) : $trip;
 
         $types = [
-            ['label' => 'Registration fee', 'type' => 'registration_fee', 'expected' => $registration],
+            ['label' => 'Registration fee', 'type' => 'registration', 'expected' => $registration],
             ['label' => 'Tuition (school fee)', 'type' => 'school_fee', 'expected' => $netTuition],
             ['label' => 'Practical fee', 'type' => 'practical_fee', 'expected' => $netPractical],
             ['label' => 'Trip fee', 'type' => 'trip_fee', 'expected' => $netTrip],

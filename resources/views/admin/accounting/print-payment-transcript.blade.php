@@ -10,7 +10,7 @@
     $hasStampSignature = $schoolInfo && !empty($schoolInfo->stamp_signature_url);
 
     $feeTypeMap = [
-        'registration_fee' => 'Registration',
+        'registration' => 'Registration',
         'school_fee' => 'Tuition (school fee)',
         'practical_fee' => 'Practical',
         'trip_fee' => 'Trip',
