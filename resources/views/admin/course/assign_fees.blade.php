@@ -76,9 +76,9 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr id="term-fee-row-template" style="display: none;">
+                            <tr id="term-fee-row-template" style="display: none;" disabled>
                                 <td>
-                                    <select name="term_fees[{index}][term_id]" class="form-select term-select" required>
+                                    <select name="term_fees[template][term_id]" class="form-select term-select" disabled>
                                         <option value="">Select Term *</option>
                                         @foreach($terms as $term)
                                             <option value="{{ $term->id }}">
@@ -88,23 +88,23 @@
                                     </select>
                                 </td>
                                 <td>
-                                    <input type="number" name="term_fees[{index}][registration_fee]" 
-                                           class="form-control" min="0" step="0.01" value="0">
+                                    <input type="number" name="term_fees[template][registration_fee]" 
+                                           class="form-control" min="0" step="0.01" value="0" disabled>
                                 </td>
                                 <td>
-                                    <input type="number" name="term_fees[{index}][tuition_fee]" 
-                                           class="form-control" min="0" step="0.01" value="0">
+                                    <input type="number" name="term_fees[template][tuition_fee]" 
+                                           class="form-control" min="0" step="0.01" value="0" disabled>
                                 </td>
                                 <td>
-                                    <input type="number" name="term_fees[{index}][practical_fee]" 
-                                           class="form-control" min="0" step="0.01" value="0">
+                                    <input type="number" name="term_fees[template][practical_fee]" 
+                                           class="form-control" min="0" step="0.01" value="0" disabled>
                                 </td>
                                 <td>
-                                    <input type="number" name="term_fees[{index}][trip_fee]" 
-                                           class="form-control" min="0" step="0.01" value="0">
+                                    <input type="number" name="term_fees[template][trip_fee]" 
+                                           class="form-control" min="0" step="0.01" value="0" disabled>
                                 </td>
                                 <td>
-                                    <button type="button" class="btn btn-sm btn-danger remove-term-fee">
+                                    <button type="button" class="btn btn-sm btn-danger remove-term-fee" disabled>
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </td>
@@ -244,45 +244,49 @@
     document.addEventListener('DOMContentLoaded', function () {
         addTermFeeRow();
 
-        document.querySelector('form').addEventListener('submit', function (e) {
-            // Check if at least one term is selected
-            const termSelects = document.querySelectorAll('.term-select');
-            let hasValidTerm = false;
-            
-            termSelects.forEach(select => {
-                if (select.value && select.value.trim() !== '') {
-                    hasValidTerm = true;
-                }
-            });
-            
-            if (!hasValidTerm) {
-                e.preventDefault();
-                alert('Please select at least one academic term and configure fees.');
-                return false;
-            }
-            
-            // Check for duplicate terms
-            const selectedTerms = [];
-            let hasDuplicates = false;
-            
-            termSelects.forEach(select => {
-                if (select.value && select.value.trim() !== '') {
-                    if (selectedTerms.includes(select.value)) {
-                        hasDuplicates = true;
-                    } else {
-                        selectedTerms.push(select.value);
+        // Safe form submission handling
+        const form = document.querySelector('form');
+        if (form) {
+            form.addEventListener('submit', function (e) {
+                // Check if at least one term is selected
+                const termSelects = document.querySelectorAll('.term-select');
+                let hasValidTerm = false;
+                
+                termSelects.forEach(select => {
+                    if (select.value && select.value.trim() !== '') {
+                        hasValidTerm = true;
                     }
+                });
+                
+                if (!hasValidTerm) {
+                    e.preventDefault();
+                    alert('Please select at least one academic term and configure fees.');
+                    return false;
                 }
+                
+                // Check for duplicate terms
+                const selectedTerms = [];
+                let hasDuplicates = false;
+                
+                termSelects.forEach(select => {
+                    if (select.value && select.value.trim() !== '') {
+                        if (selectedTerms.includes(select.value)) {
+                            hasDuplicates = true;
+                        } else {
+                            selectedTerms.push(select.value);
+                        }
+                    }
+                });
+                
+                if (hasDuplicates) {
+                    e.preventDefault();
+                    alert('Please remove duplicate academic terms. Each term can only be selected once.');
+                    return false;
+                }
+                
+                return true;
             });
-            
-            if (hasDuplicates) {
-                e.preventDefault();
-                alert('Please remove duplicate academic terms. Each term can only be selected once.');
-                return false;
-            }
-            
-            return true;
-        });
+        }
     });
 </script>
 
