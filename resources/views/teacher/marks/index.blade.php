@@ -379,14 +379,20 @@ body {
                                 <label for="lesson_id" class="form-label">
                                     <i class="bi bi-journal-text me-1" style="color: var(--accent);"></i>Lesson
                                 </label>
-                                <select name="lesson_id" id="lesson_id" class="form-select" required>
-                                    <option value="">Select Lesson</option>
+                                <select name="lesson_id" id="lesson_id" class="form-select" required disabled>
+                                    <option value="">Select Branch & Course First</option>
                                     @foreach($lessons as $lesson)
-                                        <option value="{{ $lesson->id }}" data-course-id="{{ $lesson->course_id }}" {{ old('lesson_id') == $lesson->id ? 'selected' : '' }}>
+                                        <option value="{{ $lesson->id }}" 
+                                                data-course-id="{{ $lesson->course_id }}" 
+                                                data-branch-id="{{ $lesson->branchCourses->first()?->branch_id ?? '' }}"
+                                                {{ old('lesson_id') == $lesson->id ? 'selected' : '' }}>
                                             {{ $lesson->title ?? $lesson->name }}
                                         </option>
                                     @endforeach
                                 </select>
+                                <small id="lesson-info" class="form-text text-muted mt-2" style="display:none;">
+                                    <i class="bi bi-info-circle me-1"></i><span id="lesson-count">0</span> lesson(s) available
+                                </small>
                             </div>
                             <div class="col-md-3">
                                 <label for="assessment_type" class="form-label">
@@ -633,6 +639,11 @@ body {
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 
 <script>
+    // Initialize lesson filtering on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        filterLessons();
+    });
+    
     // Filter courses by branch
     document.getElementById('branch_id').addEventListener('change', function() {
         var branchId = this.value;
@@ -657,20 +668,93 @@ body {
         updateShowStudentsBtn();
     });
 
-    // Filter lessons by course
+    // Filter lessons by branch and course
     function filterLessons() {
+        var branchId = document.getElementById('branch_id').value;
         var courseId = document.getElementById('course_id').value;
         var lessonSelect = document.getElementById('lesson_id');
-        Array.from(lessonSelect.options).forEach(function(option) {
-            if (!option.value) return;
-            option.style.display = option.getAttribute('data-course-id') == courseId ? 'block' : 'none';
-        });
-        if (lessonSelect.selectedOptions.length && lessonSelect.selectedOptions[0].getAttribute('data-course-id') != courseId) {
+        var lessonInfo = document.getElementById('lesson-info');
+        
+        // First try to filter from existing options (for initially loaded lessons)
+        var availableLessons = Array.from(lessonSelect.options)
+            .filter(option => option.value && option.getAttribute('data-branch-id') == branchId && option.getAttribute('data-course-id') == courseId);
+        
+        // If we have both branch and course selected, fetch lessons from API for more accurate results
+        if (branchId && courseId) {
+            // Dynamically fetch lessons based on branch and course
+            fetch(`/api/branches/${branchId}/courses/${courseId}/lessons`)
+                .then(res => {
+                    if (!res.ok) throw new Error('Failed to load lessons');
+                    return res.json();
+                })
+                .then(lessons => {
+                    lessonSelect.innerHTML = '<option value="">Select Lesson</option>';
+                    
+                    if (Array.isArray(lessons) && lessons.length > 0) {
+                        lessons.forEach(lesson => {
+                            const option = document.createElement('option');
+                            option.value = lesson.id;
+                            option.textContent = lesson.title || lesson.name;
+                            option.setAttribute('data-branch-id', branchId);
+                            option.setAttribute('data-course-id', courseId);
+                            lessonSelect.appendChild(option);
+                        });
+                        
+                        lessonSelect.disabled = false;
+                        lessonInfo.style.display = 'inline-block';
+                        document.getElementById('lesson-count').textContent = lessons.length;
+                    } else {
+                        lessonSelect.disabled = true;
+                        lessonInfo.innerHTML = '<i class="bi bi-info-circle me-1"></i>No lessons available for this course in this branch';
+                        lessonInfo.style.display = 'inline-block';
+                    }
+                })
+                .catch(error => {
+                    console.warn('API call failed, using local filtering:', error);
+                    // Fallback to local filtering if API fails
+                    fallbackLessonFiltering(branchId, courseId, lessonSelect, lessonInfo);
+                });
+        } else {
+            lessonSelect.disabled = true;
             lessonSelect.value = '';
+            lessonSelect.innerHTML = '<option value="">Select Branch & Course First</option>';
+            lessonInfo.style.display = 'none';
         }
+        
         updateShowStudentsBtn();
     }
-    document.getElementById('course_id').addEventListener('change', filterLessons);
+    
+    // Fallback function for local filtering
+    function fallbackLessonFiltering(branchId, courseId, lessonSelect, lessonInfo) {
+        var lessonCount = 0;
+        
+        Array.from(lessonSelect.options).forEach(function(option) {
+            if (!option.value) return;
+            
+            var optionBranchId = option.getAttribute('data-branch-id');
+            var optionCourseId = option.getAttribute('data-course-id');
+            
+            if (optionBranchId == branchId && optionCourseId == courseId) {
+                option.style.display = 'block';
+                lessonCount++;
+            } else {
+                option.style.display = 'none';
+            }
+        });
+        
+        if (lessonCount > 0) {
+            lessonSelect.disabled = false;
+            lessonInfo.style.display = 'inline-block';
+            document.getElementById('lesson-count').textContent = lessonCount;
+        } else {
+            lessonSelect.disabled = true;
+            lessonInfo.innerHTML = '<i class="bi bi-info-circle me-1"></i>No lessons available for this course in this branch';
+            lessonInfo.style.display = 'inline-block';
+        }
+    }
+    document.getElementById('course_id').addEventListener('change', function() {
+        filterLessons();
+    });
 
     document.getElementById('assessment_type').addEventListener('change', function() {
         var type = this.value;

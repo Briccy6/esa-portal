@@ -101,6 +101,14 @@
                 <p class="mb-1"><strong>Course:</strong> {{ $lesson->course->course_name ?? 'N/A' }}</p>
                 <p class="mb-1"><strong>Lesson:</strong> {{ $lesson->title }}</p>
                 <p class="mb-0"><strong>Max Test Marks:</strong> {{ $lesson->max_test_marks }} | <strong>Max Exam Marks:</strong> {{ $lesson->max_exam_marks }}</p>
+                
+                @if($lesson->branchCourses && $lesson->branchCourses->count() > 0)
+                    <hr style="margin: 12px 0;">
+                    <div style="background:#fff3cd;padding:10px;border-radius:4px;font-size:0.9rem;color:#856404;">
+                        <strong>📌 Multi-Branch Lesson</strong>
+                        <p style="margin:8px 0 0 0;">The units created here will automatically apply to <strong>all {{ $lesson->branchCourses->count() }} selected branch-course combinations</strong>. You don't need to create units separately for each branch.</p>
+                    </div>
+                @endif
             </div>
 
             <form action="{{ route('staff.lesson.details.store', $lesson->id) }}" method="POST">

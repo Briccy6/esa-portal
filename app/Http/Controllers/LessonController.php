@@ -169,8 +169,9 @@ class LessonController extends Controller
 
             DB::commit();
 
-            return redirect()->route('dos.lessons.index')
-                             ->with('success', 'Lesson created successfully for ' . count($validated['selected_courses']) . ' branch-course combinations.');
+            // Redirect to units creation page so user can create units for all selected branches/courses at once
+            return redirect()->route('lesson.details.create', $lesson->id)
+                             ->with('success', 'Multi-branch lesson created successfully! Now create the units for this lesson. Units created here will automatically apply to all ' . count($validated['selected_courses']) . ' selected branch-course combinations.');
 
         } catch (\Exception $e) {
             DB::rollback();
@@ -201,9 +202,15 @@ public function createDetails(Request $request, $lessonId)
 
     public function show($lessonId)
     {
-        $lesson = Lesson::with(['terms', 'units', 'course', 'teacher'])->findOrFail($lessonId);
-
-        // Load any other relations or data as needed
+        $lesson = Lesson::with([
+            'terms',
+            'units',
+            'course',
+            'teacher',
+            'branchCourses.branch',
+            'branchCourses.course',
+            'branchCourses.teacher'
+        ])->findOrFail($lessonId);
 
         return view('staff.lessons.show', compact('lesson'));
     }

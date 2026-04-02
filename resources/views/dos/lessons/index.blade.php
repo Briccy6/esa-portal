@@ -70,12 +70,23 @@
     
     /* Action Buttons */
     .btn-action {
-        padding: 6px 12px;
+        padding: 8px 10px;
         border-radius: 6px;
-        font-size: 0.85rem;
+        font-size: 1rem;
         font-weight: 500;
         transition: all 0.3s ease;
-        margin: 0 2px;
+        margin: 0 3px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 36px;
+        height: 36px;
+        cursor: pointer;
+        text-decoration: none;
+    }
+    .btn-action i {
+        font-size: 1rem;
+        margin: 0;
     }
     .btn-view {
         background: #667eea;
@@ -85,6 +96,7 @@
     .btn-view:hover {
         background: #5a6fd8;
         transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
     }
     .btn-edit {
         background: #28a745;
@@ -94,6 +106,7 @@
     .btn-edit:hover {
         background: #218838;
         transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
     }
     .btn-assign {
         background: #17a2b8;
@@ -103,6 +116,7 @@
     .btn-assign:hover {
         background: #138496;
         transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(23, 162, 184, 0.3);
     }
     
     /* Empty State */
@@ -131,6 +145,15 @@
     }
     .assignment-item:hover {
         background: #e9ecef;
+    }
+    .current-assignment {
+        background: #e7f3ff;
+        border: 2px solid #b3d9ff;
+        border-left: 4px solid #667eea;
+    }
+    .current-assignment:hover {
+        background: #cce5ff;
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
     }
 </style>
 
@@ -297,6 +320,7 @@
                         <div id="currentAssignments">
                             <p class="text-muted">Loading current assignments...</p>
                         </div>
+                        <div id="currentAssignmentsForm" style="display:none;"></div>
                     </div>
                     
                     <div class="mb-3">
@@ -334,6 +358,9 @@
                     </div>
                 </div>
                 <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" onclick="deleteLessonConfirm(document.getElementById('lessonIdInput').value, document.getElementById('selectedLessonName').textContent)">
+                        <i class="fas fa-trash me-2"></i>Delete Lesson
+                    </button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-save me-2"></i>Save Assignments
@@ -356,19 +383,55 @@ function openAssignModal(lessonId, lessonTitle) {
         .then(response => response.json())
         .then(data => {
             let currentHtml = '';
+            let currentAssignmentsDiv = document.getElementById('currentAssignments');
+            let currentAssignmentsFormDiv = document.getElementById('currentAssignmentsForm');
+            
             if (data.assignments && data.assignments.length > 0) {
-                data.assignments.forEach(assignment => {
-                    currentHtml += `
-                        <div class="assignment-item">
-                            <strong>${assignment.branch_name} - ${assignment.course_name}</strong>
-                            ${assignment.teacher_name ? `<br><small class="text-muted">Teacher: ${assignment.teacher_name}</small>` : ''}
+                let formHtml = '';
+                data.assignments.forEach((assignment, index) => {
+                    formHtml += `
+                        <div class="assignment-item current-assignment" data-assignment-id="${assignment.id}">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label class="form-label">Branch:</label>
+                                    <select name="current_assignments[${index}][branch_id]" class="form-select branch-select-current" data-assignment-id="${assignment.id}" required>
+                                        <option value="">Select Branch</option>
+                                        @foreach($branches ?? \App\Models\Branch::all() as $branch)
+                                            <option value="{{ $branch->id }}" ${assignment.branch_id == {{ $branch->id }} ? 'selected' : ''}>{{ $branch->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Course:</label>
+                                    <select name="current_assignments[${index}][course_id]" class="form-select course-select-current" data-assignment-id="${assignment.id}" required>
+                                        <option value="${assignment.course_id}" selected>${assignment.course_name}</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Teacher:</label>
+                                    <select name="current_assignments[${index}][teacher_id]" class="form-select teacher-select-current" data-assignment-id="${assignment.id}">
+                                        <option value="">Select Teacher (Optional)</option>
+                                        <option value="${assignment.teacher_id}" selected>${assignment.teacher_name || 'No Teacher'}</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-1 d-flex align-items-end">
+                                    <button type="button" class="btn btn-outline-danger btn-sm w-100" onclick="removeCurrentAssignment('${assignment.id}')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     `;
                 });
+                
+                currentAssignmentsDiv.innerHTML = '';
+                currentAssignmentsFormDiv.innerHTML = formHtml;
+                currentAssignmentsFormDiv.style.display = 'block';
             } else {
-                currentHtml = '<p class="text-muted">No current assignments</p>';
+                currentAssignmentsDiv.innerHTML = '<p class="text-muted text-center py-3">No current assignments</p>';
+                currentAssignmentsFormDiv.innerHTML = '';
+                currentAssignmentsFormDiv.style.display = 'none';
             }
-            document.getElementById('currentAssignments').innerHTML = currentHtml;
         })
         .catch(error => {
             console.error('Error loading assignments:', error);
@@ -447,10 +510,10 @@ function addAssignmentRow() {
 
 // Handle branch selection to load courses
 document.addEventListener('click', function(e) {
-    if (e.target.classList.contains('branch-select')) {
+    if (e.target.classList.contains('branch-select') || e.target.classList.contains('branch-select-current')) {
         const branchSelect = e.target;
-        const courseSelect = branchSelect.closest('.assignment-item').querySelector('.course-select');
-        const teacherSelect = branchSelect.closest('.assignment-item').querySelector('.teacher-select');
+        const courseSelect = branchSelect.closest('.assignment-item').querySelector('.course-select, .course-select-current');
+        const teacherSelect = branchSelect.closest('.assignment-item').querySelector('.teacher-select, .teacher-select-current');
         
         if (branchSelect.value) {
             // Load courses for this branch
@@ -478,10 +541,10 @@ document.addEventListener('click', function(e) {
 
 // Handle course selection to load teachers
 document.addEventListener('change', function(e) {
-    if (e.target.classList.contains('course-select')) {
+    if (e.target.classList.contains('course-select') || e.target.classList.contains('course-select-current')) {
         const courseSelect = e.target;
-        const branchSelect = courseSelect.closest('.assignment-item').querySelector('.branch-select');
-        const teacherSelect = courseSelect.closest('.assignment-item').querySelector('.teacher-select');
+        const branchSelect = courseSelect.closest('.assignment-item').querySelector('.branch-select, .branch-select-current');
+        const teacherSelect = courseSelect.closest('.assignment-item').querySelector('.teacher-select, .teacher-select-current');
         
         if (courseSelect.value && branchSelect.value) {
             // Load teachers for this branch-course combination
@@ -502,5 +565,68 @@ document.addEventListener('change', function(e) {
         }
     }
 });
+
+function removeCurrentAssignment(assignmentId) {
+    if (confirm('Are you sure you want to remove this assignment?')) {
+        const assignmentDiv = document.querySelector(`.current-assignment[data-assignment-id="${assignmentId}"]`);
+        if (assignmentDiv) {
+            // Add hidden input to mark for deletion
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = `deleted_assignments[]`;
+            input.value = assignmentId;
+            document.getElementById('assignLessonForm').appendChild(input);
+            
+            // Remove from display
+            assignmentDiv.remove();
+            
+            // If no more current assignments, show the default message
+            const remaining = document.querySelectorAll('.current-assignment').length;
+            if (remaining === 0) {
+                document.getElementById('currentAssignments').innerHTML = '<p class="text-muted text-center py-3">No current assignments</p>';
+                document.getElementById('currentAssignmentsForm').style.display = 'none';
+            }
+        }
+    }
+}
+
+function deleteLessonConfirm(lessonId, lessonTitle) {
+    if (!lessonId) {
+        alert('Error: Lesson ID not found');
+        return;
+    }
+    
+    if (confirm(`⚠️ WARNING!\n\nAre you absolutely sure you want to DELETE the lesson "${lessonTitle}"?\n\nThis will permanently delete:\n• The lesson itself\n• All lesson units\n• All student marks\n• All attendance records\n• All exam associations\n\nThis action CANNOT be undone!`)) {
+        // Create and submit a hidden form for deletion
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `{{ route('staff.lessons.destroy', ':id') }}`.replace(':id', lessonId);
+        
+        // Add CSRF token - get from meta tag or form
+        let csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') 
+                        || document.querySelector('input[name="_token"]')?.value;
+        
+        if (!csrfToken) {
+            alert('Error: Security token not found. Please refresh the page and try again.');
+            return;
+        }
+        
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = '_token';
+        csrfInput.value = csrfToken;
+        form.appendChild(csrfInput);
+        
+        // Add method spoofing
+        const methodInput = document.createElement('input');
+        methodInput.type = 'hidden';
+        methodInput.name = '_method';
+        methodInput.value = 'DELETE';
+        form.appendChild(methodInput);
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
 </script>
 @endsection

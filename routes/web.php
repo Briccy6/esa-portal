@@ -311,11 +311,11 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::delete('/course/{id}', [CourseController::class, 'destroy'])->name('course.destroy');
     
     // Course Fee Assignment routes
-    Route::get('/course/{id}/assign-fees', [CourseController::class, 'assignFees'])->name('admin.course.assign-fees');
-    Route::get('/course/{id}/test-assign-fees', [CourseController::class, 'testAssignFees'])->name('admin.course.test-assign-fees');
-    Route::post('/course/{id}/store-fees', [CourseController::class, 'storeFees'])->name('admin.course.store-fees');
-    Route::get('/course/{id}/edit-fees', [CourseController::class, 'editFees'])->name('admin.course.edit-fees');
-    Route::put('/course/{id}/update-fees', [CourseController::class, 'updateFees'])->name('admin.course.update-fees');
+    Route::get('/course/{id}/assign-fees', [CourseController::class, 'assignFees'])->name('course.assign-fees');
+    Route::get('/course/{id}/test-assign-fees', [CourseController::class, 'testAssignFees'])->name('course.test-assign-fees');
+    Route::post('/course/{id}/store-fees', [CourseController::class, 'storeFees'])->name('course.store-fees');
+    Route::get('/course/{id}/edit-fees', [CourseController::class, 'editFees'])->name('course.edit-fees');
+    Route::put('/course/{id}/update-fees', [CourseController::class, 'updateFees'])->name('course.update-fees');
 
     // Teacher assignment
     Route::get('teachers/{teacher}/assign-course', [TeacherController::class, 'assignCourse'])->name('teachers.assignCourse');
@@ -966,6 +966,16 @@ Route::get('/api/branches/{branch}/courses/{course}/teachers', function($branchI
     
     return response()->json($teachers);
 })->name('api.branches.courses.teachers');
+
+// API Route to get lessons for branch-course combination
+Route::get('/api/branches/{branch}/courses/{course}/lessons', function($branchId, $courseId) {
+    $lessons = \App\Models\Lesson::whereHas('branchCourses', function($query) use ($branchId, $courseId) {
+        $query->where('branch_id', $branchId)
+              ->where('course_id', $courseId);
+    })->get(['id', 'title', 'name', 'course_id']);
+    
+    return response()->json($lessons);
+})->name('api.branches.courses.lessons');
 
 // API Route to get all courses
 Route::get('/api/courses/all', function() {

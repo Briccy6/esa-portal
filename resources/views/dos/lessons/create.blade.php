@@ -491,7 +491,7 @@
 
                 <div class="field-group">
                     <label class="field-label">Lesson Title <span class="req">*</span></label>
-                    <input type="text" name="title" class="f-control" value="{{ old('title') }}" required>
+                    <input type="text" name="lesson_title" class="f-control" value="{{ old('lesson_title') }}" required>
                 </div>
 
                 <div class="field-group">
@@ -544,8 +544,8 @@
                     </div>
                 </div>
                 
-                <!-- Hidden field to store selected courses on submit -->
-                <input type="hidden" name="selected_courses" id="selectedCoursesInput" value="">
+                <!-- Hidden fields container for course selections -->
+                <div id="courseFieldsContainer" style="display:none;"></div>
                 
                 @if($courses->count() > 0)
                     <div style="margin-bottom:20px;">
@@ -617,7 +617,7 @@
                     </div>
                     <div class="field-group">
                         <label class="field-label">Lesson Weight <span class="req">*</span></label>
-                        <input type="number" name="weight" class="f-control" value="{{ old('weight', 1) }}" min="1" max="100" required>
+                        <input type="number" name="lesson_weight" class="f-control" value="{{ old('lesson_weight', 1) }}" min="1" max="100" required>
                     </div>
                 </div>
 
@@ -663,10 +663,10 @@
     function updateBranchSelection() {
         selectedBranches.clear();
         const checkboxes = document.querySelectorAll('.branch-checkbox:checked');
-        const cards = document.querySelectorAll('.branch-card');
+        const allCards = document.querySelectorAll('label.branch-card');
         
         // Clear all selected states
-        cards.forEach(card => card.classList.remove('selected'));
+        allCards.forEach(card => card.classList.remove('selected'));
         
         // Add selected state to checked branches
         checkboxes.forEach(checkbox => {
@@ -674,14 +674,15 @@
             selectedBranches.add(parseInt(branchId));
             
             // Find and highlight the card
-            const card = checkbox.closest('.branch-card');
+            const card = checkbox.closest('label.branch-card');
             if (card) {
                 card.classList.add('selected');
             }
         });
         
         // Update display
-        document.getElementById('selectedBranchCount').textContent = selectedBranches.size;
+        const countEl = document.getElementById('selectedBranchCount');
+        if (countEl) countEl.textContent = selectedBranches.size;
         updateSubmitButton();
     }
 
@@ -694,17 +695,9 @@
             selectedCourses.add(checkbox.value);
         });
         
-        document.getElementById('selectedCourseCount').textContent = selectedCourses.size;
+        const countEl = document.getElementById('selectedCourseCount');
+        if (countEl) countEl.textContent = selectedCourses.size;
         updateSubmitButton();
-    }
-
-    // ── Form Submission ───────────────────────────────────────────
-    function prepareFormSubmission() {
-        // Populate hidden selected_courses field with JSON array
-        const coursesArray = Array.from(selectedCourses);
-        document.getElementById('selectedCoursesInput').value = JSON.stringify(coursesArray);
-        
-        return true;
     }
 
     // ── UI Helpers ────────────────────────────────────────────────
@@ -725,11 +718,72 @@
 
     function updateSubmitButton() {
         const submitBtn = document.getElementById('submitBtn');
+        const titleField = document.querySelector('input[name="lesson_title"]');
+        const weightField = document.querySelector('input[name="lesson_weight"]');
         const hasBranches = selectedBranches.size > 0;
         const hasCourses = selectedCourses.size > 0;
+        const hasTitle = titleField && titleField.value.trim().length > 0;
+        const hasWeight = weightField && parseFloat(weightField.value) > 0;
         
-        // Require both branches AND courses to be selected
-        submitBtn.disabled = !(hasBranches && hasCourses);
+        // Require title, weight, branches AND courses to be selected
+        submitBtn.disabled = !(hasTitle && hasWeight && hasBranches && hasCourses);
+    }
+
+    // ── Form Submission Handler ──────────────────────────────────
+    function prepareFormSubmission(event) {
+        const titleField = document.querySelector('input[name="lesson_title"]');
+        const weightField = document.querySelector('input[name="lesson_weight"]');
+        const courseCheckboxes = document.querySelectorAll('.course-checkbox:checked');
+        const branchCheckboxes = document.querySelectorAll('.branch-checkbox:checked');
+        
+        let errors = [];
+        
+        if (!titleField || !titleField.value.trim()) {
+            errors.push('Please enter a lesson title');
+        }
+        
+        if (!weightField || parseFloat(weightField.value) <= 0) {
+            errors.push('Please enter a valid lesson weight');
+        }
+        
+        if (branchCheckboxes.length === 0) {
+            errors.push('Please select at least one branch');
+        }
+        
+        if (courseCheckboxes.length === 0) {
+            errors.push('Please select at least one course-branch combination');
+        }
+        
+        if (errors.length > 0) {
+            event.preventDefault();
+            alert('Please fix the following errors:\n\n' + errors.join('\n'));
+            return false;
+        }
+        
+        // Convert course_branch_pairs into selected_courses array format
+        const courseCheckboxes = document.querySelectorAll('.course-checkbox:checked');
+        const selectedCoursesContainer = document.createElement('div');
+        
+        courseCheckboxes.forEach((checkbox, index) => {
+            const [courseId, branchId] = checkbox.value.split('_');
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = `selected_courses[${index}][course_id]`;
+            input.value = courseId;
+            selectedCoursesContainer.appendChild(input);
+            
+            const input2 = document.createElement('input');
+            input2.type = 'hidden';
+            input2.name = `selected_courses[${index}][branch_id]`;
+            input2.value = branchId;
+            selectedCoursesContainer.appendChild(input2);
+        });
+        
+        // Append to form
+        const form = document.getElementById('multiBranchForm');
+        form.appendChild(selectedCoursesContainer);
+        
+        return true;
     }
 
     // ── Init ──────────────────────────────────────────
@@ -741,10 +795,14 @@
         // Add form submission handler
         const form = document.getElementById('multiBranchForm');
         if (form) {
-            form.addEventListener('submit', function(e) {
-                prepareFormSubmission();
-            });
+            form.addEventListener('submit', prepareFormSubmission);
         }
+        
+        // Listen to all input changes to update button state
+        const titleInput = document.querySelector('input[name="lesson_title"]');
+        const weightInput = document.querySelector('input[name="lesson_weight"]');
+        if (titleInput) titleInput.addEventListener('input', updateSubmitButton);
+        if (weightInput) weightInput.addEventListener('input', updateSubmitButton);
     });
 
 </script>

@@ -85,6 +85,49 @@
         font-size: 0.85rem;
         margin-right: 10px;
     }
+    .branch-course-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+    }
+    .branch-course-table thead {
+        background: #f8f9fa;
+    }
+    .branch-course-table th {
+        padding: 12px;
+        text-align: left;
+        font-weight: 600;
+        color: #333;
+        border-bottom: 2px solid #dee2e6;
+    }
+    .branch-course-table td {
+        padding: 12px;
+        border-bottom: 1px solid #dee2e6;
+    }
+    .branch-course-table tbody tr:hover {
+        background: #f8f9fa;
+    }
+    .branch-badge {
+        background: #007bff;
+        color: white;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 0.85rem;
+    }
+    .course-badge {
+        background: #6c757d;
+        color: white;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 0.85rem;
+    }
+    .teacher-badge {
+        background: #17a2b8;
+        color: white;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 0.85rem;
+    }
     .btn-back {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
@@ -170,6 +213,48 @@
                     <p class="text-muted">No terms assigned to this lesson.</p>
                 @endif
             </div>
+
+            <!-- Multi-Branch Assignments (if applicable) -->
+            @if($lesson->branchCourses && $lesson->branchCourses->count() > 0)
+                <div class="mb-4">
+                    <h6 class="section-title">Branch-Course Assignments</h6>
+                    <p class="text-muted small mb-3">This lesson is assigned to the following branches and courses:</p>
+                    <table class="branch-course-table">
+                        <thead>
+                            <tr>
+                                <th>Branch</th>
+                                <th>Course</th>
+                                <th>Assigned Teacher</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($lesson->branchCourses as $assignment)
+                                <tr>
+                                    <td>
+                                        <span class="branch-badge">
+                                            {{ $assignment->branch ? $assignment->branch->name : 'N/A' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="course-badge">
+                                            {{ $assignment->course ? $assignment->course->course_name : 'N/A' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        @if($assignment->teacher)
+                                            <span class="teacher-badge">
+                                                {{ $assignment->teacher->teacher_name }}
+                                            </span>
+                                        @else
+                                            <span class="text-muted">Not assigned</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
 
             <!-- Lesson Units -->
             <div class="mb-4">

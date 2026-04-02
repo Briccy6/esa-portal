@@ -25,7 +25,7 @@ public function index() {
      */
     public function create(Request $request, $lessonId)
     {
-        $lesson = Lesson::with('course')->findOrFail($lessonId);
+        $lesson = Lesson::with('course', 'branchCourses')->findOrFail($lessonId);
         $terms = Term::with('academicYear')->get();
         return view('details.create', compact('lesson', 'terms'));
     }
@@ -54,8 +54,12 @@ public function index() {
         ]);
     }
 
+    $lesson = Lesson::with('branchCourses')->find($lessonId);
+    $branchCount = $lesson->branchCourses->count();
+    $branchInfo = $branchCount > 0 ? " and are now available across {$branchCount} branch-course combinations" : '';
+    
     return redirect()->route('staff.lessons.show', $lessonId)
-                     ->with('success', 'Lesson details saved successfully.');
+                     ->with('success', 'Lesson details saved successfully! Created ' . count($request->units) . ' unit(s)' . $branchInfo . '.');
 }
 
 
