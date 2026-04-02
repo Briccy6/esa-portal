@@ -25,11 +25,11 @@ class ClientTokenController extends Controller
 
     public function purchase()
     {
-        $subscriptions = Subscription::where('is_active', true)
+        $tokenPackages = Subscription::where('is_active', true)
             ->orderBy('price')
             ->get();
 
-        return view('client.tokens.purchase', compact('subscriptions'));
+        return view('client.tokens.purchase', compact('tokenPackages'));
     }
 
     public function processPurchase(Request $request)
