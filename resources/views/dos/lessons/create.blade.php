@@ -357,16 +357,6 @@
                                 </div>
                             </div>
                         </div>
-                    @else
-                        <div class="alert alert-warning">
-                            <i class="fas fa-exclamation-triangle me-2"></i>
-                            <strong>No branches found!</strong> Please add branches to the system first before creating lessons.
-                        </div>
-                        <div class="text-center">
-                            <a href="{{ url('/admin/branches') }}" class="btn btn-primary" target="_blank">
-                                <i class="fas fa-plus me-2"></i>Add Branches
-                            </a>
-                        </div>
                     @endif
 
                     {{-- ── Course Selection (Step 2) ──}}
