@@ -146,16 +146,23 @@ class Client extends Authenticatable
 
     public function averageScore()
     {
-        $completedSessions = $this->examSessions()
+        // Get exam attempts through the exam sessions relationship
+        $completedAttempts = $this->examSessions()
+            ->with('attempt')
             ->whereNotNull('session_start')
-            ->whereNotNull('session_end')
-            ->whereNotNull('score')
-            ->get();
+            ->get()
+            ->filter(function ($session) {
+                return $session->attempt && 
+                       $session->attempt->status === 'submitted' && 
+                       $session->attempt->total_score !== null;
+            });
 
-        if ($completedSessions->isEmpty()) {
+        if ($completedAttempts->isEmpty()) {
             return 0;
         }
 
-        return $completedSessions->avg('score');
+        return $completedAttempts->avg(function ($session) {
+            return $session->attempt->percentage ?? 0;
+        });
     }
 }
