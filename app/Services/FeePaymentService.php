@@ -6,6 +6,8 @@ use App\Models\Student;
 use App\Models\StudentSubscription;
 use App\Models\StudentTransaction;
 use App\Models\SchoolFee;
+use App\Models\AcademicYear;
+use App\Models\Term;
 use Carbon\Carbon;
 
 class FeePaymentService
@@ -15,8 +17,16 @@ class FeePaymentService
      */
     public static function hasPaidAllFees(Student $student): bool
     {
-        $academicYear = config('app.academic_year', '2025-2026');
-        $currentTerm = config('app.current_term', 'Term 1');
+        $academicYearName = config('app.academic_year', '2025-2026');
+        $currentTermName = config('app.current_term', 'Term 1');
+        
+        // Find academic year and term by their names
+        $academicYear = AcademicYear::where('year', $academicYearName)->first();
+        $term = Term::where('name', $currentTermName)->first();
+        
+        if (!$academicYear || !$term) {
+            return false;
+        }
         
         // Define academic year date range
         $academicYearStart = '2025-09-01'; // Adjust based on your academic year start
@@ -35,13 +45,13 @@ class FeePaymentService
         }
         
         // Additional check: Verify payment amount matches required fees
-        $requiredFees = SchoolFee::where('academic_year', $academicYear)
-                                ->where('term', $currentTerm)
+        $requiredFees = SchoolFee::where('academic_year_id', $academicYear->id)
+                                ->where('term_id', $term->id)
                                 ->sum('amount');
         
         $totalPaid = StudentTransaction::where('student_id', $student->id)
-                                      ->where('academic_year', $academicYear)
-                                      ->where('term', $currentTerm)
+                                      ->where('academic_year', $academicYearName)
+                                      ->where('term', $currentTermName)
                                       ->where('type', 'payment')
                                       ->sum('amount');
         
@@ -56,8 +66,12 @@ class FeePaymentService
      */
     public static function getPaymentStatus(Student $student): array
     {
-        $academicYear = config('app.academic_year', '2025-2026');
-        $currentTerm = config('app.current_term', 'Term 1');
+        $academicYearName = config('app.academic_year', '2025-2026');
+        $currentTermName = config('app.current_term', 'Term 1');
+        
+        // Find academic year and term by their names
+        $academicYear = AcademicYear::where('year', $academicYearName)->first();
+        $term = Term::where('name', $currentTermName)->first();
         
         // Define academic year date range
         $academicYearStart = '2025-09-01'; // Adjust based on your academic year start
@@ -70,13 +84,16 @@ class FeePaymentService
                                         ->where('ends_at', '>=', $academicYearStart)
                                         ->first();
         
-        $requiredFees = SchoolFee::where('academic_year', $academicYear)
-                                ->where('term', $currentTerm)
-                                ->sum('amount');
+        $requiredFees = 0;
+        if ($academicYear && $term) {
+            $requiredFees = SchoolFee::where('academic_year_id', $academicYear->id)
+                                    ->where('term_id', $term->id)
+                                    ->sum('amount');
+        }
         
         $totalPaid = StudentTransaction::where('student_id', $student->id)
-                                      ->where('academic_year', $academicYear)
-                                      ->where('term', $currentTerm)
+                                      ->where('academic_year', $academicYearName)
+                                      ->where('term', $currentTermName)
                                       ->where('type', 'payment')
                                       ->sum('amount');
         

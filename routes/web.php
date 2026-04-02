@@ -1319,8 +1319,10 @@ Route::prefix('student/report-cards')->name('student.report-cards.')->group(func
     Route::get('/', [ReportCardController::class, 'studentIndex'])->name('index')->middleware('auth:student');
     Route::get('/{reportCard}', [ReportCardController::class, 'studentShow'])->name('show')->middleware('auth:student');
     Route::get('/{reportCard}/download', [ReportCardController::class, 'studentDownload'])->name('download')->middleware('auth:student');
-    Route::get('/countdown', [ReportCardController::class, 'getCountdown'])->name('countdown');
 });
+
+// Public countdown endpoint (outside student middleware group)
+Route::get('/student/report-cards/countdown', [ReportCardController::class, 'getCountdown'])->name('student.report-cards.countdown');
 
 // Secretary Token Management Routes
 Route::middleware(['auth:admin,staff'])->prefix('tokens')->name('tokens.')->group(function () {
