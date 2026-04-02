@@ -14,6 +14,9 @@ public function index()
 {
     $teacher = auth('teacher')->user();
     
+    // Get announcements for teacher layout
+    $announcements = \App\Models\Announcement::latest()->take(5)->get();
+    
     // Get all lessons for the teacher's courses (with course relationship)
     $lessons = Lesson::where('teacher_id', $teacher->id)
         ->with('course')
@@ -34,13 +37,16 @@ public function index()
     // Get all terms for term selection
     $terms = \App\Models\Term::orderBy('name')->get();
     
-    return view('teacher.marks.index', compact('lessons', 'courses', 'branches', 'terms'));
+    return view('teacher.marks.index', compact('lessons', 'courses', 'branches', 'terms', 'announcements'));
 }
 
     public function create(Lesson $lesson)
     {
+        // Get announcements for teacher layout
+        $announcements = \App\Models\Announcement::latest()->take(5)->get();
+        
         // You can fetch students for this lesson here if needed
-        return view('teacher.marks.create', compact('lesson'));
+        return view('teacher.marks.create', compact('lesson', 'announcements'));
     }
 
     public function store(Request $request)
@@ -148,6 +154,9 @@ public function index()
     {
         $teacher = auth('teacher')->user();
         
+        // Get announcements for teacher layout
+        $announcements = \App\Models\Announcement::latest()->take(5)->get();
+        
         // Get all marks recorded by this teacher with term relationship
         $marks = Mark::whereHas('lesson', function($query) use ($teacher) {
             $query->where('teacher_id', $teacher->id);
@@ -243,12 +252,15 @@ public function index()
             return strcasecmp($a['name'], $b['name']);
         });
 
-        return view('teacher.marks.view', compact('groupedMarks', 'students'));
+        return view('teacher.marks.view', compact('groupedMarks', 'students', 'announcements'));
     }
 
     public function editMarks($lessonId, $testDate)
     {
         $teacher = auth('teacher')->user();
+        
+        // Get announcements for teacher layout
+        $announcements = \App\Models\Announcement::latest()->take(5)->get();
         
         // Verify this lesson belongs to the teacher
         $lesson = Lesson::where('id', $lessonId)
@@ -261,7 +273,7 @@ public function index()
             ->with(['student', 'course', 'branch'])
             ->get();
 
-        return view('teacher.marks.edit', compact('lesson', 'marks', 'testDate'));
+        return view('teacher.marks.edit', compact('lesson', 'marks', 'testDate', 'announcements'));
     }
 
     public function updateMarks(Request $request, $lessonId, $testDate)

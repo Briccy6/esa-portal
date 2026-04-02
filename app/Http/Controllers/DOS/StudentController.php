@@ -8,6 +8,7 @@ use App\Models\Branch;
 use App\Models\Course;
 use App\Models\AcademicYear;
 use App\Models\Attendance;
+use App\Models\Lesson;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -77,6 +78,102 @@ class StudentController extends Controller
             'courses', 
             'academicYears'
         ));
+    }
+
+    public function markAttendance(Request $request)
+    {
+        $request->validate([
+            'branch_id' => 'required|exists:branches,id',
+            'course_id' => 'required|exists:courses,id',
+            'lesson_id' => 'nullable|exists:lessons,id',
+            'date' => 'required|date',
+            'attendance' => 'required|array',
+            'attendance.*.student_id' => 'required|exists:students,id',
+            'attendance.*.status' => 'required|in:present,late,absent'
+        ]);
+
+        try {
+            DB::beginTransaction();
+            
+            $markedBy = Auth::guard('staff')->user()->id;
+            $markedAt = now();
+            
+            foreach ($request->attendance as $attendanceData) {
+                // Check if attendance already exists for this student on this date
+                $existingAttendance = Attendance::where('student_id', $attendanceData['student_id'])
+                    ->where('date', $request->date)
+                    ->first();
+                
+                if ($existingAttendance) {
+                    // Update existing attendance
+                    $existingAttendance->update([
+                        'status' => $attendanceData['status'],
+                        'marked_by' => $markedBy,
+                        'marked_at' => $markedAt,
+                        'course_id' => $request->course_id,
+                        'lesson_id' => $request->lesson_id,
+                    ]);
+                } else {
+                    // Create new attendance record
+                    Attendance::create([
+                        'student_id' => $attendanceData['student_id'],
+                        'course_id' => $request->course_id,
+                        'lesson_id' => $request->lesson_id,
+                        'date' => $request->date,
+                        'status' => $attendanceData['status'],
+                        'marked_by' => $markedBy,
+                        'marked_at' => $markedAt,
+                    ]);
+                }
+            }
+            
+            DB::commit();
+            
+            // Check if request expects JSON response
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Attendance marked successfully!'
+                ]);
+            }
+            
+            return redirect()->route('dos.students.attendance')
+                ->with('success', 'Attendance marked successfully!');
+                
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            // Check if request expects JSON response
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error marking attendance: ' . $e->getMessage()
+                ], 500);
+            }
+            
+            return back()
+                ->withInput()
+                ->with('error', 'Error marking attendance: ' . $e->getMessage());
+        }
+    }
+
+    public function getStudentsForAttendance(Request $request)
+    {
+        $request->validate([
+            'branch_id' => 'required|exists:branches,id',
+            'course_id' => 'required|exists:courses,id',
+        ]);
+
+        $students = Student::where('branch_id', $request->branch_id)
+            ->where('course_id', $request->course_id)
+            ->with(['branch', 'course'])
+            ->orderBy('full_name')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'students' => $students
+        ]);
     }
 
     public function edit(Student $student)

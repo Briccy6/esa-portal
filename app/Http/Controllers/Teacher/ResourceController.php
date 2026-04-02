@@ -13,6 +13,9 @@ class ResourceController extends Controller
     {
         $teacher = auth('teacher')->user();
         $branches = Branch::all();
+        
+        // Get announcements for teacher layout
+        $announcements = \App\Models\Announcement::latest()->take(5)->get();
     
         $query = Resource::with(['course:id,course_name', 'lesson:id,title'])
             ->where('teacher_id', $teacher->id);
@@ -30,7 +33,7 @@ class ResourceController extends Controller
         // Add this line to fetch all lessons for the teacher's courses
         $lessons = Lesson::whereIn('course_id', $courses->pluck('id'))->get();
     
-        return view('teacher.resources.index', compact('resources', 'branches', 'courses', 'lessons'));
+        return view('teacher.resources.index', compact('resources', 'branches', 'courses', 'lessons', 'announcements'));
     }
     
 
@@ -40,8 +43,11 @@ class ResourceController extends Controller
         $branches = $teacher->branches; // Only branches assigned to this teacher
         $courses = $teacher->courses()->with('lessons:id,course_id,title')->get();
         $lessons = []; // Initialize as empty
+        
+        // Get announcements for teacher layout
+        $announcements = \App\Models\Announcement::latest()->take(5)->get();
 
-        return view('teacher.resources.create', compact('courses', 'branches', 'lessons'));
+        return view('teacher.resources.create', compact('courses', 'branches', 'lessons', 'announcements'));
     }
     
 
@@ -173,8 +179,11 @@ public function edit($id)
     $branches = $teacher->branches;
     $courses = $teacher->courses()->with('lessons:id,course_id,title')->get();
     $lessons = Lesson::where('course_id', $resource->course_id)->get();
+    
+    // Get announcements for teacher layout
+    $announcements = \App\Models\Announcement::latest()->take(5)->get();
 
-    return view('teacher.resources.edit', compact('resource', 'branches', 'courses', 'lessons'));
+    return view('teacher.resources.edit', compact('resource', 'branches', 'courses', 'lessons', 'announcements'));
 }
 public function update(Request $request, $id)
 {

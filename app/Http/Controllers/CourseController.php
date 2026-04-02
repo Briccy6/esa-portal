@@ -312,6 +312,30 @@ public function getAllBranches()
     return response()->json($branches);
 }
 
+public function getCourseStudents($courseId)
+{
+    try {
+        $course = Course::findOrFail($courseId);
+        $students = $course->students()
+            ->with(['branch', 'academicYear'])
+            ->get(['id', 'full_name', 'reg_number', 'class', 'branch_id', 'academic_year_id'])
+            ->map(function ($student) {
+                return [
+                    'id' => $student->id,
+                    'full_name' => $student->full_name,
+                    'reg_number' => $student->reg_number,
+                    'class' => $student->class,
+                    'branch_name' => $student->branch->name ?? 'N/A',
+                    'academic_year' => $student->academicYear->year ?? 'N/A',
+                ];
+            });
+
+        return response()->json($students);
+    } catch (\Exception $e) {
+        return response()->json(['error' => 'Failed to load students: ' . $e->getMessage()], 500);
+    }
+}
+
 public function getBranchesByCourse(Request $request) {
     $courseId = $request->query('course_id');
     if (!$courseId) {

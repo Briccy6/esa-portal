@@ -425,6 +425,49 @@ class ReportCardController extends Controller
             ->with('success', 'Report card deleted successfully!');
     }
 
+    public function bulkDestroy(Request $request)
+    {
+        $request->validate([
+            'student_id' => 'required|exists:students,id',
+            'course_id' => 'required|exists:courses,id',
+            'academic_year_id' => 'required|exists:academic_years,id',
+            'term_ids' => 'required|array',
+            'term_ids.*' => 'exists:terms,id',
+        ]);
+
+        try {
+            $reportCards = ReportCard::where('student_id', $request->student_id)
+                ->where('course_id', $request->course_id)
+                ->where('academic_year_id', $request->academic_year_id)
+                ->whereIn('term_id', $request->term_ids)
+                ->get();
+
+            if ($reportCards->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No report cards found matching the criteria.'
+                ], 404);
+            }
+
+            $deletedCount = 0;
+            foreach ($reportCards as $reportCard) {
+                $reportCard->delete();
+                $deletedCount++;
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => "Successfully deleted {$deletedCount} report card(s)."
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error in bulk delete report cards: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error deleting report cards: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function bulkApprove(Request $request)
     {
         $validated = $request->validate([

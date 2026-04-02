@@ -434,6 +434,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::get('report-cards/{reportCard}/edit', [ReportCardController::class, 'edit'])->name('report-cards.edit');
     Route::put('report-cards/{reportCard}', [ReportCardController::class, 'update'])->name('report-cards.update');
     Route::delete('report-cards/{reportCard}', [ReportCardController::class, 'destroy'])->name('report-cards.destroy');
+    Route::delete('report-cards/bulk', [ReportCardController::class, 'bulkDestroy'])->name('report-cards.destroy.bulk');
     Route::get('report-cards/{reportCard}/print', [ReportCardController::class, 'printReport'])->name('report-cards.print');
 
     // School Information
@@ -1109,6 +1110,17 @@ Route::get('/test-logo', function() {
 Route::get('/students/{student}/transcript', [App\Http\Controllers\StudentController::class, 'transcript'])->name('students.transcript');
 Route::get('/students/{student}/transcript/ajax', [App\Http\Controllers\StudentController::class, 'transcriptAjax']);
 
+// API Routes for Transcript Management
+Route::middleware(['auth:staff'])->prefix('api/transcripts')->name('api.transcripts.')->group(function () {
+    Route::get('/all', [App\Http\Controllers\TranscriptController::class, 'getAllTranscripts'])->name('all');
+    Route::get('/course/{courseId}', [App\Http\Controllers\TranscriptController::class, 'getCourseTranscripts'])->name('course');
+});
+
+// API Routes for Course Management
+Route::middleware(['auth:staff'])->prefix('api/courses')->name('api.courses.')->group(function () {
+    Route::get('/{courseId}/students', [App\Http\Controllers\CourseController::class, 'getCourseStudents'])->name('students');
+});
+
 
 // Teacher resource routes
 
@@ -1231,6 +1243,8 @@ Route::middleware(['auth:staff'])->prefix('dos')->name('dos.')->group(function (
     Route::get('/students/cards', [\App\Http\Controllers\DOS\StudentController::class, 'listStudentCards'])->name('students.StudentCards');
     Route::get('/students/report', [\App\Http\Controllers\DOS\StudentController::class, 'report'])->name('students.report');
     Route::get('/students/attendance', [\App\Http\Controllers\DOS\StudentController::class, 'attendance'])->name('students.attendance');
+    Route::post('/students/mark-attendance', [\App\Http\Controllers\DOS\StudentController::class, 'markAttendance'])->name('students.mark-attendance');
+    Route::get('/students/get-students-for-attendance', [\App\Http\Controllers\DOS\StudentController::class, 'getStudentsForAttendance'])->name('students.get-students-for-attendance');
     Route::get('/students/{student}/edit', [\App\Http\Controllers\DOS\StudentController::class, 'edit'])->name('students.edit');
     Route::put('/students/{student}', [\App\Http\Controllers\DOS\StudentController::class, 'update'])->name('students.update');
     Route::post('/students/{student}/generate-card', [\App\Http\Controllers\DOS\StudentController::class, 'generateStudentCard'])->name('students.generate_card');

@@ -13,14 +13,20 @@ class TeacherQuestionController extends Controller
         $exam = Exam::findOrFail($exam);
         $exam->load(['questions', 'questions.questionBank']);
         
-        return view('teacher.questions.index', compact('exam'));
+        // Get announcements for teacher layout
+        $announcements = \App\Models\Announcement::latest()->take(5)->get();
+        
+        return view('teacher.questions.index', compact('exam', 'announcements'));
     }
     
     public function create($exam)
     {
         $exam = Exam::findOrFail($exam);
         
-        return view('teacher.questions.create', compact('exam'));
+        // Get announcements for teacher layout
+        $announcements = \App\Models\Announcement::latest()->take(5)->get();
+        
+        return view('teacher.questions.create', compact('exam', 'announcements'));
     }
     
     public function store(Request $request, $exam)

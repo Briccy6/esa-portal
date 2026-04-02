@@ -514,11 +514,15 @@
     .form-select {
         border: 2px solid #e9ecef;
         border-radius: 12px;
-        padding: 0.8rem 1rem 0.8rem 3rem;
+        padding: 0.8rem 1rem;
         font-size: 1rem;
         transition: all 0.3s ease;
         background: #f8f9fa;
         width: 100%;
+    }
+
+    .input-group .form-control {
+        padding-left: 3rem;
     }
 
     .form-control:focus,

@@ -122,18 +122,36 @@ class ExamController extends Controller
             \Log::info('Staff user detected, role: ' . $user->role);
             if ($user->role === 'DOS') {
                 \Log::info('DOS user detected, returning dos_create view');
-                // DOS can access all courses, lessons, and branches
-                $courses = Course::all();
-                $lessons = Lesson::all();
-                $branches = \App\Models\Branch::all();
+                // DOS can only access courses in their assigned branches
+                $userBranches = $user->branches;
+                \Log::info('DOS user branches: ' . $userBranches->pluck('id')->implode(', '));
+                
+                // Filter courses to only those in DOS's assigned branches
+                $courses = Course::whereHas('branches', function($query) use ($userBranches) {
+                    $query->whereIn('branches.id', $userBranches->pluck('id'));
+                })->get();
+                
+                // Filter lessons to only those in DOS's assigned branches
+                $lessons = Lesson::whereHas('course', function($query) use ($userBranches) {
+                    $query->whereHas('branches', function($branchQuery) use ($userBranches) {
+                        $branchQuery->whereIn('branches.id', $userBranches->pluck('id'));
+                    });
+                })->get();
+                
+                // Only show branches assigned to DOS
+                $branches = $userBranches;
                 $teachers = \App\Models\Teacher::all();
                 $academicYears = \App\Models\AcademicYear::orderBy('year', 'desc')->get();
                 $terms = \App\Models\Term::all();
                 $examPassword = \Illuminate\Support\Str::random(8);
                 
-                // Get question banks for DOS (can see all)
+                // Get question banks for DOS (can only see those from courses in their branches)
                 try {
-                    $questionBanks = \App\Models\QuestionBank::with(['questions', 'teacher', 'course'])->get();
+                    $questionBanks = \App\Models\QuestionBank::whereHas('course', function($query) use ($userBranches) {
+                        $query->whereHas('branches', function($branchQuery) use ($userBranches) {
+                            $branchQuery->whereIn('branches.id', $userBranches->pluck('id'));
+                        });
+                    })->with(['questions', 'teacher', 'course'])->get();
                 } catch (\Exception $e) {
                     $questionBanks = collect();
                     \Log::error('Question banks table not available: ' . $e->getMessage());

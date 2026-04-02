@@ -348,26 +348,16 @@
                                             Actions
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                            <li><hr class="dropdown-divider"></li>
                                             <li>
                                                 @if($multipleTermsInGroup)
-                                                    <a class="dropdown-item" href="{{ route('admin.report-cards.consolidated', $consolidatedQuery) }}">
-                                                        <i class="fas fa-eye text-primary me-2"></i> View report ({{ count($termIdsInGroup) }} terms)
-                                                    </a>
+                                                    <button class="dropdown-item text-danger" onclick="deleteReportCardsGroup('{{ $first->student_id }}', '{{ $first->course_id }}', '{{ $first->academic_year_id }}', '{{ implode(',', $termIdsInGroup) }}', '{{ $first->student->full_name }}')">
+                                                        <i class="fas fa-trash me-2"></i> Delete all ({{ count($termIdsInGroup) }} terms)
+                                                    </button>
                                                 @else
-                                                    <a class="dropdown-item" href="{{ route('admin.report-cards.show', $first) }}">
-                                                        <i class="fas fa-eye text-primary me-2"></i> View report
-                                                    </a>
-                                                @endif
-                                            </li>
-                                            <li>
-                                                @if($multipleTermsInGroup)
-                                                    <a class="dropdown-item" href="{{ route('admin.report-cards.consolidated-print', $consolidatedQuery) }}" target="_blank" rel="noopener">
-                                                        <i class="fas fa-print text-success me-2"></i> Print PDF ({{ count($termIdsInGroup) }} terms)
-                                                    </a>
-                                                @else
-                                                    <a class="dropdown-item" href="{{ route('admin.report-cards.print', $first) }}" target="_blank" rel="noopener">
-                                                        <i class="fas fa-print text-success me-2"></i> Print PDF
-                                                    </a>
+                                                    <button class="dropdown-item text-danger" onclick="deleteReportCard({{ $first->id }}, '{{ $first->student->full_name }}')">
+                                                        <i class="fas fa-trash me-2"></i> Delete report
+                                                    </button>
                                                 @endif
                                             </li>
                                         </ul>
@@ -390,6 +380,70 @@
         </div>
     </div>
 </div>
+
+<script>
+function deleteReportCard(reportCardId, studentName) {
+    if (confirm('Are you sure you want to delete the report card for "' + studentName + '"? This action cannot be undone and will permanently remove all associated data including subjects, test marks, and position calculations.')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ route('admin.report-cards.destroy', ':id') }}'.replace(':id', reportCardId);
+        
+        const csrfToken = document.querySelector('meta[name="csrf-token"]');
+        if (csrfToken) {
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = '_token';
+            csrfInput.value = csrfToken.getAttribute('content');
+            form.appendChild(csrfInput);
+        }
+        
+        const methodInput = document.createElement('input');
+        methodInput.type = 'hidden';
+        methodInput.name = '_method';
+        methodInput.value = 'DELETE';
+        form.appendChild(methodInput);
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+function deleteReportCardsGroup(studentId, courseId, academicYearId, termIds, studentName) {
+    const termCount = termIds.split(',').length;
+    if (confirm('Are you sure you want to delete ALL ' + termCount + ' report cards for "' + studentName + '"? This action cannot be undone and will permanently remove all associated data including subjects, test marks, and position calculations for all terms.')) {
+        // Create a form to submit bulk delete via AJAX
+        const formData = new FormData();
+        formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+        formData.append('_method', 'DELETE');
+        formData.append('student_id', studentId);
+        formData.append('course_id', courseId);
+        formData.append('academic_year_id', academicYearId);
+        formData.append('term_ids', termIds);
+        formData.append('bulk_delete', 'true');
+        
+        fetch('{{ route('admin.report-cards.destroy.bulk') }}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Report cards deleted successfully!');
+                window.location.reload();
+            } else {
+                alert('Error deleting report cards: ' + (data.message || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting report cards. Please try again.');
+        });
+    }
+}
+</script>
 
 <style>
 /* ════════════════════════════════════════════

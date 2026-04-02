@@ -13,6 +13,15 @@
                 </a>
             </div>
 
+            @if(auth('staff')->user()->branches->count() > 0)
+                <div class="alert alert-info alert-dismissible fade show" role="alert">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>Branch Access:</strong> You can only create exams for courses and lessons in your assigned branches: 
+                    <strong>{{ auth('staff')->user()->branches->pluck('branch_name')->implode(', ') }}</strong>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            @endif
+
             <div class="card">
                 <div class="card-body">
                     <form action="{{ route('dos.exams.store') }}" method="POST">
@@ -158,7 +167,7 @@
                                             </option>
                                         @endforeach
                                     </select>
-                                    <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple courses</small>
+                                    <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple courses. Only courses from your assigned branches are shown.</small>
                                     @error('course_ids')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
@@ -176,7 +185,7 @@
                                             </option>
                                         @endforeach
                                     </select>
-                                    <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple lessons</small>
+                                    <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple lessons. Only lessons from your assigned branches are shown.</small>
                                     @error('lesson_ids')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror

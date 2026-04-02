@@ -17,26 +17,64 @@
     $totalToPay = $studentCardFee + $registrationFee + ($discountableFees - $discountAmount);
     $totalPaid = $payments->sum('amount');
     $outstanding = $totalToPay - $totalPaid;
+    
+    // Get school information
+    $schoolInfo = \App\Models\SchoolInfo::first();
+    $systemName = \Illuminate\Support\Facades\Cache::get('esa_system_name', 'ESA Learning Portal');
+    $systemLogo = \App\Helpers\LogoHelper::getLogoUrl();
 @endphp
 
 <style>
-/* Print-specific styles to hide Actions column */
+/* Print-specific styles for professional transcript */
 @media print {
+    body {
+        background: white !important;
+        color: black !important;
+        font-family: 'Times New Roman', serif !important;
+        font-size: 12pt !important;
+        line-height: 1.4 !important;
+    }
+    
     /* Hide the Actions column header */
     .transcript-container table th:nth-child(7),
     .transcript-container table td:nth-child(7) {
         display: none !important;
     }
     
-    /* Hide the Edit Mode badge */
-    .transcript-container .badge.bg-warning {
+    /* Hide the Edit Mode badge and interactive elements */
+    .transcript-container .badge.bg-warning,
+    .transcript-container .btn,
+    .transcript-container .modal {
         display: none !important;
+    }
+    
+    /* Professional header styling for print */
+    .transcript-header {
+        text-align: center !important;
+        margin-bottom: 30px !important;
+        padding-bottom: 20px !important;
+        border-bottom: 2px solid #000 !important;
+    }
+    
+    .transcript-header h2 {
+        font-size: 24pt !important;
+        font-weight: bold !important;
+        margin-bottom: 10px !important;
+        color: black !important;
+    }
+    
+    .transcript-header h3 {
+        font-size: 18pt !important;
+        font-weight: bold !important;
+        margin: 20px 0 10px 0 !important;
+        color: black !important;
     }
     
     /* Ensure proper table formatting for print */
     .transcript-container table {
         width: 100% !important;
         border-collapse: collapse !important;
+        margin-bottom: 20px !important;
     }
     
     .transcript-container table th,
@@ -44,54 +82,196 @@
         border: 1px solid #000 !important;
         padding: 8px !important;
         text-align: left !important;
+        vertical-align: top !important;
+    }
+    
+    .transcript-container table th {
+        background: #f0f0f0 !important;
+        font-weight: bold !important;
+        color: black !important;
     }
     
     /* Remove card shadows and backgrounds for clean printing */
     .transcript-container .card {
         border: 1px solid #000 !important;
         box-shadow: none !important;
-        margin-bottom: 1rem !important;
+        margin-bottom: 20px !important;
+        page-break-inside: avoid !important;
     }
     
     .transcript-container .card-header {
         background: #f8f9fa !important;
         border-bottom: 1px solid #000 !important;
+        color: black !important;
     }
     
-    /* Ensure text is black for printing */
+    .transcript-container .card-body {
+        color: black !important;
+    }
+    
+    /* Ensure all text is black for printing */
     .transcript-container * {
-        color: #000 !important;
+        color: black !important;
     }
     
-    /* Hide modals and other interactive elements */
-    .transcript-container .modal,
-    .transcript-container button {
-        display: none !important;
+    /* Student info section styling */
+    .student-info-section {
+        margin-bottom: 20px !important;
+        padding: 15px !important;
+        border: 1px solid #000 !important;
     }
+    
+    .fee-summary-section {
+        margin-bottom: 20px !important;
+        padding: 15px !important;
+        border: 1px solid #000 !important;
+    }
+    
+    /* Footer styling */
+    .transcript-footer {
+        margin-top: 40px !important;
+        padding-top: 20px !important;
+        border-top: 1px solid #000 !important;
+        text-align: center !important;
+        font-size: 10pt !important;
+        color: black !important;
+    }
+    
+    /* Page break control */
+    .page-break {
+        page-break-before: always;
+    }
+}
+
+/* Screen styles */
+.transcript-container {
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+.transcript-header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.transcript-header h2 {
+    font-size: 28px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #1e3a8a;
+}
+
+.transcript-header h3 {
+    font-size: 20px;
+    font-weight: bold;
+    margin: 20px 0 10px 0;
+    color: #2c3e50;
+}
+
+.school-logo {
+    max-height: 80px;
+    margin-bottom: 15px;
+}
+
+.student-info-section,
+.fee-summary-section {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border-left: 4px solid #1e3a8a;
+}
+
+.transcript-footer {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid #dee2e6;
+    text-align: center;
+    color: #6c757d;
+    font-size: 14px;
+}
+
+.authority-section {
+    margin-top: 30px;
+    text-align: right;
+}
+
+.signature-line {
+    border-bottom: 1px solid #000;
+    width: 250px;
+    margin-left: auto;
+    margin-bottom: 5px;
 }
 </style>
 
 <div class="transcript-container">
+    <!-- School Header -->
+    <div class="transcript-header">
+        @if($systemLogo)
+            <img src="{{ $systemLogo }}" alt="School Logo" class="school-logo">
+        @endif
+        <h2>{{ $systemName }}</h2>
+        @if($schoolInfo)
+            <p><strong>{{ $schoolInfo->address ?? '' }}</strong></p>
+            <p><strong>Phone: {{ $schoolInfo->phone ?? '' }} | Email: {{ $schoolInfo->email ?? '' }}</strong></p>
+            @if($schoolInfo->website)
+                <p><strong>Website: {{ $schoolInfo->website }}</strong></p>
+            @endif
+        @else
+            <p><strong>123 Education Street, Learning City, Knowledge State</strong></p>
+            <p><strong>Phone: +250-788-123-456 | Email: info@esa-learning.rw</strong></p>
+        @endif
+    </div>
+
+    <!-- Transcript Title -->
+    <h3 style="text-align: center; margin-bottom: 30px;">STUDENT PAYMENT TRANSCRIPT</h3>
+    
     <!-- Student Information -->
-    <div class="card mb-3">
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <h6 class="text-muted mb-2">Student Details</h6>
-                    <p class="mb-1"><strong>Name:</strong> {{ $student->full_name }}</p>
-                    <p class="mb-1"><strong>Reg Number:</strong> {{ $student->reg_number }}</p>
-                    <p class="mb-1"><strong>Course:</strong> {{ $student->course->course_name ?? 'N/A' }}</p>
-                    <p class="mb-0"><strong>Branch:</strong> {{ $student->branch->name ?? 'N/A' }}</p>
-                </div>
-                <div class="col-md-6">
-                    <h6 class="text-muted mb-2">Fee Summary</h6>
-                    <p class="mb-1"><strong>Total Fees:</strong> <span class="badge bg-primary">{{ number_format($totalToPay, 2) }} RWF</span></p>
-                    <p class="mb-1"><strong>Total Paid:</strong> <span class="badge bg-success">{{ number_format($totalPaid, 2) }} RWF</span></p>
-                    <p class="mb-1"><strong>Outstanding:</strong> <span class="badge bg-warning text-dark">{{ number_format($outstanding, 2) }} RWF</span></p>
-                    @if($discount > 0)
-                        <p class="mb-0"><strong>Discount:</strong> <span class="badge bg-info">{{ $discount }}% ({{ number_format($discountAmount, 2) }} RWF)</span></p>
+    <div class="student-info-section">
+        <h5 style="margin-bottom: 15px; font-weight: bold;">STUDENT INFORMATION</h5>
+        <div class="row">
+            <div class="col-md-6">
+                <p class="mb-2"><strong>Full Name:</strong> {{ $student->full_name }}</p>
+                <p class="mb-2"><strong>Registration Number:</strong> {{ $student->reg_number }}</p>
+                <p class="mb-2"><strong>Sex:</strong> {{ $student->sex ?? 'N/A' }}</p>
+                <p class="mb-0"><strong>Phone:</strong> {{ $student->phone ?? 'N/A' }}</p>
+            </div>
+            <div class="col-md-6">
+                <p class="mb-2"><strong>Course:</strong> {{ $student->course->course_name ?? 'N/A' }}</p>
+                <p class="mb-2"><strong>Branch:</strong> {{ $student->branch->name ?? 'N/A' }}</p>
+                <p class="mb-2"><strong>Academic Year:</strong> {{ $student->academic_year->year ?? 'N/A' }}</p>
+                <p class="mb-0"><strong>Class:</strong> {{ $student->class ?? 'N/A' }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fee Summary -->
+    <div class="fee-summary-section">
+        <h5 style="margin-bottom: 15px; font-weight: bold;">FEE SUMMARY</h5>
+        <div class="row">
+            <div class="col-md-6">
+                <p class="mb-2"><strong>Registration Fee:</strong> {{ number_format($registrationFee, 2) }} RWF</p>
+                <p class="mb-2"><strong>Tuition Fee:</strong> {{ number_format($tuitionFee, 2) }} RWF</p>
+                <p class="mb-2"><strong>Practical Fee:</strong> {{ number_format($practicalFee, 2) }} RWF</p>
+                <p class="mb-2"><strong>Trip Fee:</strong> {{ number_format($tripFee, 2) }} RWF</p>
+                <p class="mb-2"><strong>Student Card Fee:</strong> {{ number_format($studentCardFee, 2) }} RWF</p>
+                @if($discount > 0)
+                    <p class="mb-2"><strong>Discount ({{ $discount }}%):</strong> -{{ number_format($discountAmount, 2) }} RWF</p>
+                @endif
+            </div>
+            <div class="col-md-6">
+                <p class="mb-2"><strong>Total Fees:</strong> <span style="font-weight: bold; color: #1e3a8a;">{{ number_format($totalToPay, 2) }} RWF</span></p>
+                <p class="mb-2"><strong>Total Paid:</strong> <span style="font-weight: bold; color: #28a745;">{{ number_format($totalPaid, 2) }} RWF</span></p>
+                <p class="mb-2"><strong>Outstanding Balance:</strong> <span style="font-weight: bold; color: #dc3545;">{{ number_format($outstanding, 2) }} RWF</span></p>
+                <p class="mb-0"><strong>Payment Status:</strong> 
+                    @if($outstanding <= 0)
+                        <span style="color: #28a745; font-weight: bold;">FULLY PAID</span>
+                    @else
+                        <span style="color: #dc3545; font-weight: bold;">OUTSTANDING</span>
                     @endif
-                </div>
+                </p>
             </div>
         </div>
     </div>
@@ -99,7 +279,7 @@
     <!-- Payment History -->
     <div class="card">
         <div class="card-header bg-light d-flex justify-content-between align-items-center">
-            <h6 class="mb-0">Payment History</h6>
+            <h6 class="mb-0">PAYMENT HISTORY</h6>
             @if($isAuthorizedUser)
                 <span class="badge bg-warning text-dark">
                     <i class="fas fa-key"></i> Edit Mode (staff)
@@ -195,6 +375,39 @@
                 </div>
             @endif
         </div>
+    </div>
+
+    <!-- Authority Signature Section -->
+    <div class="authority-section">
+        <h5 style="margin-bottom: 20px; font-weight: bold;">CERTIFICATION</h5>
+        <p style="margin-bottom: 30px;">This transcript certifies that the above student payment information is accurate and complete as of the date of issue.</p>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <p style="margin-bottom: 5px;"><strong>Prepared By:</strong></p>
+                <div class="signature-line"></div>
+                <p style="font-size: 12px; color: #666;">Accounting Department</p>
+                <p style="font-size: 12px; color: #666;">{{ date('d F Y') }}</p>
+            </div>
+            <div class="col-md-6">
+                <p style="margin-bottom: 5px;"><strong>Authorized By:</strong></p>
+                <div class="signature-line"></div>
+                <p style="font-size: 12px; color: #666;">School Administration</p>
+                <p style="font-size: 12px; color: #666;">{{ date('d F Y') }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="transcript-footer">
+        <p><strong>Official Document - {{ $systemName }}</strong></p>
+        <p>This document is an official record of student payment information and should be kept for future reference.</p>
+        <p>For any inquiries regarding this transcript, please contact the accounting department.</p>
+        <p style="margin-top: 10px; font-size: 11px;">
+            Generated on: {{ date('d F Y H:i:s') }} | 
+            Student ID: {{ $student->id }} | 
+            Reg Number: {{ $student->reg_number }}
+        </p>
     </div>
 </div>
 

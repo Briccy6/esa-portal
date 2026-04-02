@@ -607,13 +607,7 @@
           </a>
         </li>
 
-        <li class="nav-item">
-          <a href="{{ url('staff/google-meet') }}" class="nav-link text-white d-flex align-items-center gap-2">
-            <i class="nav-icon bi bi-google"></i>
-            <span class="nav-text">Google Meet</span>
-          </a>
-        </li>
-        
+                
         <li class="nav-item">
           <a href="{{ route('staff.lessons.create') }}" class="nav-link text-white d-flex align-items-center gap-2 {{ request()->routeIs('staff.lessons.create') ? 'active' : '' }}">
             <i class="nav-icon bi bi-plus-circle-fill"></i>
@@ -702,13 +696,7 @@
           </a>
         </li>
 
-        <li class="nav-item">
-          <a href="{{ route('to-whom.index') }}" class="nav-link text-white d-flex align-items-center gap-2 {{ request()->routeIs('to-whom.*') ? 'active' : '' }}">
-            <i class="nav-icon bi bi-file-text"></i>
-            <span class="nav-text">Professional Letters</span>
-          </a>
-        </li>
-
+        
         <li class="nav-item">
           <a href="{{ route('dos.dailies.index') }}" class="nav-link text-white d-flex align-items-center gap-2 {{ request()->routeIs('dos.dailies.*') ? 'active' : '' }}">
             <i class="nav-icon bi bi-calendar-check"></i>
