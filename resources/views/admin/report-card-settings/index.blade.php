@@ -3,20 +3,33 @@
 @section('title', 'Report Card Settings')
 
 @section('content')
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-calendar-alt"></i>
-                        Report Card Settings
-                    </h5>
-                    <a href="{{ route('admin.report-card-settings.create') }}" class="btn btn-primary">
-                        <i class="fas fa-plus"></i> Add New Setting
-                    </a>
-                </div>
-                <div class="card-body">
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="page-title">Report Card Settings</h4>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Report Card Settings</li>
+                </ol>
+            </nav>
+        </div>
+        <div>
+            <a href="{{ route('admin.report-card-settings.create') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add New Setting
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-calendar-alt"></i>
+            Report Card Settings
+        </h5>
+    </div>
+    <div class="card-body">
                     @if(session('success'))
                         <div class="alert alert-success alert-dismissible fade show" role="alert">
                             {{ session('success') }}
@@ -113,7 +126,4 @@
                     @endif
                 </div>
             </div>
-        </div>
-    </div>
-</div>
 @endsection

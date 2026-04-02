@@ -3,17 +3,29 @@
 @section('title', 'Create Report Card Setting')
 
 @section('content')
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-calendar-alt"></i>
-                        Create Report Card Setting
-                    </h5>
-                </div>
-                <div class="card-body">
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="page-title">Create Report Card Setting</h4>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('admin.report-card-settings.index') }}">Report Card Settings</a></li>
+                    <li class="breadcrumb-item active">Create</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-calendar-alt"></i>
+            Create Report Card Setting
+        </h5>
+    </div>
+    <div class="card-body">
                     <form action="{{ route('admin.report-card-settings.store') }}" method="POST">
                         @csrf
                         
@@ -120,9 +132,6 @@
                     </form>
                 </div>
             </div>
-        </div>
-    </div>
-</div>
 
 @section('scripts')
 <script>

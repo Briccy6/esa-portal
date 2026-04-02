@@ -1,5 +1,5 @@
 import './bootstrap';
-import './reactbits';
+// import './reactbits';  // Temporarily disabled to fix build
 
 import Alpine from 'alpinejs';
 

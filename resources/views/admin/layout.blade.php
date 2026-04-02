@@ -740,6 +740,70 @@
                 font-size: 0.8125rem !important;
             }
         }
+
+        /* Page Header Styling */
+        .page-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: -2rem -2rem 2rem -2rem;
+            padding: 2rem;
+            border-radius: 0 0 1rem 1rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .page-title {
+            color: white;
+            font-weight: 600;
+            margin: 0;
+            font-size: 1.75rem;
+        }
+
+        .breadcrumb {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 0.5rem;
+            padding: 0.5rem 1rem;
+            margin: 0;
+        }
+
+        .breadcrumb-item {
+            color: rgba(255,255,255,0.8);
+        }
+
+        .breadcrumb-item a {
+            color: white;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .breadcrumb-item a:hover {
+            color: rgba(255,255,255,0.8);
+        }
+
+        .breadcrumb-item.active {
+            color: rgba(255,255,255,0.9);
+        }
+
+        .breadcrumb-item + .breadcrumb-item::before {
+            color: rgba(255,255,255,0.6);
+            content: ">";
+        }
+
+        /* Mobile Responsive Page Header */
+        @media (max-width: 768px) {
+            .page-header {
+                margin: -1rem -1rem 1rem -1rem;
+                padding: 1.5rem 1rem;
+            }
+
+            .page-title {
+                font-size: 1.5rem;
+            }
+
+            .breadcrumb {
+                padding: 0.375rem 0.75rem;
+                font-size: 0.875rem;
+            }
+        }
     </style>
     @yield('styles')
     @livewireStyles
