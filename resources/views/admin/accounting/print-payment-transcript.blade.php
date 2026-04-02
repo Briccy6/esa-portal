@@ -236,50 +236,106 @@
     </tbody>
 </table>
 
-<h2 style="font-size:12px;margin:12px 0 6px;">Transaction ledger (including unpaid / pending)</h2>
-<table class="data-table">
-    <thead>
-        <tr>
-            <th>#</th>
-            <th>Date</th>
-            <th>Type</th>
-            <th class="num">Amount (RWF)</th>
-            <th>Status</th>
-            <th>Reference</th>
-        </tr>
-    </thead>
-    <tbody>
-        @forelse($transactions as $i => $tx)
-            @php
-                $meta = is_array($tx->meta) ? $tx->meta : (json_decode($tx->meta, true) ?: []);
-                $displayType = $feeTypeMap[$tx->type] ?? ucfirst(str_replace('_', ' ', $tx->type));
-                $displayDate = $tx->paid_at
-                    ? \Carbon\Carbon::parse($tx->paid_at)->format('Y-m-d H:i')
-                    : ($tx->created_at ? $tx->created_at->format('Y-m-d H:i') : '—');
-            @endphp
+<h2 style="font-size:12px;margin:12px 0 6px;">Transaction ledger by term (including unpaid / pending)</h2>
+
+@if(isset($termGroups) && !empty($termGroups))
+    @foreach($termGroups as $termGroup)
+        <div style="margin-bottom: 20px;">
+            <h3 style="font-size:11px;margin:8px 0 4px;font-weight:600;color:#333;">
+                {{ $termGroup['term_name'] }}
+                @if($termGroup['term'])
+                    ({{ $termGroup['term']->start_date->format('M Y') }} - {{ $termGroup['term']->end_date->format('M Y') }})
+                @endif
+                <span style="float:right;font-weight:normal;color:#666;">
+                    Total Paid: {{ number_format($termGroup['total_paid'], 2) }} RWF
+                </span>
+            </h3>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th class="num">Amount (RWF)</th>
+                        <th>Status</th>
+                        <th>Reference</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($termGroup['transactions'] as $i => $tx)
+                        @php
+                            $meta = is_array($tx->meta) ? $tx->meta : (json_decode($tx->meta, true) ?: []);
+                            $displayType = $feeTypeMap[$tx->type] ?? ucfirst(str_replace('_', ' ', $tx->type));
+                            $displayDate = $tx->paid_at
+                                ? \Carbon\Carbon::parse($tx->paid_at)->format('Y-m-d H:i')
+                                : ($tx->created_at ? $tx->created_at->format('Y-m-d H:i') : '—');
+                        @endphp
+                        <tr>
+                            <td>{{ $i + 1 }}</td>
+                            <td>{{ $displayDate }}</td>
+                            <td>{{ $displayType }}</td>
+                            <td class="num">{{ number_format((float) $tx->amount, 2) }}</td>
+                            <td>
+                                @if(in_array($tx->status, ['successful', 'paid', 'completed']))
+                                    Paid
+                                @elseif($tx->status === 'pending')
+                                    Pending
+                                @else
+                                    {{ ucfirst($tx->status) }}
+                                @endif
+                            </td>
+                            <td style="font-size:10px;">{{ $tx->tx_ref ?? '—' }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    @endforeach
+@else
+    <table class="data-table">
+        <thead>
             <tr>
-                <td>{{ $i + 1 }}</td>
-                <td>{{ $displayDate }}</td>
-                <td>{{ $displayType }}</td>
-                <td class="num">{{ number_format((float) $tx->amount, 2) }}</td>
-                <td>
-                    @if(in_array($tx->status, ['successful', 'paid', 'completed']))
-                        Paid
-                    @elseif($tx->status === 'pending')
-                        Pending
-                    @else
-                        {{ ucfirst($tx->status) }}
-                    @endif
-                </td>
-                <td style="font-size:10px;">{{ $tx->tx_ref ?? '—' }}</td>
+                <th>#</th>
+                <th>Date</th>
+                <th>Type</th>
+                <th class="num">Amount (RWF)</th>
+                <th>Status</th>
+                <th>Reference</th>
             </tr>
-        @empty
-            <tr>
-                <td colspan="6" style="text-align:center;color:#666;">No transactions recorded.</td>
-            </tr>
-        @endforelse
-    </tbody>
-</table>
+        </thead>
+        <tbody>
+            @forelse($transactions as $i => $tx)
+                @php
+                    $meta = is_array($tx->meta) ? $tx->meta : (json_decode($tx->meta, true) ?: []);
+                    $displayType = $feeTypeMap[$tx->type] ?? ucfirst(str_replace('_', ' ', $tx->type));
+                    $displayDate = $tx->paid_at
+                        ? \Carbon\Carbon::parse($tx->paid_at)->format('Y-m-d H:i')
+                        : ($tx->created_at ? $tx->created_at->format('Y-m-d H:i') : '—');
+                @endphp
+                <tr>
+                    <td>{{ $i + 1 }}</td>
+                    <td>{{ $displayDate }}</td>
+                    <td>{{ $displayType }}</td>
+                    <td class="num">{{ number_format((float) $tx->amount, 2) }}</td>
+                    <td>
+                        @if(in_array($tx->status, ['successful', 'paid', 'completed']))
+                            Paid
+                        @elseif($tx->status === 'pending')
+                            Pending
+                        @else
+                            {{ ucfirst($tx->status) }}
+                        @endif
+                    </td>
+                    <td style="font-size:10px;">{{ $tx->tx_ref ?? '—' }}</td>
+                </tr>
+            @empty
+                <tr>
+                    <td colspan="6" style="text-align:center;color:#666;">No transactions recorded.</td>
+                </tr>
+            @endforelse
+        </tbody>
+    </table>
+@endif
 
 <table class="signatures">
     <tr>

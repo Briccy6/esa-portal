@@ -39,22 +39,27 @@ class AccountingController extends Controller
     {
         $startDate = $request->get('start_date') ? Carbon::parse($request->get('start_date')) : null;
         $endDate = $request->get('end_date') ? Carbon::parse($request->get('end_date')) : null;
-        $data = AccountingReport::getCashBookData($startDate, $endDate);
+        $termId = $request->get('term_id');
         
-        // Get school information
+        $data = AccountingReport::getCashBookData($startDate, $endDate, $termId);
+        
+        // Get school information and available terms
         $school = SchoolInformation::getActive();
+        $terms = \App\Models\Term::with('academicYear')->orderBy('start_date', 'desc')->get();
 
-        return view('admin.accounting.cashbook', compact('data', 'startDate', 'endDate', 'school'));
+        return view('admin.accounting.cashbook', compact('data', 'startDate', 'endDate', 'termId', 'terms', 'school'));
     }
 
     public function balanceSheet(Request $request)
     {
         $asOfDate = $request->get('as_of_date') ? Carbon::parse($request->get('as_of_date')) : now();
+        $termId = $request->get('term_id');
 
-        $data = AccountingReport::getBalanceSheetData($asOfDate);
+        $data = AccountingReport::getBalanceSheetData($asOfDate, $termId);
         $school = SchoolInformation::getActive();
+        $terms = \App\Models\Term::with('academicYear')->orderBy('start_date', 'desc')->get();
 
-        return view('admin.accounting.balance-sheet', compact('data', 'asOfDate', 'school'));
+        return view('admin.accounting.balance-sheet', compact('data', 'asOfDate', 'termId', 'terms', 'school'));
     }
 
     public function trialBalance(Request $request)

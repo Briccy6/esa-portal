@@ -29,15 +29,27 @@
                         <div class="col-12">
                             <form method="GET" action="{{ route('admin.accounting.cashbook') }}" class="form-inline">
                                 <div class="row g-3 align-items-end">
-                                    <div class="col-md-3">
+                                    <div class="col-md-2">
+                                        <label for="term_id" class="form-label">Academic Term</label>
+                                        <select id="term_id" name="term_id" class="form-control">
+                                            <option value="">All Terms</option>
+                                            @foreach($terms as $term)
+                                                <option value="{{ $term->id }}" {{ $termId == $term->id ? 'selected' : '' }}>
+                                                    {{ $term->name }} - {{ $term->academicYear->year ?? '' }}
+                                                    ({{ $term->start_date->format('M Y') }} - {{ $term->end_date->format('M Y') }})
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
                                         <label for="start_date" class="form-label">Start Date</label>
                                         <input type="date" id="start_date" name="start_date" class="form-control" value="{{ $startDate ? $startDate->format('Y-m-d') : '' }}">
                                     </div>
-                                    <div class="col-md-3">
+                                    <div class="col-md-2">
                                         <label for="end_date" class="form-label">End Date</label>
                                         <input type="date" id="end_date" name="end_date" class="form-control" value="{{ $endDate ? $endDate->format('Y-m-d') : '' }}">
                                     </div>
-                                    <div class="col-md-3">
+                                    <div class="col-md-2">
                                         <button type="submit" class="btn btn-primary">
                                             <i class="fas fa-filter mr-1"></i> Filter
                                         </button>
@@ -103,15 +115,31 @@
                                 <tr>
                                     <th colspan="7" class="text-center bg-primary text-white">
                                         <h5 class="mb-0">Cash Book</h5>
-                                        <small>@if($startDate && $endDate) 
-                                            From {{ $startDate->format('M d, Y') }} To {{ $endDate->format('M d, Y') }}
-                                        @elseif($startDate) 
-                                            From {{ $startDate->format('M d, Y') }}
-                                        @elseif($endDate) 
-                                            To {{ $endDate->format('M d, Y') }}
-                                        @else 
-                                            All Transactions
-                                        @endif</small>
+                                        <small>
+                                            @if($termId && isset($terms))
+                                                @php
+                                                    $selectedTerm = $terms->where('id', $termId)->first();
+                                                @endphp
+                                                {{ $selectedTerm ? $selectedTerm->name . ' - ' . ($selectedTerm->academicYear->year ?? '') : 'Selected Term' }}
+                                                @if($startDate && $endDate) 
+                                                    ({{ $startDate->format('M d, Y') }} - {{ $endDate->format('M d, Y') }})
+                                                @elseif($startDate) 
+                                                    (From {{ $startDate->format('M d, Y') }})
+                                                @elseif($endDate) 
+                                                    (To {{ $endDate->format('M d, Y') }})
+                                                @endif
+                                            @else
+                                                @if($startDate && $endDate) 
+                                                    From {{ $startDate->format('M d, Y') }} To {{ $endDate->format('M d, Y') }}
+                                                @elseif($startDate) 
+                                                    From {{ $startDate->format('M d, Y') }}
+                                                @elseif($endDate) 
+                                                    To {{ $endDate->format('M d, Y') }}
+                                                @else 
+                                                    All Transactions
+                                                @endif
+                                            @endif
+                                        </small>
                                     </th>
                                 </tr>
                                 <tr>
@@ -152,6 +180,9 @@
                                             <td>{{ \Carbon\Carbon::parse($transaction->entry_date)->format('M d') }}</td>
                                             <td>
                                                 <span class="font-weight-bold">{{ $transaction->description }}</span>
+                                                @if($transaction->term_name)
+                                                    <br><small class="badge bg-info text-white">{{ $transaction->term_name }}</small>
+                                                @endif
                                                 <br><small class="text-muted">{{ $transaction->transaction_type }}</small>
                                             </td>
                                             <td class="text-right">
@@ -172,6 +203,9 @@
                                             <td>{{ \Carbon\Carbon::parse($transaction->entry_date)->format('M d') }}</td>
                                             <td>
                                                 <span class="font-weight-bold">{{ $transaction->description }}</span>
+                                                @if($transaction->term_name)
+                                                    <br><small class="badge bg-info text-white">{{ $transaction->term_name }}</small>
+                                                @endif
                                                 <br><small class="text-muted">{{ $transaction->transaction_type }}</small>
                                             </td>
                                             <td class="text-right">

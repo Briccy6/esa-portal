@@ -3,6 +3,12 @@
     <td>{{ $payment->paid_at ? $payment->paid_at->format('Y-m-d H:i') : ($payment->created_at ? $payment->created_at->format('Y-m-d H:i') : 'N/A') }}</td>
     <td>
         @php
+            $termName = $payment->term ? $payment->term->name : 'No Term';
+        @endphp
+        <span class="badge bg-info">{{ $termName }}</span>
+    </td>
+    <td>
+        @php
             $feeTypeMap = [
                 'registration' => 'Registration Fee',
                 'registration_fee' => 'Registration Fee',
@@ -36,7 +42,7 @@
 </tr>
 @empty
 <tr>
-    <td colspan="4" class="text-center text-muted py-4">
+    <td colspan="5" class="text-center text-muted py-4">
         <i class="bi bi-receipt display-4 d-block mb-2"></i>
         No payment records found for this student.
     </td>
@@ -45,7 +51,7 @@
 
 @if($payments->count() > 0)
 <tr class="table-active">
-    <td colspan="2" class="text-end"><strong>Total Paid:</strong></td>
+    <td colspan="3" class="text-end"><strong>Total Paid:</strong></td>
     <td colspan="2"><strong class="text-success">{{ number_format($payments->sum('amount'), 2) }} RWF</strong></td>
 </tr>
 @endif

@@ -13,10 +13,16 @@ class Payment extends Model
         'payment_type',
         'discount',
         'payed',
+        'term_id',
     ];
 
     public function schoolFee()
     {
         return $this->belongsTo(SchoolFee::class);
+    }
+
+    public function term()
+    {
+        return $this->belongsTo(Term::class);
     }
 }

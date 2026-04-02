@@ -9,11 +9,12 @@ use Illuminate\Database\Query\Builder;
 
 class AccountingReport extends Model
 {
-    public static function getCashBookData($startDate = null, $endDate = null)
+    public static function getCashBookData($startDate = null, $endDate = null, $termId = null)
     {
         // Get student transactions (receipts)
         $studentTransactionsQuery = DB::table('student_transactions as st')
             ->join('students as s', 'st.student_id', '=', 's.id')
+            ->leftJoin('terms as t', 'st.term_id', '=', 't.id')
             ->select([
                 'st.id',
                 'st.tx_ref',
@@ -22,6 +23,8 @@ class AccountingReport extends Model
                 DB::raw("'RWF' as currency"),
                 'st.status',
                 'st.paid_at',
+                'st.term_id',
+                't.name as term_name',
                 DB::raw("CONCAT('Registration - ', s.full_name) as transaction_type"),
                 DB::raw("'Cash Receipt' as entry_type"),
                 DB::raw("CONCAT('Payment from student: ', s.full_name, ' (', st.tx_ref, ')') as description"),
@@ -32,6 +35,7 @@ class AccountingReport extends Model
 
         // Get expenses (payments)
         $expensesQuery = DB::table('expenses as e')
+            ->leftJoin('terms as t', 'e.term_id', '=', 't.id')
             ->select([
                 'e.id',
                 DB::raw("'EXP-' || e.id as tx_ref"),
@@ -40,12 +44,20 @@ class AccountingReport extends Model
                 DB::raw("'RWF' as currency"),
                 DB::raw("'paid' as status"),
                 'e.expense_date as paid_at',
+                'e.term_id',
+                't.name as term_name',
                 'e.expense_type as transaction_type',
                 DB::raw("'Cash Payment' as entry_type"),
                 DB::raw("CONCAT('Payment to: ', e.paid_to, ' - ', e.description) as description"),
                 DB::raw("'-' as direction")
             ])
             ->orderBy('e.expense_date');
+
+        // Apply term filter
+        if ($termId) {
+            $studentTransactionsQuery->where('st.term_id', $termId);
+            $expensesQuery->where('e.term_id', $termId);
+        }
 
         // Apply date filters to student transactions
         if ($startDate) {
@@ -91,7 +103,8 @@ class AccountingReport extends Model
             'total_receipts' => $totalReceipts,
             'total_payments' => $totalPayments,
             'net_cash' => $runningBalance,
-            'opening_balance' => self::getOpeningCashBalanceFromTransactions($startDate)
+            'opening_balance' => self::getOpeningCashBalanceFromTransactions($startDate),
+            'term_id' => $termId
         ];
     }
 
@@ -117,15 +130,15 @@ class AccountingReport extends Model
      * Balance sheet from operational tables: student_transactions, expenses, students, courses
      * (same basis as the cash book), not from journal_entries / journal_items.
      */
-    public static function getBalanceSheetData($asOfDate = null)
+    public static function getBalanceSheetData($asOfDate = null, $termId = null)
     {
         $asOfDate = $asOfDate ?: now()->endOfDay();
 
-        $totalReceipts = self::sumStudentReceiptsThrough($asOfDate);
-        $totalExpenses = self::sumExpensesThrough($asOfDate);
+        $totalReceipts = self::sumStudentReceiptsThrough($asOfDate, $termId);
+        $totalExpenses = self::sumExpensesThrough($asOfDate, $termId);
         $cash = $totalReceipts - $totalExpenses;
 
-        $feePosition = self::aggregateStudentFeePositionThrough($asOfDate);
+        $feePosition = self::aggregateStudentFeePositionThrough($asOfDate, $termId);
         $receivable = $feePosition['receivable'];
         $deferred = $feePosition['deferred'];
 
@@ -200,20 +213,30 @@ class AccountingReport extends Model
         });
     }
 
-    private static function sumStudentReceiptsThrough(Carbon $asOfDate): float
+    private static function sumStudentReceiptsThrough(Carbon $asOfDate, $termId = null): float
     {
         $q = DB::table('student_transactions')
             ->whereIn('status', ['paid', 'successful']);
+            
+        if ($termId) {
+            $q->where('term_id', $termId);
+        }
+        
         self::applyStudentTransactionThroughDate($q, $asOfDate);
 
         return (float) ($q->sum('amount') ?? 0);
     }
 
-    private static function sumExpensesThrough(Carbon $asOfDate): float
+    private static function sumExpensesThrough(Carbon $asOfDate, $termId = null): float
     {
-        return (float) (DB::table('expenses')
-            ->whereDate('expense_date', '<=', $asOfDate)
-            ->sum('amount') ?? 0);
+        $q = DB::table('expenses')
+            ->whereDate('expense_date', '<=', $asOfDate);
+            
+        if ($termId) {
+            $q->where('term_id', $termId);
+        }
+
+        return (float) ($q->sum('amount') ?? 0);
     }
 
     /**
@@ -238,11 +261,16 @@ class AccountingReport extends Model
         return $registrationFee + $studentCardFee + ($discountableFees - $discountAmount);
     }
 
-    private static function studentPaidThrough(Student $student, Carbon $asOfDate): float
+    private static function studentPaidThrough(Student $student, Carbon $asOfDate, $termId = null): float
     {
         $q = DB::table('student_transactions')
             ->where('student_id', $student->id)
             ->whereIn('status', ['paid', 'successful']);
+            
+        if ($termId) {
+            $q->where('term_id', $termId);
+        }
+            
         self::applyStudentTransactionThroughDate($q, $asOfDate);
 
         return (float) ($q->sum('amount') ?? 0);
@@ -251,20 +279,20 @@ class AccountingReport extends Model
     /**
      * @return array{receivable: float, deferred: float}
      */
-    private static function aggregateStudentFeePositionThrough(Carbon $asOfDate): array
+    private static function aggregateStudentFeePositionThrough(Carbon $asOfDate, $termId = null): array
     {
         $receivable = 0.0;
         $deferred = 0.0;
 
         Student::query()
             ->with('course')
-            ->chunkById(200, function ($students) use ($asOfDate, &$receivable, &$deferred) {
+            ->chunkById(200, function ($students) use ($asOfDate, &$receivable, &$deferred, $termId) {
                 foreach ($students as $student) {
                     $expected = self::expectedTotalFeesForStudent($student);
                     if ($expected <= 0) {
                         continue;
                     }
-                    $paid = self::studentPaidThrough($student, $asOfDate);
+                    $paid = self::studentPaidThrough($student, $asOfDate, $termId);
                     $diff = $expected - $paid;
                     if ($diff > 0) {
                         $receivable += $diff;

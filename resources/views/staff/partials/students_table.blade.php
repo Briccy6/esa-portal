@@ -508,6 +508,25 @@
                                             </div>
 
                                             <div class="col-md-12 mb-3">
+                                                <label class="form-label">Academic Term</label>
+                                                <select name="term_id" id="termSelect{{ $student->id }}" class="form-select">
+                                                    <option value="">Select Term (Optional)</option>
+                                                    @php
+                                                        $terms = \App\Models\Term::with('academicYear')
+                                                            ->orderBy('start_date', 'desc')
+                                                            ->get();
+                                                    @endphp
+                                                    @foreach($terms as $term)
+                                                        <option value="{{ $term->id }}">
+                                                            {{ $term->name }} - {{ $term->academicYear->year ?? '' }}
+                                                            {{ $term->start_date->format('Y') }}/{{ $term->end_date->format('Y') }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                                <small class="text-muted">Select the academic term for this payment (optional)</small>
+                                            </div>
+
+                                            <div class="col-md-12 mb-3">
                                                 <label class="form-label">Payment Notes (Optional)</label>
                                                 <textarea name="payment_notes" class="form-control" rows="2"
                                                           placeholder="Add any additional notes about this payment"></textarea>

@@ -90,11 +90,23 @@
                 <div class="card-body">
                     <form method="GET" action="{{ route('admin.accounting.balance-sheet') }}" class="mb-4 no-print">
                         <div class="row align-items-end">
-                            <div class="col-md-4">
+                            <div class="col-md-3">
+                                <label for="term_id" class="form-label">Academic Term</label>
+                                <select id="term_id" name="term_id" class="form-control">
+                                    <option value="">All Terms</option>
+                                    @foreach($terms as $term)
+                                        <option value="{{ $term->id }}" {{ $termId == $term->id ? 'selected' : '' }}>
+                                            {{ $term->name }} - {{ $term->academicYear->year ?? '' }}
+                                            ({{ $term->start_date->format('M Y') }} - {{ $term->end_date->format('M Y') }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-3">
                                 <label for="as_of_date" class="form-label">As at (report date)</label>
                                 <input type="date" id="as_of_date" name="as_of_date" class="form-control" value="{{ $asOfDate->format('Y-m-d') }}">
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <button type="submit" class="btn btn-primary">Generate</button>
                                 <a href="{{ route('admin.accounting.balance-sheet') }}" class="btn btn-secondary">Today</a>
                             </div>
@@ -117,7 +129,15 @@
                                 </div>
                             @endif
                             <div class="bs-title">Statement of Financial Position</div>
-                            <div class="bs-asof">As at {{ $asOfDate->format('j F Y') }}</div>
+                            <div class="bs-asof">
+                                As at {{ $asOfDate->format('j F Y') }}
+                                @if($termId && isset($terms))
+                                    @php
+                                        $selectedTerm = $terms->where('id', $termId)->first();
+                                    @endphp
+                                    <br><small>{{ $selectedTerm ? $selectedTerm->name . ' - ' . ($selectedTerm->academicYear->year ?? '') : 'Selected Term' }}</small>
+                                @endif
+                            </div>
                         </div>
 
                         <p class="bs-muted small no-print mb-3">

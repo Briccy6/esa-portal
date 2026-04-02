@@ -36,6 +36,7 @@ class ExpenseController extends Controller
             'paid_to' => 'required|string|max:255',
             'paid_to_contact' => 'required|string|max:50',
             'payment_method' => 'required|string|max:50',
+            'term_id' => 'nullable|exists:terms,id',
         ]);
 
         $expense = \App\Models\Expense::create([
@@ -47,6 +48,7 @@ class ExpenseController extends Controller
             'paid_to' => $request->paid_to,
             'paid_to_contact' => $request->paid_to_contact,
             'payment_method' => $request->payment_method,
+            'term_id' => $request->term_id,
         ]);
 
         // Create journal entry for expense

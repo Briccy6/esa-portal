@@ -77,29 +77,85 @@
             </select>
         </div>
 <div class="mb-3">
-    <label class="form-label">Add Fees & Discount</label>
-    <div class="d-flex flex-wrap gap-2 mb-2">
-        <button type="button" class="btn btn-outline-primary" onclick="showFeeInput('registration')">Add Registration Fee</button>
-        <button type="button" class="btn btn-outline-primary" onclick="showFeeInput('tuition')">Add Tuition Fee</button>
-        <button type="button" class="btn btn-outline-primary" onclick="showFeeInput('practical')">Add Practical Fee</button>
-        <button type="button" class="btn btn-outline-primary" onclick="showFeeInput('trip')">Add Trip Fee</button>
-        <button type="button" class="btn btn-outline-warning" onclick="showFeeInput('discount')">Add Discount</button>
+    <label class="form-label">Fee Structure by Term <span class="text-danger">*</span></label>
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>
+        Set up fees for each term this course will be active. You can configure different fees for different terms.
     </div>
-    <div id="fee-inputs">
-        {{-- Always include hidden inputs for optional fees to prevent null errors --}}
-        <input type="hidden" name="practical_fee" value="0">
-        <input type="hidden" name="trip_fee" value="0">
-        <input type="hidden" name="discount_fee" value="0">
+    
+    <div id="term-fees-container">
+        <div class="table-responsive">
+            <table class="table table-bordered" id="term-fees-table">
+                <thead class="table-light">
+                    <tr>
+                        <th width="30%">Academic Term</th>
+                        <th width="15%">Registration</th>
+                        <th width="15%">Tuition</th>
+                        <th width="15%">Practical</th>
+                        <th width="15%">Trip</th>
+                        <th width="10%">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr id="term-fee-row-template" style="display: none;">
+                        <td>
+                            <select name="term_fees[{index}][term_id]" class="form-select term-select" required>
+                                <option value="">Select Term</option>
+                                @php
+                                    $terms = \App\Models\Term::with('academicYear')
+                                        ->orderBy('start_date', 'desc')
+                                        ->get();
+                                @endphp
+                                @foreach($terms as $term)
+                                    <option value="{{ $term->id }}">
+                                        {{ $term->name }} - {{ $term->academicYear->year ?? '' }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </td>
+                        <td>
+                            <input type="number" name="term_fees[{index}][registration_fee]" 
+                                   class="form-control" min="0" step="0.01" value="0">
+                        </td>
+                        <td>
+                            <input type="number" name="term_fees[{index}][tuition_fee]" 
+                                   class="form-control" min="0" step="0.01" value="0">
+                        </td>
+                        <td>
+                            <input type="number" name="term_fees[{index}][practical_fee]" 
+                                   class="form-control" min="0" step="0.01" value="0">
+                        </td>
+                        <td>
+                            <input type="number" name="term_fees[{index}][trip_fee]" 
+                                   class="form-control" min="0" step="0.01" value="0">
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-danger remove-term-fee">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
         
-        {{-- Dynamic fee inputs will appear here --}}
-        @foreach(['registration', 'tuition', 'practical', 'trip', 'discount'] as $type)
-            @if(old($type . '_fee'))
-                <div class="mb-2" id="{{ $type }}-fee-input">
-                    <label class="form-label text-capitalize">{{ ucfirst($type) }} {{ $type == 'discount' ? '' : 'Fee' }}</label>
-                    <input type="number" step="0.01" min="0" name="{{ $type }}_fee" class="form-control" value="{{ old($type . '_fee') }}" required>
+        <button type="button" class="btn btn-outline-primary btn-sm mt-2" onclick="addTermFeeRow()">
+            <i class="fas fa-plus me-1"></i> Add Term Fee
+        </button>
+        
+        <div class="mt-3">
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="form-label">Total Year Fees:</label>
+                    <input type="text" id="total_year_fees" class="form-control" readonly>
                 </div>
-            @endif
-        @endforeach
+                <div class="col-md-6">
+                    <label class="form-label">Student Card Fee (per term):</label>
+                    <input type="number" name="student_card_fee" class="form-control" value="2000" readonly>
+                    <small class="text-muted">Fixed fee per term</small>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
         <div class="mb-3">
@@ -120,56 +176,135 @@
 
 
 <script>
-    function showFeeInput(type) {
-        const labels = {
-            registration: 'Registration Fee',
-            tuition: 'Tuition Fee',
-            practical: 'Practical Fee',
-            trip: 'Trip Fee',
-            discount: 'Discount (%)'
-        };
-        if (!document.getElementById(type + '-fee-input')) {
-            const div = document.createElement('div');
-            div.className = 'mb-2';
-            div.id = type + '-fee-input';
-            div.innerHTML = `
-                <label class="form-label">${labels[type]}</label>
-                <input type="number" step="0.01" min="0" name="${type}_fee" class="form-control fee-input" ${type === 'discount' ? 'max="100"' : ''} required>
-            `;
-            document.getElementById('fee-inputs').appendChild(div);
-            attachFeeListeners();
-        }
+    let termFeeRowIndex = 0;
+    const usedTerms = new Set();
+
+    function addTermFeeRow() {
+        const tbody = document.querySelector('#term-fees-table tbody');
+        const template = document.getElementById('term-fee-row-template');
+        
+        // Clone the template row
+        const newRow = template.cloneNode(true);
+        newRow.style.display = '';
+        newRow.id = '';
+        
+        // Replace {index} with actual index
+        const index = termFeeRowIndex++;
+        newRow.innerHTML = newRow.innerHTML.replace(/{index}/g, index);
+        
+        // Add event listeners
+        const termSelect = newRow.querySelector('.term-select');
+        const removeBtn = newRow.querySelector('.remove-term-fee');
+        const feeInputs = newRow.querySelectorAll('input[type="number"]');
+        
+        termSelect.addEventListener('change', function() {
+            updateUsedTerms();
+            calculateTotalYearFees();
+        });
+        
+        feeInputs.forEach(input => {
+            input.addEventListener('input', calculateTotalYearFees);
+        });
+        
+        removeBtn.addEventListener('click', function() {
+            const termId = termSelect.value;
+            if (termId) {
+                usedTerms.delete(termId);
+                updateTermSelectOptions();
+            }
+            newRow.remove();
+            calculateTotalYearFees();
+        });
+        
+        tbody.appendChild(newRow);
+        updateTermSelectOptions();
     }
 
-    function attachFeeListeners() {
-        // Attach input event to all fee inputs for live calculation
-        document.querySelectorAll('.fee-input').forEach(input => {
-            input.removeEventListener('input', calculateTotalCost); // Prevent duplicate listeners
-            input.addEventListener('input', calculateTotalCost);
+    function updateUsedTerms() {
+        usedTerms.clear();
+        document.querySelectorAll('.term-select').forEach(select => {
+            if (select.value) {
+                usedTerms.add(select.value);
+            }
+        });
+        updateTermSelectOptions();
+    }
+
+    function updateTermSelectOptions() {
+        document.querySelectorAll('.term-select').forEach(select => {
+            const currentValue = select.value;
+            select.innerHTML = '<option value="">Select Term</option>';
+            
+            @php
+                $terms = \App\Models\Term::with('academicYear')
+                    ->orderBy('start_date', 'desc')
+                    ->get();
+            @endphp
+            
+            @foreach($terms as $term)
+                const option = document.createElement('option');
+                option.value = '{{ $term->id }}';
+                option.textContent = '{{ $term->name }} - {{ $term->academicYear->year ?? '' }}';
+                
+                // Disable if term is already used elsewhere
+                if (usedTerms.has('{{ $term->id }}') && '{{ $term->id }}' !== currentValue) {
+                    option.disabled = true;
+                }
+                
+                // Select current value
+                if ('{{ $term->id }}' === currentValue) {
+                    option.selected = true;
+                }
+                
+                select.appendChild(option);
+            @endforeach
         });
     }
 
-    function calculateTotalCost() {
-        // Get values, default to 0 if not present
-        const tuition = parseFloat(document.querySelector('input[name="tuition_fee"]')?.value) || 0;
-        const practical = parseFloat(document.querySelector('input[name="practical_fee"]')?.value) || 0;
-        const trip = parseFloat(document.querySelector('input[name="trip_fee"]')?.value) || 0;
-        const discount = parseFloat(document.querySelector('input[name="discount_fee"]')?.value) || 0;
-
-        let subtotal = tuition + practical + trip;
-        let total = subtotal;
-
-        if (discount > 0 && discount <= 100) {
-            total = subtotal - (subtotal * (discount / 100));
-        }
-
-        document.getElementById('total_cost').value = total.toFixed(2);
+    function calculateTotalYearFees() {
+        let totalFees = 0;
+        const studentCardFee = 2000; // Fixed per term
+        let termCount = 0;
+        
+        document.querySelectorAll('#term-fees-table tbody tr:not([style*="display: none"])').forEach(row => {
+            const termSelect = row.querySelector('.term-select');
+            if (termSelect.value) {
+                termCount++;
+                const registration = parseFloat(row.querySelector('input[name$="[registration_fee]"]').value) || 0;
+                const tuition = parseFloat(row.querySelector('input[name$="[tuition_fee"]').value) || 0;
+                const practical = parseFloat(row.querySelector('input[name$="[practical_fee"]').value) || 0;
+                const trip = parseFloat(row.querySelector('input[name$="[trip_fee"]').value) || 0;
+                
+                totalFees += registration + tuition + practical + trip + studentCardFee;
+            }
+        });
+        
+        document.getElementById('total_year_fees').value = totalFees.toFixed(2);
     }
 
-    // Attach listeners on page load (for old inputs)
+    // Initialize with one empty row on page load
     document.addEventListener('DOMContentLoaded', function() {
-        attachFeeListeners();
-        calculateTotalCost();
+        addTermFeeRow();
+        
+        // Handle form submission validation
+        const form = document.querySelector('form');
+        form.addEventListener('submit', function(e) {
+            const termRows = document.querySelectorAll('#term-fees-table tbody tr:not([style*="display: none"])');
+            let hasValidTerm = false;
+            
+            termRows.forEach(row => {
+                const termSelect = row.querySelector('.term-select');
+                if (termSelect.value) {
+                    hasValidTerm = true;
+                }
+            });
+            
+            if (!hasValidTerm) {
+                e.preventDefault();
+                alert('Please add at least one term with fee configuration.');
+                return false;
+            }
+        });
     });
 </script>
 <style>

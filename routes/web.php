@@ -597,7 +597,11 @@ Route::prefix('staff')->name('staff.')->group(function () {
         Route::get('/transactions/{transaction}/edit', [StudentController::class, 'editTransaction'])->name('transactions.edit');
         Route::put('/transactions/{transaction}', [StudentController::class, 'updateTransaction'])->name('transactions.update');
         Route::delete('/transactions/{transaction}', [StudentController::class, 'deleteTransaction'])->name('transactions.destroy');
-            // Payment Routes - ADD THESE
+        
+        // Payment Schedule Routes
+        Route::get('/payment-schedule', [PaymentScheduleController::class, 'index'])->name('accountant.payment-schedule.index');
+        Route::get('/payment-schedule/course/{course}', [PaymentScheduleController::class, 'courseDetails'])->name('accountant.payment-schedule.course-details');
+        Route::get('/payment-schedule/student/{student}', [PaymentScheduleController::class, 'studentDetails'])->name('accountant.payment-schedule.student-details');
 
 
 
@@ -1077,6 +1081,7 @@ Route::get('/google/callback', [App\Http\Controllers\GoogleMeetController::class
 Route::post('/google/create-meet', [App\Http\Controllers\GoogleMeetController::class, 'createMeet'])->name('google.create-meet');
 
 Route::get('/student/payment', [StudentController::class, 'showPaymentPage'])->name('student.payment');
+Route::get('/student/payment-schedule', [StudentController::class, 'paymentSchedule'])->name('student.payment-schedule');
 Route::post('/student/ai-exam', [StudentController::class, 'generateStudySummary'])->name('student.ai.exam');
 Route::post('/student/pay-fee', [StudentController::class, 'payFees'])->name('student.pay.fee');
 Route::get('/student/payments/create', [StudentController::class, 'showPaymentPage'])->name('student.payments.create');
@@ -1321,8 +1326,8 @@ Route::prefix('student/report-cards')->name('student.report-cards.')->group(func
     Route::get('/{reportCard}/download', [ReportCardController::class, 'studentDownload'])->name('download')->middleware('auth:student');
 });
 
-// Public countdown endpoint (outside student middleware group)
-Route::get('/student/report-cards/countdown', [ReportCardController::class, 'getCountdown'])->name('student.report-cards.countdown');
+// Public countdown endpoint (completely separate)
+Route::get('/api/report-cards/countdown', [ReportCardController::class, 'getCountdown'])->name('student.report-cards.countdown');
 
 // Secretary Token Management Routes
 Route::middleware(['auth:admin,staff'])->prefix('tokens')->name('tokens.')->group(function () {

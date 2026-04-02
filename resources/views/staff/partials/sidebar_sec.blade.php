@@ -386,6 +386,24 @@
               <option value="other">Other</option>
             </select>
           </div>
+          <div class="mb-3">
+            <label for="term_id" class="form-label">Academic Term</label>
+            <select name="term_id" id="term_id" class="form-select">
+              <option value="">Select Term (Optional)</option>
+              @php
+                  $terms = \App\Models\Term::with('academicYear')
+                      ->orderBy('start_date', 'desc')
+                      ->get();
+              @endphp
+              @foreach($terms as $term)
+                  <option value="{{ $term->id }}">
+                      {{ $term->name }} - {{ $term->academicYear->year ?? '' }}
+                      {{ $term->start_date->format('Y') }}/{{ $term->end_date->format('Y') }}
+                  </option>
+              @endforeach
+            </select>
+            <small class="form-text text-muted">Select the academic term for this expense (optional)</small>
+          </div>
         </div>
         <div class="modal-footer">
           <button type="submit" class="btn btn-danger">Save Expense</button>

@@ -1457,12 +1457,14 @@ class StudentController extends Controller
             $validated = \Validator::make($request->all(), [
                 'amount_paid' => 'required|numeric|min:1',
                 'fee_type'    => 'required|string|in:registration_fee,school_fee,trip_fee,practical_fee,student_card',
+                'term_id'     => 'nullable|exists:terms,id',
             ], [
                 'amount_paid.required' => 'Please enter the payment amount.',
                 'amount_paid.numeric'  => 'Payment amount must be a number.',
                 'amount_paid.min'      => 'Payment amount must be at least 1 RWF.',
                 'fee_type.required'    => 'Please select a fee type.',
                 'fee_type.in'          => 'Invalid fee type selected.',
+                'term_id.exists'       => 'Selected term is invalid.',
             ]);
 
             if ($validated->fails()) {
@@ -1487,34 +1489,53 @@ class StudentController extends Controller
                     : back()->with('error', $message);
             }
 
-            $registrationFee = floatval($course->registration_fee ?? 0);
-            $tripFee         = floatval($course->trip_fee ?? 0);
-            $schoolFee       = floatval($course->tuition_fee ?? 0);
-            $practicalFee    = floatval($course->practical_fee ?? $course->pratical_fee ?? 0);
-            $studentCardFee  = 2000;
+            // Get term-specific fees or fallback to legacy fees
+            $termId = $request->term_id;
+            $termFees = null;
+            
+            if ($termId) {
+                $termFees = $course->getFeesForTerm($termId);
+            }
+            
+            if (!$termFees) {
+                // Fallback to legacy fee structure
+                $termFees = $course->getLegacyFees();
+            }
+
+            $registrationFee = floatval($termFees->registration_fee ?? 0);
+            $tripFee         = floatval($termFees->trip_fee ?? 0);
+            $schoolFee       = floatval($termFees->tuition_fee ?? 0);
+            $practicalFee    = floatval($termFees->practical_fee ?? 0);
+            $studentCardFee  = floatval($termFees->student_card_fee ?? 2000);
             $discount        = floatval($student->discount ?? 0);
 
-            $paidRegistration = StudentTransaction::where('student_id', $student->id)
+            // Calculate paid amounts for the specific term
+            $queryBase = StudentTransaction::where('student_id', $student->id);
+            if ($termId) {
+                $queryBase->where('term_id', $termId);
+            }
+
+            $paidRegistration = (clone $queryBase)
                 ->where('type', 'registration')
                 ->whereIn('status', ['successful', 'paid'])
                 ->sum('amount');
 
-            $paidSchoolFee = StudentTransaction::where('student_id', $student->id)
+            $paidSchoolFee = (clone $queryBase)
                 ->where('type', 'school_fee')
                 ->whereIn('status', ['successful', 'paid'])
                 ->sum('amount');
 
-            $paidPractical = StudentTransaction::where('student_id', $student->id)
+            $paidPractical = (clone $queryBase)
                 ->where('type', 'practical_fee')
                 ->whereIn('status', ['successful', 'paid'])
                 ->sum('amount');
 
-            $paidTrip = StudentTransaction::where('student_id', $student->id)
+            $paidTrip = (clone $queryBase)
                 ->where('type', 'trip_fee')
                 ->whereIn('status', ['successful', 'paid'])
                 ->sum('amount');
 
-            $paidStudentCard = StudentTransaction::where('student_id', $student->id)
+            $paidStudentCard = (clone $queryBase)
                 ->where('type', 'student_card')
                 ->whereIn('status', ['successful', 'paid'])
                 ->sum('amount');
@@ -1587,6 +1608,7 @@ class StudentController extends Controller
                 'amount'     => $amountPaid,
                 'currency'   => 'RWF',
                 'status'     => 'successful',
+                'term_id'    => $request->term_id ?? null,
                 'meta'       => json_encode([
                     'method'      => 'cash',
                     'recorded_by' => auth('staff')->user()->name ?? auth('admin')->user()->name ?? 'staff',
@@ -2097,29 +2119,6 @@ class StudentController extends Controller
         }
     }
 
-    public function transcriptAjax($studentId)
-    {
-        $student = Student::findOrFail($studentId);
-
-        $payments = StudentTransaction::where('student_id', $studentId)
-            ->whereIn('status', ['successful', 'paid', 'completed'])
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        return view('students.partials.transcript_table', compact('student', 'payments'))->render();
-    }
-
-    public function transcript($studentId)
-    {
-        $student  = Student::findOrFail($studentId);
-        $payments = StudentTransaction::where('student_id', $studentId)
-            ->whereIn('status', ['successful', 'paid', 'completed'])
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        return view('students.transcript', compact('student', 'payments'));
-    }
-
     public function reportCards(Request $request)
     {
         $student = auth()->guard('student')->user();
@@ -2272,6 +2271,31 @@ class StudentController extends Controller
         // Generate PDF using existing ReportCardController method
         $reportCardController = new \App\Http\Controllers\ReportCardController();
         return $reportCardController->printReport($reportCard);
+    }
+
+    public function transcriptAjax($studentId)
+    {
+        $student = Student::findOrFail($studentId);
+
+        $payments = StudentTransaction::where('student_id', $student->id)
+            ->with('term')
+            ->whereIn('status', ['successful', 'paid', 'completed'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return view('students.partials.transcript_table', compact('student', 'payments'))->render();
+    }
+
+    public function transcript($studentId)
+    {
+        $student  = Student::findOrFail($studentId);
+        $payments = StudentTransaction::where('student_id', $studentId)
+            ->with('term')
+            ->whereIn('status', ['successful', 'paid', 'completed'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return view('students.transcript', compact('student', 'payments'));
     }
 
     /**
@@ -3425,6 +3449,82 @@ class StudentController extends Controller
                 'message' => 'Failed to send email: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Show student payment schedule
+     */
+    public function paymentSchedule(Request $request)
+    {
+        $student = auth('student')->user();
+        
+        if (!$student) {
+            return redirect()->route('login')->with('error', 'Please login to view payment schedule.');
+        }
+
+        $course = $student->course;
+        
+        if (!$course) {
+            return back()->with('error', 'No course assigned to your account.');
+        }
+
+        // Get all term fees for the student's course
+        $termFees = $course->activeTermFees()->with('term')->get();
+        
+        $paymentSchedule = [];
+        
+        foreach ($termFees as $termFee) {
+            $transactions = $student->transactions()
+                ->where('term_id', $termFee->term_id)
+                ->orderBy('paid_at', 'desc')
+                ->get();
+            
+            $totalPaid = $transactions->where('status', 'successful')->sum('amount');
+            
+            $paymentSchedule[] = [
+                'term' => $termFee->term,
+                'term_fee' => $termFee,
+                'transactions' => $transactions,
+                'total_paid' => $totalPaid,
+                'total_required' => $termFee->total_fees,
+                'remaining' => $termFee->total_fees - $totalPaid,
+                'status' => $totalPaid >= $termFee->total_fees ? 'paid' : 
+                          ($totalPaid > 0 ? 'partial' : 'unpaid'),
+                'fee_breakdown' => [
+                    'registration' => [
+                        'required' => $termFee->registration_fee,
+                        'paid' => $transactions->where('type', 'registration')->where('status', 'successful')->sum('amount'),
+                    ],
+                    'tuition' => [
+                        'required' => $termFee->tuition_fee,
+                        'paid' => $transactions->where('type', 'school_fee')->where('status', 'successful')->sum('amount'),
+                    ],
+                    'practical' => [
+                        'required' => $termFee->practical_fee,
+                        'paid' => $transactions->where('type', 'practical_fee')->where('status', 'successful')->sum('amount'),
+                    ],
+                    'trip' => [
+                        'required' => $termFee->trip_fee,
+                        'paid' => $transactions->where('type', 'trip_fee')->where('status', 'successful')->sum('amount'),
+                    ],
+                    'student_card' => [
+                        'required' => $termFee->student_card_fee,
+                        'paid' => $transactions->where('type', 'student_card')->where('status', 'successful')->sum('amount'),
+                    ],
+                ],
+            ];
+        }
+        
+        // Sort by term start date
+        usort($paymentSchedule, function($a, $b) {
+            return $a['term']->start_date <=> $b['term']->start_date;
+        });
+        
+        return view('students.payment-schedule', compact(
+            'student',
+            'course',
+            'paymentSchedule'
+        ));
     }
 
     /**

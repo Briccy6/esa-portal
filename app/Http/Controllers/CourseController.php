@@ -6,6 +6,7 @@ use App\Models\Course;
 use Illuminate\Http\Request;
 use App\Models\AcademicYear;
 use App\Models\Branch; // Add this line
+use Illuminate\Support\Facades\DB;
 
 
 class CourseController extends Controller
@@ -49,11 +50,12 @@ class CourseController extends Controller
         'course_type' => 'required|string|max:50',
         'branches' => 'nullable|array',
         'branches.*' => 'string',
-        'registration_fee' => 'required|numeric|min:0',
-        'tuition_fee'      => 'required|numeric|min:0',
-        'practical_fee'    => 'nullable|numeric|min:0',
-        'trip_fee'         => 'nullable|numeric|min:0',
-        'discount_fee'     => 'nullable|numeric|min:0',
+        'term_fees' => 'required|array|min:1',
+        'term_fees.*.term_id' => 'required|exists:terms,id',
+        'term_fees.*.registration_fee' => 'required|numeric|min:0',
+        'term_fees.*.tuition_fee' => 'required|numeric|min:0',
+        'term_fees.*.practical_fee' => 'required|numeric|min:0',
+        'term_fees.*.trip_fee' => 'required|numeric|min:0',
     ]);
 
     // Check for duplicate course in the same branch
@@ -78,32 +80,58 @@ class CourseController extends Controller
         return redirect()->back()->withErrors(['academic_year' => 'No ongoing academic year is set.']);
     }
 
-    $course = Course::create([
-        'course_name'      => $validated['course_name'],
-        'abbreviation'     => $validated['abbreviation'],
-        'course_type'      => $validated['course_type'],
-        'academic_year_id' => $ongoingAcademicYear->id,
-        'registration_fee' => $request->input('registration_fee', 0),
-        'tuition_fee'      => $request->input('tuition_fee', 0),
-        'practical_fee'    => $request->input('practical_fee', 0),
-        'trip_fee'         => $request->input('trip_fee', 0),
-        'discount_fee'     => $request->input('discount_fee', 0),
-    ]);
+    DB::beginTransaction();
 
-    $randomNumber = rand(100, 999);
-    $courseCode = strtoupper($course->abbreviation) . $course->id . $randomNumber;
+    try {
+        $course = Course::create([
+            'course_name'      => $validated['course_name'],
+            'abbreviation'     => $validated['abbreviation'],
+            'course_type'      => $validated['course_type'],
+            'academic_year_id' => $ongoingAcademicYear->id,
+            // Keep legacy fees for backward compatibility
+            'registration_fee' => $request->input('registration_fee', 0),
+            'tuition_fee'      => $request->input('tuition_fee', 0),
+            'practical_fee'    => $request->input('practical_fee', 0),
+            'trip_fee'         => $request->input('trip_fee', 0),
+            'discount_fee'     => $request->input('discount_fee', 0),
+        ]);
 
-    $course->course_code = $courseCode;
-    $course->save();
+        $randomNumber = rand(100, 999);
+        $courseCode = strtoupper($course->abbreviation) . $course->id . $randomNumber;
 
-    if (!empty($validated['branches'])) {
-        if (in_array('all', $validated['branches'])) {
-            $allBranchIds = \App\Models\Branch::pluck('id')->toArray();
-            $course->branches()->sync($allBranchIds);
-        } else {
-            $branchIds = array_filter($validated['branches'], fn($b) => is_numeric($b));
-            $course->branches()->sync($branchIds);
+        $course->course_code = $courseCode;
+        $course->save();
+
+        // Create term-based fees
+        foreach ($validated['term_fees'] as $termFeeData) {
+            \App\Models\CourseTermFee::create([
+                'course_id' => $course->id,
+                'term_id' => $termFeeData['term_id'],
+                'registration_fee' => $termFeeData['registration_fee'],
+                'tuition_fee' => $termFeeData['tuition_fee'],
+                'practical_fee' => $termFeeData['practical_fee'],
+                'trip_fee' => $termFeeData['trip_fee'],
+                'student_card_fee' => 2000, // Fixed fee per term
+                'is_active' => true,
+            ]);
         }
+
+        if (!empty($validated['branches'])) {
+            if (in_array('all', $validated['branches'])) {
+                $allBranchIds = \App\Models\Branch::pluck('id')->toArray();
+                $course->branches()->sync($allBranchIds);
+            } else {
+                $branchIds = array_filter($validated['branches'], fn($b) => is_numeric($b));
+                $course->branches()->sync($branchIds);
+            }
+        }
+
+        DB::commit();
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return redirect()->back()
+            ->withInput()
+            ->withErrors(['error' => 'Failed to create course: ' . $e->getMessage()]);
     }
 
     return redirect()->back()->with('success', 'Course created successfully! Course Code: ' . $courseCode);

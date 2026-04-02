@@ -81,4 +81,59 @@ public function academicYear()
     {
         return $this->belongsToMany(\App\Models\Teacher::class, 'teacher_course');
     }
+
+    public function courseTermFees()
+    {
+        return $this->hasMany(CourseTermFee::class);
+    }
+
+    public function activeTermFees()
+    {
+        return $this->hasMany(CourseTermFee::class)->where('is_active', true);
+    }
+
+    public function getFeesForTerm($termId)
+    {
+        return $this->courseTermFees()->where('term_id', $termId)->where('is_active', true)->first();
+    }
+
+    public function getCurrentTermFees()
+    {
+        $currentTerm = Term::where('start_date', '<=', now())
+                           ->where('end_date', '>=', now())
+                           ->first();
+        
+        if ($currentTerm) {
+            return $this->getFeesForTerm($currentTerm->id);
+        }
+        
+        // Fallback to legacy fee structure if no term fees found
+        return $this->getLegacyFees();
+    }
+
+    public function getLegacyFees()
+    {
+        return (object) [
+            'registration_fee' => $this->registration_fee ?? 0,
+            'tuition_fee' => $this->tuition_fee ?? 0,
+            'practical_fee' => $this->practical_fee ?? 0,
+            'trip_fee' => $this->trip_fee ?? 0,
+            'student_card_fee' => 2000,
+        ];
+    }
+
+    public function getPaymentSchedule()
+    {
+        return $this->activeTermFees()
+                    ->with('term')
+                    ->orderBy('term.start_date')
+                    ->get();
+    }
+
+    public function getTotalYearFees()
+    {
+        return $this->activeTermFees()->sum(function($termFee) {
+            return $termFee->total_fees;
+        });
+    }
 }

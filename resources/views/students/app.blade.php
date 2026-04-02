@@ -421,6 +421,12 @@
                                 Invoices
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a href="{{route('student.payment-schedule')}}" class="nav-link">
+                                <i class="bi bi-calendar3"></i>
+                                Payment Schedule
+                            </a>
+                        </li>
                         
                     </ul>
                 </div>

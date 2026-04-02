@@ -115,6 +115,7 @@
                             <tr>
                                 <th>#</th>
                                 <th>Date</th>
+                                <th>Term</th>
                                 <th>Fee Type</th>
                                 <th>Amount</th>
                                 <th>Payment Method</th>
@@ -140,10 +141,12 @@
                                     ];
                                     $displayType = $feeTypeMap[$payment->type] ?? ucfirst(str_replace('_', ' ', $payment->type));
                                     $displayDate = $payment->paid_at ? \Carbon\Carbon::parse($payment->paid_at)->format('Y-m-d H:i') : ($payment->created_at ? $payment->created_at->format('Y-m-d H:i') : 'N/A');
+                                    $termName = $payment->term ? $payment->term->name : 'No Term';
                                 @endphp
                                 <tr id="payment-row-{{ $payment->id }}">
                                     <td>{{ $index + 1 }}</td>
                                     <td>{{ $displayDate }}</td>
+                                    <td><span class="badge bg-info">{{ $termName }}</span></td>
                                     <td><span class="badge bg-primary">{{ $displayType }}</span></td>
                                     <td><strong>{{ number_format($payment->amount, 2) }} RWF</strong></td>
                                     <td>

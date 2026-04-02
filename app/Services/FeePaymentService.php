@@ -49,10 +49,11 @@ class FeePaymentService
                                 ->where('term_id', $term->id)
                                 ->sum('amount');
         
+        // Calculate total paid based on transaction dates within the academic year period
         $totalPaid = StudentTransaction::where('student_id', $student->id)
-                                      ->where('academic_year', $academicYearName)
-                                      ->where('term', $currentTermName)
                                       ->where('type', 'payment')
+                                      ->whereIn('status', ['paid', 'successful'])
+                                      ->whereBetween('paid_at', [$academicYearStart, $academicYearEnd])
                                       ->sum('amount');
         
         // Allow small variations due to discounts or adjustments
@@ -91,10 +92,11 @@ class FeePaymentService
                                     ->sum('amount');
         }
         
+        // Calculate total paid based on transaction dates within the academic year period
         $totalPaid = StudentTransaction::where('student_id', $student->id)
-                                      ->where('academic_year', $academicYearName)
-                                      ->where('term', $currentTermName)
                                       ->where('type', 'payment')
+                                      ->whereIn('status', ['paid', 'successful'])
+                                      ->whereBetween('paid_at', [$academicYearStart, $academicYearEnd])
                                       ->sum('amount');
         
         $outstanding = max(0, $requiredFees - $totalPaid);

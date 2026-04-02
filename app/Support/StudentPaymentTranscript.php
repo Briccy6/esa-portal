@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Models\SchoolInformation;
 use App\Models\Student;
 use App\Models\StudentTransaction;
+use App\Models\Term;
 
 class StudentPaymentTranscript
 {
@@ -16,10 +17,25 @@ class StudentPaymentTranscript
         $student->loadMissing(['course', 'branch', 'academicYear']);
         $course = $student->course;
 
-        $registration = $course ? (float) $course->registration_fee : 0.0;
-        $tuition        = $course ? (float) $course->tuition_fee : 0.0;
-        $practical      = $course ? (float) $course->practical_fee : 0.0;
-        $trip           = $course ? (float) $course->trip_fee : 0.0;
+        // Get term-specific fees or fallback to legacy fees
+        $currentTerm = Term::where('start_date', '<=', now())
+                           ->where('end_date', '>=', now())
+                           ->first();
+        
+        $termFees = null;
+        if ($currentTerm) {
+            $termFees = $course->getFeesForTerm($currentTerm->id);
+        }
+        
+        if (!$termFees) {
+            // Fallback to legacy fee structure
+            $termFees = $course->getLegacyFees();
+        }
+
+        $registration = $termFees->registration_fee ?? 0;
+        $tuition        = $termFees->tuition_fee ?? 0;
+        $practical      = $termFees->practical_fee ?? 0;
+        $trip           = $termFees->trip_fee ?? 0;
         $discountPct    = (float) ($student->discount ?? 0);
 
         $discountable = $tuition + $practical + $trip;
@@ -75,7 +91,43 @@ class StudentPaymentTranscript
     }
 
     /**
-     * @return array{feeRows: array, totalExpected: float, totalPaid: float, totalOutstanding: float, discountPct: float, discountAmount: float, transactions: \Illuminate\Support\Collection, school: ?\App\Models\SchoolInformation}
+     * Group transactions by term for better transcript organization
+     */
+    public static function groupTransactionsByTerm(Student $student): array
+    {
+        $transactions = StudentTransaction::query()
+            ->where('student_id', $student->id)
+            ->with('term')
+            ->orderByDesc('paid_at')
+            ->orderByDesc('created_at')
+            ->get();
+
+        $grouped = [];
+        foreach ($transactions as $transaction) {
+            $term = $transaction->term;
+            $termKey = $term ? $term->id : 'no-term';
+            $termName = $term ? $term->name : 'No Term';
+            
+            if (!isset($grouped[$termKey])) {
+                $grouped[$termKey] = [
+                    'term' => $term,
+                    'term_name' => $termName,
+                    'transactions' => [],
+                    'total_paid' => 0
+                ];
+            }
+            
+            $grouped[$termKey]['transactions'][] = $transaction;
+            if (in_array($transaction->status, ['successful', 'paid', 'completed'])) {
+                $grouped[$termKey]['total_paid'] += $transaction->amount;
+            }
+        }
+
+        return $grouped;
+    }
+
+    /**
+     * @return array{feeRows: array, totalExpected: float, totalPaid: float, totalOutstanding: float, discountPct: float, discountAmount: float, transactions: \Illuminate\Support\Collection, school: ?\App\Models\SchoolInformation, termGroups: array}
      */
     public static function build(Student $student): array
     {
@@ -98,9 +150,13 @@ class StudentPaymentTranscript
 
         $transactions = StudentTransaction::query()
             ->where('student_id', $student->id)
+            ->with('term')
             ->orderByDesc('paid_at')
             ->orderByDesc('created_at')
             ->get();
+
+        // Group transactions by term
+        $termGroups = self::groupTransactionsByTerm($student);
 
         return [
             'feeRows'            => $feeRows,
@@ -111,6 +167,7 @@ class StudentPaymentTranscript
             'discountPct'        => $discountPct,
             'discountAmount'     => $discountAmount,
             'transactions'       => $transactions,
+            'termGroups'         => $termGroups,
             'school'             => SchoolInformation::getActive(),
         ];
     }
