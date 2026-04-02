@@ -394,4 +394,79 @@ class AccountingController extends Controller
             'printedAt'          => now(),
         ]);
     }
+
+    /**
+     * Show student fees with current and upcoming terms
+     */
+    public function studentFees(Request $request)
+    {
+        $query = Student::with(['course', 'course.courseTermFees.term', 'branch', 'academicYear']);
+        
+        // Filter by course if selected
+        if ($request->filled('course_id')) {
+            $query->where('course_id', $request->course_id);
+        }
+        
+        // Filter by branch if selected
+        if ($request->filled('branch_id')) {
+            $query->where('branch_id', $request->branch_id);
+        }
+        
+        // Filter by academic year if selected
+        if ($request->filled('academic_year_id')) {
+            $query->where('academic_year_id', $request->academic_year_id);
+        }
+        
+        $students = $query->orderBy('full_name')->paginate(20);
+        
+        // Get filter options
+        $courses = \App\Models\Course::orderBy('course_name')->get();
+        $branches = \App\Models\Branch::orderBy('name')->get();
+        $academicYears = \App\Models\AcademicYear::orderBy('year', 'desc')->get();
+        
+        return view('admin.accounting.student-fees', compact(
+            'students',
+            'courses',
+            'branches',
+            'academicYears'
+        ));
+    }
+
+    /**
+     * Show detailed fee information for a specific student
+     */
+    public function studentFeeDetails(Student $student)
+    {
+        $student->load(['course', 'course.courseTermFees.term', 'branch', 'academicYear']);
+        
+        // Get current and upcoming terms
+        $currentDate = now();
+        $allTermFees = $student->course->courseTermFees()->with('term')->get();
+        
+        $currentFees = $allTermFees->filter(function($termFee) use ($currentDate) {
+            return $currentDate->between($termFee->term->start_date, $termFee->term->end_date);
+        });
+        
+        $upcomingFees = $allTermFees->filter(function($termFee) use ($currentDate) {
+            return $currentDate->lt($termFee->term->start_date);
+        });
+        
+        $pastFees = $allTermFees->filter(function($termFee) use ($currentDate) {
+            return $currentDate->gt($termFee->term->end_date);
+        });
+        
+        // Get payment history
+        $transactions = \App\Models\StudentTransaction::where('student_id', $student->id)
+            ->with('courseTermFee.term')
+            ->orderBy('created_at', 'desc')
+            ->get();
+        
+        return view('admin.accounting.student-fee-details', compact(
+            'student',
+            'currentFees',
+            'upcomingFees',
+            'pastFees',
+            'transactions'
+        ));
+    }
 }

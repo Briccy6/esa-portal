@@ -77,13 +77,18 @@
             </select>
         </div>
 <div class="mb-3">
-    <label class="form-label">Fee Structure by Term <span class="text-danger">*</span></label>
+    <label class="form-label">Fee Structure by Term (Optional)</label>
     <div class="alert alert-info">
         <i class="fas fa-info-circle me-2"></i>
-        Set up fees for each term this course will be active. You can configure different fees for different terms.
+        Set up fees for each term now, or you can assign fees later after creating the course.
     </div>
     
-    <div id="term-fees-container">
+    <div class="form-check mb-3">
+        <input type="checkbox" name="setup_fees_now" id="setup_fees_now" class="form-check-input" onchange="toggleFeeSection()">
+        <label for="setup_fees_now" class="form-check-label">Set up fees now</label>
+    </div>
+    
+    <div id="term-fees-container" style="display: none;">
         <div class="table-responsive">
             <table class="table table-bordered" id="term-fees-table">
                 <thead class="table-light">
@@ -282,27 +287,47 @@
         document.getElementById('total_year_fees').value = totalFees.toFixed(2);
     }
 
+    function toggleFeeSection() {
+        const checkbox = document.getElementById('setup_fees_now');
+        const container = document.getElementById('term-fees-container');
+        
+        if (checkbox.checked) {
+            container.style.display = 'block';
+            // Add first row if none exists
+            const tbody = document.querySelector('#term-fees-table tbody');
+            if (tbody.children.length === 1) {
+                addTermFeeRow();
+            }
+        } else {
+            container.style.display = 'none';
+        }
+    }
+
     // Initialize with one empty row on page load
     document.addEventListener('DOMContentLoaded', function() {
-        addTermFeeRow();
+        // Don't automatically add row - wait for checkbox
         
         // Handle form submission validation
         const form = document.querySelector('form');
         form.addEventListener('submit', function(e) {
-            const termRows = document.querySelectorAll('#term-fees-table tbody tr:not([style*="display: none"])');
-            let hasValidTerm = false;
+            const setupFeesNow = document.getElementById('setup_fees_now').checked;
             
-            termRows.forEach(row => {
-                const termSelect = row.querySelector('.term-select');
-                if (termSelect.value) {
-                    hasValidTerm = true;
+            if (setupFeesNow) {
+                const termRows = document.querySelectorAll('#term-fees-table tbody tr:not([style*="display: none"])');
+                let hasValidTerm = false;
+                
+                termRows.forEach(row => {
+                    const termSelect = row.querySelector('.term-select');
+                    if (termSelect.value) {
+                        hasValidTerm = true;
+                    }
+                });
+                
+                if (!hasValidTerm) {
+                    e.preventDefault();
+                    alert('Please add at least one term with fee configuration.');
+                    return false;
                 }
-            });
-            
-            if (!hasValidTerm) {
-                e.preventDefault();
-                alert('Please add at least one term with fee configuration.');
-                return false;
             }
         });
     });

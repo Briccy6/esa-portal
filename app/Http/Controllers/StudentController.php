@@ -853,7 +853,7 @@ class StudentController extends Controller
         return response()->json(['message' => 'Invalid or expired code.'], 422);
     }
 
-    public function store(Request $request)
+    public function getCourseFee(Request $request)
     {
         // Case 1: Manual registration (Secretary, cash)
         if ($request->filled('amount_paid') && $request->filled('fee_type')) {

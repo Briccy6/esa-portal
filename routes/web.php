@@ -309,6 +309,12 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::get('/course/{id}/edit', [CourseController::class, 'edit'])->name('course.edit');
     Route::put('/course/{id}', [CourseController::class, 'update'])->name('course.update');
     Route::delete('/course/{id}', [CourseController::class, 'destroy'])->name('course.destroy');
+    
+    // Course Fee Assignment routes
+    Route::get('/course/{id}/assign-fees', [CourseController::class, 'assignFees'])->name('course.assign-fees');
+    Route::post('/course/{id}/store-fees', [CourseController::class, 'storeFees'])->name('course.store-fees');
+    Route::get('/course/{id}/edit-fees', [CourseController::class, 'editFees'])->name('course.edit-fees');
+    Route::put('/course/{id}/update-fees', [CourseController::class, 'updateFees'])->name('course.update-fees');
 
     // Teacher assignment
     Route::get('teachers/{teacher}/assign-course', [TeacherController::class, 'assignCourse'])->name('teachers.assignCourse');
@@ -411,6 +417,10 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::get('/accounting/export/cash-flow-statement', [\App\Http\Controllers\AccountingController::class, 'exportCashFlowStatement'])->name('accounting.export.cash-flow-statement');
         Route::get('/accounting/export/cash-flow-forecast', [\App\Http\Controllers\AccountingController::class, 'exportCashFlowForecast'])->name('accounting.export.cash-flow-forecast');
         Route::get('/accounting/payment-transcript/{student}', [\App\Http\Controllers\AccountingController::class, 'printPaymentTranscript'])->name('accounting.payment-transcript');
+        
+        // Student Fee Management
+        Route::get('/accounting/student-fees', [\App\Http\Controllers\AccountingController::class, 'studentFees'])->name('accounting.student-fees');
+        Route::get('/accounting/student-fees/{student}', [\App\Http\Controllers\AccountingController::class, 'studentFeeDetails'])->name('accounting.student-fee-details');
     });
 
     // Document Management

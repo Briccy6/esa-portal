@@ -50,12 +50,12 @@ class CourseController extends Controller
         'course_type' => 'required|string|max:50',
         'branches' => 'nullable|array',
         'branches.*' => 'string',
-        'term_fees' => 'required|array|min:1',
-        'term_fees.*.term_id' => 'required|exists:terms,id',
-        'term_fees.*.registration_fee' => 'required|numeric|min:0',
-        'term_fees.*.tuition_fee' => 'required|numeric|min:0',
-        'term_fees.*.practical_fee' => 'required|numeric|min:0',
-        'term_fees.*.trip_fee' => 'required|numeric|min:0',
+        'term_fees' => 'nullable|array',
+        'term_fees.*.term_id' => 'required_with:term_fees|exists:terms,id',
+        'term_fees.*.registration_fee' => 'required_with:term_fees|numeric|min:0',
+        'term_fees.*.tuition_fee' => 'required_with:term_fees|numeric|min:0',
+        'term_fees.*.practical_fee' => 'required_with:term_fees|numeric|min:0',
+        'term_fees.*.trip_fee' => 'required_with:term_fees|numeric|min:0',
     ]);
 
     // Check for duplicate course in the same branch
@@ -102,18 +102,20 @@ class CourseController extends Controller
         $course->course_code = $courseCode;
         $course->save();
 
-        // Create term-based fees
-        foreach ($validated['term_fees'] as $termFeeData) {
-            \App\Models\CourseTermFee::create([
-                'course_id' => $course->id,
-                'term_id' => $termFeeData['term_id'],
-                'registration_fee' => $termFeeData['registration_fee'],
-                'tuition_fee' => $termFeeData['tuition_fee'],
-                'practical_fee' => $termFeeData['practical_fee'],
-                'trip_fee' => $termFeeData['trip_fee'],
-                'student_card_fee' => 2000, // Fixed fee per term
-                'is_active' => true,
-            ]);
+        // Create term-based fees only if they are provided
+        if (!empty($validated['term_fees'])) {
+            foreach ($validated['term_fees'] as $termFeeData) {
+                \App\Models\CourseTermFee::create([
+                    'course_id' => $course->id,
+                    'term_id' => $termFeeData['term_id'],
+                    'registration_fee' => $termFeeData['registration_fee'],
+                    'tuition_fee' => $termFeeData['tuition_fee'],
+                    'practical_fee' => $termFeeData['practical_fee'],
+                    'trip_fee' => $termFeeData['trip_fee'],
+                    'student_card_fee' => 2000, // Fixed fee per term
+                    'is_active' => true,
+                ]);
+            }
         }
 
         if (!empty($validated['branches'])) {
@@ -343,6 +345,113 @@ public function getBranchesByCourse(Request $request) {
     }
     $branches = Branch::where('course_id', $courseId)->get(['id', 'name']);
     return response()->json($branches);
+}
+
+// Course Fee Assignment Methods
+public function assignFees($courseId)
+{
+    $course = Course::with(['branches', 'courseTermFees.term', 'courseTermFees.term.academicYear'])->findOrFail($courseId);
+    $terms = \App\Models\Term::with('academicYear')->orderBy('start_date', 'desc')->get();
+    
+    return view('admin.course.assign_fees', compact('course', 'terms'));
+}
+
+public function storeFees(Request $request, $courseId)
+{
+    $course = Course::findOrFail($courseId);
+    
+    $validated = $request->validate([
+        'term_fees' => 'required|array|min:1',
+        'term_fees.*.term_id' => 'required|exists:terms,id',
+        'term_fees.*.registration_fee' => 'required|numeric|min:0',
+        'term_fees.*.tuition_fee' => 'required|numeric|min:0',
+        'term_fees.*.practical_fee' => 'required|numeric|min:0',
+        'term_fees.*.trip_fee' => 'required|numeric|min:0',
+    ]);
+
+    DB::beginTransaction();
+
+    try {
+        // Deactivate existing fees for this course
+        \App\Models\CourseTermFee::where('course_id', $courseId)->update(['is_active' => false]);
+        
+        // Create or update term fees
+        foreach ($validated['term_fees'] as $termFeeData) {
+            \App\Models\CourseTermFee::updateOrCreate(
+                [
+                    'course_id' => $courseId,
+                    'term_id' => $termFeeData['term_id']
+                ],
+                [
+                    'registration_fee' => $termFeeData['registration_fee'],
+                    'tuition_fee' => $termFeeData['tuition_fee'],
+                    'practical_fee' => $termFeeData['practical_fee'],
+                    'trip_fee' => $termFeeData['trip_fee'],
+                    'student_card_fee' => 2000,
+                    'is_active' => true,
+                ]
+            );
+        }
+
+        DB::commit();
+        return redirect()->route('admin.course.index')->with('success', 'Course fees assigned successfully!');
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return redirect()->back()->withInput()->withErrors(['error' => 'Failed to assign fees: ' . $e->getMessage()]);
+    }
+}
+
+public function editFees($courseId)
+{
+    $course = Course::with(['branches', 'courseTermFees.term', 'courseTermFees.term.academicYear'])->findOrFail($courseId);
+    $terms = \App\Models\Term::with('academicYear')->orderBy('start_date', 'desc')->get();
+    
+    return view('admin.course.edit_fees', compact('course', 'terms'));
+}
+
+public function updateFees(Request $request, $courseId)
+{
+    $course = Course::findOrFail($courseId);
+    
+    $validated = $request->validate([
+        'term_fees' => 'required|array|min:1',
+        'term_fees.*.term_id' => 'required|exists:terms,id',
+        'term_fees.*.registration_fee' => 'required|numeric|min:0',
+        'term_fees.*.tuition_fee' => 'required|numeric|min:0',
+        'term_fees.*.practical_fee' => 'required|numeric|min:0',
+        'term_fees.*.trip_fee' => 'required|numeric|min:0',
+    ]);
+
+    DB::beginTransaction();
+
+    try {
+        // Deactivate existing fees for this course
+        \App\Models\CourseTermFee::where('course_id', $courseId)->update(['is_active' => false);
+        
+        // Create or update term fees
+        foreach ($validated['term_fees'] as $termFeeData) {
+            \App\Models\CourseTermFee::updateOrCreate(
+                [
+                    'course_id' => $courseId,
+                    'term_id' => $termFeeData['term_id']
+                ],
+                [
+                    'registration_fee' => $termFeeData['registration_fee'],
+                    'tuition_fee' => $termFeeData['tuition_fee'],
+                    'practical_fee' => $termFeeData['practical_fee'],
+                    'trip_fee' => $termFeeData['trip_fee'],
+                    'student_card_fee' => 2000,
+                    'is_active' => true,
+                ]
+            );
+        }
+
+        DB::commit();
+        return redirect()->route('admin.course.index')->with('success', 'Course fees updated successfully!');
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return redirect()->back()->withInput()->withErrors(['error' => 'Failed to update fees: ' . $e->getMessage()]);
+    }
 }
 
 

@@ -92,6 +92,16 @@
                                     <i class="fas fa-edit"></i>
                                 </a>
 
+                                @if($course->courseTermFees->count() > 0)
+                                    <a href="{{ route('admin.course.edit-fees', $course->id) }}" class="btn btn-sm btn-info" title="Edit Fees">
+                                        <i class="fas fa-money-bill-wave"></i>
+                                    </a>
+                                @else
+                                    <a href="{{ route('admin.course.assign-fees', $course->id) }}" class="btn btn-sm btn-success" title="Assign Fees">
+                                        <i class="fas fa-plus-circle"></i>
+                                    </a>
+                                @endif
+
                                 <form action="{{ route('admin.course.destroy', $course->id) }}" method="POST" style="display:inline-block;" onsubmit="return confirmDelete();">
                                     @csrf
                                     @method('DELETE')
