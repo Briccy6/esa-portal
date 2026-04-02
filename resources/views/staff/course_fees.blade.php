@@ -1,4 +1,4 @@
-@extends('staff.partials.sidebar_sec')
+@extends('staff.partials.staff_layout')
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">
