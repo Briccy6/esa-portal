@@ -20,7 +20,9 @@ class LessonController extends Controller
 {
     public function index()
     {
-        $lessonDetails = Lesson::with(['course', 'teacher', 'units', 'branches', 'terms'])->get();
+        $lessonDetails = Lesson::with(['course', 'teacher', 'units', 'branches', 'terms', 'branchCourses' => function($query) {
+            $query->with(['branch', 'course', 'teacher']);
+        }])->get();
 
         // Check if user is DOS and return DOS view
         if (auth('staff')->check() && auth('staff')->user()->role === 'DOS') {
@@ -467,7 +469,7 @@ public function createDetails(Request $request, $lessonId)
     }
 
     /**
-     * Assign lesson to branches and courses
+     * Assign lesson to branches and courses (replaces all existing assignments)
      */
     public function assignToBranches(Request $request)
     {
@@ -483,27 +485,23 @@ public function createDetails(Request $request, $lessonId)
         try {
             $lesson = Lesson::findOrFail($validated['lesson_id']);
             
+            // DELETE all existing assignments for this lesson first
+            \App\Models\LessonBranchCourse::where('lesson_id', $lesson->id)->delete();
+            
+            // CREATE new assignments
             foreach ($validated['assignments'] as $assignment) {
-                // Check if this assignment already exists
-                $existing = \App\Models\LessonBranchCourse::where('lesson_id', $lesson->id)
-                    ->where('branch_id', $assignment['branch_id'])
-                    ->where('course_id', $assignment['course_id'])
-                    ->first();
-
-                if (!$existing) {
-                    \App\Models\LessonBranchCourse::create([
-                        'lesson_id' => $lesson->id,
-                        'branch_id' => $assignment['branch_id'],
-                        'course_id' => $assignment['course_id'],
-                        'teacher_id' => $assignment['teacher_id'] ?? null,
-                    ]);
-                }
+                \App\Models\LessonBranchCourse::create([
+                    'lesson_id' => $lesson->id,
+                    'branch_id' => $assignment['branch_id'],
+                    'course_id' => $assignment['course_id'],
+                    'teacher_id' => $assignment['teacher_id'] ?? null,
+                ]);
             }
 
             DB::commit();
 
             return redirect()->route('dos.lessons.index')
-                             ->with('success', 'Lesson assigned successfully to ' . count($validated['assignments']) . ' branch-course combinations.');
+                             ->with('success', 'Lesson assignments updated successfully. ' . count($validated['assignments']) . ' branch-course combinations assigned.');
 
         } catch (\Exception $e) {
             DB::rollback();
@@ -523,14 +521,17 @@ public function createDetails(Request $request, $lessonId)
         $lesson = Lesson::with(['branches', 'courses', 'teachers'])->findOrFail($lessonId);
         
         $assignments = [];
-        foreach ($lesson->branches as $branch) {
-            $course = $lesson->courses->where('id', $branch->pivot->course_id)->first();
-            $teacher = \App\Models\Teacher::find($branch->pivot->teacher_id);
-            
+        
+        // Get assignments from lesson_branch_course table
+        $lessonAssignments = \App\Models\LessonBranchCourse::where('lesson_id', $lessonId)
+            ->with(['branch', 'course', 'teacher'])
+            ->get();
+        
+        foreach ($lessonAssignments as $assignment) {
             $assignments[] = [
-                'branch_name' => $branch->name,
-                'course_name' => $course ? $course->course_name : 'Unknown',
-                'teacher_name' => $teacher ? $teacher->teacher_name : null,
+                'branch_name' => $assignment->branch ? $assignment->branch->name : 'Unknown',
+                'course_name' => $assignment->course ? $assignment->course->course_name : 'Unknown',
+                'teacher_name' => $assignment->teacher ? $assignment->teacher->teacher_name : null,
             ];
         }
 

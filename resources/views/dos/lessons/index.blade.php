@@ -210,17 +210,17 @@
                                             @endif
                                         </td>
                                         <td>
-                                            @if($lesson->branches->count() > 0)
-                                                @foreach($lesson->branches as $branch)
-                                                    <span class="assignment-badge">
-                                                        {{ $branch->name }}
-                                                        @if($lesson->courses->where('id', $branch->pivot->course_id)->first())
-                                                            - {{ $lesson->courses->where('id', $branch->pivot->course_id)->first()->course_name }}
-                                                        @endif
-                                                        @if($branch->pivot->teacher_id)
-                                                            ({{ \App\Models\Teacher::find($branch->pivot->teacher_id)->teacher_name ?? 'Unknown' }})
-                                                        @endif
-                                                    </span>
+                                            @if($lesson->branchCourses->count() > 0)
+                                                @foreach($lesson->branchCourses as $branchCourse)
+                                                    @if($branchCourse->branch && $branchCourse->course)
+                                                        <span class="assignment-badge">
+                                                            {{ $branchCourse->branch->name }}
+                                                            - {{ $branchCourse->course->course_name }}
+                                                            @if($branchCourse->teacher)
+                                                                ({{ $branchCourse->teacher->teacher_name }})
+                                                            @endif
+                                                        </span>
+                                                    @endif
                                                 @endforeach
                                             @else
                                                 {{-- Show single course assignment for backward compatibility --}}
