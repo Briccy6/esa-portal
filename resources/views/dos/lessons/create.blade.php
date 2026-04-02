@@ -462,15 +462,30 @@
                 <div class="debug-bar">
                     <div class="debug-cell">
                         <strong>Branches</strong>
-                        <span>{{ $branches->count() }} available@if($branches->count() > 0) - {{ $branches->pluck('name')->implode(', ') }}@endif</span>
+                        <span>
+                            {{ $branches->count() }} available
+                            @if($branches->count() > 0)
+                                - {{ $branches->pluck('name')->implode(', ') }}
+                            @endif
+                        </span>
                     </div>
                     <div class="debug-cell">
                         <strong>Courses</strong>
-                        <span>{{ $courses->count() }} available@if($courses->count() > 0) - {{ $courses->take(3)->pluck('course_name')->implode(', ') }}{{ $courses->count() > 3 ? '...' : '' }}@endif</span>
+                        <span>
+                            {{ $courses->count() }} available
+                            @if($courses->count() > 0)
+                                - {{ $courses->take(3)->pluck('course_name')->implode(', ') }}{{ $courses->count() > 3 ? '...' : '' }}
+                            @endif
+                        </span>
                     </div>
                     <div class="debug-cell">
                         <strong>Terms</strong>
-                        <span>{{ $terms->count() }} available@if($terms->count() > 0) - {{ $terms->pluck('name')->implode(', ') }}@endif</span>
+                        <span>
+                            {{ $terms->count() }} available
+                            @if($terms->count() > 0)
+                                - {{ $terms->pluck('name')->implode(', ') }}
+                            @endif
+                        </span>
                     </div>
                 </div>
 
