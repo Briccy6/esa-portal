@@ -52,7 +52,7 @@
     @endif
 
     <!-- Fee Assignment Form -->
-    <form action="{{ route('course.store-fees', $course->id) }}" method="POST" class="bg-white p-4 rounded shadow-sm">
+    <form action="{{ route('admin.course.store-fees', $course->id) }}" method="POST" class="bg-white p-4 rounded shadow-sm">
         @csrf
 
         <div class="mb-4">

@@ -27,10 +27,10 @@
         * { box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            font-size: 10px;
+            font-size: 9px;
             color: #111;
             margin: 0;
-            padding: 8px;
+            padding: 4px;
             max-width: 100%;
             margin-left: auto;
             margin-right: auto;
@@ -48,87 +48,89 @@
         .print-header-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
         }
         .print-header-table td {
             vertical-align: top;
-            padding: 4px;
+            padding: 2px;
         }
         .print-header-logo { width: 90px; text-align: center; }
         .print-header-logo--right { text-align: right; }
         .school-logo-img {
-            max-width: 60px;
-            max-height: 60px;
+            max-width: 45px;
+            max-height: 45px;
             object-fit: contain;
         }
         .print-logo-placeholder {
-            width: 50px;
-            height: 50px;
+            width: 40px;
+            height: 40px;
             border: 1px dashed #999;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 8px;
+            font-size: 7px;
             color: #666;
             margin: 0 auto;
         }
         .hdr-school-name {
-            font-size: 13px;
+            font-size: 11px;
             font-weight: 700;
             text-transform: uppercase;
-            margin: 4px 0 2px;
+            margin: 2px 0 1px;
         }
         .hdr-line { margin: 1px 0; font-size: 9px; }
         .hdr-line .lbl { font-weight: 600; }
-        .hdr-contact { font-size: 8px; margin: 1px 0; color: #333; }
+        .hdr-contact { font-size: 7px; margin: 0; color: #333; }
         .doc-title {
             text-align: center;
-            font-size: 12px;
+            font-size: 10px;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            margin: 6px 0 8px;
+            margin: 3px 0 4px;
             border-bottom: 2px solid #000;
-            padding-bottom: 4px;
+            padding-bottom: 2px;
         }
         table.data-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 10px;
+            margin-bottom: 6px;
         }
         table.data-table th, table.data-table td {
             border: 1px solid #000;
-            padding: 4px 6px;
+            padding: 2px 4px;
             text-align: left;
         }
-        table.data-table th { background: #f0f0f0; font-size: 9px; }
+        table.data-table th { background: #f0f0f0; font-size: 8px; }
         .num { text-align: right; font-variant-numeric: tabular-nums; }
-        .muted { color: #555; font-size: 8px; }
+        .muted { color: #555; font-size: 7px; }
         .signatures {
-            margin-top: 12px;
+            margin-top: 8px;
             width: 100%;
             border-collapse: collapse;
         }
         .signatures td {
             vertical-align: bottom;
-            padding: 4px;
+            padding: 2px;
             width: 33%;
             text-align: center;
-            font-size: 8px;
+            font-size: 7px;
         }
-        .sig-img { max-height: 40px; max-width: 120px; object-fit: contain; margin-bottom: 2px; }
+        .sig-img { max-height: 30px; max-width: 100px; object-fit: contain; margin-bottom: 1px; }
         .sig-line {
             border-top: 1px solid #000;
-            margin-top: 20px;
-            padding-top: 2px;
+            margin-top: 15px;
+            padding-top: 1px;
         }
         @media print {
             .no-print { display: none !important; }
-            body { padding: 6px; font-size: 9px; }
-            table.data-table th, table.data-table td { padding: 3px 4px; }
-            .hdr-school-name { font-size: 11px; }
-            .doc-title { font-size: 10px; }
-            .signatures td { font-size: 7px; }
+            body { padding: 2px; font-size: 8px; }
+            table.data-table th, table.data-table td { padding: 1px 2px; }
+            .hdr-school-name { font-size: 9px; }
+            .doc-title { font-size: 8px; }
+            .signatures td { font-size: 6px; }
+            .print-header-table td { padding: 1px; }
+            .school-logo-img { max-width: 35px; max-height: 35px; }
         }
     </style>
 </head>
