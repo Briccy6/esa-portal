@@ -303,19 +303,19 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::post('/fees', [SchoolFeeController::class, 'store'])->name('fees.store');
 
     // Course routes
-    Route::get('/course/create', [CourseController::class, 'create'])->name('admin.course.create');
-    Route::post('/course/store', [CourseController::class, 'store'])->name('admin.course.store');
-    Route::get('/courses', [CourseController::class, 'index'])->name('admin.course.index');
-    Route::get('/course/{id}/edit', [CourseController::class, 'edit'])->name('admin.course.edit');
-    Route::put('/course/{id}', [CourseController::class, 'update'])->name('admin.course.update');
-    Route::delete('/course/{id}', [CourseController::class, 'destroy'])->name('admin.course.destroy');
+    Route::get('/course/create', [CourseController::class, 'create'])->name('course.create');
+    Route::post('/course/store', [CourseController::class, 'store'])->name('course.store');
+    Route::get('/courses', [CourseController::class, 'index'])->name('course.index');
+    Route::get('/course/{id}/edit', [CourseController::class, 'edit'])->name('course.edit');
+    Route::put('/course/{id}', [CourseController::class, 'update'])->name('course.update');
+    Route::delete('/course/{id}', [CourseController::class, 'destroy'])->name('course.destroy');
     
     // Course Fee Assignment routes
-    Route::get('/course/{id}/assign-fees', [CourseController::class, 'assignFees'])->name('admin.course.assign-fees');
-    Route::get('/course/{id}/test-assign-fees', [CourseController::class, 'testAssignFees'])->name('admin.course.test-assign-fees');
-    Route::post('/course/{id}/store-fees', [CourseController::class, 'storeFees'])->name('admin.course.store-fees');
-    Route::get('/course/{id}/edit-fees', [CourseController::class, 'editFees'])->name('admin.course.edit-fees');
-    Route::put('/course/{id}/update-fees', [CourseController::class, 'updateFees'])->name('admin.course.update-fees');
+    Route::get('/course/{id}/assign-fees', [CourseController::class, 'assignFees'])->name('course.assign-fees');
+    Route::get('/course/{id}/test-assign-fees', [CourseController::class, 'testAssignFees'])->name('course.test-assign-fees');
+    Route::post('/course/{id}/store-fees', [CourseController::class, 'storeFees'])->name('course.store-fees');
+    Route::get('/course/{id}/edit-fees', [CourseController::class, 'editFees'])->name('course.edit-fees');
+    Route::put('/course/{id}/update-fees', [CourseController::class, 'updateFees'])->name('course.update-fees');
 
     // Teacher assignment
     Route::get('teachers/{teacher}/assign-course', [TeacherController::class, 'assignCourse'])->name('teachers.assignCourse');
