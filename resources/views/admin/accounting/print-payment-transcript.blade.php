@@ -27,11 +27,11 @@
         * { box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            font-size: 12px;
+            font-size: 10px;
             color: #111;
             margin: 0;
-            padding: 16px;
-            max-width: 900px;
+            padding: 8px;
+            max-width: 100%;
             margin-left: auto;
             margin-right: auto;
         }
@@ -48,83 +48,87 @@
         .print-header-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
         }
         .print-header-table td {
             vertical-align: top;
-            padding: 6px;
+            padding: 4px;
         }
         .print-header-logo { width: 90px; text-align: center; }
         .print-header-logo--right { text-align: right; }
         .school-logo-img {
-            max-width: 80px;
-            max-height: 80px;
+            max-width: 60px;
+            max-height: 60px;
             object-fit: contain;
         }
         .print-logo-placeholder {
-            width: 72px;
-            height: 72px;
+            width: 50px;
+            height: 50px;
             border: 1px dashed #999;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 9px;
+            font-size: 8px;
             color: #666;
             margin: 0 auto;
         }
         .hdr-school-name {
-            font-size: 15px;
+            font-size: 13px;
             font-weight: 700;
             text-transform: uppercase;
-            margin: 6px 0 4px;
+            margin: 4px 0 2px;
         }
-        .hdr-line { margin: 2px 0; font-size: 11px; }
+        .hdr-line { margin: 1px 0; font-size: 9px; }
         .hdr-line .lbl { font-weight: 600; }
-        .hdr-contact { font-size: 10px; margin: 1px 0; color: #333; }
+        .hdr-contact { font-size: 8px; margin: 1px 0; color: #333; }
         .doc-title {
             text-align: center;
-            font-size: 14px;
+            font-size: 12px;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            margin: 10px 0 14px;
+            margin: 6px 0 8px;
             border-bottom: 2px solid #000;
-            padding-bottom: 6px;
+            padding-bottom: 4px;
         }
         table.data-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 14px;
+            margin-bottom: 10px;
         }
         table.data-table th, table.data-table td {
             border: 1px solid #000;
-            padding: 6px 8px;
+            padding: 4px 6px;
             text-align: left;
         }
-        table.data-table th { background: #f0f0f0; font-size: 11px; }
+        table.data-table th { background: #f0f0f0; font-size: 9px; }
         .num { text-align: right; font-variant-numeric: tabular-nums; }
-        .muted { color: #555; font-size: 10px; }
+        .muted { color: #555; font-size: 8px; }
         .signatures {
-            margin-top: 20px;
+            margin-top: 12px;
             width: 100%;
             border-collapse: collapse;
         }
         .signatures td {
             vertical-align: bottom;
-            padding: 8px;
+            padding: 4px;
             width: 33%;
             text-align: center;
-            font-size: 10px;
+            font-size: 8px;
         }
-        .sig-img { max-height: 56px; max-width: 160px; object-fit: contain; margin-bottom: 4px; }
+        .sig-img { max-height: 40px; max-width: 120px; object-fit: contain; margin-bottom: 2px; }
         .sig-line {
             border-top: 1px solid #000;
-            margin-top: 28px;
-            padding-top: 4px;
+            margin-top: 20px;
+            padding-top: 2px;
         }
         @media print {
             .no-print { display: none !important; }
-            body { padding: 12px; }
+            body { padding: 6px; font-size: 9px; }
+            table.data-table th, table.data-table td { padding: 3px 4px; }
+            .hdr-school-name { font-size: 11px; }
+            .doc-title { font-size: 10px; }
+            .signatures td { font-size: 7px; }
         }
     </style>
 </head>
@@ -197,7 +201,7 @@
     </tbody>
 </table>
 
-<p class="muted" style="margin:0 0 8px;">
+<p class="muted" style="margin:0 0 4px;">
     Amounts due are based on the assigned course fees and any discount on tuition, practical and trip fees. Paid amounts in the summary are taken from successful transactions in <strong>student_transactions</strong> by fee type.
     @if($discountPct > 0)
         Current discount: <strong>{{ rtrim(rtrim(number_format($discountPct, 2), '0'), '.') }}%</strong>
@@ -208,7 +212,7 @@
     @endif
 </p>
 
-<h2 style="font-size:12px;margin:12px 0 6px;">Summary by fee type</h2>
+<h2 style="font-size:10px;margin:8px 0 4px;">Summary by fee type</h2>
 <table class="data-table">
     <thead>
         <tr>
@@ -227,10 +231,10 @@
                     @if($row['term'])
                         {{ $row['term_name'] }}
                         @if($row['term']->start_date && $row['term']->end_date)
-                            <br><span style="font-size:9px;color:#666;">({{ $row['term']->start_date->format('M Y') }} - {{ $row['term']->end_date->format('M Y') }})</span>
+                            <br><span style="font-size:7px;color:#666;">({{ $row['term']->start_date->format('M Y') }} - {{ $row['term']->end_date->format('M Y') }})</span>
                         @endif
                     @else
-                        <span style="color:#666;">{{ $row['term_name'] }}</span>
+                        <span style="font-size:7px;color:#666;">{{ $row['term_name'] }}</span>
                     @endif
                 </td>
                 <td class="num">{{ number_format($row['expected'], 2) }}</td>
@@ -247,12 +251,12 @@
     </tbody>
 </table>
 
-<h2 style="font-size:12px;margin:12px 0 6px;">Transaction ledger by term (including unpaid / pending)</h2>
+<h2 style="font-size:10px;margin:8px 0 4px;">Transaction ledger by term (including unpaid / pending)</h2>
 
 @if(isset($termGroups) && !empty($termGroups))
     @foreach($termGroups as $termGroup)
-        <div style="margin-bottom: 20px;">
-            <h3 style="font-size:11px;margin:8px 0 4px;font-weight:600;color:#333;">
+        <div style="margin-bottom: 12px;">
+            <h3 style="font-size:9px;margin:4px 0 2px;font-weight:600;color:#333;">
                 {{ $termGroup['term_name'] }}
                 @if($termGroup['term'])
                     ({{ $termGroup['term']->start_date->format('M Y') }} - {{ $termGroup['term']->end_date->format('M Y') }})
@@ -295,7 +299,7 @@
                                     {{ ucfirst($tx->status) }}
                                 @endif
                             </td>
-                            <td style="font-size:10px;">{{ $tx->tx_ref ?? '—' }}</td>
+                            <td style="font-size:8px;">{{ $tx->tx_ref ?? '—' }}</td>
                         </tr>
                     @endforeach
                 </tbody>
@@ -376,7 +380,7 @@
     </tr>
 </table>
 
-<p class="muted" style="margin-top:14px;">
+<p class="muted" style="margin-top:8px;">
     This transcript reflects records in the school system as of {{ $printedAt->format('d M Y H:i') }}.
     For queries, contact the school office.
 </p>
