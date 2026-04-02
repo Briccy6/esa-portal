@@ -1826,6 +1826,7 @@ function downloadTimetable(title, imageData) {
 // Report Card Countdown Functionality
 let countdownInterval;
 let targetDate;
+let serverTimeOffset = 0;
 
 function updateReportCardStatus() {
     fetch('{{ route("student.report-cards.countdown") }}')
@@ -1833,6 +1834,11 @@ function updateReportCardStatus() {
         .then(data => {
             const statusDiv = document.getElementById('report-card-status');
             const countdownContainer = document.getElementById('countdown-container');
+            
+            // Store server time offset for accurate countdown
+            if (data.server_time) {
+                serverTimeOffset = new Date(data.server_time).getTime() - Date.now();
+            }
             
             if (data.can_access) {
                 // Student can access report cards
@@ -1905,11 +1911,12 @@ function startCountdown(initialData) {
     }
     
     function updateCountdownDisplay() {
-        const now = new Date();
+        // Get current time with server offset for accuracy
+        const now = new Date(Date.now() + serverTimeOffset);
         const difference = targetDate - now;
         
         if (difference <= 0) {
-            // Time's up - refresh status
+            // Time's up - refresh status immediately
             updateReportCardStatus();
             return;
         }
@@ -1922,19 +1929,33 @@ function startCountdown(initialData) {
         const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((difference % (1000 * 60)) / 1000);
         
-        // Update display
-        document.getElementById('months').textContent = months;
-        document.getElementById('weeks').textContent = weeks;
-        document.getElementById('days').textContent = days;
-        document.getElementById('hours').textContent = hours;
-        document.getElementById('minutes').textContent = minutes;
-        document.getElementById('seconds').textContent = seconds;
+        // Update display with smooth animations
+        updateCountdownSegment('months', months);
+        updateCountdownSegment('weeks', weeks);
+        updateCountdownSegment('days', days);
+        updateCountdownSegment('hours', hours);
+        updateCountdownSegment('minutes', minutes);
+        updateCountdownSegment('seconds', seconds);
+    }
+    
+    function updateCountdownSegment(id, value) {
+        const element = document.getElementById(id);
+        if (element && element.textContent !== value.toString()) {
+            element.textContent = value;
+            // Add pulse animation for seconds
+            if (id === 'seconds') {
+                element.style.transform = 'scale(1.1)';
+                setTimeout(() => {
+                    element.style.transform = 'scale(1)';
+                }, 100);
+            }
+        }
     }
     
     // Initial update
     updateCountdownDisplay();
     
-    // Update every second
+    // Update every second for truly live countdown
     countdownInterval = setInterval(updateCountdownDisplay, 1000);
 }
 
@@ -1942,8 +1963,8 @@ function startCountdown(initialData) {
 document.addEventListener('DOMContentLoaded', function() {
     updateReportCardStatus();
     
-    // Refresh status every 5 minutes in case of changes
-    setInterval(updateReportCardStatus, 5 * 60 * 1000);
+    // Refresh status every 30 seconds to sync with server (but countdown stays live)
+    setInterval(updateReportCardStatus, 30000);
 });
 </script>
 @endsection

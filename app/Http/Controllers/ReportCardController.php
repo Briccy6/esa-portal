@@ -971,7 +971,8 @@ class ReportCardController extends Controller
             'can_access' => $accessStatus['can_access'],
             'reason' => $accessStatus['reason'],
             'payment_status' => $accessStatus['payment_status'],
-            'available_date' => $accessStatus['available_date']
+            'available_date' => $accessStatus['available_date'],
+            'server_time' => now()->toISOString()
         ]);
     }
 }
