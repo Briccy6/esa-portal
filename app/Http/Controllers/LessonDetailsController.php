@@ -14,8 +14,8 @@ class LessonDetailsController extends Controller
      */
 public function index() {
     $lessonDetails = LessonUnit::with('lesson.course', 'lesson.teacher', 'term')
-                               ->whereHas('lesson') // Only get units with valid lessons
-                               ->get();
+                               ->whereHas('lesson')
+                               ->paginate(15);
     return view('details.index', compact('lessonDetails'));
 }
 

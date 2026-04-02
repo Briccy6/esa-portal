@@ -272,6 +272,13 @@
                                                         title="Assign to Branches">
                                                     <i class="fas fa-network-wired"></i>
                                                 </button>
+                                                <form action="{{ route('staff.lessons.destroy', $lesson->id) }}" method="POST" style="display: inline-block;" onsubmit="return confirm('Are you sure you want to delete this lesson? This will permanently delete the lesson and ALL related data including units, marks, attendance, and exam associations. This action cannot be undone.');">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="btn btn-action btn-delete" title="Delete" style="background: #dc3545; color: white;">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </form>
                                             </div>
                                         </td>
                                     </tr>
@@ -279,6 +286,19 @@
                             </tbody>
                         </table>
                     </div>
+                    @if($lessonDetails->hasPages())
+                        <div style="padding: 15px; border-top: 1px solid #e9ecef; background: #f8f9fa;">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <p class="text-muted mb-0">
+                                    Showing <strong>{{ $lessonDetails->firstItem() }}</strong> to <strong>{{ $lessonDetails->lastItem() }}</strong> 
+                                    of <strong>{{ $lessonDetails->total() }}</strong> lessons
+                                </p>
+                                <div>
+                                    {{ $lessonDetails->links('pagination::bootstrap-4') }}
+                                </div>
+                            </div>
+                        </div>
+                    @endif
                 @else
                     <div class="empty-state">
                         <i class="fas fa-book"></i>

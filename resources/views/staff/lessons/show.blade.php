@@ -282,7 +282,7 @@
             </div>
 
             <!-- Action Buttons -->
-            <div class="d-flex justify-content-between">
+            <div class="d-flex justify-content-between align-items-center">
                 <a href="{{ route('staff.lessons.index') }}" class="btn-back">
                     <i class="fas fa-arrow-left"></i> Back to Lessons
                 </a>
@@ -291,10 +291,17 @@
                         <i class="fas fa-edit"></i> Edit Lesson
                     </a>
                     @if(!$lesson->units || $lesson->units->count() == 0)
-                        <a href="{{ route('staff.lesson.details.create', $lesson->id) }}" class="btn btn-primary">
+                        <a href="{{ route('staff.lesson.details.create', $lesson->id) }}" class="btn btn-primary me-2">
                             <i class="fas fa-plus"></i> Add Units
                         </a>
                     @endif
+                    <form action="{{ route('staff.lessons.destroy', $lesson->id) }}" method="POST" style="display: inline-block;" onsubmit="return confirm('Are you sure you want to delete this lesson? This will permanently delete the lesson and ALL related data including units, marks, attendance, and exam associations. This action cannot be undone.');">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn btn-outline-danger">
+                            <i class="fas fa-trash"></i> Delete Lesson
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>

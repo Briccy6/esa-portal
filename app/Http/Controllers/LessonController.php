@@ -22,7 +22,7 @@ class LessonController extends Controller
     {
         $lessonDetails = Lesson::with(['course', 'teacher', 'units', 'branches', 'terms', 'branchCourses' => function($query) {
             $query->with(['branch', 'course', 'teacher']);
-        }])->get();
+        }])->paginate(15);
 
         // Check if user is DOS and return DOS view
         if (auth('staff')->check() && auth('staff')->user()->role === 'DOS') {
