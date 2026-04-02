@@ -200,11 +200,38 @@ class ToWhomLetterController extends Controller
      */
     private function generateEnrollmentContent($student, $purpose)
     {
-        $courseName = $student->course ? $student->course->name : 'N/A';
-        $branchName = $student->branch ? $student->branch->name : 'N/A';
-        $academicYear = $student->academicYear ? $student->academicYear->name : 'N/A';
+        $courseName = 'Not Specified';
+        $branchName = 'Not Specified';
+        $academicYear = 'Not Specified';
         
-        $idNumber = $student->id_number ? $student->id_number : 'N/A';
+        // Get course name with fallback
+        if ($student->course_id) {
+            if ($student->course && !empty($student->course->name)) {
+                $courseName = $student->course->name;
+            } else {
+                $courseName = "Course ID: {$student->course_id} (Name not available)";
+            }
+        }
+        
+        // Get branch name with fallback
+        if ($student->branch_id) {
+            if ($student->branch && !empty($student->branch->name)) {
+                $branchName = $student->branch->name;
+            } else {
+                $branchName = "Branch ID: {$student->branch_id} (Name not available)";
+            }
+        }
+        
+        // Get academic year with fallback
+        if ($student->academic_year_id) {
+            if ($student->academicYear && !empty($student->academicYear->name)) {
+                $academicYear = $student->academicYear->name;
+            } else {
+                $academicYear = "Academic Year ID: {$student->academic_year_id} (Name not available)";
+            }
+        }
+        
+        $idNumber = $student->id_number ? $student->id_number : 'Not Provided';
         
         return "This letter is to certify that {$student->full_name} is currently enrolled at our institution.
         
@@ -213,12 +240,8 @@ Student Details:
 - Course: {$courseName}
 - Branch: {$branchName}
 - Academic Year: {$academicYear}
-- ID Number: {$idNumber}
 
-The student was admitted on " . $student->created_at->format('F j, Y') . " and is currently in good academic standing. 
-This verification is provided for the purpose of: {$purpose}
-
-Should you require any additional information, please do not hesitate to contact our administration office.";
+The student was admitted on " . $student->created_at->format('F j, Y') . " and is currently in good academic standing.";
     }
 
     /**
@@ -226,9 +249,36 @@ Should you require any additional information, please do not hesitate to contact
      */
     private function generateAcademicStandingContent($student, $purpose)
     {
-        $courseName = $student->course ? $student->course->name : 'N/A';
-        $branchName = $student->branch ? $student->branch->name : 'N/A';
-        $academicYear = $student->academicYear ? $student->academicYear->name : 'N/A';
+        $courseName = 'Not Specified';
+        $branchName = 'Not Specified';
+        $academicYear = 'Not Specified';
+        
+        // Get course name with fallback
+        if ($student->course_id) {
+            if ($student->course && !empty($student->course->name)) {
+                $courseName = $student->course->name;
+            } else {
+                $courseName = "Course ID: {$student->course_id} (Name not available)";
+            }
+        }
+        
+        // Get branch name with fallback
+        if ($student->branch_id) {
+            if ($student->branch && !empty($student->branch->name)) {
+                $branchName = $student->branch->name;
+            } else {
+                $branchName = "Branch ID: {$student->branch_id} (Name not available)";
+            }
+        }
+        
+        // Get academic year with fallback
+        if ($student->academic_year_id) {
+            if ($student->academicYear && !empty($student->academicYear->name)) {
+                $academicYear = $student->academicYear->name;
+            } else {
+                $academicYear = "Academic Year ID: {$student->academic_year_id} (Name not available)";
+            }
+        }
         
         return "This letter confirms the academic standing of {$student->full_name} at our institution.
 
@@ -240,10 +290,7 @@ Student Academic Information:
 - Enrollment Status: Active
 - Academic Performance: Satisfactory
 
-The student has maintained satisfactory academic progress and has demonstrated commitment to their studies. 
-This academic standing verification is provided for the purpose of: {$purpose}
-
-For more detailed academic records, please contact our academic affairs office.";
+The student has maintained satisfactory academic progress and has demonstrated commitment to their studies.";
     }
 
     /**
@@ -251,9 +298,36 @@ For more detailed academic records, please contact our academic affairs office."
      */
     private function generateFinancialStatusContent($student, $purpose)
     {
-        $courseName = $student->course ? $student->course->name : 'N/A';
-        $branchName = $student->branch ? $student->branch->name : 'N/A';
-        $academicYear = $student->academicYear ? $student->academicYear->name : 'N/A';
+        $courseName = 'Not Specified';
+        $branchName = 'Not Specified';
+        $academicYear = 'Not Specified';
+        
+        // Get course name with fallback
+        if ($student->course_id) {
+            if ($student->course && !empty($student->course->name)) {
+                $courseName = $student->course->name;
+            } else {
+                $courseName = "Course ID: {$student->course_id} (Name not available)";
+            }
+        }
+        
+        // Get branch name with fallback
+        if ($student->branch_id) {
+            if ($student->branch && !empty($student->branch->name)) {
+                $branchName = $student->branch->name;
+            } else {
+                $branchName = "Branch ID: {$student->branch_id} (Name not available)";
+            }
+        }
+        
+        // Get academic year with fallback
+        if ($student->academic_year_id) {
+            if ($student->academicYear && !empty($student->academicYear->name)) {
+                $academicYear = $student->academicYear->name;
+            } else {
+                $academicYear = "Academic Year ID: {$student->academic_year_id} (Name not available)";
+            }
+        }
         
         return "This letter certifies the financial status of {$student->full_name} regarding their account at our institution.
 
@@ -263,10 +337,7 @@ Student Financial Information:
 - Branch: {$branchName}
 - Academic Year: {$academicYear}
 
-The student's financial account is currently in good standing. All required fees have been paid according to the institution's payment schedule.
-This financial status verification is provided for the purpose of: {$purpose}
-
-For detailed financial information, please contact our finance department.";
+The student's financial account is currently in good standing. All required fees have been paid according to the institution's payment schedule.";
     }
 
     /**
@@ -274,9 +345,36 @@ For detailed financial information, please contact our finance department.";
      */
     private function generateCompletionContent($student, $purpose)
     {
-        $courseName = $student->course ? $student->course->name : 'N/A';
-        $branchName = $student->branch ? $student->branch->name : 'N/A';
-        $academicYear = $student->academicYear ? $student->academicYear->name : 'N/A';
+        $courseName = 'Not Specified';
+        $branchName = 'Not Specified';
+        $academicYear = 'Not Specified';
+        
+        // Get course name with fallback
+        if ($student->course_id) {
+            if ($student->course && !empty($student->course->name)) {
+                $courseName = $student->course->name;
+            } else {
+                $courseName = "Course ID: {$student->course_id} (Name not available)";
+            }
+        }
+        
+        // Get branch name with fallback
+        if ($student->branch_id) {
+            if ($student->branch && !empty($student->branch->name)) {
+                $branchName = $student->branch->name;
+            } else {
+                $branchName = "Branch ID: {$student->branch_id} (Name not available)";
+            }
+        }
+        
+        // Get academic year with fallback
+        if ($student->academic_year_id) {
+            if ($student->academicYear && !empty($student->academicYear->name)) {
+                $academicYear = $student->academicYear->name;
+            } else {
+                $academicYear = "Academic Year ID: {$student->academic_year_id} (Name not available)";
+            }
+        }
         
         return "This letter certifies that {$student->full_name} has successfully completed the requirements for their course of study.
 
@@ -287,10 +385,7 @@ Completion Details:
 - Academic Year: {$academicYear}
 - Completion Date: " . Carbon::now()->format('F j, Y') . "
 
-The student has fulfilled all academic and administrative requirements for the course. 
-This completion certificate is provided for the purpose of: {$purpose}
-
-Official transcripts and certificates can be obtained from our records office.";
+The student has fulfilled all academic and administrative requirements for the course.";
     }
 
     /**
@@ -298,9 +393,36 @@ Official transcripts and certificates can be obtained from our records office.";
      */
     private function generateGoodStandingContent($student, $purpose)
     {
-        $courseName = $student->course ? $student->course->name : 'N/A';
-        $branchName = $student->branch ? $student->branch->name : 'N/A';
-        $academicYear = $student->academicYear ? $student->academicYear->name : 'N/A';
+        $courseName = 'Not Specified';
+        $branchName = 'Not Specified';
+        $academicYear = 'Not Specified';
+        
+        // Get course name with fallback
+        if ($student->course_id) {
+            if ($student->course && !empty($student->course->name)) {
+                $courseName = $student->course->name;
+            } else {
+                $courseName = "Course ID: {$student->course_id} (Name not available)";
+            }
+        }
+        
+        // Get branch name with fallback
+        if ($student->branch_id) {
+            if ($student->branch && !empty($student->branch->name)) {
+                $branchName = $student->branch->name;
+            } else {
+                $branchName = "Branch ID: {$student->branch_id} (Name not available)";
+            }
+        }
+        
+        // Get academic year with fallback
+        if ($student->academic_year_id) {
+            if ($student->academicYear && !empty($student->academicYear->name)) {
+                $academicYear = $student->academicYear->name;
+            } else {
+                $academicYear = "Academic Year ID: {$student->academic_year_id} (Name not available)";
+            }
+        }
         
         return "This letter is to certify that {$student->full_name} is in good standing at our institution.
 
@@ -310,10 +432,7 @@ Good Standing Certificate:
 - Branch: {$branchName}
 - Academic Year: {$academicYear}
 
-The student has maintained satisfactory academic performance, demonstrated good conduct, and has no outstanding disciplinary or financial obligations to the institution.
-This good standing certificate is provided for the purpose of: {$purpose}
-
-The student's record reflects positively on their character and academic achievements.";
+The student has maintained satisfactory academic performance, demonstrated good conduct, and has no outstanding disciplinary or financial obligations to the institution.";
     }
 
     /**
@@ -321,9 +440,36 @@ The student's record reflects positively on their character and academic achieve
      */
     private function generateCustomContent($student, $purpose)
     {
-        $courseName = $student->course ? $student->course->name : 'N/A';
-        $branchName = $student->branch ? $student->branch->name : 'N/A';
-        $academicYear = $student->academicYear ? $student->academicYear->name : 'N/A';
+        $courseName = 'Not Specified';
+        $branchName = 'Not Specified';
+        $academicYear = 'Not Specified';
+        
+        // Get course name with fallback
+        if ($student->course_id) {
+            if ($student->course && !empty($student->course->name)) {
+                $courseName = $student->course->name;
+            } else {
+                $courseName = "Course ID: {$student->course_id} (Name not available)";
+            }
+        }
+        
+        // Get branch name with fallback
+        if ($student->branch_id) {
+            if ($student->branch && !empty($student->branch->name)) {
+                $branchName = $student->branch->name;
+            } else {
+                $branchName = "Branch ID: {$student->branch_id} (Name not available)";
+            }
+        }
+        
+        // Get academic year with fallback
+        if ($student->academic_year_id) {
+            if ($student->academicYear && !empty($student->academicYear->name)) {
+                $academicYear = $student->academicYear->name;
+            } else {
+                $academicYear = "Academic Year ID: {$student->academic_year_id} (Name not available)";
+            }
+        }
         
         return "This letter is written regarding {$student->full_name} as requested.
 
@@ -333,8 +479,6 @@ Student Information:
 - Branch: {$branchName}
 - Academic Year: {$academicYear}
 
-This custom letter is provided for the purpose of: {$purpose}
-
-Should you require specific information about the student, please provide detailed requirements and we will be happy to assist.";
+This custom letter is provided for the purpose of: {$purpose}";
     }
 }
