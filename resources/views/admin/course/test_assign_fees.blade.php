@@ -35,7 +35,7 @@
             <h5>Test Form</h5>
         </div>
         <div class="card-body">
-            <form action="{{ route('course.store-fees', $course->id) }}" method="POST">
+            <form action="{{ route('admin.course.store-fees', $course->id) }}" method="POST">
                 @csrf
                 
                 <div class="mb-3">
