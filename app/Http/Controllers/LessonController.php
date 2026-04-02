@@ -245,33 +245,45 @@ public function createDetails(Request $request, $lessonId)
      */
     public function getCoursesForBranches(Request $request)
     {
-        $branchIds = $request->input('branch_ids', []);
-        
-        if (empty($branchIds)) {
-            return response()->json(['courses' => []]);
+        try {
+            $branchIds = $request->input('branch_ids', []);
+            
+            if (empty($branchIds)) {
+                return response()->json(['courses' => []]);
+            }
+            
+            $courses = Course::with('branches')
+                ->whereHas('branches', function($query) use ($branchIds) {
+                    $query->whereIn('branches.id', $branchIds);
+                })
+                ->get()
+                ->flatMap(function($course) use ($branchIds) {
+                    return $course->branches
+                        ->whereIn('id', $branchIds)
+                        ->map(function($branch) use ($course) {
+                            return [
+                                'id' => $course->id,
+                                'course_name' => $course->course_name,
+                                'abbreviation' => $course->abbreviation,
+                                'branch_id' => $branch->id,
+                                'branch_name' => $branch->name
+                            ];
+                        });
+                })
+                ->values();
+            
+            return response()->json(['courses' => $courses]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Error in getCoursesForBranches: ' . $e->getMessage());
+            \Log::error('Stack trace: ' . $e->getTraceAsString());
+            
+            return response()->json([
+                'error' => 'An error occurred while fetching courses',
+                'message' => $e->getMessage(),
+                'courses' => []
+            ], 500);
         }
-        
-        $courses = Course::with('branches')
-            ->whereHas('branches', function($query) use ($branchIds) {
-                $query->whereIn('branches.id', $branchIds);
-            })
-            ->get()
-            ->flatMap(function($course) use ($branchIds) {
-                return $course->branches
-                    ->whereIn('id', $branchIds)
-                    ->map(function($branch) use ($course) {
-                        return [
-                            'id' => $course->id,
-                            'course_name' => $course->course_name,
-                            'abbreviation' => $course->abbreviation,
-                            'branch_id' => $branch->id,
-                            'branch_name' => $branch->name
-                        ];
-                    });
-            })
-            ->values();
-        
-        return response()->json(['courses' => $courses]);
     }
 
     /**

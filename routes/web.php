@@ -661,17 +661,24 @@ Route::prefix('staff')->name('staff.')->group(function () {
         
         // Debug route for testing POST endpoint
         Route::post('/lessons/debug-courses', function(Request $request) {
-            return response()->json([
-                'request_data' => $request->all(),
-                'authenticated' => auth('staff')->check(),
-                'user' => auth('staff')->user() ? [
-                    'id' => auth('staff')->user()->id,
-                    'name' => auth('staff')->user()->name,
-                    'role' => auth('staff')->user()->role
-                ] : null,
-                'branch_ids' => $request->input('branch_ids'),
-                'csrf_valid' => csrf_token() === $request->header('X-CSRF-TOKEN')
-            ]);
+            try {
+                return response()->json([
+                    'request_data' => $request->all(),
+                    'authenticated' => auth('staff')->check(),
+                    'user' => auth('staff')->user() ? [
+                        'id' => auth('staff')->user()->id,
+                        'name' => auth('staff')->user()->name,
+                        'role' => auth('staff')->user()->role
+                    ] : null,
+                    'branch_ids' => $request->input('branch_ids'),
+                    'csrf_valid' => csrf_token() === $request->header('X-CSRF-TOKEN')
+                ]);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'error' => 'Debug route failed',
+                    'message' => $e->getMessage()
+                ], 500);
+            }
         })->name('lessons.debug-courses');
         Route::get('/lesson-units', [LessonDetailsController::class, 'index'])->name('lesson-units.index');
         Route::get('/lessons/{lesson}/units/create', [LessonDetailsController::class, 'create'])->name('lesson-units.create');
