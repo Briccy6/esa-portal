@@ -170,7 +170,7 @@ class LessonController extends Controller
             DB::commit();
 
             // Redirect to units creation page so user can create units for all selected branches/courses at once
-            return redirect()->route('lesson.details.create', $lesson->id)
+            return redirect()->route('staff.lesson.details.create', $lesson->id)
                              ->with('success', 'Multi-branch lesson created successfully! Now create the units for this lesson. Units created here will automatically apply to all ' . count($validated['selected_courses']) . ' selected branch-course combinations.');
 
         } catch (\Exception $e) {
