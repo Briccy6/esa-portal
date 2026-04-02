@@ -462,11 +462,16 @@ function createPC() {
         connected = true;
         const v = parseFloat(document.getElementById('volSlider').value);
         remoteVideo.volume = v;
-        remoteVideo.muted = true;
+        // Fix: Don't mute video by default - only mute if volume is 0
+        remoteVideo.muted = (v === 0);
         remoteVideo.play().then(function () {
-            if (v > 0) remoteVideo.muted = false;
-        }).catch(function () {
-            remoteVideo.play().catch(function () {});
+            // Video should play regardless of volume setting
+            console.log('✅ Remote video playing successfully');
+        }).catch(function (err) {
+            console.warn('⚠️ Video play failed, trying again:', err);
+            remoteVideo.play().catch(function (e) {
+                console.warn('⚠️ Video play failed again:', e);
+            });
         });
     }
 
@@ -504,9 +509,18 @@ function createPC() {
             }
         });
 
+        // Always show the video element when a track is received, even if muted
         showRemotePlaying();
+        
+        // If track is muted, listen for unmute event and show video again
         if (track.muted) {
-            track.addEventListener('unmute', function () { showRemotePlaying(); }, { once: true });
+            console.log('⏸️ Track is initially muted:', track.kind, 'waiting for unmute...');
+            track.addEventListener('unmute', function () { 
+                console.log('🔊 Track unmuted:', track.kind, 'showing remote video');
+                showRemotePlaying(); 
+            }, { once: true });
+        } else {
+            console.log('▶️ Track is not muted:', track.kind);
         }
         console.log('✅ Remote track attached');
 
@@ -898,9 +912,11 @@ document.getElementById('volSlider').addEventListener('input', function() {
     const rv = document.getElementById('remoteVideo');
     const v = parseFloat(this.value);
     rv.volume = v;
-    rv.muted = v === 0;
+    // Fix: Only mute if volume is 0, otherwise ensure unmuted
+    rv.muted = (v === 0);
     document.getElementById('volIcon').className =
         v === 0 ? 'fas fa-volume-mute' : v < 0.5 ? 'fas fa-volume-down' : 'fas fa-volume-up';
+    console.log('🔊 Volume changed to:', v, 'muted:', rv.muted);
 });
 
 // ═══════════════════════════════════════════════════════════
