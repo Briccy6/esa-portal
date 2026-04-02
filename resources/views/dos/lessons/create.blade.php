@@ -269,6 +269,31 @@
                     @csrf
                     <input type="hidden" name="is_multi_branch" value="1">
 
+                    {{-- Debug Information --}}
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle me-2"></i>Debug Information</h6>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <strong>Branches:</strong> {{ $branches->count() }} available
+                                @if($branches->count() > 0)
+                                    <br><small>{{ $branches->pluck('name')->implode(', ') }}</small>
+                                @endif
+                            </div>
+                            <div class="col-md-4">
+                                <strong>Courses:</strong> {{ $courses->count() }} available
+                                @if($courses->count() > 0)
+                                    <br><small>{{ $courses->pluck('course_name')->take(3)->implode(', ') }}{{ $courses->count() > 3 ? '...' : '' }}</small>
+                                @endif
+                            </div>
+                            <div class="col-md-4">
+                                <strong>Terms:</strong> {{ $terms->count() }} available
+                                @if($terms->count() > 0)
+                                    <br><small>{{ $terms->pluck('name')->implode(', ') }}</small>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+
                     {{-- Step Indicator --}}
                     <div class="step-indicator">
                         <div class="step" id="step1">
@@ -299,20 +324,53 @@
 
                     {{-- ── Branch Selection (Step 1) ──}}
                     <h5 class="section-title"><i class="fas fa-map-marker-alt me-2"></i>Step 1: Select Branches</h5>
-                    <div class="branch-selection" id="branchSelection">
-                        @foreach($branches as $branch)
-                            <div class="branch-card" data-branch-id="{{ $branch->id }}" onclick="toggleBranch({{ $branch->id }})">
-                                <div class="branch-icon">
-                                    <i class="fas fa-building"></i>
+                    
+                    @if($branches->count() > 0)
+                        <div class="branch-selection" id="branchSelection">
+                            @foreach($branches as $branch)
+                                <div class="branch-card" data-branch-id="{{ $branch->id }}" onclick="toggleBranch({{ $branch->id }})">
+                                    <div class="branch-icon">
+                                        <i class="fas fa-building"></i>
+                                    </div>
+                                    <div class="branch-title">{{ $branch->name }}</div>
+                                    <div class="branch-description">Click to select this branch</div>
                                 </div>
-                                <div class="branch-title">{{ $branch->name }}</div>
-                                <div class="branch-description">Click to select this branch</div>
+                            @endforeach
+                        </div>
+                        
+                        {{-- Fallback: Simple checkbox selection --}}
+                        <div class="mt-3">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleFallbackSelection()">
+                                <i class="fas fa-list me-1"></i>Use Simple Selection
+                            </button>
+                            <div id="fallbackSelection" style="display: none; margin-top: 15px;">
+                                <div class="alert alert-secondary">
+                                    <h6><i class="fas fa-check-square me-2"></i>Select Branches (Simple Mode)</h6>
+                                    @foreach($branches as $branch)
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="branches[]" value="{{ $branch->id }}" id="branch_{{ $branch->id }}">
+                                            <label class="form-check-label" for="branch_{{ $branch->id }}">
+                                                {{ $branch->name }}
+                                            </label>
+                                        </div>
+                                    @endforeach
+                                </div>
                             </div>
-                        @endforeach
-                    </div>
+                        </div>
+                    @else
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>No branches found!</strong> Please add branches to the system first before creating lessons.
+                        </div>
+                        <div class="text-center">
+                            <a href="{{ url('/admin/branches') }}" class="btn btn-primary" target="_blank">
+                                <i class="fas fa-plus me-2"></i>Add Branches
+                            </a>
+                        </div>
+                    @endif
 
                     {{-- ── Course Selection (Step 2) ──}}
-                    <div id="courseSection" style="display: none;">
+                    <div id="courseSection">
                         <h5 class="section-title"><i class="fas fa-graduation-cap me-2"></i>Step 2: Choose Courses for Selected Branches</h5>
                         <div class="course-selection" id="courseSelection">
                             <div class="empty-state">
@@ -320,10 +378,46 @@
                                 <p>Loading courses for selected branches...</p>
                             </div>
                         </div>
+                        
+                        {{-- Fallback: Show all courses with branch selection --}}
+                        <div class="mt-3">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleCourseFallback()">
+                                <i class="fas fa-list me-1"></i>Show All Courses
+                            </button>
+                            <div id="courseFallback" style="display: none; margin-top: 15px;">
+                                <div class="alert alert-secondary">
+                                    <h6><i class="fas fa-graduation-cap me-2"></i>Select Courses (Simple Mode)</h6>
+                                    @if($courses->count() > 0)
+                                        @foreach($courses as $course)
+                                            <div class="border rounded p-3 mb-2">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        <strong>{{ $course->course_name }}</strong> ({{ $course->abbreviation }})
+                                                        <br><small class="text-muted">Available in: {{ $course->branches->pluck('name')->implode(', ') }}</small>
+                                                    </div>
+                                                    <div>
+                                                        <select class="form-select form-select-sm" name="course_assignments[]">
+                                                            <option value="">Select Branch</option>
+                                                            @foreach($course->branches as $branch)
+                                                                <option value="{{ $course->id }}_{{ $branch->id }}">
+                                                                    {{ $branch->name }}
+                                                                </option>
+                                                            @endforeach
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    @else
+                                        <p class="text-muted">No courses available. Please add courses first.</p>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     {{-- ── Assignment Preview (Step 3) ──}}
-                    <div id="assignmentSection" style="display: none;">
+                    <div id="assignmentSection">
                         <h5 class="section-title"><i class="fas fa-users me-2"></i>Step 3: Assign Teachers & Review</h5>
                         <div class="assignment-preview">
                             <div id="assignmentPreview">
@@ -690,6 +784,18 @@ document.addEventListener('DOMContentLoaded', function () {
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Creating…';
     });
+    
+    // Toggle fallback selection
+    window.toggleFallbackSelection = function() {
+        const fallbackDiv = document.getElementById('fallbackSelection');
+        fallbackDiv.style.display = fallbackDiv.style.display === 'none' ? 'block' : 'none';
+    };
+    
+    // Toggle course fallback
+    window.toggleCourseFallback = function() {
+        const fallbackDiv = document.getElementById('courseFallback');
+        fallbackDiv.style.display = fallbackDiv.style.display === 'none' ? 'block' : 'none';
+    };
     
     // Initialize
     updateStepIndicator();
