@@ -241,6 +241,40 @@ public function createDetails(Request $request, $lessonId)
     }
 
     /**
+     * Get courses for selected branches (AJAX)
+     */
+    public function getCoursesForBranches(Request $request)
+    {
+        $branchIds = $request->input('branch_ids', []);
+        
+        if (empty($branchIds)) {
+            return response()->json(['courses' => []]);
+        }
+        
+        $courses = Course::with('branches')
+            ->whereHas('branches', function($query) use ($branchIds) {
+                $query->whereIn('branches.id', $branchIds);
+            })
+            ->get()
+            ->flatMap(function($course) use ($branchIds) {
+                return $course->branches
+                    ->whereIn('id', $branchIds)
+                    ->map(function($branch) use ($course) {
+                        return [
+                            'id' => $course->id,
+                            'course_name' => $course->course_name,
+                            'abbreviation' => $course->abbreviation,
+                            'branch_id' => $branch->id,
+                            'branch_name' => $branch->name
+                        ];
+                    });
+            })
+            ->values();
+        
+        return response()->json(['courses' => $courses]);
+    }
+
+    /**
      * Show form to create lesson details (outcomes)
      */
     public function getByCourses(Request $request)

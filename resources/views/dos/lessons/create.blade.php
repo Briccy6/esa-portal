@@ -58,52 +58,102 @@
         box-shadow: 0 5px 15px rgba(102,126,234,0.4);
         color: white;
     }
-    .course-branch-grid {
+    .btn-submit:disabled {
+        opacity: 0.6;
+        transform: none;
+        box-shadow: none;
+    }
+    .branch-selection {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 20px;
-        margin-top: 20px;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 15px;
+        margin-bottom: 30px;
     }
     .branch-card {
         border: 2px solid #e0e0e0;
         border-radius: 12px;
         padding: 20px;
         background: #f8f9fa;
+        cursor: pointer;
         transition: all 0.3s ease;
+        text-align: center;
     }
     .branch-card:hover {
         border-color: #667eea;
         box-shadow: 0 4px 12px rgba(102,126,234,0.15);
+        transform: translateY(-2px);
     }
     .branch-card.selected {
         border-color: #667eea;
         background: linear-gradient(135deg, rgba(102,126,234,0.1) 0%, rgba(118,75,162,0.1) 100%);
+        box-shadow: 0 4px 12px rgba(102,126,234,0.25);
+    }
+    .branch-icon {
+        font-size: 2.5rem;
+        color: #667eea;
+        margin-bottom: 10px;
     }
     .branch-title {
         font-weight: 600;
         color: #333;
-        margin-bottom: 15px;
+        margin-bottom: 5px;
         font-size: 1.1rem;
     }
+    .branch-description {
+        color: #666;
+        font-size: 0.9rem;
+    }
+    .course-selection {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 25px;
+        margin-top: 20px;
+        border: 2px solid #e0e0e0;
+    }
+    .course-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 15px;
+        margin-top: 15px;
+    }
     .course-item {
-        display: flex;
-        align-items: center;
-        padding: 10px;
-        margin: 5px 0;
-        border-radius: 8px;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        padding: 15px;
+        background: white;
         transition: all 0.3s ease;
     }
     .course-item:hover {
-        background: rgba(102,126,234,0.05);
+        border-color: #667eea;
+        box-shadow: 0 2px 8px rgba(102,126,234,0.15);
     }
-    .course-checkbox {
-        margin-right: 10px;
-        transform: scale(1.2);
+    .course-item.selected {
+        border-color: #667eea;
+        background: linear-gradient(135deg, rgba(102,126,234,0.05) 0%, rgba(118,75,162,0.05) 100%);
     }
-    .teacher-select {
-        margin-left: 10px;
-        min-width: 150px;
-        font-size: 0.9rem;
+    .course-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    .course-title {
+        font-weight: 600;
+        color: #333;
+        font-size: 1rem;
+    }
+    .course-abbreviation {
+        background: #667eea;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+    .teacher-selection {
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid #e9ecef;
     }
     .assignment-preview {
         background: #f8f9fa;
@@ -111,25 +161,74 @@
         border-radius: 8px;
         padding: 15px;
         margin-top: 20px;
+        max-height: 300px;
+        overflow-y: auto;
     }
     .assignment-item {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 8px 0;
-        border-bottom: 1px solid #e9ecef;
+        padding: 10px;
+        margin: 5px 0;
+        background: white;
+        border-radius: 6px;
+        border: 1px solid #e9ecef;
     }
-    .assignment-item:last-child {
-        border-bottom: none;
+    .assignment-item:hover {
+        border-color: #667eea;
+        box-shadow: 0 2px 4px rgba(102,126,234,0.1);
     }
     .remove-assignment {
         color: #dc3545;
         cursor: pointer;
         font-size: 1.2rem;
         transition: all 0.3s ease;
+        padding: 5px;
     }
     .remove-assignment:hover {
         transform: scale(1.2);
+    }
+    .step-indicator {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 30px;
+    }
+    .step {
+        display: flex;
+        align-items: center;
+        color: #999;
+        font-weight: 600;
+    }
+    .step.active {
+        color: #667eea;
+    }
+    .step.completed {
+        color: #28a745;
+    }
+    .step-number {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        border: 2px solid currentColor;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 10px;
+        font-weight: bold;
+    }
+    .step-arrow {
+        margin: 0 15px;
+        color: #ccc;
+    }
+    .empty-state {
+        text-align: center;
+        padding: 40px;
+        color: #666;
+    }
+    .empty-state i {
+        font-size: 3rem;
+        color: #ddd;
+        margin-bottom: 15px;
     }
 </style>
 
@@ -137,8 +236,8 @@
     <div class="container">
         <div class="create-card">
             <div class="create-header">
-                <h2><i class="fas fa-plus-circle me-2"></i>Create Lesson for Multiple Branches</h2>
-                <p class="mb-0 mt-1 opacity-75">Create a lesson that can be assigned to multiple courses across different branches</p>
+                <h2><i class="fas fa-plus-circle me-2"></i>Create Professional Lesson</h2>
+                <p class="mb-0 mt-1 opacity-75">Design your lesson with a step-by-step branch and course selection process</p>
             </div>
 
             <div class="create-body">
@@ -170,55 +269,66 @@
                     @csrf
                     <input type="hidden" name="is_multi_branch" value="1">
 
-                    {{-- ── Basic Information ── --}}
+                    {{-- Step Indicator --}}
+                    <div class="step-indicator">
+                        <div class="step" id="step1">
+                            <div class="step-number">1</div>
+                            <span>Select Branches</span>
+                        </div>
+                        <div class="step-arrow">→</div>
+                        <div class="step" id="step2">
+                            <div class="step-number">2</div>
+                            <span>Choose Courses</span>
+                        </div>
+                        <div class="step-arrow">→</div>
+                        <div class="step" id="step3">
+                            <div class="step-number">3</div>
+                            <span>Assign Teachers</span>
+                        </div>
+                    </div>
+
+                    {{-- ── Basic Information ──}}
                     <h5 class="section-title"><i class="fas fa-book me-2"></i>Basic Information</h5>
                     <div class="row g-3">
                         <div class="col-md-12">
                             <label class="form-label required">Lesson Title</label>
                             <input type="text" name="lesson_title" class="form-control"
-                                   value="{{ old('lesson_title') }}" required placeholder="Enter lesson title">
+                                   value="{{ old('lesson_title') }}" required placeholder="Enter a descriptive lesson title">
                         </div>
                     </div>
 
-                    {{-- ── Course-Branch Selection ── --}}
-                    <h5 class="section-title"><i class="fas fa-network-wired me-2"></i>Course & Branch Assignment</h5>
-                    <div class="course-branch-grid" id="branchGrid">
+                    {{-- ── Branch Selection (Step 1) ──}}
+                    <h5 class="section-title"><i class="fas fa-map-marker-alt me-2"></i>Step 1: Select Branches</h5>
+                    <div class="branch-selection" id="branchSelection">
                         @foreach($branches as $branch)
-                            <div class="branch-card" data-branch-id="{{ $branch->id }}">
-                                <div class="branch-title">
-                                    <i class="fas fa-map-marker-alt me-2"></i>{{ $branch->name }}
+                            <div class="branch-card" data-branch-id="{{ $branch->id }}" onclick="toggleBranch({{ $branch->id }})">
+                                <div class="branch-icon">
+                                    <i class="fas fa-building"></i>
                                 </div>
-                                @foreach($courses as $course)
-                                    @if($course->branches->contains($branch->id))
-                                        <div class="course-item">
-                                            <input type="checkbox" 
-                                                   class="form-check-input course-checkbox" 
-                                                   name="course_branch_{{ $course->id }}_{{ $branch->id }}"
-                                                   data-course-id="{{ $course->id }}" 
-                                                   data-branch-id="{{ $branch->id }}"
-                                                   data-course-name="{{ $course->course_name }}"
-                                                   data-branch-name="{{ $branch->name }}">
-                                            <label class="form-check-label" style="margin-right: 10px;">
-                                                {{ $course->course_name }} ({{ $course->abbreviation }})
-                                            </label>
-                                            <select class="form-select teacher-select" 
-                                                    name="teacher_{{ $course->id }}_{{ $branch->id }}"
-                                                    data-course-id="{{ $course->id }}" 
-                                                    data-branch-id="{{ $branch->id }}">
-                                                <option value="">Select Teacher</option>
-                                            </select>
-                                        </div>
-                                    @endif
-                                @endforeach
+                                <div class="branch-title">{{ $branch->name }}</div>
+                                <div class="branch-description">Click to select this branch</div>
                             </div>
                         @endforeach
                     </div>
 
-                    {{-- ── Assignment Preview ── --}}
-                    <h5 class="section-title"><i class="fas fa-list me-2"></i>Selected Assignments</h5>
-                    <div class="assignment-preview">
-                        <div id="assignmentPreview">
-                            <p class="text-muted text-center">No course-branch assignments selected yet</p>
+                    {{-- ── Course Selection (Step 2) ──}}
+                    <div id="courseSection" style="display: none;">
+                        <h5 class="section-title"><i class="fas fa-graduation-cap me-2"></i>Step 2: Choose Courses for Selected Branches</h5>
+                        <div class="course-selection" id="courseSelection">
+                            <div class="empty-state">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <p>Loading courses for selected branches...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- ── Assignment Preview (Step 3) ──}}
+                    <div id="assignmentSection" style="display: none;">
+                        <h5 class="section-title"><i class="fas fa-users me-2"></i>Step 3: Assign Teachers & Review</h5>
+                        <div class="assignment-preview">
+                            <div id="assignmentPreview">
+                                <p class="text-muted text-center">No course assignments selected yet</p>
+                            </div>
                         </div>
                     </div>
 
@@ -293,95 +403,166 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const assignments = new Map(); // Store assignments as Map<key, {course_id, branch_id, teacher_id, course_name, branch_name}>
+    const selectedBranches = new Set();
+    const selectedCourses = new Map(); // Store course assignments
     const form = document.getElementById('multiBranchForm');
     const submitBtn = document.getElementById('submitBtn');
     const assignmentPreview = document.getElementById('assignmentPreview');
     const selectedCoursesData = document.getElementById('selectedCoursesData');
-
-    // Handle course-branch selection
-    document.querySelectorAll('.course-checkbox').forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
-            const courseId = this.dataset.courseId;
-            const branchId = this.dataset.branchId;
-            const courseName = this.dataset.courseName;
-            const branchName = this.dataset.branchName;
-            const key = `${courseId}_${branchId}`;
-            
-            const teacherSelect = document.querySelector(`select[name="teacher_${courseId}_${branchId}"]`);
-            
-            if (this.checked) {
-                // Enable teacher selection
-                teacherSelect.disabled = false;
-                loadTeachersForCourseBranch(courseId, branchId, teacherSelect);
-                
-                // Add to assignments
-                assignments.set(key, {
-                    course_id: parseInt(courseId),
-                    branch_id: parseInt(branchId),
-                    teacher_id: null,
-                    course_name: courseName,
-                    branch_name: branchName
-                });
-                
-                // Highlight branch card
-                this.closest('.branch-card').classList.add('selected');
-            } else {
-                // Disable teacher selection
-                teacherSelect.disabled = true;
-                teacherSelect.value = '';
-                
-                // Remove from assignments
-                assignments.delete(key);
-                
-                // Remove highlight if no courses selected in this branch
-                const branchCard = this.closest('.branch-card');
-                const hasSelectedCourses = branchCard.querySelectorAll('.course-checkbox:checked').length > 0;
-                if (!hasSelectedCourses) {
-                    branchCard.classList.remove('selected');
+    
+    // Toggle branch selection
+    window.toggleBranch = function(branchId) {
+        const branchCard = document.querySelector(`.branch-card[data-branch-id="${branchId}"]`);
+        
+        if (selectedBranches.has(branchId)) {
+            selectedBranches.delete(branchId);
+            branchCard.classList.remove('selected');
+            // Remove all courses for this branch
+            selectedCourses.forEach((course, key) => {
+                if (course.branch_id === branchId) {
+                    selectedCourses.delete(key);
                 }
-            }
-            
-            updateAssignmentPreview();
-            updateSubmitButton();
-        });
-    });
-
-    // Handle teacher selection
-    document.querySelectorAll('.teacher-select').forEach(select => {
-        select.addEventListener('change', function() {
-            const courseId = this.dataset.courseId;
-            const branchId = this.dataset.branchId;
-            const key = `${courseId}_${branchId}`;
-            
-            if (assignments.has(key)) {
-                assignments.get(key).teacher_id = this.value ? parseInt(this.value) : null;
-                updateAssignmentPreview();
-            }
-        });
-    });
-
-    function loadTeachersForCourseBranch(courseId, branchId, selectElement) {
-        // Load teachers for this course
-        fetch(`/staff/lessons/get-teachers/${courseId}`)
-            .then(response => response.json())
-            .then(teachers => {
-                selectElement.innerHTML = '<option value="">Select Teacher (Optional)</option>';
-                teachers.forEach(teacher => {
-                    const option = document.createElement('option');
-                    option.value = teacher.id;
-                    option.textContent = teacher.teacher_name;
-                    selectElement.appendChild(option);
-                });
-            })
-            .catch(error => {
-                console.error('Error loading teachers:', error);
             });
+        } else {
+            selectedBranches.add(branchId);
+            branchCard.classList.add('selected');
+        }
+        
+        updateStepIndicator();
+        loadCoursesForBranches();
+    };
+    
+    // Load courses for selected branches
+    function loadCoursesForBranches() {
+        const courseSection = document.getElementById('courseSection');
+        const courseSelection = document.getElementById('courseSelection');
+        
+        if (selectedBranches.size === 0) {
+            courseSection.style.display = 'none';
+            updateStepIndicator();
+            updateSubmitButton();
+            return;
+        }
+        
+        courseSection.style.display = 'block';
+        courseSelection.innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Loading courses...</p></div>';
+        
+        // Fetch courses for selected branches
+        const branchIds = Array.from(selectedBranches);
+        fetch('/staff/lessons/get-courses-for-branches', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({ branch_ids: branchIds })
+        })
+        .then(response => response.json())
+        .then(data => {
+            displayCourses(data.courses);
+            updateStepIndicator();
+        })
+        .catch(error => {
+            console.error('Error loading courses:', error);
+            courseSelection.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Error loading courses</p></div>';
+        });
     }
-
+    
+    // Display courses for selection
+    function displayCourses(courses) {
+        const courseSelection = document.getElementById('courseSelection');
+        
+        if (courses.length === 0) {
+            courseSelection.innerHTML = '<div class="empty-state"><i class="fas fa-info-circle"></i><p>No courses available for selected branches</p></div>';
+            return;
+        }
+        
+        let html = '<div class="course-grid">';
+        courses.forEach(course => {
+            const key = `${course.id}_${course.branch_id}`;
+            const isSelected = selectedCourses.has(key);
+            
+            html += `
+                <div class="course-item ${isSelected ? 'selected' : ''}" id="course_${key}">
+                    <div class="course-header">
+                        <div class="course-title">${course.course_name}</div>
+                        <div class="course-abbreviation">${course.abbreviation}</div>
+                    </div>
+                    <div class="course-meta">
+                        <small class="text-muted">Branch: ${course.branch_name}</small>
+                    </div>
+                    <div class="course-selection mt-2">
+                        <button type="button" class="btn btn-sm ${isSelected ? 'btn-danger' : 'btn-primary'}" 
+                                onclick="toggleCourse(${course.id}, ${course.branch_id}, '${course.course_name}', '${course.branch_name}')">
+                            ${isSelected ? '<i class="fas fa-times"></i> Remove' : '<i class="fas fa-plus"></i> Select'}
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        
+        courseSelection.innerHTML = html;
+    }
+    
+    // Toggle course selection
+    window.toggleCourse = function(courseId, branchId, courseName, branchName) {
+        const key = `${courseId}_${branchId}`;
+        const courseElement = document.getElementById(`course_${key}`);
+        
+        if (selectedCourses.has(key)) {
+            selectedCourses.delete(key);
+            courseElement.classList.remove('selected');
+        } else {
+            selectedCourses.set(key, {
+                course_id: courseId,
+                branch_id: branchId,
+                course_name: courseName,
+                branch_name: branchName,
+                teacher_id: null
+            });
+            courseElement.classList.add('selected');
+        }
+        
+        displayCourses(getCurrentCoursesData());
+        updateAssignmentSection();
+        updateStepIndicator();
+        updateSubmitButton();
+    };
+    
+    // Get current courses data for display
+    function getCurrentCoursesData() {
+        const courses = [];
+        selectedCourses.forEach((course, key) => {
+            const [courseId, branchId] = key.split('_');
+            courses.push({
+                id: parseInt(courseId),
+                branch_id: parseInt(branchId),
+                course_name: course.course_name,
+                branch_name: course.branch_name,
+                abbreviation: course.abbreviation || 'N/A'
+            });
+        });
+        return courses;
+    }
+    
+    // Update assignment section
+    function updateAssignmentSection() {
+        const assignmentSection = document.getElementById('assignmentSection');
+        
+        if (selectedCourses.size === 0) {
+            assignmentSection.style.display = 'none';
+            return;
+        }
+        
+        assignmentSection.style.display = 'block';
+        updateAssignmentPreview();
+    }
+    
+    // Update assignment preview
     function updateAssignmentPreview() {
-        if (assignments.size === 0) {
-            assignmentPreview.innerHTML = '<p class="text-muted text-center">No course-branch assignments selected yet</p>';
+        if (selectedCourses.size === 0) {
+            assignmentPreview.innerHTML = '<p class="text-muted text-center">No course assignments selected yet</p>';
             selectedCoursesData.value = '';
             return;
         }
@@ -389,68 +570,130 @@ document.addEventListener('DOMContentLoaded', function () {
         let html = '';
         let assignmentsArray = [];
         
-        assignments.forEach((assignment, key) => {
+        selectedCourses.forEach((course, key) => {
+            const teacherSelectId = `teacher_${key}`;
             html += `
                 <div class="assignment-item">
                     <div>
-                        <strong>${assignment.course_name}</strong> - ${assignment.branch_name}
-                        ${assignment.teacher_id ? '<br><small class="text-muted">Teacher: ' + getTeacherName(assignment.teacher_id) + '</small>' : ''}
+                        <strong>${course.course_name}</strong> - ${course.branch_name}
+                        <div class="teacher-selection mt-2">
+                            <select class="form-select form-select-sm" id="${teacherSelectId}" 
+                                    onchange="updateTeacherAssignment('${key}', this.value)">
+                                <option value="">Select Teacher (Optional)</option>
+                            </select>
+                        </div>
                     </div>
                     <i class="fas fa-times remove-assignment" onclick="removeAssignment('${key}')"></i>
                 </div>
             `;
             
             assignmentsArray.push({
-                course_id: assignment.course_id,
-                branch_id: assignment.branch_id,
-                teacher_id: assignment.teacher_id
+                course_id: course.course_id,
+                branch_id: course.branch_id,
+                teacher_id: course.teacher_id
             });
+            
+            // Load teachers for this course
+            loadTeachersForCourse(course.course_id, teacherSelectId);
         });
 
         assignmentPreview.innerHTML = html;
         selectedCoursesData.value = JSON.stringify(assignmentsArray);
     }
-
-    function getTeacherName(teacherId) {
-        const select = document.querySelector(`option[value="${teacherId}"]`);
-        return select ? select.textContent : 'Unknown';
+    
+    // Load teachers for a course
+    function loadTeachersForCourse(courseId, selectElementId) {
+        fetch(`/staff/lessons/get-teachers/${courseId}`)
+            .then(response => response.json())
+            .then(teachers => {
+                const selectElement = document.getElementById(selectElementId);
+                if (selectElement) {
+                    selectElement.innerHTML = '<option value="">Select Teacher (Optional)</option>';
+                    teachers.forEach(teacher => {
+                        const option = document.createElement('option');
+                        option.value = teacher.id;
+                        option.textContent = teacher.teacher_name;
+                        selectElement.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error loading teachers:', error);
+            });
     }
-
-    window.removeAssignment = function(key) {
-        const [courseId, branchId] = key.split('_');
-        const checkbox = document.querySelector(`input[data-course-id="${courseId}"][data-branch-id="${branchId}"]`);
-        
-        if (checkbox) {
-            checkbox.checked = false;
-            checkbox.dispatchEvent(new Event('change'));
+    
+    // Update teacher assignment
+    window.updateTeacherAssignment = function(key, teacherId) {
+        if (selectedCourses.has(key)) {
+            selectedCourses.get(key).teacher_id = teacherId ? parseInt(teacherId) : null;
+            updateAssignmentPreview();
         }
     };
-
+    
+    // Remove assignment
+    window.removeAssignment = function(key) {
+        const [courseId, branchId] = key.split('_');
+        toggleCourse(parseInt(courseId), parseInt(branchId));
+    };
+    
+    // Update step indicator
+    function updateStepIndicator() {
+        const step1 = document.getElementById('step1');
+        const step2 = document.getElementById('step2');
+        const step3 = document.getElementById('step3');
+        
+        // Reset all steps
+        [step1, step2, step3].forEach(step => {
+            step.classList.remove('active', 'completed');
+        });
+        
+        // Step 1: Branch selection
+        if (selectedBranches.size > 0) {
+            step1.classList.add('completed');
+        } else {
+            step1.classList.add('active');
+        }
+        
+        // Step 2: Course selection
+        if (selectedBranches.size > 0) {
+            if (selectedCourses.size > 0) {
+                step2.classList.add('completed');
+            } else {
+                step2.classList.add('active');
+            }
+        }
+        
+        // Step 3: Teacher assignment
+        if (selectedCourses.size > 0) {
+            step3.classList.add('active');
+        }
+    }
+    
+    // Update submit button
     function updateSubmitButton() {
-        submitBtn.disabled = assignments.size === 0;
-        if (assignments.size > 0) {
-            submitBtn.innerHTML = `<i class="fas fa-plus-circle me-2"></i>Create Lesson (${assignments.size} assignments)`;
+        submitBtn.disabled = selectedCourses.size === 0;
+        if (selectedCourses.size > 0) {
+            submitBtn.innerHTML = `<i class="fas fa-plus-circle me-2"></i>Create Lesson (${selectedCourses.size} course${selectedCourses.size > 1 ? 's' : ''})`;
         } else {
             submitBtn.innerHTML = '<i class="fas fa-plus-circle me-2"></i>Create Lesson';
         }
     }
-
+    
     // Form submission
     form.addEventListener('submit', function (e) {
-        if (assignments.size === 0) {
+        if (selectedCourses.size === 0) {
             e.preventDefault();
-            alert('Please select at least one course-branch assignment');
+            alert('Please select at least one course assignment');
             return;
         }
         
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Creating…';
     });
-
-    // Initialize teacher selects as disabled
-    document.querySelectorAll('.teacher-select').forEach(select => {
-        select.disabled = true;
-    });
+    
+    // Initialize
+    updateStepIndicator();
+    updateSubmitButton();
 });
 </script>
 @endsection

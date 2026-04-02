@@ -657,6 +657,7 @@ Route::prefix('staff')->name('staff.')->group(function () {
         // Lesson Management
         Route::resource('lessons', LessonController::class);
         Route::get('/lessons/get-teachers/{courseId}', [LessonController::class, 'getTeachers'])->name('lessons.get-teachers');
+        Route::post('/lessons/get-courses-for-branches', [LessonController::class, 'getCoursesForBranches'])->name('lessons.get-courses-for-branches');
         Route::get('/lesson-units', [LessonDetailsController::class, 'index'])->name('lesson-units.index');
         Route::get('/lessons/{lesson}/units/create', [LessonDetailsController::class, 'create'])->name('lesson-units.create');
         Route::post('/lessons/{lesson}/units', [LessonDetailsController::class, 'store'])->name('lesson-units.store');
