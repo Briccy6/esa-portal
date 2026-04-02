@@ -389,6 +389,12 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a href="{{ route('to-whom.index') }}" class="nav-link {{ request()->routeIs('to-whom.*') ? 'active' : '' }}">
+                                <i class="bi bi-file-text"></i>
+                                Professional Letters
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a href="#" class="nav-link">
                                 <i class="bi bi-clipboard-check"></i>
                                 Assignments

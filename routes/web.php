@@ -48,6 +48,7 @@ use App\Http\Controllers\ExamResultsController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\TokenController;
 use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\ToWhomLetterController;
 use App\Http\Controllers\SecretaryAuthController;
 use App\Http\Controllers\ReportCardController;
 use App\Http\Controllers\PublicExamController;
@@ -1324,6 +1325,16 @@ Route::middleware(['auth:admin'])->prefix('admin/subscriptions')->name('subscrip
     Route::get('/student-subscriptions', [SubscriptionController::class, 'studentSubscriptions'])->name('student-subscriptions');
     Route::post('/extend/{studentSubscription}', [SubscriptionController::class, 'extendSubscription'])->name('extend');
 });
+
+// To Whom Letter Routes - Accessible by students, accountants, and admins
+Route::middleware(['auth:admin,staff,student'])->prefix('to-whom')->name('to-whom.')->group(function () {
+    Route::get('/', [ToWhomLetterController::class, 'index'])->name('index');
+    Route::get('/create', [ToWhomLetterController::class, 'create'])->name('create');
+    Route::post('/', [ToWhomLetterController::class, 'store'])->name('store');
+    Route::get('/{letter}', [ToWhomLetterController::class, 'show'])->name('show');
+    Route::get('/{letter}/download', [ToWhomLetterController::class, 'download'])->name('download');
+});
+
 // Absolute simplest test route
 Route::post('/simple-test', function() {
     return 'simple test works';

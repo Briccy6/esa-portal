@@ -151,6 +151,12 @@
                                 Subscriptions
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('to-whom.*') ? 'active' : '' }}" href="{{ route('to-whom.index') }}">
+                                <i class="fas fa-file-alt me-2"></i>
+                                Professional Letters
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </div>

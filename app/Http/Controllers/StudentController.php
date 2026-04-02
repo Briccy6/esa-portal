@@ -274,7 +274,7 @@ class StudentController extends Controller
 
         $paid = [
             'registration' => StudentTransaction::where('student_id', $student->id)
-                ->where('type', 'registration_fee')
+                ->where('type', 'registration')
                 ->where('status', 'successful')
                 ->sum('amount'),
             'tuition' => StudentTransaction::where('student_id', $student->id)
@@ -1281,7 +1281,7 @@ class StudentController extends Controller
         $totalFees        = $registrationFee + $studentCardFee + ($discountableFees - $discountAmount);
 
         $paidRegistration = \App\Models\StudentTransaction::where('student_id', $student->id)
-            ->where('type', 'registration_fee')
+            ->where('type', 'registration')
             ->whereIn('status', ['successful', 'paid'])
             ->sum('amount');
 
@@ -1495,7 +1495,7 @@ class StudentController extends Controller
             $discount        = floatval($student->discount ?? 0);
 
             $paidRegistration = StudentTransaction::where('student_id', $student->id)
-                ->where('type', 'registration_fee')
+                ->where('type', 'registration')
                 ->whereIn('status', ['successful', 'paid'])
                 ->sum('amount');
 
@@ -2139,7 +2139,7 @@ class StudentController extends Controller
         $totalFees = $registrationFee + $studentCardFee + ($discountableFees - $discountAmount);
         
         $paidRegistration = \App\Models\StudentTransaction::where('student_id', $student->id)
-            ->where('type', 'registration_fee')
+            ->where('type', 'registration')
             ->whereIn('status', ['successful', 'paid'])
             ->sum('amount');
             
@@ -2220,7 +2220,7 @@ class StudentController extends Controller
         $totalFees = $registrationFee + $studentCardFee + ($discountableFees - $discountAmount);
         
         $paidRegistration = \App\Models\StudentTransaction::where('student_id', $student->id)
-            ->where('type', 'registration_fee')
+            ->where('type', 'registration')
             ->whereIn('status', ['successful', 'paid'])
             ->sum('amount');
             
