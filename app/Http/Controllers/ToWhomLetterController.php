@@ -94,9 +94,16 @@ class ToWhomLetterController extends Controller
         // Generate letter content based on type
         $content = $this->generateLetterContent($request->letter_type, $student, $request->purpose);
 
+        // Set generated_by based on user type
+        $generatedById = null;
+        if ($user && !$user->isStudent()) {
+            // Only set generated_by for non-student users (admin, staff)
+            $generatedById = $user->id;
+        }
+
         $letter = ToWhomLetter::create([
             'student_id' => $student->id,
-            'generated_by' => $user->id,
+            'generated_by' => $generatedById,
             'letter_type' => $request->letter_type,
             'recipient_title' => $request->recipient_title,
             'purpose' => $request->purpose,
