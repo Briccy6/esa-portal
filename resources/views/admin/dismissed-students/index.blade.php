@@ -753,7 +753,17 @@ function exportData() {
     alert('Export functionality coming soon!');
 }
 </script>
-@endsection
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 col-sm-6 mb-3">
+            <div class="stats-card stats-danger">
+                <div class="stats-icon">
+                    <i class="bi bi-person-x-fill"></i>
+                </div>
+                <div class="stats-content">
+                    <h3 class="stats-number">{{ $totalDismissed }}</h3>
+                    <p class="stats-label">Total Dismissed</p>
                 </div>
             </div>
         </div>
@@ -763,7 +773,7 @@ function exportData() {
                     <i class="bi bi-calendar-month"></i>
                 </div>
                 <div class="stats-content">
-                    <h3 class="stats-number">{{ $dismissedThisMonth }}</h3>
+                    <h3 class="stats-number">{{ $monthlyDismissed }}</h3>
                     <p class="stats-label">This Month</p>
                 </div>
             </div>
@@ -774,7 +784,7 @@ function exportData() {
                     <i class="bi bi-calendar-year"></i>
                 </div>
                 <div class="stats-content">
-                    <h3 class="stats-number">{{ $dismissedThisYear }}</h3>
+                    <h3 class="stats-number">{{ $yearlyDismissed }}</h3>
                     <p class="stats-label">This Year</p>
                 </div>
             </div>
@@ -984,3 +994,4 @@ function exportData() {
     }
 </style>
 @endpush
+@endsection
