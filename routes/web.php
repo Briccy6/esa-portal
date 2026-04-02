@@ -658,6 +658,21 @@ Route::prefix('staff')->name('staff.')->group(function () {
         Route::resource('lessons', LessonController::class);
         Route::get('/lessons/get-teachers/{courseId}', [LessonController::class, 'getTeachers'])->name('lessons.get-teachers');
         Route::post('/lessons/get-courses-for-branches', [LessonController::class, 'getCoursesForBranches'])->name('lessons.get-courses-for-branches');
+        
+        // Debug route for testing POST endpoint
+        Route::post('/lessons/debug-courses', function(Request $request) {
+            return response()->json([
+                'request_data' => $request->all(),
+                'authenticated' => auth('staff')->check(),
+                'user' => auth('staff')->user() ? [
+                    'id' => auth('staff')->user()->id,
+                    'name' => auth('staff')->user()->name,
+                    'role' => auth('staff')->user()->role
+                ] : null,
+                'branch_ids' => $request->input('branch_ids'),
+                'csrf_valid' => csrf_token() === $request->header('X-CSRF-TOKEN')
+            ]);
+        })->name('lessons.debug-courses');
         Route::get('/lesson-units', [LessonDetailsController::class, 'index'])->name('lesson-units.index');
         Route::get('/lessons/{lesson}/units/create', [LessonDetailsController::class, 'create'])->name('lesson-units.create');
         Route::post('/lessons/{lesson}/units', [LessonDetailsController::class, 'store'])->name('lesson-units.store');

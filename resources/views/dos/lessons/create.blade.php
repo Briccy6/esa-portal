@@ -914,6 +914,57 @@ document.addEventListener('DOMContentLoaded', function () {
         const csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '';
         const branchIds = Array.from(selectedBranches);
         
+        // If auth is working, proceed with course request
+            return fetch('/staff/lessons/debug-courses', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: JSON.stringify({
+                    branch_ids: branchIds
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Debug response:', data);
+                if (data.authenticated && data.user) {
+                    // User is authenticated, show debug info
+                    debugDiv.innerHTML = `
+                        <div class="alert alert-info">
+                            <h5><i class="fas fa-check-circle"></i> Authentication Working</h5>
+                            <p><strong>User:</strong> ${data.user.name} (${data.user.role})</p>
+                            <p><strong>Branch IDs:</strong> ${JSON.stringify(data.branch_ids)}</p>
+                            <p><strong>CSRF Valid:</strong> ${data.csrf_valid ? 'Yes' : 'No'}</p>
+                        </div>
+                    `;
+                } else {
+                    // Authentication failed
+                    debugDiv.innerHTML = `
+                        <div class="alert alert-danger">
+                            <h5><i class="fas fa-exclamation-triangle"></i> Authentication Failed</h5>
+                            <p><strong>Authenticated:</strong> ${data.authenticated}</p>
+                            <p><strong>User:</strong> ${data.user ? 'Present' : 'Not found'}</p>
+                            <p><strong>Request Data:</strong> ${JSON.stringify(data.request_data)}</p>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Debug request failed:', error);
+                debugDiv.innerHTML = `
+                    <div class="alert alert-danger">
+                        <h5><i class="fas fa-exclamation-triangle"></i> Request Failed</h5>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                    </div>
+                `;
+            });
+
         fetch('/staff/lessons/get-courses-for-branches', {
             method: 'POST',
             headers: {
