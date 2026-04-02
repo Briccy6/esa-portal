@@ -18,6 +18,9 @@
                 <div class="card-body">
                     <form action="{{ route('to-whom.store') }}" method="POST">
                         @csrf
+                        @if($students->isNotEmpty())
+                            <input type="hidden" name="student_id" value="{{ $students->first()->id }}" />
+                        @endif
                         
                         <div class="row">
                             <div class="col-md-6">
