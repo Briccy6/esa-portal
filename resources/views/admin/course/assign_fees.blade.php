@@ -78,8 +78,8 @@
                         <tbody>
                             <tr id="term-fee-row-template" style="display: none;">
                                 <td>
-                                    <select name="term_fees[{index}][term_id]" class="form-select term-select">
-                                        <option value="">Select Term</option>
+                                    <select name="term_fees[{index}][term_id]" class="form-select term-select" required>
+                                        <option value="">Select Term *</option>
                                         @foreach($terms as $term)
                                             <option value="{{ $term->id }}">
                                                 {{ $term->name }} - {{ $term->academicYear->year ?? '' }}
@@ -156,7 +156,7 @@
     const usedTerms = new Set();
 
     function buildSelectOptions(currentValue) {
-        let html = '<option value="">Select Term</option>';
+        let html = '<option value="">Select Term *</option>';
         termsData.forEach(term => {
             const disabled = usedTerms.has(term.id) && term.id !== currentValue ? 'disabled' : '';
             const selected  = term.id === currentValue ? 'selected' : '';
@@ -173,6 +173,7 @@
         tr.innerHTML = `
             <td>
                 <select name="term_fees[${index}][term_id]" class="form-select term-select" required>
+                    <option value="">Select Term *</option>
                     ${buildSelectOptions('')}
                 </select>
             </td>
@@ -244,11 +245,43 @@
         addTermFeeRow();
 
         document.querySelector('form').addEventListener('submit', function (e) {
-            const hasValid = [...document.querySelectorAll('.term-select')].some(s => s.value);
-            if (!hasValid) {
+            // Check if at least one term is selected
+            const termSelects = document.querySelectorAll('.term-select');
+            let hasValidTerm = false;
+            
+            termSelects.forEach(select => {
+                if (select.value && select.value.trim() !== '') {
+                    hasValidTerm = true;
+                }
+            });
+            
+            if (!hasValidTerm) {
                 e.preventDefault();
-                alert('Please add at least one term with fee configuration.');
+                alert('Please select at least one academic term and configure fees.');
+                return false;
             }
+            
+            // Check for duplicate terms
+            const selectedTerms = [];
+            let hasDuplicates = false;
+            
+            termSelects.forEach(select => {
+                if (select.value && select.value.trim() !== '') {
+                    if (selectedTerms.includes(select.value)) {
+                        hasDuplicates = true;
+                    } else {
+                        selectedTerms.push(select.value);
+                    }
+                }
+            });
+            
+            if (hasDuplicates) {
+                e.preventDefault();
+                alert('Please remove duplicate academic terms. Each term can only be selected once.');
+                return false;
+            }
+            
+            return true;
         });
     });
 </script>

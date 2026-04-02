@@ -374,6 +374,14 @@ public function storeFees(Request $request, $courseId)
 {
     $course = Course::findOrFail($courseId);
     
+    // Filter out empty term fee rows where term_id is not selected
+    $termFees = collect($request->input('term_fees', []))->filter(function($termFee) {
+        return !empty($termFee['term_id']);
+    })->toArray();
+    
+    // Update request with filtered data
+    $request->merge(['term_fees' => $termFees]);
+    
     $validated = $request->validate([
         'term_fees' => 'required|array|min:1',
         'term_fees.*.term_id' => 'required|exists:terms,id',
