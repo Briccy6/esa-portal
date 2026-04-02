@@ -544,6 +544,9 @@
                     </div>
                 </div>
                 
+                <!-- Hidden field to store selected courses on submit -->
+                <input type="hidden" name="selected_courses" id="selectedCoursesInput" value="">
+                
                 @if($courses->count() > 0)
                     <div style="margin-bottom:20px;">
                         <p style="font-size:.82rem;color:var(--ink-2);margin-bottom:12px;">
@@ -563,7 +566,7 @@
                                         @if($course->branches && $course->branches->count() > 0)
                                             @foreach($course->branches as $b)
                                                 <label style="display:flex;align-items:center;gap:6px;font-size:.82rem;cursor:pointer;">
-                                                    <input type="checkbox" name="course_branch_associations[]" 
+                                                    <input type="checkbox" name="course_branch_pairs[]" 
                                                            value="{{ $course->id }}_{{ $b->id }}"
                                                            class="course-checkbox"
                                                            onchange="updateCourseSelection()">
@@ -613,19 +616,24 @@
                         </select>
                     </div>
                     <div class="field-group">
-                        <label class="field-label">Terms <span class="req">*</span></label>
-                        <div class="term-checks">
-                            @foreach($terms as $term)
-                                <label class="term-check-pill">
-                                    <input type="checkbox" name="terms[]" value="{{ $term->id }}"
-                                           {{ in_array($term->id, old('terms', [])) ? 'checked' : '' }}>
-                                    {{ $term->name }}
-                                </label>
-                            @endforeach
-                            @if($terms->count() === 0)
-                                <span style="font-size:.82rem;color:var(--ink-4);">No terms available</span>
-                            @endif
-                        </div>
+                        <label class="field-label">Lesson Weight <span class="req">*</span></label>
+                        <input type="number" name="weight" class="f-control" value="{{ old('weight', 1) }}" min="1" max="100" required>
+                    </div>
+                </div>
+
+                <div class="field-group">
+                    <label class="field-label">Terms <span class="req">*</span></label>
+                    <div class="term-checks">
+                        @foreach($terms as $term)
+                            <label class="term-check-pill">
+                                <input type="checkbox" name="terms[]" value="{{ $term->id }}"
+                                       {{ in_array($term->id, old('terms', [])) ? 'checked' : '' }}>
+                                {{ $term->name }}
+                            </label>
+                        @endforeach
+                        @if($terms->count() === 0)
+                            <span style="font-size:.82rem;color:var(--ink-4);">No terms available</span>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -690,6 +698,15 @@
         updateSubmitButton();
     }
 
+    // ── Form Submission ───────────────────────────────────────────
+    function prepareFormSubmission() {
+        // Populate hidden selected_courses field with JSON array
+        const coursesArray = Array.from(selectedCourses);
+        document.getElementById('selectedCoursesInput').value = JSON.stringify(coursesArray);
+        
+        return true;
+    }
+
     // ── UI Helpers ────────────────────────────────────────────────
     function syncSteps() {
         const steps = document.querySelectorAll('.progress-step');
@@ -720,6 +737,14 @@
         syncSteps();
         updateBranchSelection();
         updateCourseSelection();
+        
+        // Add form submission handler
+        const form = document.getElementById('multiBranchForm');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                prepareFormSubmission();
+            });
+        }
     });
 
 </script>
