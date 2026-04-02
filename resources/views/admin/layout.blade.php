@@ -29,9 +29,6 @@
     <!-- KaTeX for Mathematical Expressions (loaded synchronously so it's available on DOMContentLoaded) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous">
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
-
-    <!-- Tailwind CSS — required for blog views and any Tailwind-based pages -->
-    <script src="https://cdn.tailwindcss.com"></script>
     
     <style>
         :root {
