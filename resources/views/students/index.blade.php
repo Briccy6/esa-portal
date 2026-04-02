@@ -280,8 +280,8 @@ function submitNesaStatusForm(studentId, status, sendEmail, reason, documentInpu
         console.log('Response data:', data);
         if (ok && data.success !== false) {
             bootstrap.Modal.getInstance(document.getElementById(`nesaStatusModal${studentId}`))?.hide();
-            showAlert('success', data.message || 'NESA status updated successfully');
-            setTimeout(() => window.location.reload(), 1500);
+            showAlert('success', data.message || 'NESA status updated successfully', true);
+            // Remove automatic page reload to let user see the feedback
         } else {
             console.error('Update failed:', data);
             
@@ -560,9 +560,15 @@ function getCsrfToken() {
         || '';
 }
 
-function showAlert(type, message) {
+function showAlert(type, message, showRefreshButton = false) {
     const icons = { success: 'check-circle', danger: 'exclamation-circle', warning: 'exclamation-triangle' };
     const titles = { success: 'Success', danger: 'Error', warning: 'Warning' };
+
+    const refreshButton = showRefreshButton ? `
+        <button type="button" class="btn btn-sm btn-outline-success ms-2" onclick="window.location.reload()">
+            <i class="fas fa-sync-alt me-1"></i>Refresh Page
+        </button>
+    ` : '';
 
     const html = `
         <div class="alert alert-${type} alert-dismissible fade show alert-enhanced d-flex align-items-start" role="alert">
@@ -570,6 +576,7 @@ function showAlert(type, message) {
             <div class="alert-content">
                 <div class="alert-title">${titles[type] || type}</div>
                 <p class="alert-message mb-0">${message}</p>
+                ${refreshButton}
             </div>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>`;
@@ -586,7 +593,7 @@ function showAlert(type, message) {
     setTimeout(() => {
         const alert = container.querySelector('.alert');
         if (alert) { alert.classList.remove('show'); setTimeout(() => alert.remove(), 300); }
-    }, 5000);
+    }, 8000); // Extended timeout to allow user to read email status and refresh
 }
 </script>
 @endsection

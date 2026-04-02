@@ -1026,4 +1026,3 @@ function printStudentInfo() {
         </div>
     </div>
 </div>
-@endsection

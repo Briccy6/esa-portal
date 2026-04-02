@@ -3279,21 +3279,35 @@ class StudentController extends Controller
                 // Generate email content for successful registration
                 $emailContent = $this->generateNesaStatusEmailContent($student, 'approved');
                 
+                $emailSent = false;
+                $emailError = null;
+                
                 if ($sendEmail && $student->email) {
                     try {
                         // Attach document to email
                         $documentPath = storage_path('app/public/' . $student->nesa_document);
                         Mail::to($student->email)->send(new NesaRegistrationStatusMail($student, 'approved', $emailContent, $documentPath));
                         \Log::info('NESA approval email sent', ['student_id' => $student->id, 'email' => $student->email]);
+                        $emailSent = true;
                     } catch (\Exception $e) {
                         \Log::error('Failed to send NESA approval email', [
                             'student_id' => $student->id,
                             'error' => $e->getMessage()
                         ]);
+                        $emailError = $e->getMessage();
                     }
                 }
                 
                 $message = 'Student marked as registered with NESA successfully.';
+                if ($sendEmail) {
+                    if ($emailSent) {
+                        $message .= ' Email notification sent successfully.';
+                    } elseif ($emailError) {
+                        $message .= ' However, email sending failed: ' . $emailError;
+                    } else {
+                        $message .= ' Email was not requested or student has no email address.';
+                    }
+                }
                 
             } else {
                 // Mark as failed
@@ -3305,19 +3319,33 @@ class StudentController extends Controller
                 // Generate email content for failed registration
                 $emailContent = $this->generateNesaStatusEmailContent($student, 'rejected', $requestData['reason']);
                 
+                $emailSent = false;
+                $emailError = null;
+                
                 if ($sendEmail && $student->email) {
                     try {
                         Mail::to($student->email)->send(new NesaRegistrationStatusMail($student, 'rejected', $emailContent));
                         \Log::info('NESA rejection email sent', ['student_id' => $student->id, 'email' => $student->email]);
+                        $emailSent = true;
                     } catch (\Exception $e) {
                         \Log::error('Failed to send NESA rejection email', [
                             'student_id' => $student->id,
                             'error' => $e->getMessage()
                         ]);
+                        $emailError = $e->getMessage();
                     }
                 }
                 
                 $message = 'Student marked as failed for NESA registration.';
+                if ($sendEmail) {
+                    if ($emailSent) {
+                        $message .= ' Email notification sent successfully.';
+                    } elseif ($emailError) {
+                        $message .= ' However, email sending failed: ' . $emailError;
+                    } else {
+                        $message .= ' Email was not requested or student has no email address.';
+                    }
+                }
             }
 
             Log::info('NESA status updated successfully', [
@@ -3329,7 +3357,7 @@ class StudentController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => $message . ($sendEmail ? ' Email notification sent.' : '')
+                'message' => $message
             ]);
 
         } catch (\Exception $e) {
