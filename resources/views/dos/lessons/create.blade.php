@@ -761,7 +761,6 @@
         }
         
         // Convert course_branch_pairs into selected_courses array format
-        const courseCheckboxes = document.querySelectorAll('.course-checkbox:checked');
         const selectedCoursesContainer = document.createElement('div');
         
         courseCheckboxes.forEach((checkbox, index) => {
