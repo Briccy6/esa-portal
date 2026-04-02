@@ -394,6 +394,10 @@
     border: none;
 }
 
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
+
 .progress {
     border-radius: 10px;
     overflow: hidden;
@@ -420,6 +424,61 @@
     vertical-align: middle;
 }
 
+/* Enhanced Year Overview Styles */
+.border-primary {
+    border-width: 2px !important;
+}
+
+.border-success {
+    border-color: #28a745 !important;
+    background-color: rgba(40, 167, 69, 0.05);
+}
+
+.border-warning {
+    border-color: #ffc107 !important;
+    background-color: rgba(255, 193, 7, 0.05);
+}
+
+.border-danger {
+    border-color: #dc3545 !important;
+    background-color: rgba(220, 53, 69, 0.05);
+}
+
+/* Full Year Summary Enhancement */
+.bg-gradient-primary .card-body h4 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.bg-gradient-primary .card-body small {
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Year Overview Enhancement */
+.card-header.bg-primary h5 {
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.card-header.bg-primary .badge {
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .card-body .row > div {
+        margin-bottom: 1rem;
+    }
+    
+    .bg-gradient-primary .card-body h4 {
+        font-size: 1.5rem;
+    }
+}
+
 @media print {
     .btn, .card-header h5 {
         display: none !important;
@@ -433,6 +492,17 @@
     
     .table-responsive {
         overflow: visible !important;
+    }
+    
+    .bg-gradient-primary {
+        background: #667eea !important;
+        -webkit-print-color-adjust: exact;
+    }
+    
+    .card-header {
+        background: #667eea !important;
+        color: white !important;
+        -webkit-print-color-adjust: exact;
     }
 }
 </style>
