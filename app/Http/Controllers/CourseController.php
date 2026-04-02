@@ -44,19 +44,25 @@ class CourseController extends Controller
 
     public function store(Request $request)
 {
-    $validated = $request->validate([
+    $rules = [
         'course_name' => 'required|string|max:255',
         'abbreviation' => 'required|string|max:10',
         'course_type' => 'required|string|max:50',
         'branches' => 'nullable|array',
         'branches.*' => 'string',
-        'term_fees' => 'nullable|array',
-        'term_fees.*.term_id' => 'required_with:term_fees|exists:terms,id',
-        'term_fees.*.registration_fee' => 'required_with:term_fees|numeric|min:0',
-        'term_fees.*.tuition_fee' => 'required_with:term_fees|numeric|min:0',
-        'term_fees.*.practical_fee' => 'required_with:term_fees|numeric|min:0',
-        'term_fees.*.trip_fee' => 'required_with:term_fees|numeric|min:0',
-    ]);
+    ];
+    
+    // Only validate term fees if setup_fees_now is checked
+    if ($request->input('setup_fees_now') == 'true' || $request->boolean('setup_fees_now')) {
+        $rules['term_fees'] = 'nullable|array';
+        $rules['term_fees.*.term_id'] = 'required|exists:terms,id';
+        $rules['term_fees.*.registration_fee'] = 'required|numeric|min:0';
+        $rules['term_fees.*.tuition_fee'] = 'required|numeric|min:0';
+        $rules['term_fees.*.practical_fee'] = 'required|numeric|min:0';
+        $rules['term_fees.*.trip_fee'] = 'required|numeric|min:0';
+    }
+    
+    $validated = $request->validate($rules);
 
     // Check for duplicate course in the same branch
     if (!empty($validated['branches']) && !in_array('all', $validated['branches'])) {

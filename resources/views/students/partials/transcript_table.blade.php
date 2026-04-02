@@ -19,7 +19,7 @@
     $outstanding = $totalToPay - $totalPaid;
     
     // Get school information
-    $schoolInfo = \App\Models\SchoolInfo::first();
+    $schoolInfo = \App\Models\SchoolInformation::getActive();
     $systemName = \Illuminate\Support\Facades\Cache::get('esa_system_name', 'ESA Learning Portal');
     $systemLogo = \App\Helpers\LogoHelper::getLogoUrl();
 @endphp

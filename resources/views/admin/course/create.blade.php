@@ -84,7 +84,8 @@
     </div>
     
     <div class="form-check mb-3">
-        <input type="checkbox" name="setup_fees_now" id="setup_fees_now" class="form-check-input" onchange="toggleFeeSection()">
+        <input type="checkbox" name="setup_fees_now" id="setup_fees_now" class="form-check-input" onchange="toggleFeeSection()" value="1">
+        <input type="hidden" name="setup_fees_now" value="0">
         <label for="setup_fees_now" class="form-check-label">Set up fees now</label>
     </div>
     
