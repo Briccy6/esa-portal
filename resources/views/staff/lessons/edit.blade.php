@@ -79,6 +79,33 @@
         margin-bottom: 20px;
         border-radius: 0 8px 8px 0;
     }
+    .btn-remove-unit {
+        background: #dc3545;
+        color: white;
+        border: none;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 15px;
+        float: right;
+        transition: all 0.3s ease;
+    }
+    .btn-remove-unit:hover {
+        background: #c82333;
+        transform: scale(1.1);
+    }
+    .unit-item {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+    }
 </style>
 
 <div class="edit-container">
@@ -350,6 +377,168 @@
 <script>
 let unitCount = {{ $lesson->units ? $lesson->units->count() : 0 }};
 
+// ── Multi-branch course selection state ────────────────────────
+let selectedAdditionalBranches = new Set();
+let selectedAdditionalCourses = new Set();
+let selectedTeachers = {}; // Map: "courseId_branchId" -> teacher_id
+
+// Course-teachers data from server
+window.courseTeachersMap = {!! json_encode($courseTeachersData ?? []) !!};
+window.courseBranchesMap = {!! json_encode($courseBranchesMap ?? []) !!};
+window.branchNames = {!! json_encode($branches->pluck('name', 'id')->toArray()) !!};
+window.courseNames = {!! json_encode($courses->pluck('course_name', 'id')->toArray()) !!};
+
+// ── Branch Selection ─────────────────────────────────────────────
+function updateBranchSelection() {
+    selectedAdditionalBranches.clear();
+    const checkboxes = document.querySelectorAll('.additional-branch-checkbox:checked');
+    const labels = document.querySelectorAll('.branch-label');
+    
+    // Clear all selected states
+    labels.forEach(label => label.style.borderColor = '#e0e0e0');
+    
+    // Add selected state and collect selected branches
+    checkboxes.forEach(checkbox => {
+        selectedAdditionalBranches.add(parseInt(checkbox.value));
+        const label = checkbox.closest('.branch-label');
+        if (label) {
+            label.style.borderColor = '#667eea';
+            label.style.backgroundColor = '#f0f4ff';
+        }
+    });
+    
+    // Update display
+    const countEl = document.getElementById('selectedBranchCount');
+    if (countEl) countEl.textContent = selectedAdditionalBranches.size;
+    
+    // Update course pairs container
+    renderCoursePairs();
+}
+
+// ── Course-Branch Pair Selection ────────────────────────────────
+function renderCoursePairs() {
+    const container = document.getElementById('coursePairsContainer');
+    
+    if (selectedAdditionalBranches.size === 0) {
+        container.innerHTML = '<p style="font-size: 0.9rem; color: #999; margin: 0; text-align: center;"><i class="fas fa-arrow-up"></i> Select branches above first</p>';
+        return;
+    }
+    
+    let html = '<div style="display: flex; flex-direction: column; gap: 12px;">';
+    
+    @foreach($courses as $course)
+        const courseId = {{ $course->id }};
+        const courseName = '{{ $course->course_name }}';
+        
+        const branchesForCourse = {!! json_encode(
+            $courses->mapWithKeys(function($c) {
+                return [$c->id => $c->branches->pluck('id')->toArray()];
+            })->toArray()
+        ) !!}[courseId] || [];
+        
+        const availableBranches = Array.from(selectedAdditionalBranches).filter(bId => 
+            branchesForCourse.includes(bId)
+        );
+        
+        if (availableBranches.length > 0) {
+            html += `<div style="background: white; border: 1px solid #dee2e6; border-radius: 6px; padding: 12px;">
+                <strong style="display: block; margin-bottom: 8px;">` + courseName + `</strong>
+                <div style="display: flex; flex-direction: column; gap: 6px;">`;
+            
+            availableBranches.forEach(branchId => {
+                const checkboxId = 'additional_course_' + courseId + '_' + branchId;
+                const branchName = window.branchNames[branchId];
+                html += `
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.9rem; margin: 0;">
+                        <input type="checkbox" id="${checkboxId}" class="additional-course-checkbox" 
+                               value="${courseId}_${branchId}" onchange="updateSelectedCourses()">
+                        📍 ${branchName}
+                    </label>`;
+            });
+            
+            html += `</div></div>`;
+        }
+    @endforeach
+    
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// ── Course-Branch Selection ─────────────────────────────────────
+function updateSelectedCourses() {
+    selectedAdditionalCourses.clear();
+    const checkboxes = document.querySelectorAll('.additional-course-checkbox:checked');
+    
+    checkboxes.forEach(checkbox => {
+        selectedAdditionalCourses.add(checkbox.value);
+    });
+    
+    const countEl = document.getElementById('selectedCourseCount');
+    if (countEl) countEl.textContent = selectedAdditionalCourses.size;
+    
+    // Update teacher assignment UI
+    renderTeacherAssignments();
+}
+
+// ── Teacher Assignment UI ───────────────────────────────────────
+function renderTeacherAssignments() {
+    const container = document.getElementById('teacherAssignmentsContainer');
+    
+    if (selectedAdditionalCourses.size === 0) {
+        container.innerHTML = '<p style="font-size: 0.9rem; color: #999; margin: 0; text-align: center;"><i class="fas fa-arrow-up"></i> Select course-branch pairs above first</p>';
+        return;
+    }
+    
+    let html = '<div style="display: flex; flex-direction: column; gap: 12px;">';
+    
+    const courseBranchPairs = Array.from(selectedAdditionalCourses);
+    
+    courseBranchPairs.forEach((pair, index) => {
+        const [courseId, branchId] = pair.split('_');
+        const pairKey = `${courseId}_${branchId}`;
+        
+        const courseName = window.courseNames[courseId];
+        const branchName = window.branchNames[branchId];
+        const teachers = window.courseTeachersMap[courseId] || [];
+        
+        html += `
+            <div style="padding: 12px; border: 1px solid #dee2e6; border-radius: 6px; background: #f8f9fa;">
+                <div style="margin-bottom: 8px;">
+                    <strong style="display: block; font-size: 0.95rem;">` + courseName + `</strong>
+                    <span style="font-size: 0.85rem; color: #666;">📍 ` + branchName + `</span>
+                </div>
+                <div>
+                    <label class="form-label" style="margin-bottom: 6px;">Teacher</label>
+                    <select class="form-select teacher-select" data-pair="${pairKey}" onchange="updateTeacherSelection(this)" style="font-size: 0.9rem;">
+                        <option value="">-- No teacher --</option>
+                        ${teachers.map(teacher => `
+                            <option value="${teacher.id}" ${selectedTeachers[pairKey] == teacher.id ? 'selected' : ''}>
+                                ${teacher.teacher_name}
+                            </option>
+                        `).join('')}
+                    </select>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// ── Teacher Selection Update ────────────────────────────────────
+function updateTeacherSelection(selectElement) {
+    const pairKey = selectElement.dataset.pair;
+    const teacherId = selectElement.value;
+    
+    if (teacherId) {
+        selectedTeachers[pairKey] = teacherId;
+    } else {
+        delete selectedTeachers[pairKey];
+    }
+}
+
+// ── Unit Management ──────────────────────────────────────────────
 function addUnit() {
     const container = document.getElementById('units-container');
     const unitHtml = `
@@ -408,33 +597,42 @@ function removeUnit(button) {
     }
 }
 
-// Load teachers based on selected course
-document.getElementById('course_id').addEventListener('change', function() {
-    const courseId = this.value;
-    const teacherSelect = document.getElementById('teacher_id');
-    
-    // Clear current options except the first one
-    teacherSelect.innerHTML = '<option value="">Select Teacher</option>';
-    
-    if (courseId) {
-        // Fetch teachers for this course via AJAX
-        fetch(`/staff/lessons/get-teachers/${courseId}`)
-            .then(response => response.json())
-            .then(teachers => {
-                teachers.forEach(teacher => {
-                    const option = document.createElement('option');
-                    option.value = teacher.id;
-                    option.textContent = teacher.teacher_name;
-                    teacherSelect.appendChild(option);
-                });
-            })
-            .catch(error => console.error('Error loading teachers:', error));
-    }
-});
-
-// Trigger change event on page load to populate teachers
+// ── Form Submission Handler ─────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('course_id').dispatchEvent(new Event('change'));
+    // Add form submission handler to convert course-branch pairs to required format
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            // Convert selected course-branch pairs to hidden inputs with teacher_id
+            const courseCheckboxes = document.querySelectorAll('.additional-course-checkbox:checked');
+            
+            courseCheckboxes.forEach((checkbox, index) => {
+                const [courseId, branchId] = checkbox.value.split('_');
+                const pairKey = `${courseId}_${branchId}`;
+                const teacherId = selectedTeachers[pairKey] || null;
+                
+                const courseInput = document.createElement('input');
+                courseInput.type = 'hidden';
+                courseInput.name = `additional_courses[${index}][course_id]`;
+                courseInput.value = courseId;
+                form.appendChild(courseInput);
+                
+                const branchInput = document.createElement('input');
+                branchInput.type = 'hidden';
+                branchInput.name = `additional_courses[${index}][branch_id]`;
+                branchInput.value = branchId;
+                form.appendChild(branchInput);
+                
+                if (teacherId) {
+                    const teacherInput = document.createElement('input');
+                    teacherInput.type = 'hidden';
+                    teacherInput.name = `additional_courses[${index}][teacher_id]`;
+                    teacherInput.value = teacherId;
+                    form.appendChild(teacherInput);
+                }
+            });
+        });
+    }
 });
 </script>
 @endsection

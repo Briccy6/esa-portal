@@ -8,6 +8,8 @@ use App\Models\Teacher;
 use App\Models\Lesson;
 use App\Models\Term;
 use App\Models\LessonUnit;
+use App\Models\Branch;
+use App\Models\LessonBranchCourse;
 use Illuminate\Support\Facades\DB;
 use App\Models\AcademicYear;
 use App\Models\TimetableSession;
@@ -277,7 +279,13 @@ public function createDetails(Request $request, $lessonId)
                 ->toArray();
         }
         
-        return view('staff.lessons.edit', compact('lesson', 'courses', 'branches', 'terms', 'academicYears', 'courseTeachersData'));
+        // Prepare course-branches map for JavaScript
+        $courseBranchesMap = [];
+        foreach ($courses as $course) {
+            $courseBranchesMap[$course->id] = $course->branches->pluck('id')->toArray();
+        }
+
+        return view('staff.lessons.edit', compact('lesson', 'courses', 'branches', 'terms', 'academicYears', 'courseTeachersData', 'courseBranchesMap'));
     }
 
     /**
@@ -357,14 +365,16 @@ public function createDetails(Request $request, $lessonId)
     {
         $request->validate([
             'lesson_title' => 'required|string|max:255',
-            'course_id' => 'required|exists:courses,id',
-            'teacher_id' => 'nullable|exists:teachers,id',
             'academic_year_id' => 'required|exists:academic_years,id',
             'max_test_marks' => 'required|integer|min:1',
             'max_exam_marks' => 'required|integer|min:1',
             'lesson_weight' => 'required|integer|min:1|max:100',
             'terms' => 'required|array',
             'terms.*' => 'exists:terms,id',
+            'additional_courses' => 'nullable|array',
+            'additional_courses.*.course_id' => 'required_with:additional_courses|exists:courses,id',
+            'additional_courses.*.branch_id' => 'required_with:additional_courses|exists:branches,id',
+            'additional_courses.*.teacher_id' => 'nullable|exists:teachers,id',
             'units' => 'nullable|array',
             'units.*.name' => 'required|string|max:255',
             'units.*.hours' => 'required|integer|min:1',
@@ -376,8 +386,6 @@ public function createDetails(Request $request, $lessonId)
         
         // Update lesson basic information
         $lesson->title = $request->lesson_title;
-        $lesson->course_id = $request->course_id;
-        $lesson->teacher_id = $request->teacher_id;
         $lesson->academic_year_id = $request->academic_year_id;
         $lesson->max_test_marks = $request->max_test_marks;
         $lesson->max_exam_marks = $request->max_exam_marks;
@@ -386,6 +394,29 @@ public function createDetails(Request $request, $lessonId)
 
         // Update lesson terms (sync the relationship)
         $lesson->terms()->sync($request->terms);
+
+        // Handle additional branch-course assignments
+        // These are ADDED to existing assignments, not replacing them
+        if ($request->has('additional_courses') && is_array($request->additional_courses)) {
+            foreach ($request->additional_courses as $assignment) {
+                // Check if this branch-course-lesson combination already exists
+                $exists = \App\Models\LessonBranchCourse::where([
+                    'lesson_id' => $lesson->id,
+                    'branch_id' => $assignment['branch_id'],
+                    'course_id' => $assignment['course_id'],
+                ])->exists();
+                
+                // Only create if it doesn't already exist (avoid duplicates)
+                if (!$exists) {
+                    \App\Models\LessonBranchCourse::create([
+                        'lesson_id' => $lesson->id,
+                        'branch_id' => $assignment['branch_id'],
+                        'course_id' => $assignment['course_id'],
+                        'teacher_id' => $assignment['teacher_id'] ?? null,
+                    ]);
+                }
+            }
+        }
 
         // Handle units
         if ($request->has('units')) {
@@ -421,7 +452,7 @@ public function createDetails(Request $request, $lessonId)
         }
 
         return redirect()->route('staff.lessons.show', $lessonId)
-                         ->with('success', 'Lesson updated successfully.');
+                         ->with('success', 'Lesson updated successfully. Existing assignments preserved.');
     }
 
     /**
