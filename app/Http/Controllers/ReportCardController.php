@@ -13,6 +13,8 @@ use App\Models\Exam;
 use App\Models\AcademicYear;
 use App\Models\Term;
 use App\Models\SchoolInformation;
+use App\Services\FeePaymentService;
+use App\Services\ReportCardService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
@@ -845,5 +847,131 @@ class ReportCardController extends Controller
             ]));
         }
         // Class position is computed in recalculatePositionsForCohort() after generation (store / bulk).
+    }
+
+    /**
+     * Student-facing methods for report card access
+     */
+    public function studentIndex()
+    {
+        $student = auth('student')->user();
+        
+        if (!$student) {
+            return redirect()->route('login')->with('error', 'Please login to access your report cards.');
+        }
+
+        $accessStatus = ReportCardService::getAccessStatus($student);
+        
+        // Get student's report cards
+        $reportCards = ReportCard::where('student_id', $student->id)
+                                ->with(['course', 'academicYear', 'term'])
+                                ->orderByDesc('academic_year_id')
+                                ->orderBy('term_id')
+                                ->get();
+
+        return view('students.report-cards.index', compact('reportCards', 'accessStatus'));
+    }
+
+    public function studentShow(ReportCard $reportCard)
+    {
+        $student = auth('student')->user();
+        
+        if (!$student || $reportCard->student_id !== $student->id) {
+            abort(403, 'Unauthorized access to this report card.');
+        }
+
+        // Check if student can access this report card
+        if (!ReportCardService::canAccessReportCard($student)) {
+            $accessStatus = ReportCardService::getAccessStatus($student);
+            return redirect()->route('student.report-cards.index')
+                ->with('error', $accessStatus['reason']);
+        }
+
+        $reportCard->load([
+            'student',
+            'course',
+            'academicYear',
+            'term',
+            'approvedBy',
+            'subjects.lesson',
+            'subjects.testMarks.exam',
+        ]);
+
+        $schoolInfo = SchoolInformation::getActive();
+
+        return view('students.report-cards.show', compact('reportCard', 'schoolInfo'));
+    }
+
+    public function studentDownload(ReportCard $reportCard)
+    {
+        $student = auth('student')->user();
+        
+        if (!$student || $reportCard->student_id !== $student->id) {
+            abort(403, 'Unauthorized access to this report card.');
+        }
+
+        // Check if student can access this report card
+        if (!ReportCardService::canAccessReportCard($student)) {
+            $accessStatus = ReportCardService::getAccessStatus($student);
+            return response()->json([
+                'success' => false,
+                'message' => $accessStatus['reason']
+            ], 403);
+        }
+
+        $reportCard->load([
+            'student',
+            'course',
+            'academicYear',
+            'term',
+            'approvedBy',
+            'subjects.lesson',
+            'subjects.testMarks.exam',
+        ]);
+
+        $schoolInfo = SchoolInformation::getActive();
+        ['base64' => $studentPhotoBase64, 'mime' => $studentPhotoMime] = $this->resolveStudentPhotoData(
+            $reportCard->student->passport_photo
+        );
+
+        $pdf = Pdf::loadView('students.report-cards.print', compact(
+                'reportCard', 'schoolInfo', 'studentPhotoBase64', 'studentPhotoMime'
+            ))
+            ->setPaper('a4', 'portrait')
+            ->setOption([
+                'margin-top'        => 10,
+                'margin-bottom'     => 10,
+                'isRemoteEnabled'   => true,
+                'isHtml5ParserEnabled' => true,
+            ]);
+
+        $termSlug = Str::slug($reportCard->term->name ?? 'term');
+
+        return $pdf->stream(
+            'report-card-'.Str::slug($reportCard->student->full_name).'-'.$reportCard->academicYear->year.'-'.$termSlug.'.pdf'
+        );
+    }
+
+    /**
+     * AJAX endpoint for countdown timer
+     */
+    public function getCountdown()
+    {
+        $student = auth('student')->user();
+        
+        if (!$student) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        $countdownData = ReportCardService::getCountdownData();
+        $accessStatus = ReportCardService::getAccessStatus($student);
+
+        return response()->json([
+            'countdown_data' => $countdownData,
+            'can_access' => $accessStatus['can_access'],
+            'reason' => $accessStatus['reason'],
+            'payment_status' => $accessStatus['payment_status'],
+            'available_date' => $accessStatus['available_date']
+        ]);
     }
 }

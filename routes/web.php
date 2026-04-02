@@ -312,6 +312,15 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
 
     // Teacher assignment
     Route::get('teachers/{teacher}/assign-course', [TeacherController::class, 'assignCourse'])->name('teachers.assignCourse');
+    
+    // Report Card Settings
+    Route::get('/report-card-settings', [App\Http\Controllers\Admin\ReportCardSettingController::class, 'index'])->name('report-card-settings.index');
+    Route::get('/report-card-settings/create', [App\Http\Controllers\Admin\ReportCardSettingController::class, 'create'])->name('report-card-settings.create');
+    Route::post('/report-card-settings', [App\Http\Controllers\Admin\ReportCardSettingController::class, 'store'])->name('report-card-settings.store');
+    Route::get('/report-card-settings/{reportCardSetting}/edit', [App\Http\Controllers\Admin\ReportCardSettingController::class, 'edit'])->name('report-card-settings.edit');
+    Route::put('/report-card-settings/{reportCardSetting}', [App\Http\Controllers\Admin\ReportCardSettingController::class, 'update'])->name('report-card-settings.update');
+    Route::delete('/report-card-settings/{reportCardSetting}', [App\Http\Controllers\Admin\ReportCardSettingController::class, 'destroy'])->name('report-card-settings.destroy');
+    Route::post('/report-card-settings/{reportCardSetting}/toggle-status', [App\Http\Controllers\Admin\ReportCardSettingController::class, 'toggleStatus'])->name('report-card-settings.toggle-status');
     Route::post('teachers/{teacher}/assign-course', [TeacherController::class, 'storeCourseAssignment'])->name('teachers.storeCourseAssignment');
 
     // Student fees
@@ -1303,6 +1312,14 @@ Route::middleware('auth:student')->prefix('subscriptions')->name('subscriptions.
     Route::post('/purchase', [SubscriptionController::class, 'purchase'])->name('purchase');
     Route::get('/payment/{studentSubscription}', [SubscriptionController::class, 'payment'])->name('payment');
     Route::post('/payment/complete/{studentSubscription}', [SubscriptionController::class, 'completePayment'])->name('payment.complete');
+});
+
+// Student Report Card Routes
+Route::middleware('auth:student')->prefix('student/report-cards')->name('student.report-cards.')->group(function () {
+    Route::get('/', [ReportCardController::class, 'studentIndex'])->name('index');
+    Route::get('/{reportCard}', [ReportCardController::class, 'studentShow'])->name('show');
+    Route::get('/{reportCard}/download', [ReportCardController::class, 'studentDownload'])->name('download');
+    Route::get('/countdown', [ReportCardController::class, 'getCountdown'])->name('countdown');
 });
 
 // Secretary Token Management Routes

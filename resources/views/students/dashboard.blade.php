@@ -118,6 +118,85 @@
 .timetable-modal-close:hover {
     color: #bbb;
 }
+
+/* Countdown Timer Styles */
+.countdown-timer {
+    text-align: center;
+}
+
+.countdown-display {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin: 1rem 0;
+}
+
+.countdown-segment {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1rem;
+    border-radius: 8px;
+    min-width: 80px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease;
+}
+
+.countdown-segment:hover {
+    transform: translateY(-2px);
+}
+
+.countdown-value {
+    font-size: 2rem;
+    font-weight: bold;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+}
+
+.countdown-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    opacity: 0.9;
+}
+
+@media (max-width: 768px) {
+    .countdown-display {
+        gap: 0.5rem;
+    }
+    
+    .countdown-segment {
+        min-width: 60px;
+        padding: 0.75rem 0.5rem;
+    }
+    
+    .countdown-value {
+        font-size: 1.5rem;
+    }
+    
+    .countdown-label {
+        font-size: 0.65rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .countdown-display {
+        gap: 0.25rem;
+    }
+    
+    .countdown-segment {
+        min-width: 50px;
+        padding: 0.5rem 0.25rem;
+    }
+    
+    .countdown-value {
+        font-size: 1.25rem;
+    }
+    
+    .countdown-label {
+        font-size: 0.6rem;
+    }
+}
 </style>
 
 <div class="container-fluid">
@@ -546,6 +625,71 @@
                         </div>
                     @endif
 
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Card Countdown Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h3 class="section-title">
+                <i class="bi bi-file-earmark-text me-2"></i>Report Card Access
+            </h3>
+        </div>
+        <div class="col-12">
+            <div class="info-card">
+                <div class="info-card-header">
+                    <h4><i class="bi bi-clock-history me-2"></i>Report Card Availability</h4>
+                    <a href="{{ route('student.report-cards.index') }}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-eye"></i> View Report Cards
+                    </a>
+                </div>
+                <div class="info-card-body">
+                    <div id="report-card-status">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="spinner-border spinner-border-sm me-3" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <span>Checking report card access status...</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Countdown Timer (will be populated by JavaScript) -->
+                    <div id="countdown-container" style="display: none;">
+                        <div class="countdown-timer">
+                            <h5 class="text-center mb-3">Time Until Report Cards Available</h5>
+                            <div class="countdown-display">
+                                <div class="countdown-segment">
+                                    <div class="countdown-value" id="months">0</div>
+                                    <div class="countdown-label">Months</div>
+                                </div>
+                                <div class="countdown-segment">
+                                    <div class="countdown-value" id="weeks">0</div>
+                                    <div class="countdown-label">Weeks</div>
+                                </div>
+                                <div class="countdown-segment">
+                                    <div class="countdown-value" id="days">0</div>
+                                    <div class="countdown-label">Days</div>
+                                </div>
+                                <div class="countdown-segment">
+                                    <div class="countdown-value" id="hours">0</div>
+                                    <div class="countdown-label">Hours</div>
+                                </div>
+                                <div class="countdown-segment">
+                                    <div class="countdown-value" id="minutes">0</div>
+                                    <div class="countdown-label">Minutes</div>
+                                </div>
+                                <div class="countdown-segment">
+                                    <div class="countdown-value" id="seconds">0</div>
+                                    <div class="countdown-label">Seconds</div>
+                                </div>
+                            </div>
+                            <div class="text-center mt-3">
+                                <small class="text-muted" id="available-date"></small>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1678,5 +1822,128 @@ function downloadTimetable(title, imageData) {
     link.click();
     document.body.removeChild(link);
 }
+
+// Report Card Countdown Functionality
+let countdownInterval;
+let targetDate;
+
+function updateReportCardStatus() {
+    fetch('{{ route("student.report-cards.countdown") }}')
+        .then(response => response.json())
+        .then(data => {
+            const statusDiv = document.getElementById('report-card-status');
+            const countdownContainer = document.getElementById('countdown-container');
+            
+            if (data.can_access) {
+                // Student can access report cards
+                statusDiv.innerHTML = `
+                    <div class="alert alert-success">
+                        <i class="bi bi-check-circle-fill me-2"></i>
+                        <strong>Report Cards Available!</strong><br>
+                        <small class="text-muted">You can now download and view your report cards.</small>
+                    </div>
+                    <div class="text-center mt-3">
+                        <a href="{{ route('student.report-cards.index') }}" class="btn btn-success btn-lg">
+                            <i class="bi bi-download me-2"></i>Download Report Cards
+                        </a>
+                    </div>
+                `;
+                countdownContainer.style.display = 'none';
+                if (countdownInterval) {
+                    clearInterval(countdownInterval);
+                }
+            } else {
+                // Student cannot access yet - show countdown
+                statusDiv.innerHTML = `
+                    <div class="alert alert-warning">
+                        <i class="bi bi-clock me-2"></i>
+                        <strong>Report Cards Not Yet Available</strong><br>
+                        <small class="text-muted">${data.reason}</small>
+                    </div>
+                `;
+                
+                if (data.countdown_data && data.countdown_data.total_seconds > 0) {
+                    targetDate = new Date(data.countdown_data.target_date);
+                    countdownContainer.style.display = 'block';
+                    startCountdown(data.countdown_data);
+                    
+                    // Show available date
+                    const availableDateElement = document.getElementById('available-date');
+                    if (availableDateElement && data.available_date) {
+                        const date = new Date(data.available_date);
+                        availableDateElement.textContent = `Available on: ${date.toLocaleDateString('en-US', { 
+                            weekday: 'long', 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        })}`;
+                    }
+                } else {
+                    countdownContainer.style.display = 'none';
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching report card status:', error);
+            const statusDiv = document.getElementById('report-card-status');
+            statusDiv.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <strong>Error</strong><br>
+                    <small class="text-muted">Unable to check report card status. Please refresh the page.</small>
+                </div>
+            `;
+        });
+}
+
+function startCountdown(initialData) {
+    // Clear any existing interval
+    if (countdownInterval) {
+        clearInterval(countdownInterval);
+    }
+    
+    function updateCountdownDisplay() {
+        const now = new Date();
+        const difference = targetDate - now;
+        
+        if (difference <= 0) {
+            // Time's up - refresh status
+            updateReportCardStatus();
+            return;
+        }
+        
+        // Calculate time units
+        const months = Math.floor(difference / (1000 * 60 * 60 * 24 * 30));
+        const weeks = Math.floor((difference % (1000 * 60 * 60 * 24 * 30)) / (1000 * 60 * 60 * 24 * 7));
+        const days = Math.floor((difference % (1000 * 60 * 60 * 24 * 7)) / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+        
+        // Update display
+        document.getElementById('months').textContent = months;
+        document.getElementById('weeks').textContent = weeks;
+        document.getElementById('days').textContent = days;
+        document.getElementById('hours').textContent = hours;
+        document.getElementById('minutes').textContent = minutes;
+        document.getElementById('seconds').textContent = seconds;
+    }
+    
+    // Initial update
+    updateCountdownDisplay();
+    
+    // Update every second
+    countdownInterval = setInterval(updateCountdownDisplay, 1000);
+}
+
+// Initialize countdown when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    updateReportCardStatus();
+    
+    // Refresh status every 5 minutes in case of changes
+    setInterval(updateReportCardStatus, 5 * 60 * 1000);
+});
 </script>
 @endsection

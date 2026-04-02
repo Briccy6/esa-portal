@@ -198,6 +198,12 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('to-whom.*') ? 'active' : '' }}" href="{{ route('to-whom.index') }}">
+                            <span class="nav-icon"><i class="fas fa-file-alt"></i></span>
+                            <span class="nav-text">Professional Letters</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <button type="button" class="nav-link w-100 text-start" data-bs-toggle="modal" data-bs-target="#addStudentModal">
                             <span class="nav-icon"><i class="fas fa-user-plus"></i></span>
                             <span class="nav-text">Add Student</span>

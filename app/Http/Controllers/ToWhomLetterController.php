@@ -15,32 +15,30 @@ use Carbon\Carbon;
 class ToWhomLetterController extends Controller
 {
     /**
-     * Display a listing of letters for the current user.
+     * Display a listing of the resource.
      */
     public function index(Request $request)
     {
-        $user = Auth::user();
-        $letters = collect();
-
+        $user = auth()->user();
+        
         if ($user->isStudent()) {
             // Students can only see their own letters
-            $student = Student::where('email', $user->email)->first();
-            if ($student) {
-                $letters = ToWhomLetter::where('student_id', $student->id)
-                    ->with('student')
-                    ->active()
-                    ->latest()
-                    ->get();
-            }
-        } elseif ($user->isAdmin() || $user->isAccountant() || $user->isStaff()) {
-            // Admin, accountant, and staff can see all letters
-            $letters = ToWhomLetter::with(['student', 'generator'])
-                ->active()
-                ->latest()
-                ->get();
+            $letters = ToWhomLetter::where('student_id', $user->student->id)
+                ->where('is_active', true)
+                ->with(['student', 'generator'])
+                ->orderBy('created_at', 'desc')
+                ->paginate(10);
+                
+            return view('to-whom.student-index', compact('letters'));
+        } else {
+            // Admins and staff can see all letters
+            $letters = ToWhomLetter::where('is_active', true)
+                ->with(['student', 'generator'])
+                ->orderBy('created_at', 'desc')
+                ->paginate(10);
+                
+            return view('to-whom.index', compact('letters'));
         }
-
-        return view('to-whom.index', compact('letters'));
     }
 
     /**
@@ -50,24 +48,22 @@ class ToWhomLetterController extends Controller
     {
         $user = Auth::user();
         $students = collect();
-
-        if ($user->isStudent()) {
-            // Students can only create letters for themselves
-            $student = Student::where('email', $user->email)->first();
-            if ($student) {
-                $students = collect([$student]);
-            }
-        } elseif ($user->isAdmin() || $user->isAccountant() || $user->isStaff()) {
-            // Admin, accountant, and staff can create letters for any student
-            $students = Student::with(['course', 'branch', 'academicYear'])
-                ->orderBy('full_name')
-                ->get();
-        }
-
         $letterTypes = ToWhomLetter::getLetterTypes();
         $recipientTitles = ToWhomLetter::getRecipientTitles();
 
-        return view('to-whom.create', compact('students', 'letterTypes', 'recipientTitles'));
+        if ($user->isStudent()) {
+            // Students can only create letters for themselves
+            if ($user->student) {
+                $students = collect([$user->student]);
+            }
+            return view('to-whom.student-create', compact('students', 'letterTypes', 'recipientTitles'));
+        } else {
+            // Admins and staff can create letters for any student
+            $students = Student::with(['course', 'branch', 'academicYear'])
+                ->orderBy('full_name')
+                ->get();
+            return view('to-whom.create', compact('students', 'letterTypes', 'recipientTitles'));
+        }
     }
 
     /**
@@ -106,24 +102,24 @@ class ToWhomLetterController extends Controller
     }
 
     /**
-     * Display the specified letter.
+     * Display the specified resource.
      */
     public function show(ToWhomLetter $letter)
     {
-        $user = Auth::user();
+        $user = auth()->user();
         
         // Check permissions
-        if ($user->isStudent()) {
-            $student = Student::where('email', $user->email)->first();
-            if (!$student || $letter->student_id !== $student->id) {
-                abort(403, 'Unauthorized action.');
-            }
+        if ($user->isStudent() && $letter->student_id != $user->student->id) {
+            abort(403, 'Unauthorized');
         }
 
-        $letter->load(['student.course', 'student.branch', 'student.academicYear', 'generator']);
         $schoolInfo = SchoolInformation::getActive();
-
-        return view('to-whom.show', compact('letter', 'schoolInfo'));
+        
+        if ($user->isStudent()) {
+            return view('to-whom.student-show', compact('letter', 'schoolInfo'));
+        } else {
+            return view('to-whom.show', compact('letter', 'schoolInfo'));
+        }
     }
 
     /**

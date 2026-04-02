@@ -1059,6 +1059,13 @@
                     </div>
                     
                     <div class="nav-item">
+                        <a href="{{ route('admin.report-card-settings.index') }}" class="nav-link {{ request()->routeIs('admin.report-card-settings.*') ? 'active' : '' }}">
+                            <i class="fas fa-calendar-alt"></i>
+                            <span class="nav-text">Report Card Settings</span>
+                        </a>
+                    </div>
+                    
+                    <div class="nav-item">
                         <a href="{{ route('admin.accounting.cashbook') }}" class="nav-link {{ request()->routeIs('admin.accounting.cashbook') ? 'active' : '' }}">
                             <i class="fas fa-book"></i>
                             <span class="nav-text">Cash Book</span>
