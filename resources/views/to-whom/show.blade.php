@@ -123,7 +123,7 @@
                                 </tr>
                                 <tr>
                                     <td><strong>Course:</strong></td>
-                                    <td>{{ $letter->student->course->name ?? 'N/A' }}</td>
+                                    <td>{{ $letter->student->course->course_name ?? 'N/A' }}</td>
                                 </tr>
                                 <tr>
                                     <td><strong>Letter Type:</strong></td>
