@@ -251,19 +251,33 @@ public function createDetails(Request $request, $lessonId)
      */
     public function edit($lessonId)
     {
-        $lesson = Lesson::with(['terms', 'course', 'teacher'])->findOrFail($lessonId);
+        $lesson = Lesson::with([
+            'terms',
+            'course',
+            'teacher',
+            'branchCourses.branch',
+            'branchCourses.course',
+            'branchCourses.teacher'
+        ])->findOrFail($lessonId);
         
         // Get all available data for the form
-        $courses = Course::all();
-        $teachers = DB::table('teacher_course')
-            ->join('teachers', 'teacher_course.teacher_id', '=', 'teachers.id')
-            ->where('teacher_course.course_id', $lesson->course_id)
-            ->select('teachers.id', 'teachers.teacher_name')
-            ->get();
+        $branches = Branch::all();
+        $courses = Course::with('branches')->get();
         $terms = Term::with('academicYear')->get();
         $academicYears = \App\Models\AcademicYear::all();
         
-        return view('staff.lessons.edit', compact('lesson', 'courses', 'teachers', 'terms', 'academicYears'));
+        // Prepare course-teachers map for JavaScript
+        $courseTeachersData = [];
+        foreach ($courses as $course) {
+            $courseTeachersData[$course->id] = DB::table('teacher_course')
+                ->join('teachers', 'teacher_course.teacher_id', '=', 'teachers.id')
+                ->where('teacher_course.course_id', $course->id)
+                ->select('teachers.id', 'teachers.teacher_name')
+                ->get()
+                ->toArray();
+        }
+        
+        return view('staff.lessons.edit', compact('lesson', 'courses', 'branches', 'terms', 'academicYears', 'courseTeachersData'));
     }
 
     /**

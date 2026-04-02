@@ -25,19 +25,23 @@
     <title>Payment transcript — {{ $student->full_name }}</title>
     <style>
         * { box-sizing: border-box; }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            font-size: 10px;
-            color: #222;
+        html, body {
             margin: 0;
-            padding: 8px;
-            max-width: 100%;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+        }
+        body {
+            font-family: 'Arial', sans-serif;
+            font-size: 9px;
+            color: #111;
+            line-height: 1;
         }
         .no-print {
-            margin-bottom: 16px;
-            padding: 12px;
+            margin-bottom: 12px;
+            padding: 10px;
             background: #f4f6f9;
-            border-radius: 8px;
+            border-radius: 4px;
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
@@ -46,178 +50,181 @@
         .print-header-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 6px;
+            margin-bottom: 2px;
         }
         .print-header-table td {
             vertical-align: top;
-            padding: 3px;
+            padding: 1px 2px;
         }
-        .print-header-logo { width: 70px; text-align: center; }
+        .print-header-logo { width: 50px; text-align: center; }
         .print-header-logo--right { text-align: right; }
         .school-logo-img {
-            max-width: 50px;
-            max-height: 50px;
+            max-width: 35px;
+            max-height: 35px;
             object-fit: contain;
         }
         .print-logo-placeholder {
-            width: 40px;
-            height: 40px;
-            border: 1px dashed #999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 8px;
-            color: #666;
-            margin: 0 auto;
+            width: 30px;
+            height: 30px;
+            display: none;
         }
         .hdr-school-name {
-            font-size: 12px;
+            font-size: 10px;
             font-weight: 700;
             text-transform: uppercase;
-            margin: 0 0 2px;
-            letter-spacing: 0.5px;
+            margin: 0;
+            letter-spacing: 0.3px;
         }
-        .hdr-contact { font-size: 8px; margin: 1px 0; color: #444; }
+        .hdr-contact { font-size: 7px; margin: 0px; color: #444; }
         .doc-title {
             text-align: center;
-            font-size: 11px;
+            font-size: 9px;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.1em;
-            margin: 8px 0 6px;
-            border-bottom: 2px solid #000;
-            border-top: 2px solid #000;
-            padding: 3px 0;
+            letter-spacing: 0.05em;
+            margin: 2px 0 3px;
+            border-bottom: 1.5px solid #000;
+            border-top: 1px solid #000;
+            padding: 1px 0;
         }
         .student-info {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 8px;
-            background: #f9f9f9;
+            margin-bottom: 3px;
+            background: #fafafa;
         }
         .student-info th {
             background: #f0f0f0;
-            border: 1px solid #ddd;
-            padding: 4px 6px;
-            font-size: 9px;
+            border: 0.5px solid #999;
+            padding: 1px 3px;
+            font-size: 7px;
             text-align: left;
             font-weight: 600;
         }
         .student-info td {
-            border: 1px solid #ddd;
-            padding: 4px 6px;
-            font-size: 9px;
+            border: 0.5px solid #999;
+            padding: 1px 3px;
+            font-size: 7px;
         }
         table.data-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 8px;
+            margin-bottom: 2px;
         }
         table.data-table th, table.data-table td {
             border: 1px solid #333;
-            padding: 4px 6px;
+            padding: 2px 3px;
             text-align: left;
-            font-size: 9px;
+            font-size: 7px;
+            line-height: 1.1;
         }
         table.data-table th { 
-            background: #e8e8e8; 
+            background: #ddd; 
             font-weight: 700;
             text-transform: uppercase;
-            font-size: 8px;
+            font-size: 6px;
         }
         table.data-table tbody tr:nth-child(even) {
-            background: #fafafa;
+            background: #fbfbfb;
         }
         table.data-table .total-row {
             font-weight: 700;
-            background: #f0f0f0;
+            background: #e8e8e8;
         }
-        .num { text-align: right; font-variant-numeric: tabular-nums; font-family: 'Courier New', monospace; }
-        .muted { color: #666; font-size: 8px; }
+        .num { text-align: right; font-family: 'Courier New', monospace; }
+        .muted { color: #666; font-size: 6px; }
         .summary-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            margin: 8px 0;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 2px;
+            margin: 2px 0;
         }
         .summary-box {
-            border: 1px solid #ddd;
-            padding: 6px;
+            border: 1px solid #ccc;
+            padding: 2px 3px;
             background: #f9f9f9;
         }
         .summary-box-label {
-            font-size: 8px;
+            font-size: 6px;
             color: #666;
             font-weight: 600;
             text-transform: uppercase;
+            margin: 0;
         }
         .summary-box-value {
-            font-size: 12px;
+            font-size: 8px;
             font-weight: 700;
             color: #000;
-            margin-top: 2px;
+            margin: 1px 0 0;
             font-family: 'Courier New', monospace;
         }
+        h3 {
+            font-size: 7px;
+            margin: 2px 0 1px;
+            font-weight: 600;
+            text-transform: uppercase;
+            border-bottom: 0.5px solid #ccc;
+            padding-bottom: 1px;
+        }
         .signatures {
-            margin-top: 12px;
+            margin-top: 4px;
             width: 100%;
             border-collapse: collapse;
         }
         .signatures td {
-            vertical-align: bottom;
-            padding: 3px;
+            vertical-align: top;
+            padding: 2px 1px;
             width: 33%;
             text-align: center;
-            font-size: 8px;
+            font-size: 6px;
         }
-        .sig-img { max-height: 35px; max-width: 100px; object-fit: contain; margin-bottom: 2px; }
+        .sig-img { max-height: 20px; max-width: 70px; object-fit: contain; margin-bottom: 1px; }
         .sig-line {
-            border-top: 1px solid #000;
-            margin-top: 20px;
-            padding-top: 2px;
-            min-height: 20px;
+            border-top: 0.5px solid #000;
+            margin-top: 12px;
+            padding-top: 1px;
+            min-height: 12px;
+            font-weight: 600;
         }
-        .hidden { display: none !important; }
+        .footer-text {
+            margin-top: 2px;
+            text-align: center;
+            font-size: 6px;
+        }
         @media print {
             .no-print { display: none !important; }
-            body { 
-                padding: 5px; 
-                font-size: 9px;
-                margin: 0;
-                line-height: 1.2;
-            }
             html, body { 
-                height: auto;
-                width: 100%;
+                margin: 0;
+                padding: 0;
+                height: 100%;
             }
-            .page-break { page-break-before: always; }
-            table { page-break-inside: avoid; }
-            tr { page-break-inside: avoid; }
-            .signatures { page-break-inside: avoid; }
-            
-            /* Force to single page */
-            * { page-break-inside: avoid; }
-            .print-header-table { margin-bottom: 3px; }
-            .doc-title { margin: 4px 0 3px; padding: 2px 0; font-size: 10px; }
-            .student-info th, .student-info td { padding: 2px 3px; font-size: 8px; }
-            table.data-table th, table.data-table td { padding: 2px 3px; font-size: 8px; }
-            .summary-grid { gap: 4px; margin: 4px 0; }
-            .summary-box { padding: 4px; }
-            .summary-box-value { font-size: 11px; }
-            .muted { font-size: 7px; }
+            body { 
+                padding: 3px; 
+                font-size: 8px;
+                line-height: 1;
+                page-break-after: auto;
+            }
+            * { page-break-inside: avoid !important; }
+            table { page-break-inside: avoid !important; }
+            .print-header-table { margin-bottom: 1px; }
+            .doc-title { margin: 1px 0 2px; padding: 0px; font-size: 8px; }
+            .student-info th, .student-info td { padding: 1px 2px; font-size: 6px; }
+            table.data-table th, table.data-table td { padding: 1px 2px; font-size: 6px; }
+            .summary-grid { gap: 1px; margin: 2px 0; }
+            .summary-box { padding: 2px; }
+            .summary-box-value { font-size: 7px; }
+            .muted { font-size: 5px; }
+            .signatures { margin-top: 2px; }
+            .signatures td { padding: 1px; font-size: 5px; }
+            .sig-line { margin-top: 8px; min-height: 10px; }
         }
     </style>
 </head>
 <body>
 
 <div class="no-print">
-    <button type="button" class="btn btn-primary" onclick="window.print()" style="padding:8px 16px;border-radius:6px;border:none;background:#2563eb;color:#fff;cursor:pointer;">Print</button>
-    @if(auth('student')->check())
-        <a href="{{ route('student.dashboard') }}" style="margin-left:8px;">Back to dashboard</a>
-    @else
-        <a href="javascript:history.back()" style="margin-left:8px;">Back</a>
-    @endif
-    <span class="muted">Use your browser print dialog to save as PDF if needed.</span>
+    <button type="button" onclick="window.print()" style="padding:6px 12px;border-radius:4px;border:none;background:#0066cc;color:#fff;cursor:pointer;font-size:11px;">Print</button>
+    <span class="muted">Single page per student. Print page 1 only.</span>
 </div>
 
 <table class="print-header-table" cellspacing="0">
@@ -225,44 +232,29 @@
         <td class="print-header-logo">
             @if($hasLogo)
                 <img src="{{ $schoolInfo->logo_url }}" alt="" class="school-logo-img">
-            @else
-                <div class="print-logo-placeholder">LOGO</div>
             @endif
         </td>
-        <td>
+        <td style="padding-left: 4px;">
             <div class="hdr-school-name">{{ $hdrSchoolName }}</div>
             @if($hdrAddress)
                 <div class="hdr-contact">{{ $hdrAddress }}</div>
             @endif
-            <div class="hdr-contact">
-                @if($hdrPhone) Tel: {{ $hdrPhone }} @endif
-                @if($hdrEmail) &nbsp;|&nbsp; Email: {{ $hdrEmail }} @endif
-            </div>
-            @if(!empty($hdrWebsite))
-                <div class="hdr-contact">Website: {{ $hdrWebsite }}</div>
-            @endif
-        </td>
-        <td class="print-header-logo print-header-logo--right">
-            @if($hasLogo)
-                <img src="{{ $schoolInfo->logo_url }}" alt="" class="school-logo-img">
-            @else
-                <div class="print-logo-placeholder">LOGO</div>
-            @endif
+            <div class="hdr-contact">@if($hdrPhone) Tel: {{ $hdrPhone }} @endif @if($hdrEmail) Email: {{ $hdrEmail }} @endif</div>
         </td>
     </tr>
 </table>
 
-<div class="doc-title">Student Fee Payment Status</div>
+<div class="doc-title">STUDENT PAYMENT TRANSCRIPT</div>
 
 <table class="student-info">
     <tr>
         <th>Student Name</th>
         <td>{{ $student->full_name }}</td>
-        <th>Reg. Number</th>
+        <th style="width: 12%;">Reg. #</th>
         <td>{{ $student->reg_number ?? '—' }}</td>
     </tr>
     <tr>
-        <th>Course / Class</th>
+        <th>Course</th>
         <td>{{ $student->course->course_name ?? '—' }}</td>
         <th>Academic Year</th>
         <td>{{ $student->academicYear->year ?? '—' }}</td>
@@ -272,24 +264,24 @@
 <!-- Summary Payment Status Grid -->
 <div class="summary-grid">
     <div class="summary-box">
-        <div class="summary-box-label">Total Amount Due</div>
+        <div class="summary-box-label">Amount Due</div>
         <div class="summary-box-value">{{ number_format($totalExpected, 0) }} RWF</div>
     </div>
     <div class="summary-box">
-        <div class="summary-box-label">Total Amount Paid</div>
+        <div class="summary-box-label">Amount Paid</div>
         <div class="summary-box-value" style="color: #28a745;">{{ number_format($totalPaid, 0) }} RWF</div>
     </div>
     <div class="summary-box">
-        <div class="summary-box-label">Outstanding Balance</div>
+        <div class="summary-box-label">Outstanding</div>
         <div class="summary-box-value" style="color: #dc3545;">{{ number_format($totalOutstanding, 0) }} RWF</div>
     </div>
     <div class="summary-box">
-        <div class="summary-box-label">Payment Status</div>
+        <div class="summary-box-label">Status</div>
         <div class="summary-box-value">
             @if($totalOutstanding <= 0)
-                ✓ FULLY PAID
+                ✓ PAID
             @elseif($totalPaid > 0)
-                PARTIAL ({{ round(($totalPaid / $totalExpected) * 100, 1) }}%)
+                {{ round(($totalPaid / $totalExpected) * 100, 0) }}%
             @else
                 UNPAID
             @endif
@@ -298,14 +290,14 @@
 </div>
 
 <!-- Fee Breakdown Table -->
-<h3 style="font-size: 9px; margin: 6px 0 3px; font-weight: 600; text-transform: uppercase; border-bottom: 1px solid #ddd; padding-bottom: 2px;">Fee Payment Breakdown</h3>
+<h3>Fee Payment Breakdown</h3>
 <table class="data-table">
     <thead>
         <tr>
             <th>Fee Type</th>
-            <th class="num" style="width: 20%;">Due Amount</th>
-            <th class="num" style="width: 20%;">Paid</th>
-            <th class="num" style="width: 20%;">Balance</th>
+            <th class="num">Due</th>
+            <th class="num">Paid</th>
+            <th class="num">Balance</th>
         </tr>
     </thead>
     <tbody>
@@ -327,53 +319,32 @@
 </table>
 
 @if($discountPct > 0)
-    <p class="muted" style="margin: 4px 0;">
-        <strong>Discount Applied:</strong> {{ rtrim(rtrim(number_format($discountPct, 2), '0'), '.') }}% on tuition, practical & trip fees (≈ {{ number_format($discountAmount, 0) }} RWF saved)
-    </p>
+    <p class="muted" style="margin: 1px 0;">Discount: {{ rtrim(rtrim(number_format($discountPct, 1), '0'), '.') }}% | Saved: {{ number_format($discountAmount, 0) }} RWF</p>
 @endif
 
-
-<p class="muted" style="margin: 6px 0 2px; border-top: 1px solid #ddd; padding-top: 4px;">
-    <strong>Issued:</strong> {{ $printedAt->format('d M Y \a\t H:i') }}
-    @if($totalPaid > 0) 
-        | <strong>Last Payment:</strong> 
-        @php
-            $lastPayment = collect($transactions ?? [])->sortByDesc('paid_at')->first();
-        @endphp
-        @if($lastPayment)
-            {{ \Carbon\Carbon::parse($lastPayment->paid_at)->format('d M Y') }}
-        @endif
-    @endif
-</p>
+<p class="muted">Issued: {{ $printedAt->format('d M Y') }} | System Record</p>
 
 <table class="signatures">
     <tr>
-        <td>
+        <td style="border-right: 1px solid #ddd;">
             @if($hasPrincipalSignature)
                 <img src="{{ $schoolInfo->principal_signature_url }}" alt="" class="sig-img">
             @endif
-            <div class="sig-line">
-                School Manager
-                <br><strong>{{ $hdrPrincipal }}</strong>
-            </div>
+            <div class="sig-line">Manager</div>
         </td>
-        <td>
+        <td style="border-right: 1px solid #ddd;">
             @if($hasStampSignature)
-                <img src="{{ $schoolInfo->stamp_signature_url }}" alt="School stamp" class="sig-img">
+                <img src="{{ $schoolInfo->stamp_signature_url }}" alt="" class="sig-img">
             @endif
-            <div class="sig-line">Official School Stamp</div>
+            <div class="sig-line">Stamp</div>
         </td>
         <td>
-            <div class="sig-line">
-                Accountant / Bursar
-            </div>
+            <div class="sig-line">Accountant</div>
         </td>
     </tr>
 </table>
 
-<p class="muted" style="margin-top: 6px; text-align: center;">
-    This transcript reflects the student payment records as of {{ $printedAt->format('d M Y') }}. For inquiries, contact the school administration office.
-</p>
+<div class="footer-text">This payment transcript is valid for accounting and administrative purposes only.</div>
 
 </body>
 </html>

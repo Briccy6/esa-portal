@@ -132,36 +132,83 @@
                     </div>
                 </div>
 
-                <!-- Course Selection -->
-                <div class="mb-3">
-                    <label for="course_id" class="form-label required">Course</label>
-                    <select class="form-select" id="course_id" name="course_id" required>
-                        <option value="">Select Course</option>
-                        @foreach($courses as $course)
-                            <option value="{{ $course->id }}" {{ $lesson->course_id == $course->id ? 'selected' : '' }}>
-                                {{ $course->course_name }}
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('course_id')
-                        <div class="text-danger small">{{ $message }}</div>
-                    @enderror
-                </div>
+                <!-- Multi-Branch Course Assignment -->
+                
+                @if($lesson->branchCourses && $lesson->branchCourses->count() > 0)
+                    <div class="mb-4">
+                        <h6 class="section-title">Current Branch-Course Assignments</h6>
+                        <div style="background: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px;">
+                                @foreach($lesson->branchCourses as $bc)
+                                    <div style="background: white; border: 1px solid #dee2e6; border-radius: 6px; padding: 12px;">
+                                        <div style="font-weight: 600; color: #667eea; margin-bottom: 5px;">
+                                            <i class="fas fa-building" style="margin-right: 5px;"></i> {{ $bc->branch->name }}
+                                        </div>
+                                        <div style="font-size: 0.9rem; margin-bottom: 5px;">
+                                            <strong>Course:</strong> {{ $bc->course->course_name }}
+                                        </div>
+                                        <div style="font-size: 0.9rem; color: #666;">
+                                            <strong>Teacher:</strong> {{ $bc->teacher ? $bc->teacher->teacher_name : 'Not assigned' }}
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+                @endif
 
-                <!-- Teacher Selection -->
-                <div class="mb-3">
-                    <label for="teacher_id" class="form-label">Teacher (Optional)</label>
-                    <select class="form-select" id="teacher_id" name="teacher_id">
-                        <option value="">Select Teacher</option>
-                        @if($lesson->teacher)
-                            <option value="{{ $lesson->teacher_id }}" selected>
-                                {{ $lesson->teacher->teacher_name }}
-                            </option>
-                        @endif
-                    </select>
-                    @error('teacher_id')
-                        <div class="text-danger small">{{ $message }}</div>
-                    @enderror
+                <!-- Add New Branch-Course Assignments -->
+                <div class="mb-4" id="multiBranchSection">
+                    <h6 class="section-title">Add More Branch-Course Assignments</h6>
+                    <p style="font-size: 0.9rem; color: #666; margin-bottom: 15px;">
+                        Select branches and courses to add additional assignments to this lesson. Existing assignments will be preserved.
+                    </p>
+
+                    <!-- Step 1: Select Branches -->
+                    <div class="mb-4">
+                        <label class="form-label">Select Branches to Add</label>
+                        <div class="row" style="margin: -8px;">
+                            @foreach($branches as $branch)
+                                <div class="col-sm-6 col-lg-4 p-2">
+                                    <label style="display: flex; align-items: center; cursor: pointer; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px; transition: all 0.3s ease; margin-bottom: 0;" 
+                                           class="branch-label" onchange="updateBranchSelection()">
+                                        <input type="checkbox" name="additional_branches[]" value="{{ $branch->id }}" 
+                                               class="additional-branch-checkbox" style="margin-right: 8px;">
+                                        <span style="font-weight: 500;">
+                                            <i class="fas fa-building" style="margin-right: 5px;"></i>
+                                            {{ $branch->name }}
+                                        </span>
+                                    </label>
+                                </div>
+                            @endforeach
+                        </div>
+                        <p style="font-size: 0.82rem; color: #999; margin-top: 10px;">
+                            Selected: <span id="selectedBranchCount">0</span> branch(es)
+                        </p>
+                    </div>
+
+                    <!-- Step 2: Select Courses -->
+                    <div class="mb-4">
+                        <label class="form-label">Select Course-Branch Pairs to Add</label>
+                        <div id="coursePairsContainer" style="background: #f8f9fa; border-radius: 6px; padding: 15px;">
+                            <p style="font-size: 0.9rem; color: #999; margin: 0; text-align: center;">
+                                <i class="fas fa-arrow-up"></i> Select branches above first
+                            </p>
+                        </div>
+                        <p style="font-size: 0.82rem; color: #999; margin-top: 10px;">
+                            Selected: <span id="selectedCourseCount">0</span> course-branch pair(s)
+                        </p>
+                    </div>
+
+                    <!-- Step 3: Assign Teachers -->
+                    <div class="mb-4">
+                        <label class="form-label">Assign Teachers to New Assignments</label>
+                        <div id="teacherAssignmentsContainer" style="background: #f8f9fa; border-radius: 6px; padding: 15px;">
+                            <p style="font-size: 0.9rem; color: #999; margin: 0; text-align: center;">
+                                <i class="fas fa-arrow-up"></i> Select course-branch pairs above first
+                            </p>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Academic Year -->
