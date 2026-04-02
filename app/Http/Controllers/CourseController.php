@@ -426,7 +426,7 @@ public function updateFees(Request $request, $courseId)
 
     try {
         // Deactivate existing fees for this course
-        \App\Models\CourseTermFee::where('course_id', $courseId)->update(['is_active' => false);
+        \App\Models\CourseTermFee::where('course_id', $courseId)->update(['is_active' => false]);
         
         // Create or update term fees
         foreach ($validated['term_fees'] as $termFeeData) {

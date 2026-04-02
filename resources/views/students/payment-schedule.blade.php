@@ -41,10 +41,63 @@
         </div>
     </div>
 
+    <!-- Full Year Fees Summary -->
+    <div class="card mb-4 bg-gradient-primary text-white">
+        <div class="card-header">
+            <h5><i class="fas fa-calendar-year me-2"></i>Full Year Fees Summary</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="text-center">
+                        <h4>{{ number_format(collect($paymentSchedule)->sum('total_required'), 0) }}</h4>
+                        <small>Total Year Fees</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center">
+                        <h4>{{ number_format(collect($paymentSchedule)->sum('total_paid'), 0) }}</h4>
+                        <small>Total Paid</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center">
+                        <h4>{{ number_format(collect($paymentSchedule)->sum('remaining'), 0) }}</h4>
+                        <small>Total Outstanding</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center">
+                        @php
+                            $totalRequired = collect($paymentSchedule)->sum('total_required');
+                            $totalPaid = collect($paymentSchedule)->sum('total_paid');
+                            $paymentProgress = $totalRequired > 0 ? ($totalPaid / $totalRequired) * 100 : 0;
+                        @endphp
+                        <h4>{{ number_format($paymentProgress, 1) }}%</h4>
+                        <small>Payment Progress</small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Overall Progress Bar -->
+            <div class="mt-3">
+                <div class="d-flex justify-content-between mb-1">
+                    <small>Overall Payment Progress</small>
+                    <small>{{ number_format($paymentProgress, 1) }}%</small>
+                </div>
+                <div class="progress" style="height: 25px;">
+                    <div class="progress-bar bg-success" role="progressbar" style="width: {{ min($paymentProgress, 100) }}%">
+                        {{ number_format($paymentProgress, 1) }}% Complete
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Payment Summary -->
     <div class="row mb-4">
         <div class="col-md-3">
-            <div class="card bg-primary text-white">
+            <div class="card bg-info text-white">
                 <div class="card-body text-center">
                     <h4>{{ count($paymentSchedule) }}</h4>
                     <small>Active Terms</small>
@@ -68,7 +121,7 @@
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card bg-info text-white">
+            <div class="card bg-danger text-white">
                 <div class="card-body text-center">
                     <h4>{{ number_format(collect($paymentSchedule)->sum('total_paid'), 0) }}</h4>
                     <small>Total Paid (RWF)</small>
@@ -76,6 +129,100 @@
             </div>
         </div>
     </div>
+
+    <!-- Academic Year Overview -->
+    @if(count($paymentSchedule) > 0)
+        @php
+            $academicYears = collect($paymentSchedule)->groupBy(function($schedule) {
+                return $schedule['term']->academicYear->year ?? 'Unknown Year';
+            });
+        @endphp
+        
+        @foreach($academicYears as $year => $yearSchedule)
+            <div class="card mb-4 border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h5>
+                        <i class="fas fa-graduation-cap me-2"></i>
+                        Academic Year {{ $year }}
+                        <span class="float-end">
+                            @php
+                                $yearTotal = collect($yearSchedule)->sum('total_required');
+                                $yearPaid = collect($yearSchedule)->sum('total_paid');
+                                $yearProgress = $yearTotal > 0 ? ($yearPaid / $yearTotal) * 100 : 0;
+                            @endphp
+                            <span class="badge bg-light text-primary">{{ number_format($yearProgress, 1) }}% Complete</span>
+                        </span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <div class="text-center p-2 bg-light rounded">
+                                <h5 class="text-primary">{{ number_format(collect($yearSchedule)->sum('total_required'), 0) }}</h5>
+                                <small>Year Total</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-2 bg-light rounded">
+                                <h5 class="text-success">{{ number_format(collect($yearSchedule)->sum('total_paid'), 0) }}</h5>
+                                <small>Year Paid</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-2 bg-light rounded">
+                                <h5 class="text-danger">{{ number_format(collect($yearSchedule)->sum('remaining'), 0) }}</h5>
+                                <small>Year Outstanding</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-2 bg-light rounded">
+                                <h5 class="text-info">{{ count($yearSchedule) }}</h5>
+                                <small>Terms</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Year Progress Bar -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <small>Year Payment Progress</small>
+                            <small>{{ number_format($yearProgress, 1) }}%</small>
+                        </div>
+                        <div class="progress" style="height: 20px;">
+                            <div class="progress-bar bg-primary" role="progressbar" style="width: {{ min($yearProgress, 100) }}%">
+                                {{ number_format($yearProgress, 1) }}% of {{ number_format($yearTotal, 0) }} RWF
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Terms in this year -->
+                    <div class="row">
+                        @foreach($yearSchedule as $schedule)
+                            <div class="col-md-6 mb-2">
+                                <div class="p-2 border rounded @if($schedule['status'] === 'paid') border-success @elseif($schedule['status'] === 'partial') border-warning @else border-danger @endif">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong>{{ $schedule['term']->name }}</strong><br>
+                                            <small>{{ number_format($schedule['total_required'], 0) }} RWF</small>
+                                        </div>
+                                        <div class="text-end">
+                                            @if($schedule['status'] === 'paid')
+                                                <span class="badge bg-success">Paid</span>
+                                            @elseif($schedule['status'] === 'partial')
+                                                <span class="badge bg-warning">Partial</span>
+                                            @else
+                                                <span class="badge bg-danger">Unpaid</span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        @endforeach
+    @endif
 
     <!-- Term-wise Payment Schedule -->
     @forelse($paymentSchedule as $schedule)
