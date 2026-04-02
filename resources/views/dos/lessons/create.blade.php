@@ -513,30 +513,19 @@
                 @if($branches->count() > 0)
                     <div class="branch-grid" id="branchGrid">
                         @foreach($branches as $branch)
-                            <div class="branch-card" data-branch-id="{{ $branch->id }}"
-                                 onclick="toggleBranch({{ $branch->id }}, '{{ addslashes($branch->name) }}')">
+                            <label class="branch-card" style="cursor:pointer;">
+                                <input type="checkbox" name="branches[]" value="{{ $branch->id }}"
+                                       class="branch-checkbox" style="display:none;"
+                                       onchange="updateBranchSelection()">
                                 <div class="branch-card-icon"><i class="fas fa-building"></i></div>
                                 <div class="branch-card-name">{{ $branch->name }}</div>
-                            </div>
+                            </label>
                         @endforeach
                     </div>
-                    <button type="button" class="fallback-toggle" onclick="toggleFallbackSelection()">
-                        Having trouble? Use simple checkboxes instead
-                    </button>
-                    <div id="fallbackSelection" style="display:none;">
-                        <div class="fallback-body">
-                            <p style="font-size:.82rem;color:var(--ink-3);margin:0 0 10px;">
-                                <i class="fas fa-info-circle" style="margin-right:4px;"></i>Check the branches to include:
-                            </p>
-                            @foreach($branches as $branch)
-                                <div style="margin-bottom:6px;">
-                                    <input type="checkbox" name="branches[]" value="{{ $branch->id }}"
-                                           id="fbranch_{{ $branch->id }}">
-                                    <label for="fbranch_{{ $branch->id }}" style="font-size:.88rem;margin-left:6px;">{{ $branch->name }}</label>
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
+                    <p style="font-size:.82rem;color:var(--ink-2);margin-top:12px;">
+                        <i class="fas fa-info-circle" style="margin-right:4px;"></i>
+                        Selected branches: <span id="selectedBranchCount">0</span>
+                    </p>
                 @else
                     <div class="empty-state">
                         <i class="fas fa-map-marker-alt"></i>
@@ -554,33 +543,51 @@
                         <p>Link this lesson to specific courses in each branch</p>
                     </div>
                 </div>
-                <button type="button" class="fallback-toggle" onclick="toggleCourseFallback()">
-                    Advanced course assignment options
-                </button>
-                <div id="courseFallback" style="display:none;">
-                    <div class="fallback-body">
-                        @if($courses->count() > 0)
-                            @foreach($courses as $course)
-                                <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--rule);">
-                                    <div>
-                                        <strong style="font-size:.88rem;">{{ $course->course_name }}</strong>
-                                        <div style="font-size:.82rem;color:var(--ink-2);margin-top:2px;">
-                                            {{ $course->course_code }} - {{ $course->description }}
-                                        </div>
+                
+                @if($courses->count() > 0)
+                    <div style="margin-bottom:20px;">
+                        <p style="font-size:.82rem;color:var(--ink-2);margin-bottom:12px;">
+                            <i class="fas fa-info-circle" style="margin-right:4px;"></i>
+                            For each course, select which branches should have this lesson in that course:
+                        </p>
+                        @foreach($courses as $course)
+                            <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:12px;border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:12px;background:var(--bg);">
+                                <div style="flex:1;">
+                                    <strong style="font-size:.88rem;display:block;">{{ $course->course_name }}</strong>
+                                    <div style="font-size:.82rem;color:var(--ink-2);margin-top:4px;">
+                                        {{ $course->course_code }}{{ $course->description ? ' - ' . $course->description : '' }}
                                     </div>
-                                    <select class="f-control" name="course_assignments[]" style="width:180px;font-size:.82rem;">
-                                        <option value="">Select branch</option>
-                                        @foreach($course->branches as $b)
-                                            <option value="{{ $course->id }}_{{ $b->id }}">{{ $b->name }}</option>
-                                        @endforeach
-                                    </select>
                                 </div>
-                            @endforeach
-                        @else
-                            <p style="font-size:.82rem;color:var(--ink-3);margin:0;">No courses available.</p>
-                        @endif
+                                <div style="flex:1;margin-left:20px;">
+                                    <div style="display:flex;flex-direction:column;gap:6px;">
+                                        @if($course->branches && $course->branches->count() > 0)
+                                            @foreach($course->branches as $b)
+                                                <label style="display:flex;align-items:center;gap:6px;font-size:.82rem;cursor:pointer;">
+                                                    <input type="checkbox" name="course_branch_associations[]" 
+                                                           value="{{ $course->id }}_{{ $b->id }}"
+                                                           class="course-checkbox"
+                                                           onchange="updateCourseSelection()">
+                                                    {{ $b->name }}
+                                                </label>
+                                            @endforeach
+                                        @else
+                                            <span style="font-size:.82rem;color:var(--ink-3);">No branches</span>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                        <p style="font-size:.82rem;color:var(--ink-2);margin-top:12px;">
+                            <i class="fas fa-info-circle" style="margin-right:4px;"></i>
+                            Selected course-branch pairs: <span id="selectedCourseCount">0</span>
+                        </p>
                     </div>
-                </div>
+                @else
+                    <div class="empty-state">
+                        <i class="fas fa-book"></i>
+                        <p>No courses available.</p>
+                    </div>
+                @endif
             </div>
 
             {{-- Step 3: Academic Details --}}
@@ -641,49 +648,57 @@
 <script>
     // ── State Management ──────────────────────────────────────────
     let selectedBranches = new Set();
+    let selectedCourses = new Set();
     let currentStep = 1;
 
     // ── Branch Selection ──────────────────────────────────────────
-    function toggleBranch(branchId, branchName) {
-        const card = document.querySelector(`[data-branch-id="${branchId}"]`);
-        const checkbox = document.getElementById(`fbranch_${branchId}`);
+    function updateBranchSelection() {
+        selectedBranches.clear();
+        const checkboxes = document.querySelectorAll('.branch-checkbox:checked');
+        const cards = document.querySelectorAll('.branch-card');
         
-        if (selectedBranches.has(branchId)) {
-            selectedBranches.delete(branchId);
-            card.classList.remove('selected');
-            if (checkbox) checkbox.checked = false;
-        } else {
-            selectedBranches.add(branchId);
-            card.classList.add('selected');
-            if (checkbox) checkbox.checked = true;
-        }
+        // Clear all selected states
+        cards.forEach(card => card.classList.remove('selected'));
         
-        syncSteps();
+        // Add selected state to checked branches
+        checkboxes.forEach(checkbox => {
+            const branchId = checkbox.value;
+            selectedBranches.add(parseInt(branchId));
+            
+            // Find and highlight the card
+            const card = checkbox.closest('.branch-card');
+            if (card) {
+                card.classList.add('selected');
+            }
+        });
+        
+        // Update display
+        document.getElementById('selectedBranchCount').textContent = selectedBranches.size;
+        updateSubmitButton();
+    }
+
+    // ── Course Selection ──────────────────────────────────────────
+    function updateCourseSelection() {
+        selectedCourses.clear();
+        const checkboxes = document.querySelectorAll('.course-checkbox:checked');
+        
+        checkboxes.forEach(checkbox => {
+            selectedCourses.add(checkbox.value);
+        });
+        
+        document.getElementById('selectedCourseCount').textContent = selectedCourses.size;
         updateSubmitButton();
     }
 
     // ── UI Helpers ────────────────────────────────────────────────
-    function toggleFallbackSelection() {
-        const el = document.getElementById('fallbackSelection');
-        el.style.display = el.style.display === 'none' ? 'block' : 'none';
-    }
-
-    function toggleCourseFallback() {
-        const el = document.getElementById('courseFallback');
-        el.style.display = el.style.display === 'none' ? 'block' : 'none';
-    }
-
     function syncSteps() {
         const steps = document.querySelectorAll('.progress-step');
-        const dots = document.querySelectorAll('.ps-dot');
         
         steps.forEach((step, index) => {
             const stepNum = index + 1;
             const dot = step.querySelector('.ps-dot');
             
-            if (stepNum < currentStep) {
-                dot.classList.add('active');
-            } else if (stepNum === currentStep) {
+            if (stepNum <= currentStep) {
                 dot.classList.add('active');
             } else {
                 dot.classList.remove('active');
@@ -694,15 +709,19 @@
     function updateSubmitButton() {
         const submitBtn = document.getElementById('submitBtn');
         const hasBranches = selectedBranches.size > 0;
+        const hasCourses = selectedCourses.size > 0;
         
-        submitBtn.disabled = !hasBranches;
+        // Require both branches AND courses to be selected
+        submitBtn.disabled = !(hasBranches && hasCourses);
     }
 
     // ── Init ──────────────────────────────────────────
-    syncSteps();
-    updateSubmitButton();
+    document.addEventListener('DOMContentLoaded', function() {
+        syncSteps();
+        updateBranchSelection();
+        updateCourseSelection();
+    });
 
-}());
 </script>
 
 @endsection
