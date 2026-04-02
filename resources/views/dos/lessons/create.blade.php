@@ -874,12 +874,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ── Branch toggle ─────────────────────────────────────
     window.toggleBranch = function (branchId, branchName) {
+        console.log('Toggle branch called:', { branchId, branchName });
         const card = document.querySelector(`.branch-card[data-branch-id="${branchId}"]`);
         if (!card) return;
 
         if (selectedBranches.has(branchId)) {
             selectedBranches.delete(branchId);
             card.classList.remove('selected');
+            console.log('Removed branch:', branchId, 'Selected branches now:', Array.from(selectedBranches));
             // Drop courses that belonged to this branch
             selectedCourses.forEach((_, key) => {
                 if (key.endsWith('_' + branchId)) selectedCourses.delete(key);
@@ -887,8 +889,10 @@ document.addEventListener('DOMContentLoaded', function () {
         } else {
             selectedBranches.add(branchId);
             card.classList.add('selected');
+            console.log('Added branch:', branchId, 'Selected branches now:', Array.from(selectedBranches));
         }
 
+        console.log('About to call loadCoursesForBranches with:', Array.from(selectedBranches));
         syncSteps();
         loadCoursesForBranches();
     };
@@ -912,30 +916,77 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const csrfMeta = document.querySelector('meta[name="csrf-token"]');
         const csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '';
+        const branchIds = Array.from(selectedBranches);
+        
+        console.log('Making request with:', {
+            branchIds: branchIds,
+            csrfToken: csrfToken ? 'Present' : 'Missing',
+            url: '/staff/lessons/get-courses-for-branches'
+        });
 
-        fetch('/staff/lessons/get-courses-for-branches', {
-            method: 'POST',
+        // First test authentication
+        fetch('/staff/lessons/test-auth', {
+            method: 'GET',
             headers: {
-                'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': csrfToken
-            },
-            body: JSON.stringify({ branch_ids: Array.from(selectedBranches) })
+            }
         })
         .then(r => {
-            if (!r.ok) throw new Error('HTTP ' + r.status);
+            console.log('Auth test response status:', r.status);
+            return r.json();
+        })
+        .then(authData => {
+            console.log('Auth test data:', authData);
+            if (!authData.authenticated) {
+                throw new Error('Authentication failed - user not properly logged in');
+            }
+            
+            // If auth is working, proceed with course request
+            return fetch('/staff/lessons/get-courses-for-branches', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: JSON.stringify({ branch_ids: branchIds })
+            });
+        })
+        .then(r => {
+            console.log('Courses response status:', r.status);
+            console.log('Response headers:', r.headers);
+            if (!r.ok) {
+                if (r.status === 419) {
+                    console.error('CSRF token mismatch or expired');
+                } else if (r.status === 401) {
+                    console.error('Authentication failed - user not logged in or wrong guard');
+                } else if (r.status === 403) {
+                    console.error('Forbidden - insufficient permissions');
+                } else if (r.status === 404) {
+                    console.error('Route not found - check URL and route definition');
+                }
+                throw new Error('HTTP ' + r.status + ' - ' + r.statusText);
+            }
             return r.json();
         })
         .then(data => {
+            console.log('Received data:', data);
             allLoadedCourses = data.courses || [];
             renderCourses(allLoadedCourses);
             syncSteps();
         })
         .catch(err => {
             console.error('Error loading courses:', err);
+            console.error('Error details:', err.message);
             courseContent.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-exclamation-triangle" style="color:var(--danger);"></i>
-                    <p>Failed to load courses. Please try the fallback below.</p>
+                    <p>Failed to load courses. Error: ${err.message}</p>
+                    <p style="font-size:.78rem;color:var(--ink-3);margin-top:8px;">
+                        <strong>Debug info:</strong><br>
+                        • Selected branches: ${Array.from(selectedBranches).join(', ')}<br>
+                        • CSRF Token: ${csrfToken ? 'Present' : 'Missing'}<br>
+                        • Request URL: /staff/lessons/get-courses-for-branches
+                    </p>
                 </div>`;
         });
     }

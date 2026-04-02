@@ -453,4 +453,75 @@ public function createDetails(Request $request, $lessonId)
                              ->with('error', 'Error deleting lesson: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Assign lesson to branches and courses
+     */
+    public function assignToBranches(Request $request)
+    {
+        $validated = $request->validate([
+            'lesson_id' => 'required|exists:lessons,id',
+            'assignments' => 'required|array|min:1',
+            'assignments.*.branch_id' => 'required|exists:branches,id',
+            'assignments.*.course_id' => 'required|exists:courses,id',
+            'assignments.*.teacher_id' => 'nullable|exists:teachers,id',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $lesson = Lesson::findOrFail($validated['lesson_id']);
+            
+            foreach ($validated['assignments'] as $assignment) {
+                // Check if this assignment already exists
+                $existing = \App\Models\LessonBranchCourse::where('lesson_id', $lesson->id)
+                    ->where('branch_id', $assignment['branch_id'])
+                    ->where('course_id', $assignment['course_id'])
+                    ->first();
+
+                if (!$existing) {
+                    \App\Models\LessonBranchCourse::create([
+                        'lesson_id' => $lesson->id,
+                        'branch_id' => $assignment['branch_id'],
+                        'course_id' => $assignment['course_id'],
+                        'teacher_id' => $assignment['teacher_id'] ?? null,
+                    ]);
+                }
+            }
+
+            DB::commit();
+
+            return redirect()->route('dos.lessons.index')
+                             ->with('success', 'Lesson assigned successfully to ' . count($validated['assignments']) . ' branch-course combinations.');
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            \Log::error('Error assigning lesson: ' . $e->getMessage());
+            
+            return redirect()->back()
+                             ->with('error', 'Error assigning lesson: ' . $e->getMessage())
+                             ->withInput();
+        }
+    }
+
+    /**
+     * Get lesson assignments for AJAX
+     */
+    public function getAssignments($lessonId)
+    {
+        $lesson = Lesson::with(['branches', 'courses', 'teachers'])->findOrFail($lessonId);
+        
+        $assignments = [];
+        foreach ($lesson->branches as $branch) {
+            $course = $lesson->courses->where('id', $branch->pivot->course_id)->first();
+            $teacher = \App\Models\Teacher::find($branch->pivot->teacher_id);
+            
+            $assignments[] = [
+                'branch_name' => $branch->name,
+                'course_name' => $course ? $course->course_name : 'Unknown',
+                'teacher_name' => $teacher ? $teacher->teacher_name : null,
+            ];
+        }
+
+        return response()->json(['assignments' => $assignments]);
+    }
 }

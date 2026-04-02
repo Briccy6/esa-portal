@@ -658,6 +658,20 @@ Route::prefix('staff')->name('staff.')->group(function () {
         Route::resource('lessons', LessonController::class);
         Route::get('/lessons/get-teachers/{courseId}', [LessonController::class, 'getTeachers'])->name('lessons.get-teachers');
         Route::post('/lessons/get-courses-for-branches', [LessonController::class, 'getCoursesForBranches'])->name('lessons.get-courses-for-branches');
+        
+        // Debug route for testing
+        Route::get('/lessons/test-auth', function() {
+            return response()->json([
+                'authenticated' => auth('staff')->check(),
+                'user' => auth('staff')->user() ? [
+                    'id' => auth('staff')->user()->id,
+                    'name' => auth('staff')->user()->name,
+                    'role' => auth('staff')->user()->role
+                ] : null,
+                'guard' => auth()->getDefaultDriver(),
+                'session_id' => session()->getId()
+            ]);
+        })->name('lessons.test-auth');
         Route::get('/lesson-units', [LessonDetailsController::class, 'index'])->name('lesson-units.index');
         Route::get('/lessons/{lesson}/units/create', [LessonDetailsController::class, 'create'])->name('lesson-units.create');
         Route::post('/lessons/{lesson}/units', [LessonDetailsController::class, 'store'])->name('lesson-units.store');
@@ -933,6 +947,17 @@ Route::get('/api/branches/{branch}/courses', function($branchId) {
     $courses = $branch->courses()->get(['courses.id', 'course_name']);
     return response()->json($courses);
 })->name('api.branches.courses');
+
+// API Route to get teachers for branch-course combination
+Route::get('/api/branches/{branch}/courses/{course}/teachers', function($branchId, $courseId) {
+    $teachers = \App\Models\Teacher::whereHas('courses', function($query) use ($courseId) {
+        $query->where('courses.id', $courseId);
+    })->whereHas('branches', function($query) use ($branchId) {
+        $query->where('branches.id', $branchId);
+    })->get(['teachers.id', 'teacher_name']);
+    
+    return response()->json($teachers);
+})->name('api.branches.courses.teachers');
 
 // API Route to get all courses
 Route::get('/api/courses/all', function() {
@@ -1253,6 +1278,8 @@ Route::middleware(['auth:staff'])->prefix('dos')->name('dos.')->group(function (
     // Lessons Management
     Route::get('/lessons', [LessonController::class, 'index'])->name('lessons.index');
     Route::get('/lessons/create', [LessonController::class, 'create'])->name('lessons.create');
+    Route::post('/lessons/assign', [LessonController::class, 'assignToBranches'])->name('lessons.assign');
+    Route::get('/lessons/{lesson}/assignments', [LessonController::class, 'getAssignments'])->name('lessons.assignments');
     
     // Student Management Routes
     Route::get('/students', [\App\Http\Controllers\DOS\StudentController::class, 'index'])->name('students.index');
