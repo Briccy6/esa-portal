@@ -168,6 +168,11 @@ class Student extends Authenticatable
         return $this->hasManyThrough(TokenTransaction::class, Token::class);
     }
 
+    public function transactions()
+    {
+        return $this->hasMany(StudentTransaction::class);
+    }
+
     public function examTokens()
     {
         return $this->hasMany(ExamToken::class);

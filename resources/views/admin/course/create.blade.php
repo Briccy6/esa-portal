@@ -104,7 +104,7 @@
                 <tbody>
                     <tr id="term-fee-row-template" style="display: none;">
                         <td>
-                            <select name="term_fees[{index}][term_id]" class="form-select term-select" required>
+                            <select name="term_fees[{index}][term_id]" class="form-select term-select">
                                 <option value="">Select Term</option>
                                 @php
                                     $terms = \App\Models\Term::with('academicYear')
@@ -197,8 +197,11 @@
         const index = termFeeRowIndex++;
         newRow.innerHTML = newRow.innerHTML.replace(/{index}/g, index);
         
-        // Add event listeners
+        // Add required attribute to the select element
         const termSelect = newRow.querySelector('.term-select');
+        termSelect.setAttribute('required', 'required');
+        
+        // Add event listeners
         const removeBtn = newRow.querySelector('.remove-term-fee');
         const feeInputs = newRow.querySelectorAll('input[type="number"]');
         

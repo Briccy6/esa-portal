@@ -277,45 +277,62 @@
     function displayTranscripts(transcripts) {
         const content = document.getElementById('transcriptContent');
         
-        if (transcripts.length === 0) {
-            content.innerHTML = '<div class="text-center py-4 text-muted">No transcripts found.</div>';
-            return;
-        }
+        try {
+            // Check if transcripts is an error object
+            if (transcripts.error) {
+                content.innerHTML = '<div class="alert alert-danger">' + transcripts.error + '</div>';
+                return;
+            }
+            
+            if (!Array.isArray(transcripts) || transcripts.length === 0) {
+                content.innerHTML = '<div class="text-center py-4 text-muted">No transcripts found.</div>';
+                return;
+            }
 
-        let html = '<div class="table-responsive">';
-        html += '<table class="table table-striped table-hover">';
-        html += '<thead><tr><th>Student</th><th>Reg Number</th><th>Course</th><th>Term</th><th>Total Fees</th><th>Paid</th><th>Outstanding</th><th>Actions</th></tr></thead>';
-        html += '<tbody>';
-        
-        transcripts.forEach(transcript => {
-            const outstanding = transcript.total_fees - transcript.total_paid;
-            html += '<tr>';
-            html += '<td>' + transcript.student_name + '</td>';
-            html += '<td>' + transcript.reg_number + '</td>';
-            html += '<td>' + transcript.course_name + '</td>';
-            html += '<td><span class="badge bg-info">' + (transcript.term_name || 'N/A') + '</span></td>';
-            html += '<td><span class="badge bg-primary">' + formatCurrency(transcript.total_fees) + '</span></td>';
-            html += '<td><span class="badge bg-success">' + formatCurrency(transcript.total_paid) + '</span></td>';
-            html += '<td><span class="badge bg-warning text-dark">' + formatCurrency(outstanding) + '</span></td>';
-            html += '<td>';
-            html += '<button class="btn btn-sm btn-outline-primary me-1" onclick="viewStudentTranscript(' + transcript.student_id + ')">';
-            html += '<i class="fas fa-eye"></i> View';
-            html += '</button>';
-            html += '<button class="btn btn-sm btn-outline-success" onclick="printStudentTranscript(' + transcript.student_id + ')">';
-            html += '<i class="fas fa-print"></i> Print';
-            html += '</button>';
-            html += '</td>';
-            html += '</tr>';
-        });
-        
-        html += '</tbody></table></div>';
-        content.innerHTML = html;
+            let html = '<div class="table-responsive">';
+            html += '<table class="table table-striped table-hover">';
+            html += '<thead><tr><th>Student</th><th>Reg Number</th><th>Course</th><th>Term</th><th>Total Fees</th><th>Paid</th><th>Outstanding</th><th>Actions</th></tr></thead>';
+            html += '<tbody>';
+            
+            transcripts.forEach(transcript => {
+                const outstanding = transcript.total_fees - transcript.total_paid;
+                html += '<tr>';
+                html += '<td>' + transcript.student_name + '</td>';
+                html += '<td>' + transcript.reg_number + '</td>';
+                html += '<td>' + transcript.course_name + '</td>';
+                html += '<td><span class="badge bg-info">' + (transcript.term_name || 'N/A') + '</span></td>';
+                html += '<td><span class="badge bg-primary">' + formatCurrency(transcript.total_fees) + '</span></td>';
+                html += '<td><span class="badge bg-success">' + formatCurrency(transcript.total_paid) + '</span></td>';
+                html += '<td><span class="badge bg-warning text-dark">' + formatCurrency(outstanding) + '</span></td>';
+                html += '<td>';
+                html += '<button class="btn btn-sm btn-outline-primary me-1" onclick="viewStudentTranscript(' + transcript.student_id + ')">';
+                html += '<i class="fas fa-eye"></i> View';
+                html += '</button>';
+                html += '<button class="btn btn-sm btn-outline-success" onclick="printStudentTranscript(' + transcript.student_id + ')">';
+                html += '<i class="fas fa-print"></i> Print';
+                html += '</button>';
+                html += '</td>';
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table></div>';
+            content.innerHTML = html;
+        } catch (error) {
+            console.error('Error in displayTranscripts:', error);
+            content.innerHTML = '<div class="alert alert-danger">Error displaying transcripts. Please try again.</div>';
+        }
     }
 
     function displayCourseTranscripts(transcripts) {
         const content = document.getElementById('courseTranscriptContent');
         
-        if (transcripts.length === 0) {
+        // Check if transcripts is an error object
+        if (transcripts.error) {
+            content.innerHTML = '<div class="alert alert-danger">' + transcripts.error + '</div>';
+            return;
+        }
+        
+        if (!Array.isArray(transcripts) || transcripts.length === 0) {
             content.innerHTML = '<div class="text-center py-4 text-muted">No transcripts found for this course.</div>';
             return;
         }
