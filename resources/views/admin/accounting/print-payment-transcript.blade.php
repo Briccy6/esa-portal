@@ -131,6 +131,17 @@
             .signatures td { font-size: 6px; }
             .print-header-table td { padding: 1px; }
             .school-logo-img { max-width: 35px; max-height: 35px; }
+            
+            /* Force single page */
+            * { page-break-inside: avoid; }
+            body { page-break-after: auto; }
+            table { page-break-inside: avoid; }
+            tr { page-break-inside: avoid; }
+            td { page-break-inside: avoid; }
+            
+            /* Optimize space */
+            .no-print { display: none !important; }
+            html, body { height: 100%; overflow: hidden; }
         }
     </style>
 </head>
@@ -203,7 +214,7 @@
     </tbody>
 </table>
 
-<p class="muted" style="margin:0 0 4px;">
+<p class="muted" style="margin:0 0 2px;">
     Amounts due are based on the assigned course fees and any discount on tuition, practical and trip fees. Paid amounts in the summary are taken from successful transactions in <strong>student_transactions</strong> by fee type.
     @if($discountPct > 0)
         Current discount: <strong>{{ rtrim(rtrim(number_format($discountPct, 2), '0'), '.') }}%</strong>
@@ -214,7 +225,7 @@
     @endif
 </p>
 
-<h2 style="font-size:10px;margin:8px 0 4px;">Summary by fee type</h2>
+<h2 style="font-size:8px;margin:4px 0 2px;">Summary by fee type</h2>
 <table class="data-table">
     <thead>
         <tr>
@@ -233,10 +244,10 @@
                     @if($row['term'])
                         {{ $row['term_name'] }}
                         @if($row['term']->start_date && $row['term']->end_date)
-                            <br><span style="font-size:7px;color:#666;">({{ $row['term']->start_date->format('M Y') }} - {{ $row['term']->end_date->format('M Y') }})</span>
+                            <br><span style="font-size:6px;color:#666;">({{ $row['term']->start_date->format('M Y') }} - {{ $row['term']->end_date->format('M Y') }})</span>
                         @endif
                     @else
-                        <span style="font-size:7px;color:#666;">{{ $row['term_name'] }}</span>
+                        <span style="font-size:6px;color:#666;">{{ $row['term_name'] }}</span>
                     @endif
                 </td>
                 <td class="num">{{ number_format($row['expected'], 2) }}</td>
@@ -253,12 +264,12 @@
     </tbody>
 </table>
 
-<h2 style="font-size:10px;margin:8px 0 4px;">Transaction ledger by term (including unpaid / pending)</h2>
+<h2 style="font-size:8px;margin:4px 0 2px;">Transaction ledger by term (including unpaid / pending)</h2>
 
 @if(isset($termGroups) && !empty($termGroups))
     @foreach($termGroups as $termGroup)
-        <div style="margin-bottom: 12px;">
-            <h3 style="font-size:9px;margin:4px 0 2px;font-weight:600;color:#333;">
+        <div style="margin-bottom: 6px;">
+            <h3 style="font-size:7px;margin:2px 0 1px;font-weight:600;color:#333;">
                 {{ $termGroup['term_name'] }}
                 @if($termGroup['term'])
                     ({{ $termGroup['term']->start_date->format('M Y') }} - {{ $termGroup['term']->end_date->format('M Y') }})
@@ -301,7 +312,7 @@
                                     {{ ucfirst($tx->status) }}
                                 @endif
                             </td>
-                            <td style="font-size:8px;">{{ $tx->tx_ref ?? '—' }}</td>
+                            <td style="font-size:6px;">{{ $tx->tx_ref ?? '—' }}</td>
                         </tr>
                     @endforeach
                 </tbody>
@@ -343,7 +354,7 @@
                             {{ ucfirst($tx->status) }}
                         @endif
                     </td>
-                    <td style="font-size:8px;">{{ $tx->tx_ref ?? '—' }}</td>
+                    <td style="font-size:6px;">{{ $tx->tx_ref ?? '—' }}</td>
                 </tr>
             @empty
                 <tr>
@@ -382,7 +393,7 @@
     </tr>
 </table>
 
-<p class="muted" style="margin-top:8px;">
+<p class="muted" style="margin-top:4px;">
     This transcript reflects records in the school system as of {{ $printedAt->format('d M Y H:i') }}.
     For queries, contact the school office.
 </p>
