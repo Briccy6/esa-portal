@@ -191,6 +191,15 @@
                     </div>
                 </div>
 
+                <!-- Live Search -->
+                <div class="search-container mb-3" style="margin-bottom: 20px;">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input type="text" class="form-control live-search-input" id="lessonSearch" placeholder="Search lessons by title, course, teacher, terms...">
+                        <span class="input-group-text text-muted small"><span id="lessonCount">0</span> found</span>
+                    </div>
+                </div>
+
                 @if($lessonDetails->count() > 0)
                     <div class="table-responsive">
                         <table class="table lessons-table">
@@ -207,7 +216,7 @@
                             </thead>
                             <tbody>
                                 @foreach($lessonDetails as $lesson)
-                                    <tr>
+                                    <tr class="lesson-row" data-search-text="{{ strtolower($lesson->title . ' ' . ($lesson->course->course_name ?? '') . ' ' . ($lesson->teacher->teacher_name ?? '') . ' ' . $lesson->terms->pluck('name')->join(' ')) }}">
                                         <td>
                                             <strong>{{ $lesson->title }}</strong>
                                             @if($lesson->academicYear)
@@ -648,5 +657,34 @@ function deleteLessonConfirm(lessonId, lessonTitle) {
         form.submit();
     }
 }
+
+// Live search functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('lessonSearch');
+    const lessonRows = document.querySelectorAll('.lesson-row');
+    const lessonCountSpan = document.getElementById('lessonCount');
+    
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase().trim();
+            let visibleCount = 0;
+            
+            lessonRows.forEach(row => {
+                const searchText = row.getAttribute('data-search-text');
+                if (searchTerm === '' || searchText.includes(searchTerm)) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            lessonCountSpan.textContent = visibleCount;
+        });
+        
+        // Initialize count on page load
+        lessonCountSpan.textContent = lessonRows.length;
+    }
+});
 </script>
 @endsection

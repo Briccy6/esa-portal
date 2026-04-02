@@ -86,7 +86,7 @@
     <!-- Filters -->
     <div class="card mb-4">
         <div class="card-body">
-            <form method="GET" action="{{ route('dos.courses.index') }}">
+            <form method="GET" action="{{ route('dos.courses.index') }}" id="filterForm">
                 <div class="row g-3">
                     <div class="col-md-3">
                         <label for="branch_filter" class="form-label">Branch</label>
@@ -110,8 +110,8 @@
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <label for="search" class="form-label">Search</label>
-                        <input type="text" name="search" id="search" class="form-control" 
+                        <label for="search" class="form-label">Live Search</label>
+                        <input type="text" id="search" class="form-control live-search-input" 
                                value="{{ request('search') }}" placeholder="Search courses...">
                     </div>
                     <div class="col-md-3 d-flex align-items-end">
@@ -130,6 +130,11 @@
     <!-- Courses Table -->
     <div class="card">
         <div class="card-body">
+            <div class="search-results-info" style="margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 6px; display: none;">
+                <small class="text-muted">
+                    Showing <span id="courseCount">0</span> course(s)
+                </small>
+            </div>
             <div class="table-responsive">
                 <table class="table table-striped table-hover">
                     <thead class="table-dark">
@@ -147,10 +152,10 @@
                     <tbody>
                         @if(isset($courses) && $courses->count() > 0)
                             @foreach($courses as $course)
-                                <tr>
+                                <tr class="course-row" data-search-text="{{ strtolower($course->course_code . ' ' . $course->course_name . ' ' . ($course->branch->name ?? '') . ' ' . ($course->description ?? '')) }}">
                                     <td><strong>{{ $course->course_code ?? 'N/A' }}</strong></td>
                                     <td>{{ $course->course_name ?? 'N/A' }}</td>
-                                    <td>{{ $course->branch->name ?? 'N/A' }}</td>
+                                    <td><span class="badge bg-info">{{ $course->branch->name ?? 'N/A' }}</span></td>
                                     <td>{{ $course->duration ?? 'N/A' }}</td>
                                     <td>RWF {{ number_format($course->fee ?? 0, 0) }}</td>
                                     <td>
@@ -197,6 +202,19 @@
                     </tbody>
                 </table>
             </div>
+            @if($courses->hasPages())
+                <div class="card-footer bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <p class="text-muted mb-0">
+                            Showing <strong>{{ $courses->firstItem() }}</strong> to <strong>{{ $courses->lastItem() }}</strong> 
+                            of <strong>{{ $courses->total() }}</strong> courses
+                        </p>
+                        <div>
+                            {{ $courses->links('pagination::bootstrap-4') }}
+                        </div>
+                    </div>
+                </div>
+            @endif
         </div>
     </div>
 </div>
@@ -262,6 +280,42 @@
 </div>
 
 <script>
+// Live search functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('search');
+    const courseRows = document.querySelectorAll('.course-row');
+    const courseCountSpan = document.getElementById('courseCount');
+    const searchResultsInfo = document.querySelector('.search-results-info');
+    
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase().trim();
+        let visibleCount = 0;
+        
+        if (searchTerm === '') {
+            // Show all rows if search is empty
+            courseRows.forEach(row => {
+                row.style.display = '';
+            });
+            searchResultsInfo.style.display = 'none';
+            visibleCount = courseRows.length;
+        } else {
+            // Filter rows based on search term
+            courseRows.forEach(row => {
+                const searchText = row.getAttribute('data-search-text');
+                if (searchText.includes(searchTerm)) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            searchResultsInfo.style.display = 'block';
+        }
+        
+        courseCountSpan.textContent = visibleCount;
+    });
+});
+
 function viewCourse(id) {
     // Implement view course functionality
     window.location.href = `/dos/courses/${id}`;

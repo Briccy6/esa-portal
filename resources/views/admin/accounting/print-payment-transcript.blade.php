@@ -27,13 +27,11 @@
         * { box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            font-size: 9px;
-            color: #111;
+            font-size: 10px;
+            color: #222;
             margin: 0;
-            padding: 4px;
+            padding: 8px;
             max-width: 100%;
-            margin-left: auto;
-            margin-right: auto;
         }
         .no-print {
             margin-bottom: 16px;
@@ -48,17 +46,17 @@
         .print-header-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
         }
         .print-header-table td {
             vertical-align: top;
-            padding: 2px;
+            padding: 3px;
         }
-        .print-header-logo { width: 90px; text-align: center; }
+        .print-header-logo { width: 70px; text-align: center; }
         .print-header-logo--right { text-align: right; }
         .school-logo-img {
-            max-width: 45px;
-            max-height: 45px;
+            max-width: 50px;
+            max-height: 50px;
             object-fit: contain;
         }
         .print-logo-placeholder {
@@ -68,80 +66,145 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 7px;
+            font-size: 8px;
             color: #666;
             margin: 0 auto;
         }
         .hdr-school-name {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin: 0 0 2px;
+            letter-spacing: 0.5px;
+        }
+        .hdr-contact { font-size: 8px; margin: 1px 0; color: #444; }
+        .doc-title {
+            text-align: center;
             font-size: 11px;
             font-weight: 700;
             text-transform: uppercase;
-            margin: 2px 0 1px;
-        }
-        .hdr-line { margin: 1px 0; font-size: 9px; }
-        .hdr-line .lbl { font-weight: 600; }
-        .hdr-contact { font-size: 7px; margin: 0; color: #333; }
-        .doc-title {
-            text-align: center;
-            font-size: 10px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin: 3px 0 4px;
+            letter-spacing: 0.1em;
+            margin: 8px 0 6px;
             border-bottom: 2px solid #000;
-            padding-bottom: 2px;
+            border-top: 2px solid #000;
+            padding: 3px 0;
+        }
+        .student-info {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 8px;
+            background: #f9f9f9;
+        }
+        .student-info th {
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            padding: 4px 6px;
+            font-size: 9px;
+            text-align: left;
+            font-weight: 600;
+        }
+        .student-info td {
+            border: 1px solid #ddd;
+            padding: 4px 6px;
+            font-size: 9px;
         }
         table.data-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
         }
         table.data-table th, table.data-table td {
-            border: 1px solid #000;
-            padding: 2px 4px;
+            border: 1px solid #333;
+            padding: 4px 6px;
             text-align: left;
+            font-size: 9px;
         }
-        table.data-table th { background: #f0f0f0; font-size: 8px; }
-        .num { text-align: right; font-variant-numeric: tabular-nums; }
-        .muted { color: #555; font-size: 7px; }
+        table.data-table th { 
+            background: #e8e8e8; 
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 8px;
+        }
+        table.data-table tbody tr:nth-child(even) {
+            background: #fafafa;
+        }
+        table.data-table .total-row {
+            font-weight: 700;
+            background: #f0f0f0;
+        }
+        .num { text-align: right; font-variant-numeric: tabular-nums; font-family: 'Courier New', monospace; }
+        .muted { color: #666; font-size: 8px; }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin: 8px 0;
+        }
+        .summary-box {
+            border: 1px solid #ddd;
+            padding: 6px;
+            background: #f9f9f9;
+        }
+        .summary-box-label {
+            font-size: 8px;
+            color: #666;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .summary-box-value {
+            font-size: 12px;
+            font-weight: 700;
+            color: #000;
+            margin-top: 2px;
+            font-family: 'Courier New', monospace;
+        }
         .signatures {
-            margin-top: 8px;
+            margin-top: 12px;
             width: 100%;
             border-collapse: collapse;
         }
         .signatures td {
             vertical-align: bottom;
-            padding: 2px;
+            padding: 3px;
             width: 33%;
             text-align: center;
-            font-size: 7px;
+            font-size: 8px;
         }
-        .sig-img { max-height: 30px; max-width: 100px; object-fit: contain; margin-bottom: 1px; }
+        .sig-img { max-height: 35px; max-width: 100px; object-fit: contain; margin-bottom: 2px; }
         .sig-line {
             border-top: 1px solid #000;
-            margin-top: 15px;
-            padding-top: 1px;
+            margin-top: 20px;
+            padding-top: 2px;
+            min-height: 20px;
         }
+        .hidden { display: none !important; }
         @media print {
             .no-print { display: none !important; }
-            body { padding: 2px; font-size: 8px; }
-            table.data-table th, table.data-table td { padding: 1px 2px; }
-            .hdr-school-name { font-size: 9px; }
-            .doc-title { font-size: 8px; }
-            .signatures td { font-size: 6px; }
-            .print-header-table td { padding: 1px; }
-            .school-logo-img { max-width: 35px; max-height: 35px; }
-            
-            /* Force single page */
-            * { page-break-inside: avoid; }
-            body { page-break-after: auto; }
+            body { 
+                padding: 5px; 
+                font-size: 9px;
+                margin: 0;
+                line-height: 1.2;
+            }
+            html, body { 
+                height: auto;
+                width: 100%;
+            }
+            .page-break { page-break-before: always; }
             table { page-break-inside: avoid; }
             tr { page-break-inside: avoid; }
-            td { page-break-inside: avoid; }
+            .signatures { page-break-inside: avoid; }
             
-            /* Optimize space */
-            .no-print { display: none !important; }
-            html, body { height: 100%; overflow: hidden; }
+            /* Force to single page */
+            * { page-break-inside: avoid; }
+            .print-header-table { margin-bottom: 3px; }
+            .doc-title { margin: 4px 0 3px; padding: 2px 0; font-size: 10px; }
+            .student-info th, .student-info td { padding: 2px 3px; font-size: 8px; }
+            table.data-table th, table.data-table td { padding: 2px 3px; font-size: 8px; }
+            .summary-grid { gap: 4px; margin: 4px 0; }
+            .summary-box { padding: 4px; }
+            .summary-box-value { font-size: 11px; }
+            .muted { font-size: 7px; }
         }
     </style>
 </head>
@@ -189,181 +252,99 @@
     </tr>
 </table>
 
-<div class="doc-title">Student fee payment transcript</div>
+<div class="doc-title">Student Fee Payment Status</div>
 
-<table class="data-table">
-    <tbody>
-        <tr>
-            <th style="width:22%">Student name</th>
-            <td>{{ $student->full_name }}</td>
-            <th style="width:18%">Reg. number</th>
-            <td>{{ $student->reg_number ?? '—' }}</td>
-        </tr>
-        <tr>
-            <th>Course / class</th>
-            <td>{{ $student->course->course_name ?? '—' }}</td>
-            <th>Branch</th>
-            <td>{{ $student->branch->name ?? '—' }}</td>
-        </tr>
-        <tr>
-            <th>Academic year</th>
-            <td>{{ $student->academicYear->year ?? '—' }}</td>
-            <th>Issued on</th>
-            <td>{{ $printedAt->format('d M Y, H:i') }}</td>
-        </tr>
-    </tbody>
+<table class="student-info">
+    <tr>
+        <th>Student Name</th>
+        <td>{{ $student->full_name }}</td>
+        <th>Reg. Number</th>
+        <td>{{ $student->reg_number ?? '—' }}</td>
+    </tr>
+    <tr>
+        <th>Course / Class</th>
+        <td>{{ $student->course->course_name ?? '—' }}</td>
+        <th>Academic Year</th>
+        <td>{{ $student->academicYear->year ?? '—' }}</td>
+    </tr>
 </table>
 
-<p class="muted" style="margin:0 0 2px;">
-    Amounts due are based on the assigned course fees and any discount on tuition, practical and trip fees. Paid amounts in the summary are taken from successful transactions in <strong>student_transactions</strong> by fee type.
-    @if($discountPct > 0)
-        Current discount: <strong>{{ rtrim(rtrim(number_format($discountPct, 2), '0'), '.') }}%</strong>
-        (≈ {{ number_format($discountAmount, 2) }} RWF on tuition, practical &amp; trip).
-    @endif
-    @if(isset($totalPaidAllTypes) && abs($totalPaidAllTypes - $totalPaid) > 0.01)
-        <br>Total receipts (all payment types, e.g. subscriptions): <strong>{{ number_format($totalPaidAllTypes, 2) }} RWF</strong>.
-    @endif
-</p>
+<!-- Summary Payment Status Grid -->
+<div class="summary-grid">
+    <div class="summary-box">
+        <div class="summary-box-label">Total Amount Due</div>
+        <div class="summary-box-value">{{ number_format($totalExpected, 0) }} RWF</div>
+    </div>
+    <div class="summary-box">
+        <div class="summary-box-label">Total Amount Paid</div>
+        <div class="summary-box-value" style="color: #28a745;">{{ number_format($totalPaid, 0) }} RWF</div>
+    </div>
+    <div class="summary-box">
+        <div class="summary-box-label">Outstanding Balance</div>
+        <div class="summary-box-value" style="color: #dc3545;">{{ number_format($totalOutstanding, 0) }} RWF</div>
+    </div>
+    <div class="summary-box">
+        <div class="summary-box-label">Payment Status</div>
+        <div class="summary-box-value">
+            @if($totalOutstanding <= 0)
+                ✓ FULLY PAID
+            @elseif($totalPaid > 0)
+                PARTIAL ({{ round(($totalPaid / $totalExpected) * 100, 1) }}%)
+            @else
+                UNPAID
+            @endif
+        </div>
+    </div>
+</div>
 
-<h2 style="font-size:8px;margin:4px 0 2px;">Summary by fee type</h2>
+<!-- Fee Breakdown Table -->
+<h3 style="font-size: 9px; margin: 6px 0 3px; font-weight: 600; text-transform: uppercase; border-bottom: 1px solid #ddd; padding-bottom: 2px;">Fee Payment Breakdown</h3>
 <table class="data-table">
     <thead>
         <tr>
-            <th>Fee</th>
-            <th>Term</th>
-            <th class="num">Amount due (RWF)</th>
-            <th class="num">Paid (RWF)</th>
-            <th class="num">Balance (RWF)</th>
+            <th>Fee Type</th>
+            <th class="num" style="width: 20%;">Due Amount</th>
+            <th class="num" style="width: 20%;">Paid</th>
+            <th class="num" style="width: 20%;">Balance</th>
         </tr>
     </thead>
     <tbody>
         @foreach($feeRowsWithTerms as $row)
             <tr>
                 <td>{{ $row['label'] }}</td>
-                <td>
-                    @if($row['term'])
-                        {{ $row['term_name'] }}
-                        @if($row['term']->start_date && $row['term']->end_date)
-                            <br><span style="font-size:6px;color:#666;">({{ $row['term']->start_date->format('M Y') }} - {{ $row['term']->end_date->format('M Y') }})</span>
-                        @endif
-                    @else
-                        <span style="font-size:6px;color:#666;">{{ $row['term_name'] }}</span>
-                    @endif
-                </td>
-                <td class="num">{{ number_format($row['expected'], 2) }}</td>
-                <td class="num">{{ number_format($row['paid'], 2) }}</td>
-                <td class="num">{{ number_format($row['balance'], 2) }}</td>
+                <td class="num">{{ number_format($row['expected'], 0) }}</td>
+                <td class="num"><span style="color: #28a745;">{{ number_format($row['paid'], 0) }}</span></td>
+                <td class="num"><span style="color: #dc3545;">{{ number_format($row['balance'], 0) }}</span></td>
             </tr>
         @endforeach
-        <tr>
-            <th colspan="2">Totals</th>
-            <th class="num">{{ number_format($totalExpected, 2) }}</th>
-            <th class="num">{{ number_format($totalPaid, 2) }}</th>
-            <th class="num">{{ number_format($totalOutstanding, 2) }}</th>
+        <tr class="total-row">
+            <td><strong>TOTAL</strong></td>
+            <td class="num"><strong>{{ number_format($totalExpected, 0) }}</strong></td>
+            <td class="num"><strong style="color: #28a745;">{{ number_format($totalPaid, 0) }}</strong></td>
+            <td class="num"><strong style="color: #dc3545;">{{ number_format($totalOutstanding, 0) }}</strong></td>
         </tr>
     </tbody>
 </table>
 
-<h2 style="font-size:8px;margin:4px 0 2px;">Transaction ledger by term (including unpaid / pending)</h2>
-
-@if(isset($termGroups) && !empty($termGroups))
-    @foreach($termGroups as $termGroup)
-        <div style="margin-bottom: 6px;">
-            <h3 style="font-size:7px;margin:2px 0 1px;font-weight:600;color:#333;">
-                {{ $termGroup['term_name'] }}
-                @if($termGroup['term'])
-                    ({{ $termGroup['term']->start_date->format('M Y') }} - {{ $termGroup['term']->end_date->format('M Y') }})
-                @endif
-                <span style="float:right;font-weight:normal;color:#666;">
-                    Total Paid: {{ number_format($termGroup['total_paid'], 2) }} RWF
-                </span>
-            </h3>
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Date</th>
-                        <th>Type</th>
-                        <th class="num">Amount (RWF)</th>
-                        <th>Status</th>
-                        <th>Reference</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($termGroup['transactions'] as $i => $tx)
-                        @php
-                            $meta = is_array($tx->meta) ? $tx->meta : (json_decode($tx->meta, true) ?: []);
-                            $displayType = $feeTypeMap[$tx->type] ?? ucfirst(str_replace('_', ' ', $tx->type));
-                            $displayDate = $tx->paid_at
-                                ? \Carbon\Carbon::parse($tx->paid_at)->format('Y-m-d H:i')
-                                : ($tx->created_at ? $tx->created_at->format('Y-m-d H:i') : '—');
-                        @endphp
-                        <tr>
-                            <td>{{ $i + 1 }}</td>
-                            <td>{{ $displayDate }}</td>
-                            <td>{{ $displayType }}</td>
-                            <td class="num">{{ number_format((float) $tx->amount, 2) }}</td>
-                            <td>
-                                @if(in_array($tx->status, ['successful', 'paid', 'completed']))
-                                    Paid
-                                @elseif($tx->status === 'pending')
-                                    Pending
-                                @else
-                                    {{ ucfirst($tx->status) }}
-                                @endif
-                            </td>
-                            <td style="font-size:6px;">{{ $tx->tx_ref ?? '—' }}</td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-    @endforeach
-@else
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>Date</th>
-                <th>Type</th>
-                <th class="num">Amount (RWF)</th>
-                <th>Status</th>
-                <th>Reference</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse($transactions as $i => $tx)
-                @php
-                    $meta = is_array($tx->meta) ? $tx->meta : (json_decode($tx->meta, true) ?: []);
-                    $displayType = $feeTypeMap[$tx->type] ?? ucfirst(str_replace('_', ' ', $tx->type));
-                    $displayDate = $tx->paid_at
-                        ? \Carbon\Carbon::parse($tx->paid_at)->format('Y-m-d H:i')
-                        : ($tx->created_at ? $tx->created_at->format('Y-m-d H:i') : '—');
-                @endphp
-                <tr>
-                    <td>{{ $i + 1 }}</td>
-                    <td>{{ $displayDate }}</td>
-                    <td>{{ $displayType }}</td>
-                    <td class="num">{{ number_format((float) $tx->amount, 2) }}</td>
-                    <td>
-                        @if(in_array($tx->status, ['successful', 'paid', 'completed']))
-                            Paid
-                        @elseif($tx->status === 'pending')
-                            Pending
-                        @else
-                            {{ ucfirst($tx->status) }}
-                        @endif
-                    </td>
-                    <td style="font-size:6px;">{{ $tx->tx_ref ?? '—' }}</td>
-                </tr>
-            @empty
-                <tr>
-                    <td colspan="6" style="text-align:center;color:#666;">No transactions recorded.</td>
-                </tr>
-            @endforelse
-        </tbody>
-    </table>
+@if($discountPct > 0)
+    <p class="muted" style="margin: 4px 0;">
+        <strong>Discount Applied:</strong> {{ rtrim(rtrim(number_format($discountPct, 2), '0'), '.') }}% on tuition, practical & trip fees (≈ {{ number_format($discountAmount, 0) }} RWF saved)
+    </p>
 @endif
+
+
+<p class="muted" style="margin: 6px 0 2px; border-top: 1px solid #ddd; padding-top: 4px;">
+    <strong>Issued:</strong> {{ $printedAt->format('d M Y \a\t H:i') }}
+    @if($totalPaid > 0) 
+        | <strong>Last Payment:</strong> 
+        @php
+            $lastPayment = collect($transactions ?? [])->sortByDesc('paid_at')->first();
+        @endphp
+        @if($lastPayment)
+            {{ \Carbon\Carbon::parse($lastPayment->paid_at)->format('d M Y') }}
+        @endif
+    @endif
+</p>
 
 <table class="signatures">
     <tr>
@@ -372,30 +353,26 @@
                 <img src="{{ $schoolInfo->principal_signature_url }}" alt="" class="sig-img">
             @endif
             <div class="sig-line">
-                School manager<br>
-                <strong>{{ $hdrPrincipal }}</strong>
+                School Manager
+                <br><strong>{{ $hdrPrincipal }}</strong>
             </div>
         </td>
         <td>
             @if($hasStampSignature)
-                <img src="{{ $schoolInfo->stamp_signature_url }}" alt="School stamp" class="sig-img" style="max-height:72px;">
+                <img src="{{ $schoolInfo->stamp_signature_url }}" alt="School stamp" class="sig-img">
             @endif
-            <div class="sig-line">Official school stamp</div>
+            <div class="sig-line">Official School Stamp</div>
         </td>
         <td>
             <div class="sig-line">
                 Accountant / Bursar
-                @if(!empty($printedByName))
-                    <br><strong>{{ $printedByName }}</strong>
-                @endif
             </div>
         </td>
     </tr>
 </table>
 
-<p class="muted" style="margin-top:4px;">
-    This transcript reflects records in the school system as of {{ $printedAt->format('d M Y H:i') }}.
-    For queries, contact the school office.
+<p class="muted" style="margin-top: 6px; text-align: center;">
+    This transcript reflects the student payment records as of {{ $printedAt->format('d M Y') }}. For inquiries, contact the school administration office.
 </p>
 
 </body>

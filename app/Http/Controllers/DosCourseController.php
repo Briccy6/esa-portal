@@ -8,11 +8,38 @@ use App\Models\Teacher;
 
 class DosCourseController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $courses = Course::with(['lessons', 'teachers'])->get();
+        $query = Course::with(['lessons', 'teachers', 'branch', 'students']);
+        
+        // Filter by branch
+        if ($request->filled('branch')) {
+            $query->where('branch_id', $request->branch);
+        }
+        
+        // Filter by status
+        if ($request->filled('status')) {
+            if ($request->status === 'active') {
+                $query->where('is_active', 1);
+            } elseif ($request->status === 'inactive') {
+                $query->where('is_active', 0);
+            }
+        }
+        
+        // Search
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('course_name', 'like', "%$search%")
+                  ->orWhere('course_code', 'like', "%$search%")
+                  ->orWhere('description', 'like', "%$search%");
+            });
+        }
+        
+        $courses = $query->paginate(15);
+        $branches = \App\Models\Branch::all();
         $teachers = Teacher::all();
-        return view('staff.courses.index', compact('courses', 'teachers'));
+        return view('dos.courses', compact('courses', 'branches', 'teachers'));
     }
 
     public function assignLesson(Request $request)
