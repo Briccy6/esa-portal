@@ -994,4 +994,3 @@ function exportData() {
     }
 </style>
 @endpush
-@endsection
