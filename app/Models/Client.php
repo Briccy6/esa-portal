@@ -143,4 +143,19 @@ class Client extends Authenticatable
     {
         return $this->examAttempts()->count();
     }
+
+    public function averageScore()
+    {
+        $completedSessions = $this->examSessions()
+            ->whereNotNull('session_start')
+            ->whereNotNull('session_end')
+            ->whereNotNull('score')
+            ->get();
+
+        if ($completedSessions->isEmpty()) {
+            return 0;
+        }
+
+        return $completedSessions->avg('score');
+    }
 }
