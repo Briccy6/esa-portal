@@ -138,4 +138,9 @@ class Client extends Authenticatable
     {
         return $this->examSessions()->whereNotNull('session_start');
     }
+
+    public function examsTaken()
+    {
+        return $this->examAttempts()->count();
+    }
 }
