@@ -16,7 +16,7 @@
         --accent:     #2563eb;
         --accent-2:   #1d4ed8;
         --accent-bg:  #eff4ff;
-        --accent-rule:#c7d7fd;
+        --accent-rule: #c7d7fd;
         --danger:     #dc2626;
         --danger-bg:  #fef2f2;
         --success:    #16a34a;
