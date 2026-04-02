@@ -201,10 +201,28 @@ class LiveClassController extends Controller
         $user = Auth::user();
         
         if ($liveClass->device_restriction) {
+            // First, clean up any stale sessions from the same browser
+            \App\Models\LiveClassParticipant::where('live_class_id', $liveClass->id)
+                ->where('email', $user->email)
+                ->where('is_active', true)
+                ->where('left_at', null)
+                ->where('ip_address', request()->ip())
+                ->where('browser_info', request()->userAgent())
+                ->update([
+                    'left_at' => now(),
+                    'is_active' => false
+                ]);
+            
+            // Then check for sessions from other devices/browsers
             $existingSession = \App\Models\LiveClassParticipant::where('live_class_id', $liveClass->id)
                 ->where('email', $user->email)
                 ->where('is_active', true)
                 ->where('left_at', null)
+                ->where(function($query) {
+                    // Block only if different IP AND different browser (user agent)
+                    $query->where('ip_address', '!=', request()->ip())
+                          ->orWhere('browser_info', '!=', request()->userAgent());
+                })
                 ->first();
                 
             if ($existingSession) {
@@ -892,14 +910,32 @@ class LiveClassController extends Controller
             return back()->with('error', $canJoin['reason']);
         }
 
-        // Check device restriction if enabled
+        // Check device restriction if enabled - clean up stale sessions first
         if ($liveClass->device_restriction) {
+            // First, clean up any stale sessions from the same browser
+            $liveClass->participants()
+                ->where('email', $request->email)
+                ->where('user_type', 'public')
+                ->where('is_active', true)
+                ->whereNull('left_at')
+                ->where('ip_address', request()->ip())
+                ->where('browser_info', request()->userAgent())
+                ->update([
+                    'left_at' => now(),
+                    'is_active' => false
+                ]);
+            
+            // Then check for sessions from other devices/browsers
             $activeParticipant = $liveClass->participants()
                 ->where('email', $request->email)
                 ->where('user_type', 'public')
                 ->where('is_active', true)
                 ->whereNull('left_at')
-                ->where('ip_address', '!=', request()->ip())
+                ->where(function($query) {
+                    // Block only if different IP AND different browser (user agent)
+                    $query->where('ip_address', '!=', request()->ip())
+                          ->orWhere('browser_info', '!=', request()->userAgent());
+                })
                 ->first();
             
             if ($activeParticipant) {
@@ -1176,14 +1212,32 @@ class LiveClassController extends Controller
                     ->first();
                 
                 if ($previousPayment) {
-                    // Check device restriction if enabled
+                    // Check device restriction if enabled - clean up stale sessions first
                     if ($liveClass->device_restriction) {
+                        // First, clean up any stale sessions from the same browser
+                        $liveClass->participants()
+                            ->where('email', $previousPayment->email)
+                            ->where('user_type', 'public')
+                            ->where('is_active', true)
+                            ->whereNull('left_at')
+                            ->where('ip_address', request()->ip())
+                            ->where('browser_info', request()->userAgent())
+                            ->update([
+                                'left_at' => now(),
+                                'is_active' => false
+                            ]);
+                        
+                        // Then check for sessions from other devices/browsers
                         $activeParticipant = $liveClass->participants()
                             ->where('email', $previousPayment->email)
                             ->where('user_type', 'public')
                             ->where('is_active', true)
                             ->whereNull('left_at')
-                            ->where('ip_address', '!=', request()->ip())
+                            ->where(function($query) {
+                                // Block only if different IP AND different browser (user agent)
+                                $query->where('ip_address', '!=', request()->ip())
+                                      ->orWhere('browser_info', '!=', request()->userAgent());
+                            })
                             ->first();
                         
                         if ($activeParticipant) {
