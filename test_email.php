@@ -21,7 +21,8 @@ try {
     echo "   Mail Host: " . $config['mailers']['smtp']['host'] . "\n";
     echo "   Mail Port: " . $config['mailers']['smtp']['port'] . "\n";
     echo "   Mail Username: " . $config['mailers']['smtp']['username'] . "\n";
-    echo "   Mail From: " . $config['mailers']['smtp']['from']['address'] . "\n\n";
+    $fromAddress = $config['mailers']['smtp']['from']['address'] ?? 'Not configured';
+    echo "   Mail From: " . $fromAddress . "\n\n";
     
     // Test 2: Find a test student
     echo "2. Finding a test student...\n";

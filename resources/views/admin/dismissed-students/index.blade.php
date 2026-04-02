@@ -735,6 +735,49 @@
         flex-direction: column;
         text-align: center;
     }
+
+    /* Action Buttons Styling */
+    .action-buttons-modern .btn {
+        border-radius: 6px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        border: none;
+        padding: 0.375rem 0.75rem;
+    }
+
+    .action-buttons-modern .btn-primary {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        color: white;
+    }
+
+    .action-buttons-modern .btn-primary:hover {
+        background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0,123,255,0.3);
+    }
+
+    .action-buttons-modern .btn-success {
+        background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+        color: white;
+    }
+
+    .action-buttons-modern .btn-success:hover {
+        background: linear-gradient(135deg, #1e7e34 0%, #155724 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(40,167,69,0.3);
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .stats-card {
+            margin-bottom: 1rem;
+        }
+        
+        .action-buttons-modern .btn {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+    }
 }
 </style>
 
@@ -753,244 +796,5 @@ function exportData() {
     alert('Export functionality coming soon!');
 }
 </script>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4 col-sm-6 mb-3">
-            <div class="stats-card stats-danger">
-                <div class="stats-icon">
-                    <i class="bi bi-person-x-fill"></i>
-                </div>
-                <div class="stats-content">
-                    <h3 class="stats-number">{{ $totalDismissed }}</h3>
-                    <p class="stats-label">Total Dismissed</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4 col-sm-6 mb-3">
-            <div class="stats-card stats-warning">
-                <div class="stats-icon">
-                    <i class="bi bi-calendar-month"></i>
-                </div>
-                <div class="stats-content">
-                    <h3 class="stats-number">{{ $monthlyDismissed }}</h3>
-                    <p class="stats-label">This Month</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4 col-sm-6 mb-3">
-            <div class="stats-card stats-info">
-                <div class="stats-icon">
-                    <i class="bi bi-calendar-year"></i>
-                </div>
-                <div class="stats-content">
-                    <h3 class="stats-number">{{ $yearlyDismissed }}</h3>
-                    <p class="stats-label">This Year</p>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Filters Card -->
-    <div class="card mb-4">
-        <div class="card-header bg-white">
-            <h5 class="card-title mb-0">
-                <i class="bi bi-funnel me-2"></i>Filters
-            </h5>
-        </div>
-        <div class="card-body">
-            <form method="GET" action="{{ route('admin.dismissed-students.index') }}">
-                <div class="row">
-                    <div class="col-md-3">
-                        <label for="search" class="form-label">Search</label>
-                        <input type="text" class="form-control" id="search" name="search" 
-                               value="{{ request('search') }}" placeholder="Name, Reg #, Email, Phone...">
-                    </div>
-                    <div class="col-md-2">
-                        <label for="branch_id" class="form-label">Branch</label>
-                        <select class="form-select" id="branch_id" name="branch_id">
-                            <option value="">All Branches</option>
-                            @foreach($branches as $branch)
-                                <option value="{{ $branch->id }}" {{ request('branch_id') == $branch->id ? 'selected' : '' }}>
-                                    {{ $branch->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label for="course_id" class="form-label">Course</label>
-                        <select class="form-select" id="course_id" name="course_id">
-                            <option value="">All Courses</option>
-                            @foreach($courses as $course)
-                                <option value="{{ $course->id }}" {{ request('course_id') == $course->id ? 'selected' : '' }}>
-                                    {{ $course->abbreviation ?? $course->course_name }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label for="dismissal_date_from" class="form-label">Dismissal Date From</label>
-                        <input type="date" class="form-control" id="dismissal_date_from" name="dismissal_date_from" 
-                               value="{{ request('dismissal_date_from') }}">
-                    </div>
-                    <div class="col-md-2">
-                        <label for="dismissal_date_to" class="form-label">Dismissal Date To</label>
-                        <input type="date" class="form-control" id="dismissal_date_to" name="dismissal_date_to" 
-                               value="{{ request('dismissal_date_to') }}">
-                    </div>
-                    <div class="col-md-1">
-                        <label class="form-label d-block">&nbsp;</label>
-                        <button type="submit" class="btn btn-primary w-100">
-                            <i class="bi bi-search"></i>
-                        </button>
-                    </div>
-                    <div class="col-md-1">
-                        <label class="form-label d-block">&nbsp;</label>
-                        <a href="{{ route('admin.dismissed-students.index') }}" class="btn btn-secondary w-100">
-                            <i class="bi bi-x"></i>
-                        </a>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Dismissed Students Table -->
-    <div class="card">
-        <div class="card-header bg-white">
-            <h5 class="card-title mb-0">
-                <i class="bi bi-people me-2"></i>Dismissed Students
-                <span class="badge bg-danger ms-2">{{ $dismissedStudents->total() }}</span>
-            </h5>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Student Info</th>
-                            <th>Branch</th>
-                            <th>Course</th>
-                            <th>Dismissal Date</th>
-                            <th>Reason</th>
-                            <th>Dismissed By</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($dismissedStudents as $dismissedStudent)
-                            <tr>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <div class="avatar-sm bg-danger text-white rounded-circle d-flex align-items-center justify-content-center me-3">
-                                            {{ strtoupper(substr($dismissedStudent->full_name, 0, 1)) }}
-                                        </div>
-                                        <div>
-                                            <div class="fw-bold">{{ $dismissedStudent->full_name }}</div>
-                                            <small class="text-muted">
-                                                {{ $dismissedStudent->reg_number }}<br>
-                                                {{ $dismissedStudent->email }}
-                                            </small>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <span class="badge bg-info">{{ $dismissedStudent->branch->name ?? 'N/A' }}</span>
-                                </td>
-                                <td>
-                                    <span class="badge bg-primary">{{ $dismissedStudent->course->abbreviation ?? $dismissedStudent->course->course_name ?? 'N/A' }}</span>
-                                </td>
-                                <td>
-                                    <div class="fw-bold">{{ $dismissedStudent->formatted_dismissal_date }}</div>
-                                    <small class="text-muted">{{ $dismissedStudent->dismissal_date->diffForHumans() }}</small>
-                                </td>
-                                <td>
-                                    <div class="text-truncate" style="max-width: 200px;" title="{{ $dismissedStudent->dismissal_reason }}">
-                                        {{ $dismissedStudent->dismissal_reason_summary }}
-                                    </div>
-                                </td>
-                                <td>
-                                    <small>{{ $dismissedStudent->dismissedBy->name ?? 'System' }}</small>
-                                </td>
-                                <td>
-                                    <div class="btn-group" role="group">
-                                        <a href="{{ route('admin.dismissed-students.show', $dismissedStudent) }}" 
-                                           class="btn btn-sm btn-outline-primary" title="View Details">
-                                            <i class="bi bi-eye"></i>
-                                        </a>
-                                        <form method="POST" action="{{ route('admin.dismissed-students.restore', $dismissedStudent) }}" 
-                                              onsubmit="return confirm('Are you sure you want to restore this student to active records?')" class="d-inline">
-                                            @csrf
-                                            <button type="submit" class="btn btn-sm btn-outline-success" title="Restore Student">
-                                                <i class="bi bi-arrow-counterclockwise"></i>
-                                            </button>
-                                        </form>
-                                    </div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="7" class="text-center py-5">
-                                    <div class="text-muted">
-                                        <i class="bi bi-inbox display-1 d-block mb-3"></i>
-                                        <h5>No dismissed students found</h5>
-                                        <p>There are no dismissed students in the system.</p>
-                                    </div>
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Pagination -->
-            @if($dismissedStudents->hasPages())
-                <div class="d-flex justify-content-center mt-4">
-                    {{ $dismissedStudents->links() }}
-                </div>
-            @endif
-        </div>
-    </div>
-</div>
 @endsection
-
-@push('styles')
-<style>
-    .stats-card.stats-danger {
-        border-left: 5px solid #dc3545;
-    }
-    
-    .stats-card.stats-warning {
-        border-left: 5px solid #ffc107;
-    }
-    
-    .stats-card.stats-info {
-        border-left: 5px solid #17a2b8;
-    }
-    
-    .stats-danger .stats-icon {
-        color: #dc3545;
-    }
-    
-    .stats-warning .stats-icon {
-        color: #ffc107;
-    }
-    
-    .stats-info .stats-icon {
-        color: #17a2b8;
-    }
-    
-    .avatar-sm {
-        width: 40px;
-        height: 40px;
-        font-size: 14px;
-        font-weight: bold;
-    }
-    
-    .text-truncate {
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-</style>
-@endpush
