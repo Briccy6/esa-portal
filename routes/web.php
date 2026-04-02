@@ -1249,6 +1249,10 @@ Route::middleware(['auth:staff'])->prefix('dos')->name('dos.')->group(function (
     Route::put('/assignments/{assignment}', [\App\Http\Controllers\Admin\ResourceController::class, 'assignmentsUpdate'])->name('assignments.update');
     Route::delete('/assignments/{assignment}', [\App\Http\Controllers\Admin\ResourceController::class, 'assignmentsDestroy'])->name('assignments.destroy');
     
+    // Lessons Management
+    Route::get('/lessons', [LessonController::class, 'index'])->name('lessons.index');
+    Route::get('/lessons/create', [LessonController::class, 'create'])->name('lessons.create');
+    
     // Student Management Routes
     Route::get('/students', [\App\Http\Controllers\DOS\StudentController::class, 'index'])->name('students.index');
     Route::get('/students/cards', [\App\Http\Controllers\DOS\StudentController::class, 'listStudentCards'])->name('students.StudentCards');

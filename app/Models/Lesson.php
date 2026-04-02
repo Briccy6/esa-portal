@@ -49,4 +49,28 @@ public function exams()
     return $this->belongsToMany(\App\Models\Exam::class, 'lesson_exam');
 }
 
+// Multi-branch relationships
+public function branchCourses()
+{
+    return $this->hasMany(\App\Models\LessonBranchCourse::class);
+}
+
+public function branches()
+{
+    return $this->belongsToMany(\App\Models\Branch::class, 'lesson_branch_course')
+        ->withPivot('course_id', 'teacher_id');
+}
+
+public function courses()
+{
+    return $this->belongsToMany(\App\Models\Course::class, 'lesson_branch_course')
+        ->withPivot('branch_id', 'teacher_id');
+}
+
+public function teachers()
+{
+    return $this->belongsToMany(\App\Models\Teacher::class, 'lesson_branch_course')
+        ->withPivot('branch_id', 'course_id');
+}
+
 }

@@ -207,7 +207,7 @@ public function update(Request $request, $id)
         $course->branches()->detach();
     }
 
-    return redirect()->route('admin.course.index')->with('success', 'Course updated successfully.');
+    return redirect()->route('course.index')->with('success', 'Course updated successfully.');
 }
 public function destroy($id)
 {
@@ -263,12 +263,12 @@ public function destroy($id)
         // 9. Finally delete the course
         $course->delete();
 
-        return redirect()->route('admin.course.index')->with('success', 'Course and all related data deleted successfully.');
+        return redirect()->route('course.index')->with('success', 'Course and all related data deleted successfully.');
         
     } catch (\Illuminate\Database\QueryException $e) {
         // If there's still a foreign key constraint, provide a more helpful error
         if ($e->getCode() == '23000') {
-            return redirect()->route('admin.course.index')
+            return redirect()->route('course.index')
                 ->with('error', 'Cannot delete this course because it is referenced by other records. Please contact administrator.');
         }
         
@@ -408,7 +408,7 @@ public function storeFees(Request $request, $courseId)
         }
 
         DB::commit();
-        return redirect()->route('admin.course.index')->with('success', 'Course fees assigned successfully!');
+        return redirect()->route('course.index')->with('success', 'Course fees assigned successfully!');
     } catch (\Exception $e) {
         DB::rollBack();
         return redirect()->back()->withInput()->withErrors(['error' => 'Failed to assign fees: ' . $e->getMessage()]);
@@ -461,7 +461,7 @@ public function updateFees(Request $request, $courseId)
         }
 
         DB::commit();
-        return redirect()->route('admin.course.index')->with('success', 'Course fees updated successfully!');
+        return redirect()->route('course.index')->with('success', 'Course fees updated successfully!');
     } catch (\Exception $e) {
         DB::rollBack();
         return redirect()->back()->withInput()->withErrors(['error' => 'Failed to update fees: ' . $e->getMessage()]);

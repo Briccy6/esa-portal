@@ -19,7 +19,12 @@
     $outstanding = $totalToPay - $totalPaid;
     
     // Get school information
-    $schoolInfo = \App\Models\SchoolInformation::getActive();
+    try {
+        $schoolInfo = \App\Models\SchoolInformation::getActive();
+    } catch (Exception $e) {
+        // Fallback in case there are any issues with the model
+        $schoolInfo = null;
+    }
     $systemName = \Illuminate\Support\Facades\Cache::get('esa_system_name', 'ESA Learning Portal');
     $systemLogo = \App\Helpers\LogoHelper::getLogoUrl();
 @endphp
@@ -35,17 +40,34 @@
         line-height: 1.4 !important;
     }
     
-    /* Hide the Actions column header */
-    .transcript-container table th:nth-child(7),
-    .transcript-container table td:nth-child(7) {
+    /* Hide the Actions column header and data */
+    .transcript-container table th:nth-child(8),
+    .transcript-container table td:nth-child(8) {
         display: none !important;
     }
     
-    /* Hide the Edit Mode badge and interactive elements */
+    /* Hide the Edit Mode badge and all interactive elements */
     .transcript-container .badge.bg-warning,
     .transcript-container .btn,
-    .transcript-container .modal {
+    .transcript-container .modal,
+    .transcript-container .d-print-none {
         display: none !important;
+    }
+    
+    /* Hide all action buttons in payment rows */
+    .transcript-container .btn-sm,
+    .transcript-container .btn-danger,
+    .transcript-container .btn-warning {
+        display: none !important;
+    }
+    
+    /* Hide the regular title and show print title */
+    .transcript-container h3:not(.d-print-block h3) {
+        display: none !important;
+    }
+    
+    .transcript-container .d-print-block {
+        display: block !important;
     }
     
     /* Professional header styling for print */
@@ -207,6 +229,13 @@
 </style>
 
 <div class="transcript-container">
+    <!-- Print Button -->
+    <div class="d-print-none mb-3">
+        <button onclick="window.print()" class="btn btn-primary">
+            <i class="fas fa-print"></i> Print Transcript
+        </button>
+    </div>
+
     <!-- School Header -->
     <div class="transcript-header">
         @if($systemLogo)
@@ -219,10 +248,19 @@
             @if($schoolInfo->website)
                 <p><strong>Website: {{ $schoolInfo->website }}</strong></p>
             @endif
+            @if($schoolInfo->school_name)
+                <p><strong>{{ $schoolInfo->school_name }}</strong></p>
+            @endif
         @else
             <p><strong>123 Education Street, Learning City, Knowledge State</strong></p>
             <p><strong>Phone: +250-788-123-456 | Email: info@esa-learning.rw</strong></p>
         @endif
+    </div>
+
+    <!-- Print Title -->
+    <div class="d-print-block text-center mb-4" style="display: none;">
+        <h3 style="font-size: 20pt; font-weight: bold; margin-bottom: 10px;">OFFICIAL STUDENT PAYMENT TRANSCRIPT</h3>
+        <p style="font-size: 12pt; margin: 0;">This document certifies the complete payment history of the student</p>
     </div>
 
     <!-- Transcript Title -->
@@ -281,7 +319,7 @@
         <div class="card-header bg-light d-flex justify-content-between align-items-center">
             <h6 class="mb-0">PAYMENT HISTORY</h6>
             @if($isAuthorizedUser)
-                <span class="badge bg-warning text-dark">
+                <span class="badge bg-warning text-dark d-print-none">
                     <i class="fas fa-key"></i> Edit Mode (staff)
                 </span>
             @endif
@@ -301,7 +339,7 @@
                                 <th>Payment Method</th>
                                 <th>Status</th>
                                 @if($isAuthorizedUser)
-                                    <th class="text-center">Actions</th>
+                                    <th class="text-center d-print-none">Actions</th>
                                 @endif
                             </tr>
                         </thead>
@@ -347,7 +385,7 @@
                                     </td>
 
                                     @if($isAuthorizedUser)
-                                        <td class="text-center">
+                                        <td class="text-center d-print-none">
                                             <button type="button"
                                                     class="btn btn-sm btn-warning me-1"
                                                     onclick="openEditModal({{ $payment->id }})"
@@ -412,7 +450,7 @@
 </div>
 
 <!-- Edit Transaction Modal -->
-<div class="modal fade" id="editTransactionModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade d-print-none" id="editTransactionModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-md modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">

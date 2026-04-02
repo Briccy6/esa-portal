@@ -20,9 +20,14 @@ class LessonController extends Controller
 {
     public function index()
     {
-        $lessonDetails = Lesson::with(['course', 'teacher', 'units'])->get();
+        $lessonDetails = Lesson::with(['course', 'teacher', 'units', 'branches', 'terms'])->get();
 
-        // Check if user is staff (DOS) and return appropriate view
+        // Check if user is DOS and return DOS view
+        if (auth('staff')->check() && auth('staff')->user()->role === 'DOS') {
+            return view('dos.lessons.index', compact('lessonDetails'));
+        }
+
+        // Check if user is staff (non-DOS) and return appropriate view
         if (auth('staff')->check()) {
             return view('staff.lessons.index', compact('lessonDetails'));
         }
@@ -38,11 +43,25 @@ class LessonController extends Controller
 
     public function create(Request $request)
     {
-        $courses = Course::all();
+        $courses = Course::with('branches')->get();
+        $branches = \App\Models\Branch::all();
         $terms = Term::all();
-
         $teachers = collect();
 
+        // For DOS dashboard, we need multi-branch, multi-course support
+        if (auth('staff')->check() && auth('staff')->user()->role === 'DOS') {
+            $ongoingAcademicYear = AcademicYear::where('is_ongoing', true)->first();
+            
+            return view('dos.lessons.create', compact(
+                'courses', 
+                'branches', 
+                'teachers', 
+                'ongoingAcademicYear', 
+                'terms'
+            ));
+        }
+
+        // Original logic for other users
         if ($request->has('course_id') && $request->course_id) {
             // Get teachers assigned to selected course from teacher_course pivot table
             $teachers = DB::table('teacher_course')
@@ -54,11 +73,17 @@ class LessonController extends Controller
 
         $ongoingAcademicYear = AcademicYear::where('is_ongoing', true)->first();
 
-return view('staff.lessons.create', compact('courses', 'teachers', 'ongoingAcademicYear', 'terms'));
+        return view('staff.lessons.create', compact('courses', 'teachers', 'ongoingAcademicYear', 'terms'));
     }
 
     public function store(Request $request)
     {
+        // Check if this is a multi-branch, multi-course creation from DOS
+        if ($request->has('is_multi_branch') && $request->is_multi_branch) {
+            return $this->storeMultiBranchLesson($request);
+        }
+
+        // Original single lesson creation logic
         $validated = $request->validate([
             'lesson_title' => 'required|string|max:255',
             'teacher_id' => 'nullable|exists:teachers,id',
@@ -96,6 +121,63 @@ return view('staff.lessons.create', compact('courses', 'teachers', 'ongoingAcade
             'course_id' => $lesson->course_id,
             'terms' => $validated['terms'],
         ]);
+    }
+
+    private function storeMultiBranchLesson(Request $request)
+    {
+        $validated = $request->validate([
+            'lesson_title' => 'required|string|max:255',
+            'selected_courses' => 'required|array|min:1',
+            'selected_courses.*.course_id' => 'required|exists:courses,id',
+            'selected_courses.*.branch_id' => 'required|exists:branches,id',
+            'selected_courses.*.teacher_id' => 'nullable|exists:teachers,id',
+            'max_test_marks' => 'nullable|integer|min:0',
+            'max_exam_marks' => 'nullable|integer|min:0',
+            'lesson_weight' => 'required|integer|min:1|max:100',
+            'terms' => 'required|array|min:1|max:2',
+            'terms.*' => 'exists:terms,id',
+            'academic_year_id' => 'required|exists:academic_years,id',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            // Create the main lesson record
+            $lesson = new Lesson();
+            $lesson->title = $validated['lesson_title'];
+            $lesson->teacher_id = null; // Will be set per branch
+            $lesson->course_id = $validated['selected_courses'][0]['course_id']; // Primary course
+            $lesson->max_test_marks = $validated['max_test_marks'] ?? 100;
+            $lesson->max_exam_marks = $validated['max_exam_marks'] ?? 100;
+            $lesson->lesson_weight = $validated['lesson_weight'];
+            $lesson->academic_year_id = $validated['academic_year_id'];
+            $lesson->save();
+
+            // Attach terms to the lesson
+            $lesson->terms()->attach($validated['terms']);
+
+            // Create branch-course-teacher assignments
+            foreach ($validated['selected_courses'] as $assignment) {
+                \App\Models\LessonBranchCourse::create([
+                    'lesson_id' => $lesson->id,
+                    'branch_id' => $assignment['branch_id'],
+                    'course_id' => $assignment['course_id'],
+                    'teacher_id' => $assignment['teacher_id'] ?? null,
+                ]);
+            }
+
+            DB::commit();
+
+            return redirect()->route('dos.lessons.index')
+                             ->with('success', 'Lesson created successfully for ' . count($validated['selected_courses']) . ' branch-course combinations.');
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            \Log::error('Error creating multi-branch lesson: ' . $e->getMessage());
+            
+            return redirect()->back()
+                             ->with('error', 'Error creating lesson: ' . $e->getMessage())
+                             ->withInput();
+        }
     }
 public function createDetails(Request $request, $lessonId)
 {

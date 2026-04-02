@@ -365,7 +365,7 @@
           </div>
           <div class="mb-3">
             <label for="paid_by" class="form-label">Paid By</label>
-            <input type="text" name="paid_by" id="paid_by" class="form-control" value="{{ Auth::user()->name }}" readonly>
+            <input type="text" name="paid_by" id="paid_by" class="form-control" value="{{ Auth::check() ? Auth::user()->name : '' }}" readonly>
           </div>
           <div class="mb-3">
             <label for="paid_to" class="form-label">Paid To</label>
