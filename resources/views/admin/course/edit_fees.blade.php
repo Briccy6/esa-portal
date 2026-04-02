@@ -91,7 +91,7 @@
     @endif
 
     <!-- Fee Edit Form -->
-    <form action="{{ route('course.update-fees', $course->id) }}" method="POST" class="bg-white p-4 rounded shadow-sm">
+    <form action="{{ route('admin.course.update-fees', $course->id) }}" method="POST" class="bg-white p-4 rounded shadow-sm">
         @csrf
         @method('PUT')
 

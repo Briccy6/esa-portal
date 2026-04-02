@@ -454,7 +454,7 @@ document.addEventListener('click', function(e) {
         
         if (branchSelect.value) {
             // Load courses for this branch
-            fetch(`/branches/${branchSelect.value}/courses`)
+            fetch(`/api/branches/${branchSelect.value}/courses`)
                 .then(response => response.json())
                 .then(courses => {
                     courseSelect.innerHTML = '<option value="">Select Course</option>';
@@ -485,7 +485,7 @@ document.addEventListener('change', function(e) {
         
         if (courseSelect.value && branchSelect.value) {
             // Load teachers for this branch-course combination
-            fetch(`/branches/${branchSelect.value}/courses/${courseSelect.value}/teachers`)
+            fetch(`/api/branches/${branchSelect.value}/courses/${courseSelect.value}/teachers`)
                 .then(response => response.json())
                 .then(teachers => {
                     teacherSelect.innerHTML = '<option value="">Select Teacher (Optional)</option>';
