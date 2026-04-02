@@ -3566,4 +3566,17 @@ class StudentController extends Controller
             ";
         }
     }
+
+    /**
+     * Handle cash payment for a student
+     * This is an alias method for recordCashPayment to match the route definition
+     * 
+     * @param Request $request
+     * @param int $studentId
+     * @return \Illuminate\Http\Response
+     */
+    public function payCash(Request $request, $studentId)
+    {
+        return $this->recordCashPayment($request, $studentId);
+    }
 }

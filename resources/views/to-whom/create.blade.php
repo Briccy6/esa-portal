@@ -1,4 +1,4 @@
-@extends('staff.layout')
+@extends('staff.partials.sidebar_sec')
 
 @section('content')
 <div class="container-fluid">
