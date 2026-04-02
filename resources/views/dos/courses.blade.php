@@ -111,7 +111,7 @@
                     </div>
                     <div class="col-md-3">
                         <label for="search" class="form-label">Live Search</label>
-                        <input type="text" id="search" class="form-control live-search-input" 
+                        <input type="text" id="search" name="search" class="form-control live-search-input" 
                                value="{{ request('search') }}" placeholder="Search courses...">
                     </div>
                     <div class="col-md-3 d-flex align-items-end">
@@ -130,91 +130,88 @@
     <!-- Courses Table -->
     <div class="card">
         <div class="card-body">
-            <div class="search-results-info" style="margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 6px; display: none;">
-                <small class="text-muted">
-                    Showing <span id="courseCount">0</span> course(s)
-                </small>
-            </div>
-            <div class="table-responsive">
-                <table class="table table-striped table-hover">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>Course Code</th>
-                            <th>Course Name</th>
-                            <th>Branch</th>
-                            <th>Duration</th>
-                            <th>Fee</th>
-                            <th>Status</th>
-                            <th>Students</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if(isset($courses) && $courses->count() > 0)
-                            @foreach($courses as $course)
-                                <tr class="course-row" data-search-text="{{ strtolower($course->course_code . ' ' . $course->course_name . ' ' . ($course->branch->name ?? '') . ' ' . ($course->description ?? '')) }}">
-                                    <td><strong>{{ $course->course_code ?? 'N/A' }}</strong></td>
-                                    <td>{{ $course->course_name ?? 'N/A' }}</td>
-                                    <td><span class="badge bg-info">{{ $course->branch->name ?? 'N/A' }}</span></td>
-                                    <td>{{ $course->duration ?? 'N/A' }}</td>
-                                    <td>RWF {{ number_format($course->fee ?? 0, 0) }}</td>
-                                    <td>
-                                        @if($course->is_active ?? false)
-                                            <span class="badge bg-success">Active</span>
-                                        @else
-                                            <span class="badge bg-warning">Inactive</span>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-info">{{ $course->students->count() ?? 0 }}</span>
-                                    </td>
-                                    <td>
-                                        <div class="btn-group btn-group-sm" role="group">
-                                            <button type="button" class="btn btn-outline-primary" 
-                                                    onclick="viewCourse({{ $course->id }})">
-                                                <i class="bi bi-eye"></i>
-                                            </button>
-                                            <button type="button" class="btn btn-outline-warning" 
-                                                    onclick="editCourse({{ $course->id }})">
-                                                <i class="bi bi-pencil"></i>
-                                            </button>
-                                            <button type="button" class="btn btn-outline-danger" 
-                                                    onclick="deleteCourse({{ $course->id }})">
-                                                <i class="bi bi-trash"></i>
+            <div id="tableContainer">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Course Code</th>
+                                <th>Course Name</th>
+                                <th>Branch</th>
+                                <th>Duration</th>
+                                <th>Fee</th>
+                                <th>Status</th>
+                                <th>Students</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="courseTableBody">
+                            @if(isset($courses) && $courses->count() > 0)
+                                @foreach($courses as $course)
+                                    <tr class="course-row">
+                                        <td><strong>{{ $course->course_code ?? 'N/A' }}</strong></td>
+                                        <td>{{ $course->course_name ?? 'N/A' }}</td>
+                                        <td><span class="badge bg-info">{{ $course->branch->name ?? 'N/A' }}</span></td>
+                                        <td>{{ $course->duration ?? 'N/A' }}</td>
+                                        <td>RWF {{ number_format($course->fee ?? 0, 0) }}</td>
+                                        <td>
+                                            @if($course->is_active ?? false)
+                                                <span class="badge bg-success">Active</span>
+                                            @else
+                                                <span class="badge bg-warning">Inactive</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">{{ $course->students->count() ?? 0 }}</span>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <button type="button" class="btn btn-outline-primary" 
+                                                        onclick="viewCourse({{ $course->id }})">
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-outline-warning" 
+                                                        onclick="editCourse({{ $course->id }})">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-outline-danger" 
+                                                        onclick="deleteCourse({{ $course->id }})">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            @else
+                                <tr>
+                                    <td colspan="8" class="text-center py-4">
+                                        <div class="text-muted">
+                                            <i class="bi bi-inbox fs-1"></i>
+                                            <p class="mt-2">No courses found</p>
+                                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCourseModal">
+                                                <i class="bi bi-plus-circle me-1"></i> Add First Course
                                             </button>
                                         </div>
                                     </td>
                                 </tr>
-                            @endforeach
-                        @else
-                            <tr>
-                                <td colspan="8" class="text-center py-4">
-                                    <div class="text-muted">
-                                        <i class="bi bi-inbox fs-1"></i>
-                                        <p class="mt-2">No courses found</p>
-                                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCourseModal">
-                                            <i class="bi bi-plus-circle me-1"></i> Add First Course
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        @endif
-                    </tbody>
-                </table>
-            </div>
-            @if($courses->hasPages())
-                <div class="card-footer bg-white">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <p class="text-muted mb-0">
-                            Showing <strong>{{ $courses->firstItem() }}</strong> to <strong>{{ $courses->lastItem() }}</strong> 
-                            of <strong>{{ $courses->total() }}</strong> courses
-                        </p>
-                        <div>
-                            {{ $courses->links('pagination::bootstrap-4') }}
+                            @endif
+                        </tbody>
+                    </table>
+                </div>
+                @if($courses->hasPages())
+                    <div class="card-footer bg-white" id="paginationContainer">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <p class="text-muted mb-0">
+                                Showing <strong>{{ $courses->firstItem() }}</strong> to <strong>{{ $courses->lastItem() }}</strong> 
+                                of <strong>{{ $courses->total() }}</strong> courses
+                            </p>
+                            <div>
+                                {{ $courses->links('pagination::bootstrap-4') }}
+                            </div>
                         </div>
                     </div>
-                </div>
-            @endif
+                @endif
+            </div>
         </div>
     </div>
 </div>
@@ -280,66 +277,160 @@
 </div>
 
 <script>
-// Live search functionality
-document.addEventListener('DOMContentLoaded', function() {
-    const searchInput = document.getElementById('search');
-    const courseRows = document.querySelectorAll('.course-row');
-    const courseCountSpan = document.getElementById('courseCount');
-    const searchResultsInfo = document.querySelector('.search-results-info');
+// Debounce timer
+let searchDebounceTimer;
+
+// Live search with AJAX - searches ALL data, not just current page
+function performAjaxSearch(searchTerm = '', branch = '', status = '') {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     
-    searchInput.addEventListener('input', function() {
-        const searchTerm = this.value.toLowerCase().trim();
-        let visibleCount = 0;
+    const params = new URLSearchParams({
+        search: searchTerm,
+        branch: branch,
+        status: status,
+        ajax: 1  // Flag to indicate AJAX request
+    });
+    
+    fetch(`{{ route('dos.courses.index') }}?${params}`, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': csrfToken
+        }
+    })
+    .then(response => response.text())
+    .then(html => {
+        // Parse the new HTML
+        const parser = new DOMParser();
+        const newDoc = parser.parseFromString(html, 'text/html');
         
-        if (searchTerm === '') {
-            // Show all rows if search is empty
-            courseRows.forEach(row => {
-                row.style.display = '';
-            });
-            searchResultsInfo.style.display = 'none';
-            visibleCount = courseRows.length;
-        } else {
-            // Filter rows based on search term
-            courseRows.forEach(row => {
-                const searchText = row.getAttribute('data-search-text');
-                if (searchText.includes(searchTerm)) {
-                    row.style.display = '';
-                    visibleCount++;
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-            searchResultsInfo.style.display = 'block';
+        // Extract table body
+        const newTableBody = newDoc.querySelector('#courseTableBody');
+        const newPagination = newDoc.querySelector('#paginationContainer');
+        
+        if (newTableBody) {
+            // Update table body
+            document.getElementById('courseTableBody').innerHTML = newTableBody.innerHTML;
         }
         
-        courseCountSpan.textContent = visibleCount;
+        if (newPagination) {
+            // Update pagination
+            document.getElementById('paginationContainer').innerHTML = newPagination.innerHTML;
+            
+            // Re-attach pagination link handlers
+            attachPaginationHandlers();
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+function attachPaginationHandlers() {
+    // Handle pagination links with AJAX
+    document.querySelectorAll('#paginationContainer a[href*="page="]').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const urlParams = new URLSearchParams(new URL(this.href).search);
+            const page = urlParams.get('page');
+            const search = document.getElementById('search').value || '';
+            const branch = document.getElementById('branch_filter').value || '';
+            const status = document.getElementById('status_filter').value || '';
+            
+            const params = new URLSearchParams({
+                search: search,
+                branch: branch,
+                status: status,
+                page: page,
+                ajax: 1
+            });
+            
+            fetch(`{{ route('dos.courses.index') }}?${params}`, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const newDoc = parser.parseFromString(html, 'text/html');
+                
+                const newTableBody = newDoc.querySelector('#courseTableBody');
+                const newPagination = newDoc.querySelector('#paginationContainer');
+                
+                if (newTableBody) {
+                    document.getElementById('courseTableBody').innerHTML = newTableBody.innerHTML;
+                }
+                
+                if (newPagination) {
+                    document.getElementById('paginationContainer').innerHTML = newPagination.innerHTML;
+                    attachPaginationHandlers();
+                }
+                
+                // Scroll to table
+                document.querySelector('#tableContainer').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        });
     });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('search');
+    const branchFilter = document.getElementById('branch_filter');
+    const statusFilter = document.getElementById('status_filter');
+    
+    // Live search on input
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = setTimeout(() => {
+            performAjaxSearch(
+                searchInput.value,
+                branchFilter.value,
+                statusFilter.value
+            );
+        }, 300); // 300ms debounce
+    });
+    
+    // Filter changes
+    branchFilter.addEventListener('change', function() {
+        performAjaxSearch(
+            searchInput.value,
+            branchFilter.value,
+            statusFilter.value
+        );
+    });
+    
+    statusFilter.addEventListener('change', function() {
+        performAjaxSearch(
+            searchInput.value,
+            branchFilter.value,
+            statusFilter.value
+        );
+    });
+    
+    // Attach pagination handlers
+    attachPaginationHandlers();
 });
 
 function viewCourse(id) {
-    // Implement view course functionality
     window.location.href = `/dos/courses/${id}`;
 }
 
 function editCourse(id) {
-    // Implement edit course functionality
     window.location.href = `/dos/courses/${id}/edit`;
 }
 
 function deleteCourse(id) {
     if(confirm('Are you sure you want to delete this course?')) {
-        // Implement delete course functionality
         window.location.href = `/dos/courses/${id}/delete`;
     }
 }
 
 function exportCourses() {
-    // Implement export functionality
     window.location.href = `/dos/courses/export`;
 }
 
-// Form submission
-document.getElementById('addCourseForm').addEventListener('submit', function(e) {
+document.getElementById('addCourseForm')?.addEventListener('submit', function(e) {
     e.preventDefault();
     const formData = new FormData(this);
     

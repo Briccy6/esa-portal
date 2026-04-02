@@ -18,11 +18,30 @@ use App\Models\TeacherDaily;
 
 class LessonController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $lessonDetails = Lesson::with(['course', 'teacher', 'units', 'branches', 'terms', 'branchCourses' => function($query) {
-            $query->with(['branch', 'course', 'teacher']);
-        }])->paginate(15);
+        $query = Lesson::with(['course', 'teacher', 'units', 'branches', 'terms', 'branchCourses' => function($q) {
+            $q->with(['branch', 'course', 'teacher']);
+        }]);
+        
+        // Search across multiple fields
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('title', 'like', "%$search%")
+                  ->orWhereHas('course', function($q1) use ($search) {
+                      $q1->where('course_name', 'like', "%$search%");
+                  })
+                  ->orWhereHas('teacher', function($q2) use ($search) {
+                      $q2->where('teacher_name', 'like', "%$search%");
+                  })
+                  ->orWhereHas('terms', function($q3) use ($search) {
+                      $q3->where('name', 'like', "%$search%");
+                  });
+            });
+        }
+        
+        $lessonDetails = $query->paginate(15);
 
         // Check if user is DOS and return DOS view
         if (auth('staff')->check() && auth('staff')->user()->role === 'DOS') {
@@ -54,12 +73,24 @@ class LessonController extends Controller
         if (auth('staff')->check() && auth('staff')->user()->role === 'DOS') {
             $ongoingAcademicYear = AcademicYear::where('is_ongoing', true)->first();
             
+            // Build a mapping of courses to their teachers for JavaScript
+            $courseTeachersData = [];
+            foreach ($courses as $course) {
+                $courseTeachersData[$course->id] = DB::table('teacher_course')
+                    ->join('teachers', 'teacher_course.teacher_id', '=', 'teachers.id')
+                    ->where('teacher_course.course_id', $course->id)
+                    ->select('teachers.id', 'teachers.teacher_name')
+                    ->get()
+                    ->toArray();
+            }
+            
             return view('dos.lessons.create', compact(
                 'courses', 
                 'branches', 
                 'teachers', 
                 'ongoingAcademicYear', 
-                'terms'
+                'terms',
+                'courseTeachersData'
             ));
         }
 

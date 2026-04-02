@@ -195,13 +195,13 @@
                 <div class="search-container mb-3" style="margin-bottom: 20px;">
                     <div class="input-group">
                         <span class="input-group-text"><i class="fas fa-search"></i></span>
-                        <input type="text" class="form-control live-search-input" id="lessonSearch" placeholder="Search lessons by title, course, teacher, terms...">
-                        <span class="input-group-text text-muted small"><span id="lessonCount">0</span> found</span>
+                        <input type="text" class="form-control" id="lessonSearch" placeholder="Search lessons by title, course, teacher, terms... (searches ALL data)">
+                        <span class="input-group-text text-muted small"><span id="lessonCount">{{ $lessonDetails->total() ?? 0 }}</span> results</span>
                     </div>
                 </div>
 
                 @if($lessonDetails->count() > 0)
-                    <div class="table-responsive">
+                    <div class="table-responsive" id="tableContainer">
                         <table class="table lessons-table">
                             <thead>
                                 <tr>
@@ -214,9 +214,9 @@
                                     <th>Actions</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="lessonTableBody">
                                 @foreach($lessonDetails as $lesson)
-                                    <tr class="lesson-row" data-search-text="{{ strtolower($lesson->title . ' ' . ($lesson->course->course_name ?? '') . ' ' . ($lesson->teacher->teacher_name ?? '') . ' ' . $lesson->terms->pluck('name')->join(' ')) }}">
+                                    <tr class="lesson-row">
                                         <td>
                                             <strong>{{ $lesson->title }}</strong>
                                             @if($lesson->academicYear)
@@ -296,7 +296,7 @@
                         </table>
                     </div>
                     @if($lessonDetails->hasPages())
-                        <div style="padding: 15px; border-top: 1px solid #e9ecef; background: #f8f9fa;">
+                        <div style="padding: 15px; border-top: 1px solid #e9ecef; background: #f8f9fa;" id="paginationContainer">
                             <div class="d-flex justify-content-between align-items-center">
                                 <p class="text-muted mb-0">
                                     Showing <strong>{{ $lessonDetails->firstItem() }}</strong> to <strong>{{ $lessonDetails->lastItem() }}</strong> 
@@ -657,6 +657,109 @@ function deleteLessonConfirm(lessonId, lessonTitle) {
         form.submit();
     }
 }
+
+// Live search functionality with AJAX
+let searchDebounceTimer;
+
+function performLessonAjaxSearch(searchTerm = '') {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
+    const params = new URLSearchParams({
+        search: searchTerm,
+        ajax: 1
+    });
+    
+    fetch(`{{ route('dos.lessons.index') }}?${params}`, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': csrfToken
+        }
+    })
+    .then(response => response.text())
+    .then(html => {
+        const parser = new DOMParser();
+        const newDoc = parser.parseFromString(html, 'text/html');
+        
+        const newTableBody = newDoc.querySelector('#lessonTableBody');
+        const newPagination = newDoc.querySelector('#paginationContainer');
+        
+        if (newTableBody) {
+            document.getElementById('lessonTableBody').innerHTML = newTableBody.innerHTML;
+        }
+        
+        if (newPagination) {
+            document.getElementById('paginationContainer').innerHTML = newPagination.innerHTML;
+            attachLessonPaginationHandlers();
+        }
+        
+        // Update result count
+        const totalLessons = newDoc.querySelector('#lessonCount');
+        if (totalLessons) {
+            document.getElementById('lessonCount').textContent = totalLessons.textContent;
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+function attachLessonPaginationHandlers() {
+    document.querySelectorAll('#paginationContainer a[href*="page="]').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const urlParams = new URLSearchParams(new URL(this.href).search);
+            const page = urlParams.get('page');
+            const search = document.getElementById('lessonSearch').value || '';
+            
+            const params = new URLSearchParams({
+                search: search,
+                page: page,
+                ajax: 1
+            });
+            
+            fetch(`{{ route('dos.lessons.index') }}?${params}`, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const newDoc = parser.parseFromString(html, 'text/html');
+                
+                const newTableBody = newDoc.querySelector('#lessonTableBody');
+                const newPagination = newDoc.querySelector('#paginationContainer');
+                
+                if (newTableBody) {
+                    document.getElementById('lessonTableBody').innerHTML = newTableBody.innerHTML;
+                }
+                
+                if (newPagination) {
+                    document.getElementById('paginationContainer').innerHTML = newPagination.innerHTML;
+                    attachLessonPaginationHandlers();
+                }
+                
+                document.querySelector('#tableContainer').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        });
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('lessonSearch');
+    
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(() => {
+                performLessonAjaxSearch(searchInput.value);
+            }, 300);
+        });
+    }
+    
+    attachLessonPaginationHandlers();
+});
 
 // Live search functionality
 document.addEventListener('DOMContentLoaded', function() {

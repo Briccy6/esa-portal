@@ -12,10 +12,37 @@ class LessonDetailsController extends Controller
     /**
      * Display a listing of the lesson details.
      */
-public function index() {
-    $lessonDetails = LessonUnit::with('lesson.course', 'lesson.teacher', 'term')
-                               ->whereHas('lesson')
-                               ->paginate(15);
+public function index(Request $request) {
+    $query = LessonUnit::with('lesson.course', 'lesson.teacher', 'term')
+                        ->whereHas('lesson');
+    
+    // Search across multiple fields
+    if ($request->filled('search')) {
+        $search = $request->search;
+        $query->where(function($q) use ($search) {
+            $q->where('unit_name', 'like', "%$search%")
+              ->orWhereHas('lesson', function($q1) use ($search) {
+                  $q1->where('title', 'like', "%$search%");
+              })
+              ->orWhereHas('lesson.course', function($q2) use ($search) {
+                  $q2->where('course_name', 'like', "%$search%");
+              })
+              ->orWhereHas('lesson.teacher', function($q3) use ($search) {
+                  $q3->where('teacher_name', 'like', "%$search%");
+              })
+              ->orWhereHas('term', function($q4) use ($search) {
+                  $q4->where('name', 'like', "%$search%");
+              });
+        });
+    }
+    
+    $lessonDetails = $query->paginate(15);
+    
+    // If this is an AJAX request, return only the table body and pagination
+    if ($request->ajax() || $request->input('ajax')) {
+        return view('details.index', compact('lessonDetails'));
+    }
+    
     return view('details.index', compact('lessonDetails'));
 }
 

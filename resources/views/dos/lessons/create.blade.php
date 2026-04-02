@@ -432,6 +432,11 @@
     <form action="{{ route('staff.lessons.store') }}" method="POST" id="multiBranchForm">
         @csrf
         <input type="hidden" name="is_multi_branch" value="1">
+        
+        <!-- Store course-teachers mapping for JavaScript -->
+        <script>
+            window.courseTeachersMap = {!! json_encode($courseTeachersData ?? []) !!};
+        </script>
 
         <div class="form-card">
             <div class="progress-bar">
@@ -593,7 +598,25 @@
                 @endif
             </div>
 
-            {{-- Step 3: Academic Details --}}
+            {{-- Step 3: Assign Teachers --}}
+            <div class="section-block">
+                <div class="section-hd">
+                    <div class="section-hd-badge"><i class="fas fa-chalkboard-user fa-xs"></i></div>
+                    <div>
+                        <h2>Assign Teachers</h2>
+                        <p>Assign a teacher to each selected course-branch combination</p>
+                    </div>
+                </div>
+
+                <div id="teacherAssignmentsContainer">
+                    <p style="font-size:.82rem;color:var(--ink-2);margin-bottom:16px;padding:12px;background:var(--bg);border-radius:var(--radius-sm);">
+                        <i class="fas fa-info-circle" style="margin-right:4px;"></i>
+                        Select courses above first, then assign teachers to each branch-course combination.
+                    </p>
+                </div>
+            </div>
+
+            {{-- Step 4: Academic Details --}}
             <div class="section-block">
                 <div class="section-hd">
                     <div class="section-hd-badge"><i class="fas fa-calendar fa-xs"></i></div>

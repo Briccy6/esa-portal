@@ -68,10 +68,10 @@
             <div class="col-12">
                 <div class="card shadow-sm">
                     <div class="card-header bg-white">
-                        <h5 class="card-title mb-0">All Units (<span id="unitCount">{{ $lessonDetails->count() }}</span>)</h5>
+                        <h5 class="card-title mb-0">All Units (<span id="unitCount">{{ $lessonDetails->total() }}</span>)</h5>
                     </div>
                     <div class="card-body">
-                        <div class="table-responsive">
+                        <div class="table-responsive" id="tableContainer">
                             <table class="table table-striped" id="unitsTable">
                                 <thead>
                                     <tr>
@@ -88,7 +88,7 @@
                                 </thead>
                                 <tbody id="unitsTableBody">
                                     @foreach($lessonDetails as $unit)
-                                        <tr class="unit-row" data-search-text="{{ strtolower($unit->unit_name . ' ' . ($unit->lesson->title ?? '') . ' ' . ($unit->lesson->course->course_name ?? '') . ' ' . ($unit->lesson->teacher->teacher_name ?? '') . ' ' . ($unit->term->name ?? '')) }}">
+                                        <tr class="unit-row">
                                             <td class="unit-id">{{ $unit->id }}</td>
                                             <td class="unit-name">{{ $unit->unit_name }}</td>
                                             <td>
@@ -157,7 +157,7 @@
                         </div>
                     </div>
                     @if($lessonDetails->hasPages())
-                        <div class="card-footer bg-white">
+                        <div class="card-footer bg-white" id="paginationContainer">
                             <div class="d-flex justify-content-between align-items-center">
                                 <p class="text-muted mb-0">
                                     Showing <strong>{{ $lessonDetails->firstItem() }}</strong> to <strong>{{ $lessonDetails->lastItem() }}</strong> 
@@ -193,56 +193,114 @@
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const searchInput = document.getElementById('unitSearch');
-        const tableRows = document.querySelectorAll('.unit-row');
-        const noResults = document.getElementById('noResults');
-        const unitCount = document.getElementById('unitCount');
+let searchDebounceTimer;
 
-        if (!searchInput) return;
+function performUnitAjaxSearch(searchTerm = '') {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
+    const params = new URLSearchParams({
+        search: searchTerm,
+        ajax: 1
+    });
+    
+    fetch(`{{ route('staff.lesson-units.index') }}?${params}`, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': csrfToken
+        }
+    })
+    .then(response => response.text())
+    .then(html => {
+        const parser = new DOMParser();
+        const newDoc = parser.parseFromString(html, 'text/html');
+        
+        const newTableBody = newDoc.querySelector('#unitsTableBody');
+        const newPagination = newDoc.querySelector('#paginationContainer');
+        
+        if (newTableBody) {
+            document.getElementById('unitsTableBody').innerHTML = newTableBody.innerHTML;
+        }
+        
+        if (newPagination) {
+            document.getElementById('paginationContainer').innerHTML = newPagination.innerHTML;
+            attachUnitPaginationHandlers();
+        }
+        
+        const totalUnits = newDoc.querySelector('#unitCount');
+        if (totalUnits) {
+            document.getElementById('unitCount').textContent = totalUnits.textContent;
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
 
-        searchInput.addEventListener('keyup', function() {
-            const searchTerm = this.value.toLowerCase().trim();
-            let visibleCount = 0;
-
-            tableRows.forEach(row => {
-                const searchText = row.getAttribute('data-search-text');
-                
-                if (searchText.includes(searchTerm)) {
-                    row.style.display = '';
-                    visibleCount++;
-                } else {
-                    row.style.display = 'none';
-                }
+function attachUnitPaginationHandlers() {
+    document.querySelectorAll('#paginationContainer a[href*="page="]').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const urlParams = new URLSearchParams(new URL(this.href).search);
+            const page = urlParams.get('page');
+            const search = document.getElementById('unitSearch').value || '';
+            
+            const params = new URLSearchParams({
+                search: search,
+                page: page,
+                ajax: 1
             });
-
-            // Show/hide no results message
-            if (visibleCount === 0 && searchTerm !== '') {
-                noResults.style.display = 'block';
-            } else {
-                noResults.style.display = 'none';
-            }
-
-            // Update count
-            unitCount.textContent = visibleCount;
+            
+            fetch(`{{ route('staff.lesson-units.index') }}?${params}`, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const newDoc = parser.parseFromString(html, 'text/html');
+                
+                const newTableBody = newDoc.querySelector('#unitsTableBody');
+                const newPagination = newDoc.querySelector('#paginationContainer');
+                
+                if (newTableBody) {
+                    document.getElementById('unitsTableBody').innerHTML = newTableBody.innerHTML;
+                }
+                
+                if (newPagination) {
+                    document.getElementById('paginationContainer').innerHTML = newPagination.innerHTML;
+                    attachUnitPaginationHandlers();
+                }
+                
+                document.querySelector('#tableContainer').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
         });
+    });
+}
 
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('unitSearch');
+    
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(() => {
+                performUnitAjaxSearch(searchInput.value);
+            }, 300);
+        });
+        
         // Clear search on Escape key
         searchInput.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 this.value = '';
-                this.dispatchEvent(new Event('keyup'));
+                performUnitAjaxSearch('');
                 this.blur();
             }
         });
-
-        // Focus search input with Ctrl+/
-        document.addEventListener('keydown', function(e) {
-            if ((e.ctrlKey || e.metaKey) && e.key === '/') {
-                e.preventDefault();
-                searchInput.focus();
-            }
-        });
-    });
+    }
+    
+    attachUnitPaginationHandlers();
+});
 </script>
 @endsection

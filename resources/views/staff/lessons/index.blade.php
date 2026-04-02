@@ -77,10 +77,10 @@
             <div class="col-12">
                 <div class="card shadow-sm">
                     <div class="card-header bg-white">
-                        <h5 class="card-title mb-0">All Lessons (<span id="lessonCount">{{ $lessonDetails->count() }}</span>)</h5>
+                        <h5 class="card-title mb-0">All Lessons (<span id="lessonCount">{{ $lessonDetails->total() }}</span>)</h5>
                     </div>
                     <div class="card-body">
-                        <div class="table-responsive">
+                        <div class="table-responsive" id="tableContainer">
                             <table class="table table-striped" id="lessonsTable">
                                 <thead>
                                     <tr>
@@ -94,7 +94,7 @@
                                 </thead>
                                 <tbody id="lessonsTableBody">
                                     @foreach($lessonDetails as $lesson)
-                                        <tr class="lesson-row" data-search-text="{{ strtolower($lesson->title . ' ' . ($lesson->course->course_name ?? '') . ' ' . ($lesson->teacher->teacher_name ?? '')) }}">
+                                        <tr class="lesson-row">
                                             <td class="lesson-id">{{ $lesson->id }}</td>
                                             <td class="lesson-title">{{ $lesson->title }}</td>
                                             <td class="lesson-course">{{ $lesson->course->course_name ?? 'N/A' }}</td>
@@ -127,7 +127,7 @@
                         </div>
                     </div>
                     @if($lessonDetails->hasPages())
-                        <div class="card-footer bg-white">
+                        <div class="card-footer bg-white" id="paginationContainer">
                             <div class="d-flex justify-content-between align-items-center">
                                 <p class="text-muted mb-0">
                                     Showing <strong>{{ $lessonDetails->firstItem() }}</strong> to <strong>{{ $lessonDetails->lastItem() }}</strong> 
@@ -160,56 +160,114 @@
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const searchInput = document.getElementById('lessonSearch');
-        const tableRows = document.querySelectorAll('.lesson-row');
-        const noResults = document.getElementById('noResults');
-        const lessonCount = document.getElementById('lessonCount');
+let searchDebounceTimer;
 
-        if (!searchInput) return;
+function performStaffLessonAjaxSearch(searchTerm = '') {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
+    const params = new URLSearchParams({
+        search: searchTerm,
+        ajax: 1
+    });
+    
+    fetch(`{{ route('staff.lessons.index') }}?${params}`, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': csrfToken
+        }
+    })
+    .then(response => response.text())
+    .then(html => {
+        const parser = new DOMParser();
+        const newDoc = parser.parseFromString(html, 'text/html');
+        
+        const newTableBody = newDoc.querySelector('#lessonsTableBody');
+        const newPagination = newDoc.querySelector('#paginationContainer');
+        
+        if (newTableBody) {
+            document.getElementById('lessonsTableBody').innerHTML = newTableBody.innerHTML;
+        }
+        
+        if (newPagination) {
+            document.getElementById('paginationContainer').innerHTML = newPagination.innerHTML;
+            attachStaffLessonPaginationHandlers();
+        }
+        
+        const totalLessons = newDoc.querySelector('#lessonCount');
+        if (totalLessons) {
+            document.getElementById('lessonCount').textContent = totalLessons.textContent;
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
 
-        searchInput.addEventListener('keyup', function() {
-            const searchTerm = this.value.toLowerCase().trim();
-            let visibleCount = 0;
-
-            tableRows.forEach(row => {
-                const searchText = row.getAttribute('data-search-text');
-                
-                if (searchText.includes(searchTerm)) {
-                    row.style.display = '';
-                    visibleCount++;
-                } else {
-                    row.style.display = 'none';
-                }
+function attachStaffLessonPaginationHandlers() {
+    document.querySelectorAll('#paginationContainer a[href*="page="]').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const urlParams = new URLSearchParams(new URL(this.href).search);
+            const page = urlParams.get('page');
+            const search = document.getElementById('lessonSearch').value || '';
+            
+            const params = new URLSearchParams({
+                search: search,
+                page: page,
+                ajax: 1
             });
-
-            // Show/hide no results message
-            if (visibleCount === 0 && searchTerm !== '') {
-                noResults.style.display = 'block';
-            } else {
-                noResults.style.display = 'none';
-            }
-
-            // Update count
-            lessonCount.textContent = visibleCount;
+            
+            fetch(`{{ route('staff.lessons.index') }}?${params}`, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const newDoc = parser.parseFromString(html, 'text/html');
+                
+                const newTableBody = newDoc.querySelector('#lessonsTableBody');
+                const newPagination = newDoc.querySelector('#paginationContainer');
+                
+                if (newTableBody) {
+                    document.getElementById('lessonsTableBody').innerHTML = newTableBody.innerHTML;
+                }
+                
+                if (newPagination) {
+                    document.getElementById('paginationContainer').innerHTML = newPagination.innerHTML;
+                    attachStaffLessonPaginationHandlers();
+                }
+                
+                document.querySelector('#tableContainer').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
         });
+    });
+}
 
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('lessonSearch');
+    
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(() => {
+                performStaffLessonAjaxSearch(searchInput.value);
+            }, 300);
+        });
+        
         // Clear search on Escape key
         searchInput.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 this.value = '';
-                this.dispatchEvent(new Event('keyup'));
+                performStaffLessonAjaxSearch('');
                 this.blur();
             }
         });
-
-        // Focus search input with Ctrl+/
-        document.addEventListener('keydown', function(e) {
-            if ((e.ctrlKey || e.metaKey) && e.key === '/') {
-                e.preventDefault();
-                searchInput.focus();
-            }
-        });
-    });
+    }
+    
+    attachStaffLessonPaginationHandlers();
+});
 </script>
 @endsection
