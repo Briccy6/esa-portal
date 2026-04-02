@@ -15,7 +15,7 @@
 <div class="row g-4">
     @php
         $systemLogo = \Illuminate\Support\Facades\Cache::get('esa_system_logo');
-        $logoPath = $systemLogo ? asset('storage/' . $systemLogo) : asset('images/logo.png');
+        $logoPath = $systemLogo ? asset('storage/' . $systemLogo) : asset('images/esa.png');
     @endphp
     @forelse($courses as $course)
         @php
@@ -28,7 +28,7 @@
             <div class="card shadow-sm border-0 h-100">
                 <img src="{{ $logoPath }}" class="card-img-top p-4" alt="Course Image" style="height: 180px; object-fit: contain;">
                 <div class="card-body">
-                    <h5 class="card-title">{{ $course->name }}</h5>
+                    <h5 class="card-title">{{ $course->course_name }}</h5>
                     <ul class="list-group list-group-flush mb-3">
                         <li class="list-group-item d-flex justify-content-between align-items-center">
                             Class:
@@ -72,7 +72,7 @@
             <div class="modal-dialog modal-dialog-centered modal-lg">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="courseDetailsModalLabel{{ $course->id }}">Course Details: {{ $course->name }}</h5>
+                        <h5 class="modal-title" id="courseDetailsModalLabel{{ $course->id }}">Course Details: {{ $course->course_name }}</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
@@ -129,7 +129,7 @@
                         <select class="form-select" id="courseFilter" onchange="filterTranscripts()">
                             <option value="">All Courses</option>
                             @foreach($courses as $course)
-                                <option value="{{ $course->id }}">{{ $course->name }}</option>
+                                <option value="{{ $course->id }}">{{ $course->course_name }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -247,7 +247,7 @@
         console.log('Loading course transcripts for course:', courseId);
         try {
             const modal = new bootstrap.Modal(document.getElementById('courseTranscriptsModal'));
-            const courseNames = {{ json_encode($courses->pluck('name', 'id')->toArray()) }};
+            const courseNames = {!! json_encode($courses->pluck('course_name', 'id')->toArray()) !!};
             const courseName = courseNames[courseId];
             document.getElementById('courseTranscriptsModalLabel').innerHTML = 
                 '<i class="fas fa-file-invoice"></i> Transcripts: ' + courseName;

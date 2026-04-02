@@ -247,21 +247,21 @@
             @endphp
             
             @foreach($terms as $term)
-                const option = document.createElement('option');
-                option.value = '{{ $term->id }}';
-                option.textContent = '{{ $term->name }} - {{ $term->academicYear->year ?? '' }}';
+                const termOption{{ $loop->index }} = document.createElement('option');
+                termOption{{ $loop->index }}.value = '{{ $term->id }}';
+                termOption{{ $loop->index }}.textContent = '{{ $term->name }} - {{ $term->academicYear->year ?? '' }}';
                 
                 // Disable if term is already used elsewhere
                 if (usedTerms.has('{{ $term->id }}') && '{{ $term->id }}' !== currentValue) {
-                    option.disabled = true;
+                    termOption{{ $loop->index }}.disabled = true;
                 }
                 
                 // Select current value
                 if ('{{ $term->id }}' === currentValue) {
-                    option.selected = true;
+                    termOption{{ $loop->index }}.selected = true;
                 }
                 
-                select.appendChild(option);
+                select.appendChild(termOption{{ $loop->index }});
             @endforeach
         });
     }
@@ -276,9 +276,9 @@
             if (termSelect.value) {
                 termCount++;
                 const registration = parseFloat(row.querySelector('input[name$="[registration_fee]"]').value) || 0;
-                const tuition = parseFloat(row.querySelector('input[name$="[tuition_fee"]').value) || 0;
-                const practical = parseFloat(row.querySelector('input[name$="[practical_fee"]').value) || 0;
-                const trip = parseFloat(row.querySelector('input[name$="[trip_fee"]').value) || 0;
+                const tuition = parseFloat(row.querySelector('input[name$="[tuition_fee]"]').value) || 0;
+                const practical = parseFloat(row.querySelector('input[name$="[practical_fee]"]').value) || 0;
+                const trip = parseFloat(row.querySelector('input[name$="[trip_fee]"]').value) || 0;
                 
                 totalFees += registration + tuition + practical + trip + studentCardFee;
             }
@@ -305,7 +305,8 @@
 
     // Initialize with one empty row on page load
     document.addEventListener('DOMContentLoaded', function() {
-        // Don't automatically add row - wait for checkbox
+        // Define toggleFeeSection function globally for onclick handler
+        window.toggleFeeSection = toggleFeeSection;
         
         // Handle form submission validation
         const form = document.querySelector('form');
