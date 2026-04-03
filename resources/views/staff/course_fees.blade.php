@@ -1,5 +1,13 @@
 @extends('staff.partials.sidebar_sec')
 
+@php
+    $schoolInfo = \App\Models\SchoolInformation::first();
+    $hdrSchoolName = optional($schoolInfo)->school_name ?: 'School Name';
+    $hdrAddress = optional($schoolInfo)->address ?: '';
+    $hdrPhone = optional($schoolInfo)->phone ?: '';
+    $hdrEmail = optional($schoolInfo)->email ?: '';
+@endphp
+
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="mb-0">Course Fees & Transcript Management</h2>
@@ -171,9 +179,13 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success" onclick="downloadTranscriptsPDF()">
+                    <i class="fas fa-download"></i> Download PDF
+                </button>
                 <button type="button" class="btn btn-primary" onclick="printTranscripts()">
                     <i class="fas fa-print"></i> Print Transcripts
                 </button>
+            </div>
             </div>
         </div>
     </div>
@@ -198,6 +210,9 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success" onclick="downloadCourseTranscriptsPDF()">
+                    <i class="fas fa-download"></i> Download PDF
+                </button>
                 <button type="button" class="btn btn-primary" onclick="printCourseTranscripts()">
                     <i class="fas fa-print"></i> Print
                 </button>
@@ -249,6 +264,9 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success" onclick="downloadPaymentSchedulePDF()">
+                    <i class="fas fa-download"></i> Download PDF
+                </button>
                 <button type="button" class="btn btn-primary" onclick="printPaymentSchedule()">
                     <i class="fas fa-print"></i> Print
                 </button>
@@ -258,8 +276,18 @@
 </div>
 
 @push('scripts')
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
     let allTranscripts = [];
+    let currentPaymentScheduleContext = {}; // Store current course/term context
+    
+    // School information for print headers/footers
+    const schoolInfo = {
+        name: '{{ $hdrSchoolName }}',
+        address: '{{ $hdrAddress }}',
+        phone: '{{ $hdrPhone }}',
+        email: '{{ $hdrEmail }}'
+    };
 
     console.log('Course fees script loaded');
 
@@ -434,6 +462,13 @@
 
     function printStudentTranscript(courseId) {
         console.log('Print student transcript for course:', courseId);
+        
+        // Validate that a course ID is provided
+        if (!courseId || courseId === '' || courseId === 0) {
+            alert('Please select a course first.');
+            return;
+        }
+        
         try {
             // Show student selection modal
             const modal = new bootstrap.Modal(document.getElementById('studentSelectionModal'));
@@ -516,58 +551,132 @@
         if (modal) modal.hide();
     }
 
-    function printTranscripts() {
+    function getTranscriptPrintHTML() {
         const printContent = document.getElementById('transcriptContent').innerHTML;
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(`
+        const footer = `<footer style="border-top: 1px solid #ddd; margin-top: 20px; padding-top: 10px; font-size: 9px; text-align: center; color: #666;">
+            ${schoolInfo.name} | ${schoolInfo.address} | Phone: ${schoolInfo.phone} ${schoolInfo.email ? '| Email: ' + schoolInfo.email : ''}
+        </footer>`;
+        return `
             <html>
             <head>
                 <title>Payment Transcripts</title>
                 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
                 <style>
-                    body { padding: 20px; }
+                    body { padding: 20px; font-family: Arial, sans-serif; }
+                    .print-header { border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 20px; text-align: center; }
+                    .print-header h2 { margin: 5px 0; font-size: 16px; font-weight: bold; }
+                    .print-header p { margin: 3px 0; font-size: 11px; }
                     table { width: 100%; border-collapse: collapse; }
                     th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                    th { background-color: #f2f2f2; }
-                    @media print { body { padding: 10px; } }
+                    th { background-color: #f2f2f2; font-weight: bold; }
+                    footer { border-top: 1px solid #ddd; margin-top: 20px; padding-top: 10px; font-size: 9px; text-align: center; color: #666; }
+                    @media print { body { padding: 10px; margin: 0; } .print-header { border-bottom: 2px solid #333; } }
                 </style>
             </head>
             <body>
-                <h3>Student Payment Transcripts</h3>
-                <p>Generated on: ${new Date().toLocaleString()}</p>
+                <div class="print-header">
+                    <h2>${schoolInfo.name}</h2>
+                    <p>${schoolInfo.address}</p>
+                    <p>Phone: ${schoolInfo.phone} ${schoolInfo.email ? '| Email: ' + schoolInfo.email : ''}</p>
+                </div>
+                <h3 style="margin: 20px 0 10px 0;">Student Payment Transcripts</h3>
+                <p style="font-size: 11px; color: #666;">Generated on: ${new Date().toLocaleString()}</p>
                 ${printContent}
+                ${footer}
             </body>
             </html>
-        `);
+        `;
+    }
+
+    function printTranscripts() {
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(getTranscriptPrintHTML());
         printWindow.document.close();
         printWindow.print();
     }
 
-    function printCourseTranscripts() {
+    function downloadTranscriptsPDF() {
+        try {
+            const element = document.createElement('div');
+            element.innerHTML = getTranscriptPrintHTML();
+            
+            const opt = {
+                margin: 10,
+                filename: `Payment_Transcripts_${new Date().toISOString().split('T')[0]}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+            };
+            
+            html2pdf().set(opt).from(element).save();
+        } catch (error) {
+            console.error('Error downloading PDF:', error);
+            alert('Error downloading PDF. Please try again.');
+        }
+    }
+
+    function getCourseTranscriptsPrintHTML() {
         const printContent = document.getElementById('courseTranscriptContent').innerHTML;
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(`
+        const footer = `<footer style="border-top: 1px solid #ddd; margin-top: 20px; padding-top: 10px; font-size: 9px; text-align: center; color: #666;">
+            ${schoolInfo.name} | ${schoolInfo.address} | Phone: ${schoolInfo.phone} ${schoolInfo.email ? '| Email: ' + schoolInfo.email : ''}
+        </footer>`;
+        return `
             <html>
             <head>
                 <title>Course Transcripts</title>
                 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
                 <style>
-                    body { padding: 20px; }
+                    body { padding: 20px; font-family: Arial, sans-serif; }
+                    .print-header { border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 20px; text-align: center; }
+                    .print-header h2 { margin: 5px 0; font-size: 16px; font-weight: bold; }
+                    .print-header p { margin: 3px 0; font-size: 11px; }
                     table { width: 100%; border-collapse: collapse; }
                     th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                    th { background-color: #f2f2f2; }
-                    @media print { body { padding: 10px; } }
+                    th { background-color: #f2f2f2; font-weight: bold; }
+                    footer { border-top: 1px solid #ddd; margin-top: 20px; padding-top: 10px; font-size: 9px; text-align: center; color: #666; }
+                    @media print { body { padding: 10px; margin: 0; } .print-header { border-bottom: 2px solid #333; } }
                 </style>
             </head>
             <body>
-                <h3>Course Payment Transcripts</h3>
-                <p>Generated on: ${new Date().toLocaleString()}</p>
+                <div class="print-header">
+                    <h2>${schoolInfo.name}</h2>
+                    <p>${schoolInfo.address}</p>
+                    <p>Phone: ${schoolInfo.phone} ${schoolInfo.email ? '| Email: ' + schoolInfo.email : ''}</p>
+                </div>
+                <h3 style="margin: 20px 0 10px 0;">Course Payment Transcripts</h3>
+                <p style="font-size: 11px; color: #666;">Generated on: ${new Date().toLocaleString()}</p>
                 ${printContent}
+                ${footer}
             </body>
             </html>
-        `);
+        `;
+    }
+
+    function printCourseTranscripts() {
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(getCourseTranscriptsPrintHTML());
         printWindow.document.close();
         printWindow.print();
+    }
+
+    function downloadCourseTranscriptsPDF() {
+        try {
+            const element = document.createElement('div');
+            element.innerHTML = getCourseTranscriptsPrintHTML();
+            
+            const opt = {
+                margin: 10,
+                filename: `Course_Transcripts_${new Date().toISOString().split('T')[0]}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+            };
+            
+            html2pdf().set(opt).from(element).save();
+        } catch (error) {
+            console.error('Error downloading PDF:', error);
+            alert('Error downloading PDF. Please try again.');
+        }
     }
 
     function formatCurrency(amount) {
@@ -610,6 +719,12 @@
         const modal = new bootstrap.Modal(document.getElementById('paymentScheduleModal'));
         const courseNames = {!! json_encode($courses->pluck('course_name', 'id')->toArray()) !!};
         const courseName = courseNames[courseId];
+        
+        // Store current context for print function
+        currentPaymentScheduleContext = {
+            courseId: courseId,
+            courseName: courseName
+        };
         
         document.getElementById('paymentScheduleModalLabel').innerHTML = 
             '<i class="fas fa-calendar"></i> Payment Schedule: ' + courseName + ' by Term';
@@ -677,32 +792,161 @@
         content.innerHTML = html;
     }
 
-    // Print payment schedule
-    function printPaymentSchedule() {
+    // Get payment schedule print HTML
+    function getPaymentSchedulePrintHTML() {
         const printContent = document.getElementById('paymentScheduleContent').innerHTML;
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(`
+        const courseName = currentPaymentScheduleContext.courseName || 'Payment Schedule';
+        
+        // Get term information from the table
+        const termTable = document.querySelector('#paymentScheduleContent table tbody');
+        let termsInfo = '';
+        let academicYears = new Set();
+        
+        if (termTable) {
+            const rows = termTable.querySelectorAll('tr');
+            const termCount = rows.length;
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells[1]) { // Academic year column
+                    academicYears.add(cells[1].textContent.trim());
+                }
+            });
+            termsInfo = `Terms: ${termCount} | Academic Year(s): ${Array.from(academicYears).join(', ')}`;
+        }
+        
+        const footer = `<footer style="border-top: 1px solid #333; margin-top: 15px; padding-top: 8px; font-size: 8px; text-align: center; color: #333;">
+            ${schoolInfo.name} | ${schoolInfo.address} | Phone: ${schoolInfo.phone} ${schoolInfo.email ? '| Email: ' + schoolInfo.email : ''}
+        </footer>`;
+        
+        return `
             <html>
             <head>
-                <title>Payment Schedule</title>
+                <title>Payment Schedule - ${courseName}</title>
                 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
                 <style>
-                    body { padding: 20px; }
-                    table { width: 100%; border-collapse: collapse; }
-                    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                    th { background-color: #f2f2f2; }
-                    @media print { body { padding: 10px; } }
+                    * { margin: 0; padding: 0; }
+                    body { 
+                        padding: 12mm; 
+                        font-family: Arial, sans-serif; 
+                        font-size: 10px;
+                        line-height: 1.3;
+                    }
+                    .print-header { 
+                        border-bottom: 2px solid #333; 
+                        padding-bottom: 8px; 
+                        margin-bottom: 8px; 
+                        text-align: center; 
+                    }
+                    .print-header h2 { 
+                        margin: 0; 
+                        font-size: 14px; 
+                        font-weight: bold; 
+                    }
+                    .print-header p { 
+                        margin: 2px 0; 
+                        font-size: 9px; 
+                    }
+                    .course-header {
+                        background: #f5f5f5;
+                        border: 1px solid #ddd;
+                        padding: 6px;
+                        margin: 6px 0;
+                        border-radius: 3px;
+                    }
+                    .course-header h3 {
+                        margin: 0 0 3px 0;
+                        font-size: 12px;
+                        font-weight: bold;
+                        color: #1a3a52;
+                    }
+                    .course-info {
+                        font-size: 9px;
+                        color: #555;
+                        margin: 2px 0;
+                    }
+                    table { 
+                        width: 100%; 
+                        border-collapse: collapse; 
+                        margin: 4px 0;
+                        font-size: 9px;
+                    }
+                    th, td { 
+                        border: 1px solid #999; 
+                        padding: 4px; 
+                        text-align: left; 
+                    }
+                    th { 
+                        background-color: #2c3e50; 
+                        color: white;
+                        font-weight: bold;
+                        font-size: 9px;
+                    }
+                    tr:nth-child(even) {
+                        background-color: #f9f9f9;
+                    }
+                    footer { 
+                        border-top: 1px solid #333; 
+                        margin-top: 8px; 
+                        padding-top: 5px; 
+                        font-size: 8px; 
+                        text-align: center; 
+                        color: #333;
+                    }
+                    @media print { 
+                        body { padding: 8mm; margin: 0; }
+                        html, body { height: 100%; }
+                        .print-header { border-bottom: 2px solid #333; }
+                        @page { size: A4; margin: 8mm; }
+                    }
                 </style>
             </head>
             <body>
-                <h3>Payment Schedule by Term</h3>
-                <p>Generated on: ${new Date().toLocaleString()}</p>
+                <div class="print-header">
+                    <h2>${schoolInfo.name}</h2>
+                    <p>${schoolInfo.address}</p>
+                    <p>Phone: ${schoolInfo.phone} ${schoolInfo.email ? '| Email: ' + schoolInfo.email : ''}</p>
+                </div>
+                
+                <div class="course-header">
+                    <h3>Payment Schedule by Term</h3>
+                    <div class="course-info"><strong>Course:</strong> ${courseName}</div>
+                    <div class="course-info">${termsInfo}</div>
+                    <div class="course-info"><strong>Generated:</strong> ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })} at ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</div>
+                </div>
+                
                 ${printContent}
+                ${footer}
             </body>
             </html>
-        `);
+        `;
+    }
+
+    // Print payment schedule
+    function printPaymentSchedule() {
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(getPaymentSchedulePrintHTML());
         printWindow.document.close();
         printWindow.print();
+    }
+
+    function downloadPaymentSchedulePDF() {
+        try {
+            const element = document.createElement('div');
+            element.innerHTML = getPaymentSchedulePrintHTML();
+            
+            const opt = {
+                margin: [8, 8, 8, 8],
+                filename: `Payment_Schedule_${currentPaymentScheduleContext.courseName || 'Report'}_${new Date().toISOString().split('T')[0]}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+            };
+            
+            html2pdf().set(opt).from(element).save();
+        } catch (error) {
+            console.error('Error downloading PDF:', error);
+            alert('Error downloading PDF. Please try again.');
+        }
     }
 
     // Load payment statistics for all courses when page loads
