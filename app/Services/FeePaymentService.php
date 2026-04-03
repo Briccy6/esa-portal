@@ -5,7 +5,7 @@ namespace App\Services;
 use App\Models\Student;
 use App\Models\StudentSubscription;
 use App\Models\StudentTransaction;
-use App\Models\SchoolFee;
+use App\Models\CourseTermFee;
 use App\Models\AcademicYear;
 use App\Models\Term;
 use Carbon\Carbon;
@@ -26,7 +26,6 @@ class FeePaymentService
      */
     public static function getPaymentStatus(Student $student): array
     {
-        // Simple approach: Check if student has outstanding_amount field
         $outstanding = 0;
         $requiredFees = 0;
         
@@ -36,17 +35,32 @@ class FeePaymentService
             $requiredFees = $outstanding; // Assume required = outstanding for now
         }
         
-        // Otherwise check from school_fees table
-        if ($outstanding == 0 && $student->schoolFees()->exists()) {
-            $requiredFees = $student->schoolFees()->sum('amount');
+        // Otherwise check from course term fees (fees are tied to courses, not students directly)
+        if ($outstanding == 0 && $student->course) {
+            // Get the current term
+            $currentTerm = Term::where('start_date', '<=', now())
+                               ->where('end_date', '>=', now())
+                               ->first();
             
-            // Sum paid amounts from transactions
-            $totalPaid = StudentTransaction::where('student_id', $student->id)
-                                          ->where('type', 'school_fee')
-                                          ->where('status', 'successful')
-                                          ->sum('amount');
-            
-            $outstanding = max(0, $requiredFees - $totalPaid);
+            if ($currentTerm) {
+                // Get fees for this course in the current term
+                $courseTermFee = \App\Models\CourseTermFee::where('course_id', $student->course_id)
+                                                           ->where('term_id', $currentTerm->id)
+                                                           ->where('is_active', true)
+                                                           ->first();
+                
+                if ($courseTermFee) {
+                    $requiredFees = $courseTermFee->total_fees;
+                    
+                    // Sum paid amounts from transactions
+                    $totalPaid = StudentTransaction::where('student_id', $student->id)
+                                                  ->where('type', 'school_fee')
+                                                  ->where('status', 'successful')
+                                                  ->sum('amount');
+                    
+                    $outstanding = max(0, $requiredFees - $totalPaid);
+                }
+            }
         }
         
         return [

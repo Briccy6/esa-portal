@@ -688,48 +688,56 @@ class ReportCardController extends Controller
      */
     public function checkOutstandingFeesForGeneration(Request $request)
     {
-        $request->validate([
-            'course_id' => 'required|exists:courses,id',
-            'academic_year_id' => 'required|exists:academic_years,id',
-            'term_ids' => 'nullable|array',
-            'term_ids.*' => 'exists:terms,id',
-        ]);
+        try {
+            $request->validate([
+                'course_id' => 'required|exists:courses,id',
+                'academic_year_id' => 'required|exists:academic_years,id',
+                'term_ids' => 'nullable|array',
+                'term_ids.*' => 'exists:terms,id',
+            ]);
 
-        $termIds = $this->normalizeTermIds($request);
-        if ($termIds === []) {
+            $termIds = $this->normalizeTermIds($request);
+            if ($termIds === []) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Select at least one term.'
+                ], 400);
+            }
+
+            // Get students in this course/year
+            $students = Student::where('course_id', $request->course_id)
+                ->where('academic_year_id', $request->academic_year_id)
+                ->get();
+
+            $studentsWithFees = [];
+            foreach ($students as $student) {
+                $paymentStatus = FeePaymentService::getPaymentStatus($student);
+                if ($paymentStatus['outstanding'] > 0) {
+                    $studentsWithFees[] = [
+                        'id' => $student->id,
+                        'full_name' => $student->full_name,
+                        'email' => $student->email,
+                        'student_id' => $student->student_id,
+                        'outstanding_amount' => $paymentStatus['outstanding'],
+                        'required_fees' => $paymentStatus['required_fees'],
+                        'total_paid' => $paymentStatus['total_paid'],
+                    ];
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'has_outstanding_fees' => count($studentsWithFees) > 0,
+                'students' => $studentsWithFees,
+                'count' => count($studentsWithFees),
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error checking outstanding fees: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Select at least one term.'
-            ], 400);
+                'message' => 'Error checking fees: ' . $e->getMessage()
+            ], 500);
         }
-
-        // Get students in this course/year
-        $students = Student::where('course_id', $request->course_id)
-            ->where('academic_year_id', $request->academic_year_id)
-            ->get();
-
-        $studentsWithFees = [];
-        foreach ($students as $student) {
-            $paymentStatus = FeePaymentService::getPaymentStatus($student);
-            if ($paymentStatus['outstanding'] > 0) {
-                $studentsWithFees[] = [
-                    'id' => $student->id,
-                    'full_name' => $student->full_name,
-                    'email' => $student->email,
-                    'student_id' => $student->student_id,
-                    'outstanding_amount' => $paymentStatus['outstanding'],
-                    'required_fees' => $paymentStatus['required_fees'],
-                    'total_paid' => $paymentStatus['total_paid'],
-                ];
-            }
-        }
-
-        return response()->json([
-            'success' => true,
-            'has_outstanding_fees' => count($studentsWithFees) > 0,
-            'students' => $studentsWithFees,
-            'count' => count($studentsWithFees),
-        ]);
     }
 
     public function bulkApprove(Request $request)

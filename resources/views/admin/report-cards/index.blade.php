@@ -1960,6 +1960,12 @@ document.addEventListener('DOMContentLoaded', function () {
         })
         .then(response => {
             console.log('Response status:', response.status);
+            if (!response.ok) {
+                return response.text().then(text => {
+                    console.error('Server error response:', text);
+                    throw new Error(`Server error: ${response.status} ${response.statusText}`);
+                });
+            }
             return response.json();
         })
         .then(data => {

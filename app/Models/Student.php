@@ -55,11 +55,6 @@ class Student extends Authenticatable
      * Relationships
      */
 
-    public function schoolFees()
-    {
-        return $this->hasMany(SchoolFee::class);
-    }
-
     public function academicYear()
     {
         return $this->belongsTo(AcademicYear::class);
@@ -313,15 +308,29 @@ class Student extends Authenticatable
      */
     public function getOutstandingFees()
     {
-        // Calculate from school_fees if they exist
-        if ($this->schoolFees()->exists()) {
-            $totalFees = $this->schoolFees()->sum('amount');
-            $paidAmount = $this->transactions()
-                ->where('type', 'school_fee')
-                ->where('status', 'successful')
-                ->sum('amount');
+        // Calculate from course term fees
+        if ($this->course) {
+            // Get the current term
+            $currentTerm = \App\Models\Term::where('start_date', '<=', now())
+                                           ->where('end_date', '>=', now())
+                                           ->first();
             
-            return max(0, $totalFees - $paidAmount);
+            if ($currentTerm) {
+                $courseTermFee = \App\Models\CourseTermFee::where('course_id', $this->course_id)
+                                                           ->where('term_id', $currentTerm->id)
+                                                           ->where('is_active', true)
+                                                           ->first();
+                
+                if ($courseTermFee) {
+                    $totalFees = $courseTermFee->total_fees;
+                    $paidAmount = $this->transactions()
+                        ->where('type', 'school_fee')
+                        ->where('status', 'successful')
+                        ->sum('amount');
+                    
+                    return max(0, $totalFees - $paidAmount);
+                }
+            }
         }
 
         // Check if there's a direct outstanding_amount field
