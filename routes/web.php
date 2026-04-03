@@ -153,15 +153,15 @@ Route::prefix('public')->name('public.')->group(function () {
     Route::post('/exams/{exam}/save-session/{session}', [PublicExamController::class, 'saveSession'])->name('exams.save.session');
     Route::post('/exams/{exam}/submit/{session}', [PublicExamController::class, 'submitExam'])->name('exams.submit');
     Route::get('/api/exams/{exam}/check-access', [PublicExamController::class, 'checkAccess'])->name('exams.check-access');
+});
 
-    // Public Fees Schedule Routes
-    Route::prefix('fees')->name('fees.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\PublicFeesController::class, 'index'])->name('index');
-        Route::get('/debug', [\App\Http\Controllers\PublicFeesController::class, 'debugInfo'])->name('debug');
-        Route::get('/branches/{branchId}/courses', [\App\Http\Controllers\PublicFeesController::class, 'getCoursesByBranch'])->name('courses.by-branch');
-        Route::get('/courses/{courseId}', [\App\Http\Controllers\PublicFeesController::class, 'getCourseFees'])->name('course-fees');
-        Route::get('/courses/{courseId}/download', [\App\Http\Controllers\PublicFeesController::class, 'downloadPDF'])->name('download-pdf');
-    });
+// Public Fees Schedule Routes
+Route::prefix('fees')->name('fees.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\PublicFeesController::class, 'index'])->name('index');
+    Route::get('/debug', [\App\Http\Controllers\PublicFeesController::class, 'debugInfo'])->name('debug');
+    Route::get('/branches/{branchId}/courses', [\App\Http\Controllers\PublicFeesController::class, 'getCoursesByBranch'])->name('courses.by-branch');
+    Route::get('/courses/{courseId}', [\App\Http\Controllers\PublicFeesController::class, 'getCourseFees'])->name('course-fees');
+    Route::get('/courses/{courseId}/download', [\App\Http\Controllers\PublicFeesController::class, 'downloadPDF'])->name('download-pdf');
 });
 
 // Course AJAX

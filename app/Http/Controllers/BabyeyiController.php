@@ -329,9 +329,12 @@ class BabyeyiController extends Controller
 
         $babyeyi->load(['academicYear', 'term', 'course', 'creator', 'editor']);
         $schoolInfo = SchoolInformation::getActive();
-        $headTeacher = User::whereHas('roles', function($q) {
-            $q->whereIn('name', ['head_teacher', 'principal', 'director']);
-        })->first();
+        
+        // Try to find a head teacher, principal, or admin user
+        // First check for staff with DOS role, then admin
+        $headTeacher = User::whereIn('role', ['DOS', 'admin'])
+            ->orderBy('role')
+            ->first();
 
         return view('babyeyi.public-show', compact('babyeyi', 'schoolInfo', 'headTeacher'));
     }
@@ -348,9 +351,12 @@ class BabyeyiController extends Controller
 
         $babyeyi->load(['academicYear', 'term', 'course', 'creator', 'editor']);
         $schoolInfo = SchoolInformation::getActive();
-        $headTeacher = User::whereHas('roles', function($q) {
-            $q->whereIn('name', ['head_teacher', 'principal', 'director']);
-        })->first();
+        
+        // Try to find a head teacher, principal, or admin user
+        // First check for staff with DOS role, then admin
+        $headTeacher = User::whereIn('role', ['DOS', 'admin'])
+            ->orderBy('role')
+            ->first();
 
         $pdf = PDF::loadView('babyeyi.public-pdf', compact('babyeyi', 'schoolInfo', 'headTeacher'));
         
@@ -432,9 +438,12 @@ class BabyeyiController extends Controller
 
         $babyeyi->load(['academicYear', 'term', 'course', 'creator', 'editor']);
         $schoolInfo = SchoolInformation::getActive();
-        $headTeacher = User::whereHas('roles', function($q) {
-            $q->whereIn('name', ['head_teacher', 'principal', 'director']);
-        })->first();
+        
+        // Try to find a head teacher, principal, or admin user
+        // First check for staff with DOS role, then admin
+        $headTeacher = User::whereIn('role', ['DOS', 'admin'])
+            ->orderBy('role')
+            ->first();
 
         return view('babyeyi.student-show', compact('babyeyi', 'schoolInfo', 'headTeacher', 'student', 'courseTermFees'));
     }
@@ -460,9 +469,12 @@ class BabyeyiController extends Controller
 
         $babyeyi->load(['academicYear', 'term', 'course', 'creator', 'editor']);
         $schoolInfo = SchoolInformation::getActive();
-        $headTeacher = User::whereHas('roles', function($q) {
-            $q->whereIn('name', ['head_teacher', 'principal', 'director']);
-        })->first();
+        
+        // Try to find a head teacher, principal, or admin user
+        // First check for staff with DOS role, then admin
+        $headTeacher = User::whereIn('role', ['DOS', 'admin'])
+            ->orderBy('role')
+            ->first();
 
         $pdf = PDF::loadView('babyeyi.student-pdf', compact('babyeyi', 'schoolInfo', 'headTeacher', 'student', 'courseTermFees'));
         
