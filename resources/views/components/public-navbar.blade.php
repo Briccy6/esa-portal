@@ -35,6 +35,9 @@
                 <a href="{{ route('public.babyeyi.index') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300">
                     Babyeyi
                 </a>
+                <a href="{{ route('public.fees.index') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300">
+                    <i class="fas fa-receipt mr-1"></i>Fees
+                </a>
                 <a href="#quick-access" class="text-text-light hover:text-accent-color font-medium transition duration-300">
                     Portals
                 </a>
@@ -95,6 +98,9 @@
                         </a>
                         <a href="{{ route('public.babyeyi.index') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300" @click="open = false">
                             Babyeyi
+                        </a>
+                        <a href="{{ route('public.fees.index') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300" @click="open = false">
+                            <i class="fas fa-receipt mr-1"></i>Fees
                         </a>
                         <a href="#quick-access" class="text-text-light hover:text-accent-color font-medium transition duration-300" @click="open = false">
                             Portals

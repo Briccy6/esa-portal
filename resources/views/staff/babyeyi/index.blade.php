@@ -12,9 +12,14 @@
         </div>
         <div class="col-md-4 text-end">
             @can('create', App\Models\Babyeyi::class)
-                <a href="{{ route('babyeyi.create') }}" class="btn btn-primary btn-lg">
-                    <i class="fas fa-plus"></i> Create New Babyeyi
-                </a>
+                <div class="btn-group" role="group">
+                    <a href="{{ route('babyeyi.bulk.create') }}" class="btn btn-success btn-lg">
+                        <i class="fas fa-bolt"></i> Bulk Generate
+                    </a>
+                    <a href="{{ route('babyeyi.create') }}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-plus"></i> Create New
+                    </a>
+                </div>
             @endcan
         </div>
     </div>

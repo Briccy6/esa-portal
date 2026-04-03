@@ -9,6 +9,7 @@ use App\Models\Course;
 use App\Models\SchoolInformation;
 use App\Models\Student;
 use App\Models\User;
+use App\Services\BabyeyiService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -466,5 +467,172 @@ class BabyeyiController extends Controller
 
         return redirect()->route('babyeyi.index')
             ->with('success', "Babyeyi document ({$reference}) has been deleted successfully.");
+    }
+
+    /**
+     * Show form for bulk generation of babyeyis for all courses in a term.
+     */
+    public function bulkCreate()
+    {
+        $academicYears = AcademicYear::orderBy('year', 'desc')->get();
+        $terms = collect();
+
+        if (Auth::guard('admin')->check()) {
+            $view = 'admin.babyeyi.bulk-create';
+        } elseif (Auth::guard('staff')->check()) {
+            $view = 'staff.babyeyi.bulk-create';
+        } else {
+            $view = 'babyeyi.bulk-create';
+        }
+
+        return view($view, compact('academicYears', 'terms'));
+    }
+
+    /**
+     * Process bulk generation of babyeyis for a specific term and all its courses.
+     */
+    public function bulkStore(Request $request)
+    {
+        $validated = $request->validate([
+            'academic_year_id' => 'required|exists:academic_years,id',
+            'term_id' => 'required|exists:terms,id',
+            'auto_publish' => 'boolean',
+        ]);
+
+        $service = new BabyeyiService();
+        $term = Term::findOrFail($validated['term_id']);
+
+        try {
+            // Generate babyeyis for all courses with term fees
+            $result = $service->generateBabyeyisForTerm(
+                $validated['term_id'],
+                $validated['academic_year_id'],
+                Auth::id() ?? Auth::guard('admin')->id() ?? Auth::guard('staff')->id()
+            );
+
+            if ($validated['auto_publish'] ?? false) {
+                $publishCount = $service->publishBabyeyisForTerm($validated['term_id']);
+                $status = 'success';
+                $message = "Successfully created and published {$result['created']} babyeyis for {$term->name}!";
+                if ($publishCount > 0) {
+                    $message .= " {$publishCount} documents published.";
+                }
+            } else {
+                $status = 'success';
+                $message = "Successfully created {$result['created']} babyeyis for {$term->name}! Please review and publish them.";
+            }
+
+            if (!empty($result['errors'])) {
+                $message .= "\n\nWarnings: " . implode("; ", $result['errors']);
+                $status = 'warning';
+            }
+
+            return redirect()->route('babyeyi.index')
+                ->with(['status' => $status, 'message' => $message]);
+
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Error creating babyeyis: ' . $e->getMessage())
+                ->withInput();
+        }
+    }
+
+    /**
+     * Show the babyeyi bulk operations page.
+     */
+    public function bulkOperations()
+    {
+        $terms = Term::with('academicYear')->orderBy('created_at', 'desc')->get();
+        $statistics = [];
+
+        foreach ($terms as $term) {
+            $service = new BabyeyiService();
+            $statistics[$term->id] = $service->getTermStatistics($term->id);
+        }
+
+        if (Auth::guard('admin')->check()) {
+            $view = 'admin.babyeyi.bulk-operations';
+        } elseif (Auth::guard('staff')->check()) {
+            $view = 'staff.babyeyi.bulk-operations';
+        } else {
+            $view = 'babyeyi.bulk-operations';
+        }
+
+        return view($view, compact('terms', 'statistics'));
+    }
+
+    /**
+     * Publish all draft babyeyis for a specific term.
+     */
+    public function bulkPublish(Request $request)
+    {
+        $validated = $request->validate([
+            'term_id' => 'required|exists:terms,id',
+        ]);
+
+        $service = new BabyeyiService();
+        $publishCount = $service->publishBabyeyisForTerm($validated['term_id']);
+        $term = Term::findOrFail($validated['term_id']);
+
+        return redirect()->route('babyeyi.index')
+            ->with('success', "Published {$publishCount} babyeyis for {$term->name}!");
+    }
+
+    /**
+     * Regenerate all babyeyis for a term (useful after fee updates).
+     */
+    public function regenerateForTerm(Request $request)
+    {
+        $validated = $request->validate([
+            'term_id' => 'required|exists:terms,id',
+        ]);
+
+        $babyeyis = Babyeyi::where('term_id', $validated['term_id'])->get();
+        $service = new BabyeyiService();
+        $count = 0;
+
+        foreach ($babyeyis as $babyeyi) {
+            try {
+                $service->regenerateBabyeyi($babyeyi);
+                $count++;
+            } catch (\Exception $e) {
+                \Log::error("Error regenerating babyeyi {$babyeyi->id}: " . $e->getMessage());
+            }
+        }
+
+        $term = Term::findOrFail($validated['term_id']);
+
+        return redirect()->route('babyeyi.index')
+            ->with('success', "Regenerated content for {$count} babyeyis for {$term->name}!");
+    }
+
+    /**
+     * Quick action: Generate and publish babyeyis for a term in one step.
+     */
+    public function quickGenerate(Request $request, $termId)
+    {
+        $term = Term::findOrFail($termId);
+        $service = new BabyeyiService();
+
+        try {
+            $result = $service->generateBabyeyisForTerm(
+                $termId,
+                $term->academic_year_id,
+                Auth::id() ?? Auth::guard('admin')->id() ?? Auth::guard('staff')->id()
+            );
+
+            // Auto-publish all generated babyeyis
+            $publishCount = $service->publishBabyeyisForTerm($termId);
+
+            return redirect()->route('babyeyi.index')
+                ->with('success', 
+                    "Generated and published {$result['created']} babyeyis for {$term->name}! " .
+                    ($publishCount > 0 ? "All {$publishCount} documents are now live for students." : "")
+                );
+
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Error: ' . $e->getMessage());
+        }
     }
 }

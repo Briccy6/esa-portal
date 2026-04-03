@@ -150,6 +150,14 @@ Route::prefix('public')->name('public.')->group(function () {
     Route::post('/exams/{exam}/save-session/{session}', [PublicExamController::class, 'saveSession'])->name('exams.save.session');
     Route::post('/exams/{exam}/submit/{session}', [PublicExamController::class, 'submitExam'])->name('exams.submit');
     Route::get('/api/exams/{exam}/check-access', [PublicExamController::class, 'checkAccess'])->name('exams.check-access');
+
+    // Public Fees Schedule Routes
+    Route::prefix('fees')->name('fees.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\PublicFeesController::class, 'index'])->name('index');
+        Route::get('/branches/{branchId}/courses', [\App\Http\Controllers\PublicFeesController::class, 'getCoursesByBranch'])->name('courses.by-branch');
+        Route::get('/courses/{courseId}', [\App\Http\Controllers\PublicFeesController::class, 'getCourseFees'])->name('course-fees');
+        Route::get('/courses/{courseId}/download', [\App\Http\Controllers\PublicFeesController::class, 'downloadPDF'])->name('download-pdf');
+    });
 });
 
 // Course AJAX
@@ -1447,6 +1455,14 @@ Route::middleware(['auth:admin,staff'])->prefix('babyeyi')->name('babyeyi.')->gr
     Route::get('/{babyeyi}/download', [BabyeyiController::class, 'download'])->name('download');
     Route::get('/get-terms/{academicYearId}', [BabyeyiController::class, 'getTerms'])->name('get-terms');
     Route::get('/get-courses', [BabyeyiController::class, 'getCourses'])->name('get-courses');
+    
+    // Bulk operations routes
+    Route::get('/bulk/create', [BabyeyiController::class, 'bulkCreate'])->name('bulk.create');
+    Route::post('/bulk/store', [BabyeyiController::class, 'bulkStore'])->name('bulk.store');
+    Route::get('/bulk/operations', [BabyeyiController::class, 'bulkOperations'])->name('bulk.operations');
+    Route::post('/bulk/publish', [BabyeyiController::class, 'bulkPublish'])->name('bulk.publish');
+    Route::post('/bulk/regenerate', [BabyeyiController::class, 'regenerateForTerm'])->name('bulk.regenerate');
+    Route::post('/quick-generate/{termId}', [BabyeyiController::class, 'quickGenerate'])->name('quick-generate');
 });
 
 // PUBLIC: Babyeyi Routes - Accessible by students and public users
