@@ -250,7 +250,7 @@
 
             <div class="email-footer">
                 <p style="margin: 0;">
-                    © {{ date('Y') }} {{ config('app.name', 'Excellent Servant Academy'). }} All rights reserved.<br>
+                    © {{ date('Y') }} {{ config('app.name', 'Excellent Servant Academy') }} All rights reserved.<br>
                     <a href="{{ config('app.url') }}">{{ config('app.url') }}</a>
                 </p>
             </div>

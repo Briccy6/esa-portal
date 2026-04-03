@@ -2006,7 +2006,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 <div class="fees-student-info">
                     <div class="fees-student-name">${escapeHtml(student.full_name)}</div>
                     <div class="fees-student-amount">
-                        Outstanding: <span class="fees-amount">₱${parseFloat(student.outstanding_amount).toFixed(2)}</span>
+                        Outstanding: <span class="fees-amount">RWF ${new Intl.NumberFormat('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}).format(parseFloat(student.outstanding_amount))}</span>
                     </div>
                 </div>
                 <button type="button" class="btn btn-sm btn-outline-primary fees-email-btn" onclick="window.sendIndividualFeeEmail(${student.id})">
