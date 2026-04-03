@@ -48,10 +48,12 @@ class FeePaymentService
             ];
         }
         
-        // Get fees from course_term_fees (NOT from student)
-        // Fees are tied to the course, not individual students
+        // Get fees from course_term_fees table
+        // Fees are tied to the course in course_term_fees, not individual students
         if ($student->course_id && $student->academic_year_id) {
-            // Query for course term fees - optionally filtered by specific terms
+            
+            // ========== FEES QUERY (from course_term_fees table) ==========
+            // Get all course_term_fees for this student's course
             $feeQuery = CourseTermFee::where('course_id', $student->course_id)
                                      ->where('is_active', true);
             
@@ -65,14 +67,25 @@ class FeePaymentService
                 });
             }
             
+            // Execute the query to get course_term_fees records
             $courseTermFees = $feeQuery->get();
             
-            // Sum all required fees for the selected terms
-            $requiredFees = $courseTermFees->sum('total_fees');
+            // Sum all required fees from course_term_fees table
+            // From individual columns: registration_fee + tuition_fee + practical_fee + trip_fee + student_card_fee
+            // Using model accessor total_fees which calculates: sum of all fee columns
+            $requiredFees = $courseTermFees->sum(function($fee) {
+                return ($fee->registration_fee ?? 0) 
+                     + ($fee->tuition_fee ?? 0) 
+                     + ($fee->practical_fee ?? 0) 
+                     + ($fee->trip_fee ?? 0) 
+                     + ($fee->student_card_fee ?? 0);
+            });
             
-            // Query for student transactions - optionally filtered by specific terms
+            // ========== PAYMENT QUERY (from student_transactions table) ==========
+            // Get all successful fee payments for this student (all fee types)
+            // Includes: school_fee (tuition), trip_fee, registration_fee, practical_fee, student_card_fee
             $transactionQuery = StudentTransaction::where('student_id', $student->id)
-                                                  ->where('type', 'school_fee')
+                                                  ->whereIn('type', ['school_fee', 'trip_fee', 'registration_fee', 'practical_fee', 'student_card_fee'])
                                                   ->where('status', 'successful');
             
             // If specific term IDs provided, only get payments for those terms
@@ -80,6 +93,7 @@ class FeePaymentService
                 $transactionQuery->whereIn('term_id', $termIds);
             }
             
+            // Sum all amount values from student_transactions
             $totalPaid = $transactionQuery->sum('amount');
             
             // Calculate outstanding balance
@@ -148,15 +162,28 @@ class FeePaymentService
             $courseTermFees = $feeQuery->with('term')->get();
 
             foreach ($courseTermFees as $ctf) {
+                // Calculate total fees for this course/term
+                $termTotal = ($ctf->registration_fee ?? 0) 
+                           + ($ctf->tuition_fee ?? 0) 
+                           + ($ctf->practical_fee ?? 0) 
+                           + ($ctf->trip_fee ?? 0) 
+                           + ($ctf->student_card_fee ?? 0);
+                
                 $result['course_term_fees'][] = [
                     'term' => $ctf->term->name ?? 'Unknown',
-                    'amount' => $ctf->total_fees,
+                    'registration_fee' => $ctf->registration_fee ?? 0,
+                    'tuition_fee' => $ctf->tuition_fee ?? 0,
+                    'practical_fee' => $ctf->practical_fee ?? 0,
+                    'trip_fee' => $ctf->trip_fee ?? 0,
+                    'student_card_fee' => $ctf->student_card_fee ?? 0,
+                    'total' => $termTotal,
                 ];
             }
 
-            // Get student transactions
+            // Get student transactions (all fee types)
+            // Includes: school_fee (tuition), trip_fee, registration_fee, practical_fee, student_card_fee
             $transactionQuery = StudentTransaction::where('student_id', $student->id)
-                                                  ->where('type', 'school_fee')
+                                                  ->whereIn('type', ['school_fee', 'trip_fee', 'registration_fee', 'practical_fee', 'student_card_fee'])
                                                   ->orderBy('created_at', 'desc');
             
             if (!empty($termIds) && is_array($termIds)) {
@@ -186,7 +213,15 @@ class FeePaymentService
                 });
             }
             
-            $totalRequired = $feeCalcQuery->sum('total_fees');
+            // Get all course_term_fees and calculate total from fee columns
+            $courseTermFeesForCalc = $feeCalcQuery->get();
+            $totalRequired = $courseTermFeesForCalc->sum(function($fee) {
+                return ($fee->registration_fee ?? 0) 
+                     + ($fee->tuition_fee ?? 0) 
+                     + ($fee->practical_fee ?? 0) 
+                     + ($fee->trip_fee ?? 0) 
+                     + ($fee->student_card_fee ?? 0);
+            });
 
             $txnCalcQuery = StudentTransaction::where('student_id', $student->id)
                                              ->where('type', 'school_fee')

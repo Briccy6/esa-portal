@@ -774,10 +774,10 @@ This custom letter is provided for the purpose of: {$purpose}";
             ->where('course_id', $student->course_id)
             ->sum(DB::raw('registration_fee + tuition_fee + practical_fee + trip_fee + student_card_fee'));
         
-        // Get total paid from student_transactions (successful payments only)
+        // Get total paid from student_transactions (paid and successful transactions only)
         $totalPaid = DB::table('student_transactions')
             ->where('student_id', $studentId)
-            ->where('status', 'approved') // Only count approved/successful payments
+            ->whereIn('status', ['paid', 'successful'])
             ->sum('amount');
         
         $outstandingBalance = max(0, $totalFees - $totalPaid);

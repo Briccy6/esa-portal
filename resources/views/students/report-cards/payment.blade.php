@@ -53,17 +53,14 @@
                 </p>
             </div>
 
-            <form action="{{ route('flutterwave.payment.initialize-reportcard-fees') }}" method="POST">
-                @csrf
-                <input type="hidden" name="amount" value="{{ $outstanding }}">
-                <button 
-                    type="submit"
-                    class="w-full bg-gradient-to-r from-green-600 to-green-700 text-white font-semibold py-3 px-4 rounded-lg hover:from-green-700 hover:to-green-800 transition duration-300 flex items-center justify-center gap-2"
-                >
-                    <i class="fas fa-lock"></i>
-                    Pay Now with Flutterwave
-                </button>
-            </form>
+            <button 
+                id="payBtn" 
+                class="w-full bg-gradient-to-r from-green-600 to-green-700 text-white font-semibold py-3 px-4 rounded-lg hover:from-green-700 hover:to-green-800 transition duration-300 flex items-center justify-center gap-2"
+                onclick="initiateFeePayment()"
+            >
+                <i class="fas fa-lock"></i>
+                Pay Now with Flutterwave
+            </button>
 
             <p class="text-xs text-gray-500 text-center mt-4">
                 Your payment information is secure and encrypted
