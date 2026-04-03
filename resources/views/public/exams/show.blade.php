@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.public')
 
 @section('title', $exam->title . ' - Skill Practice Test - Excellent Servant Academy')
 
