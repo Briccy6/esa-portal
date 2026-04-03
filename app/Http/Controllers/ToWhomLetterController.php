@@ -98,8 +98,9 @@ class ToWhomLetterController extends Controller
 
         // Set generated_by based on user type
         $generatedById = null;
-        if ($user && !$user->isStudent()) {
-            // Only set generated_by for non-student users (admin, staff)
+        if ($user && $user instanceof User) {
+            // Only set generated_by for User model instances (not Staff)
+            // Staff members don't have corresponding user records
             $generatedById = $user->id;
         }
 

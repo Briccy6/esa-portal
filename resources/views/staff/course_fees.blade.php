@@ -214,6 +214,14 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
+                <!-- Live Search Input -->
+                <div class="mb-3">
+                    <input type="text" class="form-control form-control-lg" id="courseTranscriptSearch" 
+                           placeholder="🔍 Search by Student Name or Reg Number..." 
+                           onkeyup="liveSearchCourseTranscripts()">
+                    <small class="text-muted d-block mt-1" id="searchResultCount"></small>
+                </div>
+                
                 <div id="courseTranscriptContent">
                     <div class="text-center py-4">
                         <span class="spinner-border"></span> Loading course transcripts...
@@ -412,6 +420,9 @@
         }
     }
 
+    // Store all course transcripts globally for searching
+    let allCourseTranscripts = [];
+
     function displayCourseTranscripts(transcripts) {
         const content = document.getElementById('courseTranscriptContent');
         
@@ -426,25 +437,51 @@
             return;
         }
 
+        // Store all transcripts for live search
+        allCourseTranscripts = transcripts;
+        
+        // Clear search input and reset search count
+        document.getElementById('courseTranscriptSearch').value = '';
+        document.getElementById('searchResultCount').innerHTML = `Showing ${transcripts.length} student(s)`;
+
+        renderCourseTranscriptsTable(transcripts);
+    }
+
+    function renderCourseTranscriptsTable(transcripts) {
+        const content = document.getElementById('courseTranscriptContent');
+        
+        if (transcripts.length === 0) {
+            content.innerHTML = '<div class="alert alert-info text-center py-4">No results found</div>';
+            return;
+        }
+
         let html = '<div class="table-responsive">';
-        html += '<table class="table table-striped table-hover">';
-        html += '<thead><tr><th>Student</th><th>Reg Number</th><th>Term</th><th>Total Fees</th><th>Paid</th><th>Outstanding</th><th>Actions</th></tr></thead>';
+        html += '<table class="table table-striped table-hover table-sm">';
+        html += '<thead><tr class="table-primary">';
+        html += '<th style="width: 30%;">Student Name</th>';
+        html += '<th style="width: 15%;">Reg Number</th>';
+        html += '<th style="width: 15%;">Term</th>';
+        html += '<th style="width: 12%;">Total Fees</th>';
+        html += '<th style="width: 12%;">Paid</th>';
+        html += '<th style="width: 12%;">Outstanding</th>';
+        html += '<th style="width: 12%;">Actions</th>';
+        html += '</tr></thead>';
         html += '<tbody>';
         
         transcripts.forEach(transcript => {
             const outstanding = transcript.total_fees - transcript.total_paid;
             html += '<tr>';
-            html += '<td>' + transcript.student_name + '</td>';
-            html += '<td>' + transcript.reg_number + '</td>';
+            html += '<td><strong>' + transcript.student_name + '</strong></td>';
+            html += '<td><code>' + transcript.reg_number + '</code></td>';
             html += '<td><span class="badge bg-info">' + (transcript.term_name || 'N/A') + '</span></td>';
             html += '<td><span class="badge bg-primary">' + formatCurrency(transcript.total_fees) + '</span></td>';
             html += '<td><span class="badge bg-success">' + formatCurrency(transcript.total_paid) + '</span></td>';
             html += '<td><span class="badge bg-warning text-dark">' + formatCurrency(outstanding) + '</span></td>';
             html += '<td>';
-            html += '<button class="btn btn-sm btn-outline-primary me-1" onclick="viewStudentTranscript(' + transcript.student_id + ')">';
+            html += '<button class="btn btn-xs btn-outline-primary me-1" title="View Transcript" onclick="viewStudentTranscript(' + transcript.student_id + ')" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">';
             html += '<i class="fas fa-eye"></i> View';
             html += '</button>';
-            html += '<button class="btn btn-sm btn-outline-success" onclick="printStudentTranscript(' + transcript.student_id + ')">';
+            html += '<button class="btn btn-xs btn-outline-success" title="Print Transcript" onclick="printIndividualStudentTranscript(' + transcript.student_id + ')" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">';
             html += '<i class="fas fa-print"></i> Print';
             html += '</button>';
             html += '</td>';
@@ -453,6 +490,33 @@
         
         html += '</tbody></table></div>';
         content.innerHTML = html;
+    }
+
+    function liveSearchCourseTranscripts() {
+        const searchTerm = document.getElementById('courseTranscriptSearch').value.toLowerCase().trim();
+        
+        if (searchTerm === '') {
+            // If search is empty, show all transcripts
+            renderCourseTranscriptsTable(allCourseTranscripts);
+            document.getElementById('searchResultCount').innerHTML = `Showing ${allCourseTranscripts.length} student(s)`;
+            return;
+        }
+        
+        // Filter transcripts by student name or registration number
+        const filtered = allCourseTranscripts.filter(transcript => {
+            const name = transcript.student_name.toLowerCase();
+            const regNumber = transcript.reg_number.toLowerCase();
+            
+            return name.includes(searchTerm) || regNumber.includes(searchTerm);
+        });
+        
+        // Update result count
+        const resultText = filtered.length === 0 
+            ? 'No results found' 
+            : `Found ${filtered.length} match${filtered.length !== 1 ? 'es' : ''}`;
+        document.getElementById('searchResultCount').innerHTML = resultText;
+        
+        renderCourseTranscriptsTable(filtered);
     }
 
     function filterTranscripts() {
@@ -473,6 +537,10 @@
     }
 
     function viewStudentTranscript(studentId) {
+        window.open('/students/' + studentId + '/transcript', '_blank');
+    }
+
+    function printIndividualStudentTranscript(studentId) {
         window.open('/students/' + studentId + '/transcript', '_blank');
     }
 
@@ -553,6 +621,11 @@
         
         html += '</tbody></table></div>';
         content.innerHTML = html;
+    }
+
+    function printIndividualStudentTranscript(studentId) {
+        // Open the student transcript page in a new window/tab
+        window.open('/students/' + studentId + '/transcript', '_blank');
     }
 
     function generateStudentTranscript(studentId) {

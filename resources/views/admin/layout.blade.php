@@ -1170,6 +1170,13 @@
                             <span class="nav-text">Resource Upload</span>
                         </a>
                     </div>
+                    
+                    <div class="nav-item">
+                        <a href="{{ route('babyeyi.index') }}" class="nav-link {{ request()->routeIs('babyeyi.*') ? 'active' : '' }}">
+                            <i class="fas fa-file-contract"></i>
+                            <span class="nav-text">Babyeyi Documents</span>
+                        </a>
+                    </div>
                 </div>
             </div>
 
