@@ -173,9 +173,12 @@
     </form>
 </div>
 
+<!-- Include jQuery (required by Summernote) -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 <!-- Include Summernote CSS and JS -->
-<link href="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-bs4.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-bs4.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-bs5.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-bs5.js"></script>
 
 <!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
@@ -215,21 +218,34 @@ $(document).ready(function() {
         placeholder: 'Enter the babyeyi content here...',
         tabsize: 2,
         height: 400,
+        minHeight: 300,
+        maxHeight: 600,
+        focus: true,
         toolbar: [
-            ['style', ['style']],
-            ['font', ['bold', 'underline', 'italic', 'clear']],
+            ['style', ['style', 'strikethrough', 'superscript', 'subscript']],
+            ['font', ['bold', 'italic', 'underline', 'clear']],
             ['fontname', ['fontname']],
             ['fontsize', ['fontsize']],
             ['color', ['color']],
-            ['para', ['ul', 'ol', 'paragraph']],
+            ['para', ['ul', 'ol', 'paragraph', 'hr']],
             ['table', ['table']],
             ['insert', ['link', 'picture', 'video']],
             ['view', ['fullscreen', 'codeview', 'help']]
         ],
         callbacks: {
             onImageUpload: function(files) {
-                // Handle image upload if needed
+                console.log('Image upload not yet configured');
             }
+        }
+    });
+
+    // Form validation on submit
+    document.getElementById('editForm').addEventListener('submit', function(e) {
+        const content = $('#summernote').summernote('code');
+        if (!content || content.trim() === '<p><br></p>' || content.trim() === '') {
+            e.preventDefault();
+            alert('Please enter content in the editor.');
+            $('#summernote').focus();
         }
     });
 });

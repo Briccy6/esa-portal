@@ -26,8 +26,14 @@ class BabyeyiController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate(15);
 
-        // Use staff view if accessed by staff or admin, otherwise use public view
-        $view = Auth::guard('staff')->check() || Auth::guard('admin')->check() ? 'staff.babyeyi.index' : 'babyeyi.index';
+        // Route to appropriate view based on user role
+        if (Auth::guard('admin')->check()) {
+            $view = 'admin.babyeyi.index';
+        } elseif (Auth::guard('staff')->check()) {
+            $view = 'staff.babyeyi.index';
+        } else {
+            $view = 'babyeyi.index';
+        }
         
         return view($view, compact('babyeyis'));
     }
@@ -42,8 +48,14 @@ class BabyeyiController extends Controller
         $courses = collect();
         $courseTypes = $this->getCourseTypes();
 
-        // Use staff view if accessed by staff or admin, otherwise use public view
-        $view = Auth::guard('staff')->check() || Auth::guard('admin')->check() ? 'staff.babyeyi.create' : 'babyeyi.create';
+        // Route to appropriate view based on user role
+        if (Auth::guard('admin')->check()) {
+            $view = 'admin.babyeyi.create';
+        } elseif (Auth::guard('staff')->check()) {
+            $view = 'staff.babyeyi.create';
+        } else {
+            $view = 'babyeyi.create';
+        }
 
         return view($view, compact('academicYears', 'terms', 'courses', 'courseTypes'));
     }
