@@ -21,6 +21,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Register mail namespace for mail components
+        View::addNamespace('mail', resource_path('views/vendor/mail'));
+
         // Ensure storage link exists
         if (!file_exists(public_path('storage'))) {
             try {
