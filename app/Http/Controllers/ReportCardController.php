@@ -13,10 +13,12 @@ use App\Models\Exam;
 use App\Models\AcademicYear;
 use App\Models\Term;
 use App\Models\SchoolInformation;
+use App\Models\Branch;
 use App\Services\FeePaymentService;
 use App\Services\ReportCardService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
@@ -1077,7 +1079,7 @@ class ReportCardController extends Controller
             }
 
             // Send email
-            \Mail::to($student->email)->send(
+            Mail::to($student->email)->send(
                 new \App\Mail\StudentOutstandingFeesMail(
                     $student,
                     $paymentStatus['outstanding'],
@@ -1149,7 +1151,7 @@ class ReportCardController extends Controller
 
             foreach ($studentsToEmail as $item) {
                 try {
-                    \Mail::to($item['student']->email)->send(
+                    Mail::to($item['student']->email)->send(
                         new \App\Mail\StudentOutstandingFeesMail(
                             $item['student'],
                             $item['payment_status']['outstanding'],

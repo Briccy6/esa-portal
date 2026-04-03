@@ -464,6 +464,11 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::delete('report-cards/bulk', [ReportCardController::class, 'bulkDestroy'])->name('report-cards.destroy.bulk');
     Route::get('report-cards/{reportCard}/print', [ReportCardController::class, 'printReport'])->name('report-cards.print');
 
+    // Outstanding Fees Management
+    Route::get('report-cards/outstanding-fees/list', [ReportCardController::class, 'outstandingFees'])->name('report-cards.outstanding-fees');
+    Route::post('report-cards/outstanding-fees/{student}/email', [ReportCardController::class, 'sendOutstandingFeesEmail'])->name('report-cards.send-outstanding-email');
+    Route::post('report-cards/outstanding-fees/bulk-email', [ReportCardController::class, 'bulkSendOutstandingFeesEmails'])->name('report-cards.bulk-send-outstanding-email');
+
     // School Information
     Route::get('school-information', [\App\Http\Controllers\SchoolInformationController::class, 'edit'])->name('school-information.edit');
     Route::put('school-information', [\App\Http\Controllers\SchoolInformationController::class, 'update'])->name('school-information.update');
@@ -1102,6 +1107,11 @@ Route::middleware('auth:student')->prefix('student')->name('student.')->group(fu
     });
     Route::get('/live-classes/{liveClass}/room', [LiveClassController::class, 'room'])->name('live-classes.room');
     Route::post('/live-classes/{liveClass}/leave', [LiveClassController::class, 'studentLeave'])->name('live-classes.leave');
+
+    // Student Report Card Routes
+    Route::get('/report-cards', [App\Http\Controllers\StudentReportCardController::class, 'index'])->name('report-cards.index');
+    Route::get('/report-cards/{id}', [App\Http\Controllers\StudentReportCardController::class, 'show'])->name('report-cards.show');
+    Route::get('/report-cards-status', [App\Http\Controllers\StudentReportCardController::class, 'accessStatus'])->name('report-cards.status');
 });
 
 

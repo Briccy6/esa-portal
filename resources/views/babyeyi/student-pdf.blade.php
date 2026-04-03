@@ -261,21 +261,34 @@
 <body>
     <div class="container">
         <!-- Header with School Information -->
-        <div class="header">
-            @if ($schoolInfo && $schoolInfo->logo_path)
-                <img src="{{ public_path('storage/' . $schoolInfo->logo_path) }}" class="school-logo" alt="School Logo">
-            @endif
-            <div class="school-name">{{ $schoolInfo->school_name ?? 'SCHOOL NAME' }}</div>
-            @if ($schoolInfo->location)
-                <div class="school-info">{{ $schoolInfo->location }}</div>
-            @endif
-            @if ($schoolInfo->phone)
-                <div class="school-info">Tel: {{ $schoolInfo->phone }}</div>
-            @endif
-            @if ($schoolInfo->email)
-                <div class="school-info">Email: {{ $schoolInfo->email }}</div>
-            @endif
-        </div>
+        @if ($schoolInfo)
+            <div class="header">
+                @if ($schoolInfo->logo_path)
+                    <img src="{{ public_path('storage/' . $schoolInfo->logo_path) }}" class="school-logo" alt="School Logo">
+                @else
+                    <div style="height: 50px; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; background-color: #f0f0f0; border-radius: 4px;">
+                        <span style="color: #ccc; font-size: 12pt;">School Logo</span>
+                    </div>
+                @endif
+                <div class="school-name">{{ $schoolInfo->school_name ?? 'SCHOOL NAME' }}</div>
+                @if ($schoolInfo->location)
+                    <div class="school-info">{{ $schoolInfo->location }}</div>
+                @endif
+                @if ($schoolInfo->phone)
+                    <div class="school-info">Tel: {{ $schoolInfo->phone }}</div>
+                @endif
+                @if ($schoolInfo->email)
+                    <div class="school-info">Email: {{ $schoolInfo->email }}</div>
+                @endif
+            </div>
+        @else
+            <div class="header">
+                <div style="height: 50px; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; background-color: #f0f0f0; border-radius: 4px;">
+                    <span style="color: #ccc; font-size: 12pt;">School Logo</span>
+                </div>
+                <div class="school-name">SCHOOL NAME</div>
+            </div>
+        @endif
 
         <!-- Document Title -->
         <div class="document-title">

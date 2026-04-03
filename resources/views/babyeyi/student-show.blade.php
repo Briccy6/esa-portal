@@ -20,18 +20,24 @@
             <div class="card shadow">
                 <div class="card-body bg-white" style="min-height: 600px;">
                     <!-- School Header -->
-                    @if ($schoolInfo)
-                        <div style="text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px;">
-                            @if ($schoolInfo->logo_path)
-                                <img src="{{ asset('storage/' . $schoolInfo->logo_path) }}" style="max-height: 80px; margin-bottom: 10px;" alt="School Logo">
-                            @endif
-                            <h2 style="margin: 5px 0; color: #1a1a1a;">{{ $schoolInfo->school_name ?? 'School Name' }}</h2>
-                            <p style="margin: 2px 0; color: #666; font-size: 14px;">{{ $schoolInfo->location ?? '' }}</p>
-                            @if ($schoolInfo->phone)
-                                <p style="margin: 2px 0; color: #666; font-size: 14px;">Tel: {{ $schoolInfo->phone }}</p>
-                            @endif
-                        </div>
-                    @endif
+                    <div style="text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px;">
+                        @if ($schoolInfo && $schoolInfo->logo_path)
+                            <img src="{{ asset('storage/' . $schoolInfo->logo_path) }}" style="max-height: 80px; margin-bottom: 10px;" alt="School Logo">
+                        @elseif ($schoolInfo)
+                            <!-- Logo Placeholder when not available -->
+                            <div style="width: 80px; height: 80px; margin: 0 auto 10px; background-color: #e9ecef; border: 2px dashed #999; display: flex; align-items: center; justify-content: center; border-radius: 4px;">
+                                <i class="fas fa-image" style="font-size: 32px; color: #ccc;"></i>
+                            </div>
+                        @endif
+                        <h2 style="margin: 5px 0; color: #1a1a1a;">{{ $schoolInfo->school_name ?? 'School Name' }}</h2>
+                        <p style="margin: 2px 0; color: #666; font-size: 14px;">{{ $schoolInfo->location ?? '' }}</p>
+                        @if ($schoolInfo && $schoolInfo->phone)
+                            <p style="margin: 2px 0; color: #666; font-size: 14px;">Tel: {{ $schoolInfo->phone }}</p>
+                        @endif
+                        @if ($schoolInfo && $schoolInfo->email)
+                            <p style="margin: 2px 0; color: #666; font-size: 14px;">Email: {{ $schoolInfo->email }}</p>
+                        @endif
+                    </div>
 
                     <!-- Document Title -->
                     <h3 style="text-align: center; margin: 20px 0; color: #1a1a1a;">BABYEYI</h3>

@@ -92,10 +92,17 @@
                             <div class="col-md-3">
                                 <div class="form-group">
                                     <label>System Information</label>
-                                    <div class="alert alert-info">
+                                    <div class="alert alert-info mb-2">
                                         <small>
                                             <i class="fas fa-info-circle"></i>
                                             The system will automatically fetch all exam and test marks for the selected student and academic period.
+                                        </small>
+                                    </div>
+                                    <div class="alert alert-warning mb-0">
+                                        <small>
+                                            <i class="fas fa-exclamation-triangle"></i>
+                                            <strong>Important:</strong> Students with outstanding fees will be rejected. 
+                                            <a href="{{ route('admin.report-cards.outstanding-fees') }}" class="alert-link">View outstanding fees</a>
                                         </small>
                                     </div>
                                 </div>

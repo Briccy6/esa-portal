@@ -14,9 +14,14 @@
                 <p class="rc-page-header__sub">Generate and manage student academic report cards</p>
             </div>
         </div>
-        <a href="{{ route('admin.report-cards.create') }}" class="rc-btn rc-btn--primary">
-            <i class="fas fa-plus"></i> Generate Report Card
-        </a>
+        <div class="d-flex gap-2">
+            <a href="{{ route('admin.report-cards.outstanding-fees') }}" class="rc-btn rc-btn--warning">
+                <i class="fas fa-exclamation-triangle"></i> Outstanding Fees
+            </a>
+            <a href="{{ route('admin.report-cards.create') }}" class="rc-btn rc-btn--primary">
+                <i class="fas fa-plus"></i> Generate Report Card
+            </a>
+        </div>
     </div>
 
     {{-- ── QUICK GENERATION ── --}}
