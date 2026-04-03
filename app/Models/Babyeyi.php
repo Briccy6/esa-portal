@@ -63,7 +63,11 @@ class Babyeyi extends Model
     }
 
     /**
-     * Get the user who created the babyeyi (secretary).
+     * Get the user who created the babyeyi (can be Staff or Admin).
+     * Note: Due to the multi-guard authentication system, this relationship
+     * cannot use a direct foreign key. Use getCreatorInfo() instead to get the actual user.
+     * 
+     * @deprecated Use getCreatorInfo() instead
      */
     public function creator(): BelongsTo
     {
@@ -71,11 +75,79 @@ class Babyeyi extends Model
     }
 
     /**
-     * Get the user who edited the babyeyi (accountant).
+     * Get the user who edited the babyeyi (can be Staff or Admin).
+     * Note: Due to the multi-guard authentication system, this relationship
+     * cannot use a direct foreign key. Use getEditorInfo() instead to get the actual user.
+     * 
+     * @deprecated Use getEditorInfo() instead
      */
     public function editor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'edited_by');
+    }
+
+    /**
+     * Get the creator user info - tries to find in both Staff and Admin tables.
+     */
+    public function getCreatorInfo()
+    {
+        if (!$this->created_by) {
+            return null;
+        }
+
+        // Try to find in Staff table first
+        $staff = Staff::find($this->created_by);
+        if ($staff) {
+            return [
+                'type' => 'staff',
+                'user' => $staff,
+                'name' => $staff->name,
+            ];
+        }
+
+        // Try to find in Admin table
+        $admin = Admin::find($this->created_by);
+        if ($admin) {
+            return [
+                'type' => 'admin',
+                'user' => $admin,
+                'name' => $admin->first_name . ' ' . $admin->last_name,
+            ];
+        }
+
+        return null;
+    }
+
+    /**
+     * Get the editor user info - tries to find in both Staff and Admin tables.
+     */
+    public function getEditorInfo()
+    {
+        if (!$this->edited_by) {
+            return null;
+        }
+
+        // Try to find in Staff table first
+        $staff = Staff::find($this->edited_by);
+        if ($staff) {
+            return [
+                'type' => 'staff',
+                'user' => $staff,
+                'name' => $staff->name,
+            ];
+        }
+
+        // Try to find in Admin table
+        $admin = Admin::find($this->edited_by);
+        if ($admin) {
+            return [
+                'type' => 'admin',
+                'user' => $admin,
+                'name' => $admin->first_name . ' ' . $admin->last_name,
+            ];
+        }
+
+        return null;
     }
 
     /**
