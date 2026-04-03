@@ -803,17 +803,8 @@ Route::middleware('auth:teacher')->prefix('teacher')->name('teacher.')->group(fu
     Route::put('marks/update/{lessonId}/{testDate}', [\App\Http\Controllers\Teacher\MarksController::class, 'updateMarks'])->name('marks.update');
 });
 
-Route::get('/api/courses/{course}/students', function($courseId) {
-    $course = \App\Models\Course::with('students')->find($courseId);
-    $students = $course ? $course->students->map(function($s) {
-        return [
-            'id' => $s->id,
-            'name' => $s->name,
-            'student_id' => $s->student_id ?? null,
-        ];
-    }) : [];
-    return response()->json(['students' => $students]);
-});
+// This route is now handled by the controller below with proper auth middleware
+// Route moved to: Route::middleware(['auth:staff'])->prefix('api/courses') -> getCourseStudents()
 
 Route::get('/api/teacher/{teacher}/branch/{branch}/courses', function($teacherId, $branchId) {
     $teacher = \App\Models\Teacher::findOrFail($teacherId);
@@ -1172,6 +1163,8 @@ Route::get('/students/{student}/transcript/ajax', [App\Http\Controllers\StudentC
 Route::middleware(['auth:staff'])->prefix('api/transcripts')->name('api.transcripts.')->group(function () {
     Route::get('/all', [App\Http\Controllers\TranscriptController::class, 'getAllTranscripts'])->name('all');
     Route::get('/course/{courseId}', [App\Http\Controllers\TranscriptController::class, 'getCourseTranscripts'])->name('course');
+    Route::get('/course/{courseId}/payment-stats', [App\Http\Controllers\TranscriptController::class, 'getPaymentStatistics'])->name('payment-stats');
+    Route::get('/course/{courseId}/term-fees', [App\Http\Controllers\TranscriptController::class, 'getTermFeesBreakdown'])->name('term-fees');
 });
 
 // API Routes for Course Management

@@ -84,6 +84,101 @@ class TranscriptController extends Controller
     }
 
     /**
+     * Get payment statistics for a course (students who paid all, half, or nothing)
+     */
+    public function getPaymentStatistics($courseId, Request $request)
+    {
+        try {
+            $course = Course::findOrFail($courseId);
+            
+            $students = Student::where('course_id', $courseId)
+                ->with(['transactions'])
+                ->get();
+            
+            $totalStudents = $students->count();
+            $paidAll = 0;
+            $paidHalf = 0;
+            $paidNothing = 0;
+            $totalDueAmount = 0;
+            $totalPaidAmount = 0;
+            
+            foreach ($students as $student) {
+                $totalFees = $this->calculateTotalFees($student);
+                $totalPaid = $student->transactions->sum('amount');
+                $totalDueAmount += ($totalFees - $totalPaid);
+                $totalPaidAmount += $totalPaid;
+                
+                if ($totalPaid == 0) {
+                    $paidNothing++;
+                } elseif ($totalPaid >= $totalFees) {
+                    $paidAll++;
+                } else {
+                    $paidHalf++;
+                }
+            }
+            
+            return response()->json([
+                'total_students' => $totalStudents,
+                'paid_all' => $paidAll,
+                'paid_half' => $paidHalf,
+                'paid_nothing' => $paidNothing,
+                'total_fees' => $course->tuition_fee + $course->registration_fee + $course->trip_fee + $course->discount_fee,
+                'total_due' => $totalDueAmount,
+                'total_paid' => $totalPaidAmount,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to load payment statistics: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Get fees breakdown by term for a course
+     */
+    public function getTermFeesBreakdown($courseId, Request $request)
+    {
+        try {
+            $course = Course::findOrFail($courseId);
+            
+            // Get all terms with their fees for this course
+            $termFees = Term::with(['academicYear', 'courseTermFees' => function ($query) use ($courseId) {
+                $query->where('course_id', $courseId);
+            }])
+            ->orderBy('start_date', 'desc')
+            ->get()
+            ->map(function ($term) use ($courseId) {
+                // Get CourseTermFee for this course and term
+                $courseFee = $term->courseTermFees->where('course_id', $courseId)->first();
+                
+                $tuitionFee = $courseFee ? $courseFee->tuition_fee ?? 0 : 0;
+                $registrationFee = $courseFee ? $courseFee->registration_fee ?? 0 : 0;
+                $practicalFee = $courseFee ? $courseFee->practical_fee ?? 0 : 0;
+                $tripFee = $courseFee ? $courseFee->trip_fee ?? 0 : 0;
+                $studentCardFee = $courseFee ? $courseFee->student_card_fee ?? 0 : 0;
+                
+                $totalFee = $tuitionFee + $registrationFee + $practicalFee + $tripFee + $studentCardFee;
+                
+                return [
+                    'term_id' => $term->id,
+                    'term_name' => $term->name,
+                    'academic_year' => $term->academicYear->year ?? 'N/A',
+                    'tuition_fee' => $tuitionFee,
+                    'registration_fee' => $registrationFee,
+                    'practical_fee' => $practicalFee,
+                    'trip_fee' => $tripFee,
+                    'student_card_fee' => $studentCardFee,
+                    'total_fee' => max(0, $totalFee),
+                    'start_date' => $term->start_date->format('Y-m-d'),
+                    'end_date' => $term->end_date->format('Y-m-d'),
+                ];
+            });
+
+            return response()->json($termFees);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to load term fees: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
      * Calculate total fees for a student including all applicable fees
      */
     private function calculateTotalFees($student)

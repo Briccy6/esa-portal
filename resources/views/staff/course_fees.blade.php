@@ -21,7 +21,7 @@
         @php
             $totalFee = ($course->tuition_fee ?? 0) + ($course->registration_fee ?? 0) + ($course->trip_fee ?? 0) - ($course->discount_fee ?? 0);
             $studentCount = $course->students->count();
-            $totalPaid = 0; // Transcripts table doesn't exist yet
+            $totalPaid = 0; // Will be loaded via API
             $totalDue = ($studentCount * $totalFee) - $totalPaid;
         @endphp
         <div class="col-md-4">
@@ -29,10 +29,24 @@
                 <img src="{{ $logoPath }}" class="card-img-top p-4" alt="Course Image" style="height: 180px; object-fit: contain;">
                 <div class="card-body">
                     <h5 class="card-title">{{ $course->course_name }}</h5>
+                    
+                    <!-- Payment Status Section -->
+                    <div class="alert alert-light border mb-3" id="paymentStatus{{ $course->id }}">
+                        <small class="text-muted">Loading payment statistics...</small>
+                    </div>
+                    
                     <ul class="list-group list-group-flush mb-3">
                         <li class="list-group-item d-flex justify-content-between align-items-center">
                             Class:
                             <span class="fw-bold">{{ ($course->course_name) }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Total Students
+                            <span class="badge bg-info">{{ $studentCount }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Total Fees (Per Student)
+                            <span class="fw-bold">{{ number_format($totalFee, 2) }}</span>
                         </li>
                         <li class="list-group-item d-flex justify-content-between align-items-center">
                             Tuition Fee
@@ -51,18 +65,22 @@
                             <span class="fw-bold">{{ number_format($course->discount_fee, 2) }}</span>
                         </li>
                     </ul>
-                    <!-- Details Button -->
-                    <button type="button" class="btn btn-outline-info w-100 mb-2" data-bs-toggle="modal" data-bs-target="#courseDetailsModal{{ $course->id }}">
-                        <i class="fas fa-info-circle"></i> Details
-                    </button>
-                    <!-- View Transcript Button -->
-                    <button type="button" class="btn btn-outline-success w-100 mb-2" onclick="loadCourseTranscripts({{ $course->id }})">
-                        <i class="fas fa-file-invoice"></i> View Transcripts
-                    </button>
-                    <!-- Print Student Transcript Button -->
-                    <button type="button" class="btn btn-outline-primary w-100" onclick="printStudentTranscript({{ $course->id }})">
-                        <i class="fas fa-print"></i> Print Student Transcript
-                    </button>
+                    
+                    <!-- Action Buttons -->
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#courseDetailsModal{{ $course->id }}">
+                            <i class="fas fa-info-circle"></i> Course Details
+                        </button>
+                        <button type="button" class="btn btn-outline-warning btn-sm" onclick="showPaymentSchedule({{ $course->id }})">
+                            <i class="fas fa-calendar"></i> Payment Schedule by Term
+                        </button>
+                        <button type="button" class="btn btn-outline-success btn-sm" onclick="loadCourseTranscripts({{ $course->id }})">
+                            <i class="fas fa-file-invoice"></i> View Transcripts
+                        </button>
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="printStudentTranscript({{ $course->id }})">
+                            <i class="fas fa-print"></i> Print Student Transcript
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -207,6 +225,33 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Schedule Modal -->
+<div class="modal fade" id="paymentScheduleModal" tabindex="-1" aria-labelledby="paymentScheduleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="paymentScheduleModalLabel">
+                    <i class="fas fa-calendar"></i> Payment Schedule by Term
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="paymentScheduleContent">
+                    <div class="text-center py-4">
+                        <span class="spinner-border"></span> Loading payment schedule...
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="printPaymentSchedule()">
+                    <i class="fas fa-print"></i> Print
+                </button>
             </div>
         </div>
     </div>
@@ -421,6 +466,17 @@
     function displayStudentSelection(students, courseId) {
         const content = document.getElementById('studentSelectionContent');
         
+        // Handle error responses
+        if (!Array.isArray(students) && students && students.error) {
+            content.innerHTML = '<div class="alert alert-danger">' + students.error + '</div>';
+            return;
+        }
+        
+        // Ensure we have an array
+        if (!Array.isArray(students)) {
+            students = [];
+        }
+        
         if (students.length === 0) {
             content.innerHTML = '<div class="text-center py-4 text-muted">No students found for this course.</div>';
             return;
@@ -433,9 +489,9 @@
         
         students.forEach(student => {
             html += '<tr>';
-            html += '<td>' + student.full_name + '</td>';
-            html += '<td>' + student.reg_number + '</td>';
-            html += '<td>' + (student.class || 'N/A') + '</td>';
+            html += '<td>' + (student.full_name || student.name || 'N/A') + '</td>';
+            html += '<td>' + (student.reg_number || 'N/A') + '</td>';
+            html += '<td>' + (student.class || student.branch_name || 'N/A') + '</td>';
             html += '<td>';
             html += '<button class="btn btn-sm btn-primary" onclick="generateStudentTranscript(' + student.id + ')">';
             html += '<i class="fas fa-print"></i> Print Transcript';
@@ -521,6 +577,141 @@
             minimumFractionDigits: 2
         }).format(amount);
     }
+
+    // Load payment statistics for a course
+    function loadPaymentStatistics(courseId) {
+        fetch('/api/transcripts/course/' + courseId + '/payment-stats')
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.error('Error:', data.error);
+                    return;
+                }
+                
+                const statusDiv = document.getElementById('paymentStatus' + courseId);
+                if (!statusDiv) return;
+                
+                let html = '<div class="row g-2">';
+                html += '<div class="col-6"><small><strong>Paid All:</strong> <span class="badge bg-success">' + data.paid_all + '</span></small></div>';
+                html += '<div class="col-6"><small><strong>Paid Half:</strong> <span class="badge bg-warning text-dark">' + data.paid_half + '</span></small></div>';
+                html += '<div class="col-6"><small><strong>Unpaid:</strong> <span class="badge bg-danger">' + data.paid_nothing + '</span></small></div>';
+                html += '<div class="col-6"><small><strong>Total Amount Due:</strong> <span class="badge bg-info">' + formatCurrency(data.total_due) + '</span></small></div>';
+                html += '</div>';
+                
+                statusDiv.innerHTML = html;
+            })
+            .catch(error => {
+                console.error('Error loading payment stats:', error);
+            });
+    }
+
+    // Show payment schedule modal
+    function showPaymentSchedule(courseId) {
+        const modal = new bootstrap.Modal(document.getElementById('paymentScheduleModal'));
+        const courseNames = {!! json_encode($courses->pluck('course_name', 'id')->toArray()) !!};
+        const courseName = courseNames[courseId];
+        
+        document.getElementById('paymentScheduleModalLabel').innerHTML = 
+            '<i class="fas fa-calendar"></i> Payment Schedule: ' + courseName + ' by Term';
+        
+        modal.show();
+        
+        fetch('/api/transcripts/course/' + courseId + '/term-fees')
+            .then(response => response.json())
+            .then(data => {
+                displayPaymentSchedule(data);
+            })
+            .catch(error => {
+                console.error('Error loading payment schedule:', error);
+                document.getElementById('paymentScheduleContent').innerHTML = 
+                    '<div class="alert alert-danger">Error loading payment schedule. Please try again.</div>';
+            });
+    }
+
+    // Display payment schedule
+    function displayPaymentSchedule(termFees) {
+        const content = document.getElementById('paymentScheduleContent');
+        
+        if (termFees.error) {
+            content.innerHTML = '<div class="alert alert-danger">' + termFees.error + '</div>';
+            return;
+        }
+        
+        if (!Array.isArray(termFees) || termFees.length === 0) {
+            content.innerHTML = '<div class="text-center py-4 text-muted">No term fees found for this course.</div>';
+            return;
+        }
+
+        let html = '<div class="table-responsive">';
+        html += '<table class="table table-striped table-hover">';
+        html += '<thead><tr>';
+        html += '<th>Term</th>';
+        html += '<th>Academic Year</th>';
+        html += '<th>Start Date</th>';
+        html += '<th>End Date</th>';
+        html += '<th>Tuition Fee</th>';
+        html += '<th>Registration Fee</th>';
+        html += '<th>Practical Fee</th>';
+        html += '<th>Trip Fee</th>';
+        html += '<th>Student Card</th>';
+        html += '<th>Total</th>';
+        html += '</tr></thead>';
+        html += '<tbody>';
+        
+        termFees.forEach(term => {
+            html += '<tr>';
+            html += '<td><strong>' + term.term_name + '</strong></td>';
+            html += '<td>' + term.academic_year + '</td>';
+            html += '<td>' + term.start_date + '</td>';
+            html += '<td>' + term.end_date + '</td>';
+            html += '<td>' + formatCurrency(term.tuition_fee) + '</td>';
+            html += '<td>' + formatCurrency(term.registration_fee) + '</td>';
+            html += '<td>' + formatCurrency(term.practical_fee) + '</td>';
+            html += '<td>' + formatCurrency(term.trip_fee) + '</td>';
+            html += '<td>' + formatCurrency(term.student_card_fee) + '</td>';
+            html += '<td><strong>' + formatCurrency(term.total_fee) + '</strong></td>';
+            html += '</tr>';
+        });
+        
+        html += '</tbody></table></div>';
+        content.innerHTML = html;
+    }
+
+    // Print payment schedule
+    function printPaymentSchedule() {
+        const printContent = document.getElementById('paymentScheduleContent').innerHTML;
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <html>
+            <head>
+                <title>Payment Schedule</title>
+                <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+                <style>
+                    body { padding: 20px; }
+                    table { width: 100%; border-collapse: collapse; }
+                    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                    th { background-color: #f2f2f2; }
+                    @media print { body { padding: 10px; } }
+                </style>
+            </head>
+            <body>
+                <h3>Payment Schedule by Term</h3>
+                <p>Generated on: ${new Date().toLocaleString()}</p>
+                ${printContent}
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
+    }
+
+    // Load payment statistics for all courses when page loads
+    window.addEventListener('load', function() {
+        const courseIds = {!! json_encode($courses->pluck('id')->toArray()) !!};
+        courseIds.forEach(courseId => {
+            loadPaymentStatistics(courseId);
+        });
+    });
 </script>
 @endpush
 @endsection
