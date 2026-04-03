@@ -112,6 +112,9 @@
                         <div class="row">
                             <div class="col-12">
                                 <div class="form-group">
+                                    <button type="button" id="checkFeesBtn" class="btn btn-warning">
+                                        <i class="fas fa-search"></i> Check Outstanding Fees
+                                    </button>
                                     <button type="submit" class="btn btn-primary">
                                         <i class="fas fa-plus"></i> Generate Report Card
                                     </button>
@@ -127,6 +130,32 @@
         </div>
     </div>
 </div>
+
+<!-- Outstanding Fees Modal -->
+<div class="modal fade" id="outstandingFeesModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-circle me-2"></i>Students with Outstanding Fees
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="feesModalBody">
+                <div class="text-center">
+                    <div class="spinner-border text-warning" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-danger" id="proceedAnywayBtn">Proceed Anyway</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @push('scripts')
@@ -146,6 +175,131 @@ $(document).ready(function() {
                 }
             });
         }
+    });
+
+    // Check Outstanding Fees
+    $('#checkFeesBtn').click(function(e) {
+        e.preventDefault();
+        
+        const courseId = $('#course_id').val();
+        const academicYearId = $('#academic_year_id').val();
+        const termIds = $('#term_ids').val();
+
+        if (!courseId || !academicYearId) {
+            alert('Please select Course and Academic Year first');
+            return;
+        }
+
+        if (!termIds || termIds.length === 0) {
+            alert('Please select at least one Term');
+            return;
+        }
+
+        // Show modal with loading spinner
+        const modal = new bootstrap.Modal(document.getElementById('outstandingFeesModal'));
+        modal.show();
+
+        // Call API to check fees
+        $.ajax({
+            url: '{{ route("admin.report-cards.check-fees-for-generation") }}',
+            type: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            data: {
+                course_id: courseId,
+                academic_year_id: academicYearId,
+                term_ids: termIds
+            },
+            success: function(response) {
+                if (response.success && response.has_outstanding_fees) {
+                    // Build HTML for fees table
+                    let html = `
+                        <div class="alert alert-danger">
+                            <strong><i class="fas fa-warning me-2"></i>Warning:</strong> 
+                            ${response.count} student(s) have outstanding fees in this course for the selected terms.
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead class="table-danger">
+                                    <tr>
+                                        <th>Student Name</th>
+                                        <th>Student ID</th>
+                                        <th>Outstanding</th>
+                                        <th>Required</th>
+                                        <th>Paid</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+
+                    response.students.forEach(function(student) {
+                        html += `
+                            <tr>
+                                <td><strong>${student.full_name}</strong></td>
+                                <td>${student.student_id}</td>
+                                <td><span class="badge bg-danger">RWF ${Number(student.outstanding_amount).toLocaleString()}</span></td>
+                                <td>RWF ${Number(student.required_fees).toLocaleString()}</td>
+                                <td><span class="badge bg-success">RWF ${Number(student.total_paid).toLocaleString()}</span></td>
+                            </tr>
+                        `;
+                    });
+
+                    html += `
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="alert alert-info mt-3">
+                            <strong><i class="fas fa-info-circle me-2"></i>Note:</strong>
+                            These students cannot have report cards generated until they pay their outstanding fees.
+                            You can:
+                            <ul class="mb-0 mt-2">
+                                <li>Send them payment reminders (see Outstanding Fees Management)</li>
+                                <li>Wait for them to pay</li>
+                                <li>Proceed to generate report cards for other students</li>
+                            </ul>
+                        </div>
+                    `;
+
+                    $('#feesModalBody').html(html);
+                } else if (response.success) {
+                    // No outstanding fees
+                    let html = `
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle me-2"></i>
+                            <strong>Great news!</strong> No students have outstanding fees in this course for the selected terms.
+                            All students are eligible for report card generation.
+                        </div>
+                    `;
+                    $('#feesModalBody').html(html);
+                    $('#proceedAnywayBtn').hide();
+                } else {
+                    $('#feesModalBody').html(`
+                        <div class="alert alert-danger">
+                            <strong>Error:</strong> ${response.message || 'Failed to check fees'}
+                        </div>
+                    `);
+                }
+            },
+            error: function(xhr) {
+                let errorMsg = 'An error occurred while checking fees';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMsg = xhr.responseJSON.message;
+                }
+                $('#feesModalBody').html(`
+                    <div class="alert alert-danger">
+                        <strong>Error:</strong> ${errorMsg}
+                    </div>
+                `);
+            }
+        });
+    });
+
+    // Proceed Anyway button
+    $('#proceedAnywayBtn').click(function() {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('outstandingFeesModal'));
+        modal.hide();
+        $('form').submit();
     });
 });
 </script>

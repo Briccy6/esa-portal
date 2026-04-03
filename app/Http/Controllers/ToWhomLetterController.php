@@ -7,6 +7,8 @@ use App\Models\Student;
 use App\Models\SchoolInformation;
 use App\Models\User;
 use App\Models\CourseTermFee;
+use App\Models\StudentTransaction;
+use App\Models\Term;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\View;
@@ -667,19 +669,31 @@ The student has maintained satisfactory academic performance, demonstrated good 
         $totalFees = 0;
         $totalPaid = 0;
         
-        // Calculate total fees from school_fees
-        $schoolFees = DB::table('school_fees')
-            ->where('student_id', $student->id)
-            ->sum('amount');
+        // Calculate total fees from course_term_fees (fees are tied to courses, not students)
+        if ($student->course) {
+            // Get current term
+            $currentTerm = Term::where('start_date', '<=', now())
+                               ->where('end_date', '>=', now())
+                               ->first();
+            
+            if ($currentTerm) {
+                $courseTermFee = CourseTermFee::where('course_id', $student->course_id)
+                                               ->where('term_id', $currentTerm->id)
+                                               ->where('is_active', true)
+                                               ->first();
+                
+                if ($courseTermFee) {
+                    $totalFees = $courseTermFee->total_fees;
+                }
+            }
+        }
         
-        // Calculate total paid from payments
-        $paymentTotal = DB::table('payments')
-            ->join('school_fees', 'payments.school_fee_id', '=', 'school_fees.id')
-            ->where('school_fees.student_id', $student->id)
-            ->sum('payments.payed');
+        // Calculate total paid from student_transactions
+        $totalPaid = StudentTransaction::where('student_id', $student->id)
+                                        ->where('type', 'school_fee')
+                                        ->where('status', 'successful')
+                                        ->sum('amount');
         
-        $totalFees = $schoolFees;
-        $totalPaid = $paymentTotal;
         $outstandingBalance = $totalFees - $totalPaid;
         
         $content .= "- Total Fees Due: RWF " . number_format($totalFees, 2) . "\n";

@@ -7,24 +7,30 @@ use App\Models\Student;
 
 class PaymentController extends Controller
 {
+    /**
+     * Get total paid by all students for school fees
+     * Payments are tracked in StudentTransaction table (type='school_fee')
+     */
     public function totalPaidByStudents()
-{
-    $students = Student::with(['schoolFees.payments'])->get();
+    {
+        $students = Student::with(['transactions'])->get();
 
-    $result = $students->map(function ($student) {
-        $totalPaid = $student->schoolFees->sum(function ($fee) {
-            return $fee->payments->sum('payed');
+        $result = $students->map(function ($student) {
+            // Sum payments from StudentTransaction where type is 'school_fee' and status is 'successful'
+            $totalPaid = $student->transactions()
+                ->where('type', 'school_fee')
+                ->where('status', 'successful')
+                ->sum('amount');
+
+            return [
+                'student_id' => $student->id,
+                'student_name' => $student->full_name,
+                'total_paid' => $totalPaid,
+            ];
         });
 
-        return [
-            'student_id' => $student->id,
-            'student_name' => $student->name,
-            'total_paid' => $totalPaid,
-        ];
-    });
-
-    return response()->json($result);
-}
+        return response()->json($result);
+    }
     public function store(Request $request)
     {
         $validated = $request->validate([

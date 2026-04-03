@@ -78,6 +78,22 @@ class Student extends Authenticatable
         return $this->belongsTo(Course::class);
     }
 
+    /**
+     * Get course term fees through the student's course
+     * Fees are tied to courses and terms, not directly to students
+     */
+    public function courseTermFees()
+    {
+        return $this->hasManyThrough(
+            CourseTermFee::class,
+            Course::class,
+            'id',          // Foreign key on courses table
+            'course_id',   // Foreign key on course_term_fees table
+            'course_id',   // Local key on students table
+            'id'           // Local key on courses table
+        );
+    }
+
     public function transcripts()
     {
         return $this->hasMany(Transcript::class);

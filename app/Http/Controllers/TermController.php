@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\AcademicYear;
 use App\Models\Term;
+use App\Models\CourseTermFee;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
@@ -199,18 +200,8 @@ class TermController extends Controller
 
             \App\Models\ReportCard::where('term_id', $term->id)->delete();
 
-            try {
-                $term->schoolFees()->delete();
-            } catch (\Exception $e) {
-                // school_fees table might not exist, continue
-            }
-
-            $term->delete();
-
-            return redirect()->route('admin.terms.index')->with('success', 'Term and all related data deleted successfully.');
-
-        } catch (\Illuminate\Database\QueryException $e) {
-            if ($e->getCode() == '23000') {
+                // Delete courseTermFees associated with this term
+                CourseTermFee::where('term_id', $term->id)->delete();
                 return redirect()->route('admin.terms.index')
                     ->with('error', 'Cannot delete this term because it is referenced by other records. Please contact administrator.');
             }
