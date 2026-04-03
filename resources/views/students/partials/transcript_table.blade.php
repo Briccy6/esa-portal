@@ -35,9 +35,16 @@
     body {
         background: white !important;
         color: black !important;
-        font-family: 'Times New Roman', serif !important;
-        font-size: 12pt !important;
-        line-height: 1.4 !important;
+        font-family: 'Arial', sans-serif !important;
+        font-size: 10pt !important;
+        line-height: 1.2 !important;
+        margin: 0 !important;
+        padding: 8mm !important;
+    }
+    
+    html {
+        margin: 0;
+        padding: 0;
     }
     
     /* Hide the Actions column header and data */
@@ -51,6 +58,11 @@
     .transcript-container .btn,
     .transcript-container .modal,
     .transcript-container .d-print-none {
+        display: none !important;
+    }
+    
+    /* Hide fee summary section */
+    .fee-summary-section {
         display: none !important;
     }
     
@@ -73,62 +85,93 @@
     /* Professional header styling for print */
     .transcript-header {
         text-align: center !important;
-        margin-bottom: 30px !important;
-        padding-bottom: 20px !important;
-        border-bottom: 2px solid #000 !important;
+        margin-bottom: 8px !important;
+        padding-bottom: 4px !important;
+        border-bottom: 1px solid #000 !important;
     }
     
     .transcript-header h2 {
-        font-size: 24pt !important;
+        font-size: 12pt !important;
         font-weight: bold !important;
-        margin-bottom: 10px !important;
+        margin-bottom: 2px !important;
         color: black !important;
     }
     
     .transcript-header h3 {
-        font-size: 18pt !important;
+        font-size: 9pt !important;
         font-weight: bold !important;
-        margin: 20px 0 10px 0 !important;
+        margin: 1px 0 !important;
         color: black !important;
+    }
+
+    .transcript-header p {
+        font-size: 8pt !important;
+        margin: 0px !important;
+        padding: 0 !important;
+        line-height: 1.1 !important;
     }
     
     /* Ensure proper table formatting for print */
     .transcript-container table {
         width: 100% !important;
         border-collapse: collapse !important;
-        margin-bottom: 20px !important;
+        margin-bottom: 6px !important;
+        font-size: 8pt !important;
     }
     
     .transcript-container table th,
     .transcript-container table td {
         border: 1px solid #000 !important;
-        padding: 8px !important;
+        padding: 3px 2px !important;
         text-align: left !important;
-        vertical-align: top !important;
+        vertical-align: middle !important;
     }
     
     .transcript-container table th {
-        background: #f0f0f0 !important;
+        background: #e0e0e0 !important;
         font-weight: bold !important;
         color: black !important;
+        font-size: 8pt !important;
+    }
+    
+    /* Reduce payment history table size */
+    .transcript-container .table-sm td,
+    .transcript-container .table-sm th {
+        padding: 2px 2px !important;
+        font-size: 7.5pt !important;
+    }
+    
+    /* Hide badge styling in print for less height */
+    .transcript-container .badge {
+        padding: 1px 4px !important;
+        font-size: 7pt !important;
     }
     
     /* Remove card shadows and backgrounds for clean printing */
     .transcript-container .card {
         border: 1px solid #000 !important;
         box-shadow: none !important;
-        margin-bottom: 20px !important;
+        margin-bottom: 0 !important;
         page-break-inside: avoid !important;
+        break-inside: avoid !important;
     }
     
     .transcript-container .card-header {
-        background: #f8f9fa !important;
+        background: #e0e0e0 !important;
         border-bottom: 1px solid #000 !important;
         color: black !important;
+        padding: 4px !important;
+    }
+
+    .transcript-container .card-header h6 {
+        font-size: 10pt !important;
+        font-weight: bold !important;
+        margin: 0 !important;
     }
     
     .transcript-container .card-body {
         color: black !important;
+        padding: 4px !important;
     }
     
     /* Ensure all text is black for printing */
@@ -138,30 +181,71 @@
     
     /* Student info section styling */
     .student-info-section {
-        margin-bottom: 20px !important;
-        padding: 15px !important;
+        margin-bottom: 4px !important;
+        padding: 3px !important;
         border: 1px solid #000 !important;
+        background: white !important;
+        font-size: 8pt !important;
     }
     
-    .fee-summary-section {
-        margin-bottom: 20px !important;
-        padding: 15px !important;
-        border: 1px solid #000 !important;
+    .student-info-section strong {
+        font-weight: bold !important;
     }
     
     /* Footer styling */
     .transcript-footer {
-        margin-top: 40px !important;
-        padding-top: 20px !important;
+        margin-top: 6px !important;
+        padding-top: 4px !important;
         border-top: 1px solid #000 !important;
         text-align: center !important;
-        font-size: 10pt !important;
+        font-size: 7pt !important;
         color: black !important;
+        line-height: 1 !important;
+    }
+    
+    .transcript-footer p {
+        margin: 0 !important;
+        padding: 0 !important;
+        font-size: 7pt !important;
     }
     
     /* Page break control */
     .page-break {
         page-break-before: always;
+    }
+    
+    /* Reduce authority section spacing */
+    .authority-section {
+        margin-top: 8px !important;
+        padding-top: 6px !important;
+        border-top: 1px solid #000 !important;
+        text-align: right !important;
+        font-size: 7.5pt !important;
+    }
+    
+    .authority-section h5 {
+        margin-bottom: 4px !important;
+        font-size: 8pt !important;
+    }
+    
+    .authority-section p {
+        margin-bottom: 2px !important;
+        font-size: 7.5pt !important;
+    }
+    
+    .signature-line {
+        border-bottom: 1px solid #000 !important;
+        width: 120px !important;
+        margin-left: auto !important;
+        margin-bottom: 2px !important;
+    }
+    
+    .authority-section .row {
+        margin: 0 !important;
+    }
+    
+    .authority-section .col-md-6 {
+        padding: 0 5px !important;
     }
 }
 
@@ -264,54 +348,21 @@
     </div>
 
     <!-- Transcript Title -->
-    <h3 style="text-align: center; margin-bottom: 30px;">STUDENT PAYMENT TRANSCRIPT</h3>
+    <h3 style="text-align: center; margin-bottom: 12px; font-size: 16pt;">STUDENT PAYMENT TRANSCRIPT</h3>
     
     <!-- Student Information -->
-    <div class="student-info-section">
-        <h5 style="margin-bottom: 15px; font-weight: bold;">STUDENT INFORMATION</h5>
-        <div class="row">
-            <div class="col-md-6">
-                <p class="mb-2"><strong>Full Name:</strong> {{ $student->full_name }}</p>
-                <p class="mb-2"><strong>Registration Number:</strong> {{ $student->reg_number }}</p>
-                <p class="mb-2"><strong>Sex:</strong> {{ $student->sex ?? 'N/A' }}</p>
-                <p class="mb-0"><strong>Phone:</strong> {{ $student->phone ?? 'N/A' }}</p>
-            </div>
-            <div class="col-md-6">
-                <p class="mb-2"><strong>Course:</strong> {{ $student->course->course_name ?? 'N/A' }}</p>
-                <p class="mb-2"><strong>Branch:</strong> {{ $student->branch->name ?? 'N/A' }}</p>
-                <p class="mb-2"><strong>Academic Year:</strong> {{ $student->academic_year->year ?? 'N/A' }}</p>
-                <p class="mb-0"><strong>Class:</strong> {{ $student->class ?? 'N/A' }}</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Fee Summary -->
-    <div class="fee-summary-section">
-        <h5 style="margin-bottom: 15px; font-weight: bold;">FEE SUMMARY</h5>
-        <div class="row">
-            <div class="col-md-6">
-                <p class="mb-2"><strong>Registration Fee:</strong> {{ number_format($registrationFee, 2) }} RWF</p>
-                <p class="mb-2"><strong>Tuition Fee:</strong> {{ number_format($tuitionFee, 2) }} RWF</p>
-                <p class="mb-2"><strong>Practical Fee:</strong> {{ number_format($practicalFee, 2) }} RWF</p>
-                <p class="mb-2"><strong>Trip Fee:</strong> {{ number_format($tripFee, 2) }} RWF</p>
-                <p class="mb-2"><strong>Student Card Fee:</strong> {{ number_format($studentCardFee, 2) }} RWF</p>
-                @if($discount > 0)
-                    <p class="mb-2"><strong>Discount ({{ $discount }}%):</strong> -{{ number_format($discountAmount, 2) }} RWF</p>
-                @endif
-            </div>
-            <div class="col-md-6">
-                <p class="mb-2"><strong>Total Fees:</strong> <span style="font-weight: bold; color: #1e3a8a;">{{ number_format($totalToPay, 2) }} RWF</span></p>
-                <p class="mb-2"><strong>Total Paid:</strong> <span style="font-weight: bold; color: #28a745;">{{ number_format($totalPaid, 2) }} RWF</span></p>
-                <p class="mb-2"><strong>Outstanding Balance:</strong> <span style="font-weight: bold; color: #dc3545;">{{ number_format($outstanding, 2) }} RWF</span></p>
-                <p class="mb-0"><strong>Payment Status:</strong> 
-                    @if($outstanding <= 0)
-                        <span style="color: #28a745; font-weight: bold;">FULLY PAID</span>
-                    @else
-                        <span style="color: #dc3545; font-weight: bold;">OUTSTANDING</span>
-                    @endif
-                </p>
-            </div>
-        </div>
+    <div class="student-info-section" style="padding: 8px; margin-bottom: 8px;">
+        <table style="width: 100%; border: none; margin: 0; padding: 0;">
+            <tr>
+                <td style="border: none; padding: 2px 4px;"><strong>Registration Number:</strong> {{ $student->reg_number }}</td>
+                <td style="border: none; padding: 2px 4px;"><strong>Course:</strong> {{ $student->course->course_name ?? 'N/A' }}</td>
+                <td style="border: none; padding: 2px 4px;"><strong>Academic Year:</strong> {{ $student->academic_year->year ?? 'N/A' }}</td>
+            </tr>
+            <tr>
+                <td style="border: none; padding: 2px 4px;"><strong>Branch:</strong> {{ $student->branch->name ?? 'N/A' }}</td>
+                <td colspan="2" style="border: none; padding: 2px 4px;"><strong>Amount to Pay:</strong> <span style="font-weight: bold; color: #dc3545;">{{ number_format($outstanding, 2) }} RWF</span></td>
+            </tr>
+        </table>
     </div>
 
     <!-- Payment History -->
