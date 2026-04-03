@@ -208,12 +208,12 @@
     <div class="container">
         <!-- Header with School Information -->
         <div class="header">
-            @if ($schoolInfo && $schoolInfo->logo_path)
-                <img src="{{ public_path('storage/' . $schoolInfo->logo_path) }}" class="school-logo" alt="School Logo">
+            @if ($schoolInfo && $schoolInfo->logo_url)
+                <img src="{{ $schoolInfo->logo_url }}" class="school-logo" alt="School Logo">
             @endif
             <div class="school-name">{{ $schoolInfo->school_name ?? 'SCHOOL NAME' }}</div>
-            @if ($schoolInfo->location)
-                <div class="school-info">{{ $schoolInfo->location }}</div>
+            @if ($schoolInfo->address)
+                <div class="school-info">{{ $schoolInfo->address }}</div>
             @endif
             @if ($schoolInfo->phone)
                 <div class="school-info">Tel: {{ $schoolInfo->phone }}</div>
@@ -250,7 +250,7 @@
         <div class="footer">
             <div class="signature-section">
                 <!-- School Stamp & Principal Signature -->
-                <div class="signature-box" style="width: 30%;">
+                <div class="signature-box" style="width: 100%; margin: 0 auto; max-width: 300px;">
                     @if ($schoolInfo && $schoolInfo->stamp_signature_url)
                         <img src="{{ $schoolInfo->stamp_signature_url }}" style="max-height: 50px; max-width: 80px; margin-bottom: 8px;">
                     @elseif ($schoolInfo && $schoolInfo->principal_signature_url)
@@ -260,22 +260,6 @@
                     @endif
                     <div class="signature-label">Head Teacher/Principal</div>
                     <div class="signature-sub">{{ $schoolInfo->principal_name ?? 'Signature Area' }}</div>
-                    <div class="signature-sub">Date: ______________</div>
-                </div>
-
-                <!-- Document Certification -->
-                <div class="signature-box" style="width: 35%;">
-                    <div class="signature-line"></div>
-                    <div class="signature-label">Document Verified</div>
-                    <div class="signature-sub">Certified by School Administration</div>
-                    <div class="signature-sub">Date: ______________</div>
-                </div>
-
-                <!-- Accountant Signature (No Storage) -->
-                <div class="signature-box" style="width: 30%; border-left: 2px dashed #999; padding-left: 12px;">
-                    <div class="signature-line"></div>
-                    <div class="signature-label">Accountant/Manager</div>
-                    <div class="signature-sub">Signature Area (On-site only)</div>
                     <div class="signature-sub">Date: ______________</div>
                 </div>
             </div>

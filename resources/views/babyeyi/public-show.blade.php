@@ -57,12 +57,12 @@
         <!-- School Header in Document -->
         @if ($schoolInfo)
         <div class="bg-gray-50 p-8 text-center border-b-2 border-gray-300">
-            @if ($schoolInfo->logo_path)
-                <img src="{{ asset('storage/' . $schoolInfo->logo_path) }}" alt="School Logo" class="h-20 mx-auto mb-4 object-contain">
+            @if ($schoolInfo->logo_url)
+                <img src="{{ $schoolInfo->logo_url }}" alt="School Logo" class="h-20 mx-auto mb-4 object-contain">
             @endif
             <h2 class="text-2xl font-bold text-gray-900 mb-1">{{ $schoolInfo->school_name ?? 'School Name' }}</h2>
-            @if ($schoolInfo->location)
-                <p class="text-gray-600 mb-1">{{ $schoolInfo->location }}</p>
+            @if ($schoolInfo->address)
+                <p class="text-gray-600 mb-1">{{ $schoolInfo->address }}</p>
             @endif
             <div class="space-y-0.5">
                 @if ($schoolInfo->phone)
@@ -100,9 +100,9 @@
                     <div class="text-center">
                         <div class="flex items-center justify-center mb-4 h-32 border-2 border-gray-400 rounded bg-gray-50">
                             @if ($schoolInfo && $schoolInfo->stamp_signature_url)
-                                <img src="{{ asset($schoolInfo->stamp_signature_url) }}" alt="School Stamp" class="max-h-28 max-w-28 object-contain">
+                                <img src="{{ $schoolInfo->stamp_signature_url }}" alt="School Stamp" class="max-h-28 max-w-28 object-contain">
                             @elseif ($schoolInfo && $schoolInfo->principal_signature_url)
-                                <img src="{{ asset($schoolInfo->principal_signature_url) }}" alt="Principal Signature" class="max-h-28 max-w-28 object-contain">
+                                <img src="{{ $schoolInfo->principal_signature_url }}" alt="Principal Signature" class="max-h-28 max-w-28 object-contain">
                             @else
                                 <div class="text-center text-gray-400">
                                     <i class="fas fa-stamp text-4xl mb-2"></i>
