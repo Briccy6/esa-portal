@@ -7,6 +7,7 @@ use App\Models\AcademicYear;
 use App\Models\Term;
 use App\Models\Course;
 use App\Models\SchoolInformation;
+use App\Models\Student;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -429,5 +430,23 @@ class BabyeyiController extends Controller
         $pdf = PDF::loadView('babyeyi.student-pdf', compact('babyeyi', 'schoolInfo', 'headTeacher', 'student', 'courseTermFees'));
         
         return $pdf->download("babyeyi-{$babyeyi->reference_number}.pdf");
+    }
+
+    /**
+     * Delete a babyeyi document.
+     */
+    public function destroy(Babyeyi $babyeyi)
+    {
+        // Only allow deletion of draft documents
+        if ($babyeyi->status !== Babyeyi::STATUS_DRAFT) {
+            return redirect()->back()
+                ->with('error', 'Only draft documents can be deleted.');
+        }
+
+        $reference = $babyeyi->reference_number;
+        $babyeyi->delete();
+
+        return redirect()->route('babyeyi.index')
+            ->with('success', "Babyeyi document ({$reference}) has been deleted successfully.");
     }
 }

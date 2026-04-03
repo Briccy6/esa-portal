@@ -1439,6 +1439,7 @@ Route::middleware(['auth:admin,staff'])->prefix('babyeyi')->name('babyeyi.')->gr
     Route::get('/{babyeyi}', [BabyeyiController::class, 'show'])->name('show');
     Route::get('/{babyeyi}/edit', [BabyeyiController::class, 'edit'])->name('edit');
     Route::put('/{babyeyi}', [BabyeyiController::class, 'update'])->name('update');
+    Route::delete('/{babyeyi}', [BabyeyiController::class, 'destroy'])->name('destroy');
     Route::get('/{babyeyi}/preview', [BabyeyiController::class, 'preview'])->name('preview');
     Route::post('/{babyeyi}/publish', [BabyeyiController::class, 'publish'])->name('publish');
     Route::get('/{babyeyi}/download', [BabyeyiController::class, 'download'])->name('download');

@@ -57,6 +57,14 @@
                                         <a href="{{ route('babyeyi.edit', $babyeyi) }}" class="btn btn-sm btn-warning" title="Edit">
                                             <i class="fas fa-edit"></i>
                                         </a>
+                                        <form action="{{ route('babyeyi.destroy', $babyeyi) }}" method="POST" style="display: inline;" 
+                                              onsubmit="return confirm('Are you sure you want to delete this draft?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-sm btn-danger" title="Delete Draft">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
                                     @endif
                                     @if ($babyeyi->status === 'published')
                                         <a href="{{ route('babyeyi.download', $babyeyi) }}" class="btn btn-sm btn-secondary" title="Download PDF">

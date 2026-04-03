@@ -678,6 +678,13 @@
                     </a>
                 </li>
 
+                <li class="nav-item">
+                    <a href="{{ route('babyeyi.index') }}" class="nav-link {{ request()->routeIs('babyeyi.*') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-file-contract"></i>
+                        <span class="nav-text">Babyeyi Documents</span>
+                    </a>
+                </li>
+
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="accountingDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="nav-icon fas fa-calculator"></i>

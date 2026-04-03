@@ -162,6 +162,11 @@
                     <a href="{{ route('babyeyi.index') }}" class="btn btn-light border">
                         <i class="fas fa-times"></i> Cancel
                     </a>
+                    @if ($babyeyi->status === 'draft')
+                        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                            <i class="fas fa-trash"></i> Delete Draft
+                        </button>
+                    @endif
                 </div>
             </div>
         </div>
@@ -171,6 +176,38 @@
 <!-- Include Summernote CSS and JS -->
 <link href="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-bs4.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-bs4.js"></script>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-danger">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteModalLabel">Delete Babyeyi Draft</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-2">
+                    <i class="fas fa-exclamation-triangle text-danger"></i>
+                    <strong>Are you sure you want to delete this draft babyeyi document?</strong>
+                </p>
+                <p class="mb-0 text-muted">
+                    <small>Reference: <code>{{ $babyeyi->reference_number }}</code></small><br>
+                    <small>This action cannot be undone.</small>
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form action="{{ route('babyeyi.destroy', $babyeyi) }}" method="POST" style="display: inline;">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Yes, Delete it
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
 $(document).ready(function() {
