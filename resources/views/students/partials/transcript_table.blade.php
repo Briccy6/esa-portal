@@ -32,19 +32,38 @@
 <style>
 /* Print-specific styles for professional transcript */
 @media print {
+    * {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    
     body {
         background: white !important;
         color: black !important;
         font-family: 'Arial', sans-serif !important;
-        font-size: 10pt !important;
-        line-height: 1.2 !important;
+        font-size: 8pt !important;
+        line-height: 0.95 !important;
         margin: 0 !important;
-        padding: 8mm !important;
+        padding: 3mm !important;
+        width: 100%;
+        height: 100%;
     }
     
     html {
         margin: 0;
         padding: 0;
+        width: 100%;
+        height: 100%;
+    }
+    
+    /* Hide modal and backdrop */
+    .modal, .modal-backdrop, .modal-dialog, .modal-content {
+        display: none !important;
+    }
+    
+    /* Hide all overlays and backdrops */
+    [role="presentation"], .fade.in, .show {
+        display: none !important;
     }
     
     /* Hide all navigation and header elements */
@@ -55,12 +74,31 @@
         display: none !important;
     }
     
+    /* Hide links on print */
+    a {
+        color: black !important;
+        text-decoration: none !important;
+        pointer-events: none;
+    }
+    
+    a[href]:after {
+        content: "" !important;
+    }
+    
     /* Hide main layout wrappers that might contain sidebars */
     .page-wrapper, .wrapper {
         margin-left: 0 !important;
         margin-right: 0 !important;
         padding-left: 0 !important;
         padding-right: 0 !important;
+    }
+    
+    /* Prevent any page breaks or overflow */
+    body, html {
+        page-break-after: avoid !important;
+        page-break-before: avoid !important;
+        orphans: 0 !important;
+        widows: 0 !important;
     }
     
     /* The Actions column header and data */
@@ -101,44 +139,46 @@
     /* Professional header styling for print */
     .transcript-header {
         text-align: center !important;
-        margin-bottom: 8px !important;
-        padding-bottom: 4px !important;
-        border-bottom: 1px solid #000 !important;
+        margin-bottom: 1px !important;
+        padding-bottom: 1px !important;
+        border-bottom: 0.5px solid #000 !important;
     }
     
     .transcript-header h2 {
-        font-size: 12pt !important;
+        font-size: 9.5pt !important;
         font-weight: bold !important;
-        margin-bottom: 2px !important;
+        margin-bottom: 0px !important;
         color: black !important;
+        line-height: 0.9 !important;
     }
     
     .transcript-header h3 {
-        font-size: 9pt !important;
+        font-size: 7pt !important;
         font-weight: bold !important;
-        margin: 1px 0 !important;
+        margin: 0 !important;
         color: black !important;
+        line-height: 0.9 !important;
     }
 
     .transcript-header p {
-        font-size: 8pt !important;
-        margin: 0px !important;
+        font-size: 6pt !important;
+        margin: 0 !important;
         padding: 0 !important;
-        line-height: 1.1 !important;
+        line-height: 0.8 !important;
     }
     
     /* Ensure proper table formatting for print */
     .transcript-container table {
         width: 100% !important;
         border-collapse: collapse !important;
-        margin-bottom: 6px !important;
-        font-size: 8pt !important;
+        margin-bottom: 2px !important;
+        font-size: 7pt !important;
     }
     
     .transcript-container table th,
     .transcript-container table td {
         border: 1px solid #000 !important;
-        padding: 3px 2px !important;
+        padding: 1px 1px !important;
         text-align: left !important;
         vertical-align: middle !important;
     }
@@ -147,14 +187,14 @@
         background: #e0e0e0 !important;
         font-weight: bold !important;
         color: black !important;
-        font-size: 8pt !important;
+        font-size: 7pt !important;
     }
     
     /* Reduce payment history table size */
     .transcript-container .table-sm td,
     .transcript-container .table-sm th {
-        padding: 2px 2px !important;
-        font-size: 7.5pt !important;
+        padding: 0px 1px !important;
+        font-size: 6.5pt !important;
     }
     
     /* Hide badge styling in print for less height */
@@ -194,7 +234,7 @@
     
     /* Remove card shadows and backgrounds for clean printing */
     .transcript-container .card {
-        border: 1px solid #000 !important;
+        border: 0.5px solid #000 !important;
         box-shadow: none !important;
         margin-bottom: 0 !important;
         page-break-inside: avoid !important;
@@ -203,20 +243,21 @@
     
     .transcript-container .card-header {
         background: #e0e0e0 !important;
-        border-bottom: 1px solid #000 !important;
+        border-bottom: 0.5px solid #000 !important;
         color: black !important;
-        padding: 4px !important;
+        padding: 0.5px !important;
     }
 
     .transcript-container .card-header h6 {
-        font-size: 10pt !important;
+        font-size: 6.5pt !important;
         font-weight: bold !important;
         margin: 0 !important;
+        line-height: 0.9 !important;
     }
     
     .transcript-container .card-body {
         color: black !important;
-        padding: 4px !important;
+        padding: 0.5px !important;
     }
     
     /* Ensure all text is black for printing */
@@ -226,11 +267,12 @@
     
     /* Student info section styling */
     .student-info-section {
-        margin-bottom: 4px !important;
-        padding: 3px !important;
-        border: 1px solid #000 !important;
+        margin-bottom: 0px !important;
+        padding: 0.5px !important;
+        border: 0.5px solid #000 !important;
         background: white !important;
-        font-size: 8pt !important;
+        font-size: 6.5pt !important;
+        line-height: 0.9 !important;
     }
     
     .student-info-section strong {
@@ -239,50 +281,91 @@
     
     /* Footer styling */
     .transcript-footer {
-        margin-top: 6px !important;
-        padding-top: 4px !important;
-        border-top: 1px solid #000 !important;
+        margin-top: 1px !important;
+        padding-top: 0.5px !important;
+        border-top: 0.5px solid #000 !important;
         text-align: center !important;
-        font-size: 7pt !important;
+        font-size: 5.5pt !important;
         color: black !important;
-        line-height: 1 !important;
+        line-height: 0.8 !important;
     }
     
     .transcript-footer p {
         margin: 0 !important;
         padding: 0 !important;
-        font-size: 7pt !important;
+        font-size: 5.5pt !important;
+        line-height: 0.8 !important;
     }
     
-    /* Page break control */
+    /* Print footer flex layout */
+    .transcript-footer-flex {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        gap: 1px !important;
+    }
+    
+    .footer-section {
+        flex: 1 !important;
+        text-align: center !important;
+    }
+    
+    .footer-logo, .footer-stamp {
+        max-height: 25px !important;
+        width: auto !important;
+    }
+    
+    .footer-contact {
+        background: white !important;
+        padding: 0 !important;
+        border: none !important;
+        font-size: 4.5pt !important;
+    }
+    
+    .footer-contact p {
+        margin: 0 !important;
+        padding: 0 !important;
+        line-height: 0.8 !important;
+    }
+    
+    /* Page break control - prevent all page breaks */
     .page-break {
-        page-break-before: always;
+        display: none !important;
+    }
+    
+    /* Prevent any element from causing page breaks */
+    * {
+        page-break-inside: avoid !important;
+        page-break-before: avoid !important;
+        page-break-after: avoid !important;
     }
     
     /* Reduce authority section spacing */
     .authority-section {
-        margin-top: 8px !important;
-        padding-top: 6px !important;
-        border-top: 1px solid #000 !important;
+        margin-top: 0.5px !important;
+        padding-top: 0.5px !important;
+        border-top: 0.5px solid #000 !important;
         text-align: right !important;
-        font-size: 7.5pt !important;
+        font-size: 5.5pt !important;
     }
     
     .authority-section h5 {
-        margin-bottom: 4px !important;
-        font-size: 8pt !important;
+        margin-bottom: 0px !important;
+        font-size: 5.5pt !important;
+        line-height: 0.8 !important;
     }
     
     .authority-section p {
-        margin-bottom: 2px !important;
-        font-size: 7.5pt !important;
+        margin-bottom: 0px !important;
+        font-size: 5.5pt !important;
+        line-height: 0.75 !important;
     }
     
     .signature-line {
-        border-bottom: 1px solid #000 !important;
-        width: 120px !important;
+        border-bottom: 0.5px solid #000 !important;
+        width: 60px !important;
         margin-left: auto !important;
-        margin-bottom: 2px !important;
+        margin-bottom: 0px !important;
     }
     
     .authority-section .row {
@@ -290,7 +373,33 @@
     }
     
     .authority-section .col-md-6 {
-        padding: 0 5px !important;
+        padding: 0 1px !important;
+    }
+    
+    @page {
+        size: A4;
+        margin: 4mm;
+        margin-bottom: 0;
+    }
+    
+    /* Prevent page breaks and hide browser headers/footers */
+    .transcript-container {
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+        max-height: 100vh !important;
+        overflow: hidden !important;
+    }
+    
+    .authority-section {
+        page-break-inside: avoid !important;
+    }
+    
+    /* Ensure single page */
+    @page {
+        size: A4;
+        margin: 3mm;
+        orphans: 0;
+        widows: 0;
     }
 }
 
