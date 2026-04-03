@@ -1,48 +1,75 @@
 @component('mail::message')
-# Report Card Not Available
 
-Dear {{ $student->full_name }},
+<h2>Report Card Not Available</h2>
 
-We hope this message finds you well. We are writing to inform you that your **report card cannot be generated** at this time due to **outstanding fees** on your account.
+<p>Dear <strong>{{ $student->full_name }}</strong>,</p>
 
-## Current Fee Status
+<p>We hope this message finds you well. We are writing to inform you that your <strong>report card cannot be generated</strong> at this time due to <strong>outstanding fees</strong> on your account.</p>
 
-| Item | Amount |
-|------|--------|
-| **Total Required Fees** | {{ config('app.currency_symbol', 'RWF') }} {{ number_format($requiredFees, 2) }} |
-| **Amount Paid** | {{ config('app.currency_symbol', 'RWF') }} {{ number_format($totalPaid, 2) }} |
-| **Outstanding Balance** | **{{ config('app.currency_symbol', 'RWF') }} {{ number_format($outstandingAmount, 2) }}** |
+<h3>Current Fee Status</h3>
 
-## Important Notice
+<table class="fee-table">
+    <thead>
+        <tr>
+            <th>Item</th>
+            <th>Amount</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>Total Required Fees</strong></td>
+            <td>{{ config('app.currency_symbol', 'RWF') }} {{ number_format($requiredFees, 2) }}</td>
+        </tr>
+        <tr>
+            <td><strong>Amount Paid</strong></td>
+            <td>{{ config('app.currency_symbol', 'RWF') }} {{ number_format($totalPaid, 2) }}</td>
+        </tr>
+        <tr class="total">
+            <td><strong>Outstanding Balance</strong></td>
+            <td><strong>{{ config('app.currency_symbol', 'RWF') }} {{ number_format($outstandingAmount, 2) }}</strong></td>
+        </tr>
+    </tbody>
+</table>
 
-To access your report card, you must **settle all outstanding fees** on or before **{{ date('F d, Y', strtotime($dueDate)) }}**.
+<div class="alert-box">
+    <strong>⚠️ Important Notice</strong><br><br>
+    To access your report card, you must <strong>settle all outstanding fees</strong> on or before <strong>{{ date('F d, Y', strtotime($dueDate ?? now())) }}</strong>.
+</div>
 
-Your report card will be **automatically generated** as soon as your payment is confirmed in our system. This typically happens within 24 hours of payment.
+<p>Your report card will be <strong>automatically generated</strong> as soon as your payment is confirmed in our system. This typically happens within 24 hours of payment.</p>
 
-## Payment Information
+<h3>Payment Information</h3>
 
-Please contact our Finance Department for available payment methods and arrangements:
+<div class="contact-info">
+    <strong>📞 Finance Department Contact Details:</strong><br><br>
+    <strong>Email:</strong> <a href="mailto:finance@excellentservantacademy.ac.rw">finance@excellentservantacademy.ac.rw</a><br>
+    <strong>Phone:</strong> [INSERT PHONE NUMBER]<br>
+    <strong>Office Hours:</strong> Monday - Friday, 8:00 AM - 4:00 PM
+</div>
 
-- **Email**: finance@excellentservantacademy.ac.rw
-- **Phone**: [INSERT PHONE NUMBER]
-- **Office Hours**: Monday - Friday, 8:00 AM - 4:00 PM
+<h3>What Happens Next</h3>
 
-## What Happens Next
+<p>Once you have made your payment, please follow these steps:</p>
 
-Once you have made your payment:
-1. Your payment will be verified by our finance team
-2. Your report card will be generated automatically
-3. You will receive an email notification with your report card
-4. You can download and print your report card from the student portal
+<ol>
+    <li>Your payment will be verified by our finance team</li>
+    <li>Your report card will be generated automatically</li>
+    <li>You will receive an email notification with your report card</li>
+    <li>You can download and print your report card from the student portal</li>
+</ol>
 
----
+<div class="highlight-box">
+    <strong>📌 Note:</strong> This is an automated message from our school management system. Please do <strong>not</strong> reply to this email. For inquiries, contact the Finance Department directly.
+</div>
 
-**Note**: This is an automated message from our school management system. Please do not reply to this email. For inquiries, contact the Finance Department directly.
+<p style="margin-top: 30px; color: #666; font-size: 14px;">
+    Thank you for your prompt attention to this matter.<br><br>
+    <strong>Best regards,</strong><br>
+    <strong>Excellent Servant Academy</strong>
+</p>
 
-Thank you for your prompt attention to this matter.
+<p style="margin-top: 20px; color: #999; font-size: 12px; border-top: 1px solid #e5e7eb; padding-top: 15px;">
+    <em>This email contains important information about your academic record. Please save for your records.</em>
+</p>
 
-Best regards,  
-**Excellent Servant Academy**
-
-*This email contains important information about your academic record. Please save for your records.*
 @endcomponent

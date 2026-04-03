@@ -169,4 +169,12 @@ return [
     */
     'academic_year' => env('ACADEMIC_YEAR', '2026'),
     'current_term' => env('CURRENT_TERM', 'Term 1'),
+    
+    /*
+    |--------------------------------------------------------------------------
+    | Currency Configuration
+    |--------------------------------------------------------------------------
+    */
+    'currency_symbol' => env('CURRENCY_SYMBOL', 'RWF'),
+    'currency_code' => env('CURRENCY_CODE', 'RWF'),
 ];
