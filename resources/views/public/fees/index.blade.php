@@ -221,7 +221,7 @@ document.addEventListener('DOMContentLoaded', function() {
         initialState.classList.remove('hidden');
 
         // Fetch courses for this branch
-        fetch(`/public/fees/branches/${branchId}/courses`)
+        fetch(`/fees/branches/${branchId}/courses`)
             .then(response => response.json())
             .then(data => {
                 if (data.success && data.courses.length > 0) {
@@ -262,7 +262,7 @@ document.addEventListener('DOMContentLoaded', function() {
         loadingState.classList.remove('hidden');
         feesContainer.innerHTML = '';
 
-        fetch(`/public/fees/courses/${courseId}`)
+        fetch(`/fees/courses/${courseId}`)
             .then(response => response.json())
             .then(data => {
                 loadingState.classList.add('hidden');
@@ -335,7 +335,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Download PDF
     downloadBtn.addEventListener('click', function() {
         if (currentCourseId) {
-            window.location.href = `/public/fees/courses/${currentCourseId}/download`;
+            window.location.href = `/fees/courses/${currentCourseId}/download`;
         }
     });
 });

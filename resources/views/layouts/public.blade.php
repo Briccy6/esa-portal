@@ -181,6 +181,13 @@
             }
         }
 
+        /* Font Awesome Icons - Ensure they display properly */
+        i.fas, i.fab, i.far, i.fal, i.fad {
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 0.25rem;
+        }
+
         /* Loading Animation */
         .loading-spinner {
             display: inline-block;
@@ -198,7 +205,20 @@
 
         /* Ensure navigation appears above all content */
         body {
-            padding-top: 80px; /* Space for fixed navigation */
+            padding-top: 0; /* No padding needed for sticky navbar */
+            margin-top: 0;
+        }
+
+        /* Remove extra spacing from header */
+        header {
+            margin-top: 0;
+            padding-top: 0;
+        }
+
+        /* Ensure main content starts right after header */
+        main {
+            margin-top: 0;
+            padding-top: 0;
         }
     </style>
 

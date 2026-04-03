@@ -1,5 +1,8 @@
 @php
     $systemName = \Illuminate\Support\Facades\Cache::get('esa_system_name', 'ESA-Parnel');
+    $systemEmail = \Illuminate\Support\Facades\Cache::get('esa_system_email', 'info@excellentservantacademy.com');
+    $systemPhone = \Illuminate\Support\Facades\Cache::get('esa_system_phone', '+1 (555) 123-4567');
+    $systemAddress = \Illuminate\Support\Facades\Cache::get('esa_system_address', '123 Education Street, Learning City');
 @endphp
 
 <!-- Footer -->
@@ -10,7 +13,7 @@
             <div>
                 <h3 class="text-lg font-semibold mb-4">{{ $systemName }}</h3>
                 <p class="text-gray-300 text-sm leading-relaxed">
-                    Excellent Servant Academy is dedicated to providing quality education and resources to help students achieve their academic goals.
+                    {{ \Illuminate\Support\Facades\Cache::get('esa_system_description', 'Quality education and resources to help students achieve their academic goals.') }}
                 </p>
             </div>
             
@@ -18,10 +21,11 @@
             <div>
                 <h4 class="text-lg font-semibold mb-4">Quick Links</h4>
                 <ul class="space-y-2 text-sm">
-                    <li><a href="{{ url('/') }}" class="text-gray-300 hover:text-white transition"><i class="fas fa-home mr-2"></i>Home</li>
-                    <li><a href="{{ route('public.exams.index') }}" class="text-gray-300 hover:text-white transition"><i class="fas fa-brain mr-2"></i>Test Skills</li>
-                    <li><a href="{{ route('public.resources.index') }}" class="text-gray-300 hover:text-white transition"><i class="fas fa-book mr-2"></i>Resources</li>
-                    <li><a href="{{ url('/#quick-access') }}" class="text-gray-300 hover:text-white transition"><i class="fas fa-sign-in-alt mr-2"></i>Portals</li>
+                    <li><a href="{{ url('/') }}" class="text-gray-300 hover:text-white transition"><i class="fas fa-home mr-2"></i>Home</a></li>
+                    <li><a href="{{ route('public.exams.index') }}" class="text-gray-300 hover:text-white transition"><i class="fas fa-brain mr-2"></i>Test Skills</a></li>
+                    <li><a href="{{ route('public.resources.index') }}" class="text-gray-300 hover:text-white transition"><i class="fas fa-book mr-2"></i>Resources</a></li>
+                    <li><a href="{{ url('/fees') }}" class="text-gray-300 hover:text-white transition"><i class="fas fa-credit-card mr-2"></i>Fees</a></li>
+                    <li><a href="{{ url('/#quick-access') }}" class="text-gray-300 hover:text-white transition"><i class="fas fa-sign-in-alt mr-2"></i>Portals</a></li>
                 </ul>
             </div>
             
@@ -31,15 +35,15 @@
                 <ul class="space-y-2 text-sm text-gray-300">
                     <li class="flex items-center">
                         <i class="fas fa-envelope mr-2"></i>
-                        <span>info@{{ strtolower(str_replace(' ', '', $systemName)) }}.com</span>
+                        <span>{{ $systemEmail }}</span>
                     </li>
                     <li class="flex items-center">
                         <i class="fas fa-phone mr-2"></i>
-                        <span>+1 (555) 123-4567</span>
+                        <span>{{ $systemPhone }}</span>
                     </li>
                     <li class="flex items-center">
                         <i class="fas fa-map-marker-alt mr-2"></i>
-                        <span>123 Education Street, Learning City</span>
+                        <span>{{ $systemAddress }}</span>
                     </li>
                 </ul>
             </div>

@@ -12,6 +12,10 @@ class PreferenceController extends Controller
     {
         $prefs = [
             'system_name' => Cache::get('esa_system_name', 'ESA-Parnel'),
+            'system_description' => Cache::get('esa_system_description', ''),
+            'system_email' => Cache::get('esa_system_email', ''),
+            'system_phone' => Cache::get('esa_system_phone', ''),
+            'system_address' => Cache::get('esa_system_address', ''),
             'system_logo' => Cache::get('esa_system_logo', null),
             'youtube_api' => config('esa.youtube_api'),
             'payment_api' => config('esa.payment_api'),
@@ -26,6 +30,10 @@ class PreferenceController extends Controller
     {
         $data = $request->validate([
             'system_name' => 'nullable|string|max:255',
+            'system_description' => 'nullable|string|max:500',
+            'system_email' => 'nullable|email|max:255',
+            'system_phone' => 'nullable|string|max:20',
+            'system_address' => 'nullable|string|max:300',
             'system_logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'youtube_api' => 'nullable|string',
             'payment_api' => 'nullable|string',
@@ -44,6 +52,10 @@ class PreferenceController extends Controller
         }
 
         Cache::forever('esa_system_name', $data['system_name'] ?? 'ESA-Parnel');
+        Cache::forever('esa_system_description', $data['system_description'] ?? '');
+        Cache::forever('esa_system_email', $data['system_email'] ?? '');
+        Cache::forever('esa_system_phone', $data['system_phone'] ?? '');
+        Cache::forever('esa_system_address', $data['system_address'] ?? '');
         Cache::forever('esa_youtube_api', $data['youtube_api'] ?? '');
         Cache::forever('esa_payment_api', $data['payment_api'] ?? '');
         Cache::forever('esa_google_api', $data['google_api'] ?? '');

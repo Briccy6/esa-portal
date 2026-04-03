@@ -20,26 +20,26 @@
 
             <!-- Desktop Navigation -->
             <nav class="hidden md:flex items-center space-x-6">
-                <a href="{{ route('welcome') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300">
-                    Home
+                <a href="{{ route('welcome') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300 flex items-center">
+                    <i class="fas fa-home mr-1"></i>Home
                 </a>
-                <a href="{{ route('blogs.public.index') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300">
-                    Blog
+                <a href="{{ route('blogs.public.index') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300 flex items-center">
+                    <i class="fas fa-newspaper mr-1"></i>Blog
                 </a>
-                <a href="{{ route('public.exams.index') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300">
-                    Test Skills
+                <a href="{{ route('public.exams.index') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300 flex items-center">
+                    <i class="fas fa-brain mr-1"></i>Test Skills
                 </a>
-                <a href="{{ route('public.resources.index') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300">
-                    Notes
+                <a href="{{ route('public.resources.index') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300 flex items-center">
+                    <i class="fas fa-book mr-1"></i>Notes
                 </a>
-                <a href="{{ route('public.babyeyi.index') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300">
-                    Babyeyi
+                <a href="{{ route('public.babyeyi.index') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300 flex items-center">
+                    <i class="fas fa-child mr-1"></i>Babyeyi
                 </a>
-                <a href="{{ route('public.fees.index') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300">
-                    <i class="fas fa-receipt mr-1"></i>Fees
+                <a href="{{ route('public.fees.index') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300 flex items-center">
+                    <i class="fas fa-credit-card mr-1"></i>Fees
                 </a>
-                <a href="#quick-access" class="text-text-light hover:text-accent-color font-medium transition duration-300">
-                    Portals
+                <a href="#quick-access" class="text-text-light hover:text-accent-color font-medium transition duration-300 flex items-center">
+                    <i class="fas fa-sign-in-alt mr-1"></i>Portals
                 </a>
             </nav>
 
@@ -84,26 +84,26 @@
                 <div x-show="open" @click.away="open = false" x-transition.origin.top
                      class="absolute left-0 top-full w-full bg-white shadow-lg py-4 mt-2">
                     <nav class="flex flex-col items-center space-y-4">
-                        <a href="{{ route('welcome') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300" @click="open = false">
-                            Home
+                        <a href="{{ route('welcome') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300 flex items-center" @click="open = false">
+                            <i class="fas fa-home mr-1"></i>Home
                         </a>
-                        <a href="{{ route('blogs.public.index') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300" @click="open = false">
-                            Blog
+                        <a href="{{ route('blogs.public.index') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300 flex items-center" @click="open = false">
+                            <i class="fas fa-newspaper mr-1"></i>Blog
                         </a>
-                        <a href="{{ route('public.exams.index') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300" @click="open = false">
-                            Test Skills
+                        <a href="{{ route('public.exams.index') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300 flex items-center" @click="open = false">
+                            <i class="fas fa-brain mr-1"></i>Test Skills
                         </a>
-                        <a href="{{ route('public.resources.index') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300" @click="open = false">
-                            Notes
+                        <a href="{{ route('public.resources.index') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300 flex items-center" @click="open = false">
+                            <i class="fas fa-book mr-1"></i>Notes
                         </a>
-                        <a href="{{ route('public.babyeyi.index') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300" @click="open = false">
-                            Babyeyi
+                        <a href="{{ route('public.babyeyi.index') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300 flex items-center" @click="open = false">
+                            <i class="fas fa-child mr-1"></i>Babyeyi
                         </a>
-                        <a href="{{ route('public.fees.index') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300" @click="open = false">
-                            <i class="fas fa-receipt mr-1"></i>Fees
+                        <a href="{{ route('public.fees.index') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300 flex items-center" @click="open = false">
+                            <i class="fas fa-credit-card mr-1"></i>Fees
                         </a>
-                        <a href="#quick-access" class="text-text-light hover:text-accent-color font-medium transition duration-300" @click="open = false">
-                            Portals
+                        <a href="#quick-access" class="text-text-light hover:text-accent-color font-medium transition duration-300 flex items-center" @click="open = false">
+                            <i class="fas fa-sign-in-alt mr-1"></i>Portals
                         </a>
                         <div class="w-full border-t border-gray-200 pt-4 mt-4"></div>
                         <div class="relative w-full text-center" x-data="{ loginOpen: false }">

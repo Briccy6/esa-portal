@@ -15,6 +15,22 @@
             <input type="text" name="system_name" class="form-control" value="{{ old('system_name', $prefs['system_name']) }}">
         </div>
         <div class="mb-3">
+            <label class="form-label">System Description</label>
+            <textarea name="system_description" class="form-control" rows="3">{{ old('system_description', $prefs['system_description']) }}</textarea>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Contact Email</label>
+            <input type="email" name="system_email" class="form-control" value="{{ old('system_email', $prefs['system_email']) }}">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Contact Phone</label>
+            <input type="tel" name="system_phone" class="form-control" value="{{ old('system_phone', $prefs['system_phone']) }}">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Contact Address</label>
+            <input type="text" name="system_address" class="form-control" value="{{ old('system_address', $prefs['system_address']) }}">
+        </div>
+        <div class="mb-3">
             <label class="form-label">System Logo</label>
             @if($prefs['system_logo'])
                 <div class="mb-2">
