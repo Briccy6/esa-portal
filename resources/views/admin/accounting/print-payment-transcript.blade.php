@@ -19,8 +19,8 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
-            font-size: 10px;
-            line-height: 1.3;
+            font-size: 9px;
+            line-height: 1.1;
             color: #333;
             background: white;
         }
@@ -46,20 +46,19 @@
         .no-print button:hover { background: #1a252f; }
         @media print {
             .no-print { display: none !important; }
-            body { background: white; }
+            body { background: white; margin: 0; padding: 0; }
         }
 
         /* Page setup - A4 Portrait Single Page */
         @page {
             size: A4 portrait;
-            margin: 0.4in 0.3in;
+            margin: 0.3in 0.25in;
         }
         .page {
             width: 100%;
             max-width: 21cm;
-            height: 29.7cm;
             margin: 0 auto;
-            padding: 0.3in;
+            padding: 0.2in;
             background: white;
             page-break-after: avoid;
             display: flex;
@@ -70,97 +69,97 @@
         /* Header */
         .header {
             text-align: center;
-            border-bottom: 2px solid #2c3e50;
-            padding-bottom: 8px;
-            margin-bottom: 8px;
+            border-bottom: 1px solid #2c3e50;
+            padding-bottom: 4px;
+            margin-bottom: 4px;
             flex-shrink: 0;
         }
         .school-logo {
-            height: 35px;
-            margin-bottom: 4px;
+            height: 25px;
+            margin-bottom: 1px;
         }
         .school-name {
-            font-size: 13px;
+            font-size: 11px;
             font-weight: bold;
             color: #2c3e50;
-            margin-bottom: 2px;
+            margin-bottom: 1px;
         }
         .school-details {
-            font-size: 7px;
+            font-size: 6px;
             color: #666;
-            line-height: 1.1;
+            line-height: 1;
         }
-        .school-details div { margin: 1px 0; }
+        .school-details div { margin: 0.5px 0; }
 
         /* Document info */
         .doc-title {
             text-align: center;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: bold;
             color: #2c3e50;
-            margin: 6px 0 2px 0;
+            margin: 3px 0 1px 0;
             flex-shrink: 0;
         }
         .student-info {
-            margin-bottom: 6px;
+            margin-bottom: 4px;
             border: 1px solid #ddd;
-            padding: 4px;
-            font-size: 8px;
+            padding: 2px 3px;
+            font-size: 7px;
             flex-shrink: 0;
             background: #f9f9f9;
         }
         .student-info-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            margin: 2px 0;
+            gap: 4px;
+            margin: 1px 0;
         }
         .student-info-row .label {
             font-weight: bold;
-            font-size: 9px;
+            font-size: 7px;
             color: #2c3e50;
         }
         .student-info-row .value {
-            font-size: 9px;
+            font-size: 7px;
             color: #333;
         }
 
         /* Tables */
         .term-section {
-            margin-bottom: 6px;
+            margin-bottom: 2px;
             page-break-inside: avoid;
         }
         .term-section h3 {
-            font-size: 9px;
+            font-size: 8px;
             font-weight: bold;
             background: #ecf0f1;
-            padding: 2px 4px;
-            margin: 4px 0 2px 0;
-            border-left: 4px solid #2c3e50;
+            padding: 1px 2px;
+            margin: 2px 0 1px 0;
+            border-left: 2px solid #2c3e50;
             color: #2c3e50;
         }
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: 0 0 4px 0;
+            margin: 0 0 2px 0;
             background: white;
-            font-size: 8px;
+            font-size: 7px;
         }
         table thead tr {
             background: #34495e;
             color: white;
         }
         table th {
-            padding: 3px 4px;
+            padding: 1px 2px;
             text-align: left;
             font-weight: bold;
-            font-size: 7px;
-            border: 1px solid #bdc3c7;
+            font-size: 6px;
+            border: 0.5px solid #bdc3c7;
         }
         table td {
-            padding: 2px 4px;
-            border: 1px solid #ecf0f1;
-            font-size: 8px;
+            padding: 1px 2px;
+            border: 0.5px solid #ecf0f1;
+            font-size: 7px;
         }
         table tbody tr:nth-child(even) {
             background: #f8f9fa;
@@ -175,25 +174,25 @@
         .total-row {
             background: #ecf0f1 !important;
             font-weight: bold;
-            border-top: 1px solid #34495e;
+            border-top: 0.5px solid #34495e;
         }
         .success { color: #27ae60; font-weight: bold; }
         .danger { color: #c0392b; font-weight: bold; }
 
         /* Summary */
         .summary {
-            margin: 4px 0;
+            margin: 2px 0;
             border: 1px solid #ddd;
             background: #f9f9f9;
-            padding: 4px;
+            padding: 2px 3px;
             page-break-inside: avoid;
         }
         .summary-row {
             display: grid;
             grid-template-columns: 2fr 1fr;
-            gap: 8px;
-            margin: 2px 0;
-            font-size: 8px;
+            gap: 4px;
+            margin: 1px 0;
+            font-size: 7px;
         }
         .summary-row .label {
             font-weight: bold;
@@ -207,10 +206,10 @@
 
         /* Footer */
         .footer {
-            margin-top: 4px;
-            padding-top: 4px;
+            margin-top: 2px;
+            padding-top: 2px;
             border-top: 1px solid #ddd;
-            font-size: 7px;
+            font-size: 6px;
             color: #666;
             page-break-inside: avoid;
             flex-shrink: 0;
@@ -218,42 +217,42 @@
         .footer-row {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
-            gap: 4px;
-            margin-bottom: 4px;
+            gap: 2px;
+            margin-bottom: 2px;
         }
         .footer-cell {
             text-align: center;
         }
         .signature-line {
-            border-top: 1px solid #333;
-            height: 20px;
-            margin: 2px 0;
+            border-top: 0.5px solid #333;
+            height: 12px;
+            margin: 1px 0;
             position: relative;
         }
         .signature-line img {
-            max-height: 20px;
-            max-width: 60px;
+            max-height: 12px;
+            max-width: 40px;
         }
         .signature-label {
-            font-size: 7px;
+            font-size: 6px;
             font-weight: bold;
-            margin-top: 1px;
+            margin-top: 0px;
             color: #333;
         }
         .printed-info {
-            margin-top: 2px;
-            padding-top: 2px;
-            border-top: 1px solid #ddd;
-            font-size: 7px;
+            margin-top: 1px;
+            padding-top: 1px;
+            border-top: 0.5px solid #ddd;
+            font-size: 6px;
             color: #666;
             text-align: center;
-            line-height: 1.2;
+            line-height: 1.1;
         }
 
         @media print {
             body { margin: 0; padding: 0; background: white; }
-            .page { margin: 0; padding: 0.2in; }
-            @page { margin: 0.3in 0.2in; size: A4 portrait; }
+            .page { margin: 0; padding: 0.15in; }
+            @page { margin: 0.2in 0.15in; size: A4 portrait; }
             .no-print { display: none !important; }
         }
     </style>
@@ -289,35 +288,29 @@
 
         <!-- Document Title and Date -->
         <div class="doc-title">PAYMENT TRANSCRIPT</div>
-        <div style="text-align: center; font-size: 8px; color: #666; margin-bottom: 12px;">
-            Generated on {{ now()->format('d F Y \a\t H:i') }}
+        <div style="text-align: center; font-size: 6px; color: #666; margin-bottom: 2px;">
+            {{ now()->format('d M Y') }}
         </div>
 
         <!-- Student Information -->
         <div class="student-info">
             <div class="student-info-row">
-                <div style="display: flex; gap: 12px;">
+                <div style="display: flex; gap: 4px;">
                     @if($student->passport_photo_url)
                         <div style="flex-shrink: 0;">
-                            <img src="{{ $student->passport_photo_url }}" alt="Passport Photo" style="width: 60px; height: 75px; object-fit: cover; border: 1px solid #ddd; border-radius: 3px;">
+                            <img src="{{ $student->passport_photo_url }}" alt="Passport Photo" style="width: 35px; height: 45px; object-fit: cover; border: 0.5px solid #ddd; border-radius: 2px;">
                         </div>
                     @endif
                     <div style="flex: 1;">
-                        <div style="margin: 4px 0;"><span class="label"><i class="fas fa-user"></i> Student Name:</span><br><span class="value">{{ $student->full_name }}</span></div>
-                        <div style="margin: 4px 0;"><span class="label"><i class="fas fa-id-card"></i> Registration Number:</span><br><span class="value">{{ $student->reg_number }}</span></div>
+                        <div style="margin: 1px 0;"><span class="label" style="font-size: 6px;"><i class="fas fa-user"></i> Name:</span> <span class="value" style="font-size: 6px;">{{ $student->full_name }}</span></div>
+                        <div style="margin: 1px 0;"><span class="label" style="font-size: 6px;"><i class="fas fa-id-card"></i> Reg No:</span> <span class="value" style="font-size: 6px;">{{ $student->reg_number }}</span></div>
                     </div>
                 </div>
             </div>
             <div class="student-info-row">
-                <div><span class="label"><i class="fas fa-book"></i> Course:</span><br><span class="value">{{ $student->course->course_name ?? 'N/A' }}</span></div>
-                <div><span class="label"><i class="fas fa-map-marker-alt"></i> Branch:</span><br><span class="value">{{ $student->branch->name ?? 'N/A' }}</span></div>
+                <div><span class="label" style="font-size: 6px;"><i class="fas fa-book"></i> Course:</span> <span class="value" style="font-size: 6px;">{{ $student->course->course_name ?? 'N/A' }}</span></div>
+                <div><span class="label" style="font-size: 6px;"><i class="fas fa-map-marker-alt"></i> Branch:</span> <span class="value" style="font-size: 6px;">{{ $student->branch->name ?? 'N/A' }}</span></div>
             </div>
-            @if($student->email)
-                <div class="student-info-row">
-                    <div><span class="label"><i class="fas fa-envelope"></i> Email:</span><br><span class="value">{{ $student->email }}</span></div>
-                    <div><span class="label"><i class="fas fa-phone"></i> Phone:</span><br><span class="value">{{ $student->phone ?? 'N/A' }}</span></div>
-                </div>
-            @endif
         </div>
 
         <!-- Payment Details by Term -->
@@ -325,15 +318,13 @@
             @foreach($termGroups as $termKey => $group)
                 <div class="term-section">
                     <h3><i class="fas fa-calendar-alt"></i> {{ $group['term_name'] }}</h3>
-                    
                     @if(count($group['transactions']) > 0)
                         <table>
                             <thead>
                                 <tr>
-                                    <th style="width: 40%;">Payment Type</th>
-                                    <th style="width: 20%;">Amount</th>
-                                    <th style="width: 20%;">Date Paid</th>
-                                    <th style="width: 20%;">Status</th>
+                                    <th style="width: 50%;">Type</th>
+                                    <th style="width: 28%;">Amount</th>
+                                    <th style="width: 22%;">Date</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -343,12 +334,12 @@
                                 @foreach($group['transactions'] as $transaction)
                                     @php
                                         $typeLabel = [
-                                            'registration' => 'Registration Fee',
-                                            'school_fee' => 'Tuition (School Fee)',
-                                            'practical_fee' => 'Practical Fee',
-                                            'trip_fee' => 'Trip Fee',
-                                            'student_card' => 'Student Card',
-                                        ][$transaction->type] ?? ucfirst($transaction->type);
+                                            'registration' => 'Registration',
+                                            'school_fee' => 'Tuition',
+                                            'practical_fee' => 'Practical',
+                                            'trip_fee' => 'Trip',
+                                            'student_card' => 'Card',
+                                        ][$transaction->type] ?? $transaction->type;
                                         
                                         if (in_array($transaction->status, ['successful', 'paid', 'completed'])) {
                                             $termTotal += $transaction->amount;
@@ -357,45 +348,36 @@
                                     <tr>
                                         <td>{{ $typeLabel }}</td>
                                         <td class="num"><span class="success">{{ number_format($transaction->amount, 0) }}</span></td>
-                                        <td>{{ $transaction->paid_at ? \Carbon\Carbon::parse($transaction->paid_at)->format('d M Y') : 'N/A' }}</td>
-                                        <td class="num">
-                                            @if(in_array($transaction->status, ['successful', 'paid', 'completed']))
-                                                <span style="color: #27ae60;"><i class="fas fa-check-circle"></i> Paid</span>
-                                            @else
-                                                <span style="color: #e74c3c;">{{ ucfirst($transaction->status) }}</span>
-                                            @endif
-                                        </td>
+                                        <td>{{ $transaction->paid_at ? \Carbon\Carbon::parse($transaction->paid_at)->format('d M') : 'N/A' }}</td>
                                     </tr>
                                 @endforeach
                                 @if($termTotal > 0)
                                     <tr class="total-row">
-                                        <td colspan="2">Total Paid ({{ $group['term_name'] }})</td>
+                                        <td colspan="1">Total</td>
                                         <td class="num" colspan="2"><span class="success">{{ number_format($termTotal, 0) }}</span></td>
                                     </tr>
                                 @endif
                             </tbody>
                         </table>
                     @else
-                        <p style="font-size: 9px; color: #999; padding: 8px; background: #f5f5f5; border-radius: 3px;">
-                            No payments recorded for this term.
-                        </p>
+                        <div style="font-size: 6px; color: #999; padding: 2px; background: #f5f5f5;">No payments for this term</div>
                     @endif
                 </div>
             @endforeach
         @else
-            <div style="padding: 12px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 3px; font-size: 9px; color: #856404;">
-                No payment transactions found for this student.
+            <div style="padding: 3px; background: #fff3cd; border: 0.5px solid #ffc107; border-radius: 2px; font-size: 7px; color: #856404;">
+                No payment transactions found.
             </div>
         @endif
 
         <!-- Summary Section -->
         <div class="summary">
             <div class="summary-row">
-                <div class="label">Total Expected Amount:</div>
+                <div class="label">Expected:</div>
                 <div class="value">{{ number_format($totalExpected, 0) }}</div>
             </div>
             <div class="summary-row">
-                <div class="label">Total Paid:</div>
+                <div class="label">Paid:</div>
                 <div class="value" style="color: #27ae60;">{{ number_format($totalPaidAllTypes, 0) }}</div>
             </div>
             @if($discountAmount > 0)
@@ -404,8 +386,8 @@
                     <div class="value">{{ number_format($discountAmount, 0) }}</div>
                 </div>
             @endif
-            <div class="summary-row" style="border-top: 1px solid #ddd; padding-top: 6px;">
-                <div class="label">Outstanding Balance:</div>
+            <div class="summary-row" style="border-top: 0.5px solid #ddd; padding-top: 1px;">
+                <div class="label">Balance:</div>
                 <div class="value" style="color: {{ $totalOutstanding > 0 ? '#c0392b' : '#27ae60' }};">
                     {{ number_format($totalOutstanding, 0) }}
                 </div>
@@ -425,30 +407,28 @@
                             @endif
                         @endif
                     </div>
-                    <div class="signature-label">{{ $hdrPrincipal }}<br><i class="fas fa-user-tie"></i> School Head</div>
+                    <div class="signature-label">School Head</div>
                 </div>
                 <div class="footer-cell">
                     <div class="signature-line">
                         @if($hasStampSignature && $schoolInfo)
                             @if($schoolInfo->stamp_signature_data)
-                                <img src="{{ $schoolInfo->stamp_signature_url }}" alt="Stamp" style="max-height: 40px;">
+                                <img src="{{ $schoolInfo->stamp_signature_url }}" alt="Stamp" style="max-height: 12px;">
                             @elseif($schoolInfo->stamp_signature)
-                                <img src="{{ asset($schoolInfo->stamp_signature) }}" alt="Stamp" style="max-height: 40px;">
+                                <img src="{{ asset($schoolInfo->stamp_signature) }}" alt="Stamp" style="max-height: 12px;">
                             @endif
                         @endif
                     </div>
-                    <div class="signature-label"><i class="fas fa-stamp"></i> Official Stamp</div>
+                    <div class="signature-label">Official Stamp</div>
                 </div>
                 <div class="footer-cell">
                     <div class="signature-line"></div>
-                    <div class="signature-label"><i class="fas fa-signature"></i> Finance Officer<br>Signature</div>
+                    <div class="signature-label">Finance Officer</div>
                 </div>
             </div>
 
             <div class="printed-info">
-                <i class="fas fa-user-check"></i> Printed by: {{ $printedByName ?? 'System' }}<br>
-                <i class="fas fa-clock"></i> Date: {{ $printedAt->format('d F Y H:i:s') }}<br>
-                <i class="fas fa-certificate"></i> This is an official document of {{ $hdrSchoolName }}
+                Printed: {{ $printedAt->format('d M Y') }} | {{ $hdrSchoolName }}
             </div>
         </div>
     </div>

@@ -75,44 +75,37 @@
                         <td class="text-center">
                             <div class="action-buttons">
                                 <a href="{{ route('admin.students.show', $student->id) }}" 
-                                   class="btn btn-sm btn-outline-primary" 
+                                   class="btn btn-sm btn-outline-primary action-btn" 
                                    data-bs-toggle="tooltip" 
                                    title="View Details">
                                     <i class="bi bi-eye"></i>
                                 </a>
                                 <a href="{{ route('admin.students.edit', $student->id) }}" 
-                                   class="btn btn-sm btn-outline-warning" 
+                                   class="btn btn-sm btn-outline-warning action-btn" 
                                    data-bs-toggle="tooltip" 
                                    title="Edit Student">
                                     <i class="bi bi-pencil"></i>
                                 </a>
                                 <a href="javascript:void(0);" 
-                                   class="btn btn-sm btn-outline-secondary" 
+                                   class="btn btn-sm btn-outline-secondary action-btn" 
                                    data-bs-toggle="tooltip" 
                                    title="Show Password"
                                    onclick="showPasswordModal('{{ $student->reg_number }}', '{{ $student->password_plain ?? 'Not Available' }}')">
                                     <i class="bi bi-key"></i>
                                 </a>
+                                <a href="{{ route('admin.students.payment-transcript', $student->id) }}" 
+                                   class="btn btn-sm btn-outline-success action-btn" 
+                                   data-bs-toggle="tooltip" 
+                                   title="Print Payment Transcript"
+                                   target="_blank">
+                                    <i class="bi bi-printer"></i>
+                                </a>
                                 <button type="button" 
-                                        class="btn btn-sm btn-outline-danger" 
+                                        class="btn btn-sm btn-outline-danger action-btn" 
                                         data-bs-toggle="tooltip" 
                                         title="Delete Student"
-                                        onclick="confirmDelete({{ $student->id }}, '{{ addslashes($student->full_name) }}')">
+                                        onclick="confirmDelete({{ $student->id }}, '{{ addslashes($student->full_name) }}', '{{ $student->reg_number }}')">
                                     <i class="bi bi-trash"></i>
-                                </button>
-                                <button type="button"
-                                        class="btn btn-sm btn-outline-info"
-                                        data-bs-toggle="tooltip"
-                                        title="Set Discount"
-                                        onclick="showDiscountModal({{ $student->id }}, '{{ $student->reg_number }}', '{{ addslashes($student->full_name) }}', {{ $student->discount ?? 0 }})">
-                                    <i class="bi bi-percent"></i>
-                                </button>
-                                <button type="button"
-                                        class="btn btn-sm btn-outline-dark"
-                                        data-bs-toggle="tooltip"
-                                        title="Generate Transcript"
-                                        onclick="showTranscriptModal({{ $student->id }}, '{{ addslashes($student->full_name) }}', '{{ $student->reg_number }}')">
-                                    <i class="bi bi-receipt"></i>
                                 </button>
                             </div>
                         </td>
