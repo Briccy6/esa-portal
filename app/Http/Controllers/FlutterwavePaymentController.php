@@ -250,7 +250,7 @@ class FlutterwavePaymentController extends Controller
         $tx_ref = $request->query('transaction_id');
         
         if (!$tx_ref) {
-            return redirect()->route('students.dashboard')
+            return redirect()->route('student.dashboard')
                 ->with('error', 'Payment verification failed. No transaction reference found.');
         }
 
@@ -287,10 +287,10 @@ class FlutterwavePaymentController extends Controller
 
                 DB::commit();
 
-                return redirect()->route('students.dashboard')
+                return redirect()->route('student.dashboard')
                     ->with('success', 'Payment successful! You can now access your report card.');
             } else {
-                return redirect()->route('students.dashboard')
+                return redirect()->route('student.dashboard')
                     ->with('error', 'Payment failed or was cancelled.');
             }
         } catch (\Exception $e) {
@@ -299,7 +299,7 @@ class FlutterwavePaymentController extends Controller
                 'tx_ref' => $tx_ref
             ]);
 
-            return redirect()->route('students.dashboard')
+            return redirect()->route('student.dashboard')
                 ->with('error', 'Payment verification failed. Please contact support.');
         }
     }
