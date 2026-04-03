@@ -1,154 +1,139 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container-fluid">
-    <div class="row mb-3">
-        <div class="col">
-            <h1><i class="fas fa-scroll"></i> Babyeyi Document</h1>
-            <small class="text-muted">Reference: {{ $babyeyi->reference_number }}</small>
-        </div>
-        <div class="col text-right">
-            <a href="{{ route('public.babyeyi.download', $babyeyi) }}" class="btn btn-primary">
-                <i class="fas fa-download"></i> Download PDF
-            </a>
+<div class="container mx-auto px-4 py-8 max-w-4xl">
+    <!-- Header Section -->
+    <div class="mb-8">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+                <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
+                    <i class="fas fa-scroll text-primary mr-3"></i>Babyeyi Document
+                </h1>
+                <p class="text-gray-600">
+                    <strong>Reference:</strong> <code class="bg-gray-100 px-2 py-1 rounded">{{ $babyeyi->reference_number }}</code>
+                </p>
+            </div>
+            <div class="flex gap-3">
+                <a href="{{ route('public.babyeyi.download', $babyeyi) }}" class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors">
+                    <i class="fas fa-download mr-2"></i> Download PDF
+                </a>
+                <a href="{{ route('public.babyeyi.index') }}" class="inline-flex items-center px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors">
+                    <i class="fas fa-arrow-left mr-2"></i> Back
+                </a>
+            </div>
         </div>
     </div>
 
-    <div class="row">
-        <!-- Main Document -->
-        <div class="col-lg-8">
-            <div class="card shadow">
-                <div class="card-body bg-white" style="min-height: 600px;">
-                    <!-- School Header -->
-                    @if ($schoolInfo)
-                        <div style="text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px;">
-                            @if ($schoolInfo->logo_path)
-                                <img src="{{ asset('storage/' . $schoolInfo->logo_path) }}" style="max-height: 80px; margin-bottom: 10px;" alt="School Logo">
-                            @endif
-                            <h2 style="margin: 5px 0; color: #1a1a1a;">{{ $schoolInfo->name ?? 'School Name' }}</h2>
-                            <p style="margin: 2px 0; color: #666; font-size: 14px;">{{ $schoolInfo->location ?? '' }}</p>
-                            @if ($schoolInfo->phone)
-                                <p style="margin: 2px 0; color: #666; font-size: 14px;">Tel: {{ $schoolInfo->phone }}</p>
-                            @endif
-                        </div>
-                    @endif
-
-                    <!-- Document Title -->
-                    <h3 style="text-align: center; margin: 20px 0; color: #1a1a1a;">BABYEYI</h3>
-
-                    <!-- Main Content -->
-                    <div class="document-content">
-                        {!! $babyeyi->content !!}
-                    </div>
-
-                    <!-- Footer Section -->
-                    <div style="margin-top: 60px; padding-top: 30px; border-top: 1px solid #ccc;">
-                        <div style="display: flex; justify-content: space-between; margin-top: 40px;">
-                            <div style="width: 30%;">
-                                <p style="margin-bottom: 50px; border-bottom: 1px solid #333;"></p>
-                                <p style="font-weight: bold; margin: 5px 0;">Head Teacher Signature</p>
-                                <p style="font-size: 12px; color: #666; margin: 2px 0;">Stamp of Institution</p>
-                            </div>
-                            <div style="width: 30%;">
-                                <p style="margin-bottom: 50px; border-bottom: 1px solid #333;"></p>
-                                <p style="font-weight: bold; margin: 5px 0;">Date</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <!-- Document Information Bar -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div class="bg-white rounded-lg shadow-sm p-4 border-l-4 border-primary">
+            <p class="text-gray-600 text-sm font-semibold">ACADEMIC YEAR</p>
+            <p class="text-lg font-bold text-gray-900">{{ $babyeyi->academicYear->year ?? 'N/A' }}</p>
         </div>
+        <div class="bg-white rounded-lg shadow-sm p-4 border-l-4 border-secondary">
+            <p class="text-gray-600 text-sm font-semibold">TERM</p>
+            <p class="text-lg font-bold text-gray-900">{{ $babyeyi->term->name ?? 'N/A' }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm p-4 border-l-4 border-info">
+            <p class="text-gray-600 text-sm font-semibold">COURSE</p>
+            <p class="text-lg font-bold text-gray-900">
+                @if ($babyeyi->course)
+                    {{ $babyeyi->course->name }}
+                @elseif ($babyeyi->course_type)
+                    {{ $babyeyi->course_type }}
+                @else
+                    Multiple
+                @endif
+            </p>
+        </div>
+        @if ($babyeyi->trip_known && $babyeyi->trip_place)
+        <div class="bg-white rounded-lg shadow-sm p-4 border-l-4 border-warning">
+            <p class="text-gray-600 text-sm font-semibold">TRIP FEE</p>
+            <p class="text-lg font-bold text-gray-900">RWF {{ number_format($babyeyi->trip_fees ?? 0, 0) }}</p>
+        </div>
+        @endif
+    </div>
 
-        <!-- Sidebar: Document Info -->
-        <div class="col-lg-4">
-            <div class="card shadow mb-4">
-                <div class="card-header bg-secondary text-white">
-                    <h5 class="mb-0">Document Information</h5>
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <small class="text-muted"><strong>Reference Number:</strong></small><br>
-                        <code>{{ $babyeyi->reference_number }}</code>
-                    </div>
-                    <hr>
-                    <div class="mb-3">
-                        <small class="text-muted"><strong>Academic Year:</strong></small><br>
-                        {{ $babyeyi->academicYear->year ?? 'N/A' }}
-                    </div>
-                    <div class="mb-3">
-                        <small class="text-muted"><strong>Term:</strong></small><br>
-                        {{ $babyeyi->term->name ?? 'N/A' }}<br>
-                        <small class="text-muted">
-                            {{ $babyeyi->term->start_date->format('M d, Y') }} - 
-                            {{ $babyeyi->term->end_date->format('M d, Y') }}
-                        </small>
-                    </div>
-                    @if ($babyeyi->course)
-                        <div class="mb-3">
-                            <small class="text-muted"><strong>Course:</strong></small><br>
-                            <strong>{{ $babyeyi->course->name }}</strong>
-                        </div>
-                    @elseif ($babyeyi->course_type)
-                        <div class="mb-3">
-                            <small class="text-muted"><strong>Course Type:</strong></small><br>
-                            {{ $babyeyi->course_type }}
-                        </div>
-                    @endif
-                    <hr>
-                    @if ($babyeyi->trip_known && $babyeyi->trip_place)
-                        <div class="mb-3">
-                            <small class="text-muted"><strong>Trip Destination:</strong></small><br>
-                            <strong>{{ $babyeyi->trip_place }}</strong>
-                        </div>
-                    @endif
-                    @if ($babyeyi->trip_fees)
-                        <div class="mb-3">
-                            <small class="text-muted"><strong>Trip Fees:</strong></small><br>
-                            <strong>RWF {{ number_format($babyeyi->trip_fees, 2) }}</strong>
-                        </div>
-                    @endif
-                </div>
-            </div>
-
-            @if ($schoolInfo)
-                <div class="card shadow mb-4">
-                    <div class="card-header bg-info text-white">
-                        <h5 class="mb-0"><i class="fas fa-school"></i> School Information</h5>
-                    </div>
-                    <div class="card-body">
-                        @if ($schoolInfo->logo_path)
-                            <img src="{{ asset('storage/' . $schoolInfo->logo_path) }}" class="img-fluid mb-3" style="max-height: 80px;" alt="School Logo">
-                        @endif
-                        <p class="mb-2"><strong>{{ $schoolInfo->name ?? 'School Name' }}</strong></p>
-                        @if ($schoolInfo->location)
-                            <p class="mb-2 text-muted small">
-                                <i class="fas fa-map-marker-alt"></i> {{ $schoolInfo->location }}
-                            </p>
-                        @endif
-                        @if ($schoolInfo->phone)
-                            <p class="mb-2 text-muted small">
-                                <i class="fas fa-phone"></i> {{ $schoolInfo->phone }}
-                            </p>
-                        @endif
-                        @if ($schoolInfo->email)
-                            <p class="mb-0 text-muted small">
-                                <i class="fas fa-envelope"></i> {{ $schoolInfo->email }}
-                            </p>
-                        @endif
-                    </div>
-                </div>
+    <!-- Main Document Card -->
+    <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+        <!-- School Header in Document -->
+        @if ($schoolInfo)
+        <div class="bg-gray-50 p-8 text-center border-b-2 border-gray-300">
+            @if ($schoolInfo->logo_path)
+                <img src="{{ asset('storage/' . $schoolInfo->logo_path) }}" alt="School Logo" class="h-20 mx-auto mb-4 object-contain">
             @endif
+            <h2 class="text-2xl font-bold text-gray-900 mb-1">{{ $schoolInfo->name ?? 'School Name' }}</h2>
+            @if ($schoolInfo->location)
+                <p class="text-gray-600 mb-1">{{ $schoolInfo->location }}</p>
+            @endif
+            @if ($schoolInfo->phone)
+                <p class="text-gray-600 text-sm">Tel: {{ $schoolInfo->phone }}</p>
+            @endif
+        </div>
+        @endif
 
-            <!-- Action Buttons -->
-            <div class="d-grid gap-2">
-                <a href="{{ route('public.babyeyi.download', $babyeyi) }}" class="btn btn-primary btn-lg">
-                    <i class="fas fa-download"></i> Download PDF
-                </a>
-                <a href="{{ route('public.babyeyi.index') }}" class="btn btn-secondary">
-                    <i class="fas fa-list"></i> All Documents
-                </a>
+        <!-- Document Content -->
+        <div class="p-8 md:p-12">
+            <h3 class="text-center text-3xl font-bold text-gray-900 mb-8 pb-4 border-b-2 border-gray-200">BABYEYI</h3>
+            
+            <div class="document-content prose prose-lg max-w-none mb-12">
+                {!! $babyeyi->content !!}
+            </div>
+
+            <!-- Signature Section -->
+            <div class="mt-12 pt-8 border-t-2 border-gray-300">
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-8 mt-16">
+                    <div class="text-center">
+                        <div class="border-b-2 border-gray-900 h-20 mb-2"></div>
+                        <p class="font-bold text-gray-900">Head Teacher Signature</p>
+                        <p class="text-sm text-gray-600">Stamp of Institution</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="border-b-2 border-gray-900 h-20 mb-2"></div>
+                        <p class="font-bold text-gray-900">Date</p>
+                    </div>
+                </div>
             </div>
         </div>
+    </div>
+
+    <!-- Additional Information Section -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+        <!-- Term Duration -->
+        @if ($babyeyi->term)
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <h4 class="font-bold text-gray-900 mb-3">
+                <i class="fas fa-calendar text-primary mr-2"></i>Term Duration
+            </h4>
+            <p class="text-gray-600">
+                {{ $babyeyi->term->start_date->format('F d, Y') }} to {{ $babyeyi->term->end_date->format('F d, Y') }}
+            </p>
+        </div>
+        @endif
+
+        <!-- Trip Information -->
+        @if ($babyeyi->trip_known && $babyeyi->trip_place)
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <h4 class="font-bold text-gray-900 mb-3">
+                <i class="fas fa-bus text-primary mr-2"></i>{{ $babyeyi->trip_place }}
+            </h4>
+            @if ($babyeyi->trip_fees)
+                <p class="text-gray-600">
+                    <strong>Trip Fee:</strong> RWF {{ number_format($babyeyi->trip_fees, 2) }}
+                </p>
+            @endif
+        </div>
+        @endif
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex flex-col md:flex-row gap-4 mt-8">
+        <a href="{{ route('public.babyeyi.download', $babyeyi) }}" class="flex-1 py-3 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors text-center font-semibold">
+            <i class="fas fa-download mr-2"></i>Download as PDF
+        </a>
+        <a href="{{ route('public.babyeyi.index') }}" class="flex-1 py-3 bg-gray-300 text-gray-900 rounded-lg hover:bg-gray-400 transition-colors text-center font-semibold">
+            <i class="fas fa-list mr-2"></i>View All Documents
+        </a>
     </div>
 </div>
 

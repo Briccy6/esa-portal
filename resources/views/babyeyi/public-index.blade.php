@@ -1,123 +1,115 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container">
-    <div class="row mb-4">
-        <div class="col">
-            <h1><i class="fas fa-file-alt"></i> Babyeyi Documents</h1>
-            <p class="text-muted">Term registration documents and requirements for all courses</p>
-        </div>
+<div class="container mx-auto px-4 py-8">
+    <!-- Page Header -->
+    <div class="mb-8">
+        <h1 class="text-4xl font-bold text-gray-900 mb-2">
+            <i class="fas fa-file-alt text-primary mr-3"></i>Babyeyi Documents
+        </h1>
+        <p class="text-gray-600 text-lg">
+            Term registration documents and course requirements for all programs
+        </p>
     </div>
 
     @if ($babyeyis->count() > 0)
-        <div class="row">
+        <!-- Documents Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             @foreach ($babyeyis as $babyeyi)
-                <div class="col-md-6 mb-4">
-                    <div class="card shadow-sm h-100 transition-transform" style="transform: translateZ(0); transition: transform 0.3s ease;">
-                        <div class="card-header bg-primary text-white">
-                            <h5 class="mb-0">
-                                <i class="fas fa-scroll"></i>
-                                {{ $babyeyi->academicYear->year ?? 'N/A' }} - {{ $babyeyi->term->name ?? 'N/A' }}
-                            </h5>
+                <div class="bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 hover:border-primary">
+                    <!-- Card Header -->
+                    <div class="bg-gradient-to-r from-primary to-primary-dark text-white p-4">
+                        <h3 class="text-lg font-bold flex items-center">
+                            <i class="fas fa-scroll mr-2"></i>
+                            {{ $babyeyi->academicYear->year ?? 'N/A' }} - {{ $babyeyi->term->name ?? 'N/A' }}
+                        </h3>
+                    </div>
+
+                    <!-- Card Body -->
+                    <div class="p-6">
+                        <!-- Course Info -->
+                        <div class="mb-4 pb-4 border-b border-gray-200">
+                            <p class="text-gray-600 text-sm font-semibold uppercase mb-1">Course</p>
+                            <p class="text-gray-900 font-semibold">
+                                @if ($babyeyi->course)
+                                    {{ $babyeyi->course->name }}
+                                @elseif ($babyeyi->course_type)
+                                    {{ $babyeyi->course_type }}
+                                @else
+                                    Multiple Courses
+                                @endif
+                            </p>
                         </div>
-                        <div class="card-body">
-                            <div class="mb-3">
-                                <h6 class="text-secondary">Course</h6>
-                                <p class="mb-0">
-                                    @if ($babyeyi->course)
-                                        <strong>{{ $babyeyi->course->name }}</strong>
-                                    @elseif ($babyeyi->course_type)
-                                        <em>Multiple courses - Type: {{ $babyeyi->course_type }}</em>
-                                    @else
-                                        <em>Multiple courses</em>
-                                    @endif
-                                </p>
-                            </div>
 
-                            <div class="mb-3">
-                                <h6 class="text-secondary">Reference</h6>
-                                <p class="mb-0"><code>{{ $babyeyi->reference_number }}</code></p>
-                            </div>
+                        <!-- Reference Number -->
+                        <div class="mb-4 pb-4 border-b border-gray-200">
+                            <p class="text-gray-600 text-sm font-semibold uppercase mb-1">Reference</p>
+                            <code class="bg-gray-100 text-gray-900 text-sm px-2 py-1 rounded">{{ $babyeyi->reference_number }}</code>
+                        </div>
 
-                            @if ($babyeyi->term)
-                                <div class="mb-3">
-                                    <h6 class="text-secondary">Term Duration</h6>
-                                    <p class="mb-0">
-                                        <small>
-                                            {{ $babyeyi->term->start_date->format('M d, Y') }} - 
-                                            {{ $babyeyi->term->end_date->format('M d, Y') }}
-                                        </small>
-                                    </p>
-                                </div>
+                        <!-- Term Duration -->
+                        @if ($babyeyi->term)
+                        <div class="mb-4 pb-4 border-b border-gray-200">
+                            <p class="text-gray-600 text-sm font-semibold uppercase mb-1">
+                                <i class="fas fa-calendar mr-1"></i>Term Duration
+                            </p>
+                            <p class="text-gray-900">
+                                {{ $babyeyi->term->start_date->format('M d, Y') }} - 
+                                {{ $babyeyi->term->end_date->format('M d, Y') }}
+                            </p>
+                        </div>
+                        @endif
+
+                        <!-- Trip Info -->
+                        @if ($babyeyi->trip_known && $babyeyi->trip_place)
+                        <div class="mb-4 pb-4 border-b border-gray-200">
+                            <p class="text-gray-600 text-sm font-semibold uppercase mb-1">
+                                <i class="fas fa-bus mr-1"></i>Trip
+                            </p>
+                            <p class="text-gray-900 mb-1">Destination: <strong>{{ $babyeyi->trip_place }}</strong></p>
+                            @if ($babyeyi->trip_fees)
+                                <p class="text-gray-900">Fee: <strong>RWF {{ number_format($babyeyi->trip_fees, 2) }}</strong></p>
                             @endif
-
-                            @if ($babyeyi->trip_known && $babyeyi->trip_place)
-                                <div class="mb-3">
-                                    <h6 class="text-secondary"><i class="fas fa-bus"></i> Trip</h6>
-                                    <p class="mb-1">Destination: <strong>{{ $babyeyi->trip_place }}</strong></p>
-                                    @if ($babyeyi->trip_fees)
-                                        <p class="mb-0">Fees: <strong>RWF {{ number_format($babyeyi->trip_fees, 2) }}</strong></p>
-                                    @endif
-                                </div>
-                            @endif
-
-                            <div class="mb-3">
-                                <small class="text-muted">
-                                    <i class="fas fa-calendar"></i> 
-                                    Created: {{ $babyeyi->created_at->format('M d, Y') }}
-                                </small>
-                            </div>
                         </div>
-                        <div class="card-footer bg-light">
-                            <a href="{{ route('public.babyeyi.show', $babyeyi) }}" class="btn btn-sm btn-primary">
-                                <i class="fas fa-eye"></i> View Document
-                            </a>
-                            <a href="{{ route('public.babyeyi.download', $babyeyi) }}" class="btn btn-sm btn-secondary">
-                                <i class="fas fa-download"></i> Download PDF
-                            </a>
-                        </div>
+                        @endif
+
+                        <!-- Created Date -->
+                        <p class="text-gray-500 text-sm">
+                            <i class="fas fa-clock mr-1"></i>
+                            Created: {{ $babyeyi->created_at->format('M d, Y') }}
+                        </p>
+                    </div>
+
+                    <!-- Card Footer Actions -->
+                    <div class="bg-gray-50 px-6 py-4 flex gap-2">
+                        <a href="{{ route('public.babyeyi.show', $babyeyi) }}" class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors text-sm font-semibold">
+                            <i class="fas fa-eye mr-2"></i>View
+                        </a>
+                        <a href="{{ route('public.babyeyi.download', $babyeyi) }}" class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-gray-300 text-gray-900 rounded-lg hover:bg-gray-400 transition-colors text-sm font-semibold">
+                            <i class="fas fa-download mr-2"></i>Download
+                        </a>
                     </div>
                 </div>
             @endforeach
         </div>
 
-        <nav aria-label="Page navigation">
+        <!-- Pagination -->
+        <div class="mt-8 flex justify-center">
             {{ $babyeyis->links() }}
-        </nav>
+        </div>
     @else
-        <div class="alert alert-info" role="alert">
-            <i class="fas fa-info-circle"></i> 
-            <strong>No documents available.</strong> Babyeyi documents will appear here once they are published.
+        <!-- Empty State -->
+        <div class="bg-blue-50 border-2 border-blue-200 rounded-lg p-8 text-center">
+            <div class="text-4xl mb-4">
+                <i class="fas fa-inbox text-blue-500"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900 mb-2">No Documents Available</h3>
+            <p class="text-gray-600">
+                Babyeyi documents will appear here once they are published by the administration.
+            </p>
         </div>
     @endif
 </div>
-
-<style>
-.card {
-    border: none;
-    border-radius: 8px;
-    overflow: hidden;
-}
-
-.card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1) !important;
-}
-
-.card-header {
-    border-bottom: 3px solid #0056b3;
-}
-
-.text-secondary {
-    font-weight: 600;
-    color: #495057 !important;
-    font-size: 0.85rem;
-    text-transform: uppercase;
-}
-
-code {
-    background-color: #f8f9fa;
-    padding: 2px 6px;
     border-radius: 3px;
     font-family: 'Courier New', monospace;
 }

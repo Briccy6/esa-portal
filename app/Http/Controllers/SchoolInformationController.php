@@ -3,12 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Models\SchoolInformation;
+use App\Services\SchoolImageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 
 class SchoolInformationController extends Controller
 {
+    private SchoolImageService $imageService;
+
+    public function __construct(SchoolImageService $imageService)
+    {
+        $this->imageService = $imageService;
+    }
+
     public function edit()
     {
         $schoolInfo = SchoolInformation::getActive() ?: new SchoolInformation();
@@ -34,36 +41,69 @@ class SchoolInformationController extends Controller
             'stamp_signature' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-        // Handle logo upload (database storage)
+        // Handle logo upload (file storage)
         if ($request->hasFile('logo') && $request->file('logo')->isValid()) {
             try {
-                $logoData = file_get_contents($request->file('logo')->getPathname());
-                $schoolInfo->logo = $logoData;
-                $schoolInfo->logo_path = null; // Clear file path
+                // Delete old file if exists
+                if ($schoolInfo->logo_file_path) {
+                    $this->imageService->deleteImage($schoolInfo->logo_file_path);
+                }
+                
+                // Store new file
+                $filePath = $this->imageService->storeImage($request->file('logo'), 'logo');
+                if ($filePath) {
+                    $schoolInfo->logo_file_path = $filePath;
+                    // Clear old BLOB data after migration
+                    $schoolInfo->logo = null;
+                    $schoolInfo->logo_path = null;
+                }
             } catch (\Exception $e) {
                 Log::error('Logo upload failed: ' . $e->getMessage());
+                return redirect()->back()->with('error', 'Failed to upload logo');
             }
         }
 
-        // Handle principal signature upload (database storage)
+        // Handle principal signature upload (file storage)
         if ($request->hasFile('principal_signature') && $request->file('principal_signature')->isValid()) {
             try {
-                $signatureData = file_get_contents($request->file('principal_signature')->getPathname());
-                $schoolInfo->principal_signature_data = $signatureData;
-                $schoolInfo->principal_signature = null; // Clear file path
+                // Delete old file if exists
+                if ($schoolInfo->principal_signature_file_path) {
+                    $this->imageService->deleteImage($schoolInfo->principal_signature_file_path);
+                }
+                
+                // Store new file
+                $filePath = $this->imageService->storeImage($request->file('principal_signature'), 'principal_signature');
+                if ($filePath) {
+                    $schoolInfo->principal_signature_file_path = $filePath;
+                    // Clear old BLOB data after migration
+                    $schoolInfo->principal_signature_data = null;
+                    $schoolInfo->principal_signature = null;
+                }
             } catch (\Exception $e) {
                 Log::error('Principal signature upload failed: ' . $e->getMessage());
+                return redirect()->back()->with('error', 'Failed to upload principal signature');
             }
         }
 
-        // Handle stamp signature upload (database storage)
+        // Handle stamp signature upload (file storage)
         if ($request->hasFile('stamp_signature') && $request->file('stamp_signature')->isValid()) {
             try {
-                $stampData = file_get_contents($request->file('stamp_signature')->getPathname());
-                $schoolInfo->stamp_signature_data = $stampData;
-                $schoolInfo->stamp_signature = null; // Clear file path
+                // Delete old file if exists
+                if ($schoolInfo->stamp_signature_file_path) {
+                    $this->imageService->deleteImage($schoolInfo->stamp_signature_file_path);
+                }
+                
+                // Store new file
+                $filePath = $this->imageService->storeImage($request->file('stamp_signature'), 'stamp_signature');
+                if ($filePath) {
+                    $schoolInfo->stamp_signature_file_path = $filePath;
+                    // Clear old BLOB data after migration
+                    $schoolInfo->stamp_signature_data = null;
+                    $schoolInfo->stamp_signature = null;
+                }
             } catch (\Exception $e) {
                 Log::error('Stamp signature upload failed: ' . $e->getMessage());
+                return redirect()->back()->with('error', 'Failed to upload stamp signature');
             }
         }
 
