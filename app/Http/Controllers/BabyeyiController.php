@@ -468,8 +468,31 @@ class BabyeyiController extends Controller
         $user = Auth::user();
         $student = Student::where('email', $user->email)->first();
 
-        // Verify access - student can only view babyeyis for their course
-        if (!$student || $babyeyi->course_id !== $student->course_id) {
+        if (!$student) {
+            abort(403, 'You do not have access to this document.');
+        }
+
+        // Verify access - student can view babyeyis if:
+        // 1. Exact course match: babyeyi->course_id === student->course_id
+        // 2. Course type match: babyeyi->course_type === student->course->course_type
+        // 3. For all courses: babyeyi->course_id IS NULL AND babyeyi->course_type IS NULL
+        
+        $hasAccess = false;
+
+        // Check 1: Exact course match
+        if ($babyeyi->course_id && $babyeyi->course_id === $student->course_id) {
+            $hasAccess = true;
+        }
+        // Check 2: Course type match
+        elseif ($babyeyi->course_type && $student->course && $babyeyi->course_type === $student->course->course_type) {
+            $hasAccess = true;
+        }
+        // Check 3: For all courses (no specific course_id or course_type)
+        elseif (!$babyeyi->course_id && !$babyeyi->course_type) {
+            $hasAccess = true;
+        }
+
+        if (!$hasAccess) {
             abort(403, 'You do not have access to this document.');
         }
 
@@ -499,8 +522,31 @@ class BabyeyiController extends Controller
         $user = Auth::user();
         $student = Student::where('email', $user->email)->first();
 
-        // Verify access
-        if (!$student || $babyeyi->course_id !== $student->course_id) {
+        if (!$student) {
+            abort(403, 'You do not have access to this document.');
+        }
+
+        // Verify access - student can download babyeyis if:
+        // 1. Exact course match: babyeyi->course_id === student->course_id
+        // 2. Course type match: babyeyi->course_type === student->course->course_type
+        // 3. For all courses: babyeyi->course_id IS NULL AND babyeyi->course_type IS NULL
+        
+        $hasAccess = false;
+
+        // Check 1: Exact course match
+        if ($babyeyi->course_id && $babyeyi->course_id === $student->course_id) {
+            $hasAccess = true;
+        }
+        // Check 2: Course type match
+        elseif ($babyeyi->course_type && $student->course && $babyeyi->course_type === $student->course->course_type) {
+            $hasAccess = true;
+        }
+        // Check 3: For all courses (no specific course_id or course_type)
+        elseif (!$babyeyi->course_id && !$babyeyi->course_type) {
+            $hasAccess = true;
+        }
+
+        if (!$hasAccess) {
             abort(403, 'You do not have access to this document.');
         }
 
