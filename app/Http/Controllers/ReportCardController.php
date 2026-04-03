@@ -320,6 +320,8 @@ class ReportCardController extends Controller
         $paymentStatus = FeePaymentService::getPaymentStatus($student);
         
         if ($paymentStatus['outstanding'] > 0) {
+            \Log::warning("Report card generation rejected for student {$student->id} ({$student->full_name}): Outstanding fees: RWF " . number_format($paymentStatus['outstanding'], 2));
+            
             // Return JSON for AJAX request with modal
             if ($request->expectsJson()) {
                 return response()->json([
@@ -826,6 +828,7 @@ class ReportCardController extends Controller
                 // Check if student has outstanding fees
                 $paymentStatus = FeePaymentService::getPaymentStatus($student);
                 if ($paymentStatus['outstanding'] > 0) {
+                    \Log::info("Report card generation skipped for student {$student->id} ({$student->full_name}): Outstanding fees: RWF " . number_format($paymentStatus['outstanding'], 2));
                     $skippedFees++;
                     continue;
                 }
