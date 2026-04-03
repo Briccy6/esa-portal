@@ -52,120 +52,112 @@
         /* Page setup - A4 Portrait Single Page */
         @page {
             size: A4 portrait;
-            margin: 0.3in 0.25in;
+            margin: 0.2in 0.15in;
         }
         .page {
             width: 100%;
             max-width: 21cm;
             margin: 0 auto;
-            padding: 0.2in;
+            padding: 0.15in;
             background: white;
             page-break-after: avoid;
-            display: flex;
-            flex-direction: column;
         }
         .page:last-child { page-break-after: avoid; }
 
         /* Header */
         .header {
             text-align: center;
-            border-bottom: 1px solid #2c3e50;
-            padding-bottom: 4px;
-            margin-bottom: 4px;
-            flex-shrink: 0;
+            border-bottom: 0.5px solid #2c3e50;
+            padding-bottom: 2px;
+            margin-bottom: 2px;
         }
         .school-logo {
-            height: 25px;
-            margin-bottom: 1px;
+            height: 20px;
+            margin-bottom: 0.5px;
         }
         .school-name {
-            font-size: 11px;
+            font-size: 10px;
             font-weight: bold;
             color: #2c3e50;
-            margin-bottom: 1px;
+            margin-bottom: 0px;
         }
         .school-details {
-            font-size: 6px;
+            font-size: 5px;
             color: #666;
-            line-height: 1;
+            line-height: 0.9;
         }
-        .school-details div { margin: 0.5px 0; }
+        .school-details div { margin: 0px 0; }
 
         /* Document info */
         .doc-title {
             text-align: center;
-            font-size: 10px;
+            font-size: 9px;
             font-weight: bold;
             color: #2c3e50;
-            margin: 3px 0 1px 0;
-            flex-shrink: 0;
+            margin: 1px 0 0.5px 0;
         }
         .student-info {
-            margin-bottom: 4px;
-            border: 1px solid #ddd;
-            padding: 2px 3px;
-            font-size: 7px;
-            flex-shrink: 0;
+            margin-bottom: 2px;
+            border: 0.5px solid #ddd;
+            padding: 1.5px 2px;
+            font-size: 6px;
             background: #f9f9f9;
         }
         .student-info-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 4px;
-            margin: 1px 0;
+            gap: 2px;
+            margin: 0.5px 0;
         }
         .student-info-row .label {
             font-weight: bold;
-            font-size: 7px;
+            font-size: 6px;
             color: #2c3e50;
         }
         .student-info-row .value {
-            font-size: 7px;
+            font-size: 6px;
             color: #333;
         }
 
         /* Tables */
         .term-section {
-            margin-bottom: 2px;
+            margin-bottom: 1px;
             page-break-inside: avoid;
         }
         .term-section h3 {
-            font-size: 8px;
+            font-size: 7px;
             font-weight: bold;
             background: #ecf0f1;
-            padding: 1px 2px;
-            margin: 2px 0 1px 0;
-            border-left: 2px solid #2c3e50;
+            padding: 0.5px 1px;
+            margin: 1px 0 0.5px 0;
+            border-left: 1px solid #2c3e50;
             color: #2c3e50;
         }
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: 0 0 2px 0;
+            margin: 0 0 1px 0;
             background: white;
-            font-size: 7px;
+            font-size: 6px;
         }
         table thead tr {
             background: #34495e;
             color: white;
         }
         table th {
-            padding: 1px 2px;
+            padding: 0.5px 1px;
             text-align: left;
             font-weight: bold;
-            font-size: 6px;
+            font-size: 5px;
             border: 0.5px solid #bdc3c7;
         }
         table td {
-            padding: 1px 2px;
+            padding: 0.5px 1px;
             border: 0.5px solid #ecf0f1;
-            font-size: 7px;
+            font-size: 6px;
         }
         table tbody tr:nth-child(even) {
             background: #f8f9fa;
-        }
-        table tbody tr:hover {
-            background: #ecf0f1;
         }
         .num {
             text-align: right;
@@ -181,18 +173,18 @@
 
         /* Summary */
         .summary {
-            margin: 2px 0;
-            border: 1px solid #ddd;
+            margin: 1px 0;
+            border: 0.5px solid #ddd;
             background: #f9f9f9;
-            padding: 2px 3px;
+            padding: 1px 2px;
             page-break-inside: avoid;
         }
         .summary-row {
             display: grid;
             grid-template-columns: 2fr 1fr;
-            gap: 4px;
-            margin: 1px 0;
-            font-size: 7px;
+            gap: 2px;
+            margin: 0.5px 0;
+            font-size: 6px;
         }
         .summary-row .label {
             font-weight: bold;
@@ -206,53 +198,53 @@
 
         /* Footer */
         .footer {
-            margin-top: 2px;
-            padding-top: 2px;
-            border-top: 1px solid #ddd;
-            font-size: 6px;
+            margin-top: 1px;
+            padding-top: 1px;
+            border-top: 0.5px solid #ddd;
+            font-size: 5px;
             color: #666;
             page-break-inside: avoid;
-            flex-shrink: 0;
         }
         .footer-row {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
-            gap: 2px;
-            margin-bottom: 2px;
+            gap: 1px;
+            margin-bottom: 1px;
         }
         .footer-cell {
             text-align: center;
         }
         .signature-line {
             border-top: 0.5px solid #333;
-            height: 12px;
-            margin: 1px 0;
+            height: 8px;
+            margin: 0.5px 0;
             position: relative;
         }
         .signature-line img {
-            max-height: 12px;
-            max-width: 40px;
+            max-height: 8px;
+            max-width: 30px;
         }
         .signature-label {
-            font-size: 6px;
+            font-size: 5px;
             font-weight: bold;
             margin-top: 0px;
             color: #333;
+            line-height: 1;
         }
         .printed-info {
-            margin-top: 1px;
-            padding-top: 1px;
+            margin-top: 0.5px;
+            padding-top: 0.5px;
             border-top: 0.5px solid #ddd;
-            font-size: 6px;
+            font-size: 5px;
             color: #666;
             text-align: center;
-            line-height: 1.1;
+            line-height: 1;
         }
 
         @media print {
             body { margin: 0; padding: 0; background: white; }
-            .page { margin: 0; padding: 0.15in; }
-            @page { margin: 0.2in 0.15in; size: A4 portrait; }
+            .page { margin: 0; padding: 0.1in; }
+            @page { margin: 0.15in 0.1in; size: A4 portrait; }
             .no-print { display: none !important; }
         }
     </style>
@@ -288,28 +280,28 @@
 
         <!-- Document Title and Date -->
         <div class="doc-title">PAYMENT TRANSCRIPT</div>
-        <div style="text-align: center; font-size: 6px; color: #666; margin-bottom: 2px;">
+        <div style="text-align: center; font-size: 5px; color: #666; margin-bottom: 1px;">
             {{ now()->format('d M Y') }}
         </div>
 
         <!-- Student Information -->
         <div class="student-info">
             <div class="student-info-row">
-                <div style="display: flex; gap: 4px;">
+                <div style="display: flex; gap: 2px;">
                     @if($student->passport_photo_url)
                         <div style="flex-shrink: 0;">
-                            <img src="{{ $student->passport_photo_url }}" alt="Passport Photo" style="width: 35px; height: 45px; object-fit: cover; border: 0.5px solid #ddd; border-radius: 2px;">
+                            <img src="{{ $student->passport_photo_url }}" alt="Passport Photo" style="width: 25px; height: 32px; object-fit: cover; border: 0.5px solid #ddd; border-radius: 1px;">
                         </div>
                     @endif
                     <div style="flex: 1;">
-                        <div style="margin: 1px 0;"><span class="label" style="font-size: 6px;"><i class="fas fa-user"></i> Name:</span> <span class="value" style="font-size: 6px;">{{ $student->full_name }}</span></div>
-                        <div style="margin: 1px 0;"><span class="label" style="font-size: 6px;"><i class="fas fa-id-card"></i> Reg No:</span> <span class="value" style="font-size: 6px;">{{ $student->reg_number }}</span></div>
+                        <div style="margin: 0px 0;"><span class="label" style="font-size: 5px;"><i class="fas fa-user"></i> Name:</span> <span class="value" style="font-size: 5px;">{{ $student->full_name }}</span></div>
+                        <div style="margin: 0px 0;"><span class="label" style="font-size: 5px;"><i class="fas fa-id-card"></i> Reg:</span> <span class="value" style="font-size: 5px;">{{ $student->reg_number }}</span></div>
                     </div>
                 </div>
             </div>
             <div class="student-info-row">
-                <div><span class="label" style="font-size: 6px;"><i class="fas fa-book"></i> Course:</span> <span class="value" style="font-size: 6px;">{{ $student->course->course_name ?? 'N/A' }}</span></div>
-                <div><span class="label" style="font-size: 6px;"><i class="fas fa-map-marker-alt"></i> Branch:</span> <span class="value" style="font-size: 6px;">{{ $student->branch->name ?? 'N/A' }}</span></div>
+                <div><span class="label" style="font-size: 5px;"><i class="fas fa-book"></i> Course:</span> <span class="value" style="font-size: 5px;">{{ $student->course->course_name ?? 'N/A' }}</span></div>
+                <div><span class="label" style="font-size: 5px;"><i class="fas fa-map-marker-alt"></i> Branch:</span> <span class="value" style="font-size: 5px;">{{ $student->branch->name ?? 'N/A' }}</span></div>
             </div>
         </div>
 
