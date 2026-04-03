@@ -14,6 +14,8 @@ use App\Models\AcademicYear;
 use App\Models\Term;
 use App\Models\SchoolInformation;
 use App\Models\Branch;
+use App\Models\StudentTransaction;
+use App\Models\CourseTermFee;
 use App\Services\FeePaymentService;
 use App\Services\ReportCardService;
 use Illuminate\Http\Request;
@@ -688,6 +690,96 @@ class ReportCardController extends Controller
     /**
      * Show students with outstanding fees for report card generation
      */
+    /**
+     * Show all students' fees for class before generating reports
+     * This is a REQUIRED step before bulk generating reports
+     */
+    public function checkClassFeesBeforeGeneration(Request $request)
+    {
+        $request->validate([
+            'course_id' => 'required|exists:courses,id',
+            'academic_year_id' => 'required|exists:academic_years,id',
+            'term_ids' => 'nullable|array',
+            'term_ids.*' => 'exists:terms,id',
+        ]);
+
+        $termIds = $this->normalizeTermIds($request);
+        if ($termIds === []) {
+            return redirect()->back()->withErrors(['term_ids' => 'Select at least one term.']);
+        }
+
+        // Get course and year details
+        $course = Course::findOrFail($request->course_id);
+        $academicYear = AcademicYear::findOrFail($request->academic_year_id);
+        $terms = Term::whereIn('id', $termIds)->orderBy('start_date')->get();
+
+        // Get all students in this course/year
+        $students = Student::where('course_id', $request->course_id)
+            ->where('academic_year_id', $request->academic_year_id)
+            ->orderBy('full_name')
+            ->get();
+
+        $studentFeeDetails = [];
+        $totalOutstanding = 0;
+        $studentsWithOutstanding = 0;
+        $totalRequired = 0;
+        $totalPaid = 0;
+
+        foreach ($students as $student) {
+            // Get fees and payments status for selected terms
+            $paymentStatus = FeePaymentService::getPaymentStatus($student, $termIds);
+
+            // Get payment history for this student in selected terms
+            $payments = StudentTransaction::where('student_id', $student->id)
+                ->where('type', 'school_fee')
+                ->whereIn('term_id', $termIds)
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            $studentFeeDetails[] = [
+                'student' => $student,
+                'student_id' => $student->student_id,
+                'full_name' => $student->full_name,
+                'email' => $student->email,
+                'required_fees' => $paymentStatus['required_fees'],
+                'total_paid' => $paymentStatus['total_paid'],
+                'outstanding' => $paymentStatus['outstanding'],
+                'is_fully_paid' => $paymentStatus['is_fully_paid'],
+                'payment_percentage' => $paymentStatus['payment_percentage'],
+                'payments' => $payments,
+                'eligible_for_report' => $paymentStatus['outstanding'] <= 0,
+            ];
+
+            if ($paymentStatus['outstanding'] > 0) {
+                $studentsWithOutstanding++;
+                $totalOutstanding += $paymentStatus['outstanding'];
+            }
+
+            $totalRequired += $paymentStatus['required_fees'];
+            $totalPaid += $paymentStatus['total_paid'];
+        }
+
+        // Sort: Students with outstanding first
+        usort($studentFeeDetails, function($a, $b) {
+            if ($a['outstanding'] > 0 && $b['outstanding'] == 0) return -1;
+            if ($a['outstanding'] == 0 && $b['outstanding'] > 0) return 1;
+            return $a['full_name'] <=> $b['full_name'];
+        });
+
+        return view('admin.report-cards.check-fees-before-generation', [
+            'course' => $course,
+            'academicYear' => $academicYear,
+            'terms' => $terms,
+            'termIds' => $termIds,
+            'studentFeeDetails' => $studentFeeDetails,
+            'totalStudents' => count($students),
+            'studentsWithOutstanding' => $studentsWithOutstanding,
+            'totalOutstanding' => $totalOutstanding,
+            'totalRequired' => $totalRequired,
+            'totalPaid' => $totalPaid,
+        ]);
+    }
+
     public function checkOutstandingFeesForGeneration(Request $request)
     {
         try {

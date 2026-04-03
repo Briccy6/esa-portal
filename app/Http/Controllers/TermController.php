@@ -200,13 +200,16 @@ class TermController extends Controller
 
             \App\Models\ReportCard::where('term_id', $term->id)->delete();
 
-                // Delete courseTermFees associated with this term
-                CourseTermFee::where('term_id', $term->id)->delete();
-                return redirect()->route('admin.terms.index')
-                    ->with('error', 'Cannot delete this term because it is referenced by other records. Please contact administrator.');
-            }
-
-            throw $e;
+            // Delete courseTermFees associated with this term
+            CourseTermFee::where('term_id', $term->id)->delete();
+            
+            $term->delete();
+            
+            return redirect()->route('admin.terms.index')
+                ->with('success', 'Term deleted successfully.');
+        } catch (\Exception $e) {
+            return redirect()->route('admin.terms.index')
+                ->with('error', 'Cannot delete this term because it is referenced by other records. Please contact administrator.');
         }
     }
 

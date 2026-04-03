@@ -453,6 +453,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::get('report-cards/create', [ReportCardController::class, 'create'])->name('report-cards.create');
     Route::post('report-cards', [ReportCardController::class, 'store'])->name('report-cards.store');
     Route::post('report-cards/check-fees-for-generation', [ReportCardController::class, 'checkOutstandingFeesForGeneration'])->name('report-cards.check-fees-for-generation');
+    Route::post('report-cards/check-class-fees', [ReportCardController::class, 'checkClassFeesBeforeGeneration'])->name('report-cards.check-class-fees');
     Route::post('report-cards/send-fees-email-modal/{student}', [ReportCardController::class, 'sendFeesEmailFromModal'])->name('report-cards.send-fees-email-modal');
     Route::get('report-cards/consolidated', [ReportCardController::class, 'showConsolidated'])->name('report-cards.consolidated');
     Route::get('report-cards/consolidated/print', [ReportCardController::class, 'printConsolidated'])->name('report-cards.consolidated-print');
