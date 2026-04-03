@@ -1450,7 +1450,7 @@ Route::middleware(['auth:admin,staff'])->prefix('babyeyi')->name('babyeyi.')->gr
 });
 
 // PUBLIC: Babyeyi Routes - Accessible by students and public users
-Route::prefix('babyeyi')->name('public.babyeyi.')->group(function () {
+Route::prefix('public/babyeyi')->name('public.babyeyi.')->group(function () {
     Route::get('/', [BabyeyiController::class, 'publicIndex'])->name('index');
     Route::get('/{babyeyi}', [BabyeyiController::class, 'publicShow'])->name('show');
     Route::get('/{babyeyi}/download', [BabyeyiController::class, 'publicDownload'])->name('download');
