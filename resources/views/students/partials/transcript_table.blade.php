@@ -47,7 +47,23 @@
         padding: 0;
     }
     
-    /* Hide the Actions column header and data */
+    /* Hide all navigation and header elements */
+    nav, .navbar, .topbar, .sidebar, header, .header, 
+    .d-print-none, #topbar, #navbar, #sidebar,
+    .navbar-horizontal, .navbar-vertical, 
+    .app-header, .app-sidebar, .page-header {
+        display: none !important;
+    }
+    
+    /* Hide main layout wrappers that might contain sidebars */
+    .page-wrapper, .wrapper {
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+    
+    /* The Actions column header and data */
     .transcript-container table th:nth-child(8),
     .transcript-container table td:nth-child(8) {
         display: none !important;
@@ -145,6 +161,35 @@
     .transcript-container .badge {
         padding: 1px 4px !important;
         font-size: 7pt !important;
+    }
+    
+    /* Print footer flex layout */
+    .transcript-footer-flex {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        gap: 6px !important;
+    }
+    
+    .footer-section {
+        flex: 1 !important;
+        text-align: center !important;
+    }
+    
+    .footer-logo, .footer-stamp {
+        max-height: 40px !important;
+        width: auto !important;
+    }
+    
+    .footer-contact {
+        background: white !important;
+        padding: 2px 3px !important;
+        border: 1px solid #000 !important;
+        font-size: 6.5pt !important;
+    }
+    
+    .footer-contact p {
+        margin: 1px 0 !important;
     }
     
     /* Remove card shadows and backgrounds for clean printing */
@@ -279,6 +324,29 @@
 .school-logo {
     max-height: 80px;
     margin-bottom: 15px;
+}
+
+.footer-logo, .footer-stamp {
+    max-height: 60px;
+    width: auto;
+}
+
+.transcript-footer-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.footer-section {
+    flex: 1;
+    text-align: center;
+}
+
+.footer-contact {
+    font-size: 12px;
+    line-height: 1.4;
 }
 
 .student-info-section,
@@ -487,16 +555,39 @@
         </div>
     </div>
 
-    <!-- Footer -->
+    <!-- Footer with Logo and Stamp -->
     <div class="transcript-footer">
-        <p><strong>Official Document - {{ $systemName }}</strong></p>
-        <p>This document is an official record of student payment information and should be kept for future reference.</p>
-        <p>For any inquiries regarding this transcript, please contact the accounting department.</p>
-        <p style="margin-top: 10px; font-size: 11px;">
-            Generated on: {{ date('d F Y H:i:s') }} | 
-            Student ID: {{ $student->id }} | 
-            Reg Number: {{ $student->reg_number }}
-        </p>
+        <div class="transcript-footer-flex">
+            <!-- Left: School Logo -->
+            <div class="footer-section">
+                @if($systemLogo)
+                    <img src="{{ $systemLogo }}" alt="School Logo" class="footer-logo" style="max-height: 50px;">
+                @endif
+            </div>
+
+            <!-- Center: Footer Information -->
+            <div class="footer-section" style="flex: 2;">
+                <p><strong>Official Document - {{ $systemName }}</strong></p>
+                <p style="font-size: 11px; margin: 5px 0;">This document is an official record of student payment information and should be kept for future reference.</p>
+                
+                <p style="margin: 8px 0; font-weight: bold; font-size: 11px;">For inquiries, contact Accounting Department:</p>
+                <div class="footer-contact" style="background: #f5f5f5; padding: 5px; border-radius: 4px;">
+                    <p style="margin: 2px 0;"><strong>Email:</strong> ange.sec@excellentservantacademy.com</p>
+                    <p style="margin: 2px 0;"><strong>Phone:</strong> 0788525247</p>
+                </div>
+                
+                <p style="margin-top: 8px; font-size: 10px; color: #666;">
+                    Generated: {{ date('d F Y H:i:s') }} | Student ID: {{ $student->id }} | Reg: {{ $student->reg_number }}
+                </p>
+            </div>
+
+            <!-- Right: School Stamp -->
+            <div class="footer-section">
+                @if($schoolInfo && $schoolInfo->stamp_signature_data)
+                    <img src="data:image/jpeg;base64,{{ base64_encode($schoolInfo->stamp_signature_data) }}" alt="Official Stamp" class="footer-stamp" style="max-height: 50px;">
+                @endif
+            </div>
+        </div>
     </div>
 </div>
 

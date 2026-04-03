@@ -33,6 +33,7 @@ class ToWhomLetter extends Model
     const TYPE_FINANCIAL_STATUS = 'financial_status';
     const TYPE_COMPLETION = 'completion';
     const TYPE_GOOD_STANDING = 'good_standing';
+    const TYPE_PROFESSIONAL_LETTER = 'professional_letter';
     const TYPE_CUSTOM = 'custom';
 
     // Recipient titles
@@ -80,6 +81,7 @@ class ToWhomLetter extends Model
             self::TYPE_FINANCIAL_STATUS => 'Financial Status',
             self::TYPE_COMPLETION => 'Course Completion',
             self::TYPE_GOOD_STANDING => 'Good Standing',
+            self::TYPE_PROFESSIONAL_LETTER => 'Professional Letter with Fee Details',
             self::TYPE_CUSTOM => 'Custom Letter',
         ];
     }

@@ -6,9 +6,11 @@ use App\Models\ToWhomLetter;
 use App\Models\Student;
 use App\Models\SchoolInformation;
 use App\Models\User;
+use App\Models\CourseTermFee;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\View;
+use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 
@@ -186,6 +188,9 @@ class ToWhomLetterController extends Controller
                 break;
             case ToWhomLetter::TYPE_GOOD_STANDING:
                 $content = $this->generateGoodStandingContent($student, $purpose);
+                break;
+            case ToWhomLetter::TYPE_PROFESSIONAL_LETTER:
+                $content = $this->generateProfessionalLetterContent($student, $purpose);
                 break;
             default:
                 $content = $this->generateCustomContent($student, $purpose);
@@ -433,6 +438,148 @@ Good Standing Certificate:
 - Academic Year: {$academicYear}
 
 The student has maintained satisfactory academic performance, demonstrated good conduct, and has no outstanding disciplinary or financial obligations to the institution.";
+    }
+
+    /**
+     * Generate professional letter with fee details and payment history.
+     */
+    private function generateProfessionalLetterContent($student, $purpose)
+    {
+        $courseName = 'Not Specified';
+        $branchName = 'Not Specified';
+        $academicYear = 'Not Specified';
+        
+        // Get course name with fallback
+        if ($student->course_id) {
+            if ($student->course && !empty($student->course->name)) {
+                $courseName = $student->course->name;
+            } else {
+                $courseName = "Course ID: {$student->course_id} (Name not available)";
+            }
+        }
+        
+        // Get branch name with fallback
+        if ($student->branch_id) {
+            if ($student->branch && !empty($student->branch->name)) {
+                $branchName = $student->branch->name;
+            } else {
+                $branchName = "Branch ID: {$student->branch_id} (Name not available)";
+            }
+        }
+        
+        // Get academic year with fallback
+        if ($student->academic_year_id) {
+            if ($student->academicYear && !empty($student->academicYear->name)) {
+                $academicYear = $student->academicYear->name;
+            } else {
+                $academicYear = "Academic Year ID: {$student->academic_year_id} (Name not available)";
+            }
+        }
+        
+        $enrollmentDate = $student->created_at->format('F j, Y');
+        $currentDate = Carbon::now()->format('F j, Y');
+        
+        // Start building the letter
+        $content = "This is to certify that {$student->full_name} (Registration Number: {$student->reg_number}) ";
+        $content .= "has been enrolled as a student at our institution.\n\n";
+        
+        // ENROLLMENT PROOF
+        $content .= "ENROLLMENT INFORMATION:\n";
+        $content .= "- Full Name: {$student->full_name}\n";
+        $content .= "- Registration Number: {$student->reg_number}\n";
+        $content .= "- Course: {$courseName}\n";
+        $content .= "- Branch: {$branchName}\n";
+        $content .= "- Academic Year: {$academicYear}\n";
+        $content .= "- Enrollment Date: {$enrollmentDate}\n";
+        $content .= "- Date of This Letter: {$currentDate}\n\n";
+        
+        // FEE SCHEDULE
+        $content .= "FEE STRUCTURE:\n";
+        
+        if ($student->course_id) {
+            // Get the course term fees
+            $courseTermFees = DB::table('course_term_fees')
+                ->where('course_id', $student->course_id)
+                ->where('is_active', true)
+                ->get();
+            
+            if ($courseTermFees->isNotEmpty()) {
+                foreach ($courseTermFees as $fee) {
+                    $termName = DB::table('terms')->where('id', $fee->term_id)->value('name') ?? "Term {$fee->term_id}";
+                    $content .= "\n{$termName}:\n";
+                    $content .= "  - Registration Fee: RWF " . number_format($fee->registration_fee, 2) . "\n";
+                    $content .= "  - Tuition Fee: RWF " . number_format($fee->tuition_fee, 2) . "\n";
+                    $content .= "  - Practical Fee: RWF " . number_format($fee->practical_fee, 2) . "\n";
+                    $content .= "  - Trip Fee: RWF " . number_format($fee->trip_fee, 2) . "\n";
+                    $content .= "  - Student Card Fee: RWF " . number_format($fee->student_card_fee, 2) . "\n";
+                    $totalTermFee = $fee->registration_fee + $fee->tuition_fee + $fee->practical_fee + $fee->trip_fee + $fee->student_card_fee;
+                    $content .= "  - Total: RWF " . number_format($totalTermFee, 2) . "\n";
+                }
+            }
+        }
+        
+        // PAYMENT HISTORY
+        $content .= "\n\nPAYMENT HISTORY:\n";
+        
+        $payments = DB::table('payments')
+            ->join('school_fees', 'payments.school_fee_id', '=', 'school_fees.id')
+            ->where('school_fees.student_id', $student->id)
+            ->select('payments.*', 'school_fees.term_id', 'school_fees.amount')
+            ->orderBy('payments.created_at', 'desc')
+            ->get();
+        
+        if ($payments->isNotEmpty()) {
+            $totalPaid = 0;
+            foreach ($payments as $payment) {
+                $termName = DB::table('terms')->where('id', $payment->term_id)->value('name') ?? "Term {$payment->term_id}";
+                $content .= "- {$termName}: RWF " . number_format($payment->payed, 2);
+                if ($payment->discount > 0) {
+                    $content .= " (with discount: RWF " . number_format($payment->discount, 2) . ")";
+                }
+                $content .= " - Date: " . Carbon::parse($payment->created_at)->format('F j, Y') . "\n";
+                $totalPaid += $payment->payed;
+            }
+            $content .= "\nTotal Paid: RWF " . number_format($totalPaid, 2) . "\n";
+        } else {
+            $content .= "No payments recorded yet.\n";
+        }
+        
+        // OUTSTANDING BALANCE
+        $content .= "\n\nFINANCIAL STATUS:\n";
+        
+        $totalFees = 0;
+        $totalPaid = 0;
+        
+        // Calculate total fees from school_fees
+        $schoolFees = DB::table('school_fees')
+            ->where('student_id', $student->id)
+            ->sum('amount');
+        
+        // Calculate total paid from payments
+        $paymentTotal = DB::table('payments')
+            ->join('school_fees', 'payments.school_fee_id', '=', 'school_fees.id')
+            ->where('school_fees.student_id', $student->id)
+            ->sum('payments.payed');
+        
+        $totalFees = $schoolFees;
+        $totalPaid = $paymentTotal;
+        $outstandingBalance = $totalFees - $totalPaid;
+        
+        $content .= "- Total Fees Due: RWF " . number_format($totalFees, 2) . "\n";
+        $content .= "- Total Paid: RWF " . number_format($totalPaid, 2) . "\n";
+        $content .= "- Outstanding Balance: RWF " . number_format(max(0, $outstandingBalance), 2) . "\n";
+        
+        if ($outstandingBalance <= 0) {
+            $content .= "\n✓ CERTIFICATION: The student has NO OUTSTANDING FEES. All required fees have been paid in full or exceeded.\n";
+        } else {
+            $content .= "\n⚠ NOTE: The student has an outstanding balance of RWF " . number_format($outstandingBalance, 2) . ".\n";
+        }
+        
+        // CLOSING STATEMENT
+        $content .= "\n\nThis letter is issued for official purposes and certified to be accurate as per the records ";
+        $content .= "available in our institution as of " . Carbon::now()->format('F j, Y') . ".\n";
+        
+        return $content;
     }
 
     /**
