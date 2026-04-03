@@ -67,9 +67,13 @@
                                     <span>Outstanding: {{ number_format($accessStatus['payment_status']['outstanding']) }} Rwf</span>
                                 </div>
                                 <div class="mt-2">
-                                    <a href="{{ route('subscriptions.index') }}" class="btn btn-primary">
+                                    <button 
+                                        id="reportCardPayBtn" 
+                                        class="btn btn-primary"
+                                        onclick="initiateReportCardPayment()"
+                                    >
                                         <i class="bi bi-credit-card me-2"></i>Complete Payment
-                                    </a>
+                                    </button>
                                 </div>
                             </div>
                         @endif
@@ -243,4 +247,56 @@
     font-size: 1.1rem;
 }
 </style>
+
+<!-- Flutterwave Script -->
+<script src="https://checkout.flutterwave.com/v3.js"></script>
+
+<script>
+function initiateReportCardPayment() {
+    const btn = document.getElementById('reportCardPayBtn');
+    btn.disabled = true;
+    const originalHTML = btn.innerHTML;
+    btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i> Processing...';
+
+    // Get outstanding amount from the progress bar text
+    const outstandingText = document.querySelector('.d-flex.justify-content-between.text-muted.small span:last-child')?.textContent;
+    const outstandingAmount = outstandingText ? parseFloat(outstandingText.replace(/[^0-9.]/g, '')) : 0;
+
+    if (outstandingAmount <= 0) {
+        alert('No outstanding fees to pay.');
+        btn.disabled = false;
+        btn.innerHTML = originalHTML;
+        return;
+    }
+
+    // Make request to initialize payment
+    fetch('{{ route("flutterwave.payment.initialize-reportcard-fees") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({
+            amount: outstandingAmount
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Redirect to Flutterwave payment page
+            window.location.href = data.redirect_url;
+        } else {
+            alert('Error: ' + (data.message || 'Failed to initialize payment'));
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while processing your request. Please try again.');
+        btn.disabled = false;
+        btn.innerHTML = originalHTML;
+    });
+}
+</script>
 @endsection
