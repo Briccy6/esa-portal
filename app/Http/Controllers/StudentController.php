@@ -1983,7 +1983,7 @@ class StudentController extends Controller
     // =========================================================================
     // EDIT TRANSACTION
     // =========================================================================
-    public function editTransaction(Request $request, $transactionId)
+    public function editTransaction(Request $request, StudentTransaction $transaction)
     {
         $staff = auth('staff')->user();
         if (!$staff) {
@@ -1994,8 +1994,6 @@ class StudentController extends Controller
         if (!str_ends_with($staff->email, '@excellentservantacademy.com')) {
             abort(403, 'Only the designated accountant can edit payments.');
         }
-
-        $transaction = StudentTransaction::findOrFail($transactionId);
 
         if ($request->isMethod('get')) {
             return view('staff.transactions.edit', compact('transaction'));
@@ -2028,7 +2026,7 @@ class StudentController extends Controller
     // =========================================================================
     // UPDATE TRANSACTION (AJAX)
     // =========================================================================
-    public function updateTransaction(Request $request, $transactionId)
+    public function updateTransaction(Request $request, StudentTransaction $transaction)
     {
         $staff = auth('staff')->user();
         if (!$staff) {
@@ -2047,7 +2045,6 @@ class StudentController extends Controller
         }
 
         try {
-            $transaction = StudentTransaction::findOrFail($transactionId);
 
             $validated = \Validator::make($request->all(), [
                 'amount' => 'required|numeric|min:1',
@@ -2095,7 +2092,7 @@ class StudentController extends Controller
 
         } catch (\Exception $e) {
             Log::error('Failed to update transaction', [
-                'transaction_id' => $transactionId,
+                'transaction_id' => $transaction->id,
                 'error'          => $e->getMessage(),
             ]);
 
@@ -2109,7 +2106,7 @@ class StudentController extends Controller
     // =========================================================================
     // DELETE TRANSACTION
     // =========================================================================
-    public function deleteTransaction(Request $request, $transactionId)
+    public function deleteTransaction(Request $request, StudentTransaction $transaction)
     {
         $staff = auth('staff')->user();
         if (!$staff) {
@@ -2128,18 +2125,17 @@ class StudentController extends Controller
         }
 
         try {
-            $transaction = StudentTransaction::findOrFail($transactionId);
             $transaction->delete();
 
             Log::info('Transaction deleted by staff', [
-                'transaction_id' => $transactionId,
+                'transaction_id' => $transaction->id,
                 'deleted_by'     => $staff->email ?? 'staff',
             ]);
 
             return response()->json(['success' => true, 'message' => 'Transaction deleted successfully.']);
         } catch (\Exception $e) {
             Log::error('Failed to delete transaction by staff', [
-                'transaction_id' => $transactionId,
+                'transaction_id' => $transaction->id,
                 'error'          => $e->getMessage(),
             ]);
 
