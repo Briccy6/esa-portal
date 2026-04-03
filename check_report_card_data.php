@@ -30,5 +30,6 @@ foreach ($txns as $t) {
 echo "\n=== CURRENT STUDENT ===\n";
 $student = DB::table('students')->where('id', 1)->first();
 if ($student) {
-    echo "Student ID: {$student->id}, Name: {$student->full_name}, Outstanding: {$student->outstanding_amount ?? 'N/A'}\n";
+    $outstanding = isset($student->outstanding_amount) ? $student->outstanding_amount : 'N/A';
+    echo "Student ID: {$student->id}, Name: {$student->full_name}, Outstanding: {$outstanding}\n";
 }

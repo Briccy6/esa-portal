@@ -38,12 +38,15 @@ class StudentReportCardController extends Controller
             ->with(['student', 'course', 'academicYear', 'term', 'subjects.lesson', 'subjects.testMarks.exam'])
             ->firstOrFail();
 
-        // Get report card settings
-        $settings = ReportCardSetting::first();
-        $now = Carbon::now();
-        $releaseAt = $settings?->release_at ? Carbon::parse($settings->release_at) : null;
-
-        // Get outstanding fees (adjust field names according to your database schema)
+        // Get report card settings - use correct column name from actual schema
+        $settings = ReportCardSetting::where('is_active', true)
+            ->where('academic_year', $reportCard->academicYear->year ?? '')
+            ->where('term', $reportCard->term->name ?? '')
+            ->first();
+        
+        $now = \Carbon\Carbon::now();
+        
+        // Get outstanding fees
         $outstanding = $this->getOutstandingFees($student);
 
         // BUSINESS LOGIC:
@@ -53,9 +56,12 @@ class StudentReportCardController extends Controller
         }
 
         // 2. If release date not reached => COUNTDOWN
-        if ($releaseAt && $now->lt($releaseAt)) {
-            $remaining = $now->diff($releaseAt);
-            return view('reportcard.countdown', compact('releaseAt', 'remaining'));
+        if ($settings && $settings->report_card_available_at) {
+            $releaseAt = \Carbon\Carbon::parse($settings->report_card_available_at);
+            if ($now->lt($releaseAt)) {
+                $remaining = $now->diff($releaseAt);
+                return view('reportcard.countdown', compact('releaseAt', 'remaining'));
+            }
         }
 
         // 3. All checks passed => ACCESSIBLE
@@ -85,9 +91,15 @@ class StudentReportCardController extends Controller
             ->orderByDesc('created_at')
             ->get()
             ->map(function ($reportCard) use ($student) {
-                $settings = ReportCardSetting::first();
-                $now = Carbon::now();
-                $releaseAt = $settings?->release_at ? Carbon::parse($settings->release_at) : null;
+                $settings = ReportCardSetting::where('is_active', true)
+                    ->where('academic_year', $reportCard->academicYear->year ?? '')
+                    ->where('term', $reportCard->term->name ?? '')
+                    ->first();
+                    
+                $now = \Carbon\Carbon::now();
+                $releaseAt = $settings && $settings->report_card_available_at 
+                    ? \Carbon\Carbon::parse($settings->report_card_available_at) 
+                    : null;
                 $outstanding = $this->getOutstandingFees($student);
 
                 // Determine access status
