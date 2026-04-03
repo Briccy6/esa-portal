@@ -410,12 +410,131 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <style>
     @media print {
-        .sticky {
+        /* Hide everything by default */
+        * {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        
+        body {
+            background: white !important;
+            margin: 0 !important;
+            padding: 10mm !important;
+        }
+        
+        /* Hide navigation, headers, and controls */
+        header, nav, .lg\:col-span-1, .p-8.md\:p-12, 
+        #initial-state, #error-state, #loading-state,
+        .inline-flex.items-center, .space-x-3, button,
+        .mt-16, .gap-6, .additional-information {
+            display: none !important;
+        }
+        
+        /* Show only the fees display section */
+        #fees-display {
+            display: block !important;
+            visibility: visible !important;
             position: static !important;
+            width: 100% !important;
         }
-        #download-btn, #courses-section > div:first-child {
-            display: none;
+        
+        /* Main container */
+        .container {
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
         }
+        
+        .lg\:col-span-2 {
+            grid-column: auto !important;
+            display: block !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        
+        /* Course header */
+        #course-header {
+            background: #f3f4f6 !important;
+            color: #1f2937 !important;
+            page-break-after: avoid !important;
+            border: 2px solid #1f2937 !important;
+            padding: 15px !important;
+            margin: 20px 0 !important;
+        }
+        
+        #course-title {
+            font-size: 24px !important;
+            font-weight: bold !important;
+            margin: 0 !important;
+        }
+        
+        #course-code {
+            font-size: 12px !important;
+            color: #4b5563 !important;
+            margin: 5px 0 0 0 !important;
+        }
+        
+        /* Fees table styling */
+        table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            page-break-inside: avoid !important;
+            margin: 15px 0 !important;
+            font-size: 11px !important;
+        }
+        
+        thead {
+            display: table-header-group !important;
+            background-color: #2c3e50 !important;
+            color: white !important;
+        }
+        
+        th {
+            background-color: #2c3e50 !important;
+            color: white !important;
+            font-weight: bold !important;
+            border: 1px solid #1f2937 !important;
+            padding: 8px !important;
+            text-align: left !important;
+        }
+        
+        td {
+            border: 1px solid #d1d5db !important;
+            padding: 8px !important;
+            text-align: left !important;
+        }
+        
+        tr {
+            page-break-inside: avoid !important;
+        }
+        
+        tbody tr:nth-child(even) {
+            background-color: #f9f9f9 !important;
+        }
+        
+        /* Ensure header repeats on each page */
+        .academic-year {
+            font-weight: bold !important;
+            font-size: 12px !important;
+            margin: 10px 0 5px 0 !important;
+            display: block !important;
+        }
+        
+        /* Hide action buttons but show in non-print */
+        .no-print {
+            display: none !important;
+        }
+        
+        /* Document info footer */
+        footer, .mt-12.pt-6 {
+            display: none !important;
+        }
+    }
+    
+    @page {
+        margin: 10mm;
+        size: A4 portrait;
     }
 </style>
 @endsection

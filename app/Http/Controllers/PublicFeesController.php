@@ -9,6 +9,7 @@ use App\Models\Term;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use PDF;
 
 class PublicFeesController extends Controller
@@ -140,12 +141,27 @@ class PublicFeesController extends Controller
                 ->with(['term' => function($q) {
                     $q->with('academicYear')->orderBy('name');
                 }])
-                ->get()
-                ->groupBy(function($fee) {
-                    return $fee->term->academicYear->name ?? 'Unknown Year';
-                })
-                ->sortKeys()
-                ->reverse();
+                ->get();
+            
+            // Ensure academic year data is available
+            $fees = $fees->map(function($fee) {
+                // Make sure academicYear relationship is loaded
+                if (!$fee->term || !$fee->term->academicYear) {
+                    Log::warning("Fee without complete relationship data: {$fee->id}");
+                }
+                return $fee;
+            });
+            
+            // Group by academic year with better error handling
+            $fees = $fees->groupBy(function($fee) {
+                if ($fee->term && $fee->term->academicYear) {
+                    return $fee->term->academicYear->name;
+                }
+                // Fallback: use current academic year
+                return date('Y') . ' - ' . (date('Y') + 1);
+            })
+            ->sortKeys()
+            ->reverse();
 
             if ($fees->isEmpty()) {
                 Log::warning("No active fees found for course {$courseId}");
@@ -242,7 +258,7 @@ class PublicFeesController extends Controller
             'schoolName' => config('app.school_name', 'Excellent Servant Academy'),
         ]);
 
-        return $pdf->download('fees-schedule-' . slug($course->course_name) . '.pdf');
+        return $pdf->download('fees-schedule-' . Str::slug($course->course_name) . '.pdf');
     }
 
     /**
