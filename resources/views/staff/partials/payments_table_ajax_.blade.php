@@ -85,7 +85,7 @@
 
                             {{-- Hidden delete form — POST + _method=DELETE (Laravel method spoofing) --}}
                             <form id="deletePaymentForm{{ $payment->id }}"
-                                  action="{{ route('staff.transactions.destroy', $payment->id) }}"
+                                  action="{{ route('transactions.destroy', $payment->id) }}"
                                   method="POST"
                                   style="display:none;">
                                 @csrf
