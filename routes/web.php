@@ -623,6 +623,7 @@ Route::prefix('staff')->name('staff.')->group(function () {
         ->name('password.reset.code');
          // ===== PAYMENT ROUTES - ADD THESE HERE =====
         Route::post('/students/{student}/pay-cash', [StudentController::class, 'payCash'])->name('students.pay-cash');
+        Route::get('/students/{student}/term-fees', [StudentController::class, 'getTermFees'])->name('students.term-fees');
         Route::get('/students/{student}/payments/ajax', [StudentController::class, 'ajaxPayments'])->name('students.payments.ajax');
         Route::get('/students/{student}/transcript/ajax', [StudentController::class, 'transcriptAjax'])->name('students.transcript.ajax');
         Route::get('/students/{student}/transcript/send', [StudentController::class, 'sendTranscript'])->name('students.transcript.send');

@@ -423,94 +423,18 @@
                                       onsubmit="handlePayment(event, {{ $student->id }})">
                                     @csrf
                                     <div class="modal-body">
-                                        <div class="alert alert-info">
-                                            <i class="fas fa-info-circle me-2"></i>
-                                            <strong>Payment Summary:</strong>
-                                            <ul class="mb-0 mt-2">
-                                                <li>Total Fees: {{ number_format($totalToPay, 0) }} RWF</li>
-                                                <li>Total Paid: {{ number_format($totalPaid, 0) }} RWF</li>
-                                                <li>Balance: <strong>{{ number_format($remaining, 0) }} RWF</strong></li>
-                                                @if($discount > 0)
-                                                    <li class="text-success">Discount: {{ $discount }}% ({{ number_format($discountAmount, 0) }} RWF)</li>
-                                                @endif
-                                            </ul>
-                                        </div>
-
                                         <div class="row">
+                                            <!-- Step 1: Select Term (REQUIRED FIRST) -->
                                             <div class="col-md-12 mb-3">
-                                                <label class="form-label required">Fee Type</label>
-                                                <select name="fee_type"
-                                                        id="feeTypeSelect{{ $student->id }}"
+                                                <label class="form-label required">
+                                                    <i class="fas fa-calendar-alt me-1"></i>Academic Term
+                                                </label>
+                                                <select name="term_id"
+                                                        id="termSelect{{ $student->id }}"
                                                         class="form-select"
                                                         required
-                                                        onchange="updateFeeInfo(this, {{ $student->id }})">
-                                                    <option value="">Select Fee Type</option>
-                                                    @if($remainingRegistration > 0)
-                                                        <option value="registration_fee"
-                                                                data-total="{{ $registrationFee }}"
-                                                                data-paid="{{ $paidRegistration }}"
-                                                                data-remaining="{{ $remainingRegistration }}">
-                                                            Registration Fee — Remaining: {{ number_format($remainingRegistration, 0) }} RWF
-                                                        </option>
-                                                    @endif
-                                                    @if($remainingSchoolFee > 0)
-                                                        <option value="school_fee"
-                                                                data-total="{{ $tuitionFee }}"
-                                                                data-paid="{{ $paidSchoolFee }}"
-                                                                data-remaining="{{ $remainingSchoolFee }}">
-                                                            School / Tuition Fee — Remaining: {{ number_format($remainingSchoolFee, 0) }} RWF
-                                                        </option>
-                                                    @endif
-                                                    @if($remainingPractical > 0)
-                                                        <option value="practical_fee"
-                                                                data-total="{{ $practicalFee }}"
-                                                                data-paid="{{ $paidPractical }}"
-                                                                data-remaining="{{ $remainingPractical }}">
-                                                            Practical Fee — Remaining: {{ number_format($remainingPractical, 0) }} RWF
-                                                        </option>
-                                                    @endif
-                                                    @if($remainingTrip > 0)
-                                                        <option value="trip_fee"
-                                                                data-total="{{ $tripFee }}"
-                                                                data-paid="{{ $paidTrip }}"
-                                                                data-remaining="{{ $remainingTrip }}">
-                                                            Trip Fee — Remaining: {{ number_format($remainingTrip, 0) }} RWF
-                                                        </option>
-                                                    @endif
-                                                    @if($remainingStudentCard > 0)
-                                                        <option value="student_card"
-                                                                data-total="2000"
-                                                                data-paid="{{ $paidStudentCard }}"
-                                                                data-remaining="{{ $remainingStudentCard }}">
-                                                            Student Card — Remaining: {{ number_format($remainingStudentCard, 0) }} RWF
-                                                        </option>
-                                                    @endif
-                                                </select>
-
-                                                @if($remainingRegistration == 0 && $remainingSchoolFee == 0 && $remainingPractical == 0 && $remainingTrip == 0 && $remainingStudentCard == 0)
-                                                    <div class="alert alert-success mt-2 mb-0">
-                                                        <i class="fas fa-check-circle me-2"></i>All fees have been fully paid!
-                                                    </div>
-                                                @endif
-
-                                                <div id="feeInfo{{ $student->id }}" class="mt-2"></div>
-                                            </div>
-
-                                            <div class="col-md-12 mb-3">
-                                                <label class="form-label required">Amount to Pay (RWF)</label>
-                                                <input type="number"
-                                                       name="amount_paid"
-                                                       id="amountInput{{ $student->id }}"
-                                                       class="form-control form-control-lg"
-                                                       placeholder="Enter amount"
-                                                       min="1" step="1" required>
-                                                <small class="text-muted">Enter the exact amount received from the student</small>
-                                            </div>
-
-                                            <div class="col-md-12 mb-3">
-                                                <label class="form-label">Academic Term</label>
-                                                <select name="term_id" id="termSelect{{ $student->id }}" class="form-select">
-                                                    <option value="">Select Term (Optional)</option>
+                                                        onchange="loadTermFees({{ $student->id }})">
+                                                    <option value="">-- Select Term First --</option>
                                                     @php
                                                         $terms = \App\Models\Term::with('academicYear')
                                                             ->orderBy('start_date', 'desc')
@@ -518,24 +442,78 @@
                                                     @endphp
                                                     @foreach($terms as $term)
                                                         <option value="{{ $term->id }}">
-                                                            {{ $term->name }} - {{ $term->academicYear->year ?? '' }}
-                                                            {{ $term->start_date->format('Y') }}/{{ $term->end_date->format('Y') }}
+                                                            {{ $term->name }} — {{ $term->academicYear->year ?? '' }}
+                                                            ({{ $term->start_date->format('M d') }} - {{ $term->end_date->format('M d, Y') }})
                                                         </option>
                                                     @endforeach
                                                 </select>
-                                                <small class="text-muted">Select the academic term for this payment (optional)</small>
+                                                <small class="text-muted">You must select a term to proceed</small>
                                             </div>
 
-                                            <div class="col-md-12 mb-3">
+                                            <!-- Term Summary Alert -->
+                                            <div id="termSummary{{ $student->id }}" class="col-md-12 mb-3 d-none">
+                                                <div class="alert alert-info">
+                                                    <i class="fas fa-info-circle me-2"></i>
+                                                    <strong>Term Summary:</strong>
+                                                    <ul class="mb-0 mt-2">
+                                                        <li>Total Fees: <strong id="totalTermFees{{ $student->id }}">0</strong> RWF</li>
+                                                        <li>Total Paid: <strong id="totalTermPaid{{ $student->id }}">0</strong> RWF</li>
+                                                        <li>Remaining: <strong id="totalTermRemaining{{ $student->id }}">0</strong> RWF</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+
+                                            <!-- Step 2: Select Fee Type (Hidden Until Term Selected) -->
+                                            <div id="feeTypeContainer{{ $student->id }}" class="col-md-12 mb-3 d-none">
+                                                <label class="form-label required">
+                                                    <i class="fas fa-receipt me-1"></i>Fee Type for {{ $student->course->course_name ?? 'Course' }}
+                                                </label>
+                                                <select name="fee_type"
+                                                        id="feeTypeSelect{{ $student->id }}"
+                                                        class="form-select"
+                                                        required
+                                                        onchange="updateFeeInfo(this, {{ $student->id }})">
+                                                    <option value="">-- Select a Fee --</option>
+                                                </select>
+                                                <small class="text-muted">Select which fee type you are recording payment for</small>
+                                                <div id="feeInfo{{ $student->id }}" class="mt-2"></div>
+                                            </div>
+
+                                            <!-- Step 3: Enter Amount (Hidden Until Fee Selected) -->
+                                            <div id="amountContainer{{ $student->id }}" class="col-md-12 mb-3 d-none">
+                                                <label class="form-label required">Amount to Pay (RWF)</label>
+                                                <input type="number"
+                                                       name="amount_paid"
+                                                       id="amountInput{{ $student->id }}"
+                                                       class="form-control form-control-lg"
+                                                       placeholder="Enter amount"
+                                                       min="1" step="1"
+                                                       onchange="validateAmount({{ $student->id }})">
+                                                <small class="text-muted">Enter the exact amount received from the student</small>
+                                                <div id="amountError{{ $student->id }}" class="text-danger small mt-1"></div>
+                                            </div>
+
+                                            <!-- Step 4: Notes (Optional) -->
+                                            <div id="notesContainer{{ $student->id }}" class="col-md-12 mb-3 d-none">
                                                 <label class="form-label">Payment Notes (Optional)</label>
-                                                <textarea name="payment_notes" class="form-control" rows="2"
-                                                          placeholder="Add any additional notes about this payment"></textarea>
+                                                <textarea name="payment_notes" 
+                                                         id="notesInput{{ $student->id }}"
+                                                         class="form-control" rows="2"
+                                                         placeholder="Add any additional notes about this payment (e.g., partial payment, late payment, etc.)"></textarea>
+                                            </div>
+
+                                            <!-- Loading Indicator -->
+                                            <div id="loadingIndicator{{ $student->id }}" class="col-md-12 text-center d-none">
+                                                <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                                    <span class="visually-hidden">Loading...</span>
+                                                </div>
+                                                <small class="text-muted ms-2">Loading fees for selected term...</small>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="modal-footer">
                                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                        <button type="submit" class="btn btn-primary" id="submitBtn{{ $student->id }}">
+                                        <button type="submit" class="btn btn-primary" id="submitBtn{{ $student->id }}" disabled>
                                             <i class="fas fa-check me-1"></i>Record Payment
                                         </button>
                                     </div>
@@ -543,6 +521,147 @@
                             </div>
                         </div>
                     </div>
+
+                    <script>
+                    // Load term fees via AJAX
+                    function loadTermFees(studentId) {
+                        const termSelect = document.getElementById('termSelect' + studentId);
+                        const termId = termSelect.value;
+                        
+                        if (!termId) {
+                            // Hide all subsequent fields when term is cleared
+                            document.getElementById('termSummary' + studentId)?.classList.add('d-none');
+                            document.getElementById('feeTypeContainer' + studentId)?.classList.add('d-none');
+                            document.getElementById('amountContainer' + studentId)?.classList.add('d-none');
+                            document.getElementById('notesContainer' + studentId)?.classList.add('d-none');
+                            document.getElementById('submitBtn' + studentId).disabled = true;
+                            return;
+                        }
+
+                        // Show loading indicator
+                        document.getElementById('loadingIndicator' + studentId).classList.remove('d-none');
+                        document.getElementById('feeTypeContainer' + studentId).classList.add('d-none');
+                        document.getElementById('amountContainer' + studentId).classList.add('d-none');
+                        document.getElementById('notesContainer' + studentId).classList.add('d-none');
+
+                        // Fetch term fees
+                        fetch(`/staff/students/${studentId}/term-fees?term_id=${termId}`, {
+                            method: 'GET',
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                            },
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                // Update summary
+                                document.getElementById('totalTermFees' + studentId).textContent = 
+                                    new Intl.NumberFormat('en-US').format(Math.round(data.summary.total_fees));
+                                document.getElementById('totalTermPaid' + studentId).textContent = 
+                                    new Intl.NumberFormat('en-US').format(Math.round(data.summary.total_paid));
+                                document.getElementById('totalTermRemaining' + studentId).textContent = 
+                                    new Intl.NumberFormat('en-US').format(Math.round(data.summary.total_remaining));
+                                document.getElementById('termSummary' + studentId)?.classList.remove('d-none');
+
+                                // Populate fee dropdown
+                                const feeSelect = document.getElementById('feeTypeSelect' + studentId);
+                                feeSelect.innerHTML = '<option value="">-- Select a Fee --</option>';
+                                
+                                if (data.fees.length === 0) {
+                                    feeSelect.innerHTML += '<option disabled>All fees have been paid for this term!</option>';
+                                    document.getElementById('feeTypeContainer' + studentId)?.classList.add('d-none');
+                                } else {
+                                    data.fees.forEach(fee => {
+                                        const option = document.createElement('option');
+                                        option.value = fee.type;
+                                        option.textContent = `${fee.name} — Remaining: ${new Intl.NumberFormat('en-US').format(Math.round(fee.remaining))} RWF`;
+                                        option.dataset.total = fee.total;
+                                        option.dataset.paid = fee.paid;
+                                        option.dataset.remaining = fee.remaining;
+                                        feeSelect.appendChild(option);
+                                    });
+                                    document.getElementById('feeTypeContainer' + studentId)?.classList.remove('d-none');
+                                }
+                            } else {
+                                alert('Error: ' + data.message);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('Failed to load fees. Please try again.');
+                        })
+                        .finally(() => {
+                            document.getElementById('loadingIndicator' + studentId).classList.add('d-none');
+                        });
+                    }
+
+                    // Update fee info when fee type changes
+                    function updateFeeInfo(select, studentId) {
+                        const feeType = select.value;
+                        const amountContainer = document.getElementById('amountContainer' + studentId);
+                        const notesContainer = document.getElementById('notesContainer' + studentId);
+                        const amountInput = document.getElementById('amountInput' + studentId);
+                        const submitBtn = document.getElementById('submitBtn' + studentId);
+                        const feeInfoDiv = document.getElementById('feeInfo' + studentId);
+
+                        if (!feeType) {
+                            amountContainer?.classList.add('d-none');
+                            notesContainer?.classList.add('d-none');
+                            feeInfoDiv.innerHTML = '';
+                            submitBtn.disabled = true;
+                            return;
+                        }
+
+                        const option = select.querySelector(`option[value="${feeType}"]`);
+                        const remaining = parseFloat(option.dataset.remaining) || 0;
+                        const total = parseFloat(option.dataset.total) || 0;
+
+                        // Show remaining amount info
+                        feeInfoDiv.innerHTML = `
+                            <div class="alert alert-warning m-0">
+                                <small>
+                                    <i class="fas fa-exclamation-circle me-1"></i>
+                                    <strong>Remaining Balance:</strong> ${new Intl.NumberFormat('en-US').format(Math.round(remaining))} RWF
+                                </small>
+                            </div>
+                        `;
+
+                        amountInput.max = remaining;
+                        amountInput.value = '';
+                        amountContainer?.classList.remove('d-none');
+                        notesContainer?.classList.remove('d-none');
+                        submitBtn.disabled = true;
+                    }
+
+                    // Validate amount before submission
+                    function validateAmount(studentId) {
+                        const amountInput = document.getElementById('amountInput' + studentId);
+                        const feeSelect = document.getElementById('feeTypeSelect' + studentId);
+                        const errorDiv = document.getElementById('amountError' + studentId);
+                        const submitBtn = document.getElementById('submitBtn' + studentId);
+
+                        const amount = parseFloat(amountInput.value) || 0;
+                        const option = feeSelect.querySelector(`option[value="${feeSelect.value}"]`);
+                        const remaining = parseFloat(option?.dataset.remaining) || 0;
+
+                        errorDiv.textContent = '';
+
+                        if (amount <= 0) {
+                            errorDiv.textContent = 'Amount must be greater than 0';
+                            submitBtn.disabled = true;
+                            return;
+                        }
+
+                        if (amount > remaining) {
+                            errorDiv.textContent = `Amount exceeds remaining balance of ${new Intl.NumberFormat('en-US').format(Math.round(remaining))} RWF`;
+                            submitBtn.disabled = true;
+                            return;
+                        }
+
+                        submitBtn.disabled = false;
+                    }
+                    </script>
 
                     {{-- ─────────────────────────────────────────────────────────────
                          FIX: Generate ID Card Modal — was COMPLETELY MISSING before.

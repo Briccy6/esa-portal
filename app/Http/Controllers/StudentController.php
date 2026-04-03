@@ -1467,13 +1467,14 @@ class StudentController extends Controller
             $validated = \Validator::make($request->all(), [
                 'amount_paid' => 'required|numeric|min:1',
                 'fee_type'    => 'required|string|in:registration_fee,school_fee,trip_fee,practical_fee,student_card',
-                'term_id'     => 'nullable|exists:terms,id',
+                'term_id'     => 'required|exists:terms,id',
             ], [
                 'amount_paid.required' => 'Please enter the payment amount.',
                 'amount_paid.numeric'  => 'Payment amount must be a number.',
                 'amount_paid.min'      => 'Payment amount must be at least 1 RWF.',
                 'fee_type.required'    => 'Please select a fee type.',
                 'fee_type.in'          => 'Invalid fee type selected.',
+                'term_id.required'     => 'Please select an academic term.',
                 'term_id.exists'       => 'Selected term is invalid.',
             ]);
 
@@ -3607,5 +3608,181 @@ class StudentController extends Controller
     public function payCash(Request $request, $studentId)
     {
         return $this->recordCashPayment($request, $studentId);
+    }
+
+    /**
+     * Get term-specific fees for a student (AJAX endpoint)
+     * Returns all fees configured for the selected term
+     */
+    public function getTermFees(Request $request, $studentId)
+    {
+        try {
+            $request->validate([
+                'term_id' => 'required|exists:terms,id',
+            ]);
+
+            $student = Student::findOrFail($studentId);
+            $course = $student->course;
+
+            if (!$course) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Student course not found',
+                ], 400);
+            }
+
+            $termId = $request->term_id;
+            $termFees = $course->getFeesForTerm($termId);
+
+            if (!$termFees) {
+                // Fallback to legacy fees
+                $termFees = $course->getLegacyFees();
+            }
+
+            // Get term information
+            $term = Term::findOrFail($termId);
+
+            // Calculate paid amounts for this term
+            $queryBase = StudentTransaction::where('student_id', $student->id)
+                ->where('term_id', $termId);
+
+            $paidRegistration = (clone $queryBase)
+                ->where('type', 'registration')
+                ->whereIn('status', ['successful', 'paid'])
+                ->sum('amount');
+
+            $paidSchoolFee = (clone $queryBase)
+                ->where('type', 'school_fee')
+                ->whereIn('status', ['successful', 'paid'])
+                ->sum('amount');
+
+            $paidPractical = (clone $queryBase)
+                ->where('type', 'practical_fee')
+                ->whereIn('status', ['successful', 'paid'])
+                ->sum('amount');
+
+            $paidTrip = (clone $queryBase)
+                ->where('type', 'trip_fee')
+                ->whereIn('status', ['successful', 'paid'])
+                ->sum('amount');
+
+            $paidStudentCard = (clone $queryBase)
+                ->where('type', 'student_card')
+                ->whereIn('status', ['successful', 'paid'])
+                ->sum('amount');
+
+            $registrationFee = floatval($termFees->registration_fee ?? 0);
+            $tripFee = floatval($termFees->trip_fee ?? 0);
+            $schoolFee = floatval($termFees->tuition_fee ?? 0);
+            $practicalFee = floatval($termFees->practical_fee ?? 0);
+            $studentCardFee = floatval($termFees->student_card_fee ?? 2000);
+
+            // Build fees array
+            $fees = [];
+
+            if ($registrationFee > 0) {
+                $remaining = $registrationFee - $paidRegistration;
+                if ($remaining > 0) {
+                    $fees[] = [
+                        'type' => 'registration_fee',
+                        'name' => 'Registration Fee',
+                        'total' => $registrationFee,
+                        'paid' => $paidRegistration,
+                        'remaining' => $remaining,
+                    ];
+                }
+            }
+
+            if ($schoolFee > 0) {
+                $remaining = $schoolFee - $paidSchoolFee;
+                if ($remaining > 0) {
+                    $fees[] = [
+                        'type' => 'school_fee',
+                        'name' => 'School / Tuition Fee',
+                        'total' => $schoolFee,
+                        'paid' => $paidSchoolFee,
+                        'remaining' => $remaining,
+                    ];
+                }
+            }
+
+            if ($practicalFee > 0) {
+                $remaining = $practicalFee - $paidPractical;
+                if ($remaining > 0) {
+                    $fees[] = [
+                        'type' => 'practical_fee',
+                        'name' => 'Practical Fee',
+                        'total' => $practicalFee,
+                        'paid' => $paidPractical,
+                        'remaining' => $remaining,
+                    ];
+                }
+            }
+
+            if ($tripFee > 0) {
+                $remaining = $tripFee - $paidTrip;
+                if ($remaining > 0) {
+                    $fees[] = [
+                        'type' => 'trip_fee',
+                        'name' => 'Trip Fee',
+                        'total' => $tripFee,
+                        'paid' => $paidTrip,
+                        'remaining' => $remaining,
+                    ];
+                }
+            }
+
+            if ($studentCardFee > 0) {
+                $remaining = $studentCardFee - $paidStudentCard;
+                if ($remaining > 0) {
+                    $fees[] = [
+                        'type' => 'student_card',
+                        'name' => 'Student Card',
+                        'total' => $studentCardFee,
+                        'paid' => $paidStudentCard,
+                        'remaining' => $remaining,
+                    ];
+                }
+            }
+
+            // Calculate totals for the term
+            $totalTermFees = $registrationFee + $schoolFee + $practicalFee + $tripFee + $studentCardFee;
+            $totalTermPaid = $paidRegistration + $paidSchoolFee + $paidPractical + $paidTrip + $paidStudentCard;
+            $totalTermRemaining = $totalTermFees - $totalTermPaid;
+
+            return response()->json([
+                'success' => true,
+                'term' => [
+                    'id' => $term->id,
+                    'name' => $term->name,
+                    'start_date' => $term->start_date->format('Y-m-d'),
+                    'end_date' => $term->end_date->format('Y-m-d'),
+                ],
+                'fees' => $fees,
+                'summary' => [
+                    'total_fees' => $totalTermFees,
+                    'total_paid' => $totalTermPaid,
+                    'total_remaining' => $totalTermRemaining,
+                ],
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $e->errors(),
+            ], 422);
+
+        } catch (\Exception $e) {
+            \Log::error('getTermFees error', [
+                'student_id' => $studentId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
     }
 }
