@@ -9,6 +9,26 @@
         </div>
     </div>
 
+    <!-- DEBUG PANEL (Remove in production) -->
+    @if (isset($debug) && config('app.debug'))
+        <div class="alert alert-info border-left-4" style="background-color: #e3f2fd; border-left: 4px solid #2196f3;">
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            <h6 class="mb-2"><i class="fas fa-bug"></i> Debug Information</h6>
+            <ul style="margin: 0; padding-left: 20px; font-size: 12px;">
+                <li><strong>Student Email:</strong> {{ $debug['user_email'] ?? 'N/A' }}</li>
+                <li><strong>Student Found:</strong> {{ $debug['student_found'] ? '✓ Yes' : '✗ No' }}</li>
+                <li><strong>Student ID:</strong> {{ $debug['student_id'] ?? 'N/A' }}</li>
+                <li><strong>Course ID:</strong> {{ $debug['student_course_id'] ?? 'N/A' }}</li>
+                <li><strong>Course Name:</strong> {{ $debug['course_name'] ?? 'N/A' }}</li>
+                <li><strong>Course Type:</strong> {{ $debug['course_type'] ?? 'N/A' }}</li>
+                <li><strong>Exact Course Babyeyis:</strong> {{ $debug['exact_course_count'] ?? 0 }}</li>
+                <li><strong>Course Type Babyeyis:</strong> {{ $debug['course_type_count'] ?? 0 }}</li>
+                <li><strong>All Courses Babyeyis:</strong> {{ $debug['all_courses_count'] ?? 0 }}</li>
+                <li><strong>Total Babyeyis Found:</strong> <strong style="color: #d32f2f;">{{ $debug['total_babyeyis_found'] ?? 0 }}</strong></li>
+            </ul>
+        </div>
+    @endif
+
     @if (isset($message))
         <div class="alert alert-warning" role="alert">
             <i class="fas fa-exclamation-triangle"></i> {{ $message }}
@@ -30,6 +50,15 @@
                                                 {{ $babyeyi->academicYear->year ?? 'Academic Year' }} - 
                                                 <strong>{{ $babyeyi->term->name ?? 'Term' }}</strong>
                                             </h5>
+                                            
+                                            <!-- Scope Badge -->
+                                            @if (!$babyeyi->course_id && !$babyeyi->course_type)
+                                                <span class="badge bg-success mb-2"><i class="fas fa-globe"></i> For All Courses</span>
+                                            @elseif ($babyeyi->course_id)
+                                                <span class="badge bg-primary mb-2"><i class="fas fa-graduation-cap"></i> Specific Course</span>
+                                            @elseif ($babyeyi->course_type)
+                                                <span class="badge bg-info mb-2"><i class="fas fa-tag"></i> {{ $babyeyi->course_type }}</span>
+                                            @endif
                                             
                                             <p class="card-text text-secondary small mb-2">
                                                 <strong>Reference:</strong> <code>{{ $babyeyi->reference_number }}</code>
@@ -184,7 +213,24 @@
     @else
         <div class="alert alert-info" role="alert">
             <i class="fas fa-info-circle"></i> 
-            <strong>No documents yet.</strong> Your course's babyeyi documents will appear here once they are published.
+            <strong>No documents yet.</strong> Your course's babyeyi documents will appear here once they are published by the administration.
+            
+            @if (isset($debug) && config('app.debug'))
+                <hr style="margin: 10px 0;">
+                <small><strong>Debug Info:</strong>
+                    @if ($debug['exact_course_count'] == 0 && $debug['course_type_count'] == 0 && $debug['all_courses_count'] == 0)
+                        <br>✗ No published babyeyis found for:
+                        <ul style="margin: 5px 0; padding-left: 20px;">
+                            <li>Your specific course (ID: {{ $debug['student_course_id'] ?? 'N/A' }})</li>
+                            <li>Your course type ({{ $debug['course_type'] ?? 'N/A' }})</li>
+                            <li>All courses (global documents)</li>
+                        </ul>
+                        → Check the staff panel to publish babyeyis
+                    @else
+                        <br>Some documents match your criteria but are not displayed correctly. Check the exact counts above.
+                    @endif
+                </small>
+            @endif
         </div>
     @endif
 </div>

@@ -371,31 +371,73 @@ class BabyeyiController extends Controller
         $user = Auth::user();
         $student = Student::where('email', $user->email)->first();
 
+        // Debug info
+        $debug = [];
+        $debug['user_email'] = $user->email;
+        $debug['student_found'] = !is_null($student);
+        $debug['student_id'] = $student?->id;
+        $debug['student_course_id'] = $student?->course_id;
+
         if (!$student || !$student->course_id) {
+            $debug['message'] = 'No course assigned to student';
+            
             return view('babyeyi.student-dashboard', [
                 'babyeyis' => collect(),
                 'schoolInfo' => SchoolInformation::getActive(),
                 'message' => 'No course assigned to your account.',
                 'student' => $student,
-                'courseTermFees' => collect()
+                'courseTermFees' => collect(),
+                'debug' => $debug
             ]);
         }
 
-        // Get published babyeyis for this student's course
-        $babyeyis = Babyeyi::where('status', Babyeyi::STATUS_PUBLISHED)
-            ->where('course_id', $student->course_id)  // Match exact course
+        // Get the student's course
+        $studentCourse = $student->course;
+        $debug['course_name'] = $studentCourse?->name;
+        $debug['course_type'] = $studentCourse?->course_type;
+
+        // Query 1: Published babyeyis for this exact course
+        $exactCourseQuery = Babyeyi::where('status', Babyeyi::STATUS_PUBLISHED)
+            ->where('course_id', $student->course_id);
+        
+        $debug['exact_course_count'] = $exactCourseQuery->count();
+
+        $babyeyis = $exactCourseQuery
             ->with(['academicYear', 'term', 'course', 'creator'])
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // If no exact course match, try by course_type
-        if ($babyeyis->isEmpty() && $student->course && $student->course->course_type) {
-            $babyeyis = Babyeyi::where('status', Babyeyi::STATUS_PUBLISHED)
-                ->where('course_type', $student->course->course_type)
+        // Query 2: If no exact course match, try by course_type
+        if ($babyeyis->isEmpty() && $studentCourse && $studentCourse->course_type) {
+            $courseTypeQuery = Babyeyi::where('status', Babyeyi::STATUS_PUBLISHED)
+                ->where('course_type', $studentCourse->course_type);
+            
+            $debug['course_type_count'] = $courseTypeQuery->count();
+            
+            $babyeyis = $courseTypeQuery
                 ->with(['academicYear', 'term', 'course', 'creator'])
                 ->orderBy('created_at', 'desc')
                 ->get();
+        } else {
+            $debug['course_type_count'] = 0;
         }
+
+        // Query 3: ALWAYS include babyeyis for ALL COURSES (course_id = NULL AND course_type = NULL)
+        $allCoursesQuery = Babyeyi::where('status', Babyeyi::STATUS_PUBLISHED)
+            ->whereNull('course_id')
+            ->whereNull('course_type');
+        
+        $debug['all_courses_count'] = $allCoursesQuery->count();
+        
+        $allCoursesBabyeyis = $allCoursesQuery
+            ->with(['academicYear', 'term', 'course', 'creator'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // Merge all babyeyis (remove duplicates by ID)
+        $babyeyis = $babyeyis->merge($allCoursesBabyeyis)->unique('id')->sortByDesc('created_at');
+
+        $debug['total_babyeyis_found'] = $babyeyis->count();
 
         // Build fee data for each babyeyi
         $babyeyisWithFees = $babyeyis->map(function($babyeyi) use ($student) {
@@ -413,7 +455,8 @@ class BabyeyiController extends Controller
         return view('babyeyi.student-dashboard', [
             'babyeyis' => $babyeyisWithFees,
             'schoolInfo' => $schoolInfo,
-            'student' => $student
+            'student' => $student,
+            'debug' => $debug
         ]);
     }
 
