@@ -18,15 +18,15 @@
     <tbody>
         <tr>
             <td><strong>Total Required Fees</strong></td>
-            <td>{{ config('app.currency_symbol', 'RWF') }} {{ number_format($requiredFees, 2) }}</td>
+            <td>RWF {{ number_format($requiredFees, 2) }}</td>
         </tr>
         <tr>
             <td><strong>Amount Paid</strong></td>
-            <td>{{ config('app.currency_symbol', 'RWF') }} {{ number_format($totalPaid, 2) }}</td>
+            <td>RWF {{ number_format($totalPaid, 2) }}</td>
         </tr>
         <tr class="total">
             <td><strong>Outstanding Balance</strong></td>
-            <td><strong>{{ config('app.currency_symbol', 'RWF') }} {{ number_format($outstandingAmount, 2) }}</strong></td>
+            <td><strong>RWF {{ number_format($outstandingAmount, 2) }}</strong></td>
         </tr>
     </tbody>
 </table>
