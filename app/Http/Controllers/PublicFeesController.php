@@ -29,20 +29,26 @@ class PublicFeesController extends Controller
     public function getCoursesByBranch($branchId)
     {
         try {
+            Log::info("getCoursesByBranch called with branchId: {$branchId}");
+            
             // First try: Query using the pivot table (belongsToMany)
             $courses = Course::whereHas('branches', function($q) use ($branchId) {
                 $q->wherePivot('branch_id', $branchId);
             })->orderBy('course_name')->get();
 
+            Log::info("Method 1 (whereHas) returned: " . $courses->count() . " courses");
+
             // Second try: Join the pivot table directly
             if ($courses->isEmpty()) {
-                $courses = \DB::table('courses')
+                $courses = DB::table('courses')
                     ->join('branch_course', 'courses.id', '=', 'branch_course.course_id')
                     ->where('branch_course.branch_id', $branchId)
                     ->select('courses.id', 'courses.course_name', 'courses.course_code', 'courses.abbreviation')
-                    ->orderBy('course_name')
+                    ->orderBy('courses.course_name')
                     ->distinct()
                     ->get();
+                
+                Log::info("Method 2 (join) returned: " . $courses->count() . " courses");
             }
 
             // Third try: Direct foreign key (if course has branch_id column)
@@ -50,17 +56,26 @@ class PublicFeesController extends Controller
                 $courses = Course::where('branch_id', $branchId)
                     ->orderBy('course_name')
                     ->get();
+                
+                Log::info("Method 3 (direct FK) returned: " . $courses->count() . " courses");
             }
 
-            // Convert to array format
+            // Convert to array format - handle both Model and stdClass objects
             $formattedCourses = collect($courses)->map(function($course) {
+                $courseId = $course->id ?? $course->course_id;
+                $courseName = $course->course_name ?? $course->name ?? 'Unnamed Course';
+                $courseCode = $course->course_code ?? $course->code ?? '';
+                $abbreviation = $course->abbreviation ?? '';
+                
                 return [
-                    'id' => $course->id ?? $course->course_id,
-                    'name' => $course->course_name,
-                    'code' => $course->course_code,
-                    'abbreviation' => $course->abbreviation,
+                    'id' => $courseId,
+                    'name' => $courseName,
+                    'code' => $courseCode,
+                    'abbreviation' => $abbreviation,
                 ];
             })->values();
+
+            Log::info("Formatted " . $formattedCourses->count() . " courses for response");
 
             return response()->json([
                 'success' => true,
@@ -68,11 +83,12 @@ class PublicFeesController extends Controller
                 'count' => $formattedCourses->count()
             ]);
         } catch (\Exception $e) {
-            \Log::error('Courses loading error: ' . $e->getMessage());
+            Log::error('Courses loading error: ' . $e->getMessage() . ' | Trace: ' . $e->getTraceAsString());
             return response()->json([
                 'success' => false,
-                'message' => 'Error loading courses. Please try again.'
+                'message' => 'Error loading courses: ' . $e->getMessage()
             ], 500);
+        }
         }
     }
 
@@ -171,87 +187,126 @@ class PublicFeesController extends Controller
      */
     public function debugInfo()
     {
-        $output = '<h1>Public Fees Debug Info</h1>';
-        $output .= '<style>
-            body { font-family: Arial; margin: 20px; }
-            table { border-collapse: collapse; width: 100%; margin: 20px 0; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            th { background-color: #f2f2f2; }
-            .section { margin: 20px 0; padding: 10px; background: #f9f9f9; }
-            .error { color: red; }
-            .success { color: green; }
-        </style>';
+        try {
+            $output = '<h1>Public Fees Debug Info</h1>';
+            $output .= '<style>
+                body { font-family: Arial; margin: 20px; background: #f5f5f5; }
+                table { border-collapse: collapse; width: 100%; margin: 20px 0; background: white; }
+                th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+                th { background-color: #2c3e50; color: white; font-weight: bold; }
+                tr:nth-child(even) { background-color: #f9f9f9; }
+                .section { margin: 20px 0; padding: 15px; background: white; border-left: 4px solid #3498db; }
+                .error { color: #e74c3c; font-weight: bold; }
+                .success { color: #27ae60; font-weight: bold; }
+                .warning { color: #f39c12; font-weight: bold; }
+                h2 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+                .code { background: #ecf0f1; padding: 10px; border-radius: 5px; font-family: monospace; overflow-x: auto; }
+            </style>';
 
-        // Check branches
-        $branches = Branch::all();
-        $output .= '<div class="section"><h2>Branches (' . $branches->count() . ')</h2>';
-        $output .= '<table><tr><th>ID</th><th>Name</th><th>Location</th><th>Courses Count</th></tr>';
-        foreach ($branches as $branch) {
-            $courseCount = $branch->courses()->count();
-            $output .= "<tr>
-                <td>{$branch->id}</td>
-                <td>{$branch->name}</td>
-                <td>{$branch->location}</td>
-                <td class='" . ($courseCount > 0 ? 'success' : 'error') . "'>{$courseCount}</td>
-            </tr>";
-        }
-        $output .= '</table></div>';
-
-        // Check courses
-        $courses = Course::limit(20)->get();
-        $output .= '<div class="section"><h2>Courses (showing first 20 of ' . Course::count() . ')</h2>';
-        $output .= '<table><tr><th>ID</th><th>Name</th><th>Code</th><th>Branches Count</th></tr>';
-        foreach ($courses as $course) {
-            $branchCount = $course->branches()->count();
-            $output .= "<tr>
-                <td>{$course->id}</td>
-                <td>{$course->course_name}</td>
-                <td>{$course->course_code}</td>
-                <td class='" . ($branchCount > 0 ? 'success' : 'error') . "'>{$branchCount}</td>
-            </tr>";
-        }
-        $output .= '</table></div>';
-
-        // Check branch_course pivot table
-        $pivotCount = DB::table('branch_course')->count();
-        $output .= '<div class="section"><h2>branch_course Pivot Table</h2>';
-        $output .= '<p>Total records: <span class="' . ($pivotCount > 0 ? 'success' : 'error') . '">' . $pivotCount . '</span></p>';
-        
-        if ($pivotCount > 0) {
-            $pivotRecords = DB::table('branch_course')->limit(20)->get();
-            $output .= '<table><tr><th>Branch ID</th><th>Course ID</th></tr>';
-            foreach ($pivotRecords as $record) {
-                $output .= "<tr><td>{$record->branch_id}</td><td>{$record->course_id}</td></tr>";
+            // Check branch
+            $branchId = 4;
+            $branch = Branch::find($branchId);
+            
+            $output .= '<div class="section">';
+            $output .= '<h2>Selected Branch (ID: ' . $branchId . ')</h2>';
+            if ($branch) {
+                $output .= '<p><strong>Name:</strong> ' . $branch->name . '</p>';
+                $output .= '<p><strong>Location:</strong> ' . $branch->location . '</p>';
+            } else {
+                $output .= '<p class="error">❌ Branch with ID ' . $branchId . ' not found!</p>';
             }
-            $output .= '</table>';
-        }
-        $output .= '</div>';
+            $output .= '</div>';
 
-        // Test query for each branch
-        $output .= '<div class="section"><h2>Query Test (Using First 3 Branches)</h2>';
-        foreach ($branches->take(3) as $branch) {
-            $output .= '<h3>Branch: ' . $branch->name . ' (ID: ' . $branch->id . ')</h3>';
+            // Check all branches
+            $branches = Branch::all();
+            $output .= '<div class="section">';
+            $output .= '<h2>All Branches (' . $branches->count() . ')</h2>';
+            $output .= '<table><tr><th>ID</th><th>Name</th><th>Location</th></tr>';
+            foreach ($branches as $b) {
+                $output .= "<tr><td>{$b->id}</td><td>{$b->name}</td><td>{$b->location}</td></tr>";
+            }
+            $output .= '</table></div>';
+
+            // Test branch_course pivot for this branch
+            $output .= '<div class="section">';
+            $output .= '<h2>Branch-Course Relationships</h2>';
+            $pivotRecords = DB::table('branch_course')->where('branch_id', $branchId)->get();
+            $output .= '<h3>Records in branch_course table for Branch ' . $branchId . ': ' . $pivotRecords->count() . '</h3>';
+            
+            if ($pivotRecords->count() > 0) {
+                $output .= '<table><tr><th>Branch ID</th><th>Course ID</th></tr>';
+                foreach ($pivotRecords as $record) {
+                    $output .= "<tr><td>{$record->branch_id}</td><td>{$record->course_id}</td></tr>";
+                }
+                $output .= '</table>';
+            } else {
+                $output .= '<p class="error">❌ No branch_course records found for Branch ' . $branchId . '</p>';
+            }
+            $output .= '</div>';
+
+            // Check courses for this branch using each method
+            $output .= '<div class="section">';
+            $output .= '<h2>Query Test Results for Branch ' . $branchId . '</h2>';
             
             // Method 1
-            $courses1 = Course::whereHas('branches', function($q) use ($branch) {
-                $q->wherePivot('branch_id', $branch->id);
-            })->count();
-            $output .= '<p>Method 1 (wherePivot): <span class="' . ($courses1 > 0 ? 'success' : 'error') . '">' . $courses1 . ' courses</span></p>';
+            $courses1 = Course::whereHas('branches', function($q) use ($branchId) {
+                $q->wherePivot('branch_id', $branchId);
+            })->get();
+            $output .= '<h3>Method 1: whereHas with wherePivot</h3>';
+            $output .= '<p class="' . ($courses1->count() > 0 ? 'success' : 'error') . '">' . $courses1->count() . ' courses found</p>';
+            if ($courses1->count() > 0) {
+                $output .= '<table><tr><th>ID</th><th>Name</th><th>Code</th></tr>';
+                foreach ($courses1 as $c) {
+                    $output .= "<tr><td>{$c->id}</td><td>{$c->course_name}</td><td>{$c->course_code}</td></tr>";
+                }
+                $output .= '</table>';
+            }
             
             // Method 2
             $courses2 = DB::table('courses')
                 ->join('branch_course', 'courses.id', '=', 'branch_course.course_id')
-                ->where('branch_course.branch_id', $branch->id)
+                ->where('branch_course.branch_id', $branchId)
+                ->select('courses.id', 'courses.course_name', 'courses.course_code', 'courses.abbreviation')
                 ->distinct()
-                ->count();
-            $output .= '<p>Method 2 (direct join): <span class="' . ($courses2 > 0 ? 'success' : 'error') . '">' . $courses2 . ' courses</span></p>';
+                ->get();
+            $output .= '<h3>Method 2: Direct JOIN on branch_course</h3>';
+            $output .= '<p class="' . ($courses2->count() > 0 ? 'success' : 'error') . '">' . $courses2->count() . ' courses found</p>';
+            if ($courses2->count() > 0) {
+                $output .= '<table><tr><th>ID</th><th>Name</th><th>Code</th></tr>';
+                foreach ($courses2 as $c) {
+                    $output .= "<tr><td>{$c->id}</td><td>{$c->course_name}</td><td>{$c->course_code}</td></tr>";
+                }
+                $output .= '</table>';
+            }
             
             // Method 3
-            $courses3 = Course::where('branch_id', $branch->id)->count();
-            $output .= '<p>Method 3 (direct FK): <span class="' . ($courses3 > 0 ? 'success' : 'error') . '">' . $courses3 . ' courses</span></p>';
-        }
-        $output .= '</div>';
+            $courses3 = Course::where('branch_id', $branchId)->get();
+            $output .= '<h3>Method 3: Direct branch_id FK</h3>';
+            $output .= '<p class="' . ($courses3->count() > 0 ? 'success' : 'error') . '">' . $courses3->count() . ' courses found</p>';
+            if ($courses3->count() > 0) {
+                $output .= '<table><tr><th>ID</th><th>Name</th><th>Code</th></tr>';
+                foreach ($courses3 as $c) {
+                    $output .= "<tr><td>{$c->id}</td><td>{$c->course_name}</td><td>{$c->course_code}</td></tr>";
+                }
+                $output .= '</table>';
+            }
+            
+            $output .= '</div>';
 
-        return response($output)->header('Content-Type', 'text/html');
+            // Show total courses in database
+            $totalCourses = Course::count();
+            $output .= '<div class="section">';
+            $output .= '<h2>Database Summary</h2>';
+            $output .= '<table>';
+            $output .= '<tr><td><strong>Total Branches:</strong></td><td>' . Branch::count() . '</td></tr>';
+            $output .= '<tr><td><strong>Total Courses:</strong></td><td>' . $totalCourses . '</td></tr>';
+            $output .= '<tr><td><strong>Total branch_course records:</strong></td><td>' . DB::table('branch_course')->count() . '</td></tr>';
+            $output .= '</table></div>';
+
+            return response($output)->header('Content-Type', 'text/html');
+        } catch (\Exception $e) {
+            return response('<h1>Error</h1><p>' . $e->getMessage() . '</p><pre>' . $e->getTraceAsString() . '</pre>')
+                ->header('Content-Type', 'text/html');
+        }
     }
 }

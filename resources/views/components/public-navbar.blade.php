@@ -35,7 +35,7 @@
                 <a href="{{ route('public.babyeyi.index') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300 flex items-center">
                     <i class="fas fa-child mr-1"></i>Babyeyi
                 </a>
-                <a href="{{ route('public.fees.index') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300 flex items-center">
+                <a href="{{ route('fees.index') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300 flex items-center">
                     <i class="fas fa-credit-card mr-1"></i>Fees
                 </a>
                 <a href="#quick-access" class="text-text-light hover:text-accent-color font-medium transition duration-300 flex items-center">
@@ -99,7 +99,7 @@
                         <a href="{{ route('public.babyeyi.index') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300 flex items-center" @click="open = false">
                             <i class="fas fa-child mr-1"></i>Babyeyi
                         </a>
-                        <a href="{{ route('public.fees.index') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300 flex items-center" @click="open = false">
+                        <a href="{{ route('fees.index') }}" class="text-text-light hover:text-accent-color font-medium transition duration-300 flex items-center" @click="open = false">
                             <i class="fas fa-credit-card mr-1"></i>Fees
                         </a>
                         <a href="#quick-access" class="text-text-light hover:text-accent-color font-medium transition duration-300 flex items-center" @click="open = false">
