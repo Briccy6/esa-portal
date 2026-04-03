@@ -369,7 +369,7 @@ class BabyeyiController extends Controller
     public function studentDashboard()
     {
         $user = Auth::user();
-        $student = Student::where('email', $user->email)->first();
+        $student = Student::with('course')->where('email', $user->email)->first();
 
         // Debug info
         $debug = [];
@@ -466,7 +466,7 @@ class BabyeyiController extends Controller
     public function studentShow(Babyeyi $babyeyi)
     {
         $user = Auth::user();
-        $student = Student::where('email', $user->email)->first();
+        $student = Student::with('course')->where('email', $user->email)->first();
 
         if (!$student) {
             abort(403, 'You do not have access to this document.');
@@ -520,7 +520,7 @@ class BabyeyiController extends Controller
     public function studentDownload(Babyeyi $babyeyi)
     {
         $user = Auth::user();
-        $student = Student::where('email', $user->email)->first();
+        $student = Student::with('course')->where('email', $user->email)->first();
 
         if (!$student) {
             abort(403, 'You do not have access to this document.');

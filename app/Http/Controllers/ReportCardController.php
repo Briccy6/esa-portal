@@ -313,6 +313,18 @@ class ReportCardController extends Controller
                 ->withErrors(['term_ids' => 'Select at least one term.']);
         }
 
+        // Check if student has outstanding fees
+        $student = Student::find($request->student_id);
+        $paymentStatus = FeePaymentService::getPaymentStatus($student);
+        
+        if ($paymentStatus['outstanding'] > 0) {
+            return redirect()->back()
+                ->withInput()
+                ->with('warning', "Cannot generate report card for {$student->full_name}. Outstanding fees: " . 
+                    config('app.currency_symbol', 'RWF') . " " . number_format($paymentStatus['outstanding'], 2) . 
+                    ". Use the 'Outstanding Fees' section to send payment reminder email.");
+        }
+
         $created = 0;
         $skipped = 0;
         $firstId = null;
@@ -547,9 +559,17 @@ class ReportCardController extends Controller
 
         $generated = 0;
         $skipped = 0;
+        $skippedFees = 0;
 
         foreach ($termIds as $termId) {
             foreach ($students as $student) {
+                // Check if student has outstanding fees
+                $paymentStatus = FeePaymentService::getPaymentStatus($student);
+                if ($paymentStatus['outstanding'] > 0) {
+                    $skippedFees++;
+                    continue;
+                }
+
                 $existing = ReportCard::where('student_id', $student->id)
                     ->where('academic_year_id', $request->academic_year_id)
                     ->where('term_id', $termId)
@@ -578,9 +598,16 @@ class ReportCardController extends Controller
         }
 
         $termCount = count($termIds);
+        $message = "Generated {$generated} report card(s) across {$termCount} term(s).";
+        if ($skipped > 0) {
+            $message .= " Skipped {$skipped} duplicate(s).";
+        }
+        if ($skippedFees > 0) {
+            $message .= " Skipped {$skippedFees} student(s) with outstanding fees.";
+        }
 
         return redirect()->back()
-            ->with('success', "Generated {$generated} report card(s) across {$termCount} term(s). Skipped {$skipped} duplicate(s).");
+            ->with('success', $message);
     }
 
    public function printReport(ReportCard $reportCard)
@@ -993,6 +1020,168 @@ class ReportCardController extends Controller
         return $pdf->stream(
             'report-card-'.Str::slug($reportCard->student->full_name).'-'.$reportCard->academicYear->year.'-'.$termSlug.'.pdf'
         );
+    }
+
+    /**
+     * Show students with outstanding fees for report card generation
+     */
+    public function outstandingFees()
+    {
+        // Get all students with outstanding fees
+        $allStudents = Student::with(['course', 'academicYear', 'branch'])->get();
+        
+        $studentsWithFees = [];
+        foreach ($allStudents as $student) {
+            $paymentStatus = FeePaymentService::getPaymentStatus($student);
+            if ($paymentStatus['outstanding'] > 0) {
+                $studentsWithFees[] = array_merge($student->toArray(), [
+                    'outstanding_amount' => $paymentStatus['outstanding'],
+                    'required_fees' => $paymentStatus['required_fees'],
+                    'total_paid' => $paymentStatus['total_paid'],
+                    'payment_percentage' => $paymentStatus['payment_percentage'],
+                ]);
+            }
+        }
+
+        // Sort by outstanding amount (highest first)
+        usort($studentsWithFees, function ($a, $b) {
+            return $b['outstanding_amount'] <=> $a['outstanding_amount'];
+        });
+
+        $courses = Course::all();
+        $branches = \App\Models\Branch::all();
+
+        return view('admin.report-cards.outstanding-fees', compact('studentsWithFees', 'courses', 'branches'));
+    }
+
+    /**
+     * Send outstanding fees email to a single student
+     */
+    public function sendOutstandingFeesEmail(Student $student)
+    {
+        try {
+            $paymentStatus = FeePaymentService::getPaymentStatus($student);
+            
+            if ($paymentStatus['outstanding'] <= 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Student has no outstanding fees.'
+                ], 400);
+            }
+
+            if (!$student->email) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Student does not have a valid email address.'
+                ], 400);
+            }
+
+            // Send email
+            \Mail::to($student->email)->send(
+                new \App\Mail\StudentOutstandingFeesMail(
+                    $student,
+                    $paymentStatus['outstanding'],
+                    $paymentStatus['required_fees'],
+                    $paymentStatus['total_paid']
+                )
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => "Email sent successfully to {$student->full_name}."
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error sending outstanding fees email: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error sending email: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Send bulk emails to all students with outstanding fees
+     */
+    public function bulkSendOutstandingFeesEmails(Request $request)
+    {
+        try {
+            $request->validate([
+                'student_ids' => 'nullable|array',
+                'student_ids.*' => 'exists:students,id',
+            ]);
+
+            // If no students specified, get all with outstanding fees
+            if (empty($request->student_ids)) {
+                $students = Student::all();
+                $studentsToEmail = [];
+                foreach ($students as $student) {
+                    $paymentStatus = FeePaymentService::getPaymentStatus($student);
+                    if ($paymentStatus['outstanding'] > 0 && $student->email) {
+                        $studentsToEmail[] = [
+                            'student' => $student,
+                            'payment_status' => $paymentStatus
+                        ];
+                    }
+                }
+            } else {
+                $students = Student::whereIn('id', $request->student_ids)->get();
+                $studentsToEmail = [];
+                foreach ($students as $student) {
+                    $paymentStatus = FeePaymentService::getPaymentStatus($student);
+                    if ($student->email) {
+                        $studentsToEmail[] = [
+                            'student' => $student,
+                            'payment_status' => $paymentStatus
+                        ];
+                    }
+                }
+            }
+
+            if (empty($studentsToEmail)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No students with valid email addresses found.'
+                ], 400);
+            }
+
+            $sentCount = 0;
+            $failedCount = 0;
+
+            foreach ($studentsToEmail as $item) {
+                try {
+                    \Mail::to($item['student']->email)->send(
+                        new \App\Mail\StudentOutstandingFeesMail(
+                            $item['student'],
+                            $item['payment_status']['outstanding'],
+                            $item['payment_status']['required_fees'],
+                            $item['payment_status']['total_paid']
+                        )
+                    );
+                    $sentCount++;
+                } catch (\Exception $e) {
+                    \Log::error("Failed to send email to {$item['student']->email}: " . $e->getMessage());
+                    $failedCount++;
+                }
+            }
+
+            $message = "Sent {$sentCount} email(s)";
+            if ($failedCount > 0) {
+                $message .= ". Failed to send {$failedCount} email(s).";
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'sent_count' => $sentCount,
+                'failed_count' => $failedCount
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error in bulk sending outstanding fees emails: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error sending emails: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

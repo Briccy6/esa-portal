@@ -1380,6 +1380,7 @@ Route::middleware('auth:admin')->prefix('admin/exams')->name('admin.exams.')->gr
 Route::middleware('auth:student')->prefix('flutterwave')->name('flutterwave.')->group(function () {
     Route::post('/payment/initialize-subscription', [App\Http\Controllers\FlutterwavePaymentController::class, 'initializeSubscriptionPayment'])->name('payment.initialize-subscription');
     Route::post('/payment/initialize-tokens', [App\Http\Controllers\FlutterwavePaymentController::class, 'initializeTokenPayment'])->name('payment.initialize-tokens');
+    Route::post('/payment/initialize-reportcard-fees', [App\Http\Controllers\FlutterwavePaymentController::class, 'initializeReportCardFeePayment'])->name('payment.initialize-reportcard-fees');
     Route::get('/payment/callback', [App\Http\Controllers\FlutterwavePaymentController::class, 'handlePaymentCallback'])->name('payment.callback');
     Route::post('/webhook', [App\Http\Controllers\FlutterwavePaymentController::class, 'handleWebhook'])->name('webhook');
 });

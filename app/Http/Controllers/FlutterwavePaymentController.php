@@ -281,12 +281,14 @@ class FlutterwavePaymentController extends Controller
                     $this->processSubscriptionPayment($txData, $meta);
                 } elseif ($paymentType === 'token_purchase') {
                     $this->processTokenPayment($txData, $meta);
+                } elseif ($paymentType === 'report_card_fees') {
+                    $this->processReportCardPayment($txData, $meta);
                 }
 
                 DB::commit();
 
                 return redirect()->route('students.dashboard')
-                    ->with('success', 'Payment successful! Your tokens have been added to your account.');
+                    ->with('success', 'Payment successful! You can now access your report card.');
             } else {
                 return redirect()->route('students.dashboard')
                     ->with('error', 'Payment failed or was cancelled.');
@@ -418,6 +420,155 @@ class FlutterwavePaymentController extends Controller
     }
 
     /**
+     * Initialize payment for report card fees
+     */
+    public function initializeReportCardFeePayment(Request $request)
+    {
+        $student = Auth::user();
+        $outstandingAmount = $request->amount ?? $student->outstanding_amount ?? 0;
+
+        if ($outstandingAmount <= 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No outstanding fees to pay.'
+            ], 400);
+        }
+
+        // Generate unique transaction reference
+        $tx_ref = 'RFC-' . $student->id . '-' . time();
+
+        // Prepare payment data
+        $paymentData = [
+            'tx_ref' => $tx_ref,
+            'amount' => $outstandingAmount,
+            'currency' => 'RWF',
+            'payment_options' => 'card,bank_transfer,ussd,mobile_money',
+            'redirect_url' => route('flutterwave.payment.callback'),
+            'customer' => [
+                'email' => $student->email ?? 'student@example.com',
+                'name' => $student->full_name,
+                'phone' => $student->phone ?? '',
+            ],
+            'meta' => [
+                'student_id' => $student->id,
+                'outstanding_amount' => $outstandingAmount,
+                'type' => 'report_card_fees'
+            ],
+            'customizations' => [
+                'title' => 'Report Card Access - Outstanding Fees Payment',
+                'description' => "Pay outstanding fees: RWF " . number_format($outstandingAmount, 2),
+                'logo' => asset('images/logo.png')
+            ]
+        ];
+
+        try {
+            // Use direct API call instead of SDK
+            $client = new \GuzzleHttp\Client();
+            
+            $response = $client->post('https://api.flutterwave.com/v3/payments', [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . config('services.flutterwave.secret_key'),
+                    'Content-Type' => 'application/json',
+                ],
+                'json' => $paymentData,
+                'timeout' => 30,
+                'verify' => false,
+            ]);
+            
+            $body = $response->getBody()->getContents();
+            $payment = json_decode($body, true);
+
+            if (isset($payment['status']) && $payment['status'] === 'success') {
+                // Create pending transaction record
+                StudentTransaction::create([
+                    'student_id' => $student->id,
+                    'tx_ref' => $tx_ref,
+                    'type' => 'report_card_fees',
+                    'amount' => $outstandingAmount,
+                    'currency' => 'RWF',
+                    'status' => 'pending',
+                    'meta' => json_encode([
+                        'outstanding_amount' => $outstandingAmount,
+                    ])
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'redirect_url' => $payment['data']['link'],
+                    'tx_ref' => $tx_ref
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to initialize payment. Please try again.'
+                ], 500);
+            }
+        } catch (\Exception $e) {
+            Log::error('Flutterwave report card fee payment initialization failed', [
+                'error' => $e->getMessage(),
+                'student_id' => $student->id,
+                'outstanding_amount' => $outstandingAmount
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Payment initialization failed: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Process successful report card fee payment
+     */
+    private function processReportCardPayment($txData, $meta)
+    {
+        $studentId = $meta['student_id'];
+        $outstandingAmount = $meta['outstanding_amount'];
+
+        // Update transaction record
+        $transaction = StudentTransaction::where('tx_ref', $txData['tx_ref'])->first();
+        if ($transaction) {
+            $transaction->update([
+                'status' => 'successful',
+                'meta' => json_encode(array_merge(json_decode($transaction->meta, true), [
+                    'flutterwave_transaction_id' => $txData['id'],
+                    'verified_at' => now(),
+                ])),
+                'paid_at' => now(),
+            ]);
+        } else {
+            // Create transaction record if it doesn't exist
+            StudentTransaction::create([
+                'student_id' => $studentId,
+                'tx_ref' => $txData['tx_ref'],
+                'type' => 'report_card_fees',
+                'amount' => $txData['amount'],
+                'currency' => $txData['currency'],
+                'status' => 'successful',
+                'meta' => json_encode([
+                    'outstanding_amount' => $outstandingAmount,
+                    'flutterwave_transaction_id' => $txData['id'],
+                    'verified_at' => now(),
+                ]),
+                'paid_at' => now(),
+            ]);
+        }
+
+        // Update student's outstanding amount (if tracking in database)
+        $student = Student::findOrFail($studentId);
+        if (method_exists($student, 'clearOutstandingFees')) {
+            $student->clearOutstandingFees($outstandingAmount);
+        }
+
+        Log::info('Report card fee payment processed successfully', [
+            'student_id' => $studentId,
+            'outstanding_amount' => $outstandingAmount,
+            'amount_paid' => $txData['amount'],
+            'tx_ref' => $txData['tx_ref']
+        ]);
+    }
+
+    /**
      * Webhook handler for Flutterwave events
      */
     public function handleWebhook(Request $request)
@@ -455,6 +606,8 @@ class FlutterwavePaymentController extends Controller
                             $this->processSubscriptionPayment($txData, $meta);
                         } elseif ($paymentType === 'token_purchase') {
                             $this->processTokenPayment($txData, $meta);
+                        } elseif ($paymentType === 'report_card_fees') {
+                            $this->processReportCardPayment($txData, $meta);
                         }
 
                         DB::commit();
