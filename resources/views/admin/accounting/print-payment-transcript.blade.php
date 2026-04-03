@@ -25,8 +25,8 @@
             background: white;
         }
         .no-print {
-            margin-bottom: 20px;
-            padding: 12px;
+            margin-bottom: 12px;
+            padding: 8px;
             background: #f0f2f5;
             border: 1px solid #d0d0d0;
             border-radius: 4px;
@@ -34,33 +34,36 @@
             display: none;
         }
         .no-print button {
-            margin: 0 5px;
-            padding: 8px 16px;
+            margin: 0 4px;
+            padding: 6px 12px;
             background: #2c3e50;
             color: white;
             border: none;
             border-radius: 3px;
             cursor: pointer;
-            font-size: 10px;
+            font-size: 9px;
         }
         .no-print button:hover { background: #1a252f; }
         @media print {
-            .no-print { display: none; }
+            .no-print { display: none !important; }
             body { background: white; }
         }
 
-        /* Page setup */
+        /* Page setup - A4 Portrait Single Page */
         @page {
-            size: A4;
-            margin: 0.5in;
+            size: A4 portrait;
+            margin: 0.4in 0.3in;
         }
         .page {
             width: 100%;
-            max-width: 8.5in;
+            max-width: 21cm;
+            height: 29.7cm;
             margin: 0 auto;
-            page-break-after: always;
-            padding: 20px;
+            padding: 0.3in;
             background: white;
+            page-break-after: avoid;
+            display: flex;
+            flex-direction: column;
         }
         .page:last-child { page-break-after: avoid; }
 
@@ -68,44 +71,49 @@
         .header {
             text-align: center;
             border-bottom: 2px solid #2c3e50;
-            padding-bottom: 12px;
-            margin-bottom: 15px;
+            padding-bottom: 8px;
+            margin-bottom: 8px;
+            flex-shrink: 0;
         }
         .school-logo {
-            height: 50px;
-            margin-bottom: 8px;
+            height: 35px;
+            margin-bottom: 4px;
         }
         .school-name {
-            font-size: 16px;
+            font-size: 13px;
             font-weight: bold;
             color: #2c3e50;
+            margin-bottom: 2px;
         }
         .school-details {
-            font-size: 8px;
+            font-size: 7px;
             color: #666;
-            line-height: 1.2;
+            line-height: 1.1;
         }
-        .school-details div { margin: 2px 0; }
+        .school-details div { margin: 1px 0; }
 
         /* Document info */
         .doc-title {
             text-align: center;
-            font-size: 14px;
+            font-size: 11px;
             font-weight: bold;
             color: #2c3e50;
-            margin: 12px 0 8px 0;
+            margin: 6px 0 2px 0;
+            flex-shrink: 0;
         }
         .student-info {
-            margin-bottom: 12px;
+            margin-bottom: 6px;
             border: 1px solid #ddd;
-            padding: 8px;
+            padding: 4px;
+            font-size: 8px;
+            flex-shrink: 0;
             background: #f9f9f9;
         }
         .student-info-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin: 4px 0;
+            gap: 8px;
+            margin: 2px 0;
         }
         .student-info-row .label {
             font-weight: bold;
@@ -119,39 +127,40 @@
 
         /* Tables */
         .term-section {
-            margin-bottom: 12px;
+            margin-bottom: 6px;
             page-break-inside: avoid;
         }
         .term-section h3 {
-            font-size: 11px;
+            font-size: 9px;
             font-weight: bold;
             background: #ecf0f1;
-            padding: 6px 8px;
-            margin: 8px 0 6px 0;
+            padding: 2px 4px;
+            margin: 4px 0 2px 0;
             border-left: 4px solid #2c3e50;
             color: #2c3e50;
         }
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: 0 0 8px 0;
+            margin: 0 0 4px 0;
             background: white;
+            font-size: 8px;
         }
         table thead tr {
             background: #34495e;
             color: white;
         }
         table th {
-            padding: 6px 8px;
+            padding: 3px 4px;
             text-align: left;
             font-weight: bold;
-            font-size: 9px;
+            font-size: 7px;
             border: 1px solid #bdc3c7;
         }
         table td {
-            padding: 5px 8px;
+            padding: 2px 4px;
             border: 1px solid #ecf0f1;
-            font-size: 9px;
+            font-size: 8px;
         }
         table tbody tr:nth-child(even) {
             background: #f8f9fa;
@@ -166,24 +175,25 @@
         .total-row {
             background: #ecf0f1 !important;
             font-weight: bold;
-            border-top: 2px solid #34495e;
+            border-top: 1px solid #34495e;
         }
         .success { color: #27ae60; font-weight: bold; }
         .danger { color: #c0392b; font-weight: bold; }
 
         /* Summary */
         .summary {
-            margin: 12px 0;
+            margin: 4px 0;
             border: 1px solid #ddd;
             background: #f9f9f9;
-            padding: 8px;
+            padding: 4px;
+            page-break-inside: avoid;
         }
         .summary-row {
             display: grid;
             grid-template-columns: 2fr 1fr;
-            gap: 20px;
-            margin: 4px 0;
-            font-size: 9px;
+            gap: 8px;
+            margin: 2px 0;
+            font-size: 8px;
         }
         .summary-row .label {
             font-weight: bold;
@@ -197,50 +207,54 @@
 
         /* Footer */
         .footer {
-            margin-top: 20px;
-            padding-top: 12px;
+            margin-top: 4px;
+            padding-top: 4px;
             border-top: 1px solid #ddd;
-            font-size: 8px;
+            font-size: 7px;
             color: #666;
+            page-break-inside: avoid;
+            flex-shrink: 0;
         }
         .footer-row {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
-            gap: 8px;
-            margin-bottom: 20px;
+            gap: 4px;
+            margin-bottom: 4px;
         }
         .footer-cell {
             text-align: center;
         }
         .signature-line {
             border-top: 1px solid #333;
-            height: 40px;
-            margin: 8px 0;
+            height: 20px;
+            margin: 2px 0;
             position: relative;
         }
         .signature-line img {
-            max-height: 35px;
-            max-width: 80px;
+            max-height: 20px;
+            max-width: 60px;
         }
         .signature-label {
-            font-size: 8px;
+            font-size: 7px;
             font-weight: bold;
-            margin-top: 2px;
+            margin-top: 1px;
             color: #333;
         }
         .printed-info {
-            margin-top: 10px;
-            padding-top: 10px;
+            margin-top: 2px;
+            padding-top: 2px;
             border-top: 1px solid #ddd;
-            font-size: 8px;
+            font-size: 7px;
             color: #666;
             text-align: center;
+            line-height: 1.2;
         }
 
         @media print {
-            body { margin: 0; padding: 0; }
-            .page { margin: 0; padding: 15px; }
-            @page { margin: 0.3in; }
+            body { margin: 0; padding: 0; background: white; }
+            .page { margin: 0; padding: 0.2in; }
+            @page { margin: 0.3in 0.2in; size: A4 portrait; }
+            .no-print { display: none !important; }
         }
     </style>
 </head>

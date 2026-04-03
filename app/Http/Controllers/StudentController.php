@@ -2307,9 +2307,11 @@ class StudentController extends Controller
         $data        = StudentPaymentTranscript::build($authStudent);
 
         return view('admin.accounting.print-payment-transcript', [
-            'student'            => $authStudent,
+            'student'            => $data['student'],
             'schoolInfo'         => $data['school'],
             'feeRows'            => $data['feeRows'],
+            'feeRowsWithTerms'   => $data['feeRowsWithTerms'] ?? [],
+            'termGroups'         => $data['termGroups'],
             'totalExpected'      => $data['totalExpected'],
             'totalPaid'          => $data['totalPaid'],
             'totalPaidAllTypes'  => $data['totalPaidAllTypes'],
