@@ -79,4 +79,61 @@
         </div>
     </div>
 </div>
+
+<!-- Flutterwave Script -->
+<script src="https://checkout.flutterwave.com/v3.js"></script>
+
+<script>
+function initiateFeePayment() {
+    const btn = document.getElementById('payBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+    // Make request to initialize payment
+    fetch('{{ route("flutterwave.payment.initialize-reportcard-fees") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({
+            amount: {{ $outstanding }}
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Redirect to Flutterwave payment page
+            window.location.href = data.redirect_url;
+        } else {
+            alert('Error: ' + (data.message || 'Failed to initialize payment'));
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-lock"></i> Pay Now with Flutterwave';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while processing your request. Please try again.');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-lock"></i> Pay Now with Flutterwave';
+    });
+}
+</script>
+
+<style>
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .container {
+        animation: fadeIn 0.3s ease-in-out;
+    }
+</style>
 @endsection
