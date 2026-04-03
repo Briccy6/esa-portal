@@ -164,6 +164,23 @@
                     <div class="rc-empty__sub">Generate report cards for students to see them here</div>
                 </div>
             @else
+                {{-- ── DELETE OPTIONS SECTION ── --}}
+                <div class="p-3 border-bottom bg-light">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="d-flex gap-2 align-items-center">
+                                <strong><i class="fas fa-trash me-2 text-danger"></i>Delete Options:</strong>
+                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteByClass()">
+                                    <i class="fas fa-trash me-1"></i> Delete Class
+                                </button>
+                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteAll()" title="Delete all generated report cards">
+                                    <i class="fas fa-trash-alt me-1"></i> Delete All
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <form method="POST" action="{{ route('admin.report-cards.bulk-approve') }}" id="bulkApproveForm">
                     @csrf
                     <div class="d-flex align-items-center justify-content-between p-3 border-bottom bg-light">
@@ -174,9 +191,14 @@
                             </label>
                             <span class="text-muted"><strong id="selectedReportsCount">0</strong> selected</span>
                         </div>
-                        <button type="submit" class="rc-btn rc-btn--teal" onclick="return confirm('Approve selected report cards?')">
-                            <i class="fas fa-check-circle"></i> Approve Selected
-                        </button>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="rc-btn rc-btn--teal" onclick="return confirm('Approve selected report cards?')">
+                                <i class="fas fa-check-circle"></i> Approve Selected
+                            </button>
+                            <button type="button" class="btn btn-danger btn-sm" onclick="deleteSelectedReports()" style="display:none;" id="deleteSelectedBtn">
+                                <i class="fas fa-trash me-1"></i> Delete Selected
+                            </button>
+                        </div>
                     </div>
                 <div class="rc-table-wrap">
                     <table class="rc-table">
@@ -353,7 +375,33 @@
                                             Actions
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                            {{-- View/Print Section --}}
+                                            @if($multipleTermsInGroup)
+                                                <li>
+                                                    <a href="{{ route('admin.report-cards.consolidated', $consolidatedQuery) }}" class="dropdown-item" target="_blank">
+                                                        <i class="fas fa-eye me-2 text-info"></i> View all ({{ count($termIdsInGroup) }} terms)
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a href="{{ route('admin.report-cards.consolidated-print', $consolidatedQuery) }}" class="dropdown-item" target="_blank">
+                                                        <i class="fas fa-print me-2 text-success"></i> Print all ({{ count($termIdsInGroup) }} terms)
+                                                    </a>
+                                                </li>
+                                            @else
+                                                @php $rc = $group->first(); @endphp
+                                                <li>
+                                                    <a href="{{ route('admin.report-cards.show', $rc->id) }}" class="dropdown-item" target="_blank">
+                                                        <i class="fas fa-eye me-2 text-info"></i> View
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a href="{{ route('admin.report-cards.print', $rc->id) }}" class="dropdown-item" target="_blank">
+                                                        <i class="fas fa-print me-2 text-success"></i> Print
+                                                    </a>
+                                                </li>
+                                            @endif
                                             <li><hr class="dropdown-divider"></li>
+                                            {{-- Delete Section --}}
                                             <li>
                                                 @if($multipleTermsInGroup)
                                                     <button class="dropdown-item text-danger" onclick="deleteReportCardsGroup('{{ $first->student_id }}', '{{ $first->course_id }}', '{{ $first->academic_year_id }}', '{{ implode(',', $termIdsInGroup) }}', '{{ $first->student->full_name }}')">
@@ -1420,8 +1468,310 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // Show/hide delete selected button
+    function updateDeleteBtn() {
+        const deleteBtn = document.getElementById('deleteSelectedBtn');
+        if (deleteBtn) {
+            const checked = checkboxes.filter(cb => cb.checked).length;
+            deleteBtn.style.display = checked > 0 ? 'inline-block' : 'none';
+        }
+    }
+    checkboxes.forEach(cb => cb.addEventListener('change', updateDeleteBtn));
+
     refreshCount();
 });
+</script>
+<script>
+// Delete functions
+function deleteByClass() {
+    const form = document.querySelector('form[action*="generate-class"]');
+    if (!form) return alert('Form not found');
+
+    const courseId = form.querySelector('[name="course_id"]')?.value;
+    const yearId = form.querySelector('[name="academic_year_id"]')?.value;
+    const termSelect = document.getElementById('termNativeSelect');
+    const terms = termSelect ? Array.from(termSelect.selectedOptions).map(o => o.value) : [];
+
+    if (!courseId || !yearId || terms.length === 0) {
+        return alert('Select course, academic year, and at least one term.');
+    }
+
+    const course = form.querySelector('[name="course_id"] option:checked')?.text;
+    const year = form.querySelector('[name="academic_year_id"] option:checked')?.text;
+
+    if (!confirm(`Delete ALL report cards for ${course} (${year})?\n\nThis action cannot be undone.`)) {
+        return;
+    }
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    const formData = new FormData();
+    formData.append('course_id', courseId);
+    formData.append('academic_year_id', yearId);
+    terms.forEach(t => formData.append('term_ids[]', t));
+
+    fetch('{{ route("admin.report-cards.delete-by-class") }}', {
+        method: 'DELETE',
+        headers: {
+            'X-CSRF-TOKEN': csrfToken,
+            'Accept': 'application/json'
+        },
+        body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', data.message);
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showAlert('danger', data.message);
+        }
+    })
+    .catch(err => showAlert('danger', 'Error: ' + err.message));
+}
+
+function deleteSelectedReports() {
+    const checkboxes = document.querySelectorAll('.report-card-checkbox:checked');
+    if (checkboxes.length === 0) {
+        return alert('Select at least one report card to delete.');
+    }
+
+    if (!confirm(`Delete ${checkboxes.length} selected report card(s)?\n\nThis action cannot be undone.`)) {
+        return;
+    }
+
+    const ids = Array.from(checkboxes).map(cb => cb.value);
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+    fetch('{{ route("admin.report-cards.delete-selected") }}', {
+        method: 'DELETE',
+        headers: {
+            'X-CSRF-TOKEN': csrfToken,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({ report_card_ids: ids })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', data.message);
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showAlert('danger', data.message);
+        }
+    })
+    .catch(err => showAlert('danger', 'Error: ' + err.message));
+}
+
+function deleteAll() {
+    if (!confirm('Delete ALL report cards in the system?\n\nThis will delete all generated report cards. This action CANNOT be undone.')) {
+        return;
+    }
+
+    if (!confirm('Are you absolutely sure? Click OK again to confirm deletion of ALL report cards.')) {
+        return;
+    }
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+    fetch('{{ route("admin.report-cards.delete-all") }}?confirm=DELETE_ALL', {
+        method: 'DELETE',
+        headers: {
+            'X-CSRF-TOKEN': csrfToken,
+            'Accept': 'application/json'
+        }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', data.message);
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showAlert('danger', data.message);
+        }
+    })
+    .catch(err => showAlert('danger', 'Error: ' + err.message));
+}
+
+function showAlert(type, message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.style.position = 'fixed';
+    alertDiv.style.top = '20px';
+    alertDiv.style.right = '20px';
+    alertDiv.style.zIndex = '9999';
+    alertDiv.style.minWidth = '300px';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alertDiv);
+    setTimeout(() => alertDiv.remove(), 5000);
+}
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const checkboxes = Array.from(document.querySelectorAll('.report-card-checkbox'));
+    const selectedCount = document.getElementById('selectedReportsCount');
+    const bulkForm = document.getElementById('bulkApproveForm');
+
+    function refreshCount() {
+        const checked = checkboxes.filter(cb => cb.checked).length;
+        selectedCount.textContent = String(checked);
+    }
+
+    checkboxes.forEach(cb => cb.addEventListener('change', refreshCount));
+
+    if (bulkForm) {
+        bulkForm.addEventListener('submit', function (e) {
+            const checked = checkboxes.some(cb => cb.checked);
+            if (!checked) {
+                e.preventDefault();
+                alert('Select at least one report card to approve.');
+            }
+        });
+    }
+
+    // Show/hide delete selected button
+    function updateDeleteBtn() {
+        const deleteBtn = document.getElementById('deleteSelectedBtn');
+        if (deleteBtn) {
+            const checked = checkboxes.filter(cb => cb.checked).length;
+            deleteBtn.style.display = checked > 0 ? 'inline-block' : 'none';
+        }
+    }
+    checkboxes.forEach(cb => cb.addEventListener('change', updateDeleteBtn));
+
+    refreshCount();
+});
+</script>
+<script>
+// Delete functions
+function deleteByClass() {
+    const form = document.querySelector('form[action*="generate-class"]');
+    if (!form) return alert('Form not found');
+
+    const courseId = form.querySelector('[name="course_id"]')?.value;
+    const yearId = form.querySelector('[name="academic_year_id"]')?.value;
+    const termSelect = document.getElementById('termNativeSelect');
+    const terms = termSelect ? Array.from(termSelect.selectedOptions).map(o => o.value) : [];
+
+    if (!courseId || !yearId || terms.length === 0) {
+        return alert('Select course, academic year, and at least one term.');
+    }
+
+    const course = form.querySelector('[name="course_id"] option:checked')?.text;
+    const year = form.querySelector('[name="academic_year_id"] option:checked')?.text;
+
+    if (!confirm(`Delete ALL report cards for ${course} (${year})?\n\nThis action cannot be undone.`)) {
+        return;
+    }
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    const formData = new FormData();
+    formData.append('course_id', courseId);
+    formData.append('academic_year_id', yearId);
+    terms.forEach(t => formData.append('term_ids[]', t));
+
+    fetch('{{ route("admin.report-cards.delete-by-class") }}', {
+        method: 'DELETE',
+        headers: {
+            'X-CSRF-TOKEN': csrfToken,
+            'Accept': 'application/json'
+        },
+        body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', data.message);
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showAlert('danger', data.message);
+        }
+    })
+    .catch(err => showAlert('danger', 'Error: ' + err.message));
+}
+
+function deleteSelectedReports() {
+    const checkboxes = document.querySelectorAll('.report-card-checkbox:checked');
+    if (checkboxes.length === 0) {
+        return alert('Select at least one report card to delete.');
+    }
+
+    if (!confirm(`Delete ${checkboxes.length} selected report card(s)?\n\nThis action cannot be undone.`)) {
+        return;
+    }
+
+    const ids = Array.from(checkboxes).map(cb => cb.value);
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+    fetch('{{ route("admin.report-cards.delete-selected") }}', {
+        method: 'DELETE',
+        headers: {
+            'X-CSRF-TOKEN': csrfToken,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({ report_card_ids: ids })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', data.message);
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showAlert('danger', data.message);
+        }
+    })
+    .catch(err => showAlert('danger', 'Error: ' + err.message));
+}
+
+function deleteAll() {
+    if (!confirm('Delete ALL report cards in the system?\n\nThis will delete all generated report cards. This action CANNOT be undone.')) {
+        return;
+    }
+
+    if (!confirm('Are you absolutely sure? Click OK again to confirm deletion of ALL report cards.')) {
+        return;
+    }
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+    fetch('{{ route("admin.report-cards.delete-all") }}?confirm=DELETE_ALL', {
+        method: 'DELETE',
+        headers: {
+            'X-CSRF-TOKEN': csrfToken,
+            'Accept': 'application/json'
+        }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', data.message);
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showAlert('danger', data.message);
+        }
+    })
+    .catch(err => showAlert('danger', 'Error: ' + err.message));
+}
+
+function showAlert(type, message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.style.position = 'fixed';
+    alertDiv.style.top = '20px';
+    alertDiv.style.right = '20px';
+    alertDiv.style.zIndex = '9999';
+    alertDiv.style.minWidth = '300px';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alertDiv);
+    setTimeout(() => alertDiv.remove(), 5000);
+}
 </script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -1448,4 +1798,304 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 </script>
+
+<!-- MODAL: Outstanding Fees Warning -->
+<div class="modal fade" id="outstandingFeesModal" tabindex="-1" aria-labelledby="outstandingFeesModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title" id="outstandingFeesModalLabel">
+                    <i class="fas fa-exclamation-circle me-2"></i> Students with Outstanding Fees
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-3" id="feesWarningMessage"></p>
+                <div id="studentsList" style="max-height: 400px; overflow-y: auto;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" id="sendAllFeesEmailsBtn">
+                    <i class="fas fa-envelope me-1"></i> Send Emails to All
+                </button>
+                <button type="button" class="btn btn-primary" id="generateAnywayBtn">
+                    <i class="fas fa-check me-1"></i> Generate Anyway
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.modal-header.bg-warning {
+    background-color: #ffc107 !important;
+    color: #000;
+}
+
+.fees-student-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    background: #f8f9fa;
+    transition: all 0.2s;
+}
+
+.fees-student-card:hover {
+    background: #fff3cd;
+    border-color: #ffc107;
+    box-shadow: 0 2px 8px rgba(255, 193, 7, 0.2);
+}
+
+.fees-student-info {
+    flex: 1;
+}
+
+.fees-student-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #212529;
+    margin-bottom: 4px;
+}
+
+.fees-student-amount {
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+.fees-amount {
+    font-weight: 700;
+    color: #dc3545;
+    font-size: 1rem;
+}
+
+.fees-email-btn {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+</style>
+
+<script>
+// Form submission handler to check fees before generation
+document.addEventListener('DOMContentLoaded', function () {
+    const generateForm = document.querySelector('form[action="{{ route("admin.report-cards.generate-class") }}"]');
+    if (!generateForm) return;
+
+    generateForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        // Get form data
+        const courseId = generateForm.querySelector('[name="course_id"]')?.value;
+        const yearId = generateForm.querySelector('[name="academic_year_id"]')?.value;
+        const termSelect = document.getElementById('termNativeSelect');
+        const termIds = termSelect ? Array.from(termSelect.selectedOptions).map(o => o.value) : [];
+
+        if (!courseId || !yearId || termIds.length === 0) {
+            alert('Please select course, academic year, and at least one term.');
+            return;
+        }
+
+        // Check for outstanding fees via AJAX
+        const checkUrl = @json(route('admin.report-cards.check-fees-for-generation'));
+        fetch(checkUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify({
+                course_id: courseId,
+                academic_year_id: yearId,
+                term_ids: termIds
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.students && data.students.length > 0) {
+                // Students with outstanding fees found - show modal
+                showOutstandingFeesModal(data.students, courseId, yearId, termIds, generateForm);
+            } else {
+                // No fees - proceed with generation
+                submitGenerateForm(generateForm, courseId, yearId, termIds);
+            }
+        })
+        .catch(err => {
+            console.error('Error checking fees:', err);
+            showAlert('danger', 'Error checking outstanding fees: ' + err.message);
+        });
+    });
+
+    // Store form data for later use
+    window.pendingGenerationData = null;
+
+    function showOutstandingFeesModal(students, courseId, yearId, termIds, form) {
+        const modal = new bootstrap.Modal(document.getElementById('outstandingFeesModal'));
+        
+        // Update warning message
+        document.getElementById('feesWarningMessage').innerText = 
+            `The following ${students.length} student(s) have outstanding fees and cannot have report cards generated:`;
+
+        // Build students list
+        const studentsList = document.getElementById('studentsList');
+        studentsList.innerHTML = students.map(student => `
+            <div class="fees-student-card">
+                <div class="fees-student-info">
+                    <div class="fees-student-name">${escapeHtml(student.full_name)}</div>
+                    <div class="fees-student-amount">
+                        Outstanding: <span class="fees-amount">₱${parseFloat(student.outstanding_amount).toFixed(2)}</span>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-primary fees-email-btn" onclick="sendIndividualFeeEmail(${student.id})">
+                    <i class="fas fa-envelope me-1"></i> Email
+                </button>
+            </div>
+        `).join('');
+
+        // Store generation data
+        window.pendingGenerationData = {
+            courseId: courseId,
+            yearId: yearId,
+            termIds: termIds,
+            form: form
+        };
+
+        // Setup send all emails button
+        document.getElementById('sendAllFeesEmailsBtn').onclick = function() {
+            sendBulkFeesEmails(students);
+        };
+
+        // Setup generate anyway button
+        document.getElementById('generateAnywayBtn').onclick = function() {
+            modal.hide();
+            if (window.pendingGenerationData) {
+                submitGenerateForm(
+                    window.pendingGenerationData.form,
+                    window.pendingGenerationData.courseId,
+                    window.pendingGenerationData.yearId,
+                    window.pendingGenerationData.termIds
+                );
+            }
+        };
+
+        modal.show();
+    }
+
+    function submitGenerateForm(form, courseId, yearId, termIds) {
+        // Create a hidden form submission to avoid re-triggering the submit event
+        const submitForm = new FormData(form);
+        fetch(form.action, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: submitForm
+        })
+        .then(response => response.text())
+        .then(html => {
+            showAlert('success', 'Report cards generated successfully!');
+            setTimeout(() => location.reload(), 1500);
+        })
+        .catch(err => {
+            console.error('Generation error:', err);
+            showAlert('danger', 'Error generating report cards: ' + err.message);
+        });
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+});
+
+// Global functions for sending emails from modal
+function sendIndividualFeeEmail(studentId) {
+    const button = event.target.closest('button');
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Sending...';
+
+    fetch(@json(route('admin.report-cards.send-fees-email-modal', ['student' => 'PLACEHOLDER'])).replace('PLACEHOLDER', studentId), {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', 'Email sent to ' + data.student_name);
+            button.innerHTML = '<i class="fas fa-check me-1"></i> Sent';
+            button.classList.add('btn-success');
+            button.classList.remove('btn-outline-primary');
+        } else {
+            showAlert('danger', data.message || 'Error sending email');
+            button.disabled = false;
+            button.innerHTML = '<i class="fas fa-envelope me-1"></i> Email';
+        }
+    })
+    .catch(err => {
+        console.error('Email send error:', err);
+        showAlert('danger', 'Error sending email: ' + err.message);
+        button.disabled = false;
+        button.innerHTML = '<i class="fas fa-envelope me-1"></i> Email';
+    });
+}
+
+function sendBulkFeesEmails(students) {
+    if (!window.confirm(`Send fee reminder emails to ${students.length} student(s)?`)) {
+        return;
+    }
+
+    const button = document.getElementById('sendAllFeesEmailsBtn');
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Sending to all...';
+
+    let completed = 0;
+    let failed = 0;
+
+    const emailPromises = students.map(student => 
+        fetch(@json(route('admin.report-cards.send-fees-email-modal', ['student' => 'PLACEHOLDER'])).replace('PLACEHOLDER', student.id), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                completed++;
+            } else {
+                failed++;
+            }
+        })
+        .catch(err => {
+            failed++;
+        })
+    );
+
+    Promise.all(emailPromises).then(() => {
+        showAlert('success', `Sent ${completed}/${students.length} fee reminder email(s)`);
+        button.disabled = false;
+        button.innerHTML = '<i class="fas fa-envelope me-1"></i> Send Emails to All';
+        if (failed === 0) {
+            setTimeout(() => {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('outstandingFeesModal'));
+                if (modal) modal.hide();
+            }, 1500);
+        }
+    });
+}
+</script>
+
 @endsection

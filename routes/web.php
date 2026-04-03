@@ -452,6 +452,8 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::get('report-cards', [ReportCardController::class, 'index'])->name('report-cards.index');
     Route::get('report-cards/create', [ReportCardController::class, 'create'])->name('report-cards.create');
     Route::post('report-cards', [ReportCardController::class, 'store'])->name('report-cards.store');
+    Route::post('report-cards/check-fees-for-generation', [ReportCardController::class, 'checkOutstandingFeesForGeneration'])->name('report-cards.check-fees-for-generation');
+    Route::post('report-cards/send-fees-email-modal/{student}', [ReportCardController::class, 'sendFeesEmailFromModal'])->name('report-cards.send-fees-email-modal');
     Route::get('report-cards/consolidated', [ReportCardController::class, 'showConsolidated'])->name('report-cards.consolidated');
     Route::get('report-cards/consolidated/print', [ReportCardController::class, 'printConsolidated'])->name('report-cards.consolidated-print');
     Route::post('report-cards/generate-class', [ReportCardController::class, 'generateForClass'])->name('report-cards.generate-class');
@@ -462,6 +464,9 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::put('report-cards/{reportCard}', [ReportCardController::class, 'update'])->name('report-cards.update');
     Route::delete('report-cards/{reportCard}', [ReportCardController::class, 'destroy'])->name('report-cards.destroy');
     Route::delete('report-cards/bulk', [ReportCardController::class, 'bulkDestroy'])->name('report-cards.destroy.bulk');
+    Route::delete('report-cards/by-class/delete', [ReportCardController::class, 'deleteByClass'])->name('report-cards.delete-by-class');
+    Route::delete('report-cards/selected/delete', [ReportCardController::class, 'deleteSelected'])->name('report-cards.delete-selected');
+    Route::delete('report-cards/all/delete', [ReportCardController::class, 'deleteAll'])->name('report-cards.delete-all');
     Route::get('report-cards/{reportCard}/print', [ReportCardController::class, 'printReport'])->name('report-cards.print');
 
     // Outstanding Fees Management

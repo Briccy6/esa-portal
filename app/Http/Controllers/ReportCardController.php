@@ -320,6 +320,21 @@ class ReportCardController extends Controller
         $paymentStatus = FeePaymentService::getPaymentStatus($student);
         
         if ($paymentStatus['outstanding'] > 0) {
+            // Return JSON for AJAX request with modal
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'has_outstanding_fees' => true,
+                    'student_id' => $student->id,
+                    'student_name' => $student->full_name,
+                    'student_email' => $student->email,
+                    'outstanding_amount' => $paymentStatus['outstanding'],
+                    'required_fees' => $paymentStatus['required_fees'],
+                    'total_paid' => $paymentStatus['total_paid'],
+                    'message' => "Cannot generate report card. Student has outstanding fees."
+                ]);
+            }
+
             return redirect()->back()
                 ->withInput()
                 ->with('warning', "Cannot generate report card for {$student->full_name}. Outstanding fees: " . 
@@ -480,6 +495,241 @@ class ReportCardController extends Controller
                 'message' => 'Error deleting report cards: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Delete all report cards for a specific class
+     */
+    public function deleteByClass(Request $request)
+    {
+        $request->validate([
+            'course_id' => 'required|exists:courses,id',
+            'academic_year_id' => 'required|exists:academic_years,id',
+            'term_ids' => 'nullable|array',
+            'term_ids.*' => 'exists:terms,id',
+            'term_id' => 'nullable|exists:terms,id',
+        ]);
+
+        try {
+            $termIds = $this->normalizeTermIds($request);
+            if ($termIds === []) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Please select at least one term.'
+                ], 400);
+            }
+
+            $query = ReportCard::where('course_id', $request->course_id)
+                ->where('academic_year_id', $request->academic_year_id)
+                ->whereIn('term_id', $termIds);
+
+            $reportCards = $query->get();
+
+            if ($reportCards->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No report cards found for the selected class.'
+                ], 404);
+            }
+
+            $course = Course::find($request->course_id);
+            $year = AcademicYear::find($request->academic_year_id);
+            $deletedCount = 0;
+
+            foreach ($reportCards as $reportCard) {
+                $reportCard->delete();
+                $deletedCount++;
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => "Successfully deleted {$deletedCount} report card(s) for {$course->course_name} ({$year->year}).",
+                'deleted_count' => $deletedCount
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error deleting report cards by class: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error deleting report cards: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete selected report cards by IDs
+     */
+    public function deleteSelected(Request $request)
+    {
+        $validated = $request->validate([
+            'report_card_ids' => 'required|array|min:1',
+            'report_card_ids.*' => 'integer|exists:report_cards,id',
+        ]);
+
+        try {
+            $reportCards = ReportCard::whereIn('id', $validated['report_card_ids'])->get();
+
+            if ($reportCards->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No report cards found.'
+                ], 404);
+            }
+
+            $deletedCount = 0;
+            foreach ($reportCards as $reportCard) {
+                $reportCard->delete();
+                $deletedCount++;
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => "Successfully deleted {$deletedCount} report card(s).",
+                'deleted_count' => $deletedCount
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error deleting selected report cards: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error deleting report cards: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete all report cards at once
+     */
+    public function deleteAll(Request $request)
+    {
+        // Require confirmation via status parameter
+        if ($request->input('confirm') !== 'DELETE_ALL') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Confirmation not provided. Use confirm=DELETE_ALL parameter.'
+            ], 400);
+        }
+
+        try {
+            $allReportCards = ReportCard::all();
+
+            if ($allReportCards->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No report cards found to delete.'
+                ], 404);
+            }
+
+            $deletedCount = 0;
+            foreach ($allReportCards as $reportCard) {
+                $reportCard->delete();
+                $deletedCount++;
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => "Successfully deleted all {$deletedCount} report card(s).",
+                'deleted_count' => $deletedCount
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error deleting all report cards: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error deleting report cards: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Send outstanding fees email from report card generation modal
+     */
+    public function sendFeesEmailFromModal(Student $student)
+    {
+        try {
+            $paymentStatus = FeePaymentService::getPaymentStatus($student);
+            
+            if ($paymentStatus['outstanding'] <= 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Student has no outstanding fees.'
+                ], 400);
+            }
+
+            if (!$student->email) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Student does not have a valid email address.'
+                ], 400);
+            }
+
+            // Send email
+            Mail::to($student->email)->send(
+                new \App\Mail\StudentOutstandingFeesMail(
+                    $student,
+                    $paymentStatus['outstanding'],
+                    $paymentStatus['required_fees'],
+                    $paymentStatus['total_paid']
+                )
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => "Email sent successfully to {$student->full_name}."
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error sending outstanding fees email: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error sending email: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Show students with outstanding fees for report card generation
+     */
+    public function checkOutstandingFeesForGeneration(Request $request)
+    {
+        $request->validate([
+            'course_id' => 'required|exists:courses,id',
+            'academic_year_id' => 'required|exists:academic_years,id',
+            'term_ids' => 'nullable|array',
+            'term_ids.*' => 'exists:terms,id',
+        ]);
+
+        $termIds = $this->normalizeTermIds($request);
+        if ($termIds === []) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Select at least one term.'
+            ], 400);
+        }
+
+        // Get students in this course/year
+        $students = Student::where('course_id', $request->course_id)
+            ->where('academic_year_id', $request->academic_year_id)
+            ->get();
+
+        $studentsWithFees = [];
+        foreach ($students as $student) {
+            $paymentStatus = FeePaymentService::getPaymentStatus($student);
+            if ($paymentStatus['outstanding'] > 0) {
+                $studentsWithFees[] = [
+                    'id' => $student->id,
+                    'full_name' => $student->full_name,
+                    'email' => $student->email,
+                    'student_id' => $student->student_id,
+                    'outstanding_amount' => $paymentStatus['outstanding'],
+                    'required_fees' => $paymentStatus['required_fees'],
+                    'total_paid' => $paymentStatus['total_paid'],
+                ];
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'has_outstanding_fees' => count($studentsWithFees) > 0,
+            'students' => $studentsWithFees,
+            'count' => count($studentsWithFees),
+        ]);
     }
 
     public function bulkApprove(Request $request)
