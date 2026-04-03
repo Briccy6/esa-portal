@@ -25,10 +25,20 @@ class ReportCardSetting extends Model
      */
     public static function getActive()
     {
-        return self::where('academic_year', config('app.academic_year', '2025-2026'))
-                    ->where('term', config('app.current_term', 'Term 1'))
-                    ->where('is_active', true)
-                    ->first();
+        // First, try to get setting for configured academic year and term
+        $setting = self::where('academic_year', config('app.academic_year', '2025-2026'))
+                        ->where('term', config('app.current_term', 'Term 1'))
+                        ->where('is_active', true)
+                        ->first();
+        
+        // If not found, get the most recently created active setting
+        if (!$setting) {
+            $setting = self::where('is_active', true)
+                            ->orderBy('created_at', 'desc')
+                            ->first();
+        }
+        
+        return $setting;
     }
 
     /**

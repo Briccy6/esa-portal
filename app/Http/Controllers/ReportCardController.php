@@ -921,10 +921,10 @@ class ReportCardController extends Controller
                 'subjects.lesson',
                 'subjects.testMarks.exam',
             ])
-            ->where('course_id', $request->course_id)
-            ->where('academic_year_id', $request->academic_year_id)
-            ->whereIn('term_id', $termIds)
-            ->where('status', 'approved')
+            ->where('report_cards.course_id', $request->course_id)
+            ->where('report_cards.academic_year_id', $request->academic_year_id)
+            ->whereIn('report_cards.term_id', $termIds)
+            ->where('report_cards.status', 'approved')
             ->join('students', 'report_cards.student_id', '=', 'students.id')
             ->orderBy('report_cards.term_id')
             ->orderBy('students.full_name')
@@ -1203,8 +1203,22 @@ class ReportCardController extends Controller
         }
 
         // Check if student can access this report card
-        if (!ReportCardService::canAccessReportCard($student)) {
-            $accessStatus = ReportCardService::getAccessStatus($student);
+        $accessStatus = ReportCardService::getAccessStatus($student);
+        
+        // If student has outstanding fees, show payment page with Flutterwave button
+        if (!$accessStatus['payment_status']['is_fully_paid']) {
+            $outstanding = $accessStatus['payment_status']['outstanding'];
+            return view('students.report-cards.payment', compact('outstanding', 'reportCard'));
+        }
+        
+        // If report card not yet available, show countdown
+        if ($accessStatus['countdown_data']) {
+            $countdownData = $accessStatus['countdown_data'];
+            $availableDate = $accessStatus['available_date'];
+            return view('students.report-cards.countdown', compact('reportCard', 'countdownData', 'availableDate'));
+        }
+        
+        if (!$accessStatus['can_access']) {
             return redirect()->route('student.report-cards.index')
                 ->with('error', $accessStatus['reason']);
         }

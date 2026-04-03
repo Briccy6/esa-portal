@@ -1774,6 +1774,282 @@ function showAlert(type, message) {
 }
 </script>
 <script>
+// Helper function to show alerts
+function showAlert(type, message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.style.position = 'fixed';
+    alertDiv.style.top = '20px';
+    alertDiv.style.right = '20px';
+    alertDiv.style.zIndex = '9999';
+    alertDiv.style.minWidth = '300px';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alertDiv);
+    setTimeout(() => alertDiv.remove(), 5000);
+}
+
+// Helper to escape HTML
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Global state for pending generation
+window.pendingGenerationData = null;
+
+// Send individual fee email
+window.sendIndividualFeeEmail = function(studentId) {
+    const button = event.target.closest('button');
+    if (!button) return;
+    
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Sending...';
+
+    const emailRoute = @json(route('admin.report-cards.send-fees-email-modal', ['student' => 'ID']));
+    const url = emailRoute.replace('ID', studentId);
+    
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', 'Email sent to ' + data.student_name);
+            button.innerHTML = '<i class="fas fa-check me-1"></i> Sent';
+            button.classList.add('btn-success');
+            button.classList.remove('btn-outline-primary');
+        } else {
+            showAlert('danger', data.message || 'Error sending email');
+            button.disabled = false;
+            button.innerHTML = '<i class="fas fa-envelope me-1"></i> Email';
+        }
+    })
+    .catch(err => {
+        console.error('Email send error:', err);
+        showAlert('danger', 'Error sending email: ' + err.message);
+        button.disabled = false;
+        button.innerHTML = '<i class="fas fa-envelope me-1"></i> Email';
+    });
+};
+
+// Send bulk fee emails
+window.sendBulkFeesEmails = function(students) {
+    if (!window.confirm(`Send fee reminder emails to ${students.length} student(s)?`)) {
+        return;
+    }
+
+    const button = document.getElementById('sendAllFeesEmailsBtn');
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Sending to all...';
+
+    let completed = 0;
+    let failed = 0;
+
+    const emailRoute = @json(route('admin.report-cards.send-fees-email-modal', ['student' => 'ID']));
+    
+    const emailPromises = students.map(student => {
+        const url = emailRoute.replace('ID', student.id);
+        return fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                completed++;
+            } else {
+                failed++;
+            }
+        })
+        .catch(err => {
+            failed++;
+        });
+    });
+
+    Promise.all(emailPromises).then(() => {
+        showAlert('success', `Sent ${completed}/${students.length} fee reminder email(s)`);
+        button.disabled = false;
+        button.innerHTML = '<i class="fas fa-envelope me-1"></i> Send Emails to All';
+        if (failed === 0) {
+            setTimeout(() => {
+                const modalElement = document.getElementById('outstandingFeesModal');
+                if (modalElement) {
+                    const modal = bootstrap.Modal.getInstance(modalElement);
+                    if (modal) modal.hide();
+                }
+            }, 1500);
+        }
+    });
+};
+
+// Main form submission handler
+document.addEventListener('DOMContentLoaded', function () {
+    // Find all forms that might be the generation form
+    const forms = document.querySelectorAll('form');
+    let generateForm = null;
+    
+    for (let form of forms) {
+        const action = form.getAttribute('action');
+        if (action && action.includes('report-cards/generate-class')) {
+            generateForm = form;
+            break;
+        }
+    }
+
+    if (!generateForm) {
+        console.warn('Generate form not found');
+        return;
+    }
+
+    generateForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        console.log('Form submitted, checking fees...');
+
+        // Get form data
+        const courseId = generateForm.querySelector('[name="course_id"]')?.value;
+        const yearId = generateForm.querySelector('[name="academic_year_id"]')?.value;
+        const termSelect = document.getElementById('termNativeSelect');
+        const termIds = termSelect ? Array.from(termSelect.selectedOptions).map(o => o.value) : [];
+
+        if (!courseId || !yearId || termIds.length === 0) {
+            alert('Please select course, academic year, and at least one term.');
+            return;
+        }
+
+        console.log('Checking fees for:', { courseId, yearId, termIds });
+
+        // Check for outstanding fees via AJAX
+        const checkUrl = @json(route('admin.report-cards.check-fees-for-generation'));
+        fetch(checkUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify({
+                course_id: courseId,
+                academic_year_id: yearId,
+                term_ids: termIds
+            })
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('Fee check response:', data);
+            if (data.students && data.students.length > 0) {
+                // Students with outstanding fees found - show modal
+                console.log('Found students with fees:', data.students);
+                showOutstandingFeesModal(data.students, courseId, yearId, termIds, generateForm);
+            } else {
+                // No fees - proceed with generation
+                console.log('No students with fees, proceeding with generation');
+                submitGenerateForm(generateForm, courseId, yearId, termIds);
+            }
+        })
+        .catch(err => {
+            console.error('Error checking fees:', err);
+            showAlert('danger', 'Error checking outstanding fees: ' + err.message);
+        });
+    });
+
+    function showOutstandingFeesModal(students, courseId, yearId, termIds, form) {
+        console.log('Showing outstanding fees modal for', students.length, 'students');
+        
+        const modalElement = document.getElementById('outstandingFeesModal');
+        if (!modalElement) {
+            console.error('Modal element not found');
+            return;
+        }
+
+        // Update warning message
+        document.getElementById('feesWarningMessage').innerText = 
+            `The following ${students.length} student(s) have outstanding fees and cannot have report cards generated:`;
+
+        // Build students list
+        const studentsList = document.getElementById('studentsList');
+        studentsList.innerHTML = students.map(student => `
+            <div class="fees-student-card">
+                <div class="fees-student-info">
+                    <div class="fees-student-name">${escapeHtml(student.full_name)}</div>
+                    <div class="fees-student-amount">
+                        Outstanding: <span class="fees-amount">₱${parseFloat(student.outstanding_amount).toFixed(2)}</span>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-primary fees-email-btn" onclick="window.sendIndividualFeeEmail(${student.id})">
+                    <i class="fas fa-envelope me-1"></i> Email
+                </button>
+            </div>
+        `).join('');
+
+        // Store generation data
+        window.pendingGenerationData = {
+            courseId: courseId,
+            yearId: yearId,
+            termIds: termIds,
+            form: form
+        };
+
+        // Setup send all emails button
+        document.getElementById('sendAllFeesEmailsBtn').onclick = function() {
+            window.sendBulkFeesEmails(students);
+        };
+
+        // Setup generate anyway button
+        document.getElementById('generateAnywayBtn').onclick = function() {
+            const modal = bootstrap.Modal.getInstance(modalElement);
+            if (modal) modal.hide();
+            if (window.pendingGenerationData) {
+                submitGenerateForm(
+                    window.pendingGenerationData.form,
+                    window.pendingGenerationData.courseId,
+                    window.pendingGenerationData.yearId,
+                    window.pendingGenerationData.termIds
+                );
+            }
+        };
+
+        // Show modal
+        const modal = new bootstrap.Modal(modalElement);
+        modal.show();
+    }
+
+    function submitGenerateForm(form, courseId, yearId, termIds) {
+        console.log('Submitting form for generation...');
+        // Create a hidden form submission to avoid re-triggering the submit event
+        const submitForm = new FormData(form);
+        fetch(form.action, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: submitForm
+        })
+        .then(response => response.text())
+        .then(html => {
+            showAlert('success', 'Report cards generated successfully!');
+            setTimeout(() => location.reload(), 1500);
+        })
+        .catch(err => {
+            console.error('Generation error:', err);
+            showAlert('danger', 'Error generating report cards: ' + err.message);
+        });
+    }
+});
+
 document.addEventListener('DOMContentLoaded', function () {
     const btn = document.getElementById('btnDownloadClassReportCards');
     if (!btn) return;
@@ -1883,219 +2159,3 @@ document.addEventListener('DOMContentLoaded', function () {
 }
 </style>
 
-<script>
-// Form submission handler to check fees before generation
-document.addEventListener('DOMContentLoaded', function () {
-    const generateForm = document.querySelector('form[action="{{ route("admin.report-cards.generate-class") }}"]');
-    if (!generateForm) return;
-
-    generateForm.addEventListener('submit', function (e) {
-        e.preventDefault();
-
-        // Get form data
-        const courseId = generateForm.querySelector('[name="course_id"]')?.value;
-        const yearId = generateForm.querySelector('[name="academic_year_id"]')?.value;
-        const termSelect = document.getElementById('termNativeSelect');
-        const termIds = termSelect ? Array.from(termSelect.selectedOptions).map(o => o.value) : [];
-
-        if (!courseId || !yearId || termIds.length === 0) {
-            alert('Please select course, academic year, and at least one term.');
-            return;
-        }
-
-        // Check for outstanding fees via AJAX
-        const checkUrl = @json(route('admin.report-cards.check-fees-for-generation'));
-        fetch(checkUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-            },
-            body: JSON.stringify({
-                course_id: courseId,
-                academic_year_id: yearId,
-                term_ids: termIds
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.students && data.students.length > 0) {
-                // Students with outstanding fees found - show modal
-                showOutstandingFeesModal(data.students, courseId, yearId, termIds, generateForm);
-            } else {
-                // No fees - proceed with generation
-                submitGenerateForm(generateForm, courseId, yearId, termIds);
-            }
-        })
-        .catch(err => {
-            console.error('Error checking fees:', err);
-            showAlert('danger', 'Error checking outstanding fees: ' + err.message);
-        });
-    });
-
-    // Store form data for later use
-    window.pendingGenerationData = null;
-
-    function showOutstandingFeesModal(students, courseId, yearId, termIds, form) {
-        const modal = new bootstrap.Modal(document.getElementById('outstandingFeesModal'));
-        
-        // Update warning message
-        document.getElementById('feesWarningMessage').innerText = 
-            `The following ${students.length} student(s) have outstanding fees and cannot have report cards generated:`;
-
-        // Build students list
-        const studentsList = document.getElementById('studentsList');
-        studentsList.innerHTML = students.map(student => `
-            <div class="fees-student-card">
-                <div class="fees-student-info">
-                    <div class="fees-student-name">${escapeHtml(student.full_name)}</div>
-                    <div class="fees-student-amount">
-                        Outstanding: <span class="fees-amount">₱${parseFloat(student.outstanding_amount).toFixed(2)}</span>
-                    </div>
-                </div>
-                <button type="button" class="btn btn-sm btn-outline-primary fees-email-btn" onclick="sendIndividualFeeEmail(${student.id})">
-                    <i class="fas fa-envelope me-1"></i> Email
-                </button>
-            </div>
-        `).join('');
-
-        // Store generation data
-        window.pendingGenerationData = {
-            courseId: courseId,
-            yearId: yearId,
-            termIds: termIds,
-            form: form
-        };
-
-        // Setup send all emails button
-        document.getElementById('sendAllFeesEmailsBtn').onclick = function() {
-            sendBulkFeesEmails(students);
-        };
-
-        // Setup generate anyway button
-        document.getElementById('generateAnywayBtn').onclick = function() {
-            modal.hide();
-            if (window.pendingGenerationData) {
-                submitGenerateForm(
-                    window.pendingGenerationData.form,
-                    window.pendingGenerationData.courseId,
-                    window.pendingGenerationData.yearId,
-                    window.pendingGenerationData.termIds
-                );
-            }
-        };
-
-        modal.show();
-    }
-
-    function submitGenerateForm(form, courseId, yearId, termIds) {
-        // Create a hidden form submission to avoid re-triggering the submit event
-        const submitForm = new FormData(form);
-        fetch(form.action, {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: submitForm
-        })
-        .then(response => response.text())
-        .then(html => {
-            showAlert('success', 'Report cards generated successfully!');
-            setTimeout(() => location.reload(), 1500);
-        })
-        .catch(err => {
-            console.error('Generation error:', err);
-            showAlert('danger', 'Error generating report cards: ' + err.message);
-        });
-    }
-
-    function escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-});
-
-// Global functions for sending emails from modal
-function sendIndividualFeeEmail(studentId) {
-    const button = event.target.closest('button');
-    button.disabled = true;
-    button.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Sending...';
-
-    fetch(@json(route('admin.report-cards.send-fees-email-modal', ['student' => 'PLACEHOLDER'])).replace('PLACEHOLDER', studentId), {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showAlert('success', 'Email sent to ' + data.student_name);
-            button.innerHTML = '<i class="fas fa-check me-1"></i> Sent';
-            button.classList.add('btn-success');
-            button.classList.remove('btn-outline-primary');
-        } else {
-            showAlert('danger', data.message || 'Error sending email');
-            button.disabled = false;
-            button.innerHTML = '<i class="fas fa-envelope me-1"></i> Email';
-        }
-    })
-    .catch(err => {
-        console.error('Email send error:', err);
-        showAlert('danger', 'Error sending email: ' + err.message);
-        button.disabled = false;
-        button.innerHTML = '<i class="fas fa-envelope me-1"></i> Email';
-    });
-}
-
-function sendBulkFeesEmails(students) {
-    if (!window.confirm(`Send fee reminder emails to ${students.length} student(s)?`)) {
-        return;
-    }
-
-    const button = document.getElementById('sendAllFeesEmailsBtn');
-    button.disabled = true;
-    button.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Sending to all...';
-
-    let completed = 0;
-    let failed = 0;
-
-    const emailPromises = students.map(student => 
-        fetch(@json(route('admin.report-cards.send-fees-email-modal', ['student' => 'PLACEHOLDER'])).replace('PLACEHOLDER', student.id), {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                completed++;
-            } else {
-                failed++;
-            }
-        })
-        .catch(err => {
-            failed++;
-        })
-    );
-
-    Promise.all(emailPromises).then(() => {
-        showAlert('success', `Sent ${completed}/${students.length} fee reminder email(s)`);
-        button.disabled = false;
-        button.innerHTML = '<i class="fas fa-envelope me-1"></i> Send Emails to All';
-        if (failed === 0) {
-            setTimeout(() => {
-                const modal = bootstrap.Modal.getInstance(document.getElementById('outstandingFeesModal'));
-                if (modal) modal.hide();
-            }, 1500);
-        }
-    });
-}
-</script>
-
-@endsection
