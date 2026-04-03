@@ -315,9 +315,9 @@ class ReportCardController extends Controller
                 ->withErrors(['term_ids' => 'Select at least one term.']);
         }
 
-        // Check if student has outstanding fees
+        // Check if student has outstanding fees for the selected terms
         $student = Student::find($request->student_id);
-        $paymentStatus = FeePaymentService::getPaymentStatus($student);
+        $paymentStatus = FeePaymentService::getPaymentStatus($student, $termIds);
         
         if ($paymentStatus['outstanding'] > 0) {
             \Log::warning("Report card generation rejected for student {$student->id} ({$student->full_name}): Outstanding fees: RWF " . number_format($paymentStatus['outstanding'], 2));
@@ -713,7 +713,8 @@ class ReportCardController extends Controller
 
             $studentsWithFees = [];
             foreach ($students as $student) {
-                $paymentStatus = FeePaymentService::getPaymentStatus($student);
+                // Pass termIds to check fees ONLY for selected terms
+                $paymentStatus = FeePaymentService::getPaymentStatus($student, $termIds);
                 if ($paymentStatus['outstanding'] > 0) {
                     $studentsWithFees[] = [
                         'id' => $student->id,
@@ -825,8 +826,8 @@ class ReportCardController extends Controller
 
         foreach ($termIds as $termId) {
             foreach ($students as $student) {
-                // Check if student has outstanding fees
-                $paymentStatus = FeePaymentService::getPaymentStatus($student);
+                // Check if student has outstanding fees for the selected term(s)
+                $paymentStatus = FeePaymentService::getPaymentStatus($student, [$termId]);
                 if ($paymentStatus['outstanding'] > 0) {
                     \Log::info("Report card generation skipped for student {$student->id} ({$student->full_name}): Outstanding fees: RWF " . number_format($paymentStatus['outstanding'], 2));
                     $skippedFees++;
