@@ -46,12 +46,10 @@
                 @endif
             </p>
         </div>
-        @if ($babyeyi->trip_known && $babyeyi->trip_place)
-        <div class="bg-white rounded-lg shadow-sm p-4 border-l-4 border-warning">
-            <p class="text-gray-600 text-sm font-semibold">TRIP FEE</p>
-            <p class="text-lg font-bold text-gray-900">RWF {{ number_format($babyeyi->trip_fees ?? 0, 0) }}</p>
+        <div class="bg-white rounded-lg shadow-sm p-4 border-l-4 border-success">
+            <p class="text-gray-600 text-sm font-semibold">GENERATED DATE</p>
+            <p class="text-lg font-bold text-gray-900">{{ $babyeyi->created_at->format('M d, Y') }}</p>
         </div>
-        @endif
     </div>
 
     <!-- Main Document Card -->
@@ -81,32 +79,47 @@
         <div class="p-8 md:p-12">
             <h3 class="text-center text-3xl font-bold text-gray-900 mb-8 pb-4 border-b-2 border-gray-200">BABYEYI</h3>
             
+            <!-- Document Metadata Box -->
+            <div class="bg-blue-50 border-l-4 border-blue-600 p-4 mb-8 rounded">
+                <p class="text-sm text-gray-700">
+                    <strong class="text-blue-700">Reference:</strong> {{ $babyeyi->reference_number }} | 
+                    <strong class="text-blue-700">Generated:</strong> {{ $babyeyi->created_at->format('M d, Y H:i') }} | 
+                    <strong class="text-blue-700">Term:</strong> {{ $babyeyi->term->name ?? 'N/A' }}
+                </p>
+            </div>
+            
             <div class="document-content prose prose-lg max-w-none mb-12">
                 {!! $babyeyi->content !!}
             </div>
 
             <!-- Signature Section -->
             <div class="mt-12 pt-8 border-t-2 border-gray-300">
+                <h4 class="text-center font-bold text-gray-900 mb-8">OFFICIAL APPROVALS & SIGNATURES</h4>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16">
                     <!-- School Stamp & Principal Signature -->
                     <div class="text-center">
-                        <div class="flex items-center justify-center mb-4 h-24 border-2 border-gray-400 rounded">
+                        <div class="flex items-center justify-center mb-4 h-32 border-2 border-gray-400 rounded bg-gray-50">
                             @if ($schoolInfo && $schoolInfo->stamp_signature_url)
-                                <img src="{{ $schoolInfo->stamp_signature_url }}" alt="School Stamp" class="max-h-20 max-w-24 object-contain">
+                                <img src="{{ asset($schoolInfo->stamp_signature_url) }}" alt="School Stamp" class="max-h-28 max-w-28 object-contain">
                             @elseif ($schoolInfo && $schoolInfo->principal_signature_url)
-                                <img src="{{ $schoolInfo->principal_signature_url }}" alt="Principal Signature" class="max-h-20 max-w-24 object-contain">
+                                <img src="{{ asset($schoolInfo->principal_signature_url) }}" alt="Principal Signature" class="max-h-28 max-w-28 object-contain">
                             @else
-                                <p class="text-gray-400 text-xs">School Stamp<br>& Signature</p>
+                                <div class="text-center text-gray-400">
+                                    <i class="fas fa-stamp text-4xl mb-2"></i>
+                                    <p class="text-xs">School Stamp<br>& Signature</p>
+                                </div>
                             @endif
                         </div>
                         <p class="font-bold text-gray-900 mb-1">Head Teacher/Principal</p>
-                        <p class="text-sm text-gray-600">{{ $schoolInfo->principal_name ?? 'Signature Area' }}</p>
+                        <p class="text-sm text-gray-600">{{ $headTeacher->first_name ?? 'Signature Area' }} {{ $headTeacher->last_name ?? '' }}</p>
                         <p class="text-xs text-gray-500 mt-2">Date: _______________</p>
                     </div>
 
                     <!-- Document Verified -->
                     <div class="text-center">
-                        <div class="border-b-2 border-gray-900 h-20 mb-4"></div>
+                        <div class="border-b-2 border-gray-900 h-32 mb-4 flex items-center justify-center bg-gray-50 rounded border-2 border-gray-400">
+                            <span class="text-gray-400">Signature Line</span>
+                        </div>
                         <p class="font-bold text-gray-900 mb-1">Document Verified</p>
                         <p class="text-sm text-gray-600">Certified by Administration</p>
                         <p class="text-xs text-gray-500 mt-2">Date: _______________</p>
@@ -114,7 +127,9 @@
 
                     <!-- Accountant Signature (No Storage) -->
                     <div class="text-center border-l-2 border-dashed border-gray-400 pl-4">
-                        <div class="border-b-2 border-gray-500 h-20 mb-4"></div>
+                        <div class="border-b-2 border-gray-500 h-32 mb-4 flex items-center justify-center bg-gray-50 rounded border-2 border-gray-400">
+                            <span class="text-gray-400">Signature Line</span>
+                        </div>
                         <p class="font-bold text-gray-900 mb-1">Accountant/Manager</p>
                         <p class="text-sm text-gray-600">Signature Area (On-site)</p>
                         <p class="text-xs text-gray-500 mt-2">Date: _______________</p>
@@ -161,6 +176,12 @@
         <a href="{{ route('public.babyeyi.index') }}" class="flex-1 py-3 bg-gray-300 text-gray-900 rounded-lg hover:bg-gray-400 transition-colors text-center font-semibold">
             <i class="fas fa-list mr-2"></i>View All Documents
         </a>
+    </div>
+
+    <!-- Document Footer -->
+    <div class="mt-12 pt-6 border-t border-gray-300 text-center">
+        <p class="text-xs text-gray-500 mb-1">This document was generated by the {{ $schoolInfo->school_name ?? 'School' }} Student Management System</p>
+        <p class="text-xs text-gray-500">Reference: {{ $babyeyi->reference_number }} | Generated: {{ now()->format('M d, Y H:i') }}</p>
     </div>
 </div>
 

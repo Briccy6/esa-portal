@@ -224,7 +224,13 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch(`/fees/branches/${branchId}/courses`)
             .then(response => {
                 if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    return response.json().then(data => {
+                        throw {
+                            status: response.status,
+                            statusText: response.statusText,
+                            data: data
+                        };
+                    });
                 }
                 return response.json();
             })
@@ -237,16 +243,44 @@ document.addEventListener('DOMContentLoaded', function() {
                             option.textContent = `${course.name} (${course.code})`;
                             courseSelect.appendChild(option);
                         });
+                        console.log(`✅ Loaded ${data.courses.length} courses for branch "${data.branch.name}"`);
                     } else {
-                        showError(`No courses available for this branch (Found: ${data.courses?.length || 0})`);
+                        showError(`❌ No courses available for this branch. (Branch: ${data.branch.name})`);
+                        console.warn('No courses in branch_course pivot table for branch:', data.branch);
                     }
                 } else {
                     showError(data.message || 'Failed to load courses');
+                    if (data.debug) {
+                        console.error('Debug Info:', data.debug);
+                        console.log('📊 Database Stats:', {
+                            totalBranches: data.debug.totalBranches,
+                            totalCourses: data.debug.totalCourses,
+                            linkedPairs: data.debug.totalPivotRecords
+                        });
+                    }
                 }
             })
             .catch(error => {
-                console.error('Fetch Error:', error);
-                showError(`Error: ${error.message}`);
+                console.error('❌ API Error Details:', error);
+                
+                if (error.status === 500) {
+                    console.error('🔴 Server Error 500');
+                    console.error('Error Type:', error.data?.debug?.errorType);
+                    console.error('Error Message:', error.data?.debug?.errorMessage);
+                    console.error('Error Location:', `${error.data?.debug?.errorFile}:${error.data?.debug?.errorLine}`);
+                    console.log('📊 Database Stats:', {
+                        totalBranches: error.data?.debug?.totalBranches,
+                        totalCourses: error.data?.debug?.totalCourses,
+                        linkedPairs: error.data?.debug?.totalPivotRecords
+                    });
+                    console.error('Stack Trace:', error.data?.debug?.trace);
+                    showError(`Server Error: ${error.data?.message || 'Unable to load courses. Check browser console for details.'}`);
+                } else if (error.status === 404) {
+                    showError(`Branch not found. Database may be empty or branch ID ${branchId} doesn't exist.`);
+                    console.error('Branch not found:', error.data?.debug);
+                } else {
+                    showError(`Error: ${error.message || 'Unknown error occurred'}`);
+                }
             });
     });
 
@@ -274,23 +308,42 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch(`/fees/courses/${courseId}`)
             .then(response => {
                 if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    return response.json().then(data => {
+                        throw {
+                            status: response.status,
+                            statusText: response.statusText,
+                            data: data
+                        };
+                    });
                 }
                 return response.json();
             })
             .then(data => {
                 loadingState.classList.add('hidden');
                 if (data.success) {
+                    console.log(`✅ Loaded fees for course: ${data.course.name}`);
                     displayCourse(data.course);
                     displayFees(data.fees);
                 } else {
                     showError(data.message || 'Failed to load fees');
+                    if (data.debug) {
+                        console.warn('Fee Loading Info:', data.debug);
+                    }
                 }
             })
             .catch(error => {
-                console.error('Fetch Error:', error);
                 loadingState.classList.add('hidden');
-                showError(`Error: ${error.message}`);
+                console.error('❌ Fee Loading Error:', error);
+                
+                if (error.status === 404) {
+                    showError(`No fees configured for this course yet. Please contact administration.`);
+                    console.warn('Course fee records:', error.data?.debug);
+                } else if (error.status === 500) {
+                    showError(`Server error loading fees: ${error.data?.message || 'Unknown error'}`);
+                    console.error('Server Error Details:', error.data?.debug);
+                } else {
+                    showError(`Error: ${error.message || 'Unable to load fees'}`);
+                }
             });
     }
 

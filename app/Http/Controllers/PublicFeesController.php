@@ -31,6 +31,22 @@ class PublicFeesController extends Controller
         try {
             Log::info("getCoursesByBranch called with branchId: {$branchId}");
             
+            // Verify branch exists
+            $branch = Branch::find($branchId);
+            if (!$branch) {
+                Log::error("Branch not found: {$branchId}");
+                return response()->json([
+                    'success' => false,
+                    'message' => "Branch with ID {$branchId} not found in database",
+                    'debug' => [
+                        'branchId' => $branchId,
+                        'totalBranches' => Branch::count(),
+                        'totalCourses' => Course::count(),
+                        'totalPivotRecords' => DB::table('branch_course')->count(),
+                    ]
+                ], 404);
+            }
+
             // First try: Query using the pivot table (belongsToMany)
             $courses = Course::whereHas('branches', function($q) use ($branchId) {
                 $q->wherePivot('branch_id', $branchId);
@@ -62,16 +78,11 @@ class PublicFeesController extends Controller
 
             // Convert to array format - handle both Model and stdClass objects
             $formattedCourses = collect($courses)->map(function($course) {
-                $courseId = $course->id ?? $course->course_id;
-                $courseName = $course->course_name ?? $course->name ?? 'Unnamed Course';
-                $courseCode = $course->course_code ?? $course->code ?? '';
-                $abbreviation = $course->abbreviation ?? '';
-                
                 return [
-                    'id' => $courseId,
-                    'name' => $courseName,
-                    'code' => $courseCode,
-                    'abbreviation' => $abbreviation,
+                    'id' => $course->id ?? $course->course_id,
+                    'name' => $course->course_name ?? $course->name ?? 'Unnamed',
+                    'code' => $course->course_code ?? $course->code ?? '',
+                    'abbreviation' => $course->abbreviation ?? '',
                 ];
             })->values();
 
@@ -80,13 +91,43 @@ class PublicFeesController extends Controller
             return response()->json([
                 'success' => true,
                 'courses' => $formattedCourses,
-                'count' => $formattedCourses->count()
+                'count' => $formattedCourses->count(),
+                'branch' => [
+                    'id' => $branch->id,
+                    'name' => $branch->name,
+                    'location' => $branch->location
+                ]
             ]);
         } catch (\Exception $e) {
-            Log::error('Courses loading error: ' . $e->getMessage() . ' | Trace: ' . $e->getTraceAsString());
+            $errorMessage = $e->getMessage();
+            $errorCode = $e->getCode();
+            $errorFile = $e->getFile();
+            $errorLine = $e->getLine();
+            $errorTrace = $e->getTraceAsString();
+            
+            Log::error("Courses loading error: {$errorMessage}", [
+                'code' => $errorCode,
+                'file' => $errorFile,
+                'line' => $errorLine,
+                'trace' => $errorTrace
+            ]);
+            
+            // Return detailed error info for debugging
             return response()->json([
                 'success' => false,
-                'message' => 'Error loading courses: ' . $e->getMessage()
+                'message' => "Error loading courses: {$errorMessage}",
+                'debug' => [
+                    'errorType' => class_basename($e),
+                    'errorMessage' => $errorMessage,
+                    'errorFile' => $errorFile,
+                    'errorLine' => $errorLine,
+                    'branchId' => $branchId,
+                    'databaseStatus' => 'Connected',
+                    'totalBranches' => Branch::count(),
+                    'totalCourses' => Course::count(),
+                    'totalPivotRecords' => DB::table('branch_course')->count(),
+                    'trace' => explode("\n", $errorTrace)
+                ]
             ], 500);
         }
     }
@@ -96,56 +137,88 @@ class PublicFeesController extends Controller
      */
     public function getCourseFees($courseId)
     {
-        $course = Course::findOrFail($courseId);
+        try {
+            Log::info("getCourseFees called with courseId: {$courseId}");
+            
+            // Verify course exists
+            $course = Course::findOrFail($courseId);
         
-        // Get all fees for this course organized by academic year and term
-        $fees = CourseTermFee::where('course_id', $courseId)
-            ->where('is_active', true)
-            ->with(['term' => function($q) {
-                $q->with('academicYear')->orderBy('name');
-            }])
-            ->get()
-            ->groupBy(function($fee) {
-                return $fee->term->academicYear->name ?? 'Unknown Year';
-            })
-            ->sortKeys()
-            ->reverse();
+            // Get all fees for this course organized by academic year and term
+            $fees = CourseTermFee::where('course_id', $courseId)
+                ->where('is_active', true)
+                ->with(['term' => function($q) {
+                    $q->with('academicYear')->orderBy('name');
+                }])
+                ->get()
+                ->groupBy(function($fee) {
+                    return $fee->term->academicYear->name ?? 'Unknown Year';
+                })
+                ->sortKeys()
+                ->reverse();
 
-        if ($fees->isEmpty()) {
+            if ($fees->isEmpty()) {
+                Log::warning("No active fees found for course {$courseId}");
+                return response()->json([
+                    'success' => false,
+                    'message' => "No fees have been configured for this course. Please contact the administration.",
+                    'debug' => [
+                        'courseId' => $courseId,
+                        'courseName' => $course->course_name,
+                        'totalFeesRecords' => CourseTermFee::where('course_id', $courseId)->count(),
+                        'activeFeesRecords' => CourseTermFee::where('course_id', $courseId)->where('is_active', true)->count(),
+                    ]
+                ], 404);
+            }
+
+            $formattedFees = [];
+            foreach ($fees as $academicYear => $yearFees) {
+                $formattedFees[$academicYear] = $yearFees->map(function($fee) {
+                    return [
+                        'id' => $fee->id,
+                        'term_name' => $fee->term->name,
+                        'term_id' => $fee->term->id,
+                        'registration_fee' => (float) $fee->registration_fee,
+                        'tuition_fee' => (float) $fee->tuition_fee,
+                        'practical_fee' => (float) $fee->practical_fee,
+                        'trip_fee' => (float) $fee->trip_fee,
+                        'student_card_fee' => (float) $fee->student_card_fee,
+                        'total_fees' => (float) $fee->getTotalFeesAttribute(),
+                        'notes' => $fee->notes,
+                    ];
+                })->values();
+            }
+
+            Log::info("Formatted fees for course {$courseId}: " . count($formattedFees) . " academic years");
+
+            return response()->json([
+                'success' => true,
+                'course' => [
+                    'id' => $course->id,
+                    'name' => $course->course_name,
+                    'code' => $course->course_code,
+                    'abbreviation' => $course->abbreviation,
+                ],
+                'fees' => $formattedFees
+            ]);
+        } catch (\Exception $e) {
+            $errorMessage = $e->getMessage();
+            Log::error("Error loading fees: {$errorMessage}", [
+                'courseId' => $courseId,
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'No fees available for this course'
-            ], 404);
+                'message' => "Error loading fees: {$errorMessage}",
+                'debug' => [
+                    'errorType' => class_basename($e),
+                    'errorMessage' => $errorMessage,
+                    'courseId' => $courseId,
+                    'courseFeeRecords' => CourseTermFee::where('course_id', $courseId)->count(),
+                ]
+            ], 500);
         }
-
-        $formattedFees = [];
-        foreach ($fees as $academicYear => $yearFees) {
-            $formattedFees[$academicYear] = $yearFees->map(function($fee) {
-                return [
-                    'id' => $fee->id,
-                    'term_name' => $fee->term->name,
-                    'term_id' => $fee->term->id,
-                    'registration_fee' => (float) $fee->registration_fee,
-                    'tuition_fee' => (float) $fee->tuition_fee,
-                    'practical_fee' => (float) $fee->practical_fee,
-                    'trip_fee' => (float) $fee->trip_fee,
-                    'student_card_fee' => (float) $fee->student_card_fee,
-                    'total_fees' => (float) $fee->getTotalFeesAttribute(),
-                    'notes' => $fee->notes,
-                ];
-            })->values();
-        }
-
-        return response()->json([
-            'success' => true,
-            'course' => [
-                'id' => $course->id,
-                'name' => $course->course_name,
-                'code' => $course->course_code,
-                'abbreviation' => $course->abbreviation,
-            ],
-            'fees' => $formattedFees
-        ]);
     }
 
     /**
