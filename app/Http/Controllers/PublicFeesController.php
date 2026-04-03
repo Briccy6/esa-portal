@@ -47,33 +47,24 @@ class PublicFeesController extends Controller
                 ], 404);
             }
 
-            // First try: Query using the pivot table (belongsToMany)
-            $courses = Course::whereHas('branches', function($q) use ($branchId) {
-                $q->wherePivot('branch_id', $branchId);
-            })->orderBy('course_name')->get();
+            // First try: Join the pivot table directly (this is the reliable method)
+            $courses = DB::table('courses')
+                ->join('branch_course', 'courses.id', '=', 'branch_course.course_id')
+                ->where('branch_course.branch_id', $branchId)
+                ->select('courses.id', 'courses.course_name', 'courses.course_code', 'courses.abbreviation')
+                ->orderBy('courses.course_name')
+                ->distinct()
+                ->get();
+            
+            Log::info("Direct JOIN query returned: " . $courses->count() . " courses");
 
-            Log::info("Method 1 (whereHas) returned: " . $courses->count() . " courses");
-
-            // Second try: Join the pivot table directly
-            if ($courses->isEmpty()) {
-                $courses = DB::table('courses')
-                    ->join('branch_course', 'courses.id', '=', 'branch_course.course_id')
-                    ->where('branch_course.branch_id', $branchId)
-                    ->select('courses.id', 'courses.course_name', 'courses.course_code', 'courses.abbreviation')
-                    ->orderBy('courses.course_name')
-                    ->distinct()
-                    ->get();
-                
-                Log::info("Method 2 (join) returned: " . $courses->count() . " courses");
-            }
-
-            // Third try: Direct foreign key (if course has branch_id column)
+            // Second try: Direct foreign key (if course has branch_id column)
             if ($courses->isEmpty()) {
                 $courses = Course::where('branch_id', $branchId)
                     ->orderBy('course_name')
                     ->get();
                 
-                Log::info("Method 3 (direct FK) returned: " . $courses->count() . " courses");
+                Log::info("Direct FK query returned: " . $courses->count() . " courses");
             }
 
             // Convert to array format - handle both Model and stdClass objects
