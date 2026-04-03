@@ -6,6 +6,18 @@
     $hdrAddress = optional($schoolInfo)->address ?: '';
     $hdrPhone = optional($schoolInfo)->phone ?: '';
     $hdrEmail = optional($schoolInfo)->email ?: '';
+    
+    // Function to convert binary image data to data URL
+    $getImageDataUrl = function($binaryData, $mimeType = 'image/jpeg') {
+        if (empty($binaryData)) return null;
+        return 'data:' . $mimeType . ';base64,' . base64_encode($binaryData);
+    };
+    
+    // Extract image data URLs
+    $logoUrl = $getImageDataUrl(optional($schoolInfo)->logo);
+    $principalSignatureUrl = $getImageDataUrl(optional($schoolInfo)->principal_signature_data);
+    $stampSignatureUrl = $getImageDataUrl(optional($schoolInfo)->stamp_signature_data);
+    $principalName = optional($schoolInfo)->principal_name ?: 'School Principal';
 @endphp
 
 @section('content')
@@ -286,7 +298,11 @@
         name: '{{ $hdrSchoolName }}',
         address: '{{ $hdrAddress }}',
         phone: '{{ $hdrPhone }}',
-        email: '{{ $hdrEmail }}'
+        email: '{{ $hdrEmail }}',
+        logoUrl: '{{ $logoUrl }}',
+        principalSignatureUrl: '{{ $principalSignatureUrl }}',
+        stampSignatureUrl: '{{ $stampSignatureUrl }}',
+        principalName: '{{ $principalName }}'
     };
 
     console.log('Course fees script loaded');
@@ -553,8 +569,21 @@
 
     function getTranscriptPrintHTML() {
         const printContent = document.getElementById('transcriptContent').innerHTML;
-        const footer = `<footer style="border-top: 1px solid #ddd; margin-top: 20px; padding-top: 10px; font-size: 9px; text-align: center; color: #666;">
-            ${schoolInfo.name} | ${schoolInfo.address} | Phone: ${schoolInfo.phone} ${schoolInfo.email ? '| Email: ' + schoolInfo.email : ''}
+        const logoImg = schoolInfo.logoUrl ? `<img src="${schoolInfo.logoUrl}" alt="School Logo" style="height: 40px; margin-right: 10px;">` : '';
+        const footer = `<footer style="border-top: 2px solid #333; margin-top: 10px; padding-top: 8px; font-size: 8px; text-align: center; color: #333;">
+            <div style="margin-bottom: 8px; padding: 0 10px;">
+                <strong>${schoolInfo.name}</strong> | ${schoolInfo.address} | Phone: ${schoolInfo.phone} ${schoolInfo.email ? '| Email: ' + schoolInfo.email : ''}
+            </div>
+            <div style="display: flex; justify-content: space-around; align-items: flex-end;">
+                <div style="text-align: center; flex: 1;">
+                    ${schoolInfo.principalSignatureUrl ? `<img src="${schoolInfo.principalSignatureUrl}" alt="Principal Signature" style="height: 35px; max-width: 80px; margin: 0 auto;">` : '<div style="height: 35px; margin: 0 auto;"></div>'}
+                    <div style="border-top: 1px solid #333; margin-top: 3px; font-size: 7px; padding-top: 2px;">${schoolInfo.principalName}</div>
+                </div>
+                <div style="text-align: center; flex: 1;">
+                    ${schoolInfo.stampSignatureUrl ? `<img src="${schoolInfo.stampSignatureUrl}" alt="School Stamp" style="height: 40px; max-width: 80px; margin: 0 auto;">` : '<div style="height: 40px; margin: 0 auto;"></div>'}
+                    <div style="font-size: 7px; padding-top: 2px;">Official Stamp</div>
+                </div>
+            </div>
         </footer>`;
         return `
             <html>
@@ -562,25 +591,33 @@
                 <title>Payment Transcripts</title>
                 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
                 <style>
-                    body { padding: 20px; font-family: Arial, sans-serif; }
-                    .print-header { border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 20px; text-align: center; }
-                    .print-header h2 { margin: 5px 0; font-size: 16px; font-weight: bold; }
-                    .print-header p { margin: 3px 0; font-size: 11px; }
-                    table { width: 100%; border-collapse: collapse; }
-                    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                    th { background-color: #f2f2f2; font-weight: bold; }
-                    footer { border-top: 1px solid #ddd; margin-top: 20px; padding-top: 10px; font-size: 9px; text-align: center; color: #666; }
-                    @media print { body { padding: 10px; margin: 0; } .print-header { border-bottom: 2px solid #333; } }
+                    * { margin: 0; padding: 0; }
+                    body { padding: 12mm; font-family: Arial, sans-serif; font-size: 10px; line-height: 1.3; }
+                    .print-header { border-bottom: 2px solid #333; padding-bottom: 8px; margin-bottom: 8px; text-align: center; display: flex; align-items: center; justify-content: center; }
+                    .logo-section { flex-shrink: 0; }
+                    .header-text { flex-grow: 1; }
+                    .print-header h2 { margin: 0; font-size: 14px; font-weight: bold; }
+                    .print-header p { margin: 2px 0; font-size: 9px; }
+                    table { width: 100%; border-collapse: collapse; font-size: 9px; }
+                    th, td { border: 1px solid #999; padding: 6px; text-align: left; }
+                    th { background-color: #2c3e50; color: white; font-weight: bold; }
+                    tr:nth-child(even) { background-color: #f9f9f9; }
+                    footer { border-top: 2px solid #333; margin-top: 10px; padding-top: 8px; font-size: 8px; text-align: center; color: #333; }
+                    footer img { max-width: 100%; height: auto; }
+                    @media print { body { padding: 8mm; margin: 0; } @page { size: A4; margin: 8mm; } }
                 </style>
             </head>
             <body>
                 <div class="print-header">
-                    <h2>${schoolInfo.name}</h2>
-                    <p>${schoolInfo.address}</p>
-                    <p>Phone: ${schoolInfo.phone} ${schoolInfo.email ? '| Email: ' + schoolInfo.email : ''}</p>
+                    ${logoImg ? `<div class="logo-section">${logoImg}</div>` : ''}
+                    <div class="header-text">
+                        <h2>${schoolInfo.name}</h2>
+                        <p>${schoolInfo.address}</p>
+                        <p>Phone: ${schoolInfo.phone} ${schoolInfo.email ? '| Email: ' + schoolInfo.email : ''}</p>
+                    </div>
                 </div>
-                <h3 style="margin: 20px 0 10px 0;">Student Payment Transcripts</h3>
-                <p style="font-size: 11px; color: #666;">Generated on: ${new Date().toLocaleString()}</p>
+                <h3 style="margin: 8px 0 4px 0; color: #1a3a52; font-size: 12px;">Student Payment Transcripts</h3>
+                <p style="font-size: 9px; color: #666; margin: 2px 0;">Generated on: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
                 ${printContent}
                 ${footer}
             </body>
@@ -617,8 +654,21 @@
 
     function getCourseTranscriptsPrintHTML() {
         const printContent = document.getElementById('courseTranscriptContent').innerHTML;
-        const footer = `<footer style="border-top: 1px solid #ddd; margin-top: 20px; padding-top: 10px; font-size: 9px; text-align: center; color: #666;">
-            ${schoolInfo.name} | ${schoolInfo.address} | Phone: ${schoolInfo.phone} ${schoolInfo.email ? '| Email: ' + schoolInfo.email : ''}
+        const logoImg = schoolInfo.logoUrl ? `<img src="${schoolInfo.logoUrl}" alt="School Logo" style="height: 40px; margin-right: 10px;">` : '';
+        const footer = `<footer style="border-top: 2px solid #333; margin-top: 10px; padding-top: 8px; font-size: 8px; text-align: center; color: #333;">
+            <div style="margin-bottom: 8px; padding: 0 10px;">
+                <strong>${schoolInfo.name}</strong> | ${schoolInfo.address} | Phone: ${schoolInfo.phone} ${schoolInfo.email ? '| Email: ' + schoolInfo.email : ''}
+            </div>
+            <div style="display: flex; justify-content: space-around; align-items: flex-end;">
+                <div style="text-align: center; flex: 1;">
+                    ${schoolInfo.principalSignatureUrl ? `<img src="${schoolInfo.principalSignatureUrl}" alt="Principal Signature" style="height: 35px; max-width: 80px; margin: 0 auto;">` : '<div style="height: 35px; margin: 0 auto;"></div>'}
+                    <div style="border-top: 1px solid #333; margin-top: 3px; font-size: 7px; padding-top: 2px;">${schoolInfo.principalName}</div>
+                </div>
+                <div style="text-align: center; flex: 1;">
+                    ${schoolInfo.stampSignatureUrl ? `<img src="${schoolInfo.stampSignatureUrl}" alt="School Stamp" style="height: 40px; max-width: 80px; margin: 0 auto;">` : '<div style="height: 40px; margin: 0 auto;"></div>'}
+                    <div style="font-size: 7px; padding-top: 2px;">Official Stamp</div>
+                </div>
+            </div>
         </footer>`;
         return `
             <html>
@@ -626,25 +676,33 @@
                 <title>Course Transcripts</title>
                 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
                 <style>
-                    body { padding: 20px; font-family: Arial, sans-serif; }
-                    .print-header { border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 20px; text-align: center; }
-                    .print-header h2 { margin: 5px 0; font-size: 16px; font-weight: bold; }
-                    .print-header p { margin: 3px 0; font-size: 11px; }
-                    table { width: 100%; border-collapse: collapse; }
-                    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                    th { background-color: #f2f2f2; font-weight: bold; }
-                    footer { border-top: 1px solid #ddd; margin-top: 20px; padding-top: 10px; font-size: 9px; text-align: center; color: #666; }
-                    @media print { body { padding: 10px; margin: 0; } .print-header { border-bottom: 2px solid #333; } }
+                    * { margin: 0; padding: 0; }
+                    body { padding: 12mm; font-family: Arial, sans-serif; font-size: 10px; line-height: 1.3; }
+                    .print-header { border-bottom: 2px solid #333; padding-bottom: 8px; margin-bottom: 8px; text-align: center; display: flex; align-items: center; justify-content: center; }
+                    .logo-section { flex-shrink: 0; }
+                    .header-text { flex-grow: 1; }
+                    .print-header h2 { margin: 0; font-size: 14px; font-weight: bold; }
+                    .print-header p { margin: 2px 0; font-size: 9px; }
+                    table { width: 100%; border-collapse: collapse; font-size: 9px; }
+                    th, td { border: 1px solid #999; padding: 6px; text-align: left; }
+                    th { background-color: #2c3e50; color: white; font-weight: bold; }
+                    tr:nth-child(even) { background-color: #f9f9f9; }
+                    footer { border-top: 2px solid #333; margin-top: 10px; padding-top: 8px; font-size: 8px; text-align: center; color: #333; }
+                    footer img { max-width: 100%; height: auto; }
+                    @media print { body { padding: 8mm; margin: 0; } @page { size: A4; margin: 8mm; } }
                 </style>
             </head>
             <body>
                 <div class="print-header">
-                    <h2>${schoolInfo.name}</h2>
-                    <p>${schoolInfo.address}</p>
-                    <p>Phone: ${schoolInfo.phone} ${schoolInfo.email ? '| Email: ' + schoolInfo.email : ''}</p>
+                    ${logoImg ? `<div class="logo-section">${logoImg}</div>` : ''}
+                    <div class="header-text">
+                        <h2>${schoolInfo.name}</h2>
+                        <p>${schoolInfo.address}</p>
+                        <p>Phone: ${schoolInfo.phone} ${schoolInfo.email ? '| Email: ' + schoolInfo.email : ''}</p>
+                    </div>
                 </div>
-                <h3 style="margin: 20px 0 10px 0;">Course Payment Transcripts</h3>
-                <p style="font-size: 11px; color: #666;">Generated on: ${new Date().toLocaleString()}</p>
+                <h3 style="margin: 8px 0 4px 0; color: #1a3a52; font-size: 12px;">Course Payment Transcripts</h3>
+                <p style="font-size: 9px; color: #666; margin: 2px 0;">Generated on: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
                 ${printContent}
                 ${footer}
             </body>
@@ -814,8 +872,22 @@
             termsInfo = `Terms: ${termCount} | Academic Year(s): ${Array.from(academicYears).join(', ')}`;
         }
         
-        const footer = `<footer style="border-top: 1px solid #333; margin-top: 15px; padding-top: 8px; font-size: 8px; text-align: center; color: #333;">
-            ${schoolInfo.name} | ${schoolInfo.address} | Phone: ${schoolInfo.phone} ${schoolInfo.email ? '| Email: ' + schoolInfo.email : ''}
+        const logoImg = schoolInfo.logoUrl ? `<img src="${schoolInfo.logoUrl}" alt="School Logo" style="height: 40px; margin-right: 10px;">` : '';
+        
+        const footer = `<footer style="border-top: 2px solid #333; margin-top: 10px; padding-top: 8px; font-size: 8px; text-align: center; color: #333;">
+            <div style="margin-bottom: 8px; padding: 0 10px;">
+                <strong>${schoolInfo.name}</strong> | ${schoolInfo.address} | Phone: ${schoolInfo.phone} ${schoolInfo.email ? '| Email: ' + schoolInfo.email : ''}
+            </div>
+            <div style="display: flex; justify-content: space-around; align-items: flex-end;">
+                <div style="text-align: center; flex: 1;">
+                    ${schoolInfo.principalSignatureUrl ? `<img src="${schoolInfo.principalSignatureUrl}" alt="Principal Signature" style="height: 35px; max-width: 80px; margin: 0 auto;">` : '<div style="height: 35px; margin: 0 auto;"></div>'}
+                    <div style="border-top: 1px solid #333; margin-top: 3px; font-size: 7px; padding-top: 2px;">${schoolInfo.principalName}</div>
+                </div>
+                <div style="text-align: center; flex: 1;">
+                    ${schoolInfo.stampSignatureUrl ? `<img src="${schoolInfo.stampSignatureUrl}" alt="School Stamp" style="height: 40px; max-width: 80px; margin: 0 auto;">` : '<div style="height: 40px; margin: 0 auto;"></div>'}
+                    <div style="font-size: 7px; padding-top: 2px;">Official Stamp</div>
+                </div>
+            </div>
         </footer>`;
         
         return `
@@ -835,7 +907,16 @@
                         border-bottom: 2px solid #333; 
                         padding-bottom: 8px; 
                         margin-bottom: 8px; 
-                        text-align: center; 
+                        text-align: center;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    }
+                    .logo-section {
+                        flex-shrink: 0;
+                    }
+                    .header-text {
+                        flex-grow: 1;
                     }
                     .print-header h2 { 
                         margin: 0; 
@@ -885,12 +966,16 @@
                         background-color: #f9f9f9;
                     }
                     footer { 
-                        border-top: 1px solid #333; 
+                        border-top: 2px solid #333; 
                         margin-top: 8px; 
                         padding-top: 5px; 
                         font-size: 8px; 
                         text-align: center; 
                         color: #333;
+                    }
+                    footer img {
+                        max-width: 100%;
+                        height: auto;
                     }
                     @media print { 
                         body { padding: 8mm; margin: 0; }
@@ -902,9 +987,12 @@
             </head>
             <body>
                 <div class="print-header">
-                    <h2>${schoolInfo.name}</h2>
-                    <p>${schoolInfo.address}</p>
-                    <p>Phone: ${schoolInfo.phone} ${schoolInfo.email ? '| Email: ' + schoolInfo.email : ''}</p>
+                    ${logoImg ? `<div class="logo-section">${logoImg}</div>` : ''}
+                    <div class="header-text">
+                        <h2>${schoolInfo.name}</h2>
+                        <p>${schoolInfo.address}</p>
+                        <p>Phone: ${schoolInfo.phone} ${schoolInfo.email ? '| Email: ' + schoolInfo.email : ''}</p>
+                    </div>
                 </div>
                 
                 <div class="course-header">
