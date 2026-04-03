@@ -14,6 +14,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Payment Transcript - {{ $student->full_name }}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -245,24 +246,28 @@
 </head>
 <body>
     <div class="no-print">
-        <button onclick="window.print()">🖨️ Print</button>
-        <button onclick="downloadPDF()">📥 Download as PDF</button>
+        <button onclick="window.print()"><i class="fas fa-print"></i> Print</button>
+        <button onclick="downloadPDF()"><i class="fas fa-download"></i> Download as PDF</button>
     </div>
 
     <div class="page">
         <!-- Header -->
         <div class="header">
-            @if($hasLogo)
-                <img src="{{ asset($schoolInfo->logo_url) }}" alt="Logo" class="school-logo">
+            @if($hasLogo && $schoolInfo)
+                @if($schoolInfo->logo)
+                    <img src="{{ $schoolInfo->logo_url }}" alt="Logo" class="school-logo">
+                @elseif($schoolInfo->logo_path)
+                    <img src="{{ asset($schoolInfo->logo_path) }}" alt="Logo" class="school-logo">
+                @endif
             @endif
             <div class="school-name">{{ $hdrSchoolName }}</div>
             <div class="school-details">
                 @if($hdrAddress)
-                    <div>📍 {{ $hdrAddress }}</div>
+                    <div><i class="fas fa-map-marker-alt"></i> {{ $hdrAddress }}</div>
                 @endif
                 @if($hdrPhone)
-                    <div>📞 {{ $hdrPhone }}
-                        @if($hdrEmail) | 📧 {{ $hdrEmail }}@endif
+                    <div><i class="fas fa-phone"></i> {{ $hdrPhone }}
+                        @if($hdrEmail) | <i class="fas fa-envelope"></i> {{ $hdrEmail }}@endif
                     </div>
                 @endif
             </div>
@@ -277,17 +282,26 @@
         <!-- Student Information -->
         <div class="student-info">
             <div class="student-info-row">
-                <div><span class="label">Student Name:</span><br><span class="value">{{ $student->full_name }}</span></div>
-                <div><span class="label">Registration Number:</span><br><span class="value">{{ $student->reg_number }}</span></div>
+                <div style="display: flex; gap: 12px;">
+                    @if($student->passport_photo)
+                        <div style="flex-shrink: 0;">
+                            <img src="{{ asset($student->passport_photo) }}" alt="Passport Photo" style="width: 60px; height: 75px; object-fit: cover; border: 1px solid #ddd; border-radius: 3px;">
+                        </div>
+                    @endif
+                    <div style="flex: 1;">
+                        <div style="margin: 4px 0;"><span class="label"><i class="fas fa-user"></i> Student Name:</span><br><span class="value">{{ $student->full_name }}</span></div>
+                        <div style="margin: 4px 0;"><span class="label"><i class="fas fa-id-card"></i> Registration Number:</span><br><span class="value">{{ $student->reg_number }}</span></div>
+                    </div>
+                </div>
             </div>
             <div class="student-info-row">
-                <div><span class="label">Course:</span><br><span class="value">{{ $student->course->course_name ?? 'N/A' }}</span></div>
-                <div><span class="label">Branch:</span><br><span class="value">{{ $student->branch->name ?? 'N/A' }}</span></div>
+                <div><span class="label"><i class="fas fa-book"></i> Course:</span><br><span class="value">{{ $student->course->course_name ?? 'N/A' }}</span></div>
+                <div><span class="label"><i class="fas fa-map-marker-alt"></i> Branch:</span><br><span class="value">{{ $student->branch->name ?? 'N/A' }}</span></div>
             </div>
             @if($student->email)
                 <div class="student-info-row">
-                    <div><span class="label">Email:</span><br><span class="value">{{ $student->email }}</span></div>
-                    <div><span class="label">Phone:</span><br><span class="value">{{ $student->phone ?? 'N/A' }}</span></div>
+                    <div><span class="label"><i class="fas fa-envelope"></i> Email:</span><br><span class="value">{{ $student->email }}</span></div>
+                    <div><span class="label"><i class="fas fa-phone"></i> Phone:</span><br><span class="value">{{ $student->phone ?? 'N/A' }}</span></div>
                 </div>
             @endif
         </div>
@@ -296,7 +310,7 @@
         @if($termGroups && count($termGroups) > 0)
             @foreach($termGroups as $termKey => $group)
                 <div class="term-section">
-                    <h3>📅 {{ $group['term_name'] }}</h3>
+                    <h3><i class="fas fa-calendar-alt"></i> {{ $group['term_name'] }}</h3>
                     
                     @if(count($group['transactions']) > 0)
                         <table>
@@ -332,7 +346,7 @@
                                         <td>{{ $transaction->paid_at ? \Carbon\Carbon::parse($transaction->paid_at)->format('d M Y') : 'N/A' }}</td>
                                         <td class="num">
                                             @if(in_array($transaction->status, ['successful', 'paid', 'completed']))
-                                                <span style="color: #27ae60;">✓ Paid</span>
+                                                <span style="color: #27ae60;"><i class="fas fa-check-circle"></i> Paid</span>
                                             @else
                                                 <span style="color: #e74c3c;">{{ ucfirst($transaction->status) }}</span>
                                             @endif
@@ -389,30 +403,38 @@
             <div class="footer-row">
                 <div class="footer-cell">
                     <div class="signature-line">
-                        @if($hasPrincipalSignature)
-                            <img src="{{ asset($schoolInfo->principal_signature_url) }}" alt="Signature">
+                        @if($hasPrincipalSignature && $schoolInfo)
+                            @if($schoolInfo->principal_signature_data)
+                                <img src="{{ $schoolInfo->principal_signature_url }}" alt="Signature">
+                            @elseif($schoolInfo->principal_signature)
+                                <img src="{{ asset($schoolInfo->principal_signature) }}" alt="Signature">
+                            @endif
                         @endif
                     </div>
-                    <div class="signature-label">{{ $hdrPrincipal }}<br>School Head</div>
+                    <div class="signature-label">{{ $hdrPrincipal }}<br><i class="fas fa-user-tie"></i> School Head</div>
                 </div>
                 <div class="footer-cell">
                     <div class="signature-line">
-                        @if($hasStampSignature)
-                            <img src="{{ asset($schoolInfo->stamp_signature_url) }}" alt="Stamp" style="max-height: 40px;">
+                        @if($hasStampSignature && $schoolInfo)
+                            @if($schoolInfo->stamp_signature_data)
+                                <img src="{{ $schoolInfo->stamp_signature_url }}" alt="Stamp" style="max-height: 40px;">
+                            @elseif($schoolInfo->stamp_signature)
+                                <img src="{{ asset($schoolInfo->stamp_signature) }}" alt="Stamp" style="max-height: 40px;">
+                            @endif
                         @endif
                     </div>
-                    <div class="signature-label">Official Stamp</div>
+                    <div class="signature-label"><i class="fas fa-stamp"></i> Official Stamp</div>
                 </div>
                 <div class="footer-cell">
                     <div class="signature-line"></div>
-                    <div class="signature-label">Finance Officer<br>Signature</div>
+                    <div class="signature-label"><i class="fas fa-signature"></i> Finance Officer<br>Signature</div>
                 </div>
             </div>
 
             <div class="printed-info">
-                Printed by: {{ $printedByName ?? 'System' }}<br>
-                Date: {{ $printedAt->format('d F Y H:i:s') }}<br>
-                This is an official document of {{ $hdrSchoolName }}
+                <i class="fas fa-user-check"></i> Printed by: {{ $printedByName ?? 'System' }}<br>
+                <i class="fas fa-clock"></i> Date: {{ $printedAt->format('d F Y H:i:s') }}<br>
+                <i class="fas fa-certificate"></i> This is an official document of {{ $hdrSchoolName }}
             </div>
         </div>
     </div>
