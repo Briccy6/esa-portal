@@ -21,8 +21,8 @@
                 <div class="card-body bg-white" style="min-height: 600px;">
                     <!-- School Header -->
                     <div style="text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px;">
-                        @if ($schoolInfo && $schoolInfo->logo_path)
-                            <img src="{{ asset('storage/' . $schoolInfo->logo_path) }}" style="max-height: 80px; margin-bottom: 10px;" alt="School Logo">
+                        @if ($schoolInfo && $schoolInfo->logo_url)
+                            <img src="{{ $schoolInfo->logo_url }}" style="max-height: 80px; margin-bottom: 10px;" alt="School Logo">
                         @elseif ($schoolInfo)
                             <!-- Logo Placeholder when not available -->
                             <div style="width: 80px; height: 80px; margin: 0 auto 10px; background-color: #e9ecef; border: 2px dashed #999; display: flex; align-items: center; justify-content: center; border-radius: 4px;">

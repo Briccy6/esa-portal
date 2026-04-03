@@ -307,4 +307,60 @@ class Student extends Authenticatable
 
         return null;
     }
+
+    /**
+     * Get total outstanding fees for the student
+     */
+    public function getOutstandingFees()
+    {
+        // Calculate from school_fees if they exist
+        if ($this->schoolFees()->exists()) {
+            $totalFees = $this->schoolFees()->sum('amount');
+            $paidAmount = $this->transactions()
+                ->where('type', 'school_fee')
+                ->where('status', 'successful')
+                ->sum('amount');
+            
+            return max(0, $totalFees - $paidAmount);
+        }
+
+        // Check if there's a direct outstanding_amount field
+        return max(0, $this->outstanding_amount ?? 0);
+    }
+
+    /**
+     * Clear outstanding fees after successful payment
+     */
+    public function clearOutstandingFees($amount = null)
+    {
+        if ($amount === null) {
+            $amount = $this->getOutstandingFees();
+        }
+
+        // Update direct field if it exists
+        if (in_array('outstanding_amount', $this->getFillable())) {
+            $this->update([
+                'outstanding_amount' => max(0, ($this->outstanding_amount ?? 0) - $amount)
+            ]);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Check if student has outstanding fees
+     */
+    public function hasOutstandingFees()
+    {
+        return $this->getOutstandingFees() > 0;
+    }
+
+    /**
+     * Get formatted outstanding fees string
+     */
+    public function getFormattedOutstandingFeesAttribute()
+    {
+        $amount = $this->getOutstandingFees();
+        return 'RWF ' . number_format($amount, 2);
+    }
 }

@@ -68,29 +68,8 @@ class StudentReportCardController extends Controller
      */
     private function getOutstandingFees($student)
     {
-        // Option 1: If you have outstanding_amount field in students table
-        if (isset($student->outstanding_amount)) {
-            return max(0, $student->outstanding_amount);
-        }
-
-        // Option 2: Calculate from school_fees table
-        if ($student->schoolFees()->exists()) {
-            $totalFees = $student->schoolFees()
-                ->where('status', '!=', 'paid')
-                ->sum('amount');
-            return max(0, $totalFees);
-        }
-
-        // Option 3: Calculate from transactions
-        $paidAmount = $student->transactions()
-            ->where('type', 'school_fee')
-            ->where('status', 'successful')
-            ->sum('amount');
-
-        $totalFees = $student->schoolFees()->sum('amount');
-        $outstanding = $totalFees - $paidAmount;
-
-        return max(0, $outstanding);
+        // Use the model method which handles multiple fee tracking methods
+        return $student->getOutstandingFees();
     }
 
     /**

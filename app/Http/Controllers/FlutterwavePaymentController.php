@@ -556,9 +556,7 @@ class FlutterwavePaymentController extends Controller
 
         // Update student's outstanding amount (if tracking in database)
         $student = Student::findOrFail($studentId);
-        if (method_exists($student, 'clearOutstandingFees')) {
-            $student->clearOutstandingFees($outstandingAmount);
-        }
+        $student->clearOutstandingFees($outstandingAmount);
 
         Log::info('Report card fee payment processed successfully', [
             'student_id' => $studentId,

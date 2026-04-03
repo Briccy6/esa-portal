@@ -263,8 +263,8 @@
         <!-- Header with School Information -->
         @if ($schoolInfo)
             <div class="header">
-                @if ($schoolInfo->logo_path)
-                    <img src="{{ public_path('storage/' . $schoolInfo->logo_path) }}" class="school-logo" alt="School Logo">
+                @if ($schoolInfo->logo_url)
+                    <img src="{{ $schoolInfo->logo_url }}" class="school-logo" alt="School Logo">
                 @else
                     <div style="height: 50px; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; background-color: #f0f0f0; border-radius: 4px;">
                         <span style="color: #ccc; font-size: 12pt;">School Logo</span>

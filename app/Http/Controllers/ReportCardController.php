@@ -1051,7 +1051,7 @@ class ReportCardController extends Controller
         });
 
         $courses = Course::all();
-        $branches = \App\Models\Branch::all();
+        $branches = Branch::all();
 
         return view('admin.report-cards.outstanding-fees', compact('studentsWithFees', 'courses', 'branches'));
     }
