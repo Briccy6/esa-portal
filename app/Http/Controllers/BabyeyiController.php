@@ -6,6 +6,7 @@ use App\Models\Babyeyi;
 use App\Models\AcademicYear;
 use App\Models\Term;
 use App\Models\Course;
+use App\Models\CourseTermFee;
 use App\Models\SchoolInformation;
 use App\Models\Student;
 use App\Models\User;
@@ -368,23 +369,46 @@ class BabyeyiController extends Controller
             return view('babyeyi.student-dashboard', [
                 'babyeyis' => collect(),
                 'schoolInfo' => SchoolInformation::getActive(),
-                'message' => 'No course assigned to your account.'
+                'message' => 'No course assigned to your account.',
+                'student' => $student,
+                'courseTermFees' => collect()
             ]);
         }
 
         // Get published babyeyis for this student's course
         $babyeyis = Babyeyi::where('status', Babyeyi::STATUS_PUBLISHED)
-            ->where(function($query) use ($student) {
-                $query->where('course_id', $student->course_id)
-                      ->orWhere('course_type', $student->course->course_type ?? null);
-            })
+            ->where('course_id', $student->course_id)  // Match exact course
             ->with(['academicYear', 'term', 'course', 'creator'])
             ->orderBy('created_at', 'desc')
             ->get();
 
+        // If no exact course match, try by course_type
+        if ($babyeyis->isEmpty() && $student->course && $student->course->course_type) {
+            $babyeyis = Babyeyi::where('status', Babyeyi::STATUS_PUBLISHED)
+                ->where('course_type', $student->course->course_type)
+                ->with(['academicYear', 'term', 'course', 'creator'])
+                ->orderBy('created_at', 'desc')
+                ->get();
+        }
+
+        // Build fee data for each babyeyi
+        $babyeyisWithFees = $babyeyis->map(function($babyeyi) use ($student) {
+            $courseTermFees = CourseTermFee::where('course_id', $student->course_id)
+                ->where('term_id', $babyeyi->term_id)
+                ->where('is_active', true)
+                ->first();
+            
+            $babyeyi->courseTermFees = $courseTermFees;
+            return $babyeyi;
+        });
+
         $schoolInfo = SchoolInformation::getActive();
 
-        return view('babyeyi.student-dashboard', compact('babyeyis', 'schoolInfo', 'student'));
+        return view('babyeyi.student-dashboard', [
+            'babyeyis' => $babyeyisWithFees,
+            'schoolInfo' => $schoolInfo,
+            'student' => $student
+        ]);
     }
 
     /**
@@ -395,16 +419,13 @@ class BabyeyiController extends Controller
         $user = Auth::user();
         $student = Student::where('email', $user->email)->first();
 
-        // Verify access
-        if (!$student || 
-            (!($babyeyi->course_id === $student->course_id || 
-              $babyeyi->course_type === $student->course->course_type))) {
+        // Verify access - student can only view babyeyis for their course
+        if (!$student || $babyeyi->course_id !== $student->course_id) {
             abort(403, 'You do not have access to this document.');
         }
 
         // Get course term fees for this student's course
-        $courseTermFees = DB::table('course_term_fees')
-            ->where('course_id', $student->course_id)
+        $courseTermFees = CourseTermFee::where('course_id', $student->course_id)
             ->where('term_id', $babyeyi->term_id)
             ->where('is_active', true)
             ->first();
@@ -427,15 +448,12 @@ class BabyeyiController extends Controller
         $student = Student::where('email', $user->email)->first();
 
         // Verify access
-        if (!$student || 
-            (!($babyeyi->course_id === $student->course_id || 
-              $babyeyi->course_type === $student->course->course_type))) {
+        if (!$student || $babyeyi->course_id !== $student->course_id) {
             abort(403, 'You do not have access to this document.');
         }
 
         // Get course term fees for this student's course
-        $courseTermFees = DB::table('course_term_fees')
-            ->where('course_id', $student->course_id)
+        $courseTermFees = CourseTermFee::where('course_id', $student->course_id)
             ->where('term_id', $babyeyi->term_id)
             ->where('is_active', true)
             ->first();

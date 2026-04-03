@@ -1,5 +1,11 @@
 <?php
 
+
+// Public pages routes
+Route::get('/fees', [PublicController::class, 'fees'])->name('public.fees');
+Route::get('/resources', [PublicController::class, 'resources'])->name('public.resources');
+Route::get('/skills', [PublicController::class, 'skills'])->name('public.skills');
+
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Cache;
 // use Illuminate\Support\Facades\Route;

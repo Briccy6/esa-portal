@@ -200,15 +200,13 @@
         body {
             padding-top: 80px; /* Space for fixed navigation */
         }
-        
-        /* Enhanced scrollbar styling */
-        ::-webkit-scrollbar {
-    
+    </style>
+
     @stack('styles')
 </head>
 <body class="bg-gray-50 min-h-screen">
     <!-- Public Navigation -->
-    @include('components.public-navigation')
+    @include('components.public-navbar')
 
     <!-- Live Streaming Banner -->
     @include('components.live-streaming-banner')

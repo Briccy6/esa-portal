@@ -18,10 +18,10 @@
             <div>
                 <h4 class="text-lg font-semibold mb-4">Quick Links</h4>
                 <ul class="space-y-2 text-sm">
-                    <li><a href="{{ url('/') }}" class="text-gray-300 hover:text-white transition">Home</a></li>
-                    <li><a href="{{ route('public.exams.index') }}" class="text-gray-300 hover:text-white transition">Test Skills</a></li>
-                    <li><a href="{{ route('public.resources.index') }}" class="text-gray-300 hover:text-white transition">Resources</a></li>
-                    <li><a href="{{ url('/#quick-access') }}" class="text-gray-300 hover:text-white transition">Portals</a></li>
+                    <li><a href="{{ url('/') }}" class="text-gray-300 hover:text-white transition"><i class="fas fa-home mr-2"></i>Home</li>
+                    <li><a href="{{ route('public.exams.index') }}" class="text-gray-300 hover:text-white transition"><i class="fas fa-brain mr-2"></i>Test Skills</li>
+                    <li><a href="{{ route('public.resources.index') }}" class="text-gray-300 hover:text-white transition"><i class="fas fa-book mr-2"></i>Resources</li>
+                    <li><a href="{{ url('/#quick-access') }}" class="text-gray-300 hover:text-white transition"><i class="fas fa-sign-in-alt mr-2"></i>Portals</li>
                 </ul>
             </div>
             

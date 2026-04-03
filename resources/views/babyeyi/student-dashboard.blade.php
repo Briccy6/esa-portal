@@ -23,7 +23,7 @@
                         <div class="col-md-12 mb-4">
                             <div class="card shadow-sm border-left-4" style="border-left: 4px solid #007bff;">
                                 <div class="card-body">
-                                    <div class="row">
+                                    <div class="row mb-3">
                                         <div class="col-md-8">
                                             <h5 class="card-title mb-2">
                                                 <i class="fas fa-file-alt"></i>
@@ -65,6 +65,56 @@
                                             </div>
                                         </div>
                                     </div>
+
+                                    <!-- Fee Schedule Table -->
+                                    @if ($babyeyi->courseTermFees)
+                                        <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #ddd;">
+                                            <p style="margin: 0 0 10px 0;"><strong><i class="fas fa-money-bill-wave"></i> Your Fee Breakdown for This Term:</strong></p>
+                                            <table style="width: 100%; font-size: 13px; margin-bottom: 10px;">
+                                                <tr style="background-color: #f5f5f5;">
+                                                    <th style="padding: 8px; text-align: left; border: 1px solid #ddd;"><strong>Fee Type</strong></th>
+                                                    <th style="padding: 8px; text-align: right; border: 1px solid #ddd;"><strong>Amount (RWF)</strong></th>
+                                                </tr>
+                                                @if ($babyeyi->courseTermFees->registration_fee > 0)
+                                                    <tr>
+                                                        <td style="padding: 8px; border: 1px solid #ddd;">Registration Fee</td>
+                                                        <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">{{ number_format($babyeyi->courseTermFees->registration_fee, 2) }}</td>
+                                                    </tr>
+                                                @endif
+                                                @if ($babyeyi->courseTermFees->tuition_fee > 0)
+                                                    <tr style="background-color: #f9f9f9;">
+                                                        <td style="padding: 8px; border: 1px solid #ddd;">Tuition Fee</td>
+                                                        <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">{{ number_format($babyeyi->courseTermFees->tuition_fee, 2) }}</td>
+                                                    </tr>
+                                                @endif
+                                                @if ($babyeyi->courseTermFees->practical_fee > 0)
+                                                    <tr>
+                                                        <td style="padding: 8px; border: 1px solid #ddd;">Practical Fee</td>
+                                                        <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">{{ number_format($babyeyi->courseTermFees->practical_fee, 2) }}</td>
+                                                    </tr>
+                                                @endif
+                                                @if ($babyeyi->courseTermFees->trip_fee > 0)
+                                                    <tr style="background-color: #f9f9f9;">
+                                                        <td style="padding: 8px; border: 1px solid #ddd;">Trip Fee</td>
+                                                        <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">{{ number_format($babyeyi->courseTermFees->trip_fee, 2) }}</td>
+                                                    </tr>
+                                                @endif
+                                                @if ($babyeyi->courseTermFees->student_card_fee > 0)
+                                                    <tr>
+                                                        <td style="padding: 8px; border: 1px solid #ddd;">Student Card Fee</td>
+                                                        <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">{{ number_format($babyeyi->courseTermFees->student_card_fee, 2) }}</td>
+                                                    </tr>
+                                                @endif
+                                                <tr style="background-color: #e8e8e8; font-weight: bold;">
+                                                    <td style="padding: 10px; border: 2px solid #333;"><strong>TOTAL DUE</strong></td>
+                                                    <td style="padding: 10px; border: 2px solid #333; text-align: right; color: #d32f2f;">
+                                                        <strong>{{ number_format($babyeyi->courseTermFees->registration_fee + $babyeyi->courseTermFees->tuition_fee + $babyeyi->courseTermFees->practical_fee + $babyeyi->courseTermFees->trip_fee + $babyeyi->courseTermFees->student_card_fee, 2) }}</strong>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                            <p style="margin: 8px 0; font-size: 12px; color: #d32f2f;"><strong>⚠️ Payment required before term start date</strong></p>
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -81,13 +131,16 @@
                     <div class="card-body">
                         @if ($student && $student->course)
                             <p class="mb-2">
-                                <strong>{{ $student->course->name }}</strong>
+                                <strong>{{ $student->course->course_name ?? $student->course->name ?? 'Course' }}</strong>
                             </p>
                             @if ($student->course->course_type)
                                 <p class="mb-2 text-muted small">
                                     <strong>Type:</strong> {{ $student->course->course_type }}
                                 </p>
                             @endif
+                            <p class="mb-2 text-muted small">
+                                <strong>Branch:</strong> {{ $student->branch->name ?? 'N/A' }}
+                            </p>
                             <p class="mb-0 text-muted small">
                                 <strong>Academic Year:</strong> 
                                 {{ $student->academicYear->year ?? 'N/A' }}
