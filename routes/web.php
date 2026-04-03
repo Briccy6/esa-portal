@@ -333,6 +333,9 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     // Student fees
     Route::get('students/{student}/fees', [StudentController::class, 'showStudentFees'])->name('students.fees');
     Route::patch('/students/{student}/discount', [StudentController::class, 'updateDiscount'])->name('students.updateDiscount');
+    
+    // Student payment transcript
+    Route::get('students/{student}/payment-transcript', [\App\Http\Controllers\AccountingController::class, 'printPaymentTranscript'])->name('students.payment-transcript');
 
     // Preferences
     Route::get('preferences', [\App\Http\Controllers\Admin\PreferenceController::class, 'index'])->name('preferences');

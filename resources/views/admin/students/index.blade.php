@@ -250,7 +250,7 @@
                                    onclick="showPasswordModal('{{ $student->reg_number }}', '{{ $student->password_plain ?? 'Not Available' }}')">
                                     <i class="bi bi-key"></i>
                                 </a>
-                                <a href="{{ route('accounting.payment-transcript', $student->id) }}" 
+                                <a href="{{ route('admin.students.payment-transcript', $student->id) }}" 
                                    class="btn btn-sm btn-outline-success action-btn" 
                                    data-bs-toggle="tooltip" 
                                    title="Print Payment Transcript"
