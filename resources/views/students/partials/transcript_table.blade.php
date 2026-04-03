@@ -734,7 +734,19 @@
             },
         })
         .then(resp => {
-            if (!resp.ok) throw new Error('Failed to load edit form');
+            // Log the full response for debugging
+            console.log('Edit form fetch response:', {
+                status: resp.status,
+                statusText: resp.statusText,
+                ok: resp.ok,
+                headers: {
+                    contentType: resp.headers.get('content-type')
+                }
+            });
+            
+            if (!resp.ok) {
+                throw new Error(`HTTP Error ${resp.status}: ${resp.statusText}`);
+            }
             return resp.text();
         })
         .then(html => {
@@ -762,7 +774,12 @@
                             'X-Requested-With': 'XMLHttpRequest'
                         }
                     })
-                    .then(resp => resp.json())
+                    .then(resp => {
+                        if (!resp.ok) {
+                            throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+                        }
+                        return resp.json();
+                    })
                     .then(json => {
                         if (json.success) {
                             // Close modal
@@ -775,12 +792,15 @@
                             // Reload page to show updated data
                             location.reload();
                         } else {
-                            alert(json.message || 'Failed to update transaction.');
+                            const errorDetails = `Error: ${json.message || 'Failed to update transaction'}\n\nDetails:\n${JSON.stringify(json, null, 2)}`;
+                            console.error('Update error:', json);
+                            alert(errorDetails);
                         }
                     })
                     .catch(err => {
-                        console.error('Error updating transaction:', err);
-                        alert('An error occurred while updating the transaction.');
+                        console.error('Update full error:', err);
+                        const errorMsg = `Error updating transaction:\n\n${err.message}\n\nForm URL: ${form.action}\n\nPossible Causes:\n- Route may not exist\n- Validation failed\n- Permission denied\n\nCheck browser console (F12) for detailed error information.`;
+                        alert(errorMsg);
                     })
                     .finally(() => {
                         // Reset button state
@@ -791,8 +811,23 @@
             }
         })
         .catch(err => {
-            body.innerHTML = '<div class="alert alert-danger">Unable to load edit form.</div>';
-            console.error(err);
+            console.error('Full error:', err);
+            const errorMsg = `<div class="alert alert-danger">
+                <strong>Error Loading Edit Form:</strong>
+                <p><em>${err.message || 'Unknown error'}</em></p>
+                <p style="font-size: 12px; margin-top: 10px;">
+                    <strong>URL:</strong> ${url}<br>
+                    <strong>Status:</strong> Check browser console for details (F12)<br>
+                    <strong>Possible Causes:</strong>
+                    <ul style="margin: 5px 0; padding-left: 20px;">
+                        <li>Route may not exist</li>
+                        <li>Authentication issue - ensure you are logged in as staff</li>
+                        <li>Permission denied - check if you have accountant privileges</li>
+                        <li>View file not found on server</li>
+                    </ul>
+                </p>
+            </div>`;
+            body.innerHTML = errorMsg;
         });
     }
 
@@ -809,19 +844,27 @@
                 'Accept': 'application/json'
             }
         })
-        .then(resp => resp.json())
+        .then(resp => {
+            if (!resp.ok) {
+                throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+            }
+            return resp.json();
+        })
         .then(json => {
             if (json.success) {
                 const row = document.getElementById('payment-row-' + paymentId);
                 if (row) row.remove();
                 alert(json.message || 'Transaction deleted');
             } else {
-                alert(json.message || 'Failed to delete transaction');
+                const errorDetails = `Error: ${json.message || 'Failed to delete transaction'}\n\nDetails:\n${JSON.stringify(json, null, 2)}`;
+                console.error('Delete error:', json);
+                alert(errorDetails);
             }
         })
         .catch(err => {
-            console.error(err);
-            alert('An error occurred while deleting transaction.');
+            console.error('Delete full error:', err);
+            const errorMsg = `Error deleting transaction:\n\n${err.message}\n\nURL: ${url}\n\nPossible Causes:\n- Route may not exist\n- Authentication issue\n- Permission denied - check if you have accountant privileges\n\nCheck browser console (F12) for detailed error information.`;
+            alert(errorMsg);
         });
     }
 </script>
