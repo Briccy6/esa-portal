@@ -131,10 +131,20 @@ class StudentController extends Controller
             $students = Student::with(['course', 'branch', 'academicYear'])
                 ->whereNotIn('id', $dismissedStudentIds);
         } else {
-            $branchIds = $staff->branches()->pluck('branches.id')->toArray();
-            $students = Student::whereIn('branch_id', $branchIds)
-                ->with(['course', 'branch', 'academicYear'])
-                ->whereNotIn('id', $dismissedStudentIds);
+            // Check if staff is the authorized accountant (can see all branches)
+            $isAuthorizedAccountant = $staff && str_ends_with($staff->email, '@excellentservantacademy.com');
+            
+            if ($isAuthorizedAccountant) {
+                // Accountant can see all students from all branches
+                $students = Student::with(['course', 'branch', 'academicYear'])
+                    ->whereNotIn('id', $dismissedStudentIds);
+            } else {
+                // Regular staff can only see students from their assigned branches
+                $branchIds = $staff->branches()->pluck('branches.id')->toArray();
+                $students = Student::whereIn('branch_id', $branchIds)
+                    ->with(['course', 'branch', 'academicYear'])
+                    ->whereNotIn('id', $dismissedStudentIds);
+            }
         }
 
         if ($request->filled('name')) {
@@ -1977,7 +1987,12 @@ class StudentController extends Controller
     {
         $staff = auth('staff')->user();
         if (!$staff) {
-            abort(403, 'Unauthorized. Only staff can edit transactions.');
+            abort(403, 'Unauthorized. Only the accountant can edit transactions.');
+        }
+
+        // Only allow accountant with @excellentservantacademy.com email to edit payments
+        if (!str_ends_with($staff->email, '@excellentservantacademy.com')) {
+            abort(403, 'Only the designated accountant can edit payments.');
         }
 
         $transaction = StudentTransaction::findOrFail($transactionId);
@@ -2019,7 +2034,15 @@ class StudentController extends Controller
         if (!$staff) {
             return response()->json([
                 'success' => false,
-                'message' => 'Unauthorized. Only staff can edit transactions.',
+                'message' => 'Unauthorized. Only the accountant can edit transactions.',
+            ], 403);
+        }
+
+        // Only allow accountant with @excellentservantacademy.com email to edit payments
+        if (!str_ends_with($staff->email, '@excellentservantacademy.com')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only the designated accountant can edit payments.',
             ], 403);
         }
 
@@ -2092,7 +2115,15 @@ class StudentController extends Controller
         if (!$staff) {
             return response()->json([
                 'success' => false,
-                'message' => 'Unauthorized. Only staff can delete transactions.',
+                'message' => 'Unauthorized. Only the accountant can delete transactions.',
+            ], 403);
+        }
+
+        // Only allow accountant with @excellentservantacademy.com email to delete payments
+        if (!str_ends_with($staff->email, '@excellentservantacademy.com')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only the designated accountant can delete payments.',
             ], 403);
         }
 

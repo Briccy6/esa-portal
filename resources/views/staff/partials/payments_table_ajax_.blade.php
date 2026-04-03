@@ -59,31 +59,43 @@
                     <td><small class="text-muted font-monospace">{{ $payment->tx_ref ?? '-' }}</small></td>
 
                     <td class="text-center" style="white-space:nowrap;">
-                        {{-- Edit — data-bs-toggle="modal" ONLY, no tooltip conflict --}}
-                        <button type="button"
-                                class="btn btn-sm btn-outline-primary"
-                                title="Edit Payment"
-                                data-bs-toggle="modal"
-                                data-bs-target="#editPaymentModal{{ $payment->id }}">
-                            <i class="fas fa-edit"></i>
-                        </button>
+                        @php
+                            // Check if current user is the authorized accountant
+                            $staff = auth('staff')->user();
+                            $isAuthorizedAccountant = $staff && str_ends_with($staff->email, '@excellentservantacademy.com');
+                        @endphp
+                        
+                        @if($isAuthorizedAccountant)
+                            {{-- Edit — data-bs-toggle="modal" ONLY, no tooltip conflict --}}
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-primary"
+                                    title="Edit Payment"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#editPaymentModal{{ $payment->id }}">
+                                <i class="fas fa-edit"></i>
+                            </button>
 
-                        {{-- Delete --}}
-                        <button type="button"
-                                class="btn btn-sm btn-outline-danger ms-1"
-                                title="Delete Payment"
-                                onclick="confirmDeletePayment({{ $payment->id }}, '{{ number_format($payment->amount, 0) }}', '{{ addslashes(ucfirst(str_replace('_', ' ', $payment->type))) }}')">
-                            <i class="fas fa-trash"></i>
-                        </button>
+                            {{-- Delete --}}
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-danger ms-1"
+                                    title="Delete Payment"
+                                    onclick="confirmDeletePayment({{ $payment->id }}, '{{ number_format($payment->amount, 0) }}', '{{ addslashes(ucfirst(str_replace('_', ' ', $payment->type))) }}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
 
-                        {{-- Hidden delete form — POST + _method=DELETE (Laravel method spoofing) --}}
-                        <form id="deletePaymentForm{{ $payment->id }}"
-                              action="{{ route('staff.transactions.destroy', $payment->id) }}"
-                              method="POST"
-                              style="display:none;">
-                            @csrf
-                            @method('DELETE')
-                        </form>
+                            {{-- Hidden delete form — POST + _method=DELETE (Laravel method spoofing) --}}
+                            <form id="deletePaymentForm{{ $payment->id }}"
+                                  action="{{ route('staff.transactions.destroy', $payment->id) }}"
+                                  method="POST"
+                                  style="display:none;">
+                                @csrf
+                                @method('DELETE')
+                            </form>
+                        @else
+                            <span class="text-muted small" title="Only the accountant can edit or delete payments">
+                                <i class="fas fa-lock"></i> Restricted
+                            </span>
+                        @endif
                     </td>
                 </tr>
 

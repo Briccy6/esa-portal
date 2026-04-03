@@ -297,9 +297,9 @@
         <div class="student-info">
             <div class="student-info-row">
                 <div style="display: flex; gap: 12px;">
-                    @if($student->passport_photo)
+                    @if($student->passport_photo_url)
                         <div style="flex-shrink: 0;">
-                            <img src="{{ asset($student->passport_photo) }}" alt="Passport Photo" style="width: 60px; height: 75px; object-fit: cover; border: 1px solid #ddd; border-radius: 3px;">
+                            <img src="{{ $student->passport_photo_url }}" alt="Passport Photo" style="width: 60px; height: 75px; object-fit: cover; border: 1px solid #ddd; border-radius: 3px;">
                         </div>
                     @endif
                     <div style="flex: 1;">

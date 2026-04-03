@@ -16,7 +16,7 @@ class StudentPaymentTranscript
      */
     public static function feeRowsWithTerms(Student $student): array
     {
-        $student->loadMissing(['course', 'branch', 'academicYear']);
+        $student->loadMissing(['course', 'branch', 'academicYear', 'studentCard']);
         $course = $student->course;
 
         // Get term-specific fees or fallback to legacy fees
@@ -130,7 +130,7 @@ class StudentPaymentTranscript
     /** @var array<int, array{label: string, type: string, expected: float, paid: float, balance: float}> */
     public static function feeRows(Student $student): array
     {
-        $student->loadMissing(['course', 'branch', 'academicYear']);
+        $student->loadMissing(['course', 'branch', 'academicYear', 'studentCard']);
         $course = $student->course;
 
         // Get term-specific fees or fallback to legacy fees
@@ -247,7 +247,7 @@ class StudentPaymentTranscript
      */
     public static function build(Student $student): array
     {
-        $student->loadMissing(['course', 'branch', 'academicYear']);
+        $student->loadMissing(['course', 'branch', 'academicYear', 'studentCard']);
         $feeRows = self::feeRows($student);
         $feeRowsWithTerms = self::feeRowsWithTerms($student);
 

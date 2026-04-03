@@ -188,6 +188,11 @@ class Student extends Authenticatable
         return $this->hasOne(StudentSubscription::class)->active()->paid();
     }
 
+    public function studentCard()
+    {
+        return $this->hasOne(StudentCard::class);
+    }
+
     public function getTokenBalanceAttribute()
     {
         return $this->token ? $this->token->balance : 0;
@@ -271,5 +276,35 @@ class Student extends Authenticatable
             ->where('status', 'active')
             ->where('end_date', '>', now())
             ->exists();
+    }
+
+    /**
+     * Get passport photo URL - tries StudentCard first, then Student field
+     */
+    public function getPassportPhotoUrlAttribute(): ?string
+    {
+        // First, try to get from StudentCard if it has passport_photo data
+        if ($this->relationLoaded('studentCard') && $this->studentCard) {
+            $cardPhoto = $this->studentCard->passport_photo;
+            if ($cardPhoto) {
+                // Check if it's already a data URL or base64
+                if (str_starts_with($cardPhoto, 'data:') || str_starts_with($cardPhoto, 'base64,')) {
+                    return $cardPhoto;
+                }
+                // If it's a file path, try to load it as a file
+                if (file_exists(public_path($cardPhoto))) {
+                    return asset($cardPhoto);
+                }
+            }
+        }
+
+        // Fall back to Student.passport_photo if available
+        if ($this->passport_photo) {
+            if (file_exists(public_path($this->passport_photo))) {
+                return asset($this->passport_photo);
+            }
+        }
+
+        return null;
     }
 }
