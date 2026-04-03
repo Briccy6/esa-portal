@@ -383,6 +383,7 @@ class AccountingController extends Controller
             'student'            => $student,
             'schoolInfo'         => $data['school'],
             'feeRows'            => $data['feeRows'],
+            'feeRowsWithTerms'   => $data['feeRows'],
             'totalExpected'      => $data['totalExpected'],
             'totalPaid'          => $data['totalPaid'],
             'totalPaidAllTypes'  => $data['totalPaidAllTypes'],
