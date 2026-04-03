@@ -380,7 +380,7 @@ class AccountingController extends Controller
             : null;
 
         return view('admin.accounting.print-payment-transcript', [
-            'student'            => $student,
+            'student'            => $data['student'],
             'schoolInfo'         => $data['school'],
             'feeRows'            => $data['feeRows'],
             'feeRowsWithTerms'   => $data['feeRowsWithTerms'],

@@ -276,6 +276,7 @@ class StudentPaymentTranscript
         $termGroups = self::groupTransactionsByTerm($student);
 
         return [
+            'student'            => $student,
             'feeRows'            => $feeRows,
             'feeRowsWithTerms'   => $feeRowsWithTerms,
             'totalExpected'      => $totalExpected,
