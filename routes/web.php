@@ -157,6 +157,7 @@ Route::prefix('public')->name('public.')->group(function () {
     // Public Fees Schedule Routes
     Route::prefix('fees')->name('fees.')->group(function () {
         Route::get('/', [\App\Http\Controllers\PublicFeesController::class, 'index'])->name('index');
+        Route::get('/debug', [\App\Http\Controllers\PublicFeesController::class, 'debugInfo'])->name('debug');
         Route::get('/branches/{branchId}/courses', [\App\Http\Controllers\PublicFeesController::class, 'getCoursesByBranch'])->name('courses.by-branch');
         Route::get('/courses/{courseId}', [\App\Http\Controllers\PublicFeesController::class, 'getCourseFees'])->name('course-fees');
         Route::get('/courses/{courseId}/download', [\App\Http\Controllers\PublicFeesController::class, 'downloadPDF'])->name('download-pdf');

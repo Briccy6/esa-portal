@@ -165,4 +165,93 @@ class PublicFeesController extends Controller
 
         return $pdf->download('fees-schedule-' . slug($course->course_name) . '.pdf');
     }
+
+    /**
+     * Debug endpoint - shows database structure and relationships
+     */
+    public function debugInfo()
+    {
+        $output = '<h1>Public Fees Debug Info</h1>';
+        $output .= '<style>
+            body { font-family: Arial; margin: 20px; }
+            table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f2f2f2; }
+            .section { margin: 20px 0; padding: 10px; background: #f9f9f9; }
+            .error { color: red; }
+            .success { color: green; }
+        </style>';
+
+        // Check branches
+        $branches = Branch::all();
+        $output .= '<div class="section"><h2>Branches (' . $branches->count() . ')</h2>';
+        $output .= '<table><tr><th>ID</th><th>Name</th><th>Location</th><th>Courses Count</th></tr>';
+        foreach ($branches as $branch) {
+            $courseCount = $branch->courses()->count();
+            $output .= "<tr>
+                <td>{$branch->id}</td>
+                <td>{$branch->name}</td>
+                <td>{$branch->location}</td>
+                <td class='" . ($courseCount > 0 ? 'success' : 'error') . "'>{$courseCount}</td>
+            </tr>";
+        }
+        $output .= '</table></div>';
+
+        // Check courses
+        $courses = Course::limit(20)->get();
+        $output .= '<div class="section"><h2>Courses (showing first 20 of ' . Course::count() . ')</h2>';
+        $output .= '<table><tr><th>ID</th><th>Name</th><th>Code</th><th>Branches Count</th></tr>';
+        foreach ($courses as $course) {
+            $branchCount = $course->branches()->count();
+            $output .= "<tr>
+                <td>{$course->id}</td>
+                <td>{$course->course_name}</td>
+                <td>{$course->course_code}</td>
+                <td class='" . ($branchCount > 0 ? 'success' : 'error') . "'>{$branchCount}</td>
+            </tr>";
+        }
+        $output .= '</table></div>';
+
+        // Check branch_course pivot table
+        $pivotCount = DB::table('branch_course')->count();
+        $output .= '<div class="section"><h2>branch_course Pivot Table</h2>';
+        $output .= '<p>Total records: <span class="' . ($pivotCount > 0 ? 'success' : 'error') . '">' . $pivotCount . '</span></p>';
+        
+        if ($pivotCount > 0) {
+            $pivotRecords = DB::table('branch_course')->limit(20)->get();
+            $output .= '<table><tr><th>Branch ID</th><th>Course ID</th></tr>';
+            foreach ($pivotRecords as $record) {
+                $output .= "<tr><td>{$record->branch_id}</td><td>{$record->course_id}</td></tr>";
+            }
+            $output .= '</table>';
+        }
+        $output .= '</div>';
+
+        // Test query for each branch
+        $output .= '<div class="section"><h2>Query Test (Using First 3 Branches)</h2>';
+        foreach ($branches->take(3) as $branch) {
+            $output .= '<h3>Branch: ' . $branch->name . ' (ID: ' . $branch->id . ')</h3>';
+            
+            // Method 1
+            $courses1 = Course::whereHas('branches', function($q) use ($branch) {
+                $q->wherePivot('branch_id', $branch->id);
+            })->count();
+            $output .= '<p>Method 1 (wherePivot): <span class="' . ($courses1 > 0 ? 'success' : 'error') . '">' . $courses1 . ' courses</span></p>';
+            
+            // Method 2
+            $courses2 = DB::table('courses')
+                ->join('branch_course', 'courses.id', '=', 'branch_course.course_id')
+                ->where('branch_course.branch_id', $branch->id)
+                ->distinct()
+                ->count();
+            $output .= '<p>Method 2 (direct join): <span class="' . ($courses2 > 0 ? 'success' : 'error') . '">' . $courses2 . ' courses</span></p>';
+            
+            // Method 3
+            $courses3 = Course::where('branch_id', $branch->id)->count();
+            $output .= '<p>Method 3 (direct FK): <span class="' . ($courses3 > 0 ? 'success' : 'error') . '">' . $courses3 . ' courses</span></p>';
+        }
+        $output .= '</div>';
+
+        return response($output)->header('Content-Type', 'text/html');
+    }
 }
