@@ -18,7 +18,16 @@
                 <div class="lg:col-span-3">
                     <div class="flex flex-wrap gap-6">
 
-    {{-- 💰 Payment Card --}}
+    {{-- � Babyeyi Documents --}}
+    <div class="flex-1 min-w-[280px] bg-gradient-to-tr from-purple-500 to-purple-300 text-black rounded-2xl shadow-md p-6 transition-transform transform hover:scale-105">
+        <h3 class="text-lg font-bold mb-3">📜 Babyeyi</h3>
+        <p class="text-sm mb-4">Term registration documents and fee information for your course</p>
+        <a href="{{ route('student.babyeyi.dashboard') }}" class="inline-block bg-white text-purple-700 px-4 py-2 rounded-full text-sm hover:bg-purple-100 transition font-semibold">
+            📄 View Documents →
+        </a>
+    </div>
+
+    {{-- �💰 Payment Card --}}
     <div x-data="{ show: false }"
         class="flex-1 min-w-[280px] bg-gradient-to-tr from-green-500 to-green-300 text-black rounded-2xl shadow-md p-6 transition-transform transform hover:scale-105">
         

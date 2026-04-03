@@ -49,6 +49,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\TokenController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\ToWhomLetterController;
+use App\Http\Controllers\BabyeyiController;
 use App\Http\Controllers\SecretaryAuthController;
 use App\Http\Controllers\ReportCardController;
 use App\Http\Controllers\PublicExamController;
@@ -1428,6 +1429,35 @@ Route::middleware(['auth:admin,staff,student'])->prefix('to-whom')->name('to-who
     Route::post('/', [ToWhomLetterController::class, 'store'])->name('store');
     Route::get('/{letter}', [ToWhomLetterController::class, 'show'])->name('show');
     Route::get('/{letter}/download', [ToWhomLetterController::class, 'download'])->name('download');
+});
+
+// Babyeyi Routes - Accessible by secretaries and accountants for managing term registration documents
+Route::middleware(['auth:admin,staff'])->prefix('babyeyi')->name('babyeyi.')->group(function () {
+    Route::get('/', [BabyeyiController::class, 'index'])->name('index');
+    Route::get('/create', [BabyeyiController::class, 'create'])->name('create');
+    Route::post('/', [BabyeyiController::class, 'store'])->name('store');
+    Route::get('/{babyeyi}', [BabyeyiController::class, 'show'])->name('show');
+    Route::get('/{babyeyi}/edit', [BabyeyiController::class, 'edit'])->name('edit');
+    Route::put('/{babyeyi}', [BabyeyiController::class, 'update'])->name('update');
+    Route::get('/{babyeyi}/preview', [BabyeyiController::class, 'preview'])->name('preview');
+    Route::post('/{babyeyi}/publish', [BabyeyiController::class, 'publish'])->name('publish');
+    Route::get('/{babyeyi}/download', [BabyeyiController::class, 'download'])->name('download');
+    Route::get('/get-terms/{academicYearId}', [BabyeyiController::class, 'getTerms'])->name('get-terms');
+    Route::get('/get-courses', [BabyeyiController::class, 'getCourses'])->name('get-courses');
+});
+
+// PUBLIC: Babyeyi Routes - Accessible by students and public users
+Route::prefix('babyeyi')->name('public.babyeyi.')->group(function () {
+    Route::get('/', [BabyeyiController::class, 'publicIndex'])->name('index');
+    Route::get('/{babyeyi}', [BabyeyiController::class, 'publicShow'])->name('show');
+    Route::get('/{babyeyi}/download', [BabyeyiController::class, 'publicDownload'])->name('download');
+});
+
+// STUDENT: Babyeyi Routes - For authenticated students to view their course-specific babyeyis
+Route::middleware(['auth:student'])->prefix('my-babyeyi')->name('student.babyeyi.')->group(function () {
+    Route::get('/', [BabyeyiController::class, 'studentDashboard'])->name('dashboard');
+    Route::get('/{babyeyi}', [BabyeyiController::class, 'studentShow'])->name('show');
+    Route::get('/{babyeyi}/download', [BabyeyiController::class, 'studentDownload'])->name('download');
 });
 
 // Absolute simplest test route
