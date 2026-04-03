@@ -395,6 +395,12 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a href="{{ route('student.babyeyi.dashboard') }}" class="nav-link {{ request()->routeIs('student.babyeyi.*') ? 'active' : '' }}">
+                                <i class="bi bi-file-contract"></i>
+                                Term Registration
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a href="#" class="nav-link">
                                 <i class="bi bi-clipboard-check"></i>
                                 Assignments
