@@ -160,7 +160,7 @@
                             @if ($schoolInfo->logo_path)
                                 <img src="{{ asset('storage/' . $schoolInfo->logo_path) }}" class="img-fluid mb-3" style="max-height: 80px;" alt="School Logo">
                             @endif
-                            <p class="mb-2"><strong>{{ $schoolInfo->name ?? 'School Name' }}</strong></p>
+                            <p class="mb-2"><strong>{{ $schoolInfo->school_name ?? 'School Name' }}</strong></p>
                             @if ($schoolInfo->location)
                                 <p class="mb-2 text-muted small">
                                     <i class="fas fa-map-marker-alt"></i> {{ $schoolInfo->location }}

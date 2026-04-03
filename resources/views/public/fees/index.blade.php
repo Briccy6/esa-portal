@@ -222,22 +222,31 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Fetch courses for this branch
         fetch(`/fees/branches/${branchId}/courses`)
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
             .then(data => {
-                if (data.success && data.courses.length > 0) {
-                    data.courses.forEach(course => {
-                        const option = document.createElement('option');
-                        option.value = course.id;
-                        option.textContent = `${course.name} (${course.code})`;
-                        courseSelect.appendChild(option);
-                    });
+                if (data.success) {
+                    if (data.courses && data.courses.length > 0) {
+                        data.courses.forEach(course => {
+                            const option = document.createElement('option');
+                            option.value = course.id;
+                            option.textContent = `${course.name} (${course.code})`;
+                            courseSelect.appendChild(option);
+                        });
+                    } else {
+                        showError(`No courses available for this branch (Found: ${data.courses?.length || 0})`);
+                    }
                 } else {
-                    showError('No courses available for this branch');
+                    showError(data.message || 'Failed to load courses');
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
-                showError('Failed to load courses');
+                console.error('Fetch Error:', error);
+                showError(`Error: ${error.message}`);
             });
     });
 
@@ -263,7 +272,12 @@ document.addEventListener('DOMContentLoaded', function() {
         feesContainer.innerHTML = '';
 
         fetch(`/fees/courses/${courseId}`)
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
             .then(data => {
                 loadingState.classList.add('hidden');
                 if (data.success) {
@@ -274,9 +288,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
+                console.error('Fetch Error:', error);
                 loadingState.classList.add('hidden');
-                showError('An error occurred while loading fees');
+                showError(`Error: ${error.message}`);
             });
     }
 

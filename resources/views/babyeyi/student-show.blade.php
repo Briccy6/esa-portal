@@ -25,7 +25,7 @@
                             @if ($schoolInfo->logo_path)
                                 <img src="{{ asset('storage/' . $schoolInfo->logo_path) }}" style="max-height: 80px; margin-bottom: 10px;" alt="School Logo">
                             @endif
-                            <h2 style="margin: 5px 0; color: #1a1a1a;">{{ $schoolInfo->name ?? 'School Name' }}</h2>
+                            <h2 style="margin: 5px 0; color: #1a1a1a;">{{ $schoolInfo->school_name ?? 'School Name' }}</h2>
                             <p style="margin: 2px 0; color: #666; font-size: 14px;">{{ $schoolInfo->location ?? '' }}</p>
                             @if ($schoolInfo->phone)
                                 <p style="margin: 2px 0; color: #666; font-size: 14px;">Tel: {{ $schoolInfo->phone }}</p>

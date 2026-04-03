@@ -82,10 +82,10 @@
 
                     <!-- Card Footer Actions -->
                     <div class="bg-gray-50 px-6 py-4 flex gap-2">
-                        <a href="{{ route('public.babyeyi.show', $babyeyi) }}" class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors text-sm font-semibold">
-                            <i class="fas fa-eye mr-2"></i>View
+                        <a href="{{ route('public.babyeyi.show', $babyeyi) }}" class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-semibold shadow-md hover:shadow-lg">
+                            <i class="fas fa-eye mr-2"></i>Preview
                         </a>
-                        <a href="{{ route('public.babyeyi.download', $babyeyi) }}" class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-gray-300 text-gray-900 rounded-lg hover:bg-gray-400 transition-colors text-sm font-semibold">
+                        <a href="{{ route('public.babyeyi.download', $babyeyi) }}" class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500 transition-colors text-sm font-semibold shadow-md hover:shadow-lg">
                             <i class="fas fa-download mr-2"></i>Download
                         </a>
                     </div>

@@ -265,7 +265,7 @@
             @if ($schoolInfo && $schoolInfo->logo_path)
                 <img src="{{ public_path('storage/' . $schoolInfo->logo_path) }}" class="school-logo" alt="School Logo">
             @endif
-            <div class="school-name">{{ $schoolInfo->name ?? 'SCHOOL NAME' }}</div>
+            <div class="school-name">{{ $schoolInfo->school_name ?? 'SCHOOL NAME' }}</div>
             @if ($schoolInfo->location)
                 <div class="school-info">{{ $schoolInfo->location }}</div>
             @endif

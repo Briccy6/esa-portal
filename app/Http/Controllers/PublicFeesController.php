@@ -7,6 +7,8 @@ use App\Models\Course;
 use App\Models\CourseTermFee;
 use App\Models\Term;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use PDF;
 
 class PublicFeesController extends Controller
@@ -26,21 +28,52 @@ class PublicFeesController extends Controller
      */
     public function getCoursesByBranch($branchId)
     {
-        $courses = Course::whereHas('branches', function($q) use ($branchId) {
-            $q->where('branch_id', $branchId);
-        })->orderBy('course_name')->get();
+        try {
+            // First try: Query using the pivot table (belongsToMany)
+            $courses = Course::whereHas('branches', function($q) use ($branchId) {
+                $q->wherePivot('branch_id', $branchId);
+            })->orderBy('course_name')->get();
 
-        return response()->json([
-            'success' => true,
-            'courses' => $courses->map(function($course) {
+            // Second try: Join the pivot table directly
+            if ($courses->isEmpty()) {
+                $courses = \DB::table('courses')
+                    ->join('branch_course', 'courses.id', '=', 'branch_course.course_id')
+                    ->where('branch_course.branch_id', $branchId)
+                    ->select('courses.id', 'courses.course_name', 'courses.course_code', 'courses.abbreviation')
+                    ->orderBy('course_name')
+                    ->distinct()
+                    ->get();
+            }
+
+            // Third try: Direct foreign key (if course has branch_id column)
+            if ($courses->isEmpty()) {
+                $courses = Course::where('branch_id', $branchId)
+                    ->orderBy('course_name')
+                    ->get();
+            }
+
+            // Convert to array format
+            $formattedCourses = collect($courses)->map(function($course) {
                 return [
-                    'id' => $course->id,
+                    'id' => $course->id ?? $course->course_id,
                     'name' => $course->course_name,
                     'code' => $course->course_code,
                     'abbreviation' => $course->abbreviation,
                 ];
-            })
-        ]);
+            })->values();
+
+            return response()->json([
+                'success' => true,
+                'courses' => $formattedCourses,
+                'count' => $formattedCourses->count()
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Courses loading error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error loading courses. Please try again.'
+            ], 500);
+        }
     }
 
     /**

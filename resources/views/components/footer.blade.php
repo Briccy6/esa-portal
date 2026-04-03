@@ -1,8 +1,12 @@
 @php
-    $systemName = \Illuminate\Support\Facades\Cache::get('esa_system_name', 'ESA-Parnel');
-    $systemEmail = \Illuminate\Support\Facades\Cache::get('esa_system_email', 'info@excellentservantacademy.com');
-    $systemPhone = \Illuminate\Support\Facades\Cache::get('esa_system_phone', '+1 (555) 123-4567');
-    $systemAddress = \Illuminate\Support\Facades\Cache::get('esa_system_address', '123 Education Street, Learning City');
+    $schoolInfo = \App\Models\SchoolInformation::getActive();
+    
+    // Use school info if available, otherwise fall back to cache
+    $systemName = $schoolInfo?->school_name ?? \Illuminate\Support\Facades\Cache::get('esa_system_name', 'ESA-Parnel');
+    $systemEmail = $schoolInfo?->email ?? \Illuminate\Support\Facades\Cache::get('esa_system_email', 'info@excellentservantacademy.com');
+    $systemPhone = $schoolInfo?->phone ?? \Illuminate\Support\Facades\Cache::get('esa_system_phone', '+1 (555) 123-4567');
+    $systemAddress = $schoolInfo?->address ?? \Illuminate\Support\Facades\Cache::get('esa_system_address', '123 Education Street, Learning City');
+    $systemDescription = $schoolInfo?->mission ?? $schoolInfo?->motto ?? \Illuminate\Support\Facades\Cache::get('esa_system_description', 'Quality education and resources to help students achieve their academic goals.');
 @endphp
 
 <!-- Footer -->
@@ -13,7 +17,7 @@
             <div>
                 <h3 class="text-lg font-semibold mb-4">{{ $systemName }}</h3>
                 <p class="text-gray-300 text-sm leading-relaxed">
-                    {{ \Illuminate\Support\Facades\Cache::get('esa_system_description', 'Quality education and resources to help students achieve their academic goals.') }}
+                    {{ $systemDescription }}
                 </p>
             </div>
             

@@ -62,13 +62,18 @@
             @if ($schoolInfo->logo_path)
                 <img src="{{ asset('storage/' . $schoolInfo->logo_path) }}" alt="School Logo" class="h-20 mx-auto mb-4 object-contain">
             @endif
-            <h2 class="text-2xl font-bold text-gray-900 mb-1">{{ $schoolInfo->name ?? 'School Name' }}</h2>
+            <h2 class="text-2xl font-bold text-gray-900 mb-1">{{ $schoolInfo->school_name ?? 'School Name' }}</h2>
             @if ($schoolInfo->location)
                 <p class="text-gray-600 mb-1">{{ $schoolInfo->location }}</p>
             @endif
-            @if ($schoolInfo->phone)
-                <p class="text-gray-600 text-sm">Tel: {{ $schoolInfo->phone }}</p>
-            @endif
+            <div class="space-y-0.5">
+                @if ($schoolInfo->phone)
+                    <p class="text-gray-600 text-sm"><i class="fas fa-phone mr-2"></i>Tel: {{ $schoolInfo->phone }}</p>
+                @endif
+                @if ($schoolInfo->email)
+                    <p class="text-gray-600 text-sm"><i class="fas fa-envelope mr-2"></i>Email: {{ $schoolInfo->email }}</p>
+                @endif
+            </div>
         </div>
         @endif
 
