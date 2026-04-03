@@ -93,7 +93,7 @@ class TermController extends Controller
             // Log for debugging
             \Log::info('Creating term', [
                 'academic_year_id' => $validated['academic_year_id'],
-                'academic_year_name' => $academicYear->name ?? 'Unknown',
+                'academic_year_name' => $academicYear->year ?? 'Unknown',
                 'term_name' => $validated['name'],
                 'start_date' => $validated['start_date'],
                 'end_date' => $validated['end_date']

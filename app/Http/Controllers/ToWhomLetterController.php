@@ -346,8 +346,8 @@ class ToWhomLetterController extends Controller
         
         // Get academic year with fallback
         if ($student->academic_year_id) {
-            if ($student->academicYear && !empty($student->academicYear->name)) {
-                $academicYear = $student->academicYear->name;
+            if ($student->academicYear && !empty($student->academicYear->year)) {
+                $academicYear = $student->academicYear->year;
             } else {
                 $academicYear = "Academic Year ID: {$student->academic_year_id} (Name not available)";
             }
@@ -395,8 +395,8 @@ The student was admitted on " . $student->created_at->format('F j, Y') . " and i
         
         // Get academic year with fallback
         if ($student->academic_year_id) {
-            if ($student->academicYear && !empty($student->academicYear->name)) {
-                $academicYear = $student->academicYear->name;
+            if ($student->academicYear && !empty($student->academicYear->year)) {
+                $academicYear = $student->academicYear->year;
             } else {
                 $academicYear = "Academic Year ID: {$student->academic_year_id} (Name not available)";
             }
@@ -444,8 +444,8 @@ The student has maintained satisfactory academic progress and has demonstrated c
         
         // Get academic year with fallback
         if ($student->academic_year_id) {
-            if ($student->academicYear && !empty($student->academicYear->name)) {
-                $academicYear = $student->academicYear->name;
+            if ($student->academicYear && !empty($student->academicYear->year)) {
+                $academicYear = $student->academicYear->year;
             } else {
                 $academicYear = "Academic Year ID: {$student->academic_year_id} (Name not available)";
             }
@@ -491,8 +491,8 @@ The student's financial account is currently in good standing. All required fees
         
         // Get academic year with fallback
         if ($student->academic_year_id) {
-            if ($student->academicYear && !empty($student->academicYear->name)) {
-                $academicYear = $student->academicYear->name;
+            if ($student->academicYear && !empty($student->academicYear->year)) {
+                $academicYear = $student->academicYear->year;
             } else {
                 $academicYear = "Academic Year ID: {$student->academic_year_id} (Name not available)";
             }
@@ -539,8 +539,8 @@ The student has fulfilled all academic and administrative requirements for the c
         
         // Get academic year with fallback
         if ($student->academic_year_id) {
-            if ($student->academicYear && !empty($student->academicYear->name)) {
-                $academicYear = $student->academicYear->name;
+            if ($student->academicYear && !empty($student->academicYear->year)) {
+                $academicYear = $student->academicYear->year;
             } else {
                 $academicYear = "Academic Year ID: {$student->academic_year_id} (Name not available)";
             }
@@ -586,8 +586,8 @@ The student has maintained satisfactory academic performance, demonstrated good 
         
         // Get academic year with fallback
         if ($student->academic_year_id) {
-            if ($student->academicYear && !empty($student->academicYear->name)) {
-                $academicYear = $student->academicYear->name;
+            if ($student->academicYear && !empty($student->academicYear->year)) {
+                $academicYear = $student->academicYear->year;
             } else {
                 $academicYear = "Academic Year ID: {$student->academic_year_id} (Name not available)";
             }
@@ -728,8 +728,8 @@ The student has maintained satisfactory academic performance, demonstrated good 
         
         // Get academic year with fallback
         if ($student->academic_year_id) {
-            if ($student->academicYear && !empty($student->academicYear->name)) {
-                $academicYear = $student->academicYear->name;
+            if ($student->academicYear && !empty($student->academicYear->year)) {
+                $academicYear = $student->academicYear->year;
             } else {
                 $academicYear = "Academic Year ID: {$student->academic_year_id} (Name not available)";
             }

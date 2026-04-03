@@ -26,8 +26,8 @@ class BabyeyiController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate(15);
 
-        // Use staff view if accessed by staff, otherwise use public view
-        $view = Auth::guard('staff')->check() ? 'staff.babyeyi.index' : 'babyeyi.index';
+        // Use staff view if accessed by staff or admin, otherwise use public view
+        $view = Auth::guard('staff')->check() || Auth::guard('admin')->check() ? 'staff.babyeyi.index' : 'babyeyi.index';
         
         return view($view, compact('babyeyis'));
     }
@@ -37,13 +37,13 @@ class BabyeyiController extends Controller
      */
     public function create()
     {
-        $academicYears = AcademicYear::orderBy('name', 'desc')->get();
+        $academicYears = AcademicYear::orderBy('year', 'desc')->get();
         $terms = collect();
         $courses = collect();
         $courseTypes = $this->getCourseTypes();
 
-        // Use staff view if accessed by staff, otherwise use public view
-        $view = Auth::guard('staff')->check() ? 'staff.babyeyi.create' : 'babyeyi.create';
+        // Use staff view if accessed by staff or admin, otherwise use public view
+        $view = Auth::guard('staff')->check() || Auth::guard('admin')->check() ? 'staff.babyeyi.create' : 'babyeyi.create';
 
         return view($view, compact('academicYears', 'terms', 'courses', 'courseTypes'));
     }
@@ -104,7 +104,7 @@ class BabyeyiController extends Controller
         $termEnd = $term->end_date->format('F j, Y');
 
         $content = "<h2>Babyeyi - Term Registration Document</h2>";
-        $content .= "<p><strong>Academic Year:</strong> {$academicYear->name}</p>";
+        $content .= "<p><strong>Academic Year:</strong> {$academicYear->year}</p>";
         $content .= "<p><strong>Term:</strong> {$term->name}</p>";
         $content .= "<p><strong>Term Duration:</strong> {$termStart} to {$termEnd}</p>";
 

@@ -133,7 +133,7 @@
                     <hr>
                     <div class="mb-3">
                         <small class="text-muted"><strong>Academic Year:</strong></small><br>
-                        {{ $babyeyi->academicYear->name ?? 'N/A' }}
+                        {{ $babyeyi->academicYear->year ?? 'N/A' }}
                     </div>
                     <div class="mb-3">
                         <small class="text-muted"><strong>Term:</strong></small><br>

@@ -289,7 +289,7 @@
         <div class="info-box">
             <strong>Reference:</strong> {{ $babyeyi->reference_number }} | 
             <strong>Term:</strong> {{ $babyeyi->term->name ?? 'N/A' }} | 
-            <strong>Academic Year:</strong> {{ $babyeyi->academicYear->name ?? 'N/A' }}
+            <strong>Academic Year:</strong> {{ $babyeyi->academicYear->year ?? 'N/A' }}
         </div>
 
         <!-- Main Content -->

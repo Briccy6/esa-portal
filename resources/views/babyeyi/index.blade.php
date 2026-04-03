@@ -34,7 +34,7 @@
                     @foreach ($babyeyis as $babyeyi)
                         <tr>
                             <td><strong>{{ $babyeyi->reference_number }}</strong></td>
-                            <td>{{ $babyeyi->academicYear->name ?? 'N/A' }}</td>
+                            <td>{{ $babyeyi->academicYear->year ?? 'N/A' }}</td>
                             <td>{{ $babyeyi->term->name ?? 'N/A' }}</td>
                             <td>{{ $babyeyi->course->name ?? ($babyeyi->course_type ? 'Type: ' . $babyeyi->course_type : 'Multiple') }}</td>
                             <td>{{ $babyeyi->creator->name ?? 'N/A' }}</td>

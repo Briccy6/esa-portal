@@ -27,7 +27,7 @@
                                         <div class="col-md-8">
                                             <h5 class="card-title mb-2">
                                                 <i class="fas fa-file-alt"></i>
-                                                {{ $babyeyi->academicYear->name ?? 'Academic Year' }} - 
+                                                {{ $babyeyi->academicYear->year ?? 'Academic Year' }} - 
                                                 <strong>{{ $babyeyi->term->name ?? 'Term' }}</strong>
                                             </h5>
                                             
@@ -90,7 +90,7 @@
                             @endif
                             <p class="mb-0 text-muted small">
                                 <strong>Academic Year:</strong> 
-                                {{ $student->academicYear->name ?? 'N/A' }}
+                                {{ $student->academicYear->year ?? 'N/A' }}
                             </p>
                         @else
                             <p class="text-danger">No course assigned</p>

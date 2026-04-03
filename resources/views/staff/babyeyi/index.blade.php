@@ -45,7 +45,7 @@
                                         <div class="d-flex justify-content-between align-items-start">
                                             <div>
                                                 <h6 class="mb-1">
-                                                    <strong>{{ $babyeyi->academicYear->name ?? 'N/A' }} - {{ $babyeyi->term->name ?? 'N/A' }}</strong>
+                                                    <strong>{{ $babyeyi->academicYear->year ?? 'N/A' }} - {{ $babyeyi->term->name ?? 'N/A' }}</strong>
                                                 </h6>
                                                 <p class="mb-1 text-sm text-muted">
                                                     <i class="fas fa-book"></i>
@@ -126,7 +126,7 @@
                                                 <code class="bg-light px-2 py-1 rounded">{{ $babyeyi->reference_number }}</code>
                                             </td>
                                             <td>
-                                                <strong>{{ $babyeyi->academicYear->name ?? 'N/A' }}</strong><br>
+                                                <strong>{{ $babyeyi->academicYear->year ?? 'N/A' }}</strong><br>
                                                 <small class="text-muted">{{ $babyeyi->term->name ?? 'N/A' }}</small>
                                             </td>
                                             <td>

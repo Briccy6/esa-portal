@@ -17,7 +17,7 @@
                         <div class="card-header bg-primary text-white">
                             <h5 class="mb-0">
                                 <i class="fas fa-scroll"></i>
-                                {{ $babyeyi->academicYear->name ?? 'N/A' }} - {{ $babyeyi->term->name ?? 'N/A' }}
+                                {{ $babyeyi->academicYear->year ?? 'N/A' }} - {{ $babyeyi->term->name ?? 'N/A' }}
                             </h5>
                         </div>
                         <div class="card-body">
