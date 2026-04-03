@@ -145,3 +145,53 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form[action="{{ route('to-whom.store') }}"]');
+    
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(form);
+        
+        fetch(form.action, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            body: formData,
+            credentials: 'same-origin'
+        })
+        .then(response => {
+            if (response.status === 422) {
+                // Outstanding fees error
+                return response.json().then(data => {
+                    if (data.error === 'Student has outstanding fees') {
+                        alert('⚠️ Cannot Generate Letter\n\n' + data.message);
+                        throw new Error('Outstanding fees');
+                    }
+                    throw new Error('Validation error');
+                });
+            }
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.text();
+        })
+        .then(html => {
+            // If successful, redirect by submitting form normally
+            form.submit();
+        })
+        .catch(error => {
+            if (error.message !== 'Outstanding fees') {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            }
+        });
+    });
+});
+</script>
+@endpush

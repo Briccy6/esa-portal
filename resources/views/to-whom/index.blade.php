@@ -69,6 +69,9 @@
                                                     <a href="{{ route('to-whom.download', $letter) }}" class="btn btn-sm btn-outline-success" title="Download PDF">
                                                         <i class="fas fa-download"></i>
                                                     </a>
+                                                    <button type="button" class="btn btn-sm btn-outline-danger" title="Delete" onclick="deleteLetterFromIndex({{ $letter->id }})">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -92,3 +95,30 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+function deleteLetterFromIndex(letterId) {
+    if (confirm('Are you sure you want to delete this letter? This action cannot be undone.')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/to-whom/${letterId}`;
+        
+        const tokenInput = document.createElement('input');
+        tokenInput.type = 'hidden';
+        tokenInput.name = '_token';
+        tokenInput.value = '{{ csrf_token() }}';
+        
+        const methodInput = document.createElement('input');
+        methodInput.type = 'hidden';
+        methodInput.name = '_method';
+        methodInput.value = 'DELETE';
+        
+        form.appendChild(tokenInput);
+        form.appendChild(methodInput);
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+@endpush

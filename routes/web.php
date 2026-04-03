@@ -1427,8 +1427,10 @@ Route::middleware(['auth:admin,staff,student'])->prefix('to-whom')->name('to-who
     Route::get('/', [ToWhomLetterController::class, 'index'])->name('index');
     Route::get('/create', [ToWhomLetterController::class, 'create'])->name('create');
     Route::post('/', [ToWhomLetterController::class, 'store'])->name('store');
+    Route::get('/search/students', [ToWhomLetterController::class, 'searchStudents'])->name('search-students');
     Route::get('/{letter}', [ToWhomLetterController::class, 'show'])->name('show');
     Route::get('/{letter}/download', [ToWhomLetterController::class, 'download'])->name('download');
+    Route::delete('/{letter}', [ToWhomLetterController::class, 'destroy'])->name('destroy');
 });
 
 // Babyeyi Routes - Accessible by secretaries and accountants for managing term registration documents

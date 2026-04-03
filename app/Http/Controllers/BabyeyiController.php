@@ -26,7 +26,10 @@ class BabyeyiController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate(15);
 
-        return view('babyeyi.index', compact('babyeyis'));
+        // Use staff view if accessed by staff, otherwise use public view
+        $view = Auth::guard('staff')->check() ? 'staff.babyeyi.index' : 'babyeyi.index';
+        
+        return view($view, compact('babyeyis'));
     }
 
     /**
@@ -39,7 +42,10 @@ class BabyeyiController extends Controller
         $courses = collect();
         $courseTypes = $this->getCourseTypes();
 
-        return view('babyeyi.create', compact('academicYears', 'terms', 'courses', 'courseTypes'));
+        // Use staff view if accessed by staff, otherwise use public view
+        $view = Auth::guard('staff')->check() ? 'staff.babyeyi.create' : 'babyeyi.create';
+
+        return view($view, compact('academicYears', 'terms', 'courses', 'courseTypes'));
     }
 
     /**

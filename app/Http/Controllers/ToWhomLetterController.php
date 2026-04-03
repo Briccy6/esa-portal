@@ -68,13 +68,73 @@ class ToWhomLetterController extends Controller
                 $students = collect([$student]);
             }
             return view('to-whom.student-create', compact('students', 'letterTypes', 'recipientTitles'));
+        } else if (method_exists($user, 'isStaff') && $user->isStaff()) {
+            // Staff can only see students from their assigned branches
+            $branchIds = $user->branches()->pluck('branch_id')->toArray();
+            if (empty($branchIds)) {
+                // If no branches assigned, show no students
+                $students = collect();
+            } else {
+                $students = Student::with(['course', 'branch', 'academicYear'])
+                    ->whereIn('branch_id', $branchIds)
+                    ->orderBy('full_name')
+                    ->get();
+            }
+            return view('to-whom.create', compact('students', 'letterTypes', 'recipientTitles'));
         } else {
-            // Admins and staff can create letters for any student
+            // Admins can see all students
             $students = Student::with(['course', 'branch', 'academicYear'])
                 ->orderBy('full_name')
                 ->get();
             return view('to-whom.create', compact('students', 'letterTypes', 'recipientTitles'));
         }
+    }
+
+    /**
+     * Search for students via AJAX (for live autocomplete).
+     */
+    public function searchStudents(Request $request)
+    {
+        $query = $request->input('q', '');
+        $user = Auth::user();
+        
+        $studentQuery = Student::with(['course', 'branch', 'academicYear']);
+        
+        // If staff, filter by their assigned branches
+        if ($user && method_exists($user, 'isStaff') && $user->isStaff()) {
+            $branchIds = $user->branches()->pluck('branch_id')->toArray();
+            if (!empty($branchIds)) {
+                $studentQuery->whereIn('branch_id', $branchIds);
+            } else {
+                // No branches assigned, return empty
+                return response()->json([]);
+            }
+        }
+        
+        // Search by name or registration number
+        if (!empty($query)) {
+            $studentQuery->where(function ($q) use ($query) {
+                $q->where('full_name', 'like', "%{$query}%")
+                  ->orWhere('reg_number', 'like', "%{$query}%")
+                  ->orWhere('email', 'like', "%{$query}%");
+            });
+        }
+        
+        $students = $studentQuery->orderBy('full_name')
+            ->limit(20)
+            ->get()
+            ->map(function ($student) {
+                return [
+                    'id' => $student->id,
+                    'text' => "{$student->full_name} ({$student->reg_number})",
+                    'full_name' => $student->full_name,
+                    'reg_number' => $student->reg_number,
+                    'branch' => $student->branch?->name ?? 'N/A',
+                    'course' => $student->course?->name ?? 'N/A'
+                ];
+            });
+        
+        return response()->json($students);
     }
 
     /**
@@ -91,7 +151,20 @@ class ToWhomLetterController extends Controller
         ]);
 
         $user = Auth::user();
-        $student = Student::findOrFail($request->student_id);
+        // Eager load relationships to ensure course and academic year names are available
+        $student = Student::with(['course', 'branch', 'academicYear'])->findOrFail($request->student_id);
+
+        // Check for outstanding fees on financial status and good standing documents
+        if (in_array($request->letter_type, [ToWhomLetter::TYPE_FINANCIAL_STATUS, ToWhomLetter::TYPE_GOOD_STANDING])) {
+            $outstandingFees = $this->getStudentOutstandingFees($student->id);
+            if ($outstandingFees > 0) {
+                return response()->json([
+                    'error' => 'Student has outstanding fees',
+                    'message' => "This student has outstanding fees of RWF " . number_format($outstandingFees, 2) . ". All fees must be paid before generating a {$request->letter_type} document.",
+                    'outstanding_amount' => $outstandingFees
+                ], 422);
+            }
+        }
 
         // Generate letter content based on type
         $content = $this->generateLetterContent($request->letter_type, $student, $request->purpose);
@@ -121,9 +194,9 @@ class ToWhomLetterController extends Controller
     }
 
     /**
-     * Display the specified resource.
+     * Delete a generated letter.
      */
-    public function show(ToWhomLetter $letter)
+    public function destroy(ToWhomLetter $letter)
     {
         $user = auth()->user();
         
@@ -133,14 +206,57 @@ class ToWhomLetterController extends Controller
             if (!$student || $letter->student_id != $student->id) {
                 abort(403, 'Unauthorized');
             }
+        } else if (method_exists($user, 'isStaff') && $user->isStaff()) {
+            // Staff can only delete letters for students in their assigned branches
+            $branchIds = $user->branches()->pluck('branch_id')->toArray();
+            if (!in_array($letter->student->branch_id, $branchIds)) {
+                abort(403, 'Unauthorized');
+            }
+        }
+        // Admins can delete any letter
+        
+        $letter->delete();
+        
+        return redirect()->route('to-whom.index')
+            ->with('success', 'Letter deleted successfully!');
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(ToWhomLetter $letter)
+    {
+        $user = auth()->user();
+        $canDelete = false;
+        
+        // Load the student relationship
+        $letter->load('student');
+        
+        // Check permissions and determine if user can delete
+        if ($user->isStudent()) {
+            $student = Student::where('email', $user->email)->first();
+            if (!$student || $letter->student_id != $student->id) {
+                abort(403, 'Unauthorized');
+            }
+            $canDelete = true;
+        } else if (method_exists($user, 'isStaff') && $user->isStaff()) {
+            // Staff can view letters for students in their assigned branches
+            $branchIds = $user->branches()->pluck('branch_id')->toArray();
+            if (!in_array($letter->student->branch_id, $branchIds)) {
+                abort(403, 'Unauthorized');
+            }
+            $canDelete = true;
+        } else {
+            // Admins can delete any letter
+            $canDelete = true;
         }
 
         $schoolInfo = SchoolInformation::getActive();
         
         if ($user->isStudent()) {
-            return view('to-whom.student-show', compact('letter', 'schoolInfo'));
+            return view('to-whom.student-show', compact('letter', 'schoolInfo', 'canDelete'));
         } else {
-            return view('to-whom.show', compact('letter', 'schoolInfo'));
+            return view('to-whom.show', compact('letter', 'schoolInfo', 'canDelete'));
         }
     }
 
@@ -628,5 +744,26 @@ Student Information:
 - Academic Year: {$academicYear}
 
 This custom letter is provided for the purpose of: {$purpose}";
+    }
+
+    /**
+     * Calculate outstanding fees for a student.
+     * Compares total fees due vs total paid.
+     */
+    private function getStudentOutstandingFees($studentId): float
+    {
+        // Get total fees from school_fees
+        $totalFees = DB::table('school_fees')
+            ->where('student_id', $studentId)
+            ->sum('amount');
+        
+        // Get total paid from payments
+        $totalPaid = DB::table('payments')
+            ->join('school_fees', 'payments.school_fee_id', '=', 'school_fees.id')
+            ->where('school_fees.student_id', $studentId)
+            ->sum('payments.payed');
+        
+        $outstandingBalance = max(0, $totalFees - $totalPaid);
+        return (float) $outstandingBalance;
     }
 }

@@ -13,6 +13,11 @@
                     <a href="{{ route('to-whom.download', $letter) }}" class="btn btn-success ms-2">
                         <i class="fas fa-download"></i> Download PDF
                     </a>
+                    @if($canDelete)
+                        <button type="button" class="btn btn-danger ms-2" onclick="deleteLetterConfirm()">
+                            <i class="fas fa-trash"></i> Delete Letter
+                        </button>
+                    @endif
                 </div>
             </div>
 
@@ -158,6 +163,33 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+function deleteLetterConfirm() {
+    if (confirm('Are you sure you want to delete this letter? This action cannot be undone.')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ route('to-whom.destroy', $letter) }}';
+        
+        const tokenInput = document.createElement('input');
+        tokenInput.type = 'hidden';
+        tokenInput.name = '_token';
+        tokenInput.value = '{{ csrf_token() }}';
+        
+        const methodInput = document.createElement('input');
+        methodInput.type = 'hidden';
+        methodInput.name = '_method';
+        methodInput.value = 'DELETE';
+        
+        form.appendChild(tokenInput);
+        form.appendChild(methodInput);
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+@endpush
 
 @push('styles')
 <style>
