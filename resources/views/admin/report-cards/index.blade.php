@@ -584,8 +584,19 @@ function deleteReportCardsGroup(studentId, courseId, academicYearId, termIds, st
     background: #f1f3f5;
     border: 1px solid #dee2e6;
 }
+@media (max-width: 1400px) {
+    .rc-gen-grid { grid-template-columns: 1fr 1fr 1fr; }
+}
 @media (max-width: 1100px) {
     .rc-gen-grid { grid-template-columns: 1fr 1fr; }
+    .rc-page-header__left { flex-direction: column; align-items: flex-start; }
+}
+@media (max-width: 768px) {
+    .rc-gen-grid { grid-template-columns: 1fr; }
+    .rc-page-header { flex-direction: column; align-items: flex-start; }
+    .rc-page-header > .d-flex { width: 100%; flex-direction: column; }
+    .rc-page-header > .d-flex .rc-btn { width: 100%; }
+    .container-fluid { padding-left: 0.5rem; padding-right: 0.5rem; }
 }
 @media (max-width: 576px) {
     .rc-gen-grid { grid-template-columns: 1fr; }
@@ -1442,7 +1453,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function refreshCount() {
         const checked = checkboxes.filter(cb => cb.checked).length;
-        selectedCount.textContent = String(checked);
+        if (selectedCount) {
+            selectedCount.textContent = String(checked);
+        }
         if (selectAll) {
             selectAll.checked = checked > 0 && checked === checkboxes.length;
             selectAll.indeterminate = checked > 0 && checked < checkboxes.length;
@@ -1617,7 +1630,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function refreshCount() {
         const checked = checkboxes.filter(cb => cb.checked).length;
-        selectedCount.textContent = String(checked);
+        if (selectedCount) {
+            selectedCount.textContent = String(checked);
+        }
     }
 
     checkboxes.forEach(cb => cb.addEventListener('change', refreshCount));
