@@ -112,12 +112,21 @@
                         <div class="row">
                             <div class="col-12">
                                 <div class="form-group">
-                                    <button type="button" id="checkFeesBtn" class="btn btn-warning">
+                                    <!-- For Single Student Generation -->
+                                    <button type="submit" id="singleGenBtn" class="btn btn-primary" style="display: none;">
+                                        <i class="fas fa-plus"></i> Generate Report Card for Student
+                                    </button>
+
+                                    <!-- For Class Generation - Check Fees First (MANDATORY) -->
+                                    <button type="button" id="checkClassFeesBtn" class="btn btn-info" onclick="checkClassFees()" style="display: none;">
+                                        <i class="fas fa-search"></i> Step 1: Check Class Fees Before Generating
+                                    </button>
+
+                                    <!-- Legacy button -->
+                                    <button type="button" id="checkFeesBtn" class="btn btn-warning" style="display: none;">
                                         <i class="fas fa-search"></i> Check Outstanding Fees
                                     </button>
-                                    <button type="submit" class="btn btn-primary">
-                                        <i class="fas fa-plus"></i> Generate Report Card
-                                    </button>
+
                                     <a href="{{ route('admin.report-cards.index') }}" class="btn btn-secondary">
                                         <i class="fas fa-arrow-left"></i> Back
                                     </a>
@@ -301,6 +310,64 @@ $(document).ready(function() {
         modal.hide();
         $('form').submit();
     });
+
+    // Toggle buttons based on student selection
+    updateButtonDisplay();
+    $('#student_id').change(updateButtonDisplay);
+
+    function updateButtonDisplay() {
+        const studentId = document.getElementById('student_id').value;
+        const courseId = document.getElementById('course_id').value;
+        const yearId = document.getElementById('academic_year_id').value;
+        const termIds = Array.from(document.getElementById('term_ids').selectedOptions).map(o => o.value);
+
+        if (studentId) {
+            // Single student mode
+            document.getElementById('singleGenBtn').style.display = 'inline-block';
+            document.getElementById('checkClassFeesBtn').style.display = 'none';
+            document.getElementById('checkFeesBtn').style.display = 'none';
+        } else if (courseId && yearId && termIds.length > 0) {
+            // Class generation mode
+            document.getElementById('singleGenBtn').style.display = 'none';
+            document.getElementById('checkClassFeesBtn').style.display = 'inline-block';
+            document.getElementById('checkFeesBtn').style.display = 'none';
+        } else {
+            document.getElementById('singleGenBtn').style.display = 'none';
+            document.getElementById('checkClassFeesBtn').style.display = 'none';
+            document.getElementById('checkFeesBtn').style.display = 'none';
+        }
+    }
+
+    document.getElementById('course_id').addEventListener('change', updateButtonDisplay);
+    document.getElementById('academic_year_id').addEventListener('change', updateButtonDisplay);
+    document.getElementById('term_ids').addEventListener('change', updateButtonDisplay);
 });
+
+function checkClassFees() {
+    const courseId = document.getElementById('course_id').value;
+    const yearId = document.getElementById('academic_year_id').value;
+    const termIds = Array.from(document.getElementById('term_ids').selectedOptions).map(o => o.value);
+
+    if (!courseId || !yearId || termIds.length === 0) {
+        alert('Please select Course, Academic Year, and at least one Term');
+        return;
+    }
+
+    // Submit to the check-class-fees endpoint
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{{ route("admin.report-cards.check-class-fees") }}';
+
+    const csrfToken = document.querySelector('input[name="_token"]').value;
+    form.innerHTML = `
+        <input type="hidden" name="_token" value="${csrfToken}">
+        <input type="hidden" name="course_id" value="${courseId}">
+        <input type="hidden" name="academic_year_id" value="${yearId}">
+        ${termIds.map(id => `<input type="hidden" name="term_ids[]" value="${id}">`).join('')}
+    `;
+
+    document.body.appendChild(form);
+    form.submit();
+}
 </script>
 @endpush

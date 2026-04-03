@@ -763,19 +763,22 @@ This custom letter is provided for the purpose of: {$purpose}";
     /**
      * Calculate outstanding fees for a student.
      * Compares total fees due vs total paid.
+     * Fees are stored in CourseTermFee, payments in StudentTransaction.
      */
     private function getStudentOutstandingFees($studentId): float
     {
-        // Get total fees from school_fees
-        $totalFees = DB::table('school_fees')
-            ->where('student_id', $studentId)
-            ->sum('amount');
+        $student = Student::findOrFail($studentId);
         
-        // Get total paid from payments
-        $totalPaid = DB::table('payments')
-            ->join('school_fees', 'payments.school_fee_id', '=', 'school_fees.id')
-            ->where('school_fees.student_id', $studentId)
-            ->sum('payments.payed');
+        // Get total fees from course_term_fees for the student's course
+        $totalFees = DB::table('course_term_fees')
+            ->where('course_id', $student->course_id)
+            ->sum(DB::raw('registration_fee + tuition_fee + practical_fee + trip_fee + student_card_fee'));
+        
+        // Get total paid from student_transactions (successful payments only)
+        $totalPaid = DB::table('student_transactions')
+            ->where('student_id', $studentId)
+            ->where('status', 'approved') // Only count approved/successful payments
+            ->sum('amount');
         
         $outstandingBalance = max(0, $totalFees - $totalPaid);
         return (float) $outstandingBalance;
