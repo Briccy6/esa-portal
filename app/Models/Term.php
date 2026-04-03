@@ -34,6 +34,11 @@ class Term extends Model
         return $this->hasMany(SchoolFee::class);
     }
 
+    public function courseTermFees()
+    {
+        return $this->hasMany(CourseTermFee::class);
+    }
+
     /**
      * Legacy alias: older views used `term` while the column is `name`.
      */

@@ -323,16 +323,21 @@ public function getAllBranches()
 public function getCourseStudents($courseId)
 {
     try {
-        $course = Course::findOrFail($courseId);
+        $course = Course::find($courseId);
+        
+        if (!$course) {
+            return response()->json(['error' => 'Course not found'], 404);
+        }
+        
         $students = $course->students()
             ->with(['branch', 'academicYear'])
-            ->get(['id', 'full_name', 'reg_number', 'class', 'branch_id', 'academic_year_id'])
-            ->map(function ($student) {
+            ->get(['id', 'full_name', 'reg_number', 'branch_id', 'academic_year_id'])
+            ->map(function ($student) use ($course) {
                 return [
                     'id' => $student->id,
                     'full_name' => $student->full_name,
                     'reg_number' => $student->reg_number,
-                    'class' => $student->class,
+                    'class' => $course->course_name,
                     'branch_name' => $student->branch->name ?? 'N/A',
                     'academic_year' => $student->academicYear->year ?? 'N/A',
                 ];
