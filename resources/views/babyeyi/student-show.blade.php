@@ -102,17 +102,34 @@
                     @endif
 
                     <!-- Footer Section -->
-                    <div style="margin-top: 60px; padding-top: 30px; border-top: 1px solid #ccc;">
-                        <div style="display: flex; justify-content: space-between; margin-top: 40px;">
-                            <div style="width: 30%;">
-                                <p style="margin-bottom: 50px; border-bottom: 1px solid #333;"></p>
-                                <p style="font-weight: bold; margin: 5px 0;">Head Teacher Signature</p>
-                                <p style="font-size: 12px; color: #666; margin: 2px 0;">Stamp of Institution</p>
+                    <div style="margin-top: 60px; padding-top: 30px; border-top: 1px solid #ccc; display: flex; justify-content: space-between; gap: 20px;">
+                        <!-- Head Teacher & Stamp -->
+                        <div style="width: 30%; text-align: center;">
+                            <div style="min-height: 70px; border: 2px solid #333; display: flex; align-items: center; justify-content: center; background: #fff; border-radius: 4px; margin-bottom: 40px; overflow: hidden;">
+                                @if ($schoolInfo && $schoolInfo->stamp_signature_url)
+                                    <img src="{{ $schoolInfo->stamp_signature_url }}" style="max-height: 65px; max-width: 100px; object-fit: contain;" alt="School Stamp">
+                                @elseif ($schoolInfo && $schoolInfo->principal_signature_url)
+                                    <img src="{{ $schoolInfo->principal_signature_url }}" style="max-height: 65px; max-width: 100px; object-fit: contain;" alt="Principal Signature">
+                                @else
+                                    <p style="margin: 0; color: #ccc; font-size: 11px; line-height: 1.3;">School Stamp</p>
+                                @endif
                             </div>
-                            <div style="width: 30%;">
-                                <p style="margin-bottom: 50px; border-bottom: 1px solid #333;"></p>
-                                <p style="font-weight: bold; margin: 5px 0;">Date</p>
-                            </div>
+                            <p style="font-weight: bold; margin: 5px 0;">Head Teacher/Principal</p>
+                            <p style="font-size: 12px; color: #666; margin: 2px 0;">Stamp of Institution</p>
+                        </div>
+
+                        <!-- Document Verified -->
+                        <div style="width: 35%; text-align: center;">
+                            <p style="margin-bottom: 50px; border-bottom: 1px solid #333;"></p>
+                            <p style="font-weight: bold; margin: 5px 0;">Document Verified</p>
+                            <p style="font-size: 12px; color: #666; margin: 2px 0;">Date: ______________</p>
+                        </div>
+
+                        <!-- Accountant Signature (No Storage) -->
+                        <div style="width: 30%; text-align: center; border-left: 2px dashed #999; padding-left: 15px;">
+                            <p style="margin-bottom: 50px; border-bottom: 1px dashed #666;"></p>
+                            <p style="font-weight: bold; margin: 5px 0;">Accountant/Manager</p>
+                            <p style="font-size: 12px; color: #666; margin: 2px 0;">Date: ______________</p>
                         </div>
                     </div>
                 </div>

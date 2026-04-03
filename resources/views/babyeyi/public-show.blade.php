@@ -82,15 +82,37 @@
 
             <!-- Signature Section -->
             <div class="mt-12 pt-8 border-t-2 border-gray-300">
-                <div class="grid grid-cols-2 md:grid-cols-3 gap-8 mt-16">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16">
+                    <!-- School Stamp & Principal Signature -->
                     <div class="text-center">
-                        <div class="border-b-2 border-gray-900 h-20 mb-2"></div>
-                        <p class="font-bold text-gray-900">Head Teacher Signature</p>
-                        <p class="text-sm text-gray-600">Stamp of Institution</p>
+                        <div class="flex items-center justify-center mb-4 h-24 border-2 border-gray-400 rounded">
+                            @if ($schoolInfo && $schoolInfo->stamp_signature_url)
+                                <img src="{{ $schoolInfo->stamp_signature_url }}" alt="School Stamp" class="max-h-20 max-w-24 object-contain">
+                            @elseif ($schoolInfo && $schoolInfo->principal_signature_url)
+                                <img src="{{ $schoolInfo->principal_signature_url }}" alt="Principal Signature" class="max-h-20 max-w-24 object-contain">
+                            @else
+                                <p class="text-gray-400 text-xs">School Stamp<br>& Signature</p>
+                            @endif
+                        </div>
+                        <p class="font-bold text-gray-900 mb-1">Head Teacher/Principal</p>
+                        <p class="text-sm text-gray-600">{{ $schoolInfo->principal_name ?? 'Signature Area' }}</p>
+                        <p class="text-xs text-gray-500 mt-2">Date: _______________</p>
                     </div>
+
+                    <!-- Document Verified -->
                     <div class="text-center">
-                        <div class="border-b-2 border-gray-900 h-20 mb-2"></div>
-                        <p class="font-bold text-gray-900">Date</p>
+                        <div class="border-b-2 border-gray-900 h-20 mb-4"></div>
+                        <p class="font-bold text-gray-900 mb-1">Document Verified</p>
+                        <p class="text-sm text-gray-600">Certified by Administration</p>
+                        <p class="text-xs text-gray-500 mt-2">Date: _______________</p>
+                    </div>
+
+                    <!-- Accountant Signature (No Storage) -->
+                    <div class="text-center border-l-2 border-dashed border-gray-400 pl-4">
+                        <div class="border-b-2 border-gray-500 h-20 mb-4"></div>
+                        <p class="font-bold text-gray-900 mb-1">Accountant/Manager</p>
+                        <p class="text-sm text-gray-600">Signature Area (On-site)</p>
+                        <p class="text-xs text-gray-500 mt-2">Date: _______________</p>
                     </div>
                 </div>
             </div>

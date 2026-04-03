@@ -358,15 +358,34 @@
         <!-- Footer with Signature Space -->
         <div class="footer">
             <div class="signature-section">
-                <div class="signature-box">
-                    <div class="signature-line"></div>
-                    <div class="signature-label">Head Teacher</div>
-                    <div class="signature-sub">Signature & School Stamp</div>
+                <!-- School Stamp & Principal Signature -->
+                <div class="signature-box" style="width: 30%;">
+                    @if ($schoolInfo && $schoolInfo->stamp_signature_url)
+                        <img src="{{ $schoolInfo->stamp_signature_url }}" style="max-height: 50px; max-width: 80px; margin-bottom: 8px;">
+                    @elseif ($schoolInfo && $schoolInfo->principal_signature_url)
+                        <img src="{{ $schoolInfo->principal_signature_url }}" style="max-height: 50px; max-width: 80px; margin-bottom: 8px;">
+                    @else
+                        <div class="signature-line"></div>
+                    @endif
+                    <div class="signature-label">Head Teacher/Principal</div>
+                    <div class="signature-sub">{{ $schoolInfo->principal_name ?? 'Signature Area' }}</div>
+                    <div class="signature-sub">Date: ______________</div>
                 </div>
-                <div class="signature-box">
+
+                <!-- Document Certification -->
+                <div class="signature-box" style="width: 35%;">
                     <div class="signature-line"></div>
-                    <div class="signature-label">Date</div>
-                    <div class="signature-sub">{{ date('F j, Y') }}</div>
+                    <div class="signature-label">Document Verified</div>
+                    <div class="signature-sub">Certified by School Administration</div>
+                    <div class="signature-sub">Date: ______________</div>
+                </div>
+
+                <!-- Accountant Signature (No Storage) -->
+                <div class="signature-box" style="width: 30%; border-left: 2px dashed #999; padding-left: 12px;">
+                    <div class="signature-line"></div>
+                    <div class="signature-label">Accountant/Manager</div>
+                    <div class="signature-sub">Signature Area (On-site only)</div>
+                    <div class="signature-sub">Date: ______________</div>
                 </div>
             </div>
         </div>
