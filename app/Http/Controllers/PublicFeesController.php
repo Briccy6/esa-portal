@@ -89,7 +89,6 @@ class PublicFeesController extends Controller
                 'message' => 'Error loading courses: ' . $e->getMessage()
             ], 500);
         }
-        }
     }
 
     /**
