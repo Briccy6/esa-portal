@@ -34,45 +34,59 @@
                 <div class="card-body bg-white" style="min-height: 600px;">
                     <!-- School Header -->
                     @if ($schoolInfo)
-                        <div style="text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px;">
+                        <div style="text-align: center; border-bottom: 3px solid #333; padding-bottom: 25px; margin-bottom: 35px;">
                             @if ($schoolInfo->logo_path)
-                                <img src="{{ asset('storage/' . $schoolInfo->logo_path) }}" style="max-height: 80px; margin-bottom: 10px;" alt="School Logo">
+                                <img src="{{ asset('storage/' . $schoolInfo->logo_path) }}" style="max-height: 90px; margin-bottom: 15px;" alt="School Logo">
+                            @elseif ($schoolInfo->logo)
+                                <img src="data:image/png;base64,{{ base64_encode($schoolInfo->logo) }}" style="max-height: 90px; margin-bottom: 15px;" alt="School Logo">
+                            @else
+                                <div style="width: 90px; height: 90px; margin: 0 auto 15px; background: #f0f0f0; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #ccc; font-size: 40px;">
+                                    <i class="fas fa-graduation-cap"></i>
+                                </div>
                             @endif
-                            <h2 style="margin: 5px 0; color: #1a1a1a;">{{ $schoolInfo->name ?? 'School Name' }}</h2>
-                            <p style="margin: 2px 0; color: #666; font-size: 14px;">{{ $schoolInfo->location ?? '' }}</p>
+                            <h2 style="margin: 10px 0; color: #1a1a1a; font-weight: bold;">{{ $schoolInfo->school_name ?? 'Excellent Servant Academy' }}</h2>
+                            <p style="margin: 5px 0; color: #666; font-size: 15px;">{{ $schoolInfo->address ?? 'Kigali, Rwanda' }}</p>
                             @if ($schoolInfo->phone)
-                                <p style="margin: 2px 0; color: #666; font-size: 14px;">Tel: {{ $schoolInfo->phone }}</p>
+                                <p style="margin: 3px 0; color: #666; font-size: 13px;">Tel: {{ $schoolInfo->phone }}</p>
                             @endif
                             @if ($schoolInfo->email)
-                                <p style="margin: 2px 0; color: #666; font-size: 14px;">Email: {{ $schoolInfo->email }}</p>
+                                <p style="margin: 3px 0; color: #666; font-size: 13px;">Email: {{ $schoolInfo->email }}</p>
                             @endif
                         </div>
                     @endif
 
                     <!-- Document Title -->
                     @if ($babyeyi->title)
-                        <h3 style="text-align: center; margin: 20px 0; color: #1a1a1a;">{{ $babyeyi->title }}</h3>
+                        <h3 style="text-align: center; margin: 20px 0; color: #1a1a1a; font-weight: bold;">{{ $babyeyi->title }}</h3>
                     @else
-                        <h3 style="text-align: center; margin: 20px 0; color: #1a1a1a;">BABYEYI</h3>
+                        <h3 style="text-align: center; margin: 20px 0; color: #1a1a1a; font-weight: bold;">BABYEYI - TERM REGISTRATION DOCUMENT</h3>
                     @endif
 
                     <!-- Document Content -->
-                    <div class="document-content">
+                    <div class="document-content" style="font-family: 'Georgia', serif; line-height: 1.8; color: #333; font-size: 15px;">
                         {!! $babyeyi->content !!}
                     </div>
 
-                    <!-- Footer Section -->
-                    <div style="margin-top: 60px; padding-top: 30px; border-top: 1px solid #ccc;">
-                        <div style="display: flex; justify-content: space-between; margin-top: 40px;">
-                            <div style="width: 30%;">
-                                <p style="margin-bottom: 50px; border-bottom: 1px solid #333;"></p>
-                                <p style="font-weight: bold; margin: 5px 0;">Head Teacher Signature</p>
-                                <p style="font-size: 12px; color: #666; margin: 2px 0;">Stamp of Institution</p>
+                    <!-- Footer Section with Signature & Stamp -->
+                    <div style="margin-top: 80px; padding-top: 40px; border-top: 2px solid #333; display: flex; justify-content: space-between; align-items: flex-end;">
+                        <!-- Left: Head Teacher Signature -->
+                        <div style="width: 35%; text-align: center;">
+                            <div style="margin-bottom: 60px; min-height: 80px; border: 2px dashed #ccc; display: flex; align-items: center; justify-content: center; background: #f9f9f9; border-radius: 4px;">
+                                <p style="margin: 0; color: #999; font-size: 12px; line-height: 1.4;"><strong>School Stamp</strong><br>& Principal Signature</p>
                             </div>
-                            <div style="width: 30%;">
-                                <p style="margin-bottom: 50px; border-bottom: 1px solid #333;"></p>
-                                <p style="font-weight: bold; margin: 5px 0;">Date</p>
+                            <p style="font-weight: bold; margin: 10px 0; font-size: 14px;">Head Teacher/Principal</p>
+                            <p style="font-size: 12px; color: #666; margin: 5px 0;">{{ $schoolInfo->principal_name ?? '_________________' }}</p>
+                            <p style="font-size: 12px; color: #666; margin: 10px 0;">Date: _________________</p>
+                        </div>
+
+                        <!-- Right: Accountant Signature -->
+                        <div style="width: 35%; text-align: center;">
+                            <div style="margin-bottom: 60px; min-height: 80px; border: 2px dashed #ccc; display: flex; align-items: center; justify-content: center; background: #f9f9f9; border-radius: 4px;">
+                                <p style="margin: 0; color: #999; font-size: 12px; line-height: 1.4;"><strong>Accountant</strong><br>Signature Area</p>
                             </div>
+                            <p style="font-weight: bold; margin: 10px 0; font-size: 14px;">Accountant/Office Manager</p>
+                            <p style="font-size: 12px; color: #666; margin: 5px 0;">_________________</p>
+                            <p style="font-size: 12px; color: #666; margin: 10px 0;">Date: _________________</p>
                         </div>
                     </div>
                 </div>
