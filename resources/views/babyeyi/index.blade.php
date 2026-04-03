@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('staff.partials.sidebar_sec')
 
 @section('content')
 <div class="container">
