@@ -1370,27 +1370,41 @@ class ExamController extends Controller
     public function getLessonsByCourse($branchId)
     {
         try {
-            // Get all lesson_branch_course records for the selected branch
+            // Get all lesson_branch_course records for the selected branch with teacher details
             $lessonBranchCourses = \App\Models\LessonBranchCourse::where('branch_id', $branchId)
-                ->with(['lesson', 'course'])
+                ->with(['lesson', 'course', 'teacher'])
                 ->get();
 
-            // Build arrays of lessons and courses
+            // Build arrays of lessons, courses, and lesson-teacher mappings
             $lessons = [];
             $courses = [];
+            $lessonTeachers = []; // Map lesson_id -> teacher info
 
             foreach ($lessonBranchCourses as $lbc) {
+                // Add lesson to lessons array
                 if ($lbc->lesson && !isset($lessons[$lbc->lesson->id])) {
                     $lessons[$lbc->lesson->id] = [
                         'id' => $lbc->lesson->id,
                         'title' => $lbc->lesson->title ?? $lbc->lesson->name,
                     ];
                 }
+                
+                // Add course to courses array
                 if ($lbc->course && !isset($courses[$lbc->course->id])) {
                     $courses[$lbc->course->id] = [
                         'id' => $lbc->course->id,
                         'name' => $lbc->course->course_name,
                     ];
+                }
+                
+                // Map lesson to teacher
+                if ($lbc->lesson_id && $lbc->teacher) {
+                    if (!isset($lessonTeachers[$lbc->lesson->id])) {
+                        $lessonTeachers[$lbc->lesson->id] = [
+                            'teacher_id' => $lbc->teacher->id,
+                            'teacher_name' => $lbc->teacher->first_name . ' ' . $lbc->teacher->last_name,
+                        ];
+                    }
                 }
             }
 
@@ -1398,6 +1412,7 @@ class ExamController extends Controller
                 'success' => true,
                 'lessons' => array_values($lessons),
                 'courses' => array_values($courses),
+                'lessonTeachers' => $lessonTeachers, // lesson_id => {teacher_id, teacher_name}
             ]);
         } catch (\Exception $e) {
             return response()->json([

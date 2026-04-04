@@ -774,6 +774,9 @@ $(document).ready(function() {
         }
     });
 
+    // Store lesson-teacher mapping
+    let lessonTeacherMap = {};
+
     // Branch selection changes courses and lessons using lesson_branch_course table
     $('#branch_id').on('change', function() {
         const branchId = $(this).val();
@@ -788,6 +791,9 @@ $(document).ready(function() {
                 dataType: 'json',
                 success: function(data) {
                     if (data.success) {
+                        // Store lesson-teacher mapping
+                        lessonTeacherMap = data.lessonTeachers || {};
+                        
                         // Populate courses
                         courseSelect.empty();
                         if (data.courses && data.courses.length > 0) {
@@ -833,6 +839,21 @@ $(document).ready(function() {
     $('#course_ids').on('change', function() {
         // Lessons are now loaded directly from branch selection when using lesson_branch_course table
         // This is kept for potential future enhancements
+    });
+
+    // Lesson selection auto-populates teacher
+    $('#lesson_ids').on('change', function() {
+        const selectedLessonIds = $(this).val();
+        
+        if (selectedLessonIds && selectedLessonIds.length > 0) {
+            const firstLessonId = selectedLessonIds[0];
+            if (lessonTeacherMap[firstLessonId]) {
+                // Auto-populate the teacher field
+                $('#teacher_id').val(lessonTeacherMap[firstLessonId].teacher_id).trigger('change.select2');
+                console.log('Teacher auto-selected:', lessonTeacherMap[firstLessonId].teacher_name);
+            }
+        }
+    });
     });
 
     // Question Bank Preview Functionality

@@ -684,6 +684,71 @@ $(document).ready(function() {
         }
     });
 
+    // Store lesson-teacher mapping
+    let lessonTeacherMap = {};
+
+    // Lesson selection auto-populates teacher
+    $('select[name="lesson_ids[]"]').on('change', function() {
+        const selectedLessonIds = $(this).val();
+        
+        if (selectedLessonIds && selectedLessonIds.length > 0) {
+            const firstLessonId = selectedLessonIds[0];
+            if (lessonTeacherMap[firstLessonId]) {
+                // Auto-populate the teacher field
+                $('select[name="teacher_id"]').val(lessonTeacherMap[firstLessonId].teacher_id).trigger('change.select2');
+                console.log('Teacher auto-selected:', lessonTeacherMap[firstLessonId].teacher_name);
+            }
+        }
+    });
+
+    // Branch selection dynamically loads lessons and courses
+    $('select[name="branch_id"]').on('change', function() {
+        const branchId = $(this).val();
+        const courseSelect = $('select[name="course_ids[]"]');
+        const lessonSelect = $('select[name="lesson_ids[]"]');
+        
+        if (branchId) {
+            $.ajax({
+                url: `/admin/exams/api/lessons-courses/${branchId}`,
+                method: 'GET',
+                dataType: 'json',
+                success: function(data) {
+                    if (data.success) {
+                        // Store lesson-teacher mapping
+                        lessonTeacherMap = data.lessonTeachers || {};
+                        
+                        // Populate courses
+                        courseSelect.empty();
+                        if (data.courses && data.courses.length > 0) {
+                            data.courses.forEach(function(course) {
+                                courseSelect.append(`<option value="${course.id}">${course.name}</option>`);
+                            });
+                        } else {
+                            courseSelect.append('<option value="">No courses available for this branch</option>');
+                        }
+                        courseSelect.trigger('change.select2');
+                        
+                        // Populate lessons
+                        lessonSelect.empty();
+                        if (data.lessons && data.lessons.length > 0) {
+                            data.lessons.forEach(function(lesson) {
+                                lessonSelect.append(`<option value="${lesson.id}">${lesson.title}</option>`);
+                            });
+                        } else {
+                            lessonSelect.append('<option value="">No lessons available for this branch</option>');
+                        }
+                        lessonSelect.trigger('change.select2');
+                    } else {
+                        console.error('Error from API:', data.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('AJAX Error:', error);
+                }
+            });
+        }
+    });
+
     // Token cost validation
     $('input[name="token_cost"]').on('input', function() {
         var value = parseInt($(this).val());
