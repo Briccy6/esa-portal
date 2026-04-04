@@ -687,18 +687,16 @@
                         console.log('  - amountContainer classList:', amountContainer?.className);
                         console.log('  - amountContainer computed style display:', amountContainer ? window.getComputedStyle(amountContainer).display : 'N/A');
                         
-                        // FORCEFULLY remove the d-none class
+                        // FORCEFULLY remove the d-none class and show the containers
                         if (amountContainer) {
                             amountContainer.classList.remove('d-none');
-                            // Also set inline style as backup
-                            amountContainer.style.display = 'block !important';
-                            // Add a data attribute to mark it as shown
-                            amountContainer.setAttribute('data-amount-shown', 'true');
+                            // Use setAttribute for proper !important syntax
+                            amountContainer.setAttribute('style', 'display: block !important');
                         }
                         
                         if (notesContainer) {
                             notesContainer.classList.remove('d-none');
-                            notesContainer.style.display = 'block !important';
+                            notesContainer.setAttribute('style', 'display: block !important');
                         }
                         
                         console.log('🔍 After removing d-none:');
