@@ -102,14 +102,6 @@
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <label for="status_filter" class="form-label">Status</label>
-                        <select name="status" id="status_filter" class="form-select">
-                            <option value="">All Status</option>
-                            <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
-                            <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3">
                         <label for="search" class="form-label">Live Search</label>
                         <input type="text" id="search" name="search" class="form-control live-search-input" 
                                value="{{ request('search') }}" placeholder="Search courses...">
@@ -139,8 +131,6 @@
                                 <th>Course Name</th>
                                 <th>Branch</th>
                                 <th>Duration</th>
-                                <th>Fee</th>
-                                <th>Status</th>
                                 <th>Students</th>
                                 <th>Actions</th>
                             </tr>
@@ -153,14 +143,6 @@
                                         <td>{{ $course->course_name ?? 'N/A' }}</td>
                                         <td><span class="badge bg-info">{{ $course->branch->name ?? 'N/A' }}</span></td>
                                         <td>{{ $course->duration ?? 'N/A' }}</td>
-                                        <td>RWF {{ number_format($course->fee ?? 0, 0) }}</td>
-                                        <td>
-                                            @if($course->is_active ?? false)
-                                                <span class="badge bg-success">Active</span>
-                                            @else
-                                                <span class="badge bg-warning">Inactive</span>
-                                            @endif
-                                        </td>
                                         <td>
                                             <span class="badge bg-info">{{ $course->students->count() ?? 0 }}</span>
                                         </td>
@@ -184,7 +166,7 @@
                                 @endforeach
                             @else
                                 <tr>
-                                    <td colspan="8" class="text-center py-4">
+                                    <td colspan="6" class="text-center py-4">
                                         <div class="text-muted">
                                             <i class="bi bi-inbox fs-1"></i>
                                             <p class="mt-2">No courses found</p>
@@ -249,17 +231,6 @@
                         <div class="col-md-6">
                             <label for="duration" class="form-label">Duration</label>
                             <input type="text" class="form-control" id="duration" name="duration" placeholder="e.g., 2 years">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="fee" class="form-label">Course Fee (RWF)</label>
-                            <input type="number" class="form-control" id="fee" name="fee" min="0">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="is_active" class="form-label">Status</label>
-                            <select class="form-select" id="is_active" name="is_active">
-                                <option value="1">Active</option>
-                                <option value="0">Inactive</option>
-                            </select>
                         </div>
                         <div class="col-12">
                             <label for="description" class="form-label">Description</label>
