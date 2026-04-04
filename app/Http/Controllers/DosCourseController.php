@@ -10,7 +10,7 @@ class DosCourseController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Course::with(['lessons', 'teachers', 'branch', 'students']);
+        $query = Course::with(['lessons', 'teachers', 'branches', 'students']);
         
         // Filter by branch
         if ($request->filled('branch')) {
@@ -74,7 +74,6 @@ class DosCourseController extends Controller
             'practical_fee' => 'nullable|numeric|min:0',
             'trip_fee' => 'nullable|numeric|min:0',
             'discount_fee' => 'nullable|numeric|min:0',
-            'teacher_id' => 'nullable|exists:teachers,id',
         ]);
 
         $course = Course::create($request->all());
@@ -108,7 +107,6 @@ class DosCourseController extends Controller
             'practical_fee' => 'nullable|numeric|min:0',
             'trip_fee' => 'nullable|numeric|min:0',
             'discount_fee' => 'nullable|numeric|min:0',
-            'teacher_id' => 'nullable|exists:teachers,id',
         ]);
 
         $course->update($request->all());

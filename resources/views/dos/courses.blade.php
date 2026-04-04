@@ -141,7 +141,7 @@
                                     <tr class="course-row">
                                         <td><strong>{{ $course->course_code ?? 'N/A' }}</strong></td>
                                         <td>{{ $course->course_name ?? 'N/A' }}</td>
-                                        <td><span class="badge bg-info">{{ $course->branch->name ?? 'N/A' }}</span></td>
+                                        <td><span class="badge bg-info">{{ $course->branches->first()->name ?? 'N/A' }}</span></td>
                                         <td>{{ $course->duration ?? 'N/A' }}</td>
                                         <td>
                                             <span class="badge bg-info">{{ $course->students->count() ?? 0 }}</span>

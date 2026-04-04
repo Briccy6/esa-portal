@@ -106,10 +106,10 @@
                         <!-- Registration Fee -->
                         <div class="mb-3">
                             <label for="registration_fee" class="form-label fw-semibold">
-                                <i class="fas fa-naira-sign me-2 text-success"></i>Registration Fee
+                                <i class="fas fa-money-bill me-2 text-success"></i>Registration Fee
                             </label>
                             <div class="input-group">
-                                <span class="input-group-text">₦</span>
+                                <span class="input-group-text">RWF</span>
                                 <input type="number" 
                                        class="form-control @error('registration_fee') is-invalid @enderror" 
                                        id="registration_fee" 
@@ -126,10 +126,10 @@
                         <!-- Tuition Fee -->
                         <div class="mb-3">
                             <label for="tuition_fee" class="form-label fw-semibold">
-                                <i class="fas fa-naira-sign me-2 text-success"></i>Tuition Fee
+                                <i class="fas fa-money-bill me-2 text-success"></i>Tuition Fee
                             </label>
                             <div class="input-group">
-                                <span class="input-group-text">₦</span>
+                                <span class="input-group-text">RWF</span>
                                 <input type="number" 
                                        class="form-control @error('tuition_fee') is-invalid @enderror" 
                                        id="tuition_fee" 
@@ -146,10 +146,10 @@
                         <!-- Practical Fee -->
                         <div class="mb-3">
                             <label for="practical_fee" class="form-label fw-semibold">
-                                <i class="fas fa-naira-sign me-2 text-success"></i>Practical Fee
+                                <i class="fas fa-money-bill me-2 text-success"></i>Practical Fee
                             </label>
                             <div class="input-group">
-                                <span class="input-group-text">₦</span>
+                                <span class="input-group-text">RWF</span>
                                 <input type="number" 
                                        class="form-control @error('practical_fee') is-invalid @enderror" 
                                        id="practical_fee" 
@@ -166,10 +166,10 @@
                         <!-- Trip Fee -->
                         <div class="mb-3">
                             <label for="trip_fee" class="form-label fw-semibold">
-                                <i class="fas fa-naira-sign me-2 text-success"></i>Trip Fee (Optional)
+                                <i class="fas fa-money-bill me-2 text-success"></i>Trip Fee (Optional)
                             </label>
                             <div class="input-group">
-                                <span class="input-group-text">₦</span>
+                                <span class="input-group-text">RWF</span>
                                 <input type="number" 
                                        class="form-control @error('trip_fee') is-invalid @enderror" 
                                        id="trip_fee" 
@@ -186,10 +186,10 @@
                         <!-- Discount Fee -->
                         <div class="mb-3">
                             <label for="discount_fee" class="form-label fw-semibold">
-                                <i class="fas fa-naira-sign me-2 text-success"></i>Discount Fee (Optional)
+                                <i class="fas fa-money-bill me-2 text-success"></i>Discount Fee (Optional)
                             </label>
                             <div class="input-group">
-                                <span class="input-group-text">₦</span>
+                                <span class="input-group-text">RWF</span>
                                 <input type="number" 
                                        class="form-control @error('discount_fee') is-invalid @enderror" 
                                        id="discount_fee" 

@@ -77,26 +77,26 @@
                                 <tr>
                                     <td class="fw-semibold pe-3">Registration Fee:</td>
                                     <td class="text-end">
-                                        <span class="badge bg-success">₦{{ number_format($course->registration_fee, 2) }}</span>
+                                        <span class="badge bg-success">RWF {{ number_format($course->registration_fee, 2) }}</span>
                                     </td>
                                 </tr>
                                 <tr>
                                     <td class="fw-semibold pe-3">Tuition Fee:</td>
                                     <td class="text-end">
-                                        <span class="badge bg-info">₦{{ number_format($course->tuition_fee, 2) }}</span>
+                                        <span class="badge bg-info">RWF {{ number_format($course->tuition_fee, 2) }}</span>
                                     </td>
                                 </tr>
                                 <tr>
                                     <td class="fw-semibold pe-3">Practical Fee:</td>
                                     <td class="text-end">
-                                        <span class="badge bg-warning">₦{{ number_format($course->practical_fee, 2) }}</span>
+                                        <span class="badge bg-warning">RWF {{ number_format($course->practical_fee, 2) }}</span>
                                     </td>
                                 </tr>
                                 @if($course->trip_fee)
                                     <tr>
                                         <td class="fw-semibold pe-3">Trip Fee:</td>
                                         <td class="text-end">
-                                            <span class="badge bg-danger">₦{{ number_format($course->trip_fee, 2) }}</span>
+                                            <span class="badge bg-danger">RWF {{ number_format($course->trip_fee, 2) }}</span>
                                         </td>
                                     </tr>
                                 @endif
@@ -104,14 +104,14 @@
                                     <tr>
                                         <td class="fw-semibold pe-3">Discount:</td>
                                         <td class="text-end">
-                                            <span class="badge bg-secondary">₦{{ number_format($course->discount_fee, 2) }}</span>
+                                            <span class="badge bg-secondary">RWF {{ number_format($course->discount_fee, 2) }}</span>
                                         </td>
                                     </tr>
                                 @endif
                                 <tr class="border-top">
                                     <td class="fw-bold pe-3">Total Cost:</td>
                                     <td class="text-end fw-bold">
-                                        <span class="badge bg-dark fs-6">₦{{ number_format($course->total_cost ?? ($course->registration_fee + $course->tuition_fee + $course->practical_fee + ($course->trip_fee ?? 0) - ($course->discount_fee ?? 0)), 2) }}</span>
+                                        <span class="badge bg-dark fs-6">RWF {{ number_format($course->total_cost ?? ($course->registration_fee + $course->tuition_fee + $course->practical_fee + ($course->trip_fee ?? 0) - ($course->discount_fee ?? 0)), 2) }}</span>
                                     </td>
                                 </tr>
                             </table>

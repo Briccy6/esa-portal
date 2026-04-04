@@ -148,14 +148,15 @@
                                             Registration Fee
                                         </label>
                                         <div class="input-group input-group-lg">
-                                            <span class="input-group-text">₦</span>
+                                            <span class="input-group-text">RWF</span>
                                             <input type="number" 
                                                    id="registration_fee" 
                                                    name="registration_fee" 
                                                    step="0.01"
-                                                   class="form-control @error('registration_fee') is-invalid @enderror" 
+                                                   class="form-control bg-light @error('registration_fee') is-invalid @enderror" 
                                                    value="{{ old('registration_fee', $course->registration_fee ?? 0) }}"
-                                                   placeholder="0.00">
+                                                   placeholder="0.00"
+                                                   readonly>
                                             @error('registration_fee')
                                                 <div class="invalid-feedback">{{ $message }}</div>
                                             @enderror
@@ -168,14 +169,15 @@
                                             Tuition Fee
                                         </label>
                                         <div class="input-group input-group-lg">
-                                            <span class="input-group-text">₦</span>
+                                            <span class="input-group-text">RWF</span>
                                             <input type="number" 
                                                    id="tuition_fee" 
                                                    name="tuition_fee" 
                                                    step="0.01"
-                                                   class="form-control @error('tuition_fee') is-invalid @enderror" 
+                                                   class="form-control bg-light @error('tuition_fee') is-invalid @enderror" 
                                                    value="{{ old('tuition_fee', $course->tuition_fee ?? 0) }}"
-                                                   placeholder="0.00">
+                                                   placeholder="0.00"
+                                                   readonly>
                                             @error('tuition_fee')
                                                 <div class="invalid-feedback">{{ $message }}</div>
                                             @enderror
@@ -190,14 +192,15 @@
                                             Practical Fee
                                         </label>
                                         <div class="input-group input-group-lg">
-                                            <span class="input-group-text">₦</span>
+                                            <span class="input-group-text">RWF</span>
                                             <input type="number" 
                                                    id="practical_fee" 
                                                    name="practical_fee" 
                                                    step="0.01"
-                                                   class="form-control @error('practical_fee') is-invalid @enderror" 
+                                                   class="form-control bg-light @error('practical_fee') is-invalid @enderror" 
                                                    value="{{ old('practical_fee', $course->practical_fee ?? 0) }}"
-                                                   placeholder="0.00">
+                                                   placeholder="0.00"
+                                                   readonly>
                                             @error('practical_fee')
                                                 <div class="invalid-feedback">{{ $message }}</div>
                                             @enderror
@@ -210,14 +213,15 @@
                                             Trip Fee
                                         </label>
                                         <div class="input-group input-group-lg">
-                                            <span class="input-group-text">₦</span>
+                                            <span class="input-group-text">RWF</span>
                                             <input type="number" 
                                                    id="trip_fee" 
                                                    name="trip_fee" 
                                                    step="0.01"
-                                                   class="form-control @error('trip_fee') is-invalid @enderror" 
+                                                   class="form-control bg-light @error('trip_fee') is-invalid @enderror" 
                                                    value="{{ old('trip_fee', $course->trip_fee ?? 0) }}"
-                                                   placeholder="0.00">
+                                                   placeholder="0.00"
+                                                   readonly>
                                             @error('trip_fee')
                                                 <div class="invalid-feedback">{{ $message }}</div>
                                             @enderror
@@ -232,14 +236,15 @@
                                             Discount Fee
                                         </label>
                                         <div class="input-group input-group-lg">
-                                            <span class="input-group-text">₦</span>
+                                            <span class="input-group-text">RWF</span>
                                             <input type="number" 
                                                    id="discount_fee" 
                                                    name="discount_fee" 
                                                    step="0.01"
-                                                   class="form-control @error('discount_fee') is-invalid @enderror" 
+                                                   class="form-control bg-light @error('discount_fee') is-invalid @enderror" 
                                                    value="{{ old('discount_fee', $course->discount_fee ?? 0) }}"
-                                                   placeholder="0.00">
+                                                   placeholder="0.00"
+                                                   readonly>
                                             @error('discount_fee')
                                                 <div class="invalid-feedback">{{ $message }}</div>
                                             @enderror
@@ -252,7 +257,7 @@
                                             Total Cost
                                         </label>
                                         <div class="input-group input-group-lg">
-                                            <span class="input-group-text">₦</span>
+                                            <span class="input-group-text">RWF</span>
                                             <input type="number" 
                                                    id="total_cost" 
                                                    class="form-control bg-light" 
@@ -263,29 +268,6 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
-
-                        <!-- Teacher Assignment -->
-                        <div class="mb-4">
-                            <label for="teacher_id" class="form-label fw-semibold">
-                                Assign Teacher
-                            </label>
-                            <select id="teacher_id" 
-                                    name="teacher_id" 
-                                    class="form-select form-select-lg @error('teacher_id') is-invalid @enderror">
-                                <option value="">-- No Teacher Assigned --</option>
-                                @forelse($teachers as $teacher)
-                                    <option value="{{ $teacher->id }}" 
-                                            {{ old('teacher_id', $course->teacher_id ?? '') == $teacher->id ? 'selected' : '' }}>
-                                        {{ $teacher->teacher_name }}
-                                    </option>
-                                @empty
-                                    <option value="" disabled>No teachers available</option>
-                                @endforelse
-                            </select>
-                            @error('teacher_id')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
                         </div>
 
                         <!-- Action Buttons -->
@@ -302,6 +284,12 @@
                         </div>
                     </form>
                 </div>
+            </div>
+
+            <!-- Note About Teachers -->
+            <div class="alert alert-info mt-4" role="alert">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>Note:</strong> Teachers are assigned to <strong>lessons</strong>, not courses. View the course to manage lesson-teacher assignments through the lesson branch course pivot relationships.
             </div>
         </div>
     </div>
