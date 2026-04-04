@@ -424,10 +424,10 @@
                                       method="POST"
                                       onsubmit="handlePayment(event, {{ $student->id }})">
                                     @csrf
-                                    <div class="modal-body">
-                                        <div class="row">
+                                    <div class="modal-body" style="display: block !important; visibility: visible !important; opacity: 1 !important; padding: 20px; width: 100%;">
+                                        <div style="display: flex; flex-wrap: wrap; gap: 15px; width: 100%; margin: 0;">
                                             <!-- Step 1: Select Term (REQUIRED FIRST) -->
-                                            <div class="col-md-12 mb-3">
+                                            <div class="col-md-12 mb-3" style="display: block !important; width: 100%; flex: 0 0 100%;">
                                                 <label class="form-label required">
                                                     <i class="fas fa-calendar-alt me-1"></i>Academic Term
                                                 </label>
@@ -435,7 +435,8 @@
                                                         id="termSelect{{ $student->id }}"
                                                         class="form-select"
                                                         required
-                                                        onchange="loadTermFees({{ $student->id }})">
+                                                        onchange="loadTermFees({{ $student->id }})"
+                                                        style="display: block !important; width: 100% !important; visibility: visible !important; opacity: 1 !important;">
                                                     <option value="">-- Select Term First --</option>
                                                     @php
                                                         $terms = \App\Models\Term::with('academicYear')
@@ -453,7 +454,7 @@
                                             </div>
 
                                             <!-- Term Summary Alert -->
-                                            <div id="termSummary{{ $student->id }}" class="col-md-12 mb-3">
+                                            <div id="termSummary{{ $student->id }}" class="col-md-12 mb-3" style="display: block !important; width: 100%; flex: 0 0 100%;">
                                                 <div class="alert alert-info">
                                                     <i class="fas fa-info-circle me-2"></i>
                                                     <strong>Term Summary:</strong>
@@ -466,7 +467,7 @@
                                             </div>
 
                                             <!-- Step 2: Select Fee Type (ALWAYS VISIBLE) -->
-                                            <div id="feeTypeContainer{{ $student->id }}" class="col-md-12 mb-3">
+                                            <div id="feeTypeContainer{{ $student->id }}" class="col-md-12 mb-3" style="display: block !important; width: 100%; flex: 0 0 100%;">
                                                 <label class="form-label required">
                                                     <i class="fas fa-receipt me-1"></i>Fee Type for {{ $student->course->course_name ?? 'Course' }}
                                                 </label>
@@ -474,7 +475,8 @@
                                                         id="feeTypeSelect{{ $student->id }}"
                                                         class="form-select"
                                                         required
-                                                        onchange="updateFeeInfo(this, {{ $student->id }})">
+                                                        onchange="updateFeeInfo(this, {{ $student->id }})"
+                                                        style="display: block !important; width: 100% !important; visibility: visible !important; opacity: 1 !important;">
                                                     <option value="">-- Select a Fee --</option>
                                                 </select>
                                                 <small class="text-muted">Select which fee type you are recording payment for</small>
@@ -482,7 +484,7 @@
                                             </div>
 
                                             <!-- Step 3: Enter Amount (ALWAYS VISIBLE) -->
-                                            <div id="amountContainer{{ $student->id }}" class="col-md-12 mb-3">
+                                            <div id="amountContainer{{ $student->id }}" class="col-md-12 mb-3" style="display: block !important; width: 100%; flex: 0 0 100%;">
                                                 <label class="form-label required">
                                                     <i class="fas fa-money-bill-wave me-1"></i>Amount to Pay (RWF)
                                                 </label>
@@ -491,7 +493,8 @@
                                                        id="amountInput{{ $student->id }}"
                                                        class="form-control form-control-lg"
                                                        placeholder="Enter amount received from student"
-                                                       min="1" step="1">
+                                                       min="1" step="1"
+                                                       style="display: block !important; width: 100% !important; visibility: visible !important; opacity: 1 !important; padding: 10px; border: 1px solid #ccc; font-size: 16px;">
                                                 <small class="text-muted d-block mt-2">
                                                     <i class="fas fa-info-circle me-1"></i>
                                                     Enter the exact amount received from the student
@@ -500,12 +503,13 @@
                                             </div>
 
                                             <!-- Step 4: Notes (Optional - ALWAYS VISIBLE) -->
-                                            <div id="notesContainer{{ $student->id }}" class="col-md-12 mb-3">
+                                            <div id="notesContainer{{ $student->id }}" class="col-md-12 mb-3" style="display: block !important; width: 100%; flex: 0 0 100%;">
                                                 <label class="form-label">Payment Notes (Optional)</label>
                                                 <textarea name="payment_notes" 
                                                          id="notesInput{{ $student->id }}"
                                                          class="form-control" rows="2"
-                                                         placeholder="Add any additional notes about this payment (e.g., partial payment, late payment, etc.)"></textarea>
+                                                         placeholder="Add any additional notes about this payment (e.g., partial payment, late payment, etc.)"
+                                                         style="display: block !important; width: 100% !important; visibility: visible !important; opacity: 1 !important; padding: 10px; border: 1px solid #ccc; font-size: 14px;"></textarea>
                                             </div>
 
                                             <!-- Loading Indicator -->
