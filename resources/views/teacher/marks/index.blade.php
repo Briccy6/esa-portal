@@ -1012,6 +1012,7 @@ body {
         var el = document.getElementById(id);
         if (el) el.addEventListener('change', updateShowStudentsBtn);
     });
+
     window.addEventListener('DOMContentLoaded', updateShowStudentsBtn);
 </script>
 @endsection
