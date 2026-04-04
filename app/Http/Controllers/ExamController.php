@@ -474,6 +474,19 @@ class ExamController extends Controller
         if (Schema::hasColumn('exams', 'public_price')) {
             $examData['public_price'] = $request->public_price ?? 0;
         }
+        
+        // Update subject from lesson if available
+        if (Schema::hasColumn('exams', 'subject')) {
+            if ($request->lesson_ids && count($request->lesson_ids) > 0) {
+                $lessonId = $request->lesson_ids[0];
+                $lesson = Lesson::find($lessonId);
+                if ($lesson) {
+                    $examData['subject'] = $lesson->name ?? '';
+                }
+            } else {
+                $examData['subject'] = '';
+            }
+        }
 
         $exam->update($examData);
 
