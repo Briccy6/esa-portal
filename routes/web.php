@@ -851,6 +851,29 @@ Route::get('/api/teacher/{teacher}/course/{course}/lessons', function($teacherId
     return response()->json(['lessons' => $lessons]);
 });
 
+// Teacher marks recording - filtered lessons by branch, course and teacher
+Route::middleware('auth:teacher')->get('/api/teacher/branch/{branchId}/course/{courseId}/lessons', function($branchId, $courseId) {
+    $teacher = auth('teacher')->user();
+    
+    // Get lessons for this teacher in this specific branch and course using lesson_branch_course pivot
+    $lessons = \App\Models\LessonBranchCourse::where('branch_id', $branchId)
+        ->where('course_id', $courseId)
+        ->where('teacher_id', $teacher->id)
+        ->with('lesson')
+        ->get()
+        ->map(function($item) {
+            return [
+                'id' => $item->lesson_id,
+                'title' => $item->lesson->title ?? $item->lesson->name ?? 'Lesson ' . $item->lesson_id,
+                'branch_id' => $item->branch_id,
+                'course_id' => $item->course_id,
+                'teacher_id' => $item->teacher_id,
+            ];
+        });
+    
+    return response()->json($lessons);
+});
+
 Route::get('/dos/dailies', [App\Http\Controllers\DosDailyController::class, 'index'])->name('dos.dailies.index');
 Route::get('/dos/dailies/{daily}', [App\Http\Controllers\DosDailyController::class, 'show'])->name('dos.dailies.show');
 Route::post('/dos/dailies/{daily}/approve', [App\Http\Controllers\DosDailyController::class, 'approve'])->name('dos.dailies.approve');

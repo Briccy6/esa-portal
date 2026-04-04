@@ -675,14 +675,10 @@ body {
         var lessonSelect = document.getElementById('lesson_id');
         var lessonInfo = document.getElementById('lesson-info');
         
-        // First try to filter from existing options (for initially loaded lessons)
-        var availableLessons = Array.from(lessonSelect.options)
-            .filter(option => option.value && option.getAttribute('data-branch-id') == branchId && option.getAttribute('data-course-id') == courseId);
-        
-        // If we have both branch and course selected, fetch lessons from API for more accurate results
+        // If we have both branch and course selected, fetch lessons from API
         if (branchId && courseId) {
-            // Dynamically fetch lessons based on branch and course
-            fetch(`/api/branches/${branchId}/courses/${courseId}/lessons`)
+            // Fetch lessons assigned to THIS TEACHER in this branch and course
+            fetch(`/api/teacher/branch/${branchId}/course/${courseId}/lessons`)
                 .then(res => {
                     if (!res.ok) throw new Error('Failed to load lessons');
                     return res.json();
@@ -694,9 +690,9 @@ body {
                         lessons.forEach(lesson => {
                             const option = document.createElement('option');
                             option.value = lesson.id;
-                            option.textContent = lesson.title || lesson.name;
-                            option.setAttribute('data-branch-id', branchId);
-                            option.setAttribute('data-course-id', courseId);
+                            option.textContent = lesson.title || lesson.name || 'Lesson ' + lesson.id;
+                            option.setAttribute('data-branch-id', lesson.branch_id);
+                            option.setAttribute('data-course-id', lesson.course_id);
                             lessonSelect.appendChild(option);
                         });
                         
@@ -705,14 +701,15 @@ body {
                         document.getElementById('lesson-count').textContent = lessons.length;
                     } else {
                         lessonSelect.disabled = true;
-                        lessonInfo.innerHTML = '<i class="bi bi-info-circle me-1"></i>No lessons available for this course in this branch';
+                        lessonInfo.innerHTML = '<i class="bi bi-info-circle me-1"></i>You have no lessons assigned in this branch-course combination';
                         lessonInfo.style.display = 'inline-block';
                     }
                 })
                 .catch(error => {
-                    console.warn('API call failed, using local filtering:', error);
-                    // Fallback to local filtering if API fails
-                    fallbackLessonFiltering(branchId, courseId, lessonSelect, lessonInfo);
+                    console.error('Error loading lessons:', error);
+                    lessonSelect.disabled = true;
+                    lessonInfo.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i>Error loading lessons. Please refresh and try again.';
+                    lessonInfo.style.display = 'inline-block';
                 });
         } else {
             lessonSelect.disabled = true;
@@ -723,31 +720,6 @@ body {
         
         updateShowStudentsBtn();
     }
-    
-    // Fallback function for local filtering
-    function fallbackLessonFiltering(branchId, courseId, lessonSelect, lessonInfo) {
-        var lessonCount = 0;
-        
-        Array.from(lessonSelect.options).forEach(function(option) {
-            if (!option.value) return;
-            
-            var optionBranchId = option.getAttribute('data-branch-id');
-            var optionCourseId = option.getAttribute('data-course-id');
-            
-            if (optionBranchId == branchId && optionCourseId == courseId) {
-                option.style.display = 'block';
-                lessonCount++;
-            } else {
-                option.style.display = 'none';
-            }
-        });
-        
-        if (lessonCount > 0) {
-            lessonSelect.disabled = false;
-            lessonInfo.style.display = 'inline-block';
-            document.getElementById('lesson-count').textContent = lessonCount;
-        } else {
-            lessonSelect.disabled = true;
             lessonInfo.innerHTML = '<i class="bi bi-info-circle me-1"></i>No lessons available for this course in this branch';
             lessonInfo.style.display = 'inline-block';
         }
