@@ -19,6 +19,7 @@
 
                     <form id="editMarksForm" method="POST" action="{{ route('teacher.marks.update', [$lesson->id, $testDate]) }}">
                         @csrf
+                        @method('PUT')
                         <div class="table-responsive">
                             <table class="table table-striped">
                                 <thead class="table-dark">

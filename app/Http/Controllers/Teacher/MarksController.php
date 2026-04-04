@@ -88,49 +88,77 @@ public function index()
 
         try {
             $teacher = auth('teacher')->user();
+            $marksCreated = 0;
+            $marksFailed = [];
             
             foreach ($request->students as $studentId) {
                 $value = $request->marks[$studentId]['value'] ?? null;
-                if ($value !== null) {
-                    // Allow multiple test marks - don't check for duplicates
-                    // Each test recording should be a separate entry with its own date
+                
+                // Ensure value is provided
+                if ($value === null || $value === '' || !is_numeric($value)) {
+                    $marksFailed[] = "Student ID {$studentId} - No mark value provided";
+                    continue;
+                }
+                
+                // Validate term_id before creating
+                if (!$request->term_id || $request->term_id == 0) {
+                    $marksFailed[] = "Student ID {$studentId} - Invalid term selected";
+                    continue;
+                }
+                
+                // Allow multiple test marks - don't check for duplicates
+                // Each test recording should be a separate entry with its own date
+                $createData = [
+                    'student_id' => $studentId,
+                    'course_id'  => $request->course_id,
+                    'branch_id'  => $request->branch_id,
+                    'lesson_id'  => $request->lesson_id,
+                    'term_id'    => $request->term_id, // Ensure term_id is always set
+                    'assessment_type' => $request->assessment_type,
+                    'value' => (float)$value,
+                    'status' => 'recorded'
+                ];
 
-                    $createData = [
-                        'student_id' => $studentId,
-                        'course_id'  => $request->course_id,
-                        'branch_id'  => $request->branch_id,
-                        'lesson_id'  => $request->lesson_id,
-                        'term_id'    => $request->term_id, // Ensure term_id is always set
-                        'assessment_type' => $request->assessment_type,
-                        'value' => $value,
-                        'status' => 'recorded'
-                    ];
+                // Only add exam_id and exam_date if assessment_type is exam
+                if ($request->assessment_type === 'exam') {
+                    $createData['exam_id'] = $request->exam_id;
+                    $createData['exam_date'] = $request->exam_date;
+                }
 
-                    // Double-check term_id is valid before creating
-                    if (!$createData['term_id'] || $createData['term_id'] == 0) {
-                        continue; // Skip this mark if term_id is invalid
-                    }
+                // Only add marks_out_of and test_date if assessment_type is test
+                if ($request->assessment_type === 'test') {
+                    $createData['marks_out_of'] = $request->marks_out_of;
+                    $createData['test_date'] = $request->test_date;
+                }
 
-                    // Only add exam_id and exam_date if assessment_type is exam
-                    if ($request->assessment_type === 'exam') {
-                        $createData['exam_id'] = $request->exam_id;
-                        $createData['exam_date'] = $request->exam_date;
-                    }
-
-                    // Only add marks_out_of and test_date if assessment_type is test
-                    if ($request->assessment_type === 'test') {
-                        $createData['marks_out_of'] = $request->marks_out_of;
-                        $createData['test_date'] = $request->test_date;
-                    }
-
+                try {
                     Mark::create($createData);
+                    $marksCreated++;
+                } catch (\Exception $e) {
+                    $marksFailed[] = "Student ID {$studentId} - " . $e->getMessage();
                 }
             }
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Marks saved successfully!'
-            ]);
+            
+            // Return success if at least one mark was created
+            if ($marksCreated > 0) {
+                $message = "Marks saved successfully for {$marksCreated} student(s)!";
+                if (!empty($marksFailed)) {
+                    $message .= " " . count($marksFailed) . " student(s) had issues.";
+                }
+                
+                return response()->json([
+                    'success' => true,
+                    'message' => $message,
+                    'marksCreated' => $marksCreated,
+                    'marksFailed' => count($marksFailed)
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No marks were saved. ' . implode(", ", $marksFailed),
+                    'errors' => ['marks' => $marksFailed]
+                ], 422);
+            }
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,

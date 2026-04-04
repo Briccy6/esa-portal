@@ -832,55 +832,53 @@ body {
                         `;
                     });
 
-                    // Enhanced live validation for mark inputs
-                    setTimeout(function() {
-                        var markInputs = document.querySelectorAll('.mark-input');
-                        markInputs.forEach(function(input) {
-                            var errorDiv = document.createElement('div');
-                            errorDiv.className = 'text-danger small mt-1';
-                            errorDiv.style.display = 'none';
-                            input.parentNode.parentNode.appendChild(errorDiv);
+                    // Enhanced live validation for mark inputs - attach immediately after DOM elements exist
+                    var markInputs = document.querySelectorAll('.mark-input');
+                    markInputs.forEach(function(input) {
+                        var errorDiv = document.createElement('div');
+                        errorDiv.className = 'text-danger small mt-1';
+                        errorDiv.style.display = 'none';
+                        input.parentNode.parentNode.appendChild(errorDiv);
 
-                            input.addEventListener('input', function() {
-                                var max = parseInt(input.getAttribute('max'), 10);
-                                var value = parseInt(input.value, 10);
-                                var studentId = input.name.match(/marks\[(\d+)\]/)[1];
-                                var percentageBadge = document.getElementById('percentage-' + studentId);
+                        input.addEventListener('input', function() {
+                            var max = parseInt(input.getAttribute('max'), 10);
+                            var value = input.value ? parseInt(input.value, 10) : null;
+                            var studentId = input.name.match(/marks\[(\d+)\]/)[1];
+                            var percentageBadge = document.getElementById('percentage-' + studentId);
+                            
+                            // Calculate and display percentage
+                            if (value !== null && !isNaN(value) && value >= 0 && value <= max) {
+                                var percentage = Math.round((value / max) * 100);
+                                percentageBadge.textContent = percentage + '%';
                                 
-                                // Calculate and display percentage
-                                if (value >= 0 && value <= max) {
-                                    var percentage = Math.round((value / max) * 100);
-                                    percentageBadge.textContent = percentage + '%';
-                                    
-                                    // Update badge color based on percentage
-                                    percentageBadge.className = 'percentage-badge';
-                                    if (percentage >= 75) {
-                                        percentageBadge.classList.add('badge-high');
-                                    } else if (percentage >= 50) {
-                                        percentageBadge.classList.add('badge-mid');
-                                    } else {
-                                        percentageBadge.classList.add('badge-low');
-                                    }
-                                    
-                                    input.classList.remove('is-invalid');
-                                    errorDiv.style.display = 'none';
-                                } else if (value > max) {
-                                    input.classList.add('is-invalid');
-                                    errorDiv.textContent = `Marks (${value}) cannot exceed total (${max})`;
-                                    errorDiv.style.display = 'block';
-                                    input.value = max;
-                                    
-                                    // Update percentage for max value
-                                    var percentage = Math.round((max / max) * 100);
-                                    percentageBadge.textContent = percentage + '%';
-                                    percentageBadge.className = 'percentage-badge badge-high';
+                                // Update badge color based on percentage
+                                percentageBadge.className = 'percentage-badge';
+                                if (percentage >= 75) {
+                                    percentageBadge.classList.add('badge-high');
+                                } else if (percentage >= 50) {
+                                    percentageBadge.classList.add('badge-mid');
                                 } else {
-                                    percentageBadge.textContent = '-';
-                                    percentageBadge.className = 'percentage-badge';
+                                    percentageBadge.classList.add('badge-low');
                                 }
-                            });
+                                
+                                input.classList.remove('is-invalid');
+                                errorDiv.style.display = 'none';
+                            } else if (value !== null && !isNaN(value) && value > max) {
+                                input.classList.add('is-invalid');
+                                errorDiv.textContent = `Marks (${value}) cannot exceed total (${max})`;
+                                errorDiv.style.display = 'block';
+                                input.value = max;
+                                
+                                // Update percentage for max value
+                                var percentage = Math.round((max / max) * 100);
+                                percentageBadge.textContent = percentage + '%';
+                                percentageBadge.className = 'percentage-badge badge-high';
+                            } else {
+                                percentageBadge.textContent = '-';
+                                percentageBadge.className = 'percentage-badge';
+                            }
                         });
-                    }, 100);
+                    });
                 } else {
                     modalTbody.innerHTML = `
                         <tr>
@@ -914,7 +912,7 @@ body {
             });
     }
 
-    // Use event delegation for form submission since form is dynamically created
+    // Form submission handler - properly attached to the form element
     document.addEventListener('submit', function(e) {
         if (e.target.id !== 'studentsMarksForm') return;
         
@@ -923,6 +921,27 @@ body {
         var saveBtn = document.getElementById('saveMarksBtn');
         var saveBtnText = document.getElementById('saveBtnText');
         var modalMsg = document.getElementById('modal-message');
+        var form = e.target;
+        
+        // Validation: Ensure all mark fields are filled
+        var markInputs = form.querySelectorAll('.mark-input');
+        var allFilled = true;
+        var emptyCount = 0;
+        
+        markInputs.forEach(function(input) {
+            if (!input.value || input.value === '' || isNaN(input.value)) {
+                input.classList.add('is-invalid');
+                allFilled = false;
+                emptyCount++;
+            } else {
+                input.classList.remove('is-invalid');
+            }
+        });
+        
+        if (!allFilled) {
+            modalMsg.innerHTML = `<div class="alert alert-warning alert-dismissible fade show"><i class="bi bi-exclamation-triangle me-2"></i> Please fill in all mark fields (${emptyCount} missing). <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`;
+            return;
+        }
         
         // Disable button and show loading state
         saveBtn.disabled = true;
@@ -933,13 +952,13 @@ body {
         // Clear previous messages
         modalMsg.innerHTML = '';
         
-        var form = e.target;
         var formData = new FormData(form);
         formData.append('branch_id', document.getElementById('branch_id').value);
         formData.append('course_id', document.getElementById('course_id').value);
         formData.append('lesson_id', document.getElementById('lesson_id').value);
         formData.append('term_id', document.getElementById('term_id').value);
         formData.append('assessment_type', document.getElementById('assessment_type').value);
+        
         if (document.getElementById('assessment_type').value === 'exam') {
             formData.append('exam_id', document.getElementById('exam_id').value);
             formData.append('exam_date', document.getElementById('exam_date').value);
@@ -965,20 +984,32 @@ body {
             saveBtn.classList.add('btn-success');
             
             if (data.success) {
-                modalMsg.innerHTML = `<div class="text-success">${data.message}</div>`;
+                modalMsg.innerHTML = `<div class="alert alert-success alert-dismissible fade show"><i class="bi bi-check-circle me-2"></i>${data.message} <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`;
                 // Clear form after successful save
                 form.reset();
                 // Clear the students list
                 document.getElementById('students-modal-list').innerHTML = '';
                 // Close modal after 2 seconds
                 setTimeout(function() {
-                    var modal = bootstrap.Modal.getInstance(document.getElementById('studentsModal'));
-                    if (modal) {
-                        modal.hide();
+                    try {
+                        var modalElement = document.getElementById('studentsModal');
+                        var modal = bootstrap.Modal.getInstance(modalElement);
+                        if (modal) {
+                            modal.hide();
+                        }
+                    } catch(e) {
+                        console.log('Modal close:', e);
                     }
                 }, 2000);
             } else {
-                modalMsg.innerHTML = `<div class="text-danger">${data.message || 'Failed to save marks.'}</div>`;
+                var errorMsg = data.message || 'Failed to save marks.';
+                var errorDetails = '';
+                if (data.errors && typeof data.errors === 'object') {
+                    errorDetails = '<ul class="mb-0 mt-2">' + Object.entries(data.errors).map(([field, messages]) => {
+                        return '<li>' + (Array.isArray(messages) ? messages.join(', ') : messages) + '</li>';
+                    }).join('') + '</ul>';
+                }
+                modalMsg.innerHTML = `<div class="alert alert-danger alert-dismissible fade show"><i class="bi bi-exclamation-circle me-2"></i>${errorMsg}${errorDetails} <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`;
             }
         })
         .catch(error => {
@@ -988,7 +1019,7 @@ body {
             saveBtn.classList.remove('btn-outline-secondary');
             saveBtn.classList.add('btn-success');
             
-            document.getElementById('modal-message').innerHTML = `<div class="text-danger">Error: ${error.message}</div>`;
+            document.getElementById('modal-message').innerHTML = `<div class="alert alert-danger alert-dismissible fade show"><i class="bi bi-exclamation-circle me-2"></i>Error: ${error.message} <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`;
         });
     });
 
@@ -1011,11 +1042,18 @@ body {
             btn.disabled = false;
         }
     }
+    
+    // Attach event listeners to form fields for button state updates
     ['branch_id', 'course_id', 'lesson_id', 'assessment_type', 'exam_id', 'marks_out_of', 'exam_date', 'term_id', 'test_date'].forEach(function(id) {
         var el = document.getElementById(id);
         if (el) el.addEventListener('change', updateShowStudentsBtn);
     });
 
-    window.addEventListener('DOMContentLoaded', updateShowStudentsBtn);
+    // Check button state when DOM is loaded
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', updateShowStudentsBtn);
+    } else {
+        updateShowStudentsBtn();
+    }
 </script>
 @endsection
