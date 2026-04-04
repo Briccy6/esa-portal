@@ -741,7 +741,7 @@
         /* Page Header Styling */
         .page-header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            margin: -2rem -2rem 2rem 0;
+            margin: -2rem -2rem 2rem -2rem;
             padding: 2rem;
             border-radius: 0 0 1rem 1rem;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
@@ -788,7 +788,7 @@
         /* Mobile Responsive Page Header */
         @media (max-width: 768px) {
             .page-header {
-                margin: -1rem -1rem 1rem 0;
+                margin: -1rem -1rem 1rem -1rem;
                 padding: 1.5rem 1rem;
             }
 

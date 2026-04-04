@@ -112,11 +112,36 @@
                         $discountableFees = $tuitionFee + $practicalFee + $tripFee;
                         $discountAmount   = ($discount > 0) ? ($discountableFees * ($discount / 100)) : 0;
                         $studentcard      = 2000;
-                        $totalToPay       = $studentcard + $registrationFee + ($discountableFees - $discountAmount);
 
                         $studentTransactions = \App\Models\StudentTransaction::where('student_id', $student->id)
                             ->whereIn('status', ['successful', 'paid'])
                             ->get();
+
+                        // Get the latest academic year from student's term
+                        $latestPayment = \App\Models\StudentTransaction::where('student_id', $student->id)
+                            ->with('term.academicYear')
+                            ->orderByDesc('created_at')
+                            ->first();
+                        $currentAcademicYear = $latestPayment && $latestPayment->term ? $latestPayment->term->academicYear : null;
+
+                        // Check if registration fee was paid in the same academic year
+                        $registrationPaidInYear = false;
+                        if ($currentAcademicYear) {
+                            $registrationPaidInYear = \App\Models\StudentTransaction::where('student_id', $student->id)
+                                ->where('type', 'registration_fee')
+                                ->whereIn('status', ['successful', 'paid'])
+                                ->whereHas('term', function ($query) use ($currentAcademicYear) {
+                                    $query->where('academic_year_id', $currentAcademicYear->id);
+                                })
+                                ->exists();
+                        }
+
+                        // Exclude registration fee if already paid in this academic year
+                        if ($registrationPaidInYear) {
+                            $totalToPay = $studentcard + ($discountableFees - $discountAmount);
+                        } else {
+                            $totalToPay = $studentcard + $registrationFee + ($discountableFees - $discountAmount);
+                        }
 
                         $totalPaid  = $studentTransactions->sum('amount');
                         $remaining  = $totalToPay - $totalPaid;

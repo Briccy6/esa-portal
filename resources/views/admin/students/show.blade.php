@@ -228,7 +228,7 @@
                             $tuitionFee = $course ? floatval($course->tuition_fee) : 0;
                             $practicalFee = $course ? floatval($course->practical_fee) : 0;
                             $tripFee = $course ? floatval($course->trip_fee) : 0;
-                            $studentCardFee;
+                            $studentCardFee = 2000;
                             
                             // Calculate discountable fees (exclude registration fee from discount)
                             $discountableFees = $tuitionFee + $practicalFee + $tripFee;
@@ -236,8 +236,31 @@
                             // Apply discount only to discountable fees
                             $discountAmount = ($discount > 0) ? ($discountableFees * ($discount / 100)) : 0;
                             
-                            // Total fees after discount (registration fee is not discounted)
-                            $totalFees = $registrationFee + $studentCardFee+ ($discountableFees - $discountAmount);
+                            // Get the latest academic year from student's term
+                            $latestPayment = \App\Models\StudentTransaction::where('student_id', $student->id)
+                                ->with('term.academicYear')
+                                ->orderByDesc('created_at')
+                                ->first();
+                            $currentAcademicYear = $latestPayment && $latestPayment->term ? $latestPayment->term->academicYear : null;
+
+                            // Check if registration fee was paid in the same academic year
+                            $registrationPaidInYear = false;
+                            if ($currentAcademicYear) {
+                                $registrationPaidInYear = \App\Models\StudentTransaction::where('student_id', $student->id)
+                                    ->where('type', 'registration_fee')
+                                    ->whereIn('status', ['successful', 'paid'])
+                                    ->whereHas('term', function ($query) use ($currentAcademicYear) {
+                                        $query->where('academic_year_id', $currentAcademicYear->id);
+                                    })
+                                    ->exists();
+                            }
+                            
+                            // Total fees after discount - exclude registration if already paid in this academic year
+                            if ($registrationPaidInYear) {
+                                $totalFees = $studentCardFee + ($discountableFees - $discountAmount);
+                            } else {
+                                $totalFees = $registrationFee + $studentCardFee + ($discountableFees - $discountAmount);
+                            }
                             
                             // Get payments from student_transactions table
                             $studentTransactions = \App\Models\StudentTransaction::where('student_id', $student->id)
