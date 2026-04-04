@@ -425,17 +425,6 @@
                                       onsubmit="handlePayment(event, {{ $student->id }})">
                                     @csrf
                                     <div class="modal-body">
-                                        <!-- DEBUG: Visual feedback -->
-                                        <div id="debugPanel{{ $student->id }}" style="display: none; background: #ffffcc; border: 2px solid red; padding: 10px; margin-bottom: 10px; border-radius: 4px;">
-                                            <h6>🔧 DEBUG INFO:</h6>
-                                            <small>
-                                                <div>Term Selected: <span id="debugTerm{{ $student->id }}">No</span></div>
-                                                <div>Fee Selected: <span id="debugFee{{ $student->id }}">No</span></div>
-                                                <div>Amount Container: <span id="debugAmount{{ $student->id }}">Not found</span></div>
-                                                <div>Amount Input Hidden: <span id="debugInputHidden{{ $student->id }}">Unknown</span></div>
-                                            </small>
-                                        </div>
-
                                         <div class="row">
                                             <!-- Step 1: Select Term (REQUIRED FIRST) -->
                                             <div class="col-md-12 mb-3">
@@ -464,7 +453,7 @@
                                             </div>
 
                                             <!-- Term Summary Alert -->
-                                            <div id="termSummary{{ $student->id }}" class="col-md-12 mb-3 d-none">
+                                            <div id="termSummary{{ $student->id }}" class="col-md-12 mb-3">
                                                 <div class="alert alert-info">
                                                     <i class="fas fa-info-circle me-2"></i>
                                                     <strong>Term Summary:</strong>
@@ -476,8 +465,8 @@
                                                 </div>
                                             </div>
 
-                                            <!-- Step 2: Select Fee Type (Hidden Until Term Selected) -->
-                                            <div id="feeTypeContainer{{ $student->id }}" class="col-md-12 mb-3 d-none">
+                                            <!-- Step 2: Select Fee Type (ALWAYS VISIBLE) -->
+                                            <div id="feeTypeContainer{{ $student->id }}" class="col-md-12 mb-3">
                                                 <label class="form-label required">
                                                     <i class="fas fa-receipt me-1"></i>Fee Type for {{ $student->course->course_name ?? 'Course' }}
                                                 </label>
@@ -492,8 +481,8 @@
                                                 <div id="feeInfo{{ $student->id }}" class="mt-2"></div>
                                             </div>
 
-                                            <!-- Step 3: Enter Amount (Hidden Until Fee Selected) -->
-                                            <div id="amountContainer{{ $student->id }}" class="col-md-12 mb-3 d-none">
+                                            <!-- Step 3: Enter Amount (ALWAYS VISIBLE) -->
+                                            <div id="amountContainer{{ $student->id }}" class="col-md-12 mb-3">
                                                 <label class="form-label required">
                                                     <i class="fas fa-money-bill-wave me-1"></i>Amount to Pay (RWF)
                                                 </label>
@@ -502,9 +491,7 @@
                                                        id="amountInput{{ $student->id }}"
                                                        class="form-control form-control-lg"
                                                        placeholder="Enter amount received from student"
-                                                       min="1" step="1"
-                                                       oninput="validateAmount({{ $student->id }})"
-                                                       onchange="validateAmount({{ $student->id }})">
+                                                       min="1" step="1">
                                                 <small class="text-muted d-block mt-2">
                                                     <i class="fas fa-info-circle me-1"></i>
                                                     Enter the exact amount received from the student
@@ -512,8 +499,8 @@
                                                 <div id="amountError{{ $student->id }}" class="text-danger small mt-2 fw-bold"></div>
                                             </div>
 
-                                            <!-- Step 4: Notes (Optional) -->
-                                            <div id="notesContainer{{ $student->id }}" class="col-md-12 mb-3 d-none">
+                                            <!-- Step 4: Notes (Optional - ALWAYS VISIBLE) -->
+                                            <div id="notesContainer{{ $student->id }}" class="col-md-12 mb-3">
                                                 <label class="form-label">Payment Notes (Optional)</label>
                                                 <textarea name="payment_notes" 
                                                          id="notesInput{{ $student->id }}"
@@ -532,7 +519,7 @@
                                     </div>
                                     <div class="modal-footer">
                                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                        <button type="submit" class="btn btn-primary" id="submitBtn{{ $student->id }}" disabled>
+                                        <button type="submit" class="btn btn-primary" id="submitBtn{{ $student->id }}">
                                             <i class="fas fa-check me-1"></i>Record Payment
                                         </button>
                                     </div>
@@ -548,20 +535,15 @@
                         const termId = termSelect.value;
                         
                         if (!termId) {
-                            // Hide all subsequent fields when term is cleared
-                            document.getElementById('termSummary' + studentId)?.classList.add('d-none');
-                            document.getElementById('feeTypeContainer' + studentId)?.classList.add('d-none');
-                            document.getElementById('amountContainer' + studentId)?.classList.add('d-none');
-                            document.getElementById('notesContainer' + studentId)?.classList.add('d-none');
-                            document.getElementById('submitBtn' + studentId).disabled = true;
+                            // Clear fee dropdown when term is cleared
+                            const feeSelect = document.getElementById('feeTypeSelect' + studentId);
+                            feeSelect.innerHTML = '<option value="">-- Select a Fee --</option>';
+                            document.getElementById('feeInfo' + studentId).innerHTML = '';
                             return;
                         }
 
                         // Show loading indicator
                         document.getElementById('loadingIndicator' + studentId).classList.remove('d-none');
-                        document.getElementById('feeTypeContainer' + studentId).classList.add('d-none');
-                        document.getElementById('amountContainer' + studentId).classList.add('d-none');
-                        document.getElementById('notesContainer' + studentId).classList.add('d-none');
 
                         // Fetch term fees
                         fetch(`/staff/students/${studentId}/term-fees?term_id=${termId}`, {
@@ -581,7 +563,6 @@
                                     new Intl.NumberFormat('en-US').format(Math.round(data.summary.total_paid));
                                 document.getElementById('totalTermRemaining' + studentId).textContent = 
                                     new Intl.NumberFormat('en-US').format(Math.round(data.summary.total_remaining));
-                                document.getElementById('termSummary' + studentId)?.classList.remove('d-none');
 
                                 // Populate fee dropdown
                                 const feeSelect = document.getElementById('feeTypeSelect' + studentId);
@@ -589,7 +570,6 @@
                                 
                                 if (data.fees.length === 0) {
                                     feeSelect.innerHTML += '<option disabled>All fees have been paid for this term!</option>';
-                                    document.getElementById('feeTypeContainer' + studentId)?.classList.add('d-none');
                                 } else {
                                     data.fees.forEach(fee => {
                                         const option = document.createElement('option');
@@ -600,15 +580,14 @@
                                         option.dataset.remaining = fee.remaining;
                                         feeSelect.appendChild(option);
                                     });
-                                    document.getElementById('feeTypeContainer' + studentId)?.classList.remove('d-none');
                                 }
                             } else {
-                                alert('Error: ' + data.message);
+                                showAlert('danger', 'Error: ' + data.message);
                             }
                         })
                         .catch(error => {
                             console.error('Error:', error);
-                            alert('Failed to load fees. Please try again.');
+                            showAlert('danger', 'Failed to load fees. Please try again.');
                         })
                         .finally(() => {
                             document.getElementById('loadingIndicator' + studentId).classList.add('d-none');
@@ -617,50 +596,18 @@
 
                     // Update fee info when fee type changes
                     function updateFeeInfo(select, studentId) {
-                        console.log('🔍 updateFeeInfo called for studentId:', studentId);
-                        
-                        // Update debug panel
-                        const debugPanel = document.getElementById('debugPanel' + studentId);
-                        debugPanel.style.display = 'block';
-                        
                         const feeType = select.value;
-                        console.log('🔍 Selected fee type:', feeType);
-                        document.getElementById('debugFee' + studentId).textContent = feeType || 'None';
-                        
-                        const amountContainer = document.getElementById('amountContainer' + studentId);
-                        const notesContainer = document.getElementById('notesContainer' + studentId);
-                        const amountInput = document.getElementById('amountInput' + studentId);
-                        const submitBtn = document.getElementById('submitBtn' + studentId);
                         const feeInfoDiv = document.getElementById('feeInfo' + studentId);
 
-                        console.log('🔍 DOM Elements found:');
-                        console.log('  - amountContainer:', amountContainer ? '✓ Found' : '✗ NOT FOUND');
-                        console.log('  - notesContainer:', notesContainer ? '✓ Found' : '✗ NOT FOUND');
-                        console.log('  - amountInput:', amountInput ? '✓ Found' : '✗ NOT FOUND');
-                        console.log('  - feeInfoDiv:', feeInfoDiv ? '✓ Found' : '✗ NOT FOUND');
-
-                        document.getElementById('debugAmount' + studentId).textContent = amountContainer ? '✓ Found' : '✗ NOT FOUND';
-
                         if (!feeType) {
-                            console.log('🔍 No fee type selected, hiding containers');
-                            amountContainer?.classList.add('d-none');
-                            notesContainer?.classList.add('d-none');
                             feeInfoDiv.innerHTML = '';
-                            submitBtn.disabled = true;
                             return;
                         }
 
                         const option = select.querySelector(`option[value="${feeType}"]`);
-                        console.log('🔍 Selected option:', option);
-                        
                         const remaining = parseFloat(option.dataset.remaining) || 0;
                         const total = parseFloat(option.dataset.total) || 0;
                         const paid = parseFloat(option.dataset.paid) || 0;
-
-                        console.log('🔍 Fee values:');
-                        console.log('  - Total:', total);
-                        console.log('  - Paid:', paid);
-                        console.log('  - Remaining:', remaining);
 
                         // Show remaining amount info with fee breakdown
                         feeInfoDiv.innerHTML = `
@@ -680,94 +627,10 @@
                             </div>
                         `;
 
-                        amountInput.max = remaining;
-                        amountInput.value = '';
-                        amountInput.placeholder = `Max: ${new Intl.NumberFormat('en-US').format(Math.round(remaining))} RWF`;
-                        
-                        // Force show the amount and notes containers
-                        console.log('🔍 Before removing d-none:');
-                        console.log('  - amountContainer classList:', amountContainer?.className);
-                        console.log('  - amountContainer computed style display:', amountContainer ? window.getComputedStyle(amountContainer).display : 'N/A');
-                        
-                        // FORCEFULLY remove the d-none class and show the containers
-                        if (amountContainer) {
-                            amountContainer.classList.remove('d-none');
-                            // Use setAttribute for proper !important syntax
-                            amountContainer.setAttribute('style', 'display: block !important');
-                        }
-                        
-                        if (notesContainer) {
-                            notesContainer.classList.remove('d-none');
-                            notesContainer.setAttribute('style', 'display: block !important');
-                        }
-                        
-                        console.log('🔍 After removing d-none:');
-                        console.log('  - amountContainer classList:', amountContainer?.className);
-                        console.log('  - amountContainer style.display:', amountContainer?.style.display);
-                        console.log('  - amountContainer data-amount-shown:', amountContainer?.getAttribute('data-amount-shown'));
-                        console.log('  - amountContainer computed display:', amountContainer ? window.getComputedStyle(amountContainer).display : 'N/A');
-                        
-                        document.getElementById('debugInputHidden' + studentId).textContent = 
-                            amountContainer?.classList.contains('d-none') ? 'YES (has d-none)' : 'NO (d-none removed)';
-                        
-                        // Scroll to amount input if needed
-                        setTimeout(() => {
-                            console.log('🔍 Inside setTimeout - focusing on amount input');
-                            if (amountInput) {
-                                console.log('🔍 amountInput exists, focusing...');
-                                amountInput.focus();
-                                amountInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                            } else {
-                                console.error('❌ amountInput does not exist!');
-                            }
-                        }, 150);
-                        
-                        submitBtn.disabled = true;
-                        console.log('✅ updateFeeInfo completed');
-                    }
-
-                    // Validate amount before submission
-                    function validateAmount(studentId) {
-                        console.log('🔍 validateAmount called for studentId:', studentId);
-                        
+                        // Update max amount input
                         const amountInput = document.getElementById('amountInput' + studentId);
-                        const feeSelect = document.getElementById('feeTypeSelect' + studentId);
-                        const errorDiv = document.getElementById('amountError' + studentId);
-                        const submitBtn = document.getElementById('submitBtn' + studentId);
-
-                        console.log('🔍 Validation inputs:');
-                        console.log('  - amountInput value:', amountInput?.value);
-                        console.log('  - feeSelect value:', feeSelect?.value);
-
-                        const amount = parseFloat(amountInput.value) || 0;
-                        const option = feeSelect.querySelector(`option[value="${feeSelect.value}"]`);
-                        const remaining = parseFloat(option?.dataset.remaining) || 0;
-
-                        console.log('🔍 Validation values:');
-                        console.log('  - Amount:', amount);
-                        console.log('  - Remaining:', remaining);
-
-                        errorDiv.textContent = '';
-
-                        if (amount <= 0) {
-                            console.log('⚠️ Amount is 0 or less');
-                            errorDiv.textContent = '⚠️ Amount must be greater than 0';
-                            submitBtn.disabled = true;
-                            return false;
-                        }
-
-                        if (amount > remaining) {
-                            console.log('⚠️ Amount exceeds remaining');
-                            errorDiv.textContent = `⚠️ Amount exceeds remaining balance of ${new Intl.NumberFormat('en-US').format(Math.round(remaining))} RWF`;
-                            submitBtn.disabled = true;
-                            return false;
-                        }
-
-                        // Amount is valid
-                        console.log('✅ Amount is valid');
-                        errorDiv.textContent = '';
-                        submitBtn.disabled = false;
-                        return true;
+                        amountInput.max = remaining;
+                        amountInput.placeholder = `Max: ${new Intl.NumberFormat('en-US').format(Math.round(remaining))} RWF`;
                     }
                     </script>
 
@@ -1204,28 +1067,52 @@ function handlePayment(event, studentId) {
     const form        = event.target;
     const formData    = new FormData(form);
     const submitBtn   = document.getElementById(`submitBtn${studentId}`);
-    const selectEl    = document.getElementById(`feeTypeSelect${studentId}`);
+    const termSelect  = document.getElementById(`termSelect${studentId}`);
+    const feeSelect   = document.getElementById(`feeTypeSelect${studentId}`);
+    const amountInput = document.getElementById(`amountInput${studentId}`);
+    const errorDiv    = document.getElementById(`amountError${studentId}`);
 
+    const termId  = termSelect.value;
     const feeType = formData.get('fee_type');
-    const amount  = parseFloat(formData.get('amount_paid'));
+    const amount  = parseFloat(formData.get('amount_paid')) || 0;
 
-    if (!feeType)          { showAlert('danger', 'Please select a fee type');    return; }
-    if (!amount || amount <= 0) { showAlert('danger', 'Please enter a valid amount'); return; }
-
-    if (selectEl) {
-        const selectedOption = selectEl.options[selectEl.selectedIndex];
-        const remaining = parseFloat(selectedOption?.getAttribute('data-remaining') || 0);
-        if (amount > remaining) {
-            showAlert('danger', `Amount exceeds remaining balance of ${remaining.toLocaleString()} RWF`);
-            return;
-        }
-        const feeName = (selectedOption?.text || '').split(' — ')[0] || feeType;
-        if (!confirm(`Confirm payment of ${amount.toLocaleString()} RWF for ${feeName}?`)) return;
-    } else {
-        const feeName = feeType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-        if (!confirm(`Confirm payment of ${amount.toLocaleString()} RWF for ${feeName}?`)) return;
+    // ─── VALIDATION ──────────────────────────────────────────
+    if (!termId) {
+        errorDiv.textContent = '❌ Please select an academic term';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return false;
     }
 
+    if (!feeType) {
+        errorDiv.textContent = '❌ Please select a fee type';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return false;
+    }
+
+    if (!amount || amount <= 0) {
+        errorDiv.textContent = '❌ Please enter a valid amount greater than 0';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return false;
+    }
+
+    // Check if amount exceeds remaining balance
+    const selectedOption = feeSelect.options[feeSelect.selectedIndex];
+    const remaining = parseFloat(selectedOption?.dataset.remaining) || 0;
+
+    if (amount > remaining) {
+        errorDiv.textContent = `❌ Amount (${amount.toLocaleString()} RWF) exceeds remaining balance of ${remaining.toLocaleString()} RWF`;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return false;
+    }
+
+    // Clear any previous errors
+    errorDiv.textContent = '';
+
+    // ─── CONFIRMATION ────────────────────────────────────────
+    const feeName = (selectedOption?.text || '').split(' — ')[0] || feeType;
+    if (!confirm(`Confirm payment of ${amount.toLocaleString()} RWF for ${feeName}?`)) return false;
+
+    // ─── SUBMIT ──────────────────────────────────────────────
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing…';
 
@@ -1263,6 +1150,8 @@ function handlePayment(event, studentId) {
         submitBtn.disabled = false;
         submitBtn.innerHTML = '<i class="fas fa-check me-1"></i>Record Payment';
     });
+
+    return false;
 }
 
 // ─── Handle Complete Registration ────────────────────────────────────────────
