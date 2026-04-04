@@ -189,7 +189,7 @@
                         $registrationPaidInYear = false;
                         if ($currentAcademicYear) {
                             $registrationPaidInYear = \App\Models\StudentTransaction::where('student_id', $student->id)
-                                ->where('type', 'registration_fee')
+                                ->where('type', 'registration')
                                 ->whereIn('status', ['successful', 'paid'])
                                 ->whereHas('term', function ($query) use ($currentAcademicYear) {
                                     $query->where('academic_year_id', $currentAcademicYear->id);

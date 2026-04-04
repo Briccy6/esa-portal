@@ -128,7 +128,7 @@
                         $registrationPaidInYear = false;
                         if ($currentAcademicYear) {
                             $registrationPaidInYear = \App\Models\StudentTransaction::where('student_id', $student->id)
-                                ->where('type', 'registration_fee')
+                                ->where('type', 'registration')
                                 ->whereIn('status', ['successful', 'paid'])
                                 ->whereHas('term', function ($query) use ($currentAcademicYear) {
                                     $query->where('academic_year_id', $currentAcademicYear->id);
@@ -146,7 +146,7 @@
                         $totalPaid  = $studentTransactions->sum('amount');
                         $remaining  = $totalToPay - $totalPaid;
 
-                        $paidRegistration = $studentTransactions->where('type', 'registration_fee')->sum('amount');
+                        $paidRegistration = $studentTransactions->where('type', 'registration')->sum('amount');
                         $paidSchoolFee    = $studentTransactions->where('type', 'school_fee')->sum('amount');
                         $paidPractical    = $studentTransactions->where('type', 'practical_fee')->sum('amount');
                         $paidTrip         = $studentTransactions->where('type', 'trip_fee')->sum('amount');
