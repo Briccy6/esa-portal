@@ -332,212 +332,166 @@
         </div>
     @endif
 
-    <!-- Fee Overview Cards -->
+    <!-- Fee Overview Cards - Term Based -->
     <div class="row mb-5">
         <div class="col-12 d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
             <h3 class="section-title mb-0">
-                <i class="bi bi-credit-card-2-front me-2"></i>Fee Overview
+                <i class="bi bi-credit-card-2-front me-2"></i>Term-Based Fee Overview
             </h3>
             <a href="{{ route('student.payment-transcript') }}" target="_blank" rel="noopener" class="btn btn-outline-primary btn-sm">
                 <i class="bi bi-printer me-1"></i> View &amp; print payment transcript
             </a>
         </div>
 
-        {{-- Registration Fee --}}
-        @if(($registrationFee - ($paidRegistration ?? 0)) > 0)
-        <div class="col-lg-3 col-md-6 mb-4">
-            <div class="fee-card registration-card">
-                <div class="fee-card-header">
-                    <div class="fee-icon"><i class="bi bi-person-plus"></i></div>
-                    <div class="fee-title"><h6>Registration Fee</h6></div>
-                </div>
-                <div class="fee-card-body">
-                    <div class="fee-amount">{{ number_format($registrationFee, 2) }} <span>Rwf</span></div>
-                    <div class="fee-details">
-                        <div class="fee-detail-item paid">
-                            <i class="bi bi-check-circle"></i>
-                            <span>Paid: {{ number_format($paidRegistration ?? 0, 2) }} Rwf</span>
-                        </div>
-                        <div class="fee-detail-item remaining">
-                            <i class="bi bi-clock"></i>
-                            <span>Remaining: {{ number_format(max($registrationFee - ($paidRegistration ?? 0), 0), 2) }} Rwf</span>
-                        </div>
-                    </div>
-                    <button type="button" class="btn btn-pay pay-fee-btn"
-                            data-feetype="registration_fee"
-                            data-amount="{{ $registrationFee - ($paidRegistration ?? 0) }}"
-                            onclick="showPaymentModal(this)">
-                        <i class="bi bi-credit-card me-1"></i>Pay Now
-                    </button>
-                    @if(($paidRegistration ?? 0) > 0)
-                    <a href="{{ route('student.payment-transcript') }}" target="_blank" class="btn btn-sm btn-outline-info mt-2">
-                        <i class="bi bi-printer me-1"></i>Print Receipt
-                    </a>
-                    @endif
-                </div>
-                <div class="progress-bar">
-                    <div class="progress-fill" style="width: {{ $registrationFee > 0 ? (($paidRegistration ?? 0) / $registrationFee) * 100 : 0 }}%"></div>
+        @if(empty($termFeesData))
+            <div class="col-12">
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <strong>All Fees Paid!</strong> You have no outstanding fees. Congratulations!
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
             </div>
-        </div>
-        @endif
+        @else
+            @foreach($termFeesData as $termData)
+                <div class="col-12 mb-4">
+                    <!-- Term Header Card -->
+                    <div class="card border-primary shadow-sm mb-3">
+                        <div class="card-header bg-primary text-white">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="mb-1">
+                                        <i class="fas fa-calendar-alt me-2"></i>
+                                        {{ $termData['term']->name }}
+                                    </h5>
+                                    <small>
+                                        {{ $termData['term']->start_date->format('M d, Y') }} - 
+                                        {{ $termData['term']->end_date->format('M d, Y') }}
+                                    </small>
+                                </div>
+                                <div class="text-right">
+                                    <div class="h5 mb-0">{{ number_format($termData['total_fees'], 0) }} RWF</div>
+                                    <small>Total Fees</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <!-- Term Progress -->
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Payment Progress</span>
+                                    <span class="badge bg-info">{{ $termData['payment_percentage'] }}%</span>
+                                </div>
+                                <div class="progress" style="height: 25px;">
+                                    <div class="progress-bar bg-success" role="progressbar" 
+                                         style="width: {{ $termData['payment_percentage'] }}%"
+                                         aria-valuenow="{{ $termData['payment_percentage'] }}" 
+                                         aria-valuemin="0" aria-valuemax="100">
+                                        <small class="text-white fw-bold">
+                                            {{ number_format($termData['total_paid'], 0) }} RWF Paid
+                                        </small>
+                                    </div>
+                                </div>
+                                <small class="text-muted">Remaining: {{ number_format($termData['total_remaining'], 0) }} RWF</small>
+                            </div>
 
-        {{-- Trip Fee --}}
-        @if(($tripFee - ($paidTrip ?? 0)) > 0)
-        <div class="col-lg-3 col-md-6 mb-4">
-            <div class="fee-card trip-card">
-                <div class="fee-card-header">
-                    <div class="fee-icon"><i class="bi bi-bus-front"></i></div>
-                    <div class="fee-title"><h6>Trip Fee</h6></div>
-                </div>
-                <div class="fee-card-body">
-                    <div class="fee-amount">{{ number_format($tripFee, 2) }} <span>Rwf</span></div>
-                    <div class="fee-details">
-                        <div class="fee-detail-item paid">
-                            <i class="bi bi-check-circle"></i>
-                            <span>Paid: {{ number_format($paidTrip ?? 0, 2) }} Rwf</span>
-                        </div>
-                        <div class="fee-detail-item remaining">
-                            <i class="bi bi-clock"></i>
-                            <span>Remaining: {{ number_format(max($tripFee - ($paidTrip ?? 0), 0), 2) }} Rwf</span>
-                        </div>
-                    </div>
-                    <button type="button" class="btn btn-pay pay-fee-btn"
-                            data-feetype="trip_fee"
-                            data-amount="{{ $tripFee - ($paidTrip ?? 0) }}"
-                            onclick="showPaymentModal(this)">
-                        <i class="bi bi-credit-card me-1"></i>Pay Now
-                    </button>
-                    @if(($paidTrip ?? 0) > 0)
-                    <a href="{{ route('student.payment-transcript') }}" target="_blank" class="btn btn-sm btn-outline-info mt-2">
-                        <i class="bi bi-printer me-1"></i>Print Receipt
-                    </a>
-                    @endif
-                </div>
-                <div class="progress-bar">
-                    <div class="progress-fill" style="width: {{ $tripFee > 0 ? (($paidTrip ?? 0) / $tripFee) * 100 : 0 }}%"></div>
-                </div>
-            </div>
-        </div>
-        @endif
+                            <!-- Fee Breakdown -->
+                            <div class="row">
+                                @foreach($termData['fees'] as $fee)
+                                <div class="col-lg-6 col-md-12 mb-3">
+                                    <div class="card border-left-{{ $fee['type'] === 'registration_fee' ? 'primary' : ($fee['type'] === 'school_fee' ? 'info' : ($fee['type'] === 'trip_fee' ? 'warning' : 'success')) }} h-100">
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <h6 class="mb-0">{{ $fee['name'] }}</h6>
+                                                <span class="badge bg-secondary">{{ $fee['type'] }}</span>
+                                            </div>
+                                            
+                                            <div class="fee-detail-row">
+                                                <span class="text-muted">Fee Amount:</span>
+                                                <strong>{{ number_format($fee['total'], 0) }} RWF</strong>
+                                            </div>
+                                            <div class="fee-detail-row text-success">
+                                                <span>✓ Paid:</span>
+                                                <strong>{{ number_format($fee['paid'], 0) }} RWF</strong>
+                                            </div>
+                                            <div class="fee-detail-row text-danger">
+                                                <span>⚠ Remaining:</span>
+                                                <strong>{{ number_format($fee['remaining'], 0) }} RWF</strong>
+                                            </div>
 
-        {{-- Tuition Fee --}}
-        @if(($tuitionFee - ($paidTuition ?? 0)) > 0)
-        <div class="col-lg-3 col-md-6 mb-4">
-            <div class="fee-card tuition-card">
-                <div class="fee-card-header">
-                    <div class="fee-icon"><i class="bi bi-book"></i></div>
-                    <div class="fee-title"><h6>Tuition Fee</h6></div>
-                </div>
-                <div class="fee-card-body">
-                    <div class="fee-amount">{{ number_format($tuitionFee, 2) }} <span>Rwf</span></div>
-                    <div class="fee-details">
-                        <div class="fee-detail-item paid">
-                            <i class="bi bi-check-circle"></i>
-                            <span>Paid: {{ number_format($paidTuition ?? 0, 2) }} Rwf</span>
-                        </div>
-                        <div class="fee-detail-item remaining">
-                            <i class="bi bi-clock"></i>
-                            <span>Remaining: {{ number_format(max($tuitionFee - ($paidTuition ?? 0), 0), 2) }} Rwf</span>
-                        </div>
-                    </div>
-                    <button type="button" class="btn btn-pay pay-fee-btn"
-                            data-feetype="school_fee"
-                            data-amount="{{ $tuitionFee - ($paidTuition ?? 0) }}"
-                            onclick="showPaymentModal(this)">
-                        <i class="bi bi-credit-card me-1"></i>Pay Now
-                    </button>
-                    @if(($paidTuition ?? 0) > 0)
-                    <a href="{{ route('student.payment-transcript') }}" target="_blank" class="btn btn-sm btn-outline-info mt-2">
-                        <i class="bi bi-printer me-1"></i>Print Receipt
-                    </a>
-                    @endif
-                </div>
-                <div class="progress-bar">
-                    <div class="progress-fill" style="width: {{ $tuitionFee > 0 ? (($paidTuition ?? 0) / $tuitionFee) * 100 : 0 }}%"></div>
-                </div>
-            </div>
-        </div>
-        @endif
+                                            <div class="progress mt-2" style="height: 18px;">
+                                                <div class="progress-bar" role="progressbar"
+                                                     style="width: {{ $fee['total'] > 0 ? (($fee['paid'] / $fee['total']) * 100) : 0 }}%"
+                                                     aria-valuenow="{{ $fee['total'] > 0 ? (($fee['paid'] / $fee['total']) * 100) : 0 }}"
+                                                     aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
 
-        {{-- Practical Fee --}}
-        @if(($praticalFee - ($paidPractical ?? 0)) > 0)
-        <div class="col-lg-3 col-md-6 mb-4">
-            <div class="fee-card practical-card">
-                <div class="fee-card-header">
-                    <div class="fee-icon"><i class="bi bi-tools"></i></div>
-                    <div class="fee-title"><h6>Practical Fee</h6></div>
-                </div>
-                <div class="fee-card-body">
-                    <div class="fee-amount">{{ number_format($praticalFee, 2) }} <span>Rwf</span></div>
-                    <div class="fee-details">
-                        <div class="fee-detail-item paid">
-                            <i class="bi bi-check-circle"></i>
-                            <span>Paid: {{ number_format($paidPractical ?? 0, 2) }} Rwf</span>
-                        </div>
-                        <div class="fee-detail-item remaining">
-                            <i class="bi bi-clock"></i>
-                            <span>Remaining: {{ number_format(max($praticalFee - ($paidPractical ?? 0), 0), 2) }} Rwf</span>
+                                            @if($fee['remaining'] > 0)
+                                            <button type="button" 
+                                                    class="btn btn-sm btn-outline-primary mt-2 w-100"
+                                                    onclick="selectTermAndFee({{ $termData['term']->id }}, '{{ $fee['type'] }}', {{ $fee['remaining'] }})">
+                                                <i class="fas fa-money-bill-wave me-1"></i>Pay {{ number_format($fee['remaining'], 0) }} RWF
+                                            </button>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                                @endforeach
+                            </div>
                         </div>
                     </div>
-                    <button type="button" class="btn btn-pay pay-fee-btn"
-                            data-feetype="practical_fee"
-                            data-amount="{{ $praticalFee - ($paidPractical ?? 0) }}"
-                            onclick="showPaymentModal(this)">
-                        <i class="bi bi-credit-card me-1"></i>Pay Now
-                    </button>
-                    @if(($paidPractical ?? 0) > 0)
-                    <a href="{{ route('student.payment-transcript') }}" target="_blank" class="btn btn-sm btn-outline-info mt-2">
-                        <i class="bi bi-printer me-1"></i>Print Receipt
-                    </a>
-                    @endif
                 </div>
-                <div class="progress-bar">
-                    <div class="progress-fill" style="width: {{ $praticalFee > 0 ? (($paidPractical ?? 0) / $praticalFee) * 100 : 0 }}%"></div>
-                </div>
-            </div>
-        </div>
-        @endif
-
-        {{-- Student Card Fee --}}
-        @if(($studentCardFee - $paidStudentCard) > 0)
-        <div class="col-lg-3 col-md-6 mb-4">
-            <div class="fee-card student-card-fee">
-                <div class="fee-card-header">
-                    <div class="fee-icon"><i class="bi bi-person-badge"></i></div>
-                    <div class="fee-title"><h6>Student Card</h6></div>
-                </div>
-                <div class="fee-card-body">
-                    <div class="fee-amount">{{ number_format($studentCardFee, 2) }} <span>Rwf</span></div>
-                    <div class="fee-details">
-                        <div class="fee-detail-item paid">
-                            <i class="bi bi-check-circle"></i>
-                            <span>Paid: {{ number_format($paidStudentCard, 2) }} Rwf</span>
-                        </div>
-                        <div class="fee-detail-item remaining">
-                            <i class="bi bi-clock"></i>
-                            <span>Remaining: {{ number_format(max($studentCardFee - $paidStudentCard, 0), 2) }} Rwf</span>
-                        </div>
-                    </div>
-                    <button type="button" class="btn btn-pay pay-fee-btn"
-                            data-feetype="student_card"
-                            data-amount="{{ $studentCardFee - $paidStudentCard }}"
-                            onclick="showPaymentModal(this)">
-                        <i class="bi bi-credit-card me-1"></i>Pay Now
-                    </button>
-                    @if($paidStudentCard > 0)
-                    <a href="{{ route('student.payment-transcript') }}" target="_blank" class="btn btn-sm btn-outline-info mt-2">
-                        <i class="bi bi-printer me-1"></i>Print Receipt
-                    </a>
-                    @endif
-                </div>
-                <div class="progress-bar">
-                    <div class="progress-fill" style="width: {{ $studentCardFee > 0 ? ($paidStudentCard / $studentCardFee) * 100 : 0 }}%"></div>
-                </div>
-            </div>
-        </div>
+            @endforeach
         @endif
     </div>
+
+    <style>
+        .border-left-primary {
+            border-left: 4px solid #007bff !important;
+        }
+        .border-left-info {
+            border-left: 4px solid #17a2b8 !important;
+        }
+        .border-left-warning {
+            border-left: 4px solid #ffc107 !important;
+        }
+        .border-left-success {
+            border-left: 4px solid #28a745 !important;
+        }
+        .fee-detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .fee-detail-row:last-child {
+            border-bottom: none;
+        }
+    </style>
+
+    <script>
+    function selectTermAndFee(termId, feeType, remaining) {
+        // Store the selected term and fee for later use
+        localStorage.setItem('selectedTermId', termId);
+        localStorage.setItem('selectedFeeType', feeType);
+        localStorage.setItem('selectedFeeRemaining', remaining);
+        
+        // Show a toast or notification
+        const alert = document.createElement('div');
+        alert.className = 'alert alert-info alert-dismissible fade show';
+        alert.innerHTML = `
+            <i class="fas fa-check-circle me-2"></i>
+            Selected: <strong>${feeType.replace('_', ' ').toUpperCase()}</strong> - ${remaining} RWF to pay
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.prepend(alert);
+        
+        // Scroll to payment section if exists
+        const paymentSection = document.querySelector('.payment-instructions');
+        if (paymentSection) {
+            paymentSection.scrollIntoView({ behavior: 'smooth' });
+        }
+    }
+    </script>
 
     <!-- Token Management Section -->
     <div class="row mb-4">

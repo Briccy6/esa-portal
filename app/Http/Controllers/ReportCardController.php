@@ -729,9 +729,9 @@ class ReportCardController extends Controller
             // Get fees and payments status for selected terms
             $paymentStatus = FeePaymentService::getPaymentStatus($student, $termIds);
 
-            // Get payment history for this student in selected terms
+            // Get payment history for this student in selected terms (all fee types)
             $payments = StudentTransaction::where('student_id', $student->id)
-                ->where('type', 'school_fee')
+                ->whereIn('type', ['registration', 'school_fee', 'practical_fee', 'trip_fee', 'student_card'])
                 ->whereIn('term_id', $termIds)
                 ->orderBy('created_at', 'desc')
                 ->get();

@@ -83,9 +83,9 @@ class FeePaymentService
             
             // ========== PAYMENT QUERY (from student_transactions table) ==========
             // Get all successful fee payments for this student (all fee types)
-            // Includes: school_fee (tuition), trip_fee, registration_fee, practical_fee, student_card_fee
+            // Includes: registration, school_fee (tuition), practical_fee, trip_fee, student_card
             $transactionQuery = StudentTransaction::where('student_id', $student->id)
-                                                  ->whereIn('type', ['school_fee', 'trip_fee', 'registration_fee', 'practical_fee', 'student_card_fee'])
+                                                  ->whereIn('type', ['registration', 'school_fee', 'practical_fee', 'trip_fee', 'student_card'])
                                                   ->where('status', 'successful');
             
             // If specific term IDs provided, only get payments for those terms
@@ -181,9 +181,9 @@ class FeePaymentService
             }
 
             // Get student transactions (all fee types)
-            // Includes: school_fee (tuition), trip_fee, registration_fee, practical_fee, student_card_fee
+            // Includes: registration, school_fee (tuition), practical_fee, trip_fee, student_card
             $transactionQuery = StudentTransaction::where('student_id', $student->id)
-                                                  ->whereIn('type', ['school_fee', 'trip_fee', 'registration_fee', 'practical_fee', 'student_card_fee'])
+                                                  ->whereIn('type', ['registration', 'school_fee', 'practical_fee', 'trip_fee', 'student_card'])
                                                   ->orderBy('created_at', 'desc');
             
             if (!empty($termIds) && is_array($termIds)) {

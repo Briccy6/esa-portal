@@ -43,7 +43,7 @@
 <div class="contact-info">
     <strong>📞 Finance Department Contact Details:</strong><br><br>
     <strong>Email:</strong> <a href="mailto:finance@excellentservantacademy.ac.rw">finance@excellentservantacademy.ac.rw</a><br>
-    <strong>Phone:</strong> [INSERT PHONE NUMBER]<br>
+    <strong>Phone:</strong> 0788525247 <br>
     <strong>Office Hours:</strong> Monday - Friday, 8:00 AM - 4:00 PM
 </div>
 

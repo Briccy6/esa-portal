@@ -311,7 +311,12 @@ function sendPaymentReminder(studentId, studentName, outstanding) {
     pendingStudentName = studentName;
     pendingOutstanding = outstanding;
 
-    const reminderText = `Send a payment reminder to <strong>${studentName}</strong> for outstanding fees of <strong>RWF ${Number(outstanding).toLocaleString()}</strong>?`;
+    const formatted = new Intl.NumberFormat('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+        useGrouping: true
+    }).format(outstanding);
+    const reminderText = `Send a payment reminder to <strong>${studentName}</strong> for outstanding fees of <strong>RWF ${formatted}</strong>?`;
     document.getElementById('reminderText').innerHTML = reminderText;
     document.getElementById('customMessage').value = '';
 
@@ -321,9 +326,16 @@ function sendPaymentReminder(studentId, studentName, outstanding) {
 function confirmSendReminder() {
     const customMessage = document.getElementById('customMessage').value;
 
+    // Format the outstanding amount
+    const formatted = new Intl.NumberFormat('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+        useGrouping: true
+    }).format(pendingOutstanding);
+
     // Here you would send the email via AJAX
     // For now, just show a notification
-    alert(`Payment reminder would be sent to ${pendingStudentName} with outstanding amount RWF ${Number(pendingOutstanding).toLocaleString()}`);
+    alert(`Payment reminder would be sent to ${pendingStudentName} with outstanding amount RWF ${formatted}`);
 
     $('#paymentReminderModal').modal('hide');
 }

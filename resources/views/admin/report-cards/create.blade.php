@@ -1,42 +1,63 @@
 @extends('admin.layout')
 
 @section('content')
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Generate New Report Card</h3>
-            </div>
-            <div class="card-body">
-                <form method="POST" action="{{ route('admin.report-cards.store') }}">
-                    @csrf
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="student_id">Student *</label>
-                                <select name="student_id" id="student_id" class="form-control @error('student_id') is-invalid @enderror" required>
-                                    <option value="">Select Student</option>
-                                    @foreach($students as $student)
-                                        <option value="{{ $student->id }}" {{ old('student_id') == $student->id ? 'selected' : '' }}>
-                                            {{ $student->full_name }} - {{ $student->reg_number ?? 'No Reg No' }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                @error('student_id')
-                                    <span class="invalid-feedback" role="alert">{{ $message }}</span>
-                                @enderror
-                            </div>
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-file-alt me-2"></i>Generate New Report Card</h2>
+            <p class="text-muted">Create report cards for students</p>
+        </div>
+        <a href="{{ route('admin.report-cards.index') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i> Back to Report Cards
+        </a>
+    </div>
+
+    <!-- Validation Errors -->
+    @if($errors->any())
+        <div class="alert alert-danger">
+            <h5><i class="fas fa-exclamation-triangle me-1"></i> Please fix the following errors:</h5>
+            <ul class="mb-0">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    <div class="card">
+        <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="fas fa-file-alt me-2"></i>Report Card Details</h5>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ route('admin.report-cards.store') }}">
+                @csrf
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="student_id">Student *</label>
+                            <select name="student_id" id="student_id" class="form-control @error('student_id') is-invalid @enderror" required>
+                                <option value="">Select Student</option>
+                                @foreach($students as $student)
+                                    <option value="{{ $student->id }}" {{ old('student_id') == $student->id ? 'selected' : '' }}>
+                                        {{ $student->full_name }} - {{ $student->reg_number ?? 'No Reg No' }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('student_id')
+                                <span class="invalid-feedback" role="alert">{{ $message }}</span>
+                            @enderror
                         </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="course_id">Course *</label>
-                                <select name="course_id" id="course_id" class="form-control @error('course_id') is-invalid @enderror" required>
-                                    <option value="">Select Course</option>
-                                    @foreach($courses as $course)
-                                        <option value="{{ $course->id }}" {{ old('course_id') == $course->id ? 'selected' : '' }}>
-                                            {{ $course->course_name }}
-                                        </option>
-                                    @endforeach
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="course_id">Course *</label>
+                            <select name="course_id" id="course_id" class="form-control @error('course_id') is-invalid @enderror" required>
+                                <option value="">Select Course</option>
+                                @foreach($courses as $course)
+                                    <option value="{{ $course->id }}" {{ old('course_id') == $course->id ? 'selected' : '' }}>
+                                        {{ $course->course_name }}
+                                    </option>
+                                @endforeach
                                 </select>
                                 @error('course_id')
                                     <span class="invalid-feedback" role="alert">{{ $message }}</span>
@@ -241,13 +262,22 @@ $(document).ready(function() {
                     `;
 
                     response.students.forEach(function(student) {
+                        // Format currency values with proper thousand separators and 2 decimal places
+                        const formatCurrencyValue = (amount) => {
+                            return new Intl.NumberFormat('en-US', {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                                useGrouping: true
+                            }).format(amount);
+                        };
+                        
                         html += `
                             <tr>
                                 <td><strong>${student.full_name}</strong></td>
                                 <td>${student.student_id}</td>
-                                <td><span class="badge bg-danger">RWF ${Number(student.outstanding_amount).toLocaleString()}</span></td>
-                                <td>RWF ${Number(student.required_fees).toLocaleString()}</td>
-                                <td><span class="badge bg-success">RWF ${Number(student.total_paid).toLocaleString()}</span></td>
+                                <td><span class="badge bg-danger">RWF ${formatCurrencyValue(student.outstanding_amount)}</span></td>
+                                <td>RWF ${formatCurrencyValue(student.required_fees)}</td>
+                                <td><span class="badge bg-success">RWF ${formatCurrencyValue(student.total_paid)}</span></td>
                             </tr>
                         `;
                     });

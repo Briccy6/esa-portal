@@ -392,11 +392,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Format currency
     function formatCurrency(amount) {
-        return new Intl.NumberFormat('en-RW', {
-            style: 'currency',
-            currency: 'RWF',
+        // Format number with proper thousand separators
+        const formatted = new Intl.NumberFormat('en-US', {
             minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+            useGrouping: true
         }).format(amount);
+        return `RWF ${formatted}`;
     }
 
     // Download PDF

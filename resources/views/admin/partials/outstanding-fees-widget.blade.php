@@ -52,8 +52,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 .reduce((sum, student) => sum + (student.outstanding_amount || 0), 0);
             
             document.getElementById('outstandingCount').textContent = count;
-            document.getElementById('outstandingAmount').textContent = 
-                'RWF ' + Number(totalOutstanding).toLocaleString('en-US', {maximumFractionDigits: 2});
+            
+            // Format with proper thousand separators and 2 decimal places
+            const formatted = new Intl.NumberFormat('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+                useGrouping: true
+            }).format(totalOutstanding);
+            document.getElementById('outstandingAmount').textContent = 'RWF ' + formatted;
             
             // Update color based on severity
             const card = document.getElementById('outstandingFeesCard');

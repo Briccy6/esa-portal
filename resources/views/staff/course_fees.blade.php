@@ -811,11 +811,13 @@
     }
 
     function formatCurrency(amount) {
-        return new Intl.NumberFormat('rw-RW', {
-            style: 'currency',
-            currency: 'RWF',
-            minimumFractionDigits: 2
+        // Format number with proper thousand separators
+        const formatted = new Intl.NumberFormat('en-US', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+            useGrouping: true
         }).format(amount);
+        return `RWF ${formatted}`;
     }
 
     // Load payment statistics for a course

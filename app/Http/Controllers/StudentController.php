@@ -1279,44 +1279,176 @@ class StudentController extends Controller
         $attendedDays      = $approvedAttendances->where('status', 'present')->count();
         $attendancePercent = $totalDays > 0 ? round(($attendedDays / $totalDays) * 100, 2) : 0;
 
-        $registrationFee = $student->course->registration_fee ?? 0;
-        $tripFee         = $student->course->trip_fee ?? 0;
-        $tuitionFee      = $student->course->tuition_fee ?? 0;
-        $praticalFee     = $student->course->pratical_fee ?? 0;
-        $discount        = $student->discount ?? 0;
-        $studentCardFee  = 2000;
+        // ─── TERM-BASED FEE CALCULATION ─────────────────────────────────
+        // Fetch all terms with their associated fees for the student's course
+        $course = $student->course;
+        $studentCardFee = 2000;
+        $discount = $student->discount ?? 0;
 
-        $discountableFees = $tripFee + $tuitionFee + $praticalFee;
-        $discountAmount   = ($discount > 0) ? ($discountableFees * ($discount / 100)) : 0;
-        $totalFees        = $registrationFee + $studentCardFee + ($discountableFees - $discountAmount);
+        $termFeesData = [];
+        $totalAllTermsFees = 0;
+        $totalAllTermsPaid = 0;
 
-        $paidRegistration = \App\Models\StudentTransaction::where('student_id', $student->id)
-            ->where('type', 'registration')
-            ->whereIn('status', ['successful', 'paid'])
-            ->sum('amount');
+        if ($course) {
+            // Get all terms ordered by start date
+            $terms = Term::with('academicYear')
+                ->orderBy('start_date', 'desc')
+                ->get();
 
-        $paidTrip = \App\Models\StudentTransaction::where('student_id', $student->id)
-            ->where('type', 'trip_fee')
-            ->whereIn('status', ['successful', 'paid'])
-            ->sum('amount');
+            foreach ($terms as $term) {
+                // Get fees for this term
+                $termFees = $course->getFeesForTerm($term->id);
+                if (!$termFees) {
+                    $termFees = $course->getLegacyFees();
+                }
 
-        $paidTuition = \App\Models\StudentTransaction::where('student_id', $student->id)
-            ->where('type', 'school_fee')
-            ->whereIn('status', ['successful', 'paid'])
-            ->sum('amount');
+                // Calculate paid amounts for this term
+                $paidRegistration = StudentTransaction::where('student_id', $student->id)
+                    ->where('term_id', $term->id)
+                    ->where('type', 'registration')
+                    ->whereIn('status', ['successful', 'paid'])
+                    ->sum('amount');
 
-        $paidPractical = StudentTransaction::where('student_id', $student->id)
-            ->where('type', 'practical_fee')
-            ->whereIn('status', ['successful', 'paid'])
-            ->sum('amount');
+                $paidSchoolFee = StudentTransaction::where('student_id', $student->id)
+                    ->where('term_id', $term->id)
+                    ->where('type', 'school_fee')
+                    ->whereIn('status', ['successful', 'paid'])
+                    ->sum('amount');
 
-        $paidStudentCard = StudentTransaction::where('student_id', $student->id)
-            ->where('type', 'student_card')
-            ->whereIn('status', ['successful', 'paid'])
-            ->sum('amount');
+                $paidPractical = StudentTransaction::where('student_id', $student->id)
+                    ->where('term_id', $term->id)
+                    ->where('type', 'practical_fee')
+                    ->whereIn('status', ['successful', 'paid'])
+                    ->sum('amount');
 
-        $totalPaid   = $paidRegistration + $paidTrip + $paidTuition + $paidPractical + $paidStudentCard;
-        $outstanding = $totalFees - $totalPaid;
+                $paidTrip = StudentTransaction::where('student_id', $student->id)
+                    ->where('term_id', $term->id)
+                    ->where('type', 'trip_fee')
+                    ->whereIn('status', ['successful', 'paid'])
+                    ->sum('amount');
+
+                $paidStudentCard = StudentTransaction::where('student_id', $student->id)
+                    ->where('term_id', $term->id)
+                    ->where('type', 'student_card')
+                    ->whereIn('status', ['successful', 'paid'])
+                    ->sum('amount');
+
+                // Calculate fee amounts
+                $registrationFee = floatval($termFees->registration_fee ?? 0);
+                $tuitionFee = floatval($termFees->tuition_fee ?? 0);
+                $practicalFee = floatval($termFees->practical_fee ?? 0);
+                $tripFeeAmount = floatval($termFees->trip_fee ?? 0);
+                $termStudentCardFee = floatval($termFees->student_card_fee ?? $studentCardFee);
+
+                // Apply discount to discountable fees
+                $discountableFees = $tripFeeAmount + $tuitionFee + $practicalFee;
+                $discountAmount = ($discount > 0) ? ($discountableFees * ($discount / 100)) : 0;
+
+                // Calculate totals for this term
+                $totalTermFees = $registrationFee + $tuitionFee + $practicalFee + $tripFeeAmount + $termStudentCardFee;
+                $totalTermPaid = $paidRegistration + $paidSchoolFee + $paidPractical + $paidTrip + $paidStudentCard;
+                $remainingTermFees = $totalTermFees - $totalTermPaid;
+
+                // Build fees array for this term
+                $termFeesList = [];
+
+                if ($registrationFee > 0) {
+                    $remainingReg = $registrationFee - $paidRegistration;
+                    if ($remainingReg > 0) {
+                        $termFeesList[] = [
+                            'type' => 'registration_fee',
+                            'name' => 'Registration Fee',
+                            'total' => $registrationFee,
+                            'paid' => $paidRegistration,
+                            'remaining' => $remainingReg,
+                        ];
+                    }
+                }
+
+                if ($tuitionFee > 0) {
+                    $remainingTuition = $tuitionFee - $paidSchoolFee;
+                    if ($remainingTuition > 0) {
+                        $termFeesList[] = [
+                            'type' => 'school_fee',
+                            'name' => 'Tuition Fee',
+                            'total' => $tuitionFee,
+                            'paid' => $paidSchoolFee,
+                            'remaining' => $remainingTuition,
+                        ];
+                    }
+                }
+
+                if ($practicalFee > 0) {
+                    $remainingPractical = $practicalFee - $paidPractical;
+                    if ($remainingPractical > 0) {
+                        $termFeesList[] = [
+                            'type' => 'practical_fee',
+                            'name' => 'Practical Fee',
+                            'total' => $practicalFee,
+                            'paid' => $paidPractical,
+                            'remaining' => $remainingPractical,
+                        ];
+                    }
+                }
+
+                if ($tripFeeAmount > 0) {
+                    $remainingTrip = $tripFeeAmount - $paidTrip;
+                    if ($remainingTrip > 0) {
+                        $termFeesList[] = [
+                            'type' => 'trip_fee',
+                            'name' => 'Trip Fee',
+                            'total' => $tripFeeAmount,
+                            'paid' => $paidTrip,
+                            'remaining' => $remainingTrip,
+                        ];
+                    }
+                }
+
+                if ($termStudentCardFee > 0) {
+                    $remainingStudentCard = $termStudentCardFee - $paidStudentCard;
+                    if ($remainingStudentCard > 0) {
+                        $termFeesList[] = [
+                            'type' => 'student_card',
+                            'name' => 'Student Card',
+                            'total' => $termStudentCardFee,
+                            'paid' => $paidStudentCard,
+                            'remaining' => $remainingStudentCard,
+                        ];
+                    }
+                }
+
+                // Only include terms with unpaid fees
+                if (count($termFeesList) > 0) {
+                    $termFeesData[] = [
+                        'term' => $term,
+                        'fees' => $termFeesList,
+                        'total_fees' => $totalTermFees,
+                        'total_paid' => $totalTermPaid,
+                        'total_remaining' => $remainingTermFees,
+                        'payment_percentage' => $totalTermFees > 0 ? round(($totalTermPaid / $totalTermFees) * 100, 1) : 0,
+                    ];
+
+                    $totalAllTermsFees += $totalTermFees;
+                    $totalAllTermsPaid += $totalTermPaid;
+                }
+            }
+        }
+
+        // Legacy values for backward compatibility
+        $registrationFee = 0;
+        $tripFee = 0;
+        $tuitionFee = 0;
+        $praticalFee = 0;
+        $paidRegistration = 0;
+        $paidTrip = 0;
+        $paidTuition = 0;
+        $paidPractical = 0;
+        $paidStudentCard = 0;
+        $totalFees = $totalAllTermsFees;
+        $totalPaid = $totalAllTermsPaid;
+        $outstanding = $totalAllTermsFees - $totalAllTermsPaid;
+        $discountAmount = 0;
+        $discount = $student->discount ?? 0;
 
         // Get resources for the student's course and branch
         $resources = \App\Models\Resource::where(function($query) use ($student) {
@@ -1325,10 +1457,10 @@ class StudentController extends Controller
         })
         ->with(['teacher', 'course', 'branch'])
         ->orderByDesc('created_at')
-        ->take(6) // Limit to 6 resources for dashboard display
+        ->take(6)
         ->get();
 
-        // Get upcoming live classes for the student
+        // Get upcoming live classes
         $liveClass = \App\Models\LiveClass::where(function($query) use ($student) {
             $query->whereHas('courses', function($q) use ($student) {
                 $q->where('courses.id', $student->course_id);
@@ -1342,15 +1474,15 @@ class StudentController extends Controller
         ->orderBy('start_time', 'asc')
         ->first();
 
-        // Get latest announcements for the student
+        // Get latest announcements
         $announcements = \App\Models\Announcement::where(function($query) use ($student) {
             $query->whereIn('audience', ['public', 'all', 'students']);
         })
         ->orderByDesc('created_at')
-        ->take(5) // Limit to 5 announcements for dashboard display
+        ->take(5)
         ->get();
 
-        // Get exams for the student
+        // Get exams
         $exams = \App\Models\Exam::where(function ($query) use ($student) {
             $query->whereHas('courses', function ($q) use ($student) {
                 $q->where('courses.id', $student->course_id);
@@ -1363,16 +1495,15 @@ class StudentController extends Controller
             $q->where('student_id', $student->id);
         }])
         ->orderBy('class_date', 'asc')
-        ->take(5) // Limit to 5 exams for dashboard display
+        ->take(5)
         ->get();
 
-        // Get subscription data for the student
+        // Get subscription data
         $subscriptions = \App\Models\Subscription::active()->orderBy('price')->get();
         $activeSubscription = $student->activeSubscription;
 
-        // Get active and upcoming timetables for the student
+        // Get timetables
         $timetables = \App\Models\Timetable::where(function($query) {
-            // Include timetables that are currently active
             $query->where(function($activeQuery) {
                 $activeQuery->whereNull('valid_from')
                           ->orWhere('valid_from', '<=', now());
@@ -1383,7 +1514,6 @@ class StudentController extends Controller
             });
         })
         ->orWhere(function($query) {
-            // Include upcoming timetables (valid_from is in the future)
             $query->whereNotNull('valid_from')
                   ->where('valid_from', '>', now())
                   ->where(function($upcomingUntilQuery) {
@@ -1391,7 +1521,7 @@ class StudentController extends Controller
                                         ->orWhere('valid_until', '>', now());
                   });
         })
-        ->orderBy('valid_from', 'asc') // Order by start date to show upcoming first
+        ->orderBy('valid_from', 'asc')
         ->orderBy('created_at', 'desc')
         ->get();
 
@@ -1416,6 +1546,7 @@ class StudentController extends Controller
             'paidStudentCard',
             'totalPaid',
             'outstanding',
+            'termFeesData',
             'resources',
             'liveClass',
             'announcements',
