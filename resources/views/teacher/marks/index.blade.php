@@ -1005,9 +1005,15 @@ body {
                 var errorMsg = data.message || 'Failed to save marks.';
                 var errorDetails = '';
                 if (data.errors && typeof data.errors === 'object') {
-                    errorDetails = '<ul class="mb-0 mt-2">' + Object.entries(data.errors).map(([field, messages]) => {
-                        return '<li>' + (Array.isArray(messages) ? messages.join(', ') : messages) + '</li>';
-                    }).join('') + '</ul>';
+                    var errorList = [];
+                    for (var field in data.errors) {
+                        var messages = data.errors[field];
+                        var messageText = Array.isArray(messages) ? messages.join(', ') : messages;
+                        errorList.push('<li>' + messageText + '</li>');
+                    }
+                    if (errorList.length > 0) {
+                        errorDetails = '<ul class="mb-0 mt-2">' + errorList.join('') + '</ul>';
+                    }
                 }
                 modalMsg.innerHTML = `<div class="alert alert-danger alert-dismissible fade show"><i class="bi bi-exclamation-circle me-2"></i>${errorMsg}${errorDetails} <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`;
             }
