@@ -774,86 +774,99 @@ $(document).ready(function() {
         }
     });
 
-    // Store lesson-teacher mapping
-    let lessonTeacherMap = {};
-
-    // Branch selection changes courses and lessons using lesson_branch_course table
+    // Branch selection changes courses
     $('#branch_id').on('change', function() {
         const branchId = $(this).val();
         const courseSelect = $('#course_ids');
-        const lessonSelect = $('#lesson_ids');
         
         if (branchId) {
-            // Fetch lessons and courses for the selected branch from lesson_branch_course table
-            $.ajax({
-                url: `/admin/exams/api/lessons-courses/${branchId}`,
-                method: 'GET',
-                dataType: 'json',
-                success: function(data) {
-                    if (data.success) {
-                        // Store lesson-teacher mapping
-                        lessonTeacherMap = data.lessonTeachers || {};
+            $.get(`/api/branches/${branchId}/courses`, function(data) {
+                courseSelect.empty().append('<option value="">Loading courses...</option>');
+                
+                if (data && data.length > 0) {
+                    courseSelect.empty();
+                    data.forEach(function(course) {
+                        courseSelect.append(`<option value="${course.id}">${course.course_name}</option>`);
+                    });
+                    // Trigger Select2 to update
+                    courseSelect.trigger('change.select2');
+                } else {
+                    // If no courses for this branch, load all courses as fallback
+                    loadAllCourses(courseSelect);
+                }
+            }).fail(function() {
+                // If API fails, load all courses as fallback
+                loadAllCourses(courseSelect);
+            });
+        } else {
+            // If no branch selected, load all courses
+            loadAllCourses(courseSelect);
+        }
+        
+        // Clear lessons when branch changes
+        $('#lesson_ids').empty().append('<option value="">Select courses first</option>');
+    });
+
+    // Function to load all courses
+    function loadAllCourses(courseSelect) {
+        courseSelect.empty().append('<option value="">Loading all courses...</option>');
+        
+        $.get('/api/courses/all', function(data) {
+            if (data && data.length > 0) {
+                courseSelect.empty();
+                data.forEach(function(course) {
+                    courseSelect.append(`<option value="${course.id}">${course.course_name}</option>`);
+                });
+                // Trigger Select2 to update
+                courseSelect.trigger('change.select2');
+            } else {
+                courseSelect.empty().append('<option value="">No courses available</option>');
+                courseSelect.trigger('change.select2');
+            }
+        }).fail(function() {
+            courseSelect.empty().append('<option value="">Error loading courses</option>');
+        });
+    }
+
+    // Course selection changes lessons
+    $('#course_ids').on('change', function() {
+        const courseIds = $(this).val();
+        const lessonSelect = $('#lesson_ids');
+        
+        if (courseIds && courseIds.length > 0) {
+            // Load lessons for selected courses
+            let allLessons = [];
+            let loadedCount = 0;
+            
+            courseIds.forEach(function(courseId) {
+                $.get(`/api/courses/${courseId}/lessons`, function(data) {
+                    if (data.lessons) {
+                        allLessons = allLessons.concat(data.lessons);
+                    }
+                    loadedCount++;
+                    
+                    if (loadedCount === courseIds.length) {
+                        // Remove duplicates and sort
+                        const uniqueLessons = [...new Map(allLessons.map(lesson => [lesson.id, lesson])).values()];
                         
-                        // Populate courses
-                        courseSelect.empty();
-                        if (data.courses && data.courses.length > 0) {
-                            data.courses.forEach(function(course) {
-                                courseSelect.append(`<option value="${course.id}">${course.name}</option>`);
-                            });
-                        } else {
-                            courseSelect.append('<option value="">No courses available for this branch</option>');
-                        }
-                        courseSelect.trigger('change.select2');
+                        lessonSelect.empty().append('<option value="">Loading lessons...</option>');
                         
-                        // Populate lessons
-                        lessonSelect.empty();
-                        if (data.lessons && data.lessons.length > 0) {
-                            data.lessons.forEach(function(lesson) {
+                        if (uniqueLessons.length > 0) {
+                            lessonSelect.empty();
+                            uniqueLessons.forEach(function(lesson) {
                                 lessonSelect.append(`<option value="${lesson.id}">${lesson.title}</option>`);
                             });
                         } else {
-                            lessonSelect.append('<option value="">No lessons available for this branch</option>');
+                            lessonSelect.empty().append('<option value="">No lessons available</option>');
                         }
-                        lessonSelect.trigger('change.select2');
-                    } else {
-                        console.error('Error from API:', data.message);
-                        courseSelect.empty().append('<option value="">Error loading courses</option>');
-                        lessonSelect.empty().append('<option value="">Error loading lessons</option>');
                     }
-                },
-                error: function(xhr, status, error) {
-                    console.error('AJAX Error:', error);
-                    console.error('Status:', status);
-                    courseSelect.empty().append('<option value="">Error loading courses</option>');
+                }).fail(function() {
                     lessonSelect.empty().append('<option value="">Error loading lessons</option>');
-                }
+                });
             });
         } else {
-            // If no branch selected, clear both dropdowns
-            courseSelect.empty().append('<option value="">Select a branch first</option>');
-            lessonSelect.empty().append('<option value="">Select a branch first</option>');
+            lessonSelect.empty().append('<option value="">Select courses first</option>');
         }
-    });
-
-    // Course selection changes lessons (kept for backward compatibility)
-    $('#course_ids').on('change', function() {
-        // Lessons are now loaded directly from branch selection when using lesson_branch_course table
-        // This is kept for potential future enhancements
-    });
-
-    // Lesson selection auto-populates teacher
-    $('#lesson_ids').on('change', function() {
-        const selectedLessonIds = $(this).val();
-        
-        if (selectedLessonIds && selectedLessonIds.length > 0) {
-            const firstLessonId = selectedLessonIds[0];
-            if (lessonTeacherMap[firstLessonId]) {
-                // Auto-populate the teacher field
-                $('#teacher_id').val(lessonTeacherMap[firstLessonId].teacher_id).trigger('change.select2');
-                console.log('Teacher auto-selected:', lessonTeacherMap[firstLessonId].teacher_name);
-            }
-        }
-    });
     });
 
     // Question Bank Preview Functionality
