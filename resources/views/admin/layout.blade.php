@@ -349,6 +349,19 @@
             opacity: 0;
         }
 
+        /* Report Cards & Other Admin Pages - Full Width Headers */
+        .main-content .container-fluid {
+            width: calc(100% + 4rem);
+            margin-left: -2rem;
+            padding-left: 2rem;
+            padding-right: 2rem;
+        }
+
+        .main-content .container-fluid > :first-child {
+            margin-left: 0;
+            margin-right: 0;
+        }
+
         .nav-item {
             margin: 0.3rem 0.8rem;
         }
@@ -466,6 +479,13 @@
             .main-content {
                 margin-left: 0;
                 padding: 1rem;
+            }
+
+            .main-content .container-fluid {
+                width: calc(100% + 2rem);
+                margin-left: -1rem;
+                padding-left: 1rem;
+                padding-right: 1rem;
             }
 
             .navbar-right {
