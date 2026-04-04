@@ -622,6 +622,7 @@ Route::prefix('staff')->name('staff.')->group(function () {
     Route::post('reset-password/code', [\App\Http\Controllers\StaffPasswordResetController::class, 'resetWithCode'])
         ->name('password.reset.code');
          // ===== PAYMENT ROUTES - ADD THESE HERE =====
+        Route::get('/students/{student}/pay-cash', [StudentController::class, 'showPaymentForm'])->name('students.pay-cash.form');
         Route::post('/students/{student}/pay-cash', [StudentController::class, 'payCash'])->name('students.pay-cash');
         Route::get('/students/{student}/term-fees', [StudentController::class, 'getTermFees'])->name('students.term-fees');
         Route::get('/students/{student}/payments/ajax', [StudentController::class, 'ajaxPayments'])->name('students.payments.ajax');
@@ -632,11 +633,6 @@ Route::prefix('staff')->name('staff.')->group(function () {
 
     Route::middleware('auth:staff')->group(function () {
         Route::get('dashboard', [StaffAuthController::class, 'dashboard'])->name('dashboard');
-        
-        // Transaction Management Routes (FIXED)
-        Route::get('/transactions/{transaction}/edit', [StudentController::class, 'editTransaction'])->name('transactions.edit');
-        Route::put('/transactions/{transaction}', [StudentController::class, 'updateTransaction'])->name('transactions.update');
-        Route::delete('/transactions/{transaction}', [StudentController::class, 'deleteTransaction'])->name('transactions.destroy');
         
         // Payment Schedule Routes
         Route::get('/payment-schedule', [PaymentScheduleController::class, 'index'])->name('accountant.payment-schedule.index');
@@ -736,12 +732,23 @@ Route::get('/students/cards', [App\Http\Controllers\StudentController::class, 'l
 
 /*
 |--------------------------------------------------------------------------
+| Transaction routes (without staff prefix) for accountant dashboard
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth:staff'])->group(function () {
+    Route::get('/transactions/{transaction}/edit', [StudentController::class, 'editTransaction'])->name('transactions.edit');
+    Route::put('/transactions/{transaction}', [StudentController::class, 'updateTransaction'])->name('transactions.update');
+    Route::delete('/transactions/{transaction}', [StudentController::class, 'deleteTransaction'])->name('transactions.destroy');
+});
+
+/*
+|--------------------------------------------------------------------------
 | Special routes for authorized user for editing/deleting transactions
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth:admin,staff'])->group(function () {
     Route::get('/admin/transactions/{transaction}/edit', [StudentController::class, 'editTransaction'])->name('admin.transactions.edit');
-    Route::put('/admin/transactions/{transaction}', [StudentController::class, 'editTransaction'])->name('admin.transactions.update');
+    Route::put('/admin/transactions/{transaction}', [StudentController::class, 'updateTransaction'])->name('admin.transactions.update');
     Route::delete('/admin/transactions/{transaction}', [StudentController::class, 'deleteTransaction'])->name('admin.transactions.delete');
 });
 

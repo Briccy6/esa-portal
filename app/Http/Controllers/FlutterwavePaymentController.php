@@ -426,6 +426,7 @@ class FlutterwavePaymentController extends Controller
     {
         $student = Auth::user();
         $outstandingAmount = $request->amount ?? $student->outstanding_amount ?? 0;
+        $termId = $request->term_id ?? null;
 
         if ($outstandingAmount <= 0) {
             return response()->json([
@@ -452,7 +453,8 @@ class FlutterwavePaymentController extends Controller
             'meta' => [
                 'student_id' => $student->id,
                 'outstanding_amount' => $outstandingAmount,
-                'type' => 'report_card_fees'
+                'type' => 'report_card_fees',
+                'term_id' => $termId
             ],
             'customizations' => [
                 'title' => 'Report Card Access - Outstanding Fees Payment',
@@ -482,6 +484,7 @@ class FlutterwavePaymentController extends Controller
                 // Create pending transaction record
                 StudentTransaction::create([
                     'student_id' => $student->id,
+                    'term_id' => $termId,
                     'tx_ref' => $tx_ref,
                     'type' => 'report_card_fees',
                     'amount' => $outstandingAmount,
@@ -489,6 +492,7 @@ class FlutterwavePaymentController extends Controller
                     'status' => 'pending',
                     'meta' => json_encode([
                         'outstanding_amount' => $outstandingAmount,
+                        'term_id' => $termId
                     ])
                 ]);
 
@@ -507,7 +511,8 @@ class FlutterwavePaymentController extends Controller
             Log::error('Flutterwave report card fee payment initialization failed', [
                 'error' => $e->getMessage(),
                 'student_id' => $student->id,
-                'outstanding_amount' => $outstandingAmount
+                'outstanding_amount' => $outstandingAmount,
+                'term_id' => $termId
             ]);
 
             return response()->json([
@@ -524,11 +529,13 @@ class FlutterwavePaymentController extends Controller
     {
         $studentId = $meta['student_id'];
         $outstandingAmount = $meta['outstanding_amount'];
+        $termId = $meta['term_id'] ?? null;
 
         // Update transaction record
         $transaction = StudentTransaction::where('tx_ref', $txData['tx_ref'])->first();
         if ($transaction) {
             $transaction->update([
+                'term_id' => $termId,
                 'status' => 'successful',
                 'meta' => json_encode(array_merge(json_decode($transaction->meta, true), [
                     'flutterwave_transaction_id' => $txData['id'],
@@ -540,6 +547,7 @@ class FlutterwavePaymentController extends Controller
             // Create transaction record if it doesn't exist
             StudentTransaction::create([
                 'student_id' => $studentId,
+                'term_id' => $termId,
                 'tx_ref' => $txData['tx_ref'],
                 'type' => 'report_card_fees',
                 'amount' => $txData['amount'],
@@ -562,6 +570,7 @@ class FlutterwavePaymentController extends Controller
             'student_id' => $studentId,
             'outstanding_amount' => $outstandingAmount,
             'amount_paid' => $txData['amount'],
+            'term_id' => $termId,
             'tx_ref' => $txData['tx_ref']
         ]);
     }

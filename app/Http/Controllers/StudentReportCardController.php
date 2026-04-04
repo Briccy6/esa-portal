@@ -52,7 +52,7 @@ class StudentReportCardController extends Controller
         // BUSINESS LOGIC:
         // 1. If student has outstanding fees => BLOCKED
         if ($outstanding > 0) {
-            return view('reportcard.blocked', compact('outstanding'));
+            return view('reportcard.blocked', compact('outstanding', 'reportCard'));
         }
 
         // 2. If release date not reached => COUNTDOWN

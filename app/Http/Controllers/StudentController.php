@@ -1295,6 +1295,29 @@ class StudentController extends Controller
                 ->orderBy('start_date', 'desc')
                 ->get();
 
+            // ─── CHECK REGISTRATION FEE STATUS FOR ACADEMIC YEAR ─────────────────
+            // Registration fees should only be paid once per academic year, not per term
+            $academicYearId = $student->academic_year_id;
+            
+            // Check if student has paid registration fee in ANY term of the current academic year
+            $registrationFeePaidInAcademicYear = StudentTransaction::where('student_id', $student->id)
+                ->where('type', 'registration')
+                ->whereIn('status', ['successful', 'paid'])
+                ->whereHas('term', function ($query) use ($academicYearId) {
+                    $query->where('academic_year_id', $academicYearId);
+                })
+                ->exists();
+
+            // ─── CHECK STUDENT CARD FEE STATUS FOR ACADEMIC YEAR ─────────────────
+            // Student card fees should only be paid once per academic year, not per term
+            $studentCardFeePaidInAcademicYear = StudentTransaction::where('student_id', $student->id)
+                ->where('type', 'student_card')
+                ->whereIn('status', ['successful', 'paid'])
+                ->whereHas('term', function ($query) use ($academicYearId) {
+                    $query->where('academic_year_id', $academicYearId);
+                })
+                ->exists();
+
             foreach ($terms as $term) {
                 // Get fees for this term
                 $termFees = $course->getFeesForTerm($term->id);
@@ -1345,20 +1368,26 @@ class StudentController extends Controller
                 $discountAmount = ($discount > 0) ? ($discountableFees * ($discount / 100)) : 0;
 
                 // Calculate totals for this term
-                $totalTermFees = $registrationFee + $tuitionFee + $practicalFee + $tripFeeAmount + $termStudentCardFee;
+                // NOTE: If registration already paid for academic year, don't charge again
+                $registrationFeeForTerm = $registrationFeePaidInAcademicYear ? 0 : $registrationFee;
+                // NOTE: If student card already paid for academic year, don't charge again
+                $studentCardFeeForTerm = $studentCardFeePaidInAcademicYear ? 0 : $termStudentCardFee;
+                
+                $totalTermFees = $registrationFeeForTerm + $tuitionFee + $practicalFee + $tripFeeAmount + $studentCardFeeForTerm;
                 $totalTermPaid = $paidRegistration + $paidSchoolFee + $paidPractical + $paidTrip + $paidStudentCard;
                 $remainingTermFees = $totalTermFees - $totalTermPaid;
 
                 // Build fees array for this term
                 $termFeesList = [];
 
-                if ($registrationFee > 0) {
-                    $remainingReg = $registrationFee - $paidRegistration;
+                // Only show registration fee if NOT already paid for academic year
+                if ($registrationFeeForTerm > 0) {
+                    $remainingReg = $registrationFeeForTerm - $paidRegistration;
                     if ($remainingReg > 0) {
                         $termFeesList[] = [
                             'type' => 'registration_fee',
                             'name' => 'Registration Fee',
-                            'total' => $registrationFee,
+                            'total' => $registrationFeeForTerm,
                             'paid' => $paidRegistration,
                             'remaining' => $remainingReg,
                         ];
@@ -1405,12 +1434,12 @@ class StudentController extends Controller
                 }
 
                 if ($termStudentCardFee > 0) {
-                    $remainingStudentCard = $termStudentCardFee - $paidStudentCard;
+                    $remainingStudentCard = $studentCardFeeForTerm - $paidStudentCard;
                     if ($remainingStudentCard > 0) {
                         $termFeesList[] = [
                             'type' => 'student_card',
                             'name' => 'Student Card',
-                            'total' => $termStudentCardFee,
+                            'total' => $studentCardFeeForTerm,
                             'paid' => $paidStudentCard,
                             'remaining' => $remainingStudentCard,
                         ];
@@ -1555,6 +1584,30 @@ class StudentController extends Controller
             'activeSubscription',
             'timetables'
         ));
+    }
+
+    // =========================================================================
+    // SHOW PAYMENT FORM (Accountant/Finance - Record Cash Payment)
+    // Route: GET /students/{student}/pay-cash
+    // =========================================================================
+    public function showPaymentForm($studentId)
+    {
+        $student = Student::with('course', 'course.academicYear')->findOrFail($studentId);
+        $terms = Term::with('academicYear')->orderBy('start_date', 'desc')->get();
+        
+        // Get pre-selected term if passed via query string
+        $selectedTermId = request('term_id');
+        $selectedTerm = null;
+        
+        if ($selectedTermId) {
+            $selectedTerm = $terms->where('id', $selectedTermId)->first();
+        }
+        
+        return view('staff.accounting.record-payment', [
+            'student' => $student,
+            'terms' => $terms,
+            'selectedTerm' => $selectedTerm,
+        ]);
     }
 
     // =========================================================================
@@ -1812,6 +1865,7 @@ class StudentController extends Controller
                     'message'   => $successMessage,
                     'balance'   => $balance,
                     'remaining' => $newRemaining,
+                    'redirect'  => route('accountant.payment-schedule.index'),
                 ], 200);
             }
 

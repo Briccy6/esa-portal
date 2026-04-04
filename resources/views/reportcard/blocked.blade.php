@@ -95,7 +95,8 @@ function initiateFeePayment() {
             'X-CSRF-TOKEN': '{{ csrf_token() }}'
         },
         body: JSON.stringify({
-            amount: {{ $outstanding }}
+            amount: {{ $outstanding }},
+            term_id: {{ $reportCard->term_id ?? 0 }}
         })
     })
     .then(response => response.json())
