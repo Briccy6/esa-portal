@@ -3865,16 +3865,29 @@ class StudentController extends Controller
             // Build fees array
             $fees = [];
 
+            // Check if registration fee has been paid in ANY term of the same academic year
+            $academicYearId = $term->academic_year_id;
+            $registrationPaidInYear = StudentTransaction::where('student_id', $student->id)
+                ->where('type', 'registration')
+                ->whereIn('status', ['successful', 'paid'])
+                ->whereHas('term', function ($query) use ($academicYearId) {
+                    $query->where('academic_year_id', $academicYearId);
+                })
+                ->exists();
+
             if ($registrationFee > 0) {
-                $remaining = $registrationFee - $paidRegistration;
-                if ($remaining > 0) {
-                    $fees[] = [
-                        'type' => 'registration_fee',
-                        'name' => 'Registration Fee',
-                        'total' => $registrationFee,
-                        'paid' => $paidRegistration,
-                        'remaining' => $remaining,
-                    ];
+                // Only show registration fee if not already paid in this academic year
+                if (!$registrationPaidInYear) {
+                    $remaining = $registrationFee - $paidRegistration;
+                    if ($remaining > 0) {
+                        $fees[] = [
+                            'type' => 'registration_fee',
+                            'name' => 'Registration Fee',
+                            'total' => $registrationFee,
+                            'paid' => $paidRegistration,
+                            'remaining' => $remaining,
+                        ];
+                    }
                 }
             }
 

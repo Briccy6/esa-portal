@@ -481,16 +481,22 @@
 
                                             <!-- Step 3: Enter Amount (Hidden Until Fee Selected) -->
                                             <div id="amountContainer{{ $student->id }}" class="col-md-12 mb-3 d-none">
-                                                <label class="form-label required">Amount to Pay (RWF)</label>
+                                                <label class="form-label required">
+                                                    <i class="fas fa-money-bill-wave me-1"></i>Amount to Pay (RWF)
+                                                </label>
                                                 <input type="number"
                                                        name="amount_paid"
                                                        id="amountInput{{ $student->id }}"
                                                        class="form-control form-control-lg"
-                                                       placeholder="Enter amount"
+                                                       placeholder="Enter amount received from student"
                                                        min="1" step="1"
+                                                       oninput="validateAmount({{ $student->id }})"
                                                        onchange="validateAmount({{ $student->id }})">
-                                                <small class="text-muted">Enter the exact amount received from the student</small>
-                                                <div id="amountError{{ $student->id }}" class="text-danger small mt-1"></div>
+                                                <small class="text-muted d-block mt-2">
+                                                    <i class="fas fa-info-circle me-1"></i>
+                                                    Enter the exact amount received from the student
+                                                </small>
+                                                <div id="amountError{{ $student->id }}" class="text-danger small mt-2 fw-bold"></div>
                                             </div>
 
                                             <!-- Step 4: Notes (Optional) -->
@@ -616,21 +622,39 @@
                         const option = select.querySelector(`option[value="${feeType}"]`);
                         const remaining = parseFloat(option.dataset.remaining) || 0;
                         const total = parseFloat(option.dataset.total) || 0;
+                        const paid = parseFloat(option.dataset.paid) || 0;
 
-                        // Show remaining amount info
+                        // Show remaining amount info with fee breakdown
                         feeInfoDiv.innerHTML = `
-                            <div class="alert alert-warning m-0">
-                                <small>
-                                    <i class="fas fa-exclamation-circle me-1"></i>
-                                    <strong>Remaining Balance:</strong> ${new Intl.NumberFormat('en-US').format(Math.round(remaining))} RWF
-                                </small>
+                            <div class="alert alert-info m-0 small">
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <strong>Total Fee:</strong><br>${new Intl.NumberFormat('en-US').format(Math.round(total))} RWF
+                                    </div>
+                                    <div class="col-6">
+                                        <strong>Already Paid:</strong><br>${new Intl.NumberFormat('en-US').format(Math.round(paid))} RWF
+                                    </div>
+                                </div>
+                                <div class="mt-2 pt-2 border-top">
+                                    <strong class="text-danger">Remaining Balance:</strong><br>
+                                    <strong class="text-danger">${new Intl.NumberFormat('en-US').format(Math.round(remaining))} RWF</strong>
+                                </div>
                             </div>
                         `;
 
                         amountInput.max = remaining;
                         amountInput.value = '';
+                        amountInput.placeholder = `Max: ${new Intl.NumberFormat('en-US').format(Math.round(remaining))} RWF`;
+                        
+                        // Show amount and notes containers
                         amountContainer?.classList.remove('d-none');
                         notesContainer?.classList.remove('d-none');
+                        
+                        // Scroll to amount input if needed
+                        setTimeout(() => {
+                            amountInput?.focus();
+                        }, 100);
+                        
                         submitBtn.disabled = true;
                     }
 
@@ -648,18 +672,20 @@
                         errorDiv.textContent = '';
 
                         if (amount <= 0) {
-                            errorDiv.textContent = 'Amount must be greater than 0';
+                            errorDiv.textContent = '⚠️ Amount must be greater than 0';
                             submitBtn.disabled = true;
-                            return;
+                            return false;
                         }
 
                         if (amount > remaining) {
-                            errorDiv.textContent = `Amount exceeds remaining balance of ${new Intl.NumberFormat('en-US').format(Math.round(remaining))} RWF`;
+                            errorDiv.textContent = `⚠️ Amount exceeds remaining balance of ${new Intl.NumberFormat('en-US').format(Math.round(remaining))} RWF`;
                             submitBtn.disabled = true;
-                            return;
+                            return false;
                         }
 
+                        // Amount is valid
                         submitBtn.disabled = false;
+                        return true;
                     }
                     </script>
 
