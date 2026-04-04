@@ -16,6 +16,18 @@
     $tripFee = $course ? floatval($course->trip_fee) : 0;
     $studentCardFee = 2000;
 
+    // Check if registration fee was paid in the same academic year
+    $registrationPaidInYear = false;
+    if ($academicYear) {
+        $registrationPaidInYear = \App\Models\StudentTransaction::where('student_id', $student->id)
+            ->where('type', 'registration_fee')
+            ->whereIn('status', ['successful', 'paid'])
+            ->whereHas('term', function ($query) use ($academicYear) {
+                $query->where('academic_year_id', $academicYear->id);
+            })
+            ->exists();
+    }
+
     $discountableFees = $tuitionFee + $practicalFee + $tripFee;
     $discountAmount = ($discount > 0) ? ($discountableFees * ($discount / 100)) : 0;
 
@@ -29,8 +41,14 @@
         $totalPaid = $payments->sum('amount');
     }
 
-    // Total fees for the term (per course)
-    $totalToPay = $studentCardFee + $registrationFee + ($discountableFees - $discountAmount);
+    // Total fees for the term - EXCLUDE registration fee if already paid in this academic year
+    if ($registrationPaidInYear) {
+        // Don't include registration fee if already paid in this year
+        $totalToPay = $studentCardFee + ($discountableFees - $discountAmount);
+    } else {
+        // Include all fees if registration not paid yet
+        $totalToPay = $studentCardFee + $registrationFee + ($discountableFees - $discountAmount);
+    }
     
     // Outstanding for the current term only
     $outstanding = max(0, $totalToPay - $totalPaid);
