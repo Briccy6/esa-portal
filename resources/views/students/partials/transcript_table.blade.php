@@ -5,6 +5,11 @@
     $course = \App\Models\Course::find($student->course_id);
     $discount = $student->discount ?? 0;
 
+    // Get the current/latest term from payments
+    $latestPayment = $payments->sortByDesc('created_at')->first();
+    $currentTerm = $latestPayment ? $latestPayment->term : null;
+    $academicYear = $currentTerm ? $currentTerm->academicYear : null;
+
     $registrationFee = $course ? floatval($course->registration_fee) : 0;
     $tuitionFee = $course ? floatval($course->tuition_fee) : 0;
     $practicalFee = $course ? floatval($course->practical_fee) : 0;
@@ -14,9 +19,21 @@
     $discountableFees = $tuitionFee + $practicalFee + $tripFee;
     $discountAmount = ($discount > 0) ? ($discountableFees * ($discount / 100)) : 0;
 
+    // Calculate PER TERM: Use only payments for the current term
+    if ($currentTerm) {
+        $termPayments = $payments->filter(function($p) use ($currentTerm) {
+            return $p->term_id == $currentTerm->id;
+        });
+        $totalPaid = $termPayments->sum('amount');
+    } else {
+        $totalPaid = $payments->sum('amount');
+    }
+
+    // Total fees for the term (per course)
     $totalToPay = $studentCardFee + $registrationFee + ($discountableFees - $discountAmount);
-    $totalPaid = $payments->sum('amount');
-    $outstanding = $totalToPay - $totalPaid;
+    
+    // Outstanding for the current term only
+    $outstanding = max(0, $totalToPay - $totalPaid);
     
     // Get school information
     try {
@@ -533,11 +550,12 @@
             <tr>
                 <td style="border: none; padding: 2px 4px;"><strong>Registration Number:</strong> {{ $student->reg_number }}</td>
                 <td style="border: none; padding: 2px 4px;"><strong>Course:</strong> {{ $student->course->course_name ?? 'N/A' }}</td>
-                <td style="border: none; padding: 2px 4px;"><strong>Academic Year:</strong> {{ $student->academic_year->year ?? 'N/A' }}</td>
+                <td style="border: none; padding: 2px 4px;"><strong>Academic Year:</strong> {{ $academicYear ? $academicYear->year : 'N/A' }}</td>
             </tr>
             <tr>
                 <td style="border: none; padding: 2px 4px;"><strong>Branch:</strong> {{ $student->branch->name ?? 'N/A' }}</td>
-                <td colspan="2" style="border: none; padding: 2px 4px;"><strong>Amount to Pay:</strong> <span style="font-weight: bold; color: #dc3545;">{{ number_format($outstanding, 2) }} RWF</span></td>
+                <td style="border: none; padding: 2px 4px;"><strong>Current Term:</strong> {{ $currentTerm ? $currentTerm->name : 'N/A' }}</td>
+                <td style="border: none; padding: 2px 4px;"><strong>Outstanding:</strong> <span style="font-weight: bold; color: @if($outstanding > 0) #dc3545 @else #28a745 @endif;">{{ number_format($outstanding, 2) }} RWF</span></td>
             </tr>
         </table>
     </div>
