@@ -722,6 +722,58 @@
 
 @push('scripts')
 <script>
+    function handleTransactionFormSubmit(e) {
+        e.preventDefault();
+        
+        const form = e.target;
+        const formData = new FormData(form);
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalButtonText = submitBtn.innerHTML;
+        
+        // Show loading state
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+        
+        console.log('Submitting form to:', form.action);
+        
+        fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
+        .then(resp => {
+            console.log('Response:', resp.status, resp.statusText);
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            return resp.json();
+        })
+        .then(json => {
+            console.log('Success response:', json);
+            if (json.success) {
+                bootstrap.Modal.getInstance(document.getElementById('editTransactionModal')).hide();
+                alert(json.message || 'Transaction updated successfully!');
+                location.reload();
+            } else {
+                let msg = json.message || 'Failed to update';
+                if (json.errors) {
+                    msg += '\n' + Object.entries(json.errors).map(([k,v]) => `${k}: ${v.join(', ')}`).join('\n');
+                }
+                alert(msg);
+            }
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            alert('Error: ' + err.message);
+        })
+        .finally(() => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalButtonText;
+        });
+    }
+    
     function openEditModal(paymentId) {
         // Use correct transaction route
         const url = '/transactions/' + paymentId + '/edit';
@@ -753,102 +805,49 @@
             return resp.text();
         })
         .then(html => {
-            body.innerHTML = html;
-
-            // Add form submission handler
-            const form = body.querySelector('form');
+            console.log('Form response received, length:', html.length);
+            console.log('Contains form tag:', html.includes('<form'));
+            console.log('First 500 chars:', html.substring(0, 500));
+            
+            // Clear the loading state
+            body.innerHTML = '';
+            
+            // Create a temporary div to parse the HTML
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            
+            // If we got a form, insert it
+            const form = tempDiv.querySelector('form');
             if (form) {
-                form.addEventListener('submit', function(e) {
-                    e.preventDefault();
-
-                    // DEBUG: Log all form fields before submission
-                    const formData = new FormData(form);
-                    console.log('Form submission data:');
-                    for (let [key, value] of formData.entries()) {
-                        console.log(`  ${key}: ${value}`);
-                    }
-
-                    const submitBtn = form.querySelector('button[type="submit"]');
-                    const originalText = submitBtn.innerHTML;
-
-                    // Show loading state
-                    submitBtn.disabled = true;
-                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
-
-                    // Log the action URL
-                    console.log('Submitting to:', form.action);
-
-                    fetch(form.action, {
-                        method: 'POST', // Use POST with FormData which includes _method=PUT from the form
-                        body: formData,
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'Accept': 'application/json'
-                        }
-                    })
-                    .then(resp => {
-                        console.log('Response status:', resp.status, resp.statusText);
-                        if (!resp.ok && resp.status !== 422) {
-                            throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
-                        }
-                        return resp.json();
-                    })
-                    .then(json => {
-                        console.log('Response JSON:', json);
-                        if (json.success) {
-                            // Close modal
-                            const modal = bootstrap.Modal.getInstance(document.getElementById('editTransactionModal'));
-                            if (modal) modal.hide();
-
-                            // Show success message
-                            alert(json.message || 'Transaction updated successfully.');
-
-                            // Reload page to show updated data
-                            location.reload();
-                        } else {
-                            // Show errors with better formatting
-                            let errorMsg = json.message || 'Failed to update transaction';
-                            if (json.errors) {
-                                errorMsg += '\n\nValidation Errors:\n';
-                                for (let [field, messages] of Object.entries(json.errors)) {
-                                    errorMsg += `• ${field}: ${messages.join(', ')}\n`;
-                                }
-                            }
-                            console.error('Update error:', json);
-                            alert(errorMsg);
-                        }
-                    })
-                    .catch(err => {
-                        console.error('Update full error:', err);
-                        const errorMsg = `Error updating transaction:\n\n${err.message}\n\nForm URL: ${form.action}\n\nPlease check the browser console (F12) for detailed error information.`;
-                        alert(errorMsg);
-                    })
-                    .finally(() => {
-                        // Reset button state
-                        submitBtn.disabled = false;
-                        submitBtn.innerHTML = originalText;
-                    });
-                });
+                console.log('✓ Form found in response');
+                body.innerHTML = html;
+                
+                // Attach submit handler
+                const submitForm = body.querySelector('form');
+                if (submitForm) {
+                    submitForm.removeEventListener('submit', handleTransactionFormSubmit);
+                    submitForm.addEventListener('submit', handleTransactionFormSubmit);
+                    console.log('✓ Submit handler attached');
+                }
+            } else {
+                console.error('✗ No form found in response.');
+                console.error('Response data:', html);
+                const errorHTML = `
+                    <div class="alert alert-danger" role="alert">
+                        <strong>Error:</strong> The form did not load correctly.
+                        <p class="mt-2 mb-0 small"><code>Response length: ${html.length} chars</code></p>
+                        <p class="mt-2">This might indicate an authentication issue or server error. Check the browser console.</p>
+                    </div>
+                `;
+                body.innerHTML = errorHTML;
             }
         })
         .catch(err => {
-            console.error('Full error:', err);
-            const errorMsg = `<div class="alert alert-danger">
-                <strong>Error Loading Edit Form:</strong>
-                <p><em>${err.message || 'Unknown error'}</em></p>
-                <p style="font-size: 12px; margin-top: 10px;">
-                    <strong>URL:</strong> ${url}<br>
-                    <strong>Status:</strong> Check browser console for details (F12)<br>
-                    <strong>Possible Causes:</strong>
-                    <ul style="margin: 5px 0; padding-left: 20px;">
-                        <li>Route may not exist</li>
-                        <li>Authentication issue - ensure you are logged in as staff</li>
-                        <li>Permission denied - check if you have accountant privileges</li>
-                        <li>View file not found on server</li>
-                    </ul>
-                </p>
+            console.error('Fetch error:', err);
+            body.innerHTML = `<div class="alert alert-danger">
+                <strong>Error:</strong> Could not load the form.<br>
+                <small>${err.message || 'Unknown error'}</small>
             </div>`;
-            body.innerHTML = errorMsg;
         });
     }
 
