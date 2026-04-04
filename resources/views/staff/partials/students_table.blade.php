@@ -420,7 +420,7 @@
                                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                                 </div>
                                 <form id="payForm{{ $student->id }}"
-                                      action="/students/{{ $student->id }}/pay-cash"
+                                      action="/staff/students/{{ $student->id }}/pay-cash"
                                       method="POST"
                                       onsubmit="handlePayment(event, {{ $student->id }})">
                                     @csrf
@@ -522,7 +522,7 @@
                                         </div>
                                     </div>
                                     <div class="modal-footer">
-                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="button" class="btn btn-secondary" onclick="closePayModal({{ $student->id }})">Cancel</button>
                                         <button type="submit" class="btn btn-primary" id="submitBtn{{ $student->id }}">
                                             <i class="fas fa-check me-1"></i>Record Payment
                                         </button>
@@ -1021,6 +1021,27 @@ function openPayModal(studentId) {
         modalElement.style.display = 'block';
         document.body.classList.add('modal-open');
         console.log('✅ Modal opened with fallback');
+    }
+}
+
+// Close Payment Modal
+function closePayModal(studentId) {
+    const modalElement = document.getElementById('payModal' + studentId);
+    if (!modalElement) return;
+    
+    try {
+        const modal = bootstrap.Modal.getInstance(modalElement);
+        if (modal) {
+            modal.hide();
+        } else {
+            modalElement.classList.remove('show');
+            modalElement.style.display = 'none';
+            document.body.classList.remove('modal-open');
+        }
+    } catch (err) {
+        modalElement.classList.remove('show');
+        modalElement.style.display = 'none';
+        document.body.classList.remove('modal-open');
     }
 }
 
