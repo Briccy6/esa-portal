@@ -423,6 +423,17 @@
                                       onsubmit="handlePayment(event, {{ $student->id }})">
                                     @csrf
                                     <div class="modal-body">
+                                        <!-- DEBUG: Visual feedback -->
+                                        <div id="debugPanel{{ $student->id }}" style="display: none; background: #ffffcc; border: 2px solid red; padding: 10px; margin-bottom: 10px; border-radius: 4px;">
+                                            <h6>🔧 DEBUG INFO:</h6>
+                                            <small>
+                                                <div>Term Selected: <span id="debugTerm{{ $student->id }}">No</span></div>
+                                                <div>Fee Selected: <span id="debugFee{{ $student->id }}">No</span></div>
+                                                <div>Amount Container: <span id="debugAmount{{ $student->id }}">Not found</span></div>
+                                                <div>Amount Input Hidden: <span id="debugInputHidden{{ $student->id }}">Unknown</span></div>
+                                            </small>
+                                        </div>
+
                                         <div class="row">
                                             <!-- Step 1: Select Term (REQUIRED FIRST) -->
                                             <div class="col-md-12 mb-3">
@@ -604,14 +615,32 @@
 
                     // Update fee info when fee type changes
                     function updateFeeInfo(select, studentId) {
+                        console.log('🔍 updateFeeInfo called for studentId:', studentId);
+                        
+                        // Update debug panel
+                        const debugPanel = document.getElementById('debugPanel' + studentId);
+                        debugPanel.style.display = 'block';
+                        
                         const feeType = select.value;
+                        console.log('🔍 Selected fee type:', feeType);
+                        document.getElementById('debugFee' + studentId).textContent = feeType || 'None';
+                        
                         const amountContainer = document.getElementById('amountContainer' + studentId);
                         const notesContainer = document.getElementById('notesContainer' + studentId);
                         const amountInput = document.getElementById('amountInput' + studentId);
                         const submitBtn = document.getElementById('submitBtn' + studentId);
                         const feeInfoDiv = document.getElementById('feeInfo' + studentId);
 
+                        console.log('🔍 DOM Elements found:');
+                        console.log('  - amountContainer:', amountContainer ? '✓ Found' : '✗ NOT FOUND');
+                        console.log('  - notesContainer:', notesContainer ? '✓ Found' : '✗ NOT FOUND');
+                        console.log('  - amountInput:', amountInput ? '✓ Found' : '✗ NOT FOUND');
+                        console.log('  - feeInfoDiv:', feeInfoDiv ? '✓ Found' : '✗ NOT FOUND');
+
+                        document.getElementById('debugAmount' + studentId).textContent = amountContainer ? '✓ Found' : '✗ NOT FOUND';
+
                         if (!feeType) {
+                            console.log('🔍 No fee type selected, hiding containers');
                             amountContainer?.classList.add('d-none');
                             notesContainer?.classList.add('d-none');
                             feeInfoDiv.innerHTML = '';
@@ -620,9 +649,16 @@
                         }
 
                         const option = select.querySelector(`option[value="${feeType}"]`);
+                        console.log('🔍 Selected option:', option);
+                        
                         const remaining = parseFloat(option.dataset.remaining) || 0;
                         const total = parseFloat(option.dataset.total) || 0;
                         const paid = parseFloat(option.dataset.paid) || 0;
+
+                        console.log('🔍 Fee values:');
+                        console.log('  - Total:', total);
+                        console.log('  - Paid:', paid);
+                        console.log('  - Remaining:', remaining);
 
                         // Show remaining amount info with fee breakdown
                         feeInfoDiv.innerHTML = `
@@ -647,44 +683,89 @@
                         amountInput.placeholder = `Max: ${new Intl.NumberFormat('en-US').format(Math.round(remaining))} RWF`;
                         
                         // Force show the amount and notes containers
-                        amountContainer?.classList.remove('d-none');
-                        notesContainer?.classList.remove('d-none');
+                        console.log('🔍 Before removing d-none:');
+                        console.log('  - amountContainer classList:', amountContainer?.className);
+                        console.log('  - amountContainer computed style display:', amountContainer ? window.getComputedStyle(amountContainer).display : 'N/A');
+                        
+                        // FORCEFULLY remove the d-none class
+                        if (amountContainer) {
+                            amountContainer.classList.remove('d-none');
+                            // Also set inline style as backup
+                            amountContainer.style.display = 'block !important';
+                            // Add a data attribute to mark it as shown
+                            amountContainer.setAttribute('data-amount-shown', 'true');
+                        }
+                        
+                        if (notesContainer) {
+                            notesContainer.classList.remove('d-none');
+                            notesContainer.style.display = 'block !important';
+                        }
+                        
+                        console.log('🔍 After removing d-none:');
+                        console.log('  - amountContainer classList:', amountContainer?.className);
+                        console.log('  - amountContainer style.display:', amountContainer?.style.display);
+                        console.log('  - amountContainer data-amount-shown:', amountContainer?.getAttribute('data-amount-shown'));
+                        console.log('  - amountContainer computed display:', amountContainer ? window.getComputedStyle(amountContainer).display : 'N/A');
+                        
+                        document.getElementById('debugInputHidden' + studentId).textContent = 
+                            amountContainer?.classList.contains('d-none') ? 'YES (has d-none)' : 'NO (d-none removed)';
                         
                         // Scroll to amount input if needed
                         setTimeout(() => {
-                            amountInput?.focus();
-                            amountInput?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                        }, 100);
+                            console.log('🔍 Inside setTimeout - focusing on amount input');
+                            if (amountInput) {
+                                console.log('🔍 amountInput exists, focusing...');
+                                amountInput.focus();
+                                amountInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                            } else {
+                                console.error('❌ amountInput does not exist!');
+                            }
+                        }, 150);
                         
                         submitBtn.disabled = true;
+                        console.log('✅ updateFeeInfo completed');
                     }
 
                     // Validate amount before submission
                     function validateAmount(studentId) {
+                        console.log('🔍 validateAmount called for studentId:', studentId);
+                        
                         const amountInput = document.getElementById('amountInput' + studentId);
                         const feeSelect = document.getElementById('feeTypeSelect' + studentId);
                         const errorDiv = document.getElementById('amountError' + studentId);
                         const submitBtn = document.getElementById('submitBtn' + studentId);
 
+                        console.log('🔍 Validation inputs:');
+                        console.log('  - amountInput value:', amountInput?.value);
+                        console.log('  - feeSelect value:', feeSelect?.value);
+
                         const amount = parseFloat(amountInput.value) || 0;
                         const option = feeSelect.querySelector(`option[value="${feeSelect.value}"]`);
                         const remaining = parseFloat(option?.dataset.remaining) || 0;
 
+                        console.log('🔍 Validation values:');
+                        console.log('  - Amount:', amount);
+                        console.log('  - Remaining:', remaining);
+
                         errorDiv.textContent = '';
 
                         if (amount <= 0) {
+                            console.log('⚠️ Amount is 0 or less');
                             errorDiv.textContent = '⚠️ Amount must be greater than 0';
                             submitBtn.disabled = true;
                             return false;
                         }
 
                         if (amount > remaining) {
+                            console.log('⚠️ Amount exceeds remaining');
                             errorDiv.textContent = `⚠️ Amount exceeds remaining balance of ${new Intl.NumberFormat('en-US').format(Math.round(remaining))} RWF`;
                             submitBtn.disabled = true;
                             return false;
                         }
 
                         // Amount is valid
+                        console.log('✅ Amount is valid');
+                        errorDiv.textContent = '';
                         submitBtn.disabled = false;
                         return true;
                     }

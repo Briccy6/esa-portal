@@ -130,7 +130,8 @@
                                         </td>
                                         <td>
                                             @php
-                                                $meta = json_decode($subscription->meta ?? '{}', true);
+                                                $metaRaw = $subscription->meta ?? '{}';
+                                                $meta = is_array($metaRaw) ? $metaRaw : json_decode($metaRaw, true);
                                                 $method = $meta['method'] ?? 'Unknown';
                                             @endphp
                                             <span class="badge bg-light text-dark">{{ ucfirst($method) }}</span>

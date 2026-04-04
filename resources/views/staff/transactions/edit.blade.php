@@ -32,7 +32,7 @@
 
         <div class="mb-3">
             <label class="form-label">Notes (Optional)</label>
-            <textarea name="notes" class="form-control" rows="2" placeholder="Add any notes about this transaction">{{ json_decode($transaction->meta, true)['notes'] ?? '' }}</textarea>
+            <textarea name="notes" class="form-control" rows="3" placeholder="Add any notes about this transaction">{{ (is_array($transaction->meta) ? $transaction->meta : json_decode($transaction->meta, true) ?? [])['notes'] ?? '' }}</textarea>
             @error('notes')
                 <div class="text-danger small mt-1">{{ $message }}</div>
             @enderror

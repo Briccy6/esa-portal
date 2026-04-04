@@ -575,7 +575,7 @@
                         <tbody>
                             @foreach($payments as $index => $payment)
                                 @php
-                                    $meta = json_decode($payment->meta, true) ?: [];
+                                    $meta = is_array($payment->meta) ? $payment->meta : (json_decode($payment->meta, true) ?: []);
                                     $method = $meta['method'] ?? 'online';
 
                                     $feeTypeMap = [

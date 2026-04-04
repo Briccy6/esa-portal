@@ -188,7 +188,7 @@
                                     {{ ucfirst(str_replace('_', ' ', $transaction->type)) }}
                                     @if($transaction->meta)
                                         @php
-                                            $meta = json_decode($transaction->meta, true);
+                                            $meta = is_array($transaction->meta) ? $transaction->meta : (json_decode($transaction->meta, true) ?? []);
                                             if (isset($meta['fee_name'])) {
                                                 echo ' - ' . $meta['fee_name'];
                                             }
@@ -198,7 +198,7 @@
                                 <td class="fw-bold">{{ number_format($transaction->amount, 0) }} RWF</td>
                                 <td>
                                     @php
-                                        $meta = json_decode($transaction->meta, true);
+                                        $meta = is_array($transaction->meta) ? $transaction->meta : (json_decode($transaction->meta, true) ?? []);
                                         echo $meta['method'] ?? 'Unknown';
                                     @endphp
                                 </td>
