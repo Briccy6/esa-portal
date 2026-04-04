@@ -788,7 +788,7 @@
         /* Mobile Responsive Page Header */
         @media (max-width: 768px) {
             .page-header {
-                margin: -1rem -1rem 1rem -1rem;
+                margin: -1rem -1rem 1rem 0;
                 padding: 1.5rem 1rem;
             }
 
