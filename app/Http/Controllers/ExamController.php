@@ -242,6 +242,7 @@ class ExamController extends Controller
                 'notes' => $request->notes,
                 'exam_password' => $request->exam_password,
                 'is_active' => true, // Default to active
+                'subject' => '', // Default subject - can be derived from lesson_branch_course
             ];
             
             // Add optional fields if they exist in the database
@@ -253,6 +254,15 @@ class ExamController extends Controller
             }
             if (Schema::hasColumn('exams', 'branch_id')) {
                 $examData['branch_id'] = $request->branch_id;
+            }
+            
+            // Get subject from lesson if available
+            if ($request->lesson_ids && count($request->lesson_ids) > 0) {
+                $lessonId = $request->lesson_ids[0];
+                $lesson = Lesson::find($lessonId);
+                if ($lesson) {
+                    $examData['subject'] = $lesson->name ?? '';
+                }
             }
             
             Log::info('Exam data to create: ' . json_encode($examData));

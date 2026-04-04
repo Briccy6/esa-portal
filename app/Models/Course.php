@@ -136,4 +136,9 @@ public function academicYear()
             return $termFee->total_fees;
         });
     }
+
+    public function lessonBranchCourses()
+    {
+        return $this->hasMany(LessonBranchCourse::class);
+    }
 }

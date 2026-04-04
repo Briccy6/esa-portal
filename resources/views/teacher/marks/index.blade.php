@@ -355,24 +355,14 @@ body {
                                 </label>
                                 <select name="branch_id" id="branch_id" class="form-select" required>
                                     <option value="">Select Branch</option>
-                                    @foreach($branches as $branch)
-                                        <option value="{{ $branch->id }}">{{ $branch->name }}</option>
-                                    @endforeach
                                 </select>
                             </div>
                             <div class="col-md-3">
                                 <label for="course_id" class="form-label">
                                     <i class="bi bi-book me-1" style="color: var(--accent);"></i>Course
                                 </label>
-                                <select name="course_id" id="course_id" class="form-select" required>
+                                <select name="course_id" id="course_id" class="form-select" required disabled>
                                     <option value="">Select Course</option>
-                                    @foreach($branches as $branch)
-                                        @foreach($branch->courses as $course)
-                                            <option value="{{ $course->id }}" data-branch="{{ $branch->id }}">
-                                                {{ $course->title ?? $course->course_name }}
-                                            </option>
-                                        @endforeach
-                                    @endforeach
                                 </select>
                             </div>
                             <div class="col-md-3">
@@ -380,15 +370,7 @@ body {
                                     <i class="bi bi-journal-text me-1" style="color: var(--accent);"></i>Lesson
                                 </label>
                                 <select name="lesson_id" id="lesson_id" class="form-select" required disabled>
-                                    <option value="">Select Branch & Course First</option>
-                                    @foreach($lessons as $lesson)
-                                        <option value="{{ $lesson->id }}" 
-                                                data-course-id="{{ $lesson->course_id }}" 
-                                                data-branch-id="{{ $lesson->branchCourses->first()?->branch_id ?? '' }}"
-                                                {{ old('lesson_id') == $lesson->id ? 'selected' : '' }}>
-                                            {{ $lesson->title ?? $lesson->name }}
-                                        </option>
-                                    @endforeach
+                                    <option value="">Select Lesson</option>
                                 </select>
                                 <small id="lesson-info" class="form-text text-muted mt-2" style="display:none;">
                                     <i class="bi bi-info-circle me-1"></i><span id="lesson-count">0</span> lesson(s) available
@@ -639,94 +621,124 @@ body {
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 
 <script>
-    // Initialize lesson filtering on page load
+    // Load branches on page load
     document.addEventListener('DOMContentLoaded', function() {
-        filterLessons();
+        loadBranches();
     });
     
-    // Filter courses by branch
+    // Load branches for this teacher
+    function loadBranches() {
+        fetch('/api/teacher/branches')
+            .then(res => {
+                if (!res.ok) throw new Error('Failed to load branches');
+                return res.json();
+            })
+            .then(branches => {
+                const branchSelect = document.getElementById('branch_id');
+                branchSelect.innerHTML = '<option value="">Select Branch</option>';
+                
+                if (Array.isArray(branches) && branches.length > 0) {
+                    branches.forEach(branch => {
+                        const option = document.createElement('option');
+                        option.value = branch.id;
+                        option.textContent = branch.name;
+                        branchSelect.appendChild(option);
+                    });
+                } else {
+                    branchSelect.innerHTML = '<option value="">No branches available for you</option>';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading branches:', error);
+            });
+    }
+    
+    // Load courses when branch is selected
     document.getElementById('branch_id').addEventListener('change', function() {
-        var branchId = this.value;
-        var courseSelect = document.getElementById('course_id');
-        var anyVisible = false;
-        Array.from(courseSelect.options).forEach(function(option) {
-            if (!option.value) return; // skip "Select Course"
-            if (option.getAttribute('data-branch') == branchId) {
-                option.style.display = 'block';
-                anyVisible = true;
-            } else {
-                option.style.display = 'none';
-            }
-        });
-        // Reset course selection if not in branch
-        if (!anyVisible) {
-            courseSelect.value = '';
-        } else if (courseSelect.selectedOptions.length && courseSelect.selectedOptions[0].style.display === 'none') {
-            courseSelect.value = '';
-        }
-        filterLessons();
+        const branchId = this.value;
+        const courseSelect = document.getElementById('course_id');
+        const lessonSelect = document.getElementById('lesson_id');
+        
+        courseSelect.innerHTML = '<option value="">Select Course</option>';
+        courseSelect.disabled = true;
+        lessonSelect.innerHTML = '<option value="">Select Lesson</option>';
+        lessonSelect.disabled = true;
+        
+        if (!branchId) return;
+        
+        fetch(`/api/teacher/branch/${branchId}/courses`)
+            .then(res => {
+                if (!res.ok) throw new Error('Failed to load courses');
+                return res.json();
+            })
+            .then(courses => {
+                if (Array.isArray(courses) && courses.length > 0) {
+                    courseSelect.innerHTML = '<option value="">Select Course</option>';
+                    courses.forEach(course => {
+                        const option = document.createElement('option');
+                        option.value = course.id;
+                        option.textContent = course.course_name + ' (' + course.course_code + ')';
+                        courseSelect.appendChild(option);
+                    });
+                    courseSelect.disabled = false;
+                } else {
+                    courseSelect.innerHTML = '<option value="">No courses available in this branch</option>';
+                    courseSelect.disabled = true;
+                }
+            })
+            .catch(error => {
+                console.error('Error loading courses:', error);
+                courseSelect.innerHTML = '<option value="">Error loading courses</option>';
+            });
+        
         updateShowStudentsBtn();
     });
-
-    // Filter lessons by branch and course
-    function filterLessons() {
-        var branchId = document.getElementById('branch_id').value;
-        var courseId = document.getElementById('course_id').value;
-        var lessonSelect = document.getElementById('lesson_id');
-        var lessonInfo = document.getElementById('lesson-info');
-        
-        // If we have both branch and course selected, fetch lessons from API
-        if (branchId && courseId) {
-            // Fetch lessons assigned to THIS TEACHER in this branch and course
-            fetch(`/api/teacher/branch/${branchId}/course/${courseId}/lessons`)
-                .then(res => {
-                    if (!res.ok) throw new Error('Failed to load lessons');
-                    return res.json();
-                })
-                .then(lessons => {
-                    lessonSelect.innerHTML = '<option value="">Select Lesson</option>';
-                    
-                    if (Array.isArray(lessons) && lessons.length > 0) {
-                        lessons.forEach(lesson => {
-                            const option = document.createElement('option');
-                            option.value = lesson.id;
-                            option.textContent = lesson.title || lesson.name || 'Lesson ' + lesson.id;
-                            option.setAttribute('data-branch-id', lesson.branch_id);
-                            option.setAttribute('data-course-id', lesson.course_id);
-                            lessonSelect.appendChild(option);
-                        });
-                        
-                        lessonSelect.disabled = false;
-                        lessonInfo.style.display = 'inline-block';
-                        document.getElementById('lesson-count').textContent = lessons.length;
-                    } else {
-                        lessonSelect.disabled = true;
-                        lessonInfo.innerHTML = '<i class="bi bi-info-circle me-1"></i>You have no lessons assigned in this branch-course combination';
-                        lessonInfo.style.display = 'inline-block';
-                    }
-                })
-                .catch(error => {
-                    console.error('Error loading lessons:', error);
-                    lessonSelect.disabled = true;
-                    lessonInfo.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i>Error loading lessons. Please refresh and try again.';
-                    lessonInfo.style.display = 'inline-block';
-                });
-        } else {
-            lessonSelect.disabled = true;
-            lessonSelect.value = '';
-            lessonSelect.innerHTML = '<option value="">Select Branch & Course First</option>';
-            lessonInfo.style.display = 'none';
-        }
-        
-        updateShowStudentsBtn();
-    }
-            lessonInfo.innerHTML = '<i class="bi bi-info-circle me-1"></i>No lessons available for this course in this branch';
-            lessonInfo.style.display = 'inline-block';
-        }
-    }
+    
+    // Load lessons when course is selected
     document.getElementById('course_id').addEventListener('change', function() {
-        filterLessons();
-    });
+        const branchId = document.getElementById('branch_id').value;
+        const courseId = this.value;
+        const lessonSelect = document.getElementById('lesson_id');
+        const lessonInfo = document.getElementById('lesson-info');
+        
+        lessonSelect.innerHTML = '<option value="">Select Lesson</option>';
+        lessonSelect.disabled = true;
+        lessonInfo.style.display = 'none';
+        
+        if (!branchId || !courseId) return;
+        
+        fetch(`/api/teacher/branch/${branchId}/course/${courseId}/lessons`)
+            .then(res => {
+                if (!res.ok) throw new Error('Failed to load lessons');
+                return res.json();
+            })
+            .then(lessons => {
+                if (Array.isArray(lessons) && lessons.length > 0) {
+                    lessonSelect.innerHTML = '<option value="">Select Lesson</option>';
+                    lessons.forEach(lesson => {
+                        const option = document.createElement('option');
+                        option.value = lesson.id;
+                        option.textContent = lesson.title;
+                        lessonSelect.appendChild(option);
+                    });
+                    lessonSelect.disabled = false;
+                    lessonInfo.style.display = 'inline-block';
+                    document.getElementById('lesson-count').textContent = lessons.length;
+                } else {
+                    lessonSelect.innerHTML = '<option value="">No lessons assigned to you in this branch-course</option>';
+                    lessonSelect.disabled = true;
+                    lessonInfo.innerHTML = '<i class="bi bi-info-circle me-1"></i>No lessons available for this course in this branch';
+                    lessonInfo.style.display = 'inline-block';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading lessons:', error);
+                lessonSelect.innerHTML = '<option value="">Error loading lessons</option>';
+                lessonSelect.disabled = true;
+            });
+        
+        updateShowStudentsBtn();
+    }
 
     document.getElementById('assessment_type').addEventListener('change', function() {
         var type = this.value;

@@ -41,4 +41,9 @@ class Branch extends Model
     {
         return $this->hasMany(Mark::class);
     }
+    
+    public function lessonBranchCourses()
+    {
+        return $this->hasMany(LessonBranchCourse::class);
+    }
 }

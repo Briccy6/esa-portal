@@ -17,27 +17,17 @@ public function index()
     // Get announcements for teacher layout
     $announcements = \App\Models\Announcement::latest()->take(5)->get();
     
-    // Get all lessons for the teacher's courses (with course relationship)
-    $lessons = Lesson::where('teacher_id', $teacher->id)
-        ->with('course')
-        ->get();
-    
-    // Get only courses assigned to this teacher
-    $courses = \App\Models\Course::whereHas('teachersManyToMany', function($query) use ($teacher) {
-        $query->where('teachers.id', $teacher->id);
-    })->with('branches')->get();
-    
-    // Get branches through the course relationships
-    $branchIds = $courses->pluck('branches')->flatten()->pluck('id')->unique();
-    $branches = \App\Models\Branch::whereIn('id', $branchIds)->get();
-    
-    // Load courses relationship for branches to use in view
-    $branches = $branches->load('courses');
+    // Get branches where this teacher has lesson assignments (from lesson_branch_course pivot)
+    $branches = \App\Models\Branch::whereHas('lessonBranchCourses', function($query) use ($teacher) {
+        $query->where('teacher_id', $teacher->id);
+    })->with(['lessonBranchCourses' => function($query) use ($teacher) {
+        $query->where('teacher_id', $teacher->id);
+    }])->get();
     
     // Get all terms for term selection
     $terms = \App\Models\Term::orderBy('name')->get();
     
-    return view('teacher.marks.index', compact('lessons', 'courses', 'branches', 'terms', 'announcements'));
+    return view('teacher.marks.index', compact('branches', 'terms', 'announcements'));
 }
 
     public function create(Lesson $lesson)

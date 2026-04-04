@@ -16,9 +16,10 @@ class Exam extends Model
     use HasFactory;
 
     protected $fillable = [
-        'title', 'description', 'exam_type', 'class_date', 'exam_weight', 'total_marks', 
+        'title', 'subject', 'description', 'exam_type', 'class_date', 'exam_weight', 'total_marks', 
         'academic_year_id', 'teacher_id', 'term_id', 'notes', 'exam_password', 'is_active',
         'token_cost', 'is_public', 'public_price', 'start_time', 'end_time', 'allow_public_after_end',
+        'course_id', 'lesson_id', 'branch_id',
     ];
 
     // Cache for question count to prevent multiple queries
@@ -97,6 +98,11 @@ class Exam extends Model
     public function examTokens()
     {
         return $this->hasMany(ExamToken::class);
+    }
+
+    public function lessonBranchCourse()
+    {
+        return $this->hasMany(LessonBranchCourse::class);
     }
 
     /**

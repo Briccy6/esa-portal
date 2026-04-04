@@ -851,6 +851,29 @@ Route::get('/api/teacher/{teacher}/course/{course}/lessons', function($teacherId
     return response()->json(['lessons' => $lessons]);
 });
 
+// Teacher marks recording - get branches where teacher has assignments
+Route::middleware('auth:teacher')->get('/api/teacher/branches', function() {
+    $teacher = auth('teacher')->user();
+    
+    $branches = \App\Models\Branch::whereHas('lessonBranchCourses', function($query) use ($teacher) {
+        $query->where('teacher_id', $teacher->id);
+    })->get(['id', 'name']);
+    
+    return response()->json($branches);
+});
+
+// Teacher marks recording - get courses for teacher in a specific branch
+Route::middleware('auth:teacher')->get('/api/teacher/branch/{branchId}/courses', function($branchId) {
+    $teacher = auth('teacher')->user();
+    
+    $courses = \App\Models\Course::whereHas('lessonBranchCourses', function($query) use ($teacher, $branchId) {
+        $query->where('teacher_id', $teacher->id)
+              ->where('branch_id', $branchId);
+    })->get(['id', 'course_name', 'course_code']);
+    
+    return response()->json($courses);
+});
+
 // Teacher marks recording - filtered lessons by branch, course and teacher
 Route::middleware('auth:teacher')->get('/api/teacher/branch/{branchId}/course/{courseId}/lessons', function($branchId, $courseId) {
     $teacher = auth('teacher')->user();
