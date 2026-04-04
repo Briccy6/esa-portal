@@ -2235,6 +2235,7 @@ class StudentController extends Controller
             $validated = \Validator::make($request->all(), [
                 'amount' => 'required|numeric|min:1',
                 'type'   => 'required|in:registration_fee,school_fee,practical_fee,trip_fee,student_card',
+                'term_id' => 'nullable|exists:terms,id',
                 'notes'  => 'nullable|string|max:500',
             ]);
 
@@ -2257,12 +2258,18 @@ class StudentController extends Controller
             $transaction->amount = $request->input('amount');
             $transaction->type   = $request->input('type');
             $transaction->meta   = $meta;
+            
+            // Update term_id if provided
+            if ($request->filled('term_id')) {
+                $transaction->term_id = $request->input('term_id');
+            }
+            
             $transaction->save();
 
             Log::info('Transaction updated by staff', [
                 'transaction_id' => $transaction->id,
                 'edited_by'      => $staff->email ?? 'staff',
-                'changes'        => $request->only(['amount', 'type', 'notes']),
+                'changes'        => $request->only(['amount', 'type', 'term_id', 'notes']),
             ]);
 
             return response()->json([

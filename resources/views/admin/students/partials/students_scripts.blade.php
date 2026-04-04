@@ -217,11 +217,87 @@ function showTranscriptModal(studentId, fullName, regNumber) {
 }
 
 // Transaction editing functions (only for authorized users)
-function editTransaction(transactionId, amount, type, status, paidAt) {
+function handleEditTransactionSubmit(e) {
+    e.preventDefault();
+    
+    const form = document.getElementById('editTransactionForm');
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalButtonText = submitBtn.innerHTML;
+    
+    // Show loading state
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Updating...';
+    
+    // Create FormData and explicitly add _method for PUT
+    const formData = new FormData(form);
+    
+    // Log what we're sending for debugging
+    console.log('Submitting transaction update to:', form.action);
+    console.log('Form data:');
+    for (let [key, value] of formData.entries()) {
+        console.log(`  ${key}: ${value}`);
+    }
+    
+    fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Update response:', data);
+        if (data.success) {
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editTransactionModal'));
+            if (modal) modal.hide();
+            
+            // Show success message
+            alert(data.message || 'Transaction updated successfully!');
+            
+            // Reload the page to reflect changes
+            location.reload();
+        } else {
+            let errorMsg = data.message || 'Failed to update transaction';
+            if (data.errors) {
+                errorMsg += '\n\nValidation Errors:\n';
+                for (let [field, messages] of Object.entries(data.errors)) {
+                    errorMsg += `• ${field}: ${messages.join(', ')}\n`;
+                }
+            }
+            console.error('Update failed:', data);
+            alert(errorMsg);
+        }
+    })
+    .catch(error => {
+        console.error('Submit error:', error);
+        alert(`Error updating transaction: ${error.message}\n\nPlease check the browser console for details.`);
+    })
+    .finally(() => {
+        // Reset button state
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalButtonText;
+    });
+}
+
+function editTransaction(transactionId, amount, type, status, paidAt, termId) {
     document.getElementById('edit_transaction_id').value = transactionId;
     document.getElementById('edit_amount').value = amount;
     document.getElementById('edit_type').value = type;
     document.getElementById('edit_status').value = status;
+    
+    if (termId) {
+        document.getElementById('edit_term').value = termId;
+    }
     
     if (paidAt) {
         const date = new Date(paidAt);
@@ -230,10 +306,15 @@ function editTransaction(transactionId, amount, type, status, paidAt) {
     }
     
     const form = document.getElementById('editTransactionForm');
-    form.action = '/admin/transactions/' + transactionId + '/edit';
+    form.action = '/admin/transactions/' + transactionId;
     
     const modal = new bootstrap.Modal(document.getElementById('editTransactionModal'));
     modal.show();
+    
+    // Remove any existing submit handler
+    form.removeEventListener('submit', handleEditTransactionSubmit);
+    // Add form submission handler
+    form.addEventListener('submit', handleEditTransactionSubmit);
 }
 
 function deleteTransaction(transactionId, studentName) {

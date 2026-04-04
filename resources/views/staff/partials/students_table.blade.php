@@ -646,13 +646,14 @@
                         amountInput.value = '';
                         amountInput.placeholder = `Max: ${new Intl.NumberFormat('en-US').format(Math.round(remaining))} RWF`;
                         
-                        // Show amount and notes containers
+                        // Force show the amount and notes containers
                         amountContainer?.classList.remove('d-none');
                         notesContainer?.classList.remove('d-none');
                         
                         // Scroll to amount input if needed
                         setTimeout(() => {
                             amountInput?.focus();
+                            amountInput?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                         }, 100);
                         
                         submitBtn.disabled = true;

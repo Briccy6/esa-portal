@@ -59,12 +59,14 @@
                     </td>
                     <td>
                         @if($remaining > 0)
-                            <form action="{{ route('student.pay.fee') }}" method="POST" class="d-inline">
+                            <form action="{{ route('student.pay.fee') }}" method="POST" class="d-inline-flex gap-2 flex-column">
                                 @csrf
                                 <input type="hidden" name="fee_type" value="{{ $fee['type'] }}">
-                                <input type="hidden" name="pay_amount" value="{{ $remaining }}">
-                                <input type="number" name="pay_number" class="form-control mb-1" placeholder="Phone Number" required>
-                                <button type="submit" class="btn btn-success btn-sm">Pay Now</button>
+                                <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                                    <input type="number" name="pay_amount" class="form-control form-control-sm" placeholder="Amount" value="{{ $remaining }}" min="1" max="{{ $remaining }}" required style="width: 100px;">
+                                    <input type="number" name="pay_number" class="form-control form-control-sm" placeholder="Phone" required style="width: 120px;">
+                                    <button type="submit" class="btn btn-success btn-sm">Pay</button>
+                                </div>
                             </form>
                         @else
                             <button class="btn btn-outline-primary btn-sm" disabled>

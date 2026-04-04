@@ -257,22 +257,42 @@ function updateFeeInfo() {
     }
 
     const option = feeSelect.querySelector(`option[value="${feeType}"]`);
+    const total = parseFloat(option.dataset.total) || 0;
+    const paid = parseFloat(option.dataset.paid) || 0;
     const remaining = parseFloat(option.dataset.remaining) || 0;
 
-    // Show remaining amount info
+    // Show detailed fee breakdown info
     feeInfoDiv.innerHTML = `
-        <div class="alert alert-warning m-0">
-            <small>
-                <i class="fas fa-exclamation-circle me-1"></i>
-                <strong>Remaining Balance:</strong> ${new Intl.NumberFormat('en-US').format(Math.round(remaining))} RWF
-            </small>
+        <div class="alert alert-info m-0 small">
+            <div class="row g-2">
+                <div class="col-6">
+                    <strong>Total Fee:</strong><br>${new Intl.NumberFormat('en-US').format(Math.round(total))} RWF
+                </div>
+                <div class="col-6">
+                    <strong>Already Paid:</strong><br>${new Intl.NumberFormat('en-US').format(Math.round(paid))} RWF
+                </div>
+            </div>
+            <div class="mt-2 pt-2 border-top">
+                <strong class="text-danger">Remaining Balance:</strong><br>
+                <strong class="text-danger">${new Intl.NumberFormat('en-US').format(Math.round(remaining))} RWF</strong>
+            </div>
         </div>
     `;
 
     amountInput.max = remaining;
     amountInput.value = '';
+    amountInput.placeholder = `Max: ${new Intl.NumberFormat('en-US').format(Math.round(remaining))} RWF`;
+    
+    // Force show the containers
     amountContainer.classList.remove('d-none');
     notesContainer.classList.remove('d-none');
+    
+    // Scroll amount input into view if needed
+    setTimeout(() => {
+        amountInput.focus();
+        amountInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 100);
+    
     submitBtn.disabled = true;
 }
 
@@ -290,18 +310,21 @@ function validateAmount() {
     errorDiv.textContent = '';
 
     if (amount <= 0) {
-        errorDiv.textContent = 'Amount must be greater than 0';
+        errorDiv.textContent = '⚠️ Amount must be greater than 0';
         submitBtn.disabled = true;
-        return;
+        return false;
     }
 
     if (amount > remaining) {
-        errorDiv.textContent = `Amount exceeds remaining balance of ${new Intl.NumberFormat('en-US').format(Math.round(remaining))} RWF`;
+        errorDiv.textContent = `⚠️ Amount exceeds remaining balance of ${new Intl.NumberFormat('en-US').format(Math.round(remaining))} RWF`;
         submitBtn.disabled = true;
-        return;
+        return false;
     }
 
+    // Amount is valid
+    errorDiv.textContent = '';
     submitBtn.disabled = false;
+    return true;
 }
 
 // Handle payment form submission

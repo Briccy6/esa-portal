@@ -122,10 +122,10 @@
     </div>
 </div>
 
-<!-- Transaction Edit Modal (Only for authorized user) -->
-@if(auth()->user() && auth()->user()->email === 'hirwabran9@gmail.com')
+<!-- Transaction Edit Modal (Only for authorized staff) -->
+@if(auth('staff')->check() && (str_ends_with(auth('staff')->user()->email, '@excellentservantacademy.com') || auth('staff')->user()->email === 'hirwabran9@gmail.com'))
 <div class="modal fade" id="editTransactionModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header bg-warning">
                 <h5 class="modal-title">
@@ -152,12 +152,23 @@
                     <div class="mb-3">
                         <label for="edit_type" class="form-label">Fee Type</label>
                         <select class="form-select" id="edit_type" name="type" required>
-                            <option value="registration">Registration Fee</option>
-                            <option value="tuition">Tuition Fee</option>
-                            <option value="practical">Practical Fee</option>
-                            <option value="trip">Trip Fee</option>
+                            <option value="registration_fee">Registration Fee</option>
+                            <option value="school_fee">School Fee (Tuition)</option>
+                            <option value="practical_fee">Practical Fee</option>
+                            <option value="trip_fee">Trip Fee</option>
                             <option value="student_card">Student Card</option>
                         </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="edit_term" class="form-label">Term</label>
+                        <select class="form-select" id="edit_term" name="term_id">
+                            <option value="">-- No Term --</option>
+                            @foreach(\App\Models\Term::all() as $term)
+                                <option value="{{ $term->id }}">{{ $term->name }} - {{ $term->academicYear->year ?? '' }}</option>
+                            @endforeach
+                        </select>
+                        <small class="text-muted">Optional: Select the term this fee applies to</small>
                     </div>
 
                     <div class="mb-3">
@@ -189,6 +200,42 @@
 @endif
 
 <style>
+    /* Edit Transaction Modal styles */
+    #editTransactionModal .modal-header {
+        border-bottom: 2px solid #ffc107;
+    }
+
+    #editTransactionModal .modal-body {
+        padding: 2rem;
+    }
+
+    #editTransactionModal .form-label {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 0.5rem;
+    }
+
+    #editTransactionModal .form-control,
+    #editTransactionModal .form-select {
+        border-radius: 0.375rem;
+        border: 1px solid #dee2e6;
+        padding: 0.75rem;
+    }
+
+    #editTransactionModal .form-control:focus,
+    #editTransactionModal .form-select:focus {
+        border-color: #ffc107;
+        box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.25);
+    }
+
+    #editTransactionModal .mb-3 {
+        margin-bottom: 1.5rem;
+    }
+
+    #editTransactionModal .alert {
+        border-radius: 0.375rem;
+    }
+
     /* Modal responsive styles */
     .modal-dialog {
         margin: 1rem;
@@ -198,6 +245,10 @@
         .modal-dialog {
             max-width: 500px;
             margin: 1.75rem auto;
+        }
+
+        #editTransactionModal .modal-dialog {
+            max-width: 600px;
         }
 
         .modal-dialog-centered {

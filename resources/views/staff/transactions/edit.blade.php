@@ -4,40 +4,42 @@
         @csrf
         @method('PUT')
 
-        <div class="mb-3">
-            <label class="form-label">Amount</label>
-            <input type="number" step="0.01" name="amount" class="form-control" value="{{ old('amount', $transaction->amount) }}" required>
-            @error('amount')
-                <div class="text-danger small mt-1">{{ $message }}</div>
-            @enderror
-        </div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Amount <span class="text-danger">*</span></label>
+                <input type="number" step="0.01" name="amount" class="form-control form-control-lg" value="{{ old('amount', $transaction->amount) }}" required>
+                @error('amount')
+                    <div class="text-danger small mt-1">{{ $message }}</div>
+                @enderror
+            </div>
 
-        <div class="mb-3">
-            <label class="form-label">Fee Type</label>
-            <select name="type" class="form-select" required>
-                <option value="">-- Select Fee Type --</option>
-                <option value="registration_fee" {{ $transaction->type === 'registration_fee' ? 'selected' : '' }}>Registration Fee</option>
-                <option value="school_fee" {{ $transaction->type === 'school_fee' ? 'selected' : '' }}>School Fee</option>
-                <option value="practical_fee" {{ $transaction->type === 'practical_fee' ? 'selected' : '' }}>Practical Fee</option>
-                <option value="trip_fee" {{ $transaction->type === 'trip_fee' ? 'selected' : '' }}>Trip Fee</option>
-                <option value="student_card" {{ $transaction->type === 'student_card' ? 'selected' : '' }}>Student Card</option>
-                <option value="other" {{ $transaction->type === 'other' ? 'selected' : '' }}>Other</option>
-            </select>
-            @error('type')
-                <div class="text-danger small mt-1">{{ $message }}</div>
-            @enderror
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Fee Type <span class="text-danger">*</span></label>
+                <select name="type" class="form-select form-select-lg" required>
+                    <option value="">-- Select Fee Type --</option>
+                    <option value="registration_fee" {{ $transaction->type === 'registration_fee' ? 'selected' : '' }}>Registration Fee</option>
+                    <option value="school_fee" {{ $transaction->type === 'school_fee' ? 'selected' : '' }}>School Fee</option>
+                    <option value="practical_fee" {{ $transaction->type === 'practical_fee' ? 'selected' : '' }}>Practical Fee</option>
+                    <option value="trip_fee" {{ $transaction->type === 'trip_fee' ? 'selected' : '' }}>Trip Fee</option>
+                    <option value="student_card" {{ $transaction->type === 'student_card' ? 'selected' : '' }}>Student Card</option>
+                    <option value="other" {{ $transaction->type === 'other' ? 'selected' : '' }}>Other</option>
+                </select>
+                @error('type')
+                    <div class="text-danger small mt-1">{{ $message }}</div>
+                @enderror
+            </div>
         </div>
 
         <div class="mb-3">
             <label class="form-label">Notes (Optional)</label>
-            <textarea name="notes" class="form-control" rows="3" placeholder="Add any notes about this transaction">{{ json_decode($transaction->meta, true)['notes'] ?? '' }}</textarea>
+            <textarea name="notes" class="form-control" rows="2" placeholder="Add any notes about this transaction">{{ json_decode($transaction->meta, true)['notes'] ?? '' }}</textarea>
             @error('notes')
                 <div class="text-danger small mt-1">{{ $message }}</div>
             @enderror
         </div>
 
         <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-primary">
+            <button type="submit" class="btn btn-primary flex-grow-1">
                 <i class="fas fa-save me-2"></i>Save Changes
             </button>
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">

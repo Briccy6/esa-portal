@@ -702,15 +702,18 @@
 
 <!-- Edit Transaction Modal -->
 <div class="modal fade d-print-none" id="editTransactionModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-md modal-dialog-centered">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Edit Transaction</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-edit me-2"></i>Edit Transaction
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body" id="editTransactionModalBody">
-                <div class="text-center">
-                    <span class="spinner-border"></span> Loading...
+                <div class="text-center py-4">
+                    <span class="spinner-border spinner-border-lg"></span> 
+                    <p class="mt-2">Loading transaction form...</p>
                 </div>
             </div>
         </div>
@@ -758,7 +761,13 @@
                 form.addEventListener('submit', function(e) {
                     e.preventDefault();
 
+                    // DEBUG: Log all form fields before submission
                     const formData = new FormData(form);
+                    console.log('Form submission data:');
+                    for (let [key, value] of formData.entries()) {
+                        console.log(`  ${key}: ${value}`);
+                    }
+
                     const submitBtn = form.querySelector('button[type="submit"]');
                     const originalText = submitBtn.innerHTML;
 
@@ -766,21 +775,26 @@
                     submitBtn.disabled = true;
                     submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
 
+                    // Log the action URL
+                    console.log('Submitting to:', form.action);
+
                     fetch(form.action, {
-                        method: 'PUT',
+                        method: 'POST', // Use POST with FormData which includes _method=PUT from the form
                         body: formData,
                         headers: {
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                            'X-Requested-With': 'XMLHttpRequest'
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
                         }
                     })
                     .then(resp => {
-                        if (!resp.ok) {
+                        console.log('Response status:', resp.status, resp.statusText);
+                        if (!resp.ok && resp.status !== 422) {
                             throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
                         }
                         return resp.json();
                     })
                     .then(json => {
+                        console.log('Response JSON:', json);
                         if (json.success) {
                             // Close modal
                             const modal = bootstrap.Modal.getInstance(document.getElementById('editTransactionModal'));
@@ -792,14 +806,21 @@
                             // Reload page to show updated data
                             location.reload();
                         } else {
-                            const errorDetails = `Error: ${json.message || 'Failed to update transaction'}\n\nDetails:\n${JSON.stringify(json, null, 2)}`;
+                            // Show errors with better formatting
+                            let errorMsg = json.message || 'Failed to update transaction';
+                            if (json.errors) {
+                                errorMsg += '\n\nValidation Errors:\n';
+                                for (let [field, messages] of Object.entries(json.errors)) {
+                                    errorMsg += `• ${field}: ${messages.join(', ')}\n`;
+                                }
+                            }
                             console.error('Update error:', json);
-                            alert(errorDetails);
+                            alert(errorMsg);
                         }
                     })
                     .catch(err => {
                         console.error('Update full error:', err);
-                        const errorMsg = `Error updating transaction:\n\n${err.message}\n\nForm URL: ${form.action}\n\nPossible Causes:\n- Route may not exist\n- Validation failed\n- Permission denied\n\nCheck browser console (F12) for detailed error information.`;
+                        const errorMsg = `Error updating transaction:\n\n${err.message}\n\nForm URL: ${form.action}\n\nPlease check the browser console (F12) for detailed error information.`;
                         alert(errorMsg);
                     })
                     .finally(() => {
