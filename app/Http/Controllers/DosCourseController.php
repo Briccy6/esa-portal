@@ -64,8 +64,16 @@ class DosCourseController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'title' => 'required|string|max:255',
+            'course_name' => 'required|string|max:255',
+            'course_code' => 'required|string|max:50',
+            'abbreviation' => 'required|string|max:20',
+            'course_type' => 'required|string',
             'description' => 'nullable|string',
+            'registration_fee' => 'nullable|numeric|min:0',
+            'tuition_fee' => 'nullable|numeric|min:0',
+            'practical_fee' => 'nullable|numeric|min:0',
+            'trip_fee' => 'nullable|numeric|min:0',
+            'discount_fee' => 'nullable|numeric|min:0',
             'teacher_id' => 'nullable|exists:teachers,id',
         ]);
 
@@ -90,8 +98,16 @@ class DosCourseController extends Controller
     public function update(Request $request, Course $course)
     {
         $request->validate([
-            'title' => 'required|string|max:255',
+            'course_name' => 'required|string|max:255',
+            'course_code' => 'required|string|max:50',
+            'abbreviation' => 'required|string|max:20',
+            'course_type' => 'required|string',
             'description' => 'nullable|string',
+            'registration_fee' => 'nullable|numeric|min:0',
+            'tuition_fee' => 'nullable|numeric|min:0',
+            'practical_fee' => 'nullable|numeric|min:0',
+            'trip_fee' => 'nullable|numeric|min:0',
+            'discount_fee' => 'nullable|numeric|min:0',
             'teacher_id' => 'nullable|exists:teachers,id',
         ]);
 

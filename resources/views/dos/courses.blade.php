@@ -348,7 +348,6 @@ function attachPaginationHandlers() {
 document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('search');
     const branchFilter = document.getElementById('branch_filter');
-    const statusFilter = document.getElementById('status_filter');
     
     // Live search on input
     searchInput.addEventListener('input', function() {
@@ -357,7 +356,7 @@ document.addEventListener('DOMContentLoaded', function() {
             performAjaxSearch(
                 searchInput.value,
                 branchFilter.value,
-                statusFilter.value
+                ''
             );
         }, 300); // 300ms debounce
     });
@@ -367,15 +366,7 @@ document.addEventListener('DOMContentLoaded', function() {
         performAjaxSearch(
             searchInput.value,
             branchFilter.value,
-            statusFilter.value
-        );
-    });
-    
-    statusFilter.addEventListener('change', function() {
-        performAjaxSearch(
-            searchInput.value,
-            branchFilter.value,
-            statusFilter.value
+            ''
         );
     });
     
