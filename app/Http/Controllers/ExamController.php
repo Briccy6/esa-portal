@@ -1363,4 +1363,47 @@ class ExamController extends Controller
 
         fclose($handle);
     }
+
+    /**
+     * Get lessons and courses for a specific branch using lesson_branch_course table
+     */
+    public function getLessonsByCourse($branchId)
+    {
+        try {
+            // Get all lesson_branch_course records for the selected branch
+            $lessonBranchCourses = \App\Models\LessonBranchCourse::where('branch_id', $branchId)
+                ->with(['lesson', 'course'])
+                ->get();
+
+            // Build arrays of lessons and courses
+            $lessons = [];
+            $courses = [];
+
+            foreach ($lessonBranchCourses as $lbc) {
+                if ($lbc->lesson && !isset($lessons[$lbc->lesson->id])) {
+                    $lessons[$lbc->lesson->id] = [
+                        'id' => $lbc->lesson->id,
+                        'title' => $lbc->lesson->title ?? $lbc->lesson->name,
+                    ];
+                }
+                if ($lbc->course && !isset($courses[$lbc->course->id])) {
+                    $courses[$lbc->course->id] = [
+                        'id' => $lbc->course->id,
+                        'name' => $lbc->course->course_name,
+                    ];
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'lessons' => array_values($lessons),
+                'courses' => array_values($courses),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching lessons and courses: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
 }

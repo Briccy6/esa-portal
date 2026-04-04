@@ -914,7 +914,10 @@ body {
             });
     }
 
-    document.getElementById('studentsMarksForm').addEventListener('submit', function(e) {
+    // Use event delegation for form submission since form is dynamically created
+    document.addEventListener('submit', function(e) {
+        if (e.target.id !== 'studentsMarksForm') return;
+        
         e.preventDefault();
         
         var saveBtn = document.getElementById('saveMarksBtn');

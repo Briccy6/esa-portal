@@ -1425,6 +1425,7 @@ Route::middleware(['auth:teacher'])->prefix('teacher/exams')->name('teacher.exam
     Route::get('/{exam}/edit', [ExamController::class, 'edit'])->name('edit');
     Route::put('/{exam}', [ExamController::class, 'update'])->name('update');
     Route::delete('/{exam}', [ExamController::class, 'destroy'])->name('destroy');
+    Route::get('/api/lessons-courses/{branchId}', [ExamController::class, 'getLessonsByCourse'])->name('api.lessons-courses');
     
     // Teacher Question Management Routes
     Route::get('{exam}/questions', [\App\Http\Controllers\Teacher\TeacherQuestionController::class, 'index'])->name('questions');
