@@ -1141,10 +1141,16 @@ function handlePayment(event, studentId) {
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing…';
 
-    fetch(form.action, {
+    // Use AJAX POST with correct path
+    fetch(`/staff/students/${studentId}/pay-cash`, {
         method: 'POST',
-        headers: { 'X-CSRF-TOKEN': getCsrfToken(), 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-        body: formData,
+        headers: { 
+            'X-CSRF-TOKEN': getCsrfToken(), 
+            'Accept': 'application/json', 
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: new URLSearchParams(formData),
         credentials: 'same-origin'
     })
     .then(async response => {
@@ -1160,7 +1166,7 @@ function handlePayment(event, studentId) {
     })
     .then(({ ok, data }) => {
         if (ok && data.success !== false) {
-            bootstrap.Modal.getInstance(document.getElementById(`payModal${studentId}`))?.hide();
+            closePayModal(studentId);
             showAlert('success', data.message || 'Payment recorded successfully');
             setTimeout(() => window.location.reload(), 1500);
         } else {
