@@ -1865,7 +1865,6 @@ class StudentController extends Controller
                     'message'   => $successMessage,
                     'balance'   => $balance,
                     'remaining' => $newRemaining,
-                    'redirect'  => route('accountant.payment-schedule.index'),
                 ], 200);
             }
 

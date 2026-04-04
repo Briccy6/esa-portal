@@ -420,7 +420,7 @@
                                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                                 </div>
                                 <form id="payForm{{ $student->id }}"
-                                      action="{{ route('staff.students.pay-cash', $student) }}"
+                                      action="{{ route('students.pay-cash', $student) }}"
                                       method="POST"
                                       onsubmit="handlePayment(event, {{ $student->id }})">
                                     @csrf
