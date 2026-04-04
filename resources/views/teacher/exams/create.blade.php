@@ -423,4 +423,94 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const branchSelect = document.getElementById('branch_id');
+    const courseSelect = document.getElementById('course_ids');
+    const lessonSelect = document.getElementById('lesson_ids');
+    
+    // Store original courses and lessons for reference
+    const allCoursesOptions = Array.from(courseSelect.options).map(option => ({
+        value: option.value,
+        text: option.text,
+        element: option.cloneNode(true)
+    }));
+    
+    const allLessonsOptions = Array.from(lessonSelect.options).map(option => ({
+        value: option.value,
+        text: option.text,
+        element: option.cloneNode(true)
+    }));
+    
+    branchSelect.addEventListener('change', function() {
+        const branchId = this.value;
+        
+        if (!branchId) {
+            // Show all options if no branch is selected
+            courseSelect.innerHTML = '';
+            lessonSelect.innerHTML = '';
+            
+            allCoursesOptions.forEach(option => {
+                courseSelect.appendChild(option.element.cloneNode(true));
+            });
+            
+            allLessonsOptions.forEach(option => {
+                lessonSelect.appendChild(option.element.cloneNode(true));
+            });
+            return;
+        }
+        
+        // Fetch lessons and courses for the selected branch
+        fetch(`{{ route('teacher.exams.api.lessons-courses', '') }}/${branchId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Clear current options
+                    courseSelect.innerHTML = '';
+                    lessonSelect.innerHTML = '';
+                    
+                    // Add filtered courses
+                    if (data.courses.length > 0) {
+                        data.courses.forEach(course => {
+                            const option = document.createElement('option');
+                            option.value = course.id;
+                            option.text = course.name;
+                            courseSelect.appendChild(option);
+                        });
+                    } else {
+                        const option = document.createElement('option');
+                        option.value = '';
+                        option.text = 'No courses available for this branch';
+                        option.disabled = true;
+                        courseSelect.appendChild(option);
+                    }
+                    
+                    // Add filtered lessons
+                    if (data.lessons.length > 0) {
+                        data.lessons.forEach(lesson => {
+                            const option = document.createElement('option');
+                            option.value = lesson.id;
+                            option.text = lesson.title;
+                            lessonSelect.appendChild(option);
+                        });
+                    } else {
+                        const option = document.createElement('option');
+                        option.value = '';
+                        option.text = 'No lessons available for this branch';
+                        option.disabled = true;
+                        lessonSelect.appendChild(option);
+                    }
+                } else {
+                    console.error('Error fetching data:', data.message);
+                    alert('Error loading courses and lessons. Please try again.');
+                }
+            })
+            .catch(error => {
+                console.error('Fetch error:', error);
+                alert('Error loading courses and lessons. Please try again.');
+            });
+    });
+});
+</script>
 @endsection
