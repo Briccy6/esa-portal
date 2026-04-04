@@ -235,9 +235,11 @@
 
                                 {{-- Pay Cash --}}
                                 <button type="button"
-                                        class="btn btn-sm btn-primary action-btn-icon"
+                                        class="btn btn-sm btn-primary action-btn-icon pay-cash-btn"
                                         data-bs-toggle="modal"
                                         data-bs-target="#payModal{{ $student->id }}"
+                                        data-student-id="{{ $student->id }}"
+                                        onclick="openPayModal({{ $student->id }}); return false;"
                                         title="Record Cash Payment">
                                     <i class="fas fa-money-bill-wave"></i>
                                 </button>
@@ -1125,6 +1127,34 @@ function showAlert(type, message) {
         const alert = container.querySelector('.alert');
         if (alert) { alert.classList.remove('show'); setTimeout(() => alert.remove(), 300); }
     }, 5000);
+}
+
+// ─── Explicit Modal Opener (Fallback for Bootstrap issues) ────────────────────
+// FIX: If Bootstrap isn't working due to SSL issues,  these functions will 
+//      explicitly open modals using vanilla JavaScript
+function openPayModal(studentId) {
+    console.log('🔓 openPayModal called for:', studentId);
+    const modalElement = document.getElementById('payModal' + studentId);
+    
+    if (!modalElement) {
+        console.error('❌ Modal not found: payModal' + studentId);
+        showAlert('danger', 'Payment modal not found. Please refresh the page.');
+        return;
+    }
+    
+    try {
+        // Try Bootstrap first
+        const modal = new bootstrap.Modal(modalElement);
+        modal.show();
+        console.log('✅ Modal opened with Bootstrap');
+    } catch (err) {
+        console.warn('⚠️ Bootstrap Modal failed:', err);
+        // Fallback: show modal manually
+        modalElement.classList.add('show');
+        modalElement.style.display = 'block';
+        document.body.classList.add('modal-open');
+        console.log('✅ Modal opened with fallback');
+    }
 }
 
 // ─── Fee info updater ────────────────────────────────────────────────────────
