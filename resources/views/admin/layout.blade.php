@@ -62,7 +62,7 @@
             left: var(--sidebar-width);
             right: 0;
             height: 70px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #2c3e50;
             backdrop-filter: blur(10px);
             box-shadow: var(--shadow);
             z-index: 1000;
@@ -157,7 +157,7 @@
             width: 35px;
             height: 35px;
             border-radius: 50%;
-            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            background: #3498db;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -349,17 +349,12 @@
             opacity: 0;
         }
 
-        /* Report Cards & Other Admin Pages - Full Width Headers */
+        /* Content area — keep everything inside the main column */
         .main-content .container-fluid {
-            width: calc(100% + 4rem);
-            margin-left: -2rem;
-            padding-left: 2rem;
-            padding-right: 2rem;
-        }
-
-        .main-content .container-fluid > :first-child {
+            width: 100%;
             margin-left: 0;
-            margin-right: 0;
+            padding-left: 0;
+            padding-right: 0;
         }
 
         .nav-item {
@@ -435,13 +430,13 @@
 
         .logout-btn {
             width: 100%;
-            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            background: #e74c3c;
             border: none;
             color: white;
             padding: 0.8rem 1rem;
             border-radius: 12px;
             font-weight: 500;
-            transition: all 0.3s;
+            transition: opacity 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -449,8 +444,7 @@
         }
 
         .logout-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
+            opacity: 0.88;
         }
 
         /* Main Content */
@@ -760,11 +754,10 @@
 
         /* Page Header Styling */
         .page-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #2c3e50;
             margin: -2rem -2rem 2rem -2rem;
             padding: 2rem;
-            border-radius: 0 0 1rem 1rem;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-radius: 0 0 0.5rem 0.5rem;
         }
 
         .page-title {

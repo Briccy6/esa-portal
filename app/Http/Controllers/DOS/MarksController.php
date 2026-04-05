@@ -353,7 +353,7 @@ class MarksController extends Controller
             'academic_year' => 'nullable|string',
         ]);
 
-        $student = Student::with(['course', 'branch'])->findOrFail($request->student_id);
+        $student = Student::with(['course', 'branch', 'academicYear'])->findOrFail($request->student_id);
         
         // Resolve student passport photo to base64 for consistency with admin template
         $studentPhotoBase64 = null;
@@ -404,9 +404,18 @@ class MarksController extends Controller
         $reportCard->academicYear = (object)['year' => $request->academic_year ?? date('Y') . '-' . (date('Y') + 1)];
         $reportCard->term = (object)['term' => $request->term ?? 'Current Term'];
         
-        // Get marks and group by lesson
+        // ============================================================================
+        // Get lessons from lesson_branch_course for this student's branch and course
+        // ============================================================================
+        $lessonBranchCourses = LessonBranchCourse::with('lesson')
+            ->where('branch_id', $student->branch_id)
+            ->where('course_id', $student->course_id)
+            ->get();
+        
+        // Get marks for these lessons
         $marks = Mark::with(['course', 'exam', 'lesson', 'grade'])
             ->where('student_id', $student->id)
+            ->whereIn('lesson_id', $lessonBranchCourses->pluck('lesson_id'))
             ->when($request->term, fn($q) => $q->where('term', $request->term))
             ->when($request->academic_year, fn($q) => $q->where('academic_year', $request->academic_year))
             ->orderBy('created_at', 'asc')
@@ -414,46 +423,55 @@ class MarksController extends Controller
 
         // Group marks by lesson and create subjects structure
         $subjects = collect();
-        $lessons = $marks->groupBy('lesson_id');
+        $lessonMarksGrouped = $marks->groupBy('lesson_id');
         
-        foreach ($lessons as $lessonId => $lessonMarks) {
+        foreach ($lessonMarksGrouped as $lessonId => $lessonMarks) {
             $lesson = $lessonMarks->first()->lesson;
             if ($lesson) {
                 $subject = new \stdClass();
+                $subject->lesson_id = $lessonId;
                 $subject->subject_name = $lesson->title;
                 $subject->subject_code = $lesson->code ?? strtoupper(substr($lesson->title, 0, 3));
                 $subject->credits = 3;
                 
-                // Calculate test average (multiple test marks for same lesson)
+                // ================================================================
+                // CALCULATE TEST MARKS (multiple marks average to 100)
+                // ================================================================
                 $testMarks = $lessonMarks->where('assessment_type', 'test');
-                $subject->test_average = $testMarks->isNotEmpty() ? $testMarks->avg('value') : 0;
+                if ($testMarks->isNotEmpty()) {
+                    // Convert all test marks to 100-point scale, then average
+                    $testValuesNormalized = $testMarks->map(function($mark) {
+                        // If mark is on different scale, convert to 100
+                        if ($mark->marks_out_of && $mark->marks_out_of > 0 && $mark->marks_out_of != 100) {
+                            return ($mark->value / $mark->marks_out_of) * 100;
+                        }
+                        return $mark->value; // Already on 100 scale
+                    });
+                    $subject->test_average = $testValuesNormalized->avg();
+                } else {
+                    $subject->test_average = 0;
+                }
                 
-                // Get exam mark (should be only one exam mark per lesson)
+                // ================================================================
+                // CALCULATE EXAM MARKS (on 100 scale)
+                // ================================================================
                 $examMark = $lessonMarks->where('assessment_type', 'exam')->first();
-                $subject->exam_mark = $examMark ? $examMark->value : 0;
-                
-                // Calculate weighted average: 40% test average + 60% exam mark
-                // Convert to percentage scale (out of 100)
-                $testWeighted = $subject->test_average * 0.4; // 40% weight for tests
-                $examWeighted = $subject->exam_mark * 0.6;    // 60% weight for exam
-                
-                // Ensure we're working with percentages
-                if ($subject->test_average > 0 && $subject->test_average <= 100) {
-                    $testWeighted = $subject->test_average * 0.4;
+                if ($examMark) {
+                    // Convert exam mark to 100-point scale if needed
+                    if ($examMark->marks_out_of && $examMark->marks_out_of > 0 && $examMark->marks_out_of != 100) {
+                        $subject->exam_mark = ($examMark->value / $examMark->marks_out_of) * 100;
+                    } else {
+                        $subject->exam_mark = $examMark->value;
+                    }
                 } else {
-                    // Convert from original scale to percentage
-                    $testOutOf = $testMarks->first()->marks_out_of ?? 100;
-                    $testWeighted = ($subject->test_average / $testOutOf) * 100 * 0.4;
+                    $subject->exam_mark = 0;
                 }
                 
-                if ($subject->exam_mark > 0 && $subject->exam_mark <= 100) {
-                    $examWeighted = $subject->exam_mark * 0.6;
-                } else {
-                    // Convert from original scale to percentage
-                    $examOutOf = $examMark->marks_out_of ?? 100;
-                    $examWeighted = ($subject->exam_mark / $examOutOf) * 100 * 0.6;
-                }
-                
+                // ================================================================
+                // CALCULATE WEIGHTED AVERAGE: 40% test + 60% exam
+                // ================================================================
+                $testWeighted = $subject->test_average * 0.4;      // 40% weight for tests
+                $examWeighted = $subject->exam_mark * 0.6;         // 60% weight for exam
                 $subject->total_mark = $testWeighted + $examWeighted;
                 
                 // Ensure total is capped at 100
@@ -476,11 +494,77 @@ class MarksController extends Controller
         
         $reportCard->subjects = $subjects;
         
+        // ================================================================
+        // Calculate student position/ranking in the class
+        // ================================================================
+        // Get all students in the same course and branch
+        $classStudents = Student::where('course_id', $student->course_id)
+            ->where('branch_id', $student->branch_id)
+            ->get();
+        
+        $totalStudents = $classStudents->count();
+        $studentPosition = 1; // Default position
+        
+        if ($totalStudents > 1) {
+            // Calculate average marks for each student in the class
+            $studentAverages = [];
+            foreach ($classStudents as $classStudent) {
+                $classStudentMarks = Mark::with('lesson')
+                    ->where('student_id', $classStudent->id)
+                    ->whereIn('lesson_id', $lessonBranchCourses->pluck('lesson_id'))
+                    ->when($request->term, fn($q) => $q->where('term', $request->term))
+                    ->when($request->academic_year, fn($q) => $q->where('academic_year', $request->academic_year))
+                    ->get();
+                
+                // Calculate average for this student
+                $classStudentTotal = 0;
+                $classStudentCount = 0;
+                
+                $classStudentLessonMarks = $classStudentMarks->groupBy('lesson_id');
+                foreach ($classStudentLessonMarks as $clessonId => $clessonMarks) {
+                    // Test marks (convert to 100)
+                    $ctestMarks = $clessonMarks->where('assessment_type', 'test');
+                    $ctestAvg = 0;
+                    if ($ctestMarks->isNotEmpty()) {
+                        $ctestValuesNormalized = $ctestMarks->map(function($mark) {
+                            if ($mark->marks_out_of && $mark->marks_out_of > 0 && $mark->marks_out_of != 100) {
+                                return ($mark->value / $mark->marks_out_of) * 100;
+                            }
+                            return $mark->value;
+                        });
+                        $ctestAvg = $ctestValuesNormalized->avg();
+                    }
+                    
+                    // Exam marks (convert to 100)
+                    $cexamMark = $clessonMarks->where('assessment_type', 'exam')->first();
+                    $cexamValue = 0;
+                    if ($cexamMark) {
+                        if ($cexamMark->marks_out_of && $cexamMark->marks_out_of > 0 && $cexamMark->marks_out_of != 100) {
+                            $cexamValue = ($cexamMark->value / $cexamMark->marks_out_of) * 100;
+                        } else {
+                            $cexamValue = $cexamMark->value;
+                        }
+                    }
+                    
+                    // Weighted average for this lesson: 40% test + 60% exam
+                    $lessonTotal = ($ctestAvg * 0.4) + ($cexamValue * 0.6);
+                    $classStudentTotal += $lessonTotal;
+                    $classStudentCount++;
+                }
+                
+                $studentAverages[$classStudent->id] = $classStudentCount > 0 ? $classStudentTotal / $classStudentCount : 0;
+            }
+            
+            // Sort students by average (highest first) and find this student's position
+            arsort($studentAverages);
+            $studentPosition = array_search($student->id, array_keys($studentAverages)) + 1;
+        }
+        
         // Calculate totals
         $reportCard->total_marks = $subjects->sum('total_mark');
         $reportCard->average_marks = $subjects->isNotEmpty() ? $subjects->avg('total_mark') : 0;
-        $reportCard->class_position = 1; // Mock position
-        $reportCard->total_students = 1; // Mock total students
+        $reportCard->class_position = $studentPosition;
+        $reportCard->total_students = $totalStudents;
         
         // Get school information
         $schoolInfo = \App\Models\SchoolInformation::getActive();

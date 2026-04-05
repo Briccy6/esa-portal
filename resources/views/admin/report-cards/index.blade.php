@@ -257,7 +257,7 @@
                                                     <img src="{{ $first->student->passport_photo }}" alt="{{ $first->student->full_name }}">
                                                 @else
                                                     <img src="{{ asset($first->student->passport_photo) }}" alt="{{ $first->student->full_name }}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                                                    <div style="display: none; width: 34px; height: 34px; background: linear-gradient(135deg,#0d6efd,#0a58ca); border-radius: 50%; align-items: center; justify-content: center;">
+                                                    <div style="display: none; width: 34px; height: 34px; background: #0d6efd; border-radius: 50%; align-items: center; justify-content: center;">
                                                         <div style="color: #fff; font-size: 0.8rem; font-weight: 700;">{{ strtoupper(substr($first->student->full_name, 0, 1)) }}</div>
                                                     </div>
                                                 @endif
@@ -503,6 +503,14 @@ function deleteReportCardsGroup(studentId, courseId, academicYearId, termIds, st
    REPORT CARDS — scoped component styles
 ════════════════════════════════════════════ */
 
+/* FIX: prevent container-fluid from overflowing behind sidebar */
+.main-content .container-fluid {
+    width: 100% !important;
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
 /* PAGE HEADER */
 .rc-page-header {
     display: flex;
@@ -518,16 +526,15 @@ function deleteReportCardsGroup(studentId, courseId, academicYearId, termIds, st
 }
 .rc-page-header__icon {
     width: 48px; height: 48px;
-    border-radius: 12px;
-    background: linear-gradient(135deg, #198754 0%, #0f5132 100%);
+    border-radius: 8px;
+    background: #198754;
     display: flex; align-items: center; justify-content: center;
     color: #fff; font-size: 1.25rem;
     flex-shrink: 0;
-    box-shadow: 0 4px 12px rgba(25,135,84,.3);
 }
 .rc-page-header__title {
     font-size: 1.5rem; font-weight: 700;
-    color: #1a1a2e; margin: 0;
+    color: #212529; margin: 0;
 }
 .rc-page-header__sub {
     font-size: 0.82rem; color: #6c757d; margin: 0;
@@ -551,8 +558,8 @@ function deleteReportCardsGroup(studentId, courseId, academicYearId, termIds, st
     gap: 0.4rem;
     border-radius: 14px 14px 0 0;
 }
-.rc-card__header--blue  { background: linear-gradient(135deg,#0d6efd,#0a58ca); }
-.rc-card__header--green { background: linear-gradient(135deg,#198754,#0f5132); }
+.rc-card__header--blue  { background: #0d6efd; }
+.rc-card__header--green { background: #198754; }
 .rc-card__header-count {
     margin-left: auto;
     background: rgba(255,255,255,.2);
@@ -623,25 +630,28 @@ function deleteReportCardsGroup(studentId, courseId, academicYearId, termIds, st
 .rc-btn {
     display: inline-flex; align-items: center; gap: 6px;
     padding: 0.5rem 1.1rem;
-    border-radius: 8px;
+    border-radius: 6px;
     font-size: 0.875rem; font-weight: 600;
     border: none; cursor: pointer;
     text-decoration: none;
-    transition: all .2s;
+    transition: opacity .15s;
     white-space: nowrap;
 }
 .rc-btn--primary {
-    background: linear-gradient(135deg,#0d6efd,#0a58ca);
+    background: #0d6efd;
     color: #fff;
-    box-shadow: 0 3px 10px rgba(13,110,253,.3);
 }
-.rc-btn--primary:hover { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(13,110,253,.4); color:#fff; }
+.rc-btn--primary:hover { opacity: .88; color:#fff; }
 .rc-btn--teal {
-    background: linear-gradient(135deg,#0dcaf0,#098fac);
-    color: #fff;
-    box-shadow: 0 3px 10px rgba(13,202,240,.3);
+    background: #0dcaf0;
+    color: #000;
 }
-.rc-btn--teal:hover { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(13,202,240,.4); color:#fff; }
+.rc-btn--teal:hover { opacity: .88; color:#000; }
+.rc-btn--warning {
+    background: #ffc107;
+    color: #000;
+}
+.rc-btn--warning:hover { opacity: .88; color:#000; }
 
 /* ════════════════════════════════════════════
    CUSTOM MULTI-SELECT DROPDOWN  (ms- prefix)
@@ -948,7 +958,7 @@ function deleteReportCardsGroup(studentId, courseId, academicYearId, termIds, st
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    background: linear-gradient(135deg,#e7f1ff,#dbeafe);
+    background: #e7f1ff;
     color: #084298;
     border: 1px solid #bfdbfe;
     border-radius: 20px;
@@ -1024,13 +1034,13 @@ function deleteReportCardsGroup(studentId, courseId, academicYearId, termIds, st
     font-weight: 700; font-size: 0.8rem; color: #fff;
     flex-shrink: 0;
     overflow: hidden;
-    background: linear-gradient(135deg,#0d6efd,#0a58ca);
+    background: #0d6efd;
 }
 .rc-avatar img {
     width: 100%; height: 100%; object-fit: cover;
     border-radius: 50%;
 }
-.rc-avatar--blue { background: linear-gradient(135deg,#0d6efd,#0a58ca); }
+.rc-avatar--blue { background: #0d6efd; }
 .rc-student-cell__info {
     display: flex; flex-direction: column;
     min-width: 0;
@@ -2179,4 +2189,3 @@ document.addEventListener('DOMContentLoaded', function () {
     white-space: nowrap;
 }
 </style>
-
