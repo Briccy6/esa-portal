@@ -761,8 +761,25 @@ body {
     document.getElementById('assessment_type').addEventListener('change', function() {
         const type = this.value;
         document.getElementById('testMarksOutOfRow').style.display = type === 'test' ? 'flex' : 'none';
-        document.getElementById('examSelectRow').style.display = type === 'exam' ? 'flex' : 'none';
+        
+        // Only show exam row, but don't load exams yet
         if (type === 'exam') {
+            document.getElementById('examSelectRow').style.display = 'flex';
+        } else {
+            document.getElementById('examSelectRow').style.display = 'none';
+            // Clear exams if switching away from exam type
+            document.getElementById('exam_id').innerHTML = '<option value="">Select Exam</option>';
+        }
+        updateShowStudentsBtn();
+    });
+
+    // Add listener to Term dropdown - load exams when term is selected and assessment type is exam
+    document.getElementById('term_id').addEventListener('change', function() {
+        const assessmentType = document.getElementById('assessment_type').value;
+        const termId = this.value;
+        
+        // Load exams if exam type is selected AND term is selected
+        if (assessmentType === 'exam' && termId) {
             loadExams();
         }
         updateShowStudentsBtn();
@@ -770,19 +787,30 @@ body {
 
     function loadExams() {
         const courseId = document.getElementById('course_id').value;
+        const termId = document.getElementById('term_id').value;
+        const examSelect = document.getElementById('exam_id');
+        
+        console.log('Loading exams for course:', courseId, 'term:', termId);
+        
         fetch(`/api/course/${courseId}/exams`)
             .then(res => res.json())
             .then(data => {
-                const examSelect = document.getElementById('exam_id');
+                console.log('Exams loaded:', data);
                 examSelect.innerHTML = '<option value="">Select Exam</option>';
                 if (Array.isArray(data) && data.length > 0) {
                     data.forEach(function(exam) {
-                        examSelect.innerHTML += `<option value="${exam.id}">${exam.title}</option>`;
+                        examSelect.innerHTML += '<option value="' + exam.id + '">' + exam.title + '</option>';
                     });
+                    console.log('Exams populated: ' + data.length);
+                } else {
+                    examSelect.innerHTML = '<option value="">No exams available for this course</option>';
+                    console.warn('No exams returned for course');
                 }
             })
             .catch(error => {
+                console.error('Error loading exams:', error);
                 document.getElementById('marks-message').innerHTML = '<div class="text-danger">Error loading exams: ' + error.message + '</div>';
+                examSelect.innerHTML = '<option value="">Error loading exams</option>';
             });
     }
 
