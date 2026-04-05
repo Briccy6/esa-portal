@@ -370,13 +370,19 @@
         // Handle form submission validation
         const form = document.querySelector('form');
         form.addEventListener('submit', function(e) {
-            const termRows = document.querySelectorAll('#term-fees-table tbody tr:not([style*="display: none"])');
+            const termRows = document.querySelectorAll('#term-fees-table tbody tr:not([style*="display: none"]):not(#term-fee-row-template)');
             let hasValidTerm = false;
+            let validRowCount = 0;
             
+            // Remove empty rows and count valid ones
             termRows.forEach(row => {
                 const termSelect = row.querySelector('.term-select');
-                if (termSelect.value) {
+                if (termSelect && termSelect.value) {
                     hasValidTerm = true;
+                    validRowCount++;
+                } else {
+                    // Remove rows without a selected term
+                    row.remove();
                 }
             });
             
