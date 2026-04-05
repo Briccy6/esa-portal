@@ -887,6 +887,9 @@ class ReportCardController extends Controller
             ]);
 
             $termIds = $this->normalizeTermIds($request);
+            \Log::info('═══ checkOutstandingFeesForGeneration START ═══');
+            \Log::info('Requested term_ids:', ['raw' => $request->input('term_ids'), 'normalized' => $termIds]);
+            
             if ($termIds === []) {
                 return response()->json([
                     'success' => false,
@@ -899,11 +902,22 @@ class ReportCardController extends Controller
                 ->where('academic_year_id', $request->academic_year_id)
                 ->get();
 
+            \Log::info('Total students in course:', ['count' => $students->count(), 'course_id' => $request->course_id, 'year_id' => $request->academic_year_id]);
+
             $studentsWithFees = [];
             foreach ($students as $student) {
                 // Pass termIds to check fees ONLY for selected terms
                 $paymentStatus = FeePaymentService::getPaymentStatus($student, $termIds);
+                
                 if ($paymentStatus['outstanding'] > 0) {
+                    \Log::debug('Student with outstanding fees:', [
+                        'student_id' => $student->id,
+                        'name' => $student->full_name,
+                        'required_fees' => $paymentStatus['required_fees'],
+                        'total_paid' => $paymentStatus['total_paid'],
+                        'outstanding' => $paymentStatus['outstanding'],
+                    ]);
+                    
                     $studentsWithFees[] = [
                         'id' => $student->id,
                         'full_name' => $student->full_name,
@@ -915,6 +929,12 @@ class ReportCardController extends Controller
                     ];
                 }
             }
+
+            \Log::info('═══ checkOutstandingFeesForGeneration RESULT ═══', [
+                'total_students' => $students->count(),
+                'students_with_fees' => count($studentsWithFees),
+                'term_ids_checked' => $termIds,
+            ]);
 
             return response()->json([
                 'success' => true,

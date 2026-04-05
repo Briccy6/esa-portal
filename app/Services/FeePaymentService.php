@@ -67,15 +67,22 @@ class FeePaymentService
             // If specific term IDs provided, filter by those terms only
             if (!empty($termIds) && is_array($termIds)) {
                 $feeQuery->whereIn('term_id', $termIds);
+                \Log::debug('FeePaymentService: Filtering by term_ids', ['term_ids' => $termIds, 'student_id' => $student->id]);
             } else {
                 // Otherwise, get all fees for this academic year
                 $feeQuery->whereHas('term', function ($query) use ($student) {
                     $query->where('academic_year_id', $student->academic_year_id);
                 });
+                \Log::debug('FeePaymentService: Using all terms for year', ['year_id' => $student->academic_year_id, 'student_id' => $student->id]);
             }
             
             // Execute the query to get course_term_fees records
             $courseTermFees = $feeQuery->get();
+            \Log::debug('FeePaymentService: CourseTermFees fetched', [
+                'student_id' => $student->id,
+                'count' => $courseTermFees->count(),
+                'term_ids_checked' => !empty($termIds) ? $termIds : 'all',
+            ]);
             
             // Sum all required fees from course_term_fees table
             // IMPORTANT: Registration fee should only be counted ONCE per academic year, not per term
@@ -96,6 +103,23 @@ class FeePaymentService
                                  + ($fee->student_card_fee ?? 0);
             }
             
+            // When checking only specific terms (not all terms), check if registration was already paid globally
+            // If it was paid in ANY term (even if not in the selected terms), don't count it again
+            if (!empty($termIds) && is_array($termIds)) {
+                $registrationAlreadyPaid = StudentTransaction::where('student_id', $student->id)
+                                                             ->where('type', 'registration')
+                                                             ->where('status', 'successful')
+                                                             ->exists();
+                
+                if ($registrationAlreadyPaid) {
+                    \Log::debug('FeePaymentService: Registration already paid globally, excluding from required fees', [
+                        'student_id' => $student->id,
+                        'term_ids' => $termIds,
+                    ]);
+                    $registrationFee = 0;
+                }
+            }
+            
             $requiredFees = $registrationFee + $otherFeesTotal;
             
             // ========== PAYMENT QUERY (from student_transactions table) ==========
@@ -112,6 +136,14 @@ class FeePaymentService
             
             // Sum all amount values from student_transactions
             $totalPaid = $transactionQuery->sum('amount');
+            
+            \Log::debug('FeePaymentService: Payment summary', [
+                'student_id' => $student->id,
+                'required_fees' => $requiredFees,
+                'total_paid' => $totalPaid,
+                'outstanding' => max(0, $requiredFees - $totalPaid),
+                'term_ids' => !empty($termIds) ? $termIds : 'all',
+            ]);
             
             // Calculate outstanding balance
             $outstanding = max(0, $requiredFees - $totalPaid);
