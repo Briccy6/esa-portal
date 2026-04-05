@@ -195,6 +195,9 @@ body { background: var(--surface-2); padding: 2.5rem 0 4rem; }
                                     <option value="test">Test</option>
                                     <option value="exam">Exam</option>
                                 </select>
+                                <small id="assessmentTypeInfo" class="form-text d-block mt-2" style="display:none; color: var(--accent); font-weight: 500;">
+                                    <i class="bi bi-info-circle me-1"></i><span id="assessmentTypeLabel"></span>
+                                </small>
                             </div>
                             <div class="col-md-3">
                                 <label for="term_id" class="form-label">
@@ -210,7 +213,7 @@ body { background: var(--surface-2); padding: 2.5rem 0 4rem; }
                         </div>
 
                         <!-- Test Fields -->
-                        <div class="row g-4 mt-2" id="testMarksOutOfRow" style="display:none;">
+                        <div class="row g-4 mt-2" id="testMarksOutOfRow">
                             <div class="col-md-3">
                                 <label for="marks_out_of" class="form-label">
                                     <i class="bi bi-calculator me-1" style="color: var(--accent);"></i>Marks Out Of
@@ -226,7 +229,7 @@ body { background: var(--surface-2); padding: 2.5rem 0 4rem; }
                         </div>
 
                         <!-- Exam Fields -->
-                        <div class="row g-4 mt-2" id="examSelectRow" style="display:none;">
+                        <div class="row g-4 mt-2" id="examSelectRow">
                             <div class="col-md-3">
                                 <label for="exam_id" class="form-label">
                                     <i class="bi bi-file-earmark-text me-1" style="color: var(--accent);"></i>Select Exam
@@ -429,18 +432,86 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // ─── Assessment Type Toggle ────────────────────────────────────────
-    document.getElementById('assessment_type').addEventListener('change', function () {
-        var type = this.value;
-        document.getElementById('testMarksOutOfRow').style.display = type === 'test' ? 'flex' : 'none';
-        document.getElementById('examSelectRow').style.display = type === 'exam' ? 'flex' : 'none';
+    function updateAssessmentTypeFields() {
+        var type = document.getElementById('assessment_type').value;
+        var testRow = document.getElementById('testMarksOutOfRow');
+        var examRow = document.getElementById('examSelectRow');
+        var typeInfo = document.getElementById('assessmentTypeInfo');
+        var typeLabel = document.getElementById('assessmentTypeLabel');
+        
+        console.log('updateAssessmentTypeFields called - Assessment Type:', type);
+        
+        // Show/hide test fields
+        if (testRow) {
+            if (type === 'test') {
+                testRow.style.display = 'flex';
+                testRow.style.visibility = 'visible';
+                testRow.style.opacity = '1';
+                // Set required attribute
+                document.getElementById('marks_out_of').required = true;
+                document.getElementById('test_date').required = true;
+                console.log('Showing test fields');
+            } else {
+                testRow.style.display = 'none';
+            }
+        }
+        
+        // Show/hide exam fields
+        if (examRow) {
+            if (type === 'exam') {
+                examRow.style.display = 'flex';
+                examRow.style.visibility = 'visible';
+                examRow.style.opacity = '1';
+                // Set required attribute
+                document.getElementById('exam_id').required = true;
+                document.getElementById('exam_date').required = true;
+                console.log('Showing exam fields');
+            } else {
+                examRow.style.display = 'none';
+            }
+        }
 
+        // Show assessment type feedback
+        if (typeInfo && typeLabel) {
+            if (type === 'test') {
+                typeLabel.textContent = 'Test selected - Enter marks out of and test date';
+                typeInfo.style.display = 'block';
+            } else if (type === 'exam') {
+                typeLabel.textContent = 'Exam selected - Select exam and enter exam date';
+                typeInfo.style.display = 'block';
+            } else {
+                typeInfo.style.display = 'none';
+            }
+        }
+
+        // Load exams if exam is selected
         if (type === 'exam') {
             document.getElementById('exam_id').innerHTML = '<option value="">Select Exam</option>';
             var termId = document.getElementById('term_id').value;
-            if (termId) loadExams();
+            if (termId) {
+                console.log('Loading exams for term:', termId);
+                loadExams();
+            }
         }
-        updateBtn();
-    });
+        
+        console.log('Assessment type change completed');
+    }
+    
+    // Attach change listener
+    var assessmentTypeSelect = document.getElementById('assessment_type');
+    if (assessmentTypeSelect) {
+        assessmentTypeSelect.addEventListener('change', function () {
+            console.log('assessment_type change event fired, new value:', this.value);
+            updateAssessmentTypeFields();
+            updateBtn();
+        });
+    } else {
+        console.error('Could not find assessment_type element!');
+    }
+    
+    // Initialize field visibility on page load
+    console.log('Initializing form - calling updateAssessmentTypeFields');
+    updateAssessmentTypeFields();
 
     // ─── Term Change → reload exams if needed ─────────────────────────
     document.getElementById('term_id').addEventListener('change', function () {
@@ -501,12 +572,27 @@ document.addEventListener('DOMContentLoaded', function () {
         modalTbody.innerHTML = '';
         modalMsg.innerHTML = '';
 
-        var missing = !branchId || !courseId || !lessonId || !termId || !assessmentType
-            || (assessmentType === 'exam' && (!examId || !examDate))
-            || (assessmentType === 'test' && (!marksOutOf || !testDate));
+        // Validate required fields based on assessment type
+        var missingFields = [];
+        
+        if (!branchId) missingFields.push('Branch');
+        if (!courseId) missingFields.push('Course');
+        if (!lessonId) missingFields.push('Lesson');
+        if (!termId) missingFields.push('Term');
+        if (!assessmentType) missingFields.push('Assessment Type (Test/Exam)');
+        
+        if (assessmentType === 'exam') {
+            if (!examId) missingFields.push('Exam');
+            if (!examDate) missingFields.push('Exam Date');
+        } else if (assessmentType === 'test') {
+            if (!marksOutOf) missingFields.push('Marks Out Of');
+            if (!testDate) missingFields.push('Test Date');
+        }
 
-        if (missing) {
-            modalMsg.innerHTML = '<div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-2"></i>Please fill in all required fields.</div>';
+        if (missingFields.length > 0) {
+            var fieldList = missingFields.map(function(f) { return '<li>' + f + '</li>'; }).join('');
+            modalMsg.innerHTML = '<div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-2"></i><strong>Missing required fields:</strong><ul class="mb-0 mt-2">' + fieldList + '</ul></div>';
+            console.warn('Missing fields:', missingFields);
             return;
         }
 
@@ -634,6 +720,7 @@ document.addEventListener('DOMContentLoaded', function () {
         var saveBtn     = document.getElementById('saveMarksBtn');
         var saveBtnText = document.getElementById('saveBtnText');
         var modalMsg    = document.getElementById('modal-message');
+        var assessmentType = document.getElementById('assessment_type').value;
 
         // Normalise empty inputs to 0
         var invalid = false;
@@ -662,18 +749,34 @@ document.addEventListener('DOMContentLoaded', function () {
         saveBtnText.textContent = 'Saving…';
 
         var formData = new FormData(this);
-        formData.append('branch_id',       document.getElementById('branch_id').value);
-        formData.append('course_id',       document.getElementById('course_id').value);
-        formData.append('lesson_id',       document.getElementById('lesson_id').value);
-        formData.append('term_id',         document.getElementById('term_id').value);
-        formData.append('assessment_type', document.getElementById('assessment_type').value);
+        
+        // Explicitly set the form data to ensure assessment type is correctly transmitted
+        formData.set('branch_id',       document.getElementById('branch_id').value);
+        formData.set('course_id',       document.getElementById('course_id').value);
+        formData.set('lesson_id',       document.getElementById('lesson_id').value);
+        formData.set('term_id',         document.getElementById('term_id').value);
+        formData.set('assessment_type', assessmentType);
 
-        if (document.getElementById('assessment_type').value === 'exam') {
-            formData.append('exam_id',   document.getElementById('exam_id').value);
-            formData.append('exam_date', document.getElementById('exam_date').value);
+        console.log('Form submission - Assessment Type:', assessmentType);
+
+        if (assessmentType === 'exam') {
+            var examId = document.getElementById('exam_id').value;
+            var examDate = document.getElementById('exam_date').value;
+            formData.set('exam_id',   examId);
+            formData.set('exam_date', examDate);
+            console.log('Exam submission - exam_id:', examId, 'exam_date:', examDate);
+        } else if (assessmentType === 'test') {
+            var marksOutOf = document.getElementById('marks_out_of').value;
+            var testDate = document.getElementById('test_date').value;
+            formData.set('marks_out_of', marksOutOf);
+            formData.set('test_date',    testDate);
+            console.log('Test submission - marks_out_of:', marksOutOf, 'test_date:', testDate);
         } else {
-            formData.append('marks_out_of', document.getElementById('marks_out_of').value);
-            formData.append('test_date',    document.getElementById('test_date').value);
+            console.error('No assessment type selected!');
+            modalMsg.innerHTML = '<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i>Please select an assessment type (Test or Exam).</div>';
+            saveBtn.disabled = false;
+            saveBtnText.textContent = 'Save Marks';
+            return;
         }
 
         fetch('{{ route("teacher.marks.store") }}', {
