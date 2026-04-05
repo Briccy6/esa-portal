@@ -765,6 +765,14 @@ body {
         // Only show exam row, but don't load exams yet
         if (type === 'exam') {
             document.getElementById('examSelectRow').style.display = 'flex';
+            // Clear exams when switching to exam type
+            document.getElementById('exam_id').innerHTML = '<option value="">Select Exam</option>';
+            
+            // Load exams only if term is already selected
+            const termId = document.getElementById('term_id').value;
+            if (termId) {
+                loadExams();
+            }
         } else {
             document.getElementById('examSelectRow').style.display = 'none';
             // Clear exams if switching away from exam type
@@ -777,6 +785,9 @@ body {
     document.getElementById('term_id').addEventListener('change', function() {
         const assessmentType = document.getElementById('assessment_type').value;
         const termId = this.value;
+        
+        // Clear exam selection when term changes
+        document.getElementById('exam_id').innerHTML = '<option value="">Select Exam</option>';
         
         // Load exams if exam type is selected AND term is selected
         if (assessmentType === 'exam' && termId) {
@@ -792,10 +803,11 @@ body {
         
         console.log('Loading exams for course:', courseId, 'term:', termId);
         
-        fetch(`/api/course/${courseId}/exams`)
+        // Pass term_id as query parameter
+        fetch(`/api/course/${courseId}/exams?term_id=${termId}`)
             .then(res => res.json())
             .then(data => {
-                console.log('Exams loaded:', data);
+                console.log('Exams loaded for term ' + termId + ':', data);
                 examSelect.innerHTML = '<option value="">Select Exam</option>';
                 if (Array.isArray(data) && data.length > 0) {
                     data.forEach(function(exam) {
@@ -803,8 +815,8 @@ body {
                     });
                     console.log('Exams populated: ' + data.length);
                 } else {
-                    examSelect.innerHTML = '<option value="">No exams available for this course</option>';
-                    console.warn('No exams returned for course');
+                    examSelect.innerHTML = '<option value="">No exams available for this term</option>';
+                    console.warn('No exams returned for this term');
                 }
             })
             .catch(error => {
@@ -1219,35 +1231,7 @@ body {
         updateShowStudentsBtn();
     }
 
-    document.getElementById('assessment_type').addEventListener('change', function() {
-        var type = this.value;
-        document.getElementById('testMarksOutOfRow').style.display = type === 'test' ? 'flex' : 'none';
-        document.getElementById('examSelectRow').style.display = type === 'exam' ? 'flex' : 'none';
-        if (type === 'exam') {
-            loadExams();
-        }
-        updateShowStudentsBtn();
-    });
 
-    function loadExams() {
-        var courseId = document.getElementById('course_id').value;
-        fetch(`/api/course/${courseId}/exams`)
-            .then(res => res.json())
-            .then(data => {
-                var examSelect = document.getElementById('exam_id');
-                examSelect.innerHTML = '<option value="">Select Exam</option>';
-                if (Array.isArray(data) && data.length > 0) {
-                    data.forEach(function(exam) {
-                        examSelect.innerHTML += `<option value="${exam.id}">${exam.title}</option>`;
-                    });
-                }
-            })
-            .catch(error => {
-                document.getElementById('marks-message').innerHTML = `<div class="text-danger">Error loading exams: ${error.message}</div>`;
-            });
-    }
-
-    document.getElementById('showStudentsBtn').addEventListener('click', function() {
         loadStudentsModal();
     });
 

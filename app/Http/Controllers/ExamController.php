@@ -1380,9 +1380,9 @@ class ExamController extends Controller
             // Get all lesson_branch_course records for the selected branch with relationships
             $query = \App\Models\LessonBranchCourse::where('branch_id', $branchId)
                 ->with(['lesson' => function($q) {
-                    $q->select('id', 'title', 'name');
+                    $q->select('id', 'title');
                 }, 'course' => function($q) {
-                    $q->select('id', 'course_name', 'name');
+                    $q->select('id', 'course_name');
                 }, 'teacher' => function($q) {
                     $q->select('id', 'first_name', 'last_name');
                 }]);
@@ -1405,7 +1405,7 @@ class ExamController extends Controller
                 // Add course
                 if ($lbc->course) {
                     if (!isset($courses[$lbc->course->id])) {
-                        $courseName = $lbc->course->course_name ?? $lbc->course->name ?? 'Unknown Course';
+                        $courseName = $lbc->course->course_name;
                         $courses[$lbc->course->id] = [
                             'id' => $lbc->course->id,
                             'name' => $courseName,
@@ -1421,7 +1421,7 @@ class ExamController extends Controller
                     }
                     
                     if ($lbc->lesson) {
-                        $lessonTitle = $lbc->lesson->title ?? $lbc->lesson->name ?? 'Unknown Lesson';
+                        $lessonTitle = $lbc->lesson->title;
                         $lessonData = [
                             'id' => $lbc->lesson->id,
                             'title' => $lessonTitle,

@@ -561,12 +561,21 @@ Route::middleware(['auth:staff'])->prefix('secretary')->name('secretary.')->grou
 
 // API helpers
 Route::get('/api/course/{course}/exams', function($courseId) {
-    $exams = \App\Models\Exam::where('is_active', true)
+    $termId = request()->query('term_id');
+    
+    $query = \App\Models\Exam::where('is_active', true)
         ->whereHas('courses', function($query) use ($courseId) {
             $query->where('courses.id', $courseId);
-        })
-        ->orderBy('title')
-        ->get(['id', 'title']);
+        });
+    
+    // Filter by term if provided
+    if ($termId) {
+        $query->where('term_id', $termId);
+    }
+    
+    $exams = $query->orderBy('title')
+        ->get(['id', 'title', 'term_id']);
+    
     return response()->json($exams);
 });
 
