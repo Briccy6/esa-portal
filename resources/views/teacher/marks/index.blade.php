@@ -1004,6 +1004,13 @@ body {
             } else {
                 var errorMsg = data.message || 'Failed to save marks.';
                 var errorDetails = '';
+                var debugInfo = '';
+                
+                // Add debug information if available
+                if (data.debug) {
+                    debugInfo = '<div class="alert alert-info mt-2"><strong>Debug Info:</strong> ' + data.debug + '</div>';
+                }
+                
                 if (data.errors && typeof data.errors === 'object') {
                     var errorList = [];
                     for (var field in data.errors) {
@@ -1015,7 +1022,16 @@ body {
                         errorDetails = '<ul class="mb-0 mt-2">' + errorList.join('') + '</ul>';
                     }
                 }
-                modalMsg.innerHTML = `<div class="alert alert-danger alert-dismissible fade show"><i class="bi bi-exclamation-circle me-2"></i>${errorMsg}${errorDetails} <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`;
+                
+                modalMsg.innerHTML = `<div class="alert alert-danger alert-dismissible fade show"><i class="bi bi-exclamation-circle me-2"></i><strong>Error:</strong> ${errorMsg}${errorDetails}${debugInfo} <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`;
+                
+                // Log to console for debugging
+                console.error('Marks submission error', {
+                    message: data.message,
+                    errors: data.errors,
+                    debug: data.debug,
+                    fullResponse: data
+                });
             }
         })
         .catch(error => {
@@ -1025,7 +1041,8 @@ body {
             saveBtn.classList.remove('btn-outline-secondary');
             saveBtn.classList.add('btn-success');
             
-            document.getElementById('modal-message').innerHTML = `<div class="alert alert-danger alert-dismissible fade show"><i class="bi bi-exclamation-circle me-2"></i>Error: ${error.message} <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`;
+            console.error('Fetch error:', error);
+            document.getElementById('modal-message').innerHTML = `<div class="alert alert-danger alert-dismissible fade show"><i class="bi bi-exclamation-circle me-2"></i><strong>Error:</strong> ${error.message} <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`;
         });
     });
 

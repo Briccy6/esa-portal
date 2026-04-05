@@ -897,6 +897,45 @@ Route::middleware('auth:teacher')->get('/api/teacher/branch/{branchId}/course/{c
     return response()->json($lessons);
 });
 
+// Teacher marks recording - get students for a specific branch, course and lesson
+Route::middleware('auth:teacher')->get('/api/teacher/branch/{branchId}/course/{courseId}/students', function($branchId, $courseId) {
+    $teacher = auth('teacher')->user();
+    
+    try {
+        // DEBUG: Log the API call
+        \Log::info('Teacher students API called', [
+            'teacher_id' => $teacher->id,
+            'branch_id' => $branchId,
+            'course_id' => $courseId
+        ]);
+
+        // Get students enrolled in this branch and course
+        $students = \App\Models\Student::where('course_id', $courseId)
+            ->where('branch_id', $branchId)
+            ->orderBy('full_name')
+            ->get(['id', 'full_name', 'reg_number']);
+        
+        \Log::info('Students retrieved', [
+            'count' => $students->count(),
+            'branch_id' => $branchId,
+            'course_id' => $courseId
+        ]);
+        
+        return response()->json($students);
+    } catch (\Exception $e) {
+        \Log::error('Error fetching students for marks', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+            'branch_id' => $branchId,
+            'course_id' => $courseId
+        ]);
+        return response()->json([
+            'error' => 'Failed to load students',
+            'message' => $e->getMessage()
+        ], 500);
+    }
+});
+
 Route::get('/dos/dailies', [App\Http\Controllers\DosDailyController::class, 'index'])->name('dos.dailies.index');
 Route::get('/dos/dailies/{daily}', [App\Http\Controllers\DosDailyController::class, 'show'])->name('dos.dailies.show');
 Route::post('/dos/dailies/{daily}/approve', [App\Http\Controllers\DosDailyController::class, 'approve'])->name('dos.dailies.approve');

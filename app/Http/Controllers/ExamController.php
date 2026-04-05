@@ -1370,34 +1370,66 @@ class ExamController extends Controller
     public function getLessonsByCourse($branchId)
     {
         try {
-            // Get all lesson_branch_course records for the selected branch
+            // Get all lesson_branch_course records for the selected branch with teacher details
             $lessonBranchCourses = \App\Models\LessonBranchCourse::where('branch_id', $branchId)
-                ->with(['lesson', 'course'])
+                ->with(['lesson', 'course', 'teacher'])
                 ->get();
 
-            // Build arrays of lessons and courses
-            $lessons = [];
+            // Build arrays
             $courses = [];
+            $lessonsByCourse = []; // courseId => [lessons]
+            $lessonTeacherMap = []; // lessonId => {teacher_id, teacher_name}
 
             foreach ($lessonBranchCourses as $lbc) {
-                if ($lbc->lesson && !isset($lessons[$lbc->lesson->id])) {
-                    $lessons[$lbc->lesson->id] = [
-                        'id' => $lbc->lesson->id,
-                        'title' => $lbc->lesson->title ?? $lbc->lesson->name,
-                    ];
-                }
+                // Add course
                 if ($lbc->course && !isset($courses[$lbc->course->id])) {
                     $courses[$lbc->course->id] = [
                         'id' => $lbc->course->id,
                         'name' => $lbc->course->course_name,
                     ];
                 }
+                
+                // Build lessons by course
+                $courseId = $lbc->course->id;
+                
+                if (!isset($lessonsByCourse[$courseId])) {
+                    $lessonsByCourse[$courseId] = [];
+                }
+                
+                if ($lbc->lesson) {
+                    $lessonData = [
+                        'id' => $lbc->lesson->id,
+                        'title' => $lbc->lesson->title ?? $lbc->lesson->name,
+                    ];
+                    
+                    // Avoid duplicates
+                    $lessonExists = false;
+                    foreach ($lessonsByCourse[$courseId] as $existing) {
+                        if ($existing['id'] == $lessonData['id']) {
+                            $lessonExists = true;
+                            break;
+                        }
+                    }
+                    
+                    if (!$lessonExists) {
+                        $lessonsByCourse[$courseId][] = $lessonData;
+                    }
+                    
+                    // Map lesson to teacher
+                    if ($lbc->teacher && !isset($lessonTeacherMap[$lbc->lesson->id])) {
+                        $lessonTeacherMap[$lbc->lesson->id] = [
+                            'teacher_id' => $lbc->teacher->id,
+                            'teacher_name' => $lbc->teacher->first_name . ' ' . $lbc->teacher->last_name,
+                        ];
+                    }
+                }
             }
 
             return response()->json([
                 'success' => true,
-                'lessons' => array_values($lessons),
                 'courses' => array_values($courses),
+                'lessonsByCourse' => $lessonsByCourse, // courseId => [lessons]
+                'lessonTeachers' => $lessonTeacherMap, // lessonId => {teacher_id, teacher_name}
             ]);
         } catch (\Exception $e) {
             return response()->json([

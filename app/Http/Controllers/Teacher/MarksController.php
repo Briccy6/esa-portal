@@ -41,6 +41,19 @@ public function index()
 
     public function store(Request $request)
     {
+        // DEBUG: Log all incoming request data
+        \Log::info('MarksController::store - Incoming Request Data', [
+            'teacher_id' => auth('teacher')->user()?->id,
+            'branch_id' => $request->branch_id,
+            'course_id' => $request->course_id,
+            'lesson_id' => $request->lesson_id,
+            'term_id' => $request->term_id,
+            'assessment_type' => $request->assessment_type,
+            'students_count' => count($request->students ?? []),
+            'marks_count' => count($request->marks ?? []),
+            'all_request_data' => $request->all()
+        ]);
+
         $validator = \Validator::make($request->all(), [
             'course_id'       => 'required|exists:courses,id',
             'branch_id'       => 'required|exists:branches,id',
@@ -61,9 +74,11 @@ public function index()
         if ($request->term_id) {
             $termExists = \App\Models\Term::where('id', $request->term_id)->exists();
             if (!$termExists) {
+                \Log::error('Term not found', ['term_id' => $request->term_id]);
                 return response()->json([
                     'success' => false,
                     'message' => 'Selected term does not exist',
+                    'debug' => "Term ID {$request->term_id} not found in database",
                     'errors' => ['term_id' => ['The selected term is invalid']]
                 ], 422);
             }
@@ -71,17 +86,24 @@ public function index()
 
         // Ensure term_id is not null or zero
         if (!$request->term_id || $request->term_id == 0) {
+            \Log::error('Term ID missing or zero', ['term_id' => $request->term_id]);
             return response()->json([
                 'success' => false,
                 'message' => 'Term selection is required',
+                'debug' => "Term ID is empty or zero: " . ($request->term_id ?? 'null'),
                 'errors' => ['term_id' => ['Please select a valid term for recording marks']]
             ], 422);
         }
 
         if ($validator->fails()) {
+            \Log::error('Validation failed', [
+                'errors' => $validator->errors()->toArray(),
+                'request_data' => $request->all()
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed',
+                'debug' => 'Validation errors detected',
                 'errors' => $validator->errors()
             ], 422);
         }
@@ -91,18 +113,34 @@ public function index()
             $marksCreated = 0;
             $marksFailed = [];
             
+            \Log::info('Starting marks creation loop', [
+                'teacher_id' => $teacher->id,
+                'students_to_process' => $request->students
+            ]);
+            
             foreach ($request->students as $studentId) {
                 $value = $request->marks[$studentId]['value'] ?? null;
                 
+                // DEBUG: Log each student processing
+                \Log::debug('Processing student mark', [
+                    'student_id' => $studentId,
+                    'mark_value' => $value,
+                    'marks_array' => $request->marks[$studentId] ?? null
+                ]);
+                
                 // Ensure value is provided
                 if ($value === null || $value === '' || !is_numeric($value)) {
-                    $marksFailed[] = "Student ID {$studentId} - No mark value provided";
+                    $errorMsg = "Student ID {$studentId} - No mark value provided (value: " . var_export($value, true) . ")";
+                    $marksFailed[] = $errorMsg;
+                    \Log::warning('Mark value missing or invalid', ['student_id' => $studentId, 'value' => $value]);
                     continue;
                 }
                 
                 // Validate term_id before creating
                 if (!$request->term_id || $request->term_id == 0) {
-                    $marksFailed[] = "Student ID {$studentId} - Invalid term selected";
+                    $errorMsg = "Student ID {$studentId} - Invalid term selected (term_id: {$request->term_id})";
+                    $marksFailed[] = $errorMsg;
+                    \Log::warning('Invalid term ID', ['student_id' => $studentId, 'term_id' => $request->term_id]);
                     continue;
                 }
                 
@@ -131,13 +169,29 @@ public function index()
                     $createData['test_date'] = $request->test_date;
                 }
 
+                \Log::debug('Creating mark with data', ['createData' => $createData]);
+
                 try {
-                    Mark::create($createData);
+                    $mark = Mark::create($createData);
                     $marksCreated++;
+                    \Log::info('Mark created successfully', ['mark_id' => $mark->id, 'student_id' => $studentId]);
                 } catch (\Exception $e) {
-                    $marksFailed[] = "Student ID {$studentId} - " . $e->getMessage();
+                    $errorMsg = "Student ID {$studentId} - " . $e->getMessage();
+                    $marksFailed[] = $errorMsg;
+                    \Log::error('Error creating mark', [
+                        'student_id' => $studentId,
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString(),
+                        'createData' => $createData
+                    ]);
                 }
             }
+            
+            \Log::info('Marks creation completed', [
+                'marksCreated' => $marksCreated,
+                'marksFailed' => count($marksFailed),
+                'failedDetails' => $marksFailed
+            ]);
             
             // Return success if at least one mark was created
             if ($marksCreated > 0) {
@@ -153,16 +207,28 @@ public function index()
                     'marksFailed' => count($marksFailed)
                 ]);
             } else {
+                \Log::error('No marks were created', [
+                    'students_count' => count($request->students),
+                    'failed_count' => count($marksFailed),
+                    'failures' => $marksFailed
+                ]);
                 return response()->json([
                     'success' => false,
                     'message' => 'No marks were saved. ' . implode(", ", $marksFailed),
+                    'debug' => 'Failed to save any marks - check server logs for details',
                     'errors' => ['marks' => $marksFailed]
                 ], 422);
             }
         } catch (\Exception $e) {
+            \Log::error('Unexpected error in marks store', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'request' => $request->all()
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to save marks: ' . $e->getMessage(),
+                'debug' => 'Check server logs for full error trace',
                 'errors' => ['server' => [$e->getMessage()]]
             ], 500);
         }
