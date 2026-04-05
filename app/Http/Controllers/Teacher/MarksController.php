@@ -187,9 +187,18 @@ public function index()
                 'failedDetails' => $marksFailed
             ]);
             
+            // Refresh report cards with new marks
+            if ($marksCreated > 0) {
+                $this->refreshReportCardsForMarks(
+                    $request->course_id,
+                    $request->term_id,
+                    $request->students
+                );
+            }
+            
             // Return success if at least one mark was created
             if ($marksCreated > 0) {
-                $message = "Marks saved successfully for {$marksCreated} student(s)!";
+                $message = "Marks saved successfully for {$marksCreated} student(s)! Report cards have been updated.";
                 if (!empty($marksFailed)) {
                     $message .= " " . count($marksFailed) . " student(s) had issues.";
                 }
@@ -398,6 +407,59 @@ public function index()
                 'message' => 'Failed to update marks: ' . $e->getMessage(),
                 'errors' => ['server' => [$e->getMessage()]]
             ], 500);
+        }
+    }
+
+    /**
+     * Refresh report cards for students after marks are recorded
+     * Removes old aggregated mark data and regenerates it from the marks table
+     */
+    private function refreshReportCardsForMarks($courseId, $termId, $studentIds)
+    {
+        try {
+            $reportCardController = new \App\Http\Controllers\ReportCardController();
+            
+            // Get the academic year for this term
+            $term = \App\Models\Term::find($termId);
+            if (!$term) {
+                \Log::warning('Term not found for report card refresh', ['term_id' => $termId]);
+                return;
+            }
+            
+            // For each student, find and refresh their report cards
+            foreach ($studentIds as $studentId) {
+                // Find all report cards for this student with the same course, year, and term
+                $reportCards = \App\Models\ReportCard::where('student_id', $studentId)
+                    ->where('course_id', $courseId)
+                    ->where('academic_year_id', $term->academic_year_id)
+                    ->where('term_id', $termId)
+                    ->get();
+                
+                foreach ($reportCards as $reportCard) {
+                    // Delete old subjects and test marks
+                    foreach ($reportCard->subjects as $subject) {
+                        $subject->testMarks()->delete();
+                        $subject->delete();
+                    }
+                    
+                    // Regenerate the report card data from marks table
+                    $reportCardController->generateReportCardData($reportCard);
+                    
+                    \Log::info('Report card refreshed with new marks', [
+                        'report_card_id' => $reportCard->id,
+                        'student_id' => $studentId,
+                        'course_id' => $courseId,
+                        'term_id' => $termId
+                    ]);
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::error('Error refreshing report cards', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'course_id' => $courseId,
+                'term_id' => $termId
+            ]);
         }
     }
 }

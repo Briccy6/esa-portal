@@ -130,10 +130,15 @@ class ReportCard extends Model
             ->orderBy('id')
             ->get();
 
-        $total = $cards->count();
-        if ($total === 0) {
+        if ($cards->count() === 0) {
             return;
         }
+
+        // Count total students in this course/year for accurate class size
+        // This ensures positions are accurate even if not all students have had report cards generated
+        $totalStudentsInClass = Student::where('course_id', $courseId)
+            ->where('academic_year_id', $academicYearId)
+            ->count();
 
         $rank = 1;
         foreach ($cards as $i => $card) {
@@ -144,7 +149,7 @@ class ReportCard extends Model
                     $rank = $i + 1;
                 }
             }
-            $card->total_students = $total;
+            $card->total_students = $totalStudentsInClass;
             $card->class_position = $rank;
             $card->saveQuietly();
         }

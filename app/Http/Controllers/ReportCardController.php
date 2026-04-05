@@ -1186,12 +1186,18 @@ class ReportCardController extends Controller
 
     public function generateReportCardData(ReportCard $reportCard)
     {
-        // Get lessons for this course
-        $lessons = Lesson::where('course_id', $reportCard->course_id)->get();
+        // Get lessons for this student's branch and course from lesson_branch_course table
+        // This ensures we only include lessons assigned to the student's specific branch
+        $lessons = \App\Models\LessonBranchCourse::where('course_id', $reportCard->course_id)
+            ->where('branch_id', $reportCard->student->branch_id)
+            ->with('lesson')
+            ->get()
+            ->pluck('lesson');
         
         \Log::info('Processing report card: ' . json_encode([
             'report_card_id' => $reportCard->id,
             'course_id' => $reportCard->course_id,
+            'branch_id' => $reportCard->student->branch_id,
             'lessons_count' => $lessons->count()
         ]));
 

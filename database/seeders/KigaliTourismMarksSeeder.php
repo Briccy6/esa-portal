@@ -268,7 +268,12 @@ class KigaliTourismMarksSeeder extends Seeder
             $subject->delete();
         });
 
-        $lessons = Lesson::where('course_id', $reportCard->course_id)->get();
+        // Get lessons for this student's branch and course from lesson_branch_course table
+        $lessons = \App\Models\LessonBranchCourse::where('course_id', $reportCard->course_id)
+            ->where('branch_id', $reportCard->student->branch_id)
+            ->with('lesson')
+            ->get()
+            ->pluck('lesson');
 
         $totalMarks = 0;
         $subjectCount = 0;
