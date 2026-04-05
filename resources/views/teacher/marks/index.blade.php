@@ -242,7 +242,10 @@ body { background: var(--surface-2); padding: 2.5rem 0 4rem; }
                                 <label for="exam_date" class="form-label">
                                     <i class="bi bi-calendar-event me-1" style="color: var(--accent);"></i>Exam Date
                                 </label>
-                                <input type="date" name="exam_date" id="exam_date" class="form-control">
+                                <input type="date" name="exam_date" id="exam_date" class="form-control" readonly style="background-color: #f8f9fa; cursor: not-allowed;">
+                                <small class="form-text mt-1" style="color: var(--accent);">
+                                    <i class="bi bi-info-circle me-1"></i>Auto-populated from exam details
+                                </small>
                             </div>
                         </div>
 
@@ -462,9 +465,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 examRow.style.display = 'flex';
                 examRow.style.visibility = 'visible';
                 examRow.style.opacity = '1';
-                // Set required attribute
+                // Set required attribute (exam_date is auto-populated, not required)
                 document.getElementById('exam_id').required = true;
-                document.getElementById('exam_date').required = true;
+                document.getElementById('exam_date').required = false;
                 console.log('Showing exam fields');
             } else {
                 examRow.style.display = 'none';
@@ -477,7 +480,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 typeLabel.textContent = 'Test selected - Enter marks out of and test date';
                 typeInfo.style.display = 'block';
             } else if (type === 'exam') {
-                typeLabel.textContent = 'Exam selected - Select exam and enter exam date';
+                typeLabel.textContent = 'Exam selected - Select exam (date will auto-populate)';
                 typeInfo.style.display = 'block';
             } else {
                 typeInfo.style.display = 'none';
@@ -539,7 +542,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 examSelect.innerHTML = '<option value="">Select Exam</option>';
                 if (Array.isArray(data) && data.length > 0) {
                     data.forEach(function (exam) {
-                        examSelect.innerHTML += '<option value="' + exam.id + '">' + exam.title + '</option>';
+                        // Create option with data-date attribute to store the class_date
+                        var option = document.createElement('option');
+                        option.value = exam.id;
+                        option.textContent = exam.title;
+                        option.setAttribute('data-date', exam.class_date);
+                        examSelect.appendChild(option);
                     });
                 } else {
                     examSelect.innerHTML = '<option value="">No exams for this term</option>';
@@ -550,6 +558,23 @@ document.addEventListener('DOMContentLoaded', function () {
                 console.error('Exams error:', err);
             });
     }
+
+    // ─── Auto-populate exam date when exam is selected ────────────────
+    document.getElementById('exam_id').addEventListener('change', function() {
+        var selectedOption = this.options[this.selectedIndex];
+        var examDate = selectedOption.getAttribute('data-date');
+        var examTitle = selectedOption.textContent;
+        
+        if (examDate) {
+            document.getElementById('exam_date').value = examDate;
+            console.log('Auto-populated exam_date for "' + examTitle + '":', examDate);
+        } else {
+            document.getElementById('exam_date').value = '';
+            console.log('Cleared exam_date - no exam selected');
+        }
+        
+        updateBtn();
+    });
 
     // ─── Show Students Button ─────────────────────────────────────────
     document.getElementById('showStudentsBtn').addEventListener('click', function () {
@@ -583,7 +608,7 @@ document.addEventListener('DOMContentLoaded', function () {
         
         if (assessmentType === 'exam') {
             if (!examId) missingFields.push('Exam');
-            if (!examDate) missingFields.push('Exam Date');
+            // Exam date is auto-populated, no need to validate
         } else if (assessmentType === 'test') {
             if (!marksOutOf) missingFields.push('Marks Out Of');
             if (!testDate) missingFields.push('Test Date');
@@ -764,7 +789,7 @@ document.addEventListener('DOMContentLoaded', function () {
             var examDate = document.getElementById('exam_date').value;
             formData.set('exam_id',   examId);
             formData.set('exam_date', examDate);
-            console.log('Exam submission - exam_id:', examId, 'exam_date:', examDate);
+            console.log('Exam submission - exam_id:', examId, 'exam_date:', examDate, '(auto-populated from exam database)');
         } else if (assessmentType === 'test') {
             var marksOutOf = document.getElementById('marks_out_of').value;
             var testDate = document.getElementById('test_date').value;
@@ -822,12 +847,12 @@ document.addEventListener('DOMContentLoaded', function () {
         var termId         = document.getElementById('term_id').value;
         var assessmentType = document.getElementById('assessment_type').value;
         var examId         = document.getElementById('exam_id').value;
-        var examDate       = document.getElementById('exam_date').value;
         var marksOutOf     = document.getElementById('marks_out_of').value;
         var testDate       = document.getElementById('test_date').value;
 
+        // Exam date is auto-populated, so we don't check for it
         var ready = branchId && courseId && lessonId && termId && assessmentType
-            && !(assessmentType === 'exam' && (!examId || !examDate))
+            && !(assessmentType === 'exam' && !examId)
             && !(assessmentType === 'test' && (!marksOutOf || !testDate));
 
         document.getElementById('showStudentsBtn').disabled = !ready;

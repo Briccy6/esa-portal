@@ -2058,9 +2058,22 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function submitGenerateForm(form, courseId, yearId, termIds) {
-        console.log('Submitting form for generation...');
-        // Create a hidden form submission to avoid re-triggering the submit event
+        console.log('Submitting form for generation...', { courseId, yearId, termIds });
+        // Create FormData and explicitly add term IDs to ensure they're included
         const submitForm = new FormData(form);
+        
+        // Remove any existing term_ids entries and add the selected ones
+        // (in case FormData picked up the empty select)
+        const params = form.querySelectorAll('[name="term_ids[]"]');
+        params.forEach(param => submitForm.delete('term_ids[]'));
+        
+        // Explicitly add each selected term ID
+        termIds.forEach(termId => {
+            submitForm.append('term_ids[]', termId);
+        });
+        
+        console.log('FormData with term_ids:', termIds);
+        
         fetch(form.action, {
             method: 'POST',
             headers: {

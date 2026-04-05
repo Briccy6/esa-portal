@@ -574,7 +574,7 @@ Route::get('/api/course/{course}/exams', function($courseId) {
     }
     
     $exams = $query->orderBy('title')
-        ->get(['id', 'title', 'term_id']);
+        ->get(['id', 'title', 'term_id', 'class_date']);
     
     return response()->json($exams);
 });
