@@ -226,9 +226,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const lessonSelect = document.getElementById('lesson_ids');
     const teacherIdInput = document.querySelector('input[name="teacher_id"]');
     
-    // Store lesson-teacher mapping
-    let lessonTeacherMap = {};
-    
     const loadLessonsByCourse = function(branchId) {
         if (!branchId) {
             courseSelect.innerHTML = '';
@@ -241,8 +238,8 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Store lesson-teacher mapping
-                    lessonTeacherMap = data.lessonTeachers || {};
+                    // Store lesson-teacher mapping for auto-population
+                    const lessonTeacherMap = data.lessonTeachers || {};
                     
                     // Clear current options
                     courseSelect.innerHTML = '';
@@ -272,6 +269,18 @@ document.addEventListener('DOMContentLoaded', function() {
                             option.text = lesson.title;
                             lessonSelect.appendChild(option);
                         });
+                        
+                        // Add listener for lesson selection to auto-populate teacher
+                        lessonSelect.addEventListener('change', function() {
+                            const selectedLessonIds = Array.from(this.selectedOptions).map(opt => opt.value);
+                            if (selectedLessonIds.length > 0) {
+                                const firstLessonId = selectedLessonIds[0];
+                                if (lessonTeacherMap[firstLessonId]) {
+                                    teacherIdInput.value = lessonTeacherMap[firstLessonId].teacher_id;
+                                    console.log('Teacher auto-populated:', lessonTeacherMap[firstLessonId].teacher_name);
+                                }
+                            }
+                        }, { once: false });
                     } else {
                         const option = document.createElement('option');
                         option.value = '';
@@ -292,27 +301,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     branchSelect.addEventListener('change', function() {
         loadLessonsByCourse(this.value);
-    });
-    
-    // Update teacher when lesson is selected
-    lessonSelect.addEventListener('change', function() {
-        const selectedLessonIds = Array.from(this.selectedOptions).map(option => option.value);
-        
-        if (selectedLessonIds.length > 0) {
-            const firstLessonId = selectedLessonIds[0];
-            if (lessonTeacherMap[firstLessonId]) {
-                // Auto-populate the teacher field
-                teacherIdInput.value = lessonTeacherMap[firstLessonId].teacher_id;
-                
-                // If there's a select field for teacher, update it
-                const teacherSelect = document.getElementById('teacher_id');
-                if (teacherSelect) {
-                    teacherSelect.value = lessonTeacherMap[firstLessonId].teacher_id;
-                }
-                
-                console.log('Teacher auto-selected:', lessonTeacherMap[firstLessonId].teacher_name);
-            }
-        }
     });
 });
 </script>
