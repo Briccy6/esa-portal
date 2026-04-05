@@ -56,6 +56,7 @@ use App\Http\Controllers\BabyeyiController;
 use App\Http\Controllers\SecretaryAuthController;
 use App\Http\Controllers\ReportCardController;
 use App\Http\Controllers\PublicExamController;
+use App\Http\Controllers\PopulateLessonBranchCourseController;
 use Illuminate\Http\Request;
 
 /*
@@ -1745,6 +1746,12 @@ Route::prefix('resources')->name('public.resources.')->group(function () {
     Route::post('/{resource}/payment', [App\Http\Controllers\PublicResourceController::class, 'processPayment'])->name('payment.process');
     Route::get('/{resource}/payment/callback', [App\Http\Controllers\PublicResourceController::class, 'handlePaymentCallback'])->name('payment.callback');
     Route::get('/{resource}/payment/success', [App\Http\Controllers\PublicResourceController::class, 'paymentSuccess'])->name('payment.success');
+});
+
+// Development: Populate lesson_branch_course table with sample data
+Route::prefix('dev')->name('dev.')->group(function () {
+    Route::get('/populate-lesson-branch-course', [PopulateLessonBranchCourseController::class, 'populate'])->name('populate-lbc');
+    Route::get('/check-lesson-branch-course', [PopulateLessonBranchCourseController::class, 'check'])->name('check-lbc');
 });
 
 // Public Exam Access Routes

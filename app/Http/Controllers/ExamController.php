@@ -1379,13 +1379,20 @@ class ExamController extends Controller
             
             // Get all lesson_branch_course records for the selected branch with relationships
             $query = \App\Models\LessonBranchCourse::where('branch_id', $branchId)
-                ->with(['lesson', 'course', 'teacher', 'branch']);
+                ->with(['lesson' => function($q) {
+                    $q->select('id', 'title', 'name');
+                }, 'course' => function($q) {
+                    $q->select('id', 'course_name', 'name');
+                }, 'teacher' => function($q) {
+                    $q->select('id', 'first_name', 'last_name');
+                }]);
             
             \Log::info("Query count: " . $query->count());
             
             $lessonBranchCourses = $query->get();
             
             \Log::info("LessonBranchCourse records found: " . count($lessonBranchCourses));
+            \Log::info("Full data: " . json_encode($lessonBranchCourses));
 
             // Build arrays
             $courses = [];
@@ -1393,19 +1400,20 @@ class ExamController extends Controller
             $lessonTeacherMap = []; // lessonId => {teacher_id, teacher_name}
 
             foreach ($lessonBranchCourses as $lbc) {
-                \Log::info("Processing LBC: lesson_id={$lbc->lesson_id}, course_id={$lbc->course_id}, branch_id={$lbc->branch_id}");
+                \Log::info("Processing LBC: lesson_id={$lbc->lesson_id}, course_id={$lbc->course_id}, branch_id={$lbc->branch_id}, teacher_id={$lbc->teacher_id}");
                 
                 // Add course
-                if ($lbc->course && !isset($courses[$lbc->course->id])) {
-                    $courses[$lbc->course->id] = [
-                        'id' => $lbc->course->id,
-                        'name' => $lbc->course->course_name ?? $lbc->course->name,
-                    ];
-                    \Log::info("Added course: {$lbc->course->id} - {$lbc->course->course_name}");
-                }
-                
-                // Build lessons by course
                 if ($lbc->course) {
+                    if (!isset($courses[$lbc->course->id])) {
+                        $courseName = $lbc->course->course_name ?? $lbc->course->name ?? 'Unknown Course';
+                        $courses[$lbc->course->id] = [
+                            'id' => $lbc->course->id,
+                            'name' => $courseName,
+                        ];
+                        \Log::info("Added course: {$lbc->course->id} - {$courseName}");
+                    }
+                    
+                    // Build lessons by course
                     $courseId = $lbc->course->id;
                     
                     if (!isset($lessonsByCourse[$courseId])) {
@@ -1413,9 +1421,10 @@ class ExamController extends Controller
                     }
                     
                     if ($lbc->lesson) {
+                        $lessonTitle = $lbc->lesson->title ?? $lbc->lesson->name ?? 'Unknown Lesson';
                         $lessonData = [
                             'id' => $lbc->lesson->id,
-                            'title' => $lbc->lesson->title ?? $lbc->lesson->name,
+                            'title' => $lessonTitle,
                         ];
                         
                         // Avoid duplicates
@@ -1429,34 +1438,41 @@ class ExamController extends Controller
                         
                         if (!$lessonExists) {
                             $lessonsByCourse[$courseId][] = $lessonData;
-                            \Log::info("Added lesson: {$lessonData['id']} to course {$courseId}");
+                            \Log::info("Added lesson: {$lessonData['id']} ({$lessonTitle}) to course {$courseId}");
                         }
                         
                         // Map lesson to teacher
                         if ($lbc->teacher && !isset($lessonTeacherMap[$lbc->lesson->id])) {
+                            $teacherName = $lbc->teacher->first_name . ' ' . $lbc->teacher->last_name;
                             $lessonTeacherMap[$lbc->lesson->id] = [
                                 'teacher_id' => $lbc->teacher->id,
-                                'teacher_name' => $lbc->teacher->first_name . ' ' . $lbc->teacher->last_name,
+                                'teacher_name' => $teacherName,
                             ];
-                            \Log::info("Added teacher mapping: lesson {$lbc->lesson->id} => teacher {$lbc->teacher->id}");
+                            \Log::info("Added teacher mapping: lesson {$lbc->lesson->id} => teacher {$lbc->teacher->id} ({$teacherName})");
                         }
                     }
                 }
             }
 
-            \Log::info("Final response - Courses: " . count($courses) . ", LessonsByCourse: " . json_encode($lessonsByCourse));
+            \Log::info("Final response - Courses: " . count($courses) . ", LessonsByCourse keys: " . json_encode(array_keys($lessonsByCourse)));
 
             return response()->json([
                 'success' => true,
                 'courses' => array_values($courses),
                 'lessonsByCourse' => $lessonsByCourse, // courseId => [lessons]
                 'lessonTeachers' => $lessonTeacherMap, // lessonId => {teacher_id, teacher_name}
+                'debug' => [
+                    'branch_id' => $branchId,
+                    'total_records' => count($lessonBranchCourses),
+                    'course_count' => count($courses),
+                ]
             ]);
         } catch (\Exception $e) {
             \Log::error("getLessonsByCourse error: " . $e->getMessage() . "\n" . $e->getTraceAsString());
             return response()->json([
                 'success' => false,
                 'message' => 'Error fetching lessons and courses: ' . $e->getMessage(),
+                'debug' => ['branch_id' => $branchId],
             ], 500);
         }
     }
