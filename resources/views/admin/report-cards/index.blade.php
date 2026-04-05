@@ -1264,6 +1264,11 @@ document.addEventListener('DOMContentLoaded', function () {
         Array.from(nativeSelect.options).forEach(o => {
             o.selected = selected.has(o.value);
         });
+        const selectedTermIds = Array.from(nativeSelect.selectedOptions).map(o => o.value);
+        console.group('📡 NATIVE SELECT SYNC');
+        console.log('Selected Term IDs in Native Select:', selectedTermIds);
+        console.log('Selected Set:', Array.from(selected));
+        console.groupEnd();
     }
 
     function renderTriggerLabel() {
@@ -1330,9 +1335,12 @@ document.addEventListener('DOMContentLoaded', function () {
     function toggleValue(val) {
         if (selected.has(val)) {
             selected.delete(val);
+            console.log('❌ TERM DESELECTED:', val, 'Label:', getLabel(val));
         } else {
             selected.add(val);
+            console.log('✅ TERM SELECTED:', val, 'Label:', getLabel(val));
         }
+        console.log('📋 CURRENTLY SELECTED TERMS:', Array.from(selected));
         renderAll();
     }
 
@@ -2105,6 +2113,12 @@ document.addEventListener('DOMContentLoaded', function () {
         const yearId = form.querySelector('[name="academic_year_id"]')?.value;
         const termSelect = document.getElementById('termNativeSelect');
         const terms = termSelect ? Array.from(termSelect.selectedOptions).map(function (o) { return o.value; }) : [];
+        console.group('🖨️ PRINT ACTION TRIGGERED');
+        console.log('Course ID:', courseId);
+        console.log('Academic Year ID:', yearId);
+        console.log('Selected Terms:', terms);
+        console.log('Term Count:', terms.length);
+        console.groupEnd();
         if (!courseId || !yearId || terms.length === 0) {
             alert('Select course, academic year, and at least one term.');
             return;
@@ -2114,6 +2128,7 @@ document.addEventListener('DOMContentLoaded', function () {
         params.set('academic_year_id', yearId);
         params.set('download', '1');
         terms.forEach(function (t) { params.append('term_ids[]', t); });
+        console.log('🌐 FINAL URL:', printClassUrl + '?' + params.toString());
         window.location.href = printClassUrl + '?' + params.toString();
     });
 });

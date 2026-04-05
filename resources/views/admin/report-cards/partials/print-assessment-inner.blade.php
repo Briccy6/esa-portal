@@ -141,8 +141,7 @@
                 <td></td>
                 <td></td>
                 <td></td>
-                <td colspan="2">{{ $reportCard->class_position ?? '-' }} out of {{ $reportCard->total_students ?? '-' }}</td>
-                <td></td>
+                <td colspan="2" class="text-center">{{ $reportCard->class_position ?? '-' }} out of {{ $reportCard->total_students ?? '-' }}</td>
             </tr>
 
             <tr class="bg-gray font-bold">

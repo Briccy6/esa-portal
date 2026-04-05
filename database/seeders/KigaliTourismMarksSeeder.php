@@ -294,13 +294,12 @@ class KigaliTourismMarksSeeder extends Seeder
 
             $examMark = 0;
             if ($examMarks->isNotEmpty()) {
-                $totalExamMark = $examMarks->sum('value');
-                $totalExamMax = $examMarks->sum(function ($mark) {
-                    return $mark->exam->total_marks ?? 100;
-                });
-
-                if ($totalExamMax > 0) {
-                    $examMark = ($totalExamMark / $totalExamMax) * 100;
+                // Take only the first exam mark and normalize to 100
+                $firstExamMark = $examMarks->first();
+                $totalExamMarks = $firstExamMark->exam->total_marks ?? 100;
+                
+                if ($totalExamMarks > 0) {
+                    $examMark = ($firstExamMark->value / $totalExamMarks) * 100;
                 }
             }
 

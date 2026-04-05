@@ -90,13 +90,15 @@ class ReportCardController extends Controller
 
         $termIds = $this->normalizeTermIds($request);
         
-        \Log::info('consolidatedReportCards - Normalized term IDs:', [
-            'raw_input' => $request->input('term_ids'),
-            'normalized_term_ids' => $termIds,
+        \Log::info('═══ consolidatedReportCards START ═══');
+        \Log::info('Request Input:', [
             'student_id' => $request->student_id,
             'course_id' => $request->course_id,
-            'academic_year_id' => $request->academic_year_id
+            'academic_year_id' => $request->academic_year_id,
+            'term_ids_raw' => $request->input('term_ids'),
+            'term_id_raw' => $request->input('term_id'),
         ]);
+        \Log::info('Normalized term IDs:', ['normalized' => $termIds]);
 
         $query = ReportCard::query()
             ->where('student_id', $request->integer('student_id'))
@@ -120,10 +122,11 @@ class ReportCardController extends Controller
             ->sortBy(fn (ReportCard $rc) => $rc->term?->start_date?->timestamp ?? $rc->term_id)
             ->values();
         
-        \Log::info('consolidatedReportCards - Query results:', [
+        \Log::info('Query Results:', [
             'count' => $results->count(),
-            'term_ids_found' => $results->pluck('term_id')->all()
+            'term_ids_found' => $results->pluck('term_id')->all(),
         ]);
+        \Log::info('═══ consolidatedReportCards END ═══');
 
         return $results;
     }
@@ -155,14 +158,26 @@ class ReportCardController extends Controller
      */
     protected function buildConsolidatedAssessmentMatrix(Collection $reportCards): array
     {
+        \Log::info('🔨 buildConsolidatedAssessmentMatrix - Start');
+        \Log::info('Input Report Cards:', [
+            'count' => $reportCards->count(),
+            'terms' => $reportCards->pluck('term_id')->all(),
+        ]);
+        
         $terms = $reportCards->map(fn (ReportCard $rc) => [
             'id' => (int) $rc->term_id,
             'name' => $rc->term?->name ?? 'Term #'.$rc->term_id,
             'report_card' => $rc,
         ])->values()->all();
+        
+        \Log::info('Terms for matrix:', $terms);
 
         $rowMap = [];
         foreach ($reportCards as $rc) {
+            \Log::info("Processing ReportCard for Term {$rc->term_id}:", [
+                'subjects_count' => $rc->subjects->count(),
+                'subject_list' => $rc->subjects->pluck('subject_name')->all(),
+            ]);
             foreach ($rc->subjects as $sub) {
                 $key = $sub->lesson_id ? 'l'.$sub->lesson_id : 'n'.md5((string) $sub->subject_name);
                 if (! isset($rowMap[$key])) {
@@ -176,6 +191,12 @@ class ReportCardController extends Controller
             }
         }
         uasort($rowMap, fn ($a, $b) => strcmp($a['sort'], $b['sort']));
+        
+        \Log::info('RowMap after sorting:', [
+            'count' => count($rowMap),
+            'keys' => array_keys($rowMap),
+            'subjects' => array_column($rowMap, 'competence_title'),
+        ]);
 
         $rows = [];
         foreach ($rowMap as $key => $meta) {
@@ -194,6 +215,12 @@ class ReportCardController extends Controller
                         'total' => $this->formatMarkForMatrix($sub->total_mark),
                         'obs' => ($sub->grade === 'A' || $sub->grade === 'B' ? 'C' : 'NYC'),
                     ];
+                    \Log::debug("Subject {$meta['competence_title']} - Term {$tid}:", [
+                        'raw_exam_mark' => $sub->exam_mark,
+                        'raw_test_average' => $sub->test_average,
+                        'raw_total_mark' => $sub->total_mark,
+                        'formatted_marks' => $byTermId[$tid],
+                    ]);
                 } else {
                     $byTermId[$tid] = [
                         'test' => '—',
@@ -201,6 +228,7 @@ class ReportCardController extends Controller
                         'total' => '—',
                         'obs' => '—',
                     ];
+                    \Log::debug("Subject {$meta['competence_title']} - Term {$tid}: NOT FOUND");
                 }
             }
             $rows[] = [
@@ -285,14 +313,52 @@ class ReportCardController extends Controller
             abort(404);
         }
 
-        if ($reportCards->count() === 1) {
+        // Get the requested term IDs - if only 1 term was requested, use single report view
+        $termIds = $this->normalizeTermIds($request);
+        
+        \Log::info('═══ printConsolidated START ═══');
+        \Log::info('Request params:', [
+            'student_id' => $request->student_id,
+            'course_id' => $request->course_id,
+            'academic_year_id' => $request->academic_year_id,
+            'term_ids_requested' => $termIds,
+            'report_cards_count' => $reportCards->count(),
+        ]);
+        
+        if ($reportCards->count() === 1 && count($termIds) <= 1) {
+            \Log::info('Routing to single report print (only 1 term, 1 report card)');
             return $this->printReport($reportCards->first());
         }
+        
+        \Log::info('Using consolidated print (multiple terms or partial data)');
+        
+        // Log detailed subject and marks data
+        foreach ($reportCards as $rc) {
+            \Log::info("Report Card - Term {$rc->term_id}:", [
+                'subjects_count' => $rc->subjects->count(),
+                'subject_names' => $rc->subjects->pluck('subject_name')->all(),
+            ]);
+            foreach ($rc->subjects as $subject) {
+                \Log::info("  Subject: {$subject->subject_name}", [
+                    'exam_mark' => $subject->exam_mark,
+                    'test_average' => $subject->test_average,
+                    'total_mark' => $subject->total_mark,
+                    'test_marks_count' => $subject->testMarks->count(),
+                ]);
+            }
+        }
+        \Log::info('═══ printConsolidated CONTINUE ═══');
 
         $schoolInfo = SchoolInformation::getActive();
         $assessmentMatrix = $this->buildConsolidatedAssessmentMatrix($reportCards);
-
-        ini_set('memory_limit', '256M');
+        
+        \Log::info('Assessment Matrix Compiled:', [
+            'terms_count' => count($assessmentMatrix['terms']),
+            'terms' => $assessmentMatrix['terms'],
+            'rows_count' => count($assessmentMatrix['rows']),
+            'first_row_sample' => count($assessmentMatrix['rows']) > 0 ? $assessmentMatrix['rows'][0] : null,
+        ]);
+        \Log::info('═══ printConsolidated COMPLETE ═══');
 
         $pdf = Pdf::loadView('admin.report-cards.print-consolidated', compact(
             'reportCards',
@@ -1186,6 +1252,16 @@ class ReportCardController extends Controller
 
     public function generateReportCardData(ReportCard $reportCard)
     {
+        \Log::info('═══ generateReportCardData START ═══');
+        \Log::info('Generating report card data for:', [
+            'report_card_id' => $reportCard->id,
+            'student_id' => $reportCard->student_id,
+            'student_name' => $reportCard->student->full_name ?? 'Unknown',
+            'course_id' => $reportCard->course_id,
+            'term_id' => $reportCard->term_id,
+            'branch_id' => $reportCard->student->branch_id,
+        ]);
+        
         // Get lessons for this student's branch and course from lesson_branch_course table
         // This ensures we only include lessons assigned to the student's specific branch
         $lessons = \App\Models\LessonBranchCourse::where('course_id', $reportCard->course_id)
@@ -1238,18 +1314,25 @@ class ReportCardController extends Controller
             // Calculate exam mark (normalized to 100)
             $examMark = 0;
             if ($examMarks->isNotEmpty()) {
-                $totalExamMark = $examMarks->sum('value');
-                $totalExamMax = $examMarks->sum('marks_out_of');
+                // For exam marks, take the first exam mark (exams are typically 1 per subject per term)
+                $firstExamMark = $examMarks->first();
                 
-                if ($totalExamMax > 0) {
-                    $examMark = ($totalExamMark / $totalExamMax) * 100;
+                // Get total_marks from the exam relationship
+                $examTotalMarks = $firstExamMark->exam ? $firstExamMark->exam->total_marks : 100;
+                
+                // Always normalize to 100-point scale
+                if ($examTotalMarks && $examTotalMarks > 0) {
+                    $examMark = ($firstExamMark->value / $examTotalMarks) * 100;
+                } else {
+                    // If no total_marks, assume it's already on 0-100 scale
+                    $examMark = (float) $firstExamMark->value;
                 }
                 
                 \Log::info('Exam marks calculated: ' . json_encode([
                     'lesson_id' => $lesson->id,
                     'exam_marks_count' => $examMarks->count(),
-                    'total_exam_mark' => $totalExamMark,
-                    'total_exam_max' => $totalExamMax,
+                    'first_exam_value' => $firstExamMark->value,
+                    'exam_total_marks' => $examTotalMarks,
                     'normalized_exam_mark' => $examMark
                 ]));
             }
@@ -1331,6 +1414,7 @@ class ReportCardController extends Controller
                 'subject_count' => $subjectCount
             ]));
         }
+        \Log::info('═══ generateReportCardData END ═══');
         // Class position is computed in recalculatePositionsForCohort() after generation (store / bulk).
     }
 
