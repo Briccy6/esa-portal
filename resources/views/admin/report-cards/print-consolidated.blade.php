@@ -146,14 +146,18 @@
                 <tr class="bg-yellow" style="font-weight: bold;">
                     <td colspan="3" class="text-left">POSITION</td>
                     @foreach($terms as $t)
-                        <td colspan="3">{{ $positionByTerm[$t['id']] ?? '—' }}</td>
+                        <td></td>
+                        <td></td>
+                        <td class="text-center">{{ $positionByTerm[$t['id']] ?? '—' }}</td>
                     @endforeach
                 </tr>
-                <tr class="bg-gray">
+                <tr class="bg-gray" style="font-weight: bold;">
                     <td colspan="3" class="text-left">Percentage %</td>
                     @foreach($terms as $t)
                         @php $avg = $averageByTerm[$t['id']] ?? null; @endphp
-                        <td colspan="3">{{ $avg !== null ? number_format((float) $avg, 1).'%' : '—' }}</td>
+                        <td></td>
+                        <td></td>
+                        <td>{{ $avg !== null ? number_format((float) $avg, 1).'%' : '—' }}</td>
                     @endforeach
                 </tr>
             @endif

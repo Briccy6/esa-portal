@@ -999,7 +999,17 @@ class ReportCardController extends Controller
         ]);
 
         $termIds = $this->normalizeTermIds($request);
+        
+        \Log::info('═══ generateForClass START ═══');
+        \Log::info('Parameters:', [
+            'course_id' => $request->course_id,
+            'academic_year_id' => $request->academic_year_id,
+            'term_ids_requested' => $termIds,
+            'term_count' => count($termIds),
+        ]);
+        
         if ($termIds === []) {
+            \Log::warning('No terms selected');
             return redirect()->back()
                 ->withErrors(['term_ids' => 'Select at least one term.']);
         }
@@ -1007,17 +1017,23 @@ class ReportCardController extends Controller
         $students = Student::where('course_id', $request->course_id)
             ->where('academic_year_id', $request->academic_year_id)
             ->get();
+        
+        \Log::info('Students in class:', ['count' => $students->count()]);
 
         $generated = 0;
         $skipped = 0;
         $skippedFees = 0;
 
         foreach ($termIds as $termId) {
+            \Log::info("Processing Term ID: {$termId}");
+            $termName = \App\Models\Term::find($termId)?->name ?? "Term #{$termId}";
+            \Log::info("  Term Name: {$termName}");
+            
             foreach ($students as $student) {
                 // Check if student has outstanding fees for the selected term(s)
                 $paymentStatus = FeePaymentService::getPaymentStatus($student, [$termId]);
                 if ($paymentStatus['outstanding'] > 0) {
-                    \Log::info("Report card generation skipped for student {$student->id} ({$student->full_name}): Outstanding fees: RWF " . number_format($paymentStatus['outstanding'], 2));
+                    \Log::info("    Student {$student->id} ({$student->full_name}): SKIPPED - Outstanding fees RWF " . number_format($paymentStatus['outstanding'], 2));
                     $skippedFees++;
                     continue;
                 }
@@ -1037,8 +1053,10 @@ class ReportCardController extends Controller
                     ]);
                     $this->generateReportCardData($reportCard);
                     $generated++;
+                    \Log::info("    Student {$student->id} ({$student->full_name}): CREATED report card #{$reportCard->id}");
                 } else {
                     $skipped++;
+                    \Log::info("    Student {$student->id} ({$student->full_name}): SKIPPED - Already exists");
                 }
             }
 
@@ -1047,6 +1065,7 @@ class ReportCardController extends Controller
                 (int) $request->academic_year_id,
                 (int) $termId
             );
+            \Log::info("  Term {$termId} positions recalculated");
         }
 
         $termCount = count($termIds);
@@ -1057,6 +1076,14 @@ class ReportCardController extends Controller
         if ($skippedFees > 0) {
             $message .= " Skipped {$skippedFees} student(s) with outstanding fees.";
         }
+        
+        \Log::info('═══ generateForClass END ═══');
+        \Log::info('Summary:', [
+            'generated' => $generated,
+            'skipped' => $skipped,
+            'skipped_fees' => $skippedFees,
+            'message' => $message
+        ]);
 
         return redirect()->back()
             ->with('success', $message);
@@ -1064,6 +1091,14 @@ class ReportCardController extends Controller
 
    public function printReport(ReportCard $reportCard)
 {
+    \Log::info('🖨️ printReport (SINGLE CARD):', [
+        'report_card_id' => $reportCard->id,
+        'student_id' => $reportCard->student_id,
+        'student_name' => $reportCard->student->full_name ?? 'Unknown',
+        'term_id' => $reportCard->term_id,
+        'term_name' => $reportCard->term->name ?? 'Unknown',
+    ]);
+    
     $reportCard->load([
         'student',
         'course',
@@ -1109,14 +1144,16 @@ class ReportCardController extends Controller
 
         $termIds = $this->normalizeTermIds($request);
         
-        \Log::info('printClassReports - Normalized term IDs:', [
-            'raw_input' => $request->input('term_ids'),
-            'normalized_term_ids' => $termIds,
+        \Log::info('═══ printClassReports START ═══');
+        \Log::info('Request parameters:', [
             'course_id' => $request->course_id,
-            'academic_year_id' => $request->academic_year_id
+            'academic_year_id' => $request->academic_year_id,
+            'term_ids_requested' => $termIds,
+            'download' => $request->input('download'),
         ]);
         
         if ($termIds === []) {
+            \Log::warning('No terms specified in printClassReports');
             return redirect()->back()
                 ->withErrors(['term_ids' => 'Select at least one term.']);
         }
@@ -1139,12 +1176,18 @@ class ReportCardController extends Controller
             ->select('report_cards.*')
             ->get();
         
-        \Log::info('printClassReports - Query results:', [
-            'count' => $reportCards->count(),
-            'term_ids_found' => $reportCards->pluck('term_id')->unique()->values()->all()
+        \Log::info('Print query results:', [
+            'total_records' => $reportCards->count(),
+            'terms_found' => $reportCards->pluck('term_id')->unique()->sort()->values()->all(),
+            'students_found' => $reportCards->pluck('student.full_name')->unique()->values()->all(),
         ]);
+        
+        foreach ($reportCards->groupBy('term_id') as $termId => $cardsForTerm) {
+            \Log::info("  Term {$termId}: " . $cardsForTerm->count() . " students");
+        }
 
         if ($reportCards->isEmpty()) {
+            \Log::warning('No approved report cards found', ['params' => $request->all()]);
             return redirect()->back()
                 ->with('error', 'No approved report cards found for the selected course, year, and term(s).');
         }
@@ -1163,6 +1206,14 @@ class ReportCardController extends Controller
         $academicYear = AcademicYear::find($request->academic_year_id);
         $termsSlug = count($termIds) > 1 ? 'terms-'.implode('-', $termIds) : 'term-'.$termIds[0];
         $filename = 'class-reports-'.Str::slug($course->course_name).'-'.$academicYear->year.'-'.$termsSlug.'.pdf';
+        
+        \Log::info('═══ printClassReports COMPLETE ═══');
+        \Log::info('PDF generated:', [
+            'filename' => $filename,
+            'total_pages' => $reportCards->count(),
+            'terms_in_pdf' => $reportCards->pluck('term_id')->unique()->sort()->values()->all(),
+            'download' => $request->boolean('download') ? 'Yes (download)' : 'No (stream)',
+        ]);
 
         if ($request->boolean('download')) {
             return $pdf->download($filename);

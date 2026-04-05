@@ -93,7 +93,6 @@
             <td class="bg-gray">AVG</td>
             <td class="bg-gray">A.A</td>
             <td class="bg-gray">R.E</td>
-            <td class="bg-gray">Comments</td>
         </tr>
     </thead>
     <tbody>
@@ -110,7 +109,7 @@
                     <td class="font-bold">{{ $subject->total_mark ?? '-' }}</td>
                     <td class="font-bold">{{ number_format($subject->total_mark ?? 0, 2) }}%</td>
                     <td class="font-bold">{{ $subject->grade === 'A' || $subject->grade === 'B' ? 'C' : 'NYC' }}</td>
-                    <td class="font-bold">{{ $subject->comments ?? '-' }}</td>
+
                 </tr>
             @endforeach
         @else
@@ -132,12 +131,10 @@
                 <td class="font-bold">{{ number_format($reportCard->subjects->sum('total_mark'), 1) }}</td>
                 <td class="font-bold">{{ number_format($reportCard->subjects->sum('total_mark'), 1) }}%</td>
                 <td class="font-bold">{{ $reportCard->average_marks >= 50 ? 'C' : 'NYC' }}</td>
-                <td></td>
             </tr>
 
             <tr class="bg-yellow font-bold">
                 <td colspan="5" class="text-left">POSITION</td>
-                <td></td>
                 <td></td>
                 <td></td>
                 <td></td>
@@ -146,9 +143,8 @@
 
             <tr class="bg-gray font-bold">
                 <td colspan="5" class="text-left">Percentage %</td>
-                <td>100</td>
-                <td>100</td>
-                <td>100</td>
+                <td>—</td>
+                <td>—</td>
                 <td class="font-bold">{{ number_format($reportCard->average_marks, 1) }}%</td>
                 <td></td>
                 <td></td>
@@ -156,25 +152,11 @@
         @endif
 
         <tr class="bg-white font-bold">
-            <td colspan="5" class="text-left">Class Trainer's Comments & Signature</td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
+            <td colspan="10" class="text-left">Class Trainer's Comments & Signature</td>
         </tr>
 
         <tr class="bg-white font-bold">
-            <td colspan="5" class="text-left">Parents signature</td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
+            <td colspan="10" class="text-left">Parents signature</td>
         </tr>
     </tbody>
 </table>
