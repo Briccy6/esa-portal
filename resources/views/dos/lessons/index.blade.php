@@ -403,6 +403,10 @@
 <script>
 let assignmentRowCount = 1;
 
+// Store branches and teachers data for use in JavaScript
+const branchesData = {!! json_encode($branches ?? \App\Models\Branch::all()) !!};
+const teachersData = {!! json_encode(\App\Models\Teacher::all()) !!};
+
 function openAssignModal(lessonId, lessonTitle) {
     document.getElementById('lessonIdInput').value = lessonId;
     document.getElementById('selectedLessonName').textContent = lessonTitle;
@@ -411,23 +415,32 @@ function openAssignModal(lessonId, lessonTitle) {
     fetch(`/dos/lessons/${lessonId}/assignments`)
         .then(response => response.json())
         .then(data => {
-            let currentHtml = '';
             let currentAssignmentsDiv = document.getElementById('currentAssignments');
             let currentAssignmentsFormDiv = document.getElementById('currentAssignmentsForm');
             
             if (data.assignments && data.assignments.length > 0) {
                 let formHtml = '';
                 data.assignments.forEach((assignment, index) => {
+                    // Build branch options
+                    let branchOptions = '<option value="">Select Branch</option>';
+                    branchesData.forEach(branch => {
+                        const selected = assignment.branch_id == branch.id ? 'selected' : '';
+                        branchOptions += `<option value="${branch.id}" ${selected}>${branch.name}</option>`;
+                    });
+                    
+                    // Build teacher options
+                    let teacherOptions = '<option value="">Select Teacher (Optional)</option>';
+                    if (assignment.teacher_id) {
+                        teacherOptions += `<option value="${assignment.teacher_id}" selected>${assignment.teacher_name || 'No Teacher'}</option>`;
+                    }
+                    
                     formHtml += `
                         <div class="assignment-item current-assignment" data-assignment-id="${assignment.id}">
                             <div class="row">
                                 <div class="col-md-4">
                                     <label class="form-label">Branch:</label>
                                     <select name="current_assignments[${index}][branch_id]" class="form-select branch-select-current" data-assignment-id="${assignment.id}" required>
-                                        <option value="">Select Branch</option>
-                                        @foreach($branches ?? \App\Models\Branch::all() as $branch)
-                                            <option value="{{ $branch->id }}" ${assignment.branch_id == {{ $branch->id }} ? 'selected' : ''}>{{ $branch->name }}</option>
-                                        @endforeach
+                                        ${branchOptions}
                                     </select>
                                 </div>
                                 <div class="col-md-4">
@@ -439,8 +452,7 @@ function openAssignModal(lessonId, lessonTitle) {
                                 <div class="col-md-3">
                                     <label class="form-label">Teacher:</label>
                                     <select name="current_assignments[${index}][teacher_id]" class="form-select teacher-select-current" data-assignment-id="${assignment.id}">
-                                        <option value="">Select Teacher (Optional)</option>
-                                        <option value="${assignment.teacher_id}" selected>${assignment.teacher_name || 'No Teacher'}</option>
+                                        ${teacherOptions}
                                     </select>
                                 </div>
                                 <div class="col-md-1 d-flex align-items-end">
@@ -468,16 +480,18 @@ function openAssignModal(lessonId, lessonTitle) {
         });
     
     // Reset new assignments form
+    let branchOptions = '<option value="">Select Branch</option>';
+    branchesData.forEach(branch => {
+        branchOptions += `<option value="${branch.id}">${branch.name}</option>`;
+    });
+    
     document.getElementById('newAssignments').innerHTML = `
         <div class="assignment-item">
             <div class="row">
                 <div class="col-md-4">
                     <label class="form-label">Branch:</label>
                     <select name="assignments[0][branch_id]" class="form-select branch-select" required>
-                        <option value="">Select Branch</option>
-                        @foreach($branches ?? \App\Models\Branch::all() as $branch)
-                            <option value="{{ $branch->id }}">{{ $branch->name }}</option>
-                        @endforeach
+                        ${branchOptions}
                     </select>
                 </div>
                 <div class="col-md-4">
@@ -505,15 +519,19 @@ function addAssignmentRow() {
     const container = document.getElementById('newAssignments');
     const newRow = document.createElement('div');
     newRow.className = 'assignment-item';
+    
+    // Build branch options
+    let branchOptions = '<option value="">Select Branch</option>';
+    branchesData.forEach(branch => {
+        branchOptions += `<option value="${branch.id}">${branch.name}</option>`;
+    });
+    
     newRow.innerHTML = `
         <div class="row">
             <div class="col-md-4">
                 <label class="form-label">Branch:</label>
                 <select name="assignments[${assignmentRowCount}][branch_id]" class="form-select branch-select" required>
-                    <option value="">Select Branch</option>
-                    @foreach($branches ?? \App\Models\Branch::all() as $branch)
-                        <option value="{{ $branch->id }}">{{ $branch->name }}</option>
-                    @endforeach
+                    ${branchOptions}
                 </select>
             </div>
             <div class="col-md-4">

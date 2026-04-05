@@ -11,6 +11,8 @@ use App\Models\Mark;
 use App\Models\Student;
 use App\Models\Lesson;
 use App\Models\Grade;
+use App\Models\LessonBranchCourse;
+use App\Models\Term;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 

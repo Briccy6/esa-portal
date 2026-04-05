@@ -35,14 +35,14 @@
                         <div class="col-md-6">
                             <div class="bg-light rounded p-3">
                                 <div class="row align-items-center">
-                                    <div class="col-8">
+                                    <div class="col-7">
                                         <p class="mb-1"><strong>NAME:</strong> {{ $student->full_name }}</p>
                                         <p class="mb-1"><strong>REG NO:</strong> {{ $student->reg_number ?? 'ESAHEG022025-2026' }}</p>
                                         <p class="mb-1"><strong>CLASS:</strong> {{ $student->course->course_name ?? 'N/A' }}</p>
                                         <p class="mb-1"><strong>YEAR:</strong> {{ $student->academicYear->year ?? '2025-2026' }}</p>
                                     </div>
-                                    <div class="flex-shrink-0 ms-3">
-                                        <div class="bg-secondary bg-opacity-10 rounded p-2 text-center" style="width: 90px;">
+                                    <div class="flex-shrink-0 ms-2">
+                                        <div class="bg-secondary bg-opacity-10 rounded p-2 text-center" style="width: 120px; height: 140px; display: flex; align-items: center; justify-content: center;">
                                             @if($student->passport_photo)
                                                 @php
                                                     $photoPath = $student->passport_photo;
@@ -54,17 +54,19 @@
                                                     }
                                                 @endphp
                                                 @if(str_contains($photoPath, 'http'))
-                                                    <img src="{{ $photoPath }}" alt="Student Photo" style="height: 60px; width: 60px; object-fit: cover; border-radius: 4px;">
+                                                    <img src="{{ $photoPath }}" alt="Student Photo" style="height: 110px; width: 100%; max-width: 110px; object-fit: cover; border-radius: 6px; border: 2px solid #dee2e6;">
                                                 @else
-                                                    <img src="{{ asset($photoPath) }}" alt="Student Photo" style="height: 60px; width: 60px; object-fit: cover; border-radius: 4px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                                                    <div style="display: none;">
-                                                        <i class="fas fa-user-circle fs-2 text-secondary"></i>
-                                                        <p class="mb-0 small text-muted mt-1">Student Photo</p>
+                                                    <img src="{{ asset($photoPath) }}" alt="Student Photo" style="height: 110px; width: 100%; max-width: 110px; object-fit: cover; border-radius: 6px; border: 2px solid #dee2e6;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                                    <div style="display: none; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%;">
+                                                        <i class="fas fa-user-circle fs-1 text-secondary"></i>
+                                                        <p class="mb-0 small text-muted mt-2" style="font-size: 0.65rem;">No Photo</p>
                                                     </div>
                                                 @endif
                                             @else
-                                                <i class="fas fa-user-circle fs-2 text-secondary"></i>
-                                                <p class="mb-0 small text-muted mt-1">Student Photo</p>
+                                                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%;">
+                                                    <i class="fas fa-user-circle fs-1 text-secondary"></i>
+                                                    <p class="mb-0 small text-muted mt-2" style="font-size: 0.65rem;">No Photo</p>
+                                                </div>
                                             @endif
                                         </div>
                                     </div>
@@ -208,6 +210,78 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Annual Summary with Term Averages -->
+            @if(isset($stats['term_summaries']) && count($stats['term_summaries']) > 0)
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-gradient-warning text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-calendar-alt me-2"></i>Annual Summary - Term Breakdown
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Annual Average Highlight -->
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <div class="bg-warning bg-opacity-10 rounded p-4 text-center" style="border-left: 5px solid #ffc107;">
+                                <h6 class="text-muted mb-2">ANNUAL AVERAGE (All Terms)</h6>
+                                <h2 class="fw-bold text-dark" style="font-size: 2.5rem;">{{ number_format($stats['annual_average'], 1) }}%</h2>
+                                <p class="mb-0 text-muted">
+                                    Based on {{ count($stats['term_summaries']) }} term(s)
+                                    @php
+                                        $annualGrade = 'F';
+                                        if ($stats['annual_average'] >= 80) $annualGrade = 'A';
+                                        elseif ($stats['annual_average'] >= 70) $annualGrade = 'B';
+                                        elseif ($stats['annual_average'] >= 60) $annualGrade = 'C';
+                                        elseif ($stats['annual_average'] >= 50) $annualGrade = 'D';
+                                    @endphp
+                                    <span class="badge bg-{{ $annualGrade == 'A' ? 'success' : ($annualGrade == 'B' ? 'info' : ($annualGrade == 'C' ? 'warning' : ($annualGrade == 'D' ? 'secondary' : 'danger'))) }} ms-2" style="font-size: 0.85rem;">Grade {{ $annualGrade }}</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Term-wise Breakdown -->
+                    <div class="row">
+                        @foreach($stats['term_summaries'] as $termName => $termData)
+                            <div class="col-md-6 mb-3">
+                                <div class="card border-1 h-100">
+                                    <div class="card-header bg-light border-bottom">
+                                        <h6 class="mb-0 fw-semibold">{{ $termName }}</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row text-center">
+                                            <div class="col-6 border-end">
+                                                <h6 class="text-muted small">Term Average</h6>
+                                                <h4 class="fw-bold text-primary">{{ number_format($termData['average'], 1) }}%</h4>
+                                            </div>
+                                            <div class="col-6">
+                                                <h6 class="text-muted small">Assessments</h6>
+                                                <h4 class="fw-bold text-info">{{ $termData['count'] }}</h4>
+                                            </div>
+                                        </div>
+                                        <div class="row text-center mt-3 pt-3 border-top">
+                                            <div class="col-4">
+                                                <small class="text-muted d-block">Exams</small>
+                                                <span class="fw-semibold">{{ $termData['exam_count'] }}</span>
+                                            </div>
+                                            <div class="col-4">
+                                                <small class="text-muted d-block">Tests</small>
+                                                <span class="fw-semibold">{{ $termData['test_count'] }}</span>
+                                            </div>
+                                            <div class="col-4">
+                                                <small class="text-muted d-block">Range</small>
+                                                <span class="fw-semibold">{{ number_format($termData['lowest'], 1) }}-{{ number_format($termData['highest'], 1) }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+            @endif
 
             <!-- Subject-wise Performance -->
             @foreach($marksByCourse as $courseId => $courseMarks)

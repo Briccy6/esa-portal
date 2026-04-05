@@ -71,15 +71,25 @@ class FeePaymentService
             $courseTermFees = $feeQuery->get();
             
             // Sum all required fees from course_term_fees table
-            // From individual columns: registration_fee + tuition_fee + practical_fee + trip_fee + student_card_fee
-            // Using model accessor total_fees which calculates: sum of all fee columns
-            $requiredFees = $courseTermFees->sum(function($fee) {
-                return ($fee->registration_fee ?? 0) 
-                     + ($fee->tuition_fee ?? 0) 
-                     + ($fee->practical_fee ?? 0) 
-                     + ($fee->trip_fee ?? 0) 
-                     + ($fee->student_card_fee ?? 0);
-            });
+            // IMPORTANT: Registration fee should only be counted ONCE per academic year, not per term
+            // Registration fee comes from the first term only
+            $registrationFee = 0;
+            $otherFeesTotal = 0;
+            
+            foreach ($courseTermFees as $index => $fee) {
+                // Add registration fee only from the first term
+                if ($index === 0) {
+                    $registrationFee = ($fee->registration_fee ?? 0);
+                }
+                
+                // Add all other fees for each term
+                $otherFeesTotal += ($fee->tuition_fee ?? 0) 
+                                 + ($fee->practical_fee ?? 0) 
+                                 + ($fee->trip_fee ?? 0) 
+                                 + ($fee->student_card_fee ?? 0);
+            }
+            
+            $requiredFees = $registrationFee + $otherFeesTotal;
             
             // ========== PAYMENT QUERY (from student_transactions table) ==========
             // Get all successful fee payments for this student (all fee types)
@@ -213,15 +223,29 @@ class FeePaymentService
                 });
             }
             
-            // Get all course_term_fees and calculate total from fee columns
             $courseTermFeesForCalc = $feeCalcQuery->get();
-            $totalRequired = $courseTermFeesForCalc->sum(function($fee) {
-                return ($fee->registration_fee ?? 0) 
-                     + ($fee->tuition_fee ?? 0) 
-                     + ($fee->practical_fee ?? 0) 
-                     + ($fee->trip_fee ?? 0) 
-                     + ($fee->student_card_fee ?? 0);
-            });
+            
+            // IMPORTANT: Registration fee should only be counted ONCE per academic year, not per term
+            $registrationFeeForCalc = 0;
+            $totalRequired = 0;
+            
+            foreach ($courseTermFeesForCalc as $index => $fee) {
+                // Add registration fee only from the first term
+                if ($index === 0) {
+                    $registrationFeeForCalc = ($fee->registration_fee ?? 0);
+                }
+                
+                // Add all fees for calculation
+                $totalRequired += ($fee->registration_fee ?? 0) 
+                                + ($fee->tuition_fee ?? 0) 
+                                + ($fee->practical_fee ?? 0) 
+                                + ($fee->trip_fee ?? 0) 
+                                + ($fee->student_card_fee ?? 0);
+            }
+            
+            // Adjust total to only include registration fee once
+            $totalRequired = $totalRequired - ($registrationFeeForCalc * max(0, count($courseTermFeesForCalc) - 1));
+            $totalRequired = max(0, $totalRequired);
 
             $txnCalcQuery = StudentTransaction::where('student_id', $student->id)
                                              ->where('type', 'school_fee')

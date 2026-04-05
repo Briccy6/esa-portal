@@ -552,15 +552,19 @@ public function createDetails(Request $request, $lessonId)
     }
 
     /**
-     * Assign lesson to branches and courses (replaces all existing assignments)
+     * Assign lesson to branches and courses (merges with existing assignments)
      */
     public function assignToBranches(Request $request)
     {
         $validated = $request->validate([
             'lesson_id' => 'required|exists:lessons,id',
-            'assignments' => 'required|array|min:1',
-            'assignments.*.branch_id' => 'required|exists:branches,id',
-            'assignments.*.course_id' => 'required|exists:courses,id',
+            'current_assignments' => 'nullable|array',
+            'current_assignments.*.branch_id' => 'required_with:current_assignments|exists:branches,id',
+            'current_assignments.*.course_id' => 'required_with:current_assignments|exists:courses,id',
+            'current_assignments.*.teacher_id' => 'nullable|exists:teachers,id',
+            'assignments' => 'nullable|array',
+            'assignments.*.branch_id' => 'required_with:assignments|exists:branches,id',
+            'assignments.*.course_id' => 'required_with:assignments|exists:courses,id',
             'assignments.*.teacher_id' => 'nullable|exists:teachers,id',
         ]);
 
@@ -568,23 +572,37 @@ public function createDetails(Request $request, $lessonId)
         try {
             $lesson = Lesson::findOrFail($validated['lesson_id']);
             
-            // DELETE all existing assignments for this lesson first
-            \App\Models\LessonBranchCourse::where('lesson_id', $lesson->id)->delete();
+            // Update existing assignments
+            if (isset($validated['current_assignments'])) {
+                foreach ($validated['current_assignments'] as $index => $assignment) {
+                    // Update existing assignment or create if not exists
+                    \App\Models\LessonBranchCourse::updateOrCreate(
+                        ['lesson_id' => $lesson->id, 'branch_id' => $assignment['branch_id'], 'course_id' => $assignment['course_id']],
+                        ['teacher_id' => $assignment['teacher_id'] ?? null]
+                    );
+                }
+            }
             
-            // CREATE new assignments
-            foreach ($validated['assignments'] as $assignment) {
-                \App\Models\LessonBranchCourse::create([
-                    'lesson_id' => $lesson->id,
-                    'branch_id' => $assignment['branch_id'],
-                    'course_id' => $assignment['course_id'],
-                    'teacher_id' => $assignment['teacher_id'] ?? null,
-                ]);
+            // Add new assignments (MERGE instead of REPLACE)
+            if (isset($validated['assignments'])) {
+                foreach ($validated['assignments'] as $assignment) {
+                    // Only create if this combination doesn't exist
+                    \App\Models\LessonBranchCourse::firstOrCreate(
+                        [
+                            'lesson_id' => $lesson->id,
+                            'branch_id' => $assignment['branch_id'],
+                            'course_id' => $assignment['course_id'],
+                        ],
+                        ['teacher_id' => $assignment['teacher_id'] ?? null]
+                    );
+                }
             }
 
             DB::commit();
 
+            $totalAssignments = \App\Models\LessonBranchCourse::where('lesson_id', $lesson->id)->count();
             return redirect()->route('dos.lessons.index')
-                             ->with('success', 'Lesson assignments updated successfully. ' . count($validated['assignments']) . ' branch-course combinations assigned.');
+                             ->with('success', 'Lesson assignments updated successfully. ' . $totalAssignments . ' total branch-course combinations assigned.');
 
         } catch (\Exception $e) {
             DB::rollback();
@@ -612,12 +630,40 @@ public function createDetails(Request $request, $lessonId)
         
         foreach ($lessonAssignments as $assignment) {
             $assignments[] = [
+                'id' => $assignment->id,
+                'branch_id' => $assignment->branch_id,
                 'branch_name' => $assignment->branch ? $assignment->branch->name : 'Unknown',
+                'course_id' => $assignment->course_id,
                 'course_name' => $assignment->course ? $assignment->course->course_name : 'Unknown',
+                'teacher_id' => $assignment->teacher_id,
                 'teacher_name' => $assignment->teacher ? $assignment->teacher->teacher_name : null,
             ];
         }
 
         return response()->json(['assignments' => $assignments]);
+    }
+
+    /**
+     * Delete a specific lesson assignment
+     */
+    public function deleteAssignment($assignmentId)
+    {
+        try {
+            $assignment = \App\Models\LessonBranchCourse::findOrFail($assignmentId);
+            $lessonId = $assignment->lesson_id;
+            $assignment->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Assignment deleted successfully.',
+                'remaining' => \App\Models\LessonBranchCourse::where('lesson_id', $lessonId)->count()
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error deleting assignment: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error deleting assignment: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }
