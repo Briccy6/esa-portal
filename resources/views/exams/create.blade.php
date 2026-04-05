@@ -774,14 +774,20 @@ $(document).ready(function() {
         }
     });
 
-    // Store lesson-teacher mapping
+    // Store API data for filtering
+    let lessonsByBranchCourse = {}; // courseId => [lessons]
     let lessonTeacherMap = {};
+    let coursesList = [];
 
-    // Branch selection changes courses and lessons using lesson_branch_course table
+    // Branch selection changes courses using lesson_branch_course table
     $('#branch_id').on('change', function() {
         const branchId = $(this).val();
         const courseSelect = $('#course_ids');
         const lessonSelect = $('#lesson_ids');
+        
+        // Reset selects
+        courseSelect.empty().append('<option value="">-- Select Course --</option>');
+        lessonSelect.empty().append('<option value="">-- Select Lesson --</option>');
         
         if (branchId) {
             // Fetch lessons and courses for the selected branch from lesson_branch_course table
@@ -791,30 +797,20 @@ $(document).ready(function() {
                 dataType: 'json',
                 success: function(data) {
                     if (data.success) {
-                        // Store lesson-teacher mapping
+                        // Store the API data
+                        lessonsByBranchCourse = data.lessonsByCourse || {};
                         lessonTeacherMap = data.lessonTeachers || {};
+                        coursesList = data.courses || [];
                         
                         // Populate courses
-                        courseSelect.empty();
-                        if (data.courses && data.courses.length > 0) {
-                            data.courses.forEach(function(course) {
+                        if (coursesList.length > 0) {
+                            coursesList.forEach(function(course) {
                                 courseSelect.append(`<option value="${course.id}">${course.name}</option>`);
                             });
                         } else {
                             courseSelect.append('<option value="">No courses available for this branch</option>');
                         }
                         courseSelect.trigger('change.select2');
-                        
-                        // Populate lessons
-                        lessonSelect.empty();
-                        if (data.lessons && data.lessons.length > 0) {
-                            data.lessons.forEach(function(lesson) {
-                                lessonSelect.append(`<option value="${lesson.id}">${lesson.title}</option>`);
-                            });
-                        } else {
-                            lessonSelect.append('<option value="">No lessons available for this branch</option>');
-                        }
-                        lessonSelect.trigger('change.select2');
                     } else {
                         console.error('Error from API:', data.message);
                         courseSelect.empty().append('<option value="">Error loading courses</option>');
@@ -834,6 +830,46 @@ $(document).ready(function() {
             lessonSelect.empty().append('<option value="">Select a branch first</option>');
         }
     });
+    
+    // Course selection changes lessons
+    $('#course_ids').on('change', function() {
+        const courseId = $(this).val();
+        const lessonSelect = $('#lesson_ids');
+        
+        // Reset lessons
+        lessonSelect.empty().append('<option value="">-- Select Lesson --</option>');
+        
+        if (courseId) {
+            // Get lessons for selected course
+            const lessonsForCourse = lessonsByBranchCourse[courseId] || [];
+            
+            if (lessonsForCourse.length > 0) {
+                lessonsForCourse.forEach(function(lesson) {
+                    lessonSelect.append(`<option value="${lesson.id}">${lesson.title}</option>`);
+                });
+            } else {
+                lessonSelect.append('<option value="">No lessons available for this course</option>');
+            }
+        }
+        
+        lessonSelect.trigger('change.select2');
+    });
+    
+    // Lesson selection auto-populates teacher
+    $('#lesson_ids').on('change', function() {
+        const selectedLessons = $(this).val();
+        const teacherSelect = $('#teacher_id');
+        
+        if (selectedLessons && selectedLessons.length > 0) {
+            const firstLessonId = selectedLessons[0];
+            if (lessonTeacherMap[firstLessonId]) {
+                const teacher = lessonTeacherMap[firstLessonId];
+                teacherSelect.val(teacher.teacher_id).trigger('change.select2');
+                console.log('Teacher auto-selected:', teacher.teacher_name);
+            }
+        } else {
+            teacherSelect.val('').trigger('change.select2');
+        }
     });
 
     // Question Bank Preview Functionality

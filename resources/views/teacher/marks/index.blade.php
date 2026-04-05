@@ -630,10 +630,12 @@ body {
     function loadBranches() {
         fetch('/api/teacher/branches')
             .then(res => {
-                if (!res.ok) throw new Error('Failed to load branches');
+                console.log('Branch API Response Status:', res.status);
+                if (!res.ok) throw new Error('Failed to load branches (HTTP ' + res.status + ')');
                 return res.json();
             })
             .then(branches => {
+                console.log('Branches loaded:', branches);
                 const branchSelect = document.getElementById('branch_id');
                 branchSelect.innerHTML = '<option value="">Select Branch</option>';
                 
@@ -644,12 +646,16 @@ body {
                         option.textContent = branch.name;
                         branchSelect.appendChild(option);
                     });
+                    console.log('Branches populated: ' + branches.length);
                 } else {
                     branchSelect.innerHTML = '<option value="">No branches available for you</option>';
                 }
             })
             .catch(error => {
                 console.error('Error loading branches:', error);
+                const branchSelect = document.getElementById('branch_id');
+                branchSelect.innerHTML = '<option value="">Error loading branches</option>';
+                alert('Failed to load branches: ' + error.message);
             });
     }
     
@@ -668,10 +674,12 @@ body {
         
         fetch(`/api/teacher/branch/${branchId}/courses`)
             .then(res => {
-                if (!res.ok) throw new Error('Failed to load courses');
+                console.log('Courses API Response Status:', res.status);
+                if (!res.ok) throw new Error('Failed to load courses (HTTP ' + res.status + ')');
                 return res.json();
             })
             .then(courses => {
+                console.log('Courses loaded:', courses);
                 if (Array.isArray(courses) && courses.length > 0) {
                     courseSelect.innerHTML = '<option value="">Select Course</option>';
                     courses.forEach(course => {
@@ -681,6 +689,7 @@ body {
                         courseSelect.appendChild(option);
                     });
                     courseSelect.disabled = false;
+                    console.log('Courses populated: ' + courses.length);
                 } else {
                     courseSelect.innerHTML = '<option value="">No courses available in this branch</option>';
                     courseSelect.disabled = true;
@@ -689,6 +698,8 @@ body {
             .catch(error => {
                 console.error('Error loading courses:', error);
                 courseSelect.innerHTML = '<option value="">Error loading courses</option>';
+                courseSelect.disabled = true;
+                alert('Failed to load courses: ' + error.message);
             });
         
         updateShowStudentsBtn();
@@ -709,10 +720,12 @@ body {
         
         fetch(`/api/teacher/branch/${branchId}/course/${courseId}/lessons`)
             .then(res => {
-                if (!res.ok) throw new Error('Failed to load lessons');
+                console.log('Lessons API Response Status:', res.status);
+                if (!res.ok) throw new Error('Failed to load lessons (HTTP ' + res.status + ')');
                 return res.json();
             })
             .then(lessons => {
+                console.log('Lessons loaded:', lessons);
                 if (Array.isArray(lessons) && lessons.length > 0) {
                     lessonSelect.innerHTML = '<option value="">Select Lesson</option>';
                     lessons.forEach(lesson => {
@@ -724,6 +737,7 @@ body {
                     lessonSelect.disabled = false;
                     lessonInfo.style.display = 'inline-block';
                     document.getElementById('lesson-count').textContent = lessons.length;
+                    console.log('Lessons populated: ' + lessons.length);
                 } else {
                     lessonSelect.innerHTML = '<option value="">No lessons assigned to you in this branch-course</option>';
                     lessonSelect.disabled = true;
@@ -735,6 +749,7 @@ body {
                 console.error('Error loading lessons:', error);
                 lessonSelect.innerHTML = '<option value="">Error loading lessons</option>';
                 lessonSelect.disabled = true;
+                alert('Failed to load lessons: ' + error.message);
             });
         
         updateShowStudentsBtn();
@@ -787,17 +802,24 @@ body {
         modalTbody.innerHTML = '';
         modalMsg.innerHTML = '';
 
+        // DEBUG: Log the params
+        console.log('loadStudentsModal called with:', {
+            branchId, courseId, lessonId, termId, assessmentType
+        });
+
         if (!branchId || !courseId || !lessonId || !termId || !assessmentType || (assessmentType === 'exam' && (!examId || !examDate)) || (assessmentType === 'test' && (!marksOutOf || !testDate))) {
-            modalMsg.innerHTML = '<div class="text-warning">Please select all required fields including term.</div>';
+            modalMsg.innerHTML = '<div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-2"></i>Please select all required fields including term.</div>';
             return;
         }
 
         fetch(`/api/teacher/branch/${branchId}/course/${courseId}/students`)
             .then(res => {
-                if (!res.ok) throw new Error('Network response was not ok');
+                console.log('Students API Response Status:', res.status);
+                if (!res.ok) throw new Error('Failed to load students (HTTP ' + res.status + ')');
                 return res.json();
             })
             .then(data => {
+                console.log('Students data received:', data);
                 if (Array.isArray(data) && data.length > 0) {
                     data.forEach(function(student, index) {
                         modalTbody.innerHTML += `
@@ -831,6 +853,8 @@ body {
                             </tr>
                         `;
                     });
+                    
+                    console.log('Students populated: ' + data.length);
 
                     // Enhanced live validation for mark inputs - attach immediately after DOM elements exist
                     var markInputs = document.querySelectorAll('.mark-input');
@@ -880,6 +904,7 @@ body {
                         });
                     });
                 } else {
+                    console.warn('No students found for this course/branch combination');
                     modalTbody.innerHTML = `
                         <tr>
                             <td colspan="4" class="text-center py-5">
@@ -887,7 +912,7 @@ body {
                                     <i class="bi bi-person-x" style="font-size: 3rem;"></i>
                                     <div class="mt-3">
                                         <h5>No Students Found</h5>
-                                        <p class="mb-0">There are no students enrolled in this course/lesson combination.</p>
+                                        <p class="mb-0">There are no students enrolled in this course/branch combination.</p>
                                     </div>
                                 </div>
                             </td>
@@ -896,6 +921,7 @@ body {
                 }
             })
             .catch(error => {
+                console.error('Error loading students:', error);
                 modalTbody.innerHTML = `
                     <tr>
                         <td colspan="4" class="text-center py-5">
@@ -909,6 +935,7 @@ body {
                         </td>
                     </tr>
                 `;
+                modalMsg.innerHTML = '<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i><strong>Error:</strong> ' + error.message + '</div>';
             });
     }
 

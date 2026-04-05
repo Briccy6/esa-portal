@@ -226,81 +226,100 @@ document.addEventListener('DOMContentLoaded', function() {
     const lessonSelect = document.getElementById('lesson_ids');
     const teacherIdInput = document.querySelector('input[name="teacher_id"]');
     
-    const loadLessonsByCourse = function(branchId) {
+    // Store API data
+    let lessonsByBranchCourse = {}; // courseId => [lessons]
+    let lessonTeacherMap = {}; // lessonId => {teacher_id, teacher_name}
+    let coursesList = []; // All available courses
+    
+    const loadCoursesForBranch = function(branchId) {
         if (!branchId) {
             courseSelect.innerHTML = '';
             lessonSelect.innerHTML = '';
+            teacherIdInput.value = '';
             return;
         }
         
-        // Fetch lessons and courses for the selected branch
+        // Fetch lessons, courses, and teacher mappings for the selected branch
         fetch(`{{ route('teacher.exams.api.lessons-courses', '') }}/${branchId}`)
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Store lesson-teacher mapping for auto-population
-                    const lessonTeacherMap = data.lessonTeachers || {};
+                    // Store the API data for later use
+                    lessonsByBranchCourse = data.lessonsByCourse || {};
+                    lessonTeacherMap = data.lessonTeachers || {};
+                    coursesList = data.courses || [];
                     
                     // Clear current options
-                    courseSelect.innerHTML = '';
-                    lessonSelect.innerHTML = '';
+                    courseSelect.innerHTML = '<option value="">-- Select Course --</option>';
+                    lessonSelect.innerHTML = '<option value="">-- Select Lesson --</option>';
+                    teacherIdInput.value = '';
                     
-                    // Add filtered courses
-                    if (data.courses.length > 0) {
-                        data.courses.forEach(course => {
+                    // Populate courses dropdown
+                    if (coursesList.length > 0) {
+                        coursesList.forEach(course => {
                             const option = document.createElement('option');
                             option.value = course.id;
                             option.text = course.name;
                             courseSelect.appendChild(option);
                         });
                     } else {
-                        const option = document.createElement('option');
-                        option.value = '';
-                        option.text = 'No courses available for this branch';
-                        option.disabled = true;
-                        courseSelect.appendChild(option);
-                    }
-                    
-                    // Add filtered lessons
-                    if (data.lessons.length > 0) {
-                        data.lessons.forEach(lesson => {
-                            const option = document.createElement('option');
-                            option.value = lesson.id;
-                            option.text = lesson.title;
-                            lessonSelect.appendChild(option);
-                        });
-                        
-                        // Add listener for lesson selection to auto-populate teacher
-                        lessonSelect.addEventListener('change', function() {
-                            const selectedLessonIds = Array.from(this.selectedOptions).map(opt => opt.value);
-                            if (selectedLessonIds.length > 0) {
-                                const firstLessonId = selectedLessonIds[0];
-                                if (lessonTeacherMap[firstLessonId]) {
-                                    teacherIdInput.value = lessonTeacherMap[firstLessonId].teacher_id;
-                                    console.log('Teacher auto-populated:', lessonTeacherMap[firstLessonId].teacher_name);
-                                }
-                            }
-                        }, { once: false });
-                    } else {
-                        const option = document.createElement('option');
-                        option.value = '';
-                        option.text = 'No lessons available for this branch';
-                        option.disabled = true;
-                        lessonSelect.appendChild(option);
+                        courseSelect.innerHTML = '<option value="">-- No courses available for this branch --</option>';
                     }
                 } else {
                     console.error('Error fetching data:', data.message);
-                    alert('Error loading courses and lessons. Please try again.');
+                    alert('Error loading courses. Please try again.');
                 }
             })
             .catch(error => {
                 console.error('Fetch error:', error);
-                alert('Error loading courses and lessons. Please try again.');
+                alert('Error loading courses. Please try again.');
             });
     };
     
+    // Load courses when branch is selected
     branchSelect.addEventListener('change', function() {
-        loadLessonsByCourse(this.value);
+        loadCoursesForBranch(this.value);
+    });
+    
+    // Populate lessons when course is selected
+    courseSelect.addEventListener('change', function() {
+        const courseId = this.value;
+        
+        // Reset lesson select and teacher
+        lessonSelect.innerHTML = '<option value="">-- Select Lesson --</option>';
+        teacherIdInput.value = '';
+        
+        if (!courseId) {
+            return;
+        }
+        
+        // Populate lessons for selected course
+        const lessonsForCourse = lessonsByBranchCourse[courseId] || [];
+        
+        if (lessonsForCourse.length > 0) {
+            lessonsForCourse.forEach(lesson => {
+                const option = document.createElement('option');
+                option.value = lesson.id;
+                option.text = lesson.title;
+                lessonSelect.appendChild(option);
+            });
+        } else {
+            lessonSelect.innerHTML = '<option value="">-- No lessons available for this course --</option>';
+        }
+    });
+    
+    // Update teacher when lesson is selected
+    lessonSelect.addEventListener('change', function() {
+        const selectedLessonId = this.value;
+        teacherIdInput.value = '';
+        
+        if (selectedLessonId && lessonTeacherMap[selectedLessonId]) {
+            const teacher = lessonTeacherMap[selectedLessonId];
+            
+            // Auto-populate the teacher field
+            teacherIdInput.value = teacher.teacher_id;
+            console.log('Teacher auto-populated:', teacher.teacher_name);
+        }
     });
 });
 </script>
