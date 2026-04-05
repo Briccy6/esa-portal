@@ -478,6 +478,12 @@ body {
                 </div>
             </div>
             
+            <!-- Live Search Input -->
+            <div class="mb-3">
+                <input type="text" id="student-search" class="form-control form-control-lg" placeholder="Search student by name or ID..." autofocus>
+                <small class="form-text text-muted mt-2"><i class="bi bi-search me-1"></i>Type to search students</small>
+            </div>
+            
             <!-- Professional Students Table -->
             <div class="card border-0 shadow-sm">
                 <div class="card-body p-0">
@@ -505,6 +511,11 @@ body {
                         </table>
                     </div>
                 </div>
+            </div>
+            
+            <!-- Search Results Info -->
+            <div id="filter-info" class="mt-3 text-muted small" style="display: none;">
+                Showing <span id="shown-count">0</span> of <span id="total-count">0</span> students
             </div>
             
             <!-- Action Buttons -->
@@ -1018,23 +1029,38 @@ body {
         const modalMsg = document.getElementById('modal-message');
         const form = e.target;
         
-        // Validation: Ensure all mark fields are filled
+        // Validation: Allow empty cells (they will be treated as 0)
         const markInputs = form.querySelectorAll('.mark-input');
-        let allFilled = true;
-        let emptyCount = 0;
+        let hasInvalidMarks = false;
+        let validCount = 0;
         
         markInputs.forEach(function(input) {
-            if (!input.value || input.value === '' || isNaN(input.value)) {
-                input.classList.add('is-invalid');
-                allFilled = false;
-                emptyCount++;
-            } else {
+            const value = input.value;
+            
+            // If empty, treat as 0
+            if (value === '' || value === null) {
+                input.value = '0';
                 input.classList.remove('is-invalid');
+            } else if (isNaN(value) || value < 0) {
+                // Only invalid if it's not a number or is negative
+                input.classList.add('is-invalid');
+                hasInvalidMarks = true;
+            } else {
+                // Check if mark exceeds max
+                const max = parseInt(input.getAttribute('max'), 10);
+                if (parseInt(value, 10) > max) {
+                    input.value = max;
+                    input.classList.add('is-invalid');
+                    hasInvalidMarks = true;
+                } else {
+                    input.classList.remove('is-invalid');
+                    validCount++;
+                }
             }
         });
         
-        if (!allFilled) {
-            modalMsg.innerHTML = '<div class="alert alert-warning alert-dismissible fade show"><i class="bi bi-exclamation-triangle me-2"></i> Please fill in all mark fields (' + emptyCount + ' missing). <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+        if (hasInvalidMarks && validCount === 0) {
+            modalMsg.innerHTML = '<div class="alert alert-warning alert-dismissible fade show"><i class="bi bi-exclamation-triangle me-2"></i> Please provide valid mark values (numbers only, no negative values). <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
             return;
         }
         
@@ -1162,10 +1188,9 @@ body {
     } else {
         updateShowStudentsBtn();
     }
+});
 </script>
-    
-    // Load courses when branch is selected
-    document.getElementById('branch_id').addEventListener('change', function() {
+@endsection
         const branchId = this.value;
         const courseSelect = document.getElementById('course_id');
         const lessonSelect = document.getElementById('lesson_id');
@@ -1297,8 +1322,12 @@ body {
             })
             .then(data => {
                 console.log('Students data received:', data);
-                if (Array.isArray(data) && data.length > 0) {
-                    data.forEach(function(student, index) {
+                
+                // Handle both new response format and backward compatibility
+                let studentsList = Array.isArray(data) ? data : (data.students || []);
+                
+                if (studentsList && studentsList.length > 0) {
+                    studentsList.forEach(function(student, index) {
                         modalTbody.innerHTML += `
                             <tr class="student-row">
                                 <td class="text-center">
@@ -1319,7 +1348,7 @@ body {
                                 </td>
                                 <td>
                                     <div class="input-group">
-                                        <input type="number" name="marks[${student.id}][value]" class="form-control mark-input" min="0" max="${assessmentType === 'test' ? marksOutOf : 100}" required placeholder="0">
+                                        <input type="number" name="marks[${student.id}][value]" class="form-control mark-input" min="0" max="${assessmentType === 'test' ? marksOutOf : 100}" placeholder="0">
                                         <span class="input-group-text">/ ${assessmentType === 'test' ? marksOutOf : 100}</span>
                                     </div>
                                     <input type="hidden" name="students[]" value="${student.id}">
@@ -1331,7 +1360,10 @@ body {
                         `;
                     });
                     
-                    console.log('Students populated: ' + data.length);
+                    console.log('Students populated: ' + studentsList.length);
+
+                    // Setup live search
+                    setupLiveSearch(studentsList);
 
                     // Enhanced live validation for mark inputs - attach immediately after DOM elements exist
                     var markInputs = document.querySelectorAll('.mark-input');
@@ -1415,6 +1447,52 @@ body {
                 modalMsg.innerHTML = '<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i><strong>Error:</strong> ' + error.message + '</div>';
             });
     }
+    
+    // Live search function
+    function setupLiveSearch(allStudents) {
+        var searchInput = document.getElementById('student-search');
+        var studentRows = document.querySelectorAll('.student-row');
+        var filterInfo = document.getElementById('filter-info');
+        var totalCountSpan = document.getElementById('total-count');
+        var shownCountSpan = document.getElementById('shown-count');
+        
+        // Set total count
+        totalCountSpan.textContent = allStudents.length;
+        
+        searchInput.addEventListener('keyup', function() {
+            var searchTerm = this.value.toLowerCase().trim();
+            var visibleCount = 0;
+            
+            studentRows.forEach(function(row) {
+                var studentName = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+                var regNumber = row.querySelector('small') ? row.querySelector('small').textContent.toLowerCase() : '';
+                
+                // Show/hide based on search term
+                if (!searchTerm || studentName.includes(searchTerm) || regNumber.includes(searchTerm)) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            // Update and show filter info
+            shownCountSpan.textContent = visibleCount;
+            if (searchTerm) {
+                filterInfo.style.display = 'block';
+                if (visibleCount === 0) {
+                    filterInfo.innerHTML = '<div class="alert alert-info mt-3 mb-0"><i class="bi bi-info-circle me-2"></i>No students found matching "' + searchTerm + '"</div>';
+                } else {
+                    filterInfo.innerHTML = 'Showing ' + visibleCount + ' of ' + allStudents.length + ' students';
+                }
+            } else {
+                filterInfo.style.display = 'none';
+            }
+        });
+        
+        // Focus on search input
+        searchInput.focus();
+    }
 
     // Form submission handler - properly attached to the form element
     document.addEventListener('submit', function(e) {
@@ -1427,23 +1505,38 @@ body {
         var modalMsg = document.getElementById('modal-message');
         var form = e.target;
         
-        // Validation: Ensure all mark fields are filled
+        // Validation: Allow empty cells (they will be treated as 0)
         var markInputs = form.querySelectorAll('.mark-input');
-        var allFilled = true;
-        var emptyCount = 0;
+        var hasInvalidMarks = false;
+        var validCount = 0;
         
         markInputs.forEach(function(input) {
-            if (!input.value || input.value === '' || isNaN(input.value)) {
-                input.classList.add('is-invalid');
-                allFilled = false;
-                emptyCount++;
-            } else {
+            var value = input.value;
+            
+            // If empty, treat as 0
+            if (value === '' || value === null) {
+                input.value = '0';
                 input.classList.remove('is-invalid');
+            } else if (isNaN(value) || value < 0) {
+                // Only invalid if it's not a number or is negative
+                input.classList.add('is-invalid');
+                hasInvalidMarks = true;
+            } else {
+                // Check if mark exceeds max
+                var max = parseInt(input.getAttribute('max'), 10);
+                if (parseInt(value, 10) > max) {
+                    input.value = max;
+                    input.classList.add('is-invalid');
+                    hasInvalidMarks = true;
+                } else {
+                    input.classList.remove('is-invalid');
+                    validCount++;
+                }
             }
         });
         
-        if (!allFilled) {
-            modalMsg.innerHTML = `<div class="alert alert-warning alert-dismissible fade show"><i class="bi bi-exclamation-triangle me-2"></i> Please fill in all mark fields (${emptyCount} missing). <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`;
+        if (hasInvalidMarks && validCount === 0) {
+            modalMsg.innerHTML = `<div class="alert alert-warning alert-dismissible fade show"><i class="bi bi-exclamation-triangle me-2"></i> Please provide valid mark values (numbers only, no negative values). <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`;
             return;
         }
         

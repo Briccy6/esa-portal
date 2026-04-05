@@ -1023,19 +1023,32 @@ Route::middleware('auth:teacher')->get('/api/teacher/branch/{branchId}/course/{c
             'course_id' => $courseId
         ]);
 
+        // Validate branch and course exist
+        $branch = \App\Models\Branch::findOrFail($branchId);
+        $course = \App\Models\Course::findOrFail($courseId);
+        
         // Get students enrolled in this branch and course
         $students = \App\Models\Student::where('course_id', $courseId)
             ->where('branch_id', $branchId)
+            ->where('status', '!=', 'inactive')
             ->orderBy('full_name')
-            ->get(['id', 'full_name', 'reg_number']);
+            ->get(['id', 'full_name', 'reg_number', 'email']);
         
         \Log::info('Students retrieved', [
             'count' => $students->count(),
             'branch_id' => $branchId,
-            'course_id' => $courseId
+            'course_id' => $courseId,
+            'branch_name' => $branch->name,
+            'course_name' => $course->course_name
         ]);
         
-        return response()->json($students);
+        return response()->json([
+            'success' => true,
+            'students' => $students,
+            'branch' => ['id' => $branch->id, 'name' => $branch->name],
+            'course' => ['id' => $course->id, 'name' => $course->course_name],
+            'count' => $students->count()
+        ]);
     } catch (\Exception $e) {
         \Log::error('Error fetching students for marks', [
             'error' => $e->getMessage(),
@@ -1044,6 +1057,7 @@ Route::middleware('auth:teacher')->get('/api/teacher/branch/{branchId}/course/{c
             'course_id' => $courseId
         ]);
         return response()->json([
+            'success' => false,
             'error' => 'Failed to load students',
             'message' => $e->getMessage()
         ], 500);
