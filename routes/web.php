@@ -855,46 +855,150 @@ Route::get('/api/teacher/{teacher}/course/{course}/lessons', function($teacherId
 Route::middleware('auth:teacher')->get('/api/teacher/branches', function() {
     $teacher = auth('teacher')->user();
     
-    $branches = \App\Models\Branch::whereHas('lessonBranchCourses', function($query) use ($teacher) {
-        $query->where('teacher_id', $teacher->id);
-    })->get(['id', 'name']);
+    try {
+        // DEBUG: Log the teacher ID
+        \Log::info('Teacher branches API called', ['teacher_id' => $teacher->id]);
+        
+        // Query the lesson_branch_course table directly for distinct branches
+        $branchIds = \App\Models\LessonBranchCourse::where('teacher_id', $teacher->id)
+            ->pluck('branch_id')
+            ->unique()
+            ->toArray();
+        
+        \Log::info('Branch IDs found', ['branch_ids' => $branchIds, 'count' => count($branchIds)]);
+        
+        // Now fetch the actual branch records
+        $branches = \App\Models\Branch::whereIn('id', $branchIds)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+        
+        \Log::info('Branches retrieved', ['count' => $branches->count()]);
+        
+        return response()->json($branches);
+    } catch (\Exception $e) {
+        \Log::error('Error fetching branches for teacher', [
+            'teacher_id' => $teacher->id,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+        return response()->json([
+            'error' => 'Failed to load branches',
+            'message' => $e->getMessage()
+        ], 500);
+    }
+});
+
+// Diagnostic endpoint - shows teacher assignment data
+Route::middleware('auth:teacher')->get('/api/teacher/diagnostic', function() {
+    $teacher = auth('teacher')->user();
     
-    return response()->json($branches);
+    // Get all lesson_branch_course assignments for this teacher
+    $assignments = \App\Models\LessonBranchCourse::where('teacher_id', $teacher->id)
+        ->with(['branch', 'course', 'lesson'])
+        ->get();
+    
+    return response()->json([
+        'teacher_id' => $teacher->id,
+        'teacher_name' => $teacher->name,
+        'assignment_count' => $assignments->count(),
+        'assignments' => $assignments->map(function($item) {
+            return [
+                'lesson_id' => $item->lesson_id,
+                'lesson_title' => $item->lesson->title ?? 'Unknown',
+                'branch_id' => $item->branch_id,
+                'branch_name' => $item->branch?->name ?? 'Unknown',
+                'course_id' => $item->course_id,
+                'course_name' => $item->course?->course_name ?? 'Unknown',
+            ];
+        })
+    ]);
 });
 
 // Teacher marks recording - get courses for teacher in a specific branch
 Route::middleware('auth:teacher')->get('/api/teacher/branch/{branchId}/courses', function($branchId) {
     $teacher = auth('teacher')->user();
     
-    $courses = \App\Models\Course::whereHas('lessonBranchCourses', function($query) use ($teacher, $branchId) {
-        $query->where('teacher_id', $teacher->id)
-              ->where('branch_id', $branchId);
-    })->get(['id', 'course_name', 'course_code']);
-    
-    return response()->json($courses);
+    try {
+        \Log::info('Teacher courses API called', [
+            'teacher_id' => $teacher->id,
+            'branch_id' => $branchId
+        ]);
+
+        // Query lesson_branch_course table directly for this branch and teacher
+        $courseIds = \App\Models\LessonBranchCourse::where('teacher_id', $teacher->id)
+            ->where('branch_id', $branchId)
+            ->pluck('course_id')
+            ->unique()
+            ->toArray();
+        
+        \Log::info('Course IDs found', ['course_ids' => $courseIds, 'count' => count($courseIds)]);
+
+        // Fetch the actual course records
+        $courses = \App\Models\Course::whereIn('id', $courseIds)
+            ->orderBy('course_name')
+            ->get(['id', 'course_name', 'course_code']);
+        
+        \Log::info('Courses retrieved', ['count' => $courses->count()]);
+        
+        return response()->json($courses);
+    } catch (\Exception $e) {
+        \Log::error('Error fetching courses', [
+            'teacher_id' => $teacher->id,
+            'branch_id' => $branchId,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+        return response()->json([
+            'error' => 'Failed to load courses',
+            'message' => $e->getMessage()
+        ], 500);
+    }
 });
 
 // Teacher marks recording - filtered lessons by branch, course and teacher
 Route::middleware('auth:teacher')->get('/api/teacher/branch/{branchId}/course/{courseId}/lessons', function($branchId, $courseId) {
     $teacher = auth('teacher')->user();
     
-    // Get lessons for this teacher in this specific branch and course using lesson_branch_course pivot
-    $lessons = \App\Models\LessonBranchCourse::where('branch_id', $branchId)
-        ->where('course_id', $courseId)
-        ->where('teacher_id', $teacher->id)
-        ->with('lesson')
-        ->get()
-        ->map(function($item) {
-            return [
-                'id' => $item->lesson_id,
-                'title' => $item->lesson->title ?? $item->lesson->name ?? 'Lesson ' . $item->lesson_id,
-                'branch_id' => $item->branch_id,
-                'course_id' => $item->course_id,
-                'teacher_id' => $item->teacher_id,
-            ];
-        });
+    try {
+        \Log::info('Teacher lessons API called', [
+            'teacher_id' => $teacher->id,
+            'branch_id' => $branchId,
+            'course_id' => $courseId
+        ]);
     
-    return response()->json($lessons);
+        // Get lessons directly from lesson_branch_course for this teacher, branch, and course
+        $lessons = \App\Models\LessonBranchCourse::where('teacher_id', $teacher->id)
+            ->where('branch_id', $branchId)
+            ->where('course_id', $courseId)
+            ->with('lesson')
+            ->orderBy('lesson_id')
+            ->get()
+            ->map(function($item) {
+                return [
+                    'id' => $item->lesson_id,
+                    'title' => $item->lesson ? ($item->lesson->title ?? $item->lesson->name ?? 'Lesson ' . $item->lesson_id) : 'Lesson ' . $item->lesson_id,
+                    'branch_id' => $item->branch_id,
+                    'course_id' => $item->course_id,
+                    'teacher_id' => $item->teacher_id,
+                ];
+            });
+        
+        \Log::info('Lessons retrieved', ['count' => $lessons->count()]);
+        
+        return response()->json($lessons);
+    } catch (\Exception $e) {
+        \Log::error('Error fetching lessons', [
+            'teacher_id' => $teacher->id,
+            'branch_id' => $branchId,
+            'course_id' => $courseId,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+        return response()->json([
+            'error' => 'Failed to load lessons',
+            'message' => $e->getMessage()
+        ], 500);
+    }
 });
 
 // Teacher marks recording - get students for a specific branch, course and lesson
