@@ -615,25 +615,36 @@ document.addEventListener('change', function(e) {
 
 function removeCurrentAssignment(assignmentId) {
     if (confirm('Are you sure you want to remove this assignment?')) {
-        const assignmentDiv = document.querySelector(`.current-assignment[data-assignment-id="${assignmentId}"]`);
-        if (assignmentDiv) {
-            // Add hidden input to mark for deletion
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = `deleted_assignments[]`;
-            input.value = assignmentId;
-            document.getElementById('assignLessonForm').appendChild(input);
-            
-            // Remove from display
-            assignmentDiv.remove();
-            
-            // If no more current assignments, show the default message
-            const remaining = document.querySelectorAll('.current-assignment').length;
-            if (remaining === 0) {
-                document.getElementById('currentAssignments').innerHTML = '<p class="text-muted text-center py-3">No current assignments</p>';
-                document.getElementById('currentAssignmentsForm').style.display = 'none';
+        // Delete via AJAX
+        fetch(`/dos/lessons/${assignmentId}/delete-assignment`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'Content-Type': 'application/json'
             }
-        }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const assignmentDiv = document.querySelector(`.current-assignment[data-assignment-id="${assignmentId}"]`);
+                if (assignmentDiv) {
+                    assignmentDiv.remove();
+                    
+                    // If no more current assignments, show the default message
+                    const remaining = document.querySelectorAll('.current-assignment').length;
+                    if (remaining === 0) {
+                        document.getElementById('currentAssignments').innerHTML = '<p class="text-muted text-center py-3">No current assignments</p>';
+                        document.getElementById('currentAssignmentsForm').style.display = 'none';
+                    }
+                }
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting assignment. Please try again.');
+        });
     }
 }
 

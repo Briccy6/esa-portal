@@ -154,7 +154,7 @@
                             @endforeach
                             <tr id="term-fee-row-template" style="display: none;">
                                 <td>
-                                    <select name="term_fees[{index}][term_id]" class="form-select term-select" required>
+                                    <select name="term_fees[{index}][term_id]" class="form-select term-select">
                                         <option value="">Select Term</option>
                                         @foreach($terms as $term)
                                             <option value="{{ $term->id }}">

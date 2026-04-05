@@ -25,6 +25,13 @@ class FeePaymentService
      * Get payment status details for a student
      * Checks course_term_fees for required amounts and student_transactions for paid amounts
      * 
+     * IMPORTANT: Registration Fee Logic
+     * - A student pays registration fee only ONCE per academic year, not per term
+     * - If a course has 3 terms, registration_fee appears in all 3 course_term_fees records
+     * - But we only count it ONCE in the outstanding calculation
+     * - The registration fee is taken from the first term only
+     * - If the student has already paid the registration fee, it should not appear again
+     * 
      * @param Student $student
      * @param array|null $termIds - If provided, only check fees/payments for these specific terms
      * @return array
