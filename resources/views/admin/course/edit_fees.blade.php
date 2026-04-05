@@ -280,23 +280,32 @@
             const currentValue = select.value;
             select.innerHTML = '<option value="">Select Term</option>';
             
-            @foreach($terms as $term)
+            const termsData = [
+                @foreach($terms as $term)
+                    {
+                        id: '{{ $term->id }}',
+                        name: '{{ $term->name }} - {{ $term->academicYear->year ?? '' }}'
+                    },
+                @endforeach
+            ];
+            
+            termsData.forEach(term => {
                 const option = document.createElement('option');
-                option.value = '{{ $term->id }}';
-                option.textContent = '{{ $term->name }} - {{ $term->academicYear->year ?? '' }}';
+                option.value = term.id;
+                option.textContent = term.name;
                 
                 // Disable if term is already used elsewhere
-                if (usedTerms.has('{{ $term->id }}') && '{{ $term->id }}' !== currentValue) {
+                if (usedTerms.has(term.id) && term.id !== currentValue) {
                     option.disabled = true;
                 }
                 
                 // Select current value
-                if ('{{ $term->id }}' === currentValue) {
+                if (term.id === currentValue) {
                     option.selected = true;
                 }
                 
                 select.appendChild(option);
-            @endforeach
+            });
         });
     }
 

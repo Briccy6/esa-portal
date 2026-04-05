@@ -203,9 +203,24 @@ class MarksController extends Controller
                 'course_id' => $student->course_id,
                 'branch_id' => $student->branch_id,
             ]);
+
+            // Fetch lessons from lesson_branch_course pivot table based on student's branch and course
+            $lessons = \App\Models\LessonBranchCourse::with('lesson')
+                ->where('branch_id', $student->branch_id)
+                ->where('course_id', $student->course_id)
+                ->get()
+                ->pluck('lesson');
+
+            \Log::info('Lessons found from pivot:', [
+                'lessons_count' => $lessons->count(),
+                'lesson_ids' => $lessons->pluck('id')->toArray(),
+            ]);
             
-            $query = Mark::with(['course', 'exam', 'lesson', 'grade'])
+            // Query marks for this student with lesson and term relationships
+            $query = Mark::with(['course', 'exam', 'lesson', 'grade', 'term'])
                 ->where('student_id', $student->id)
+                ->where('branch_id', $student->branch_id)
+                ->where('course_id', $student->course_id)
                 ->when($request->course_id, fn($q) => $q->where('course_id', $request->course_id))
                 ->when($request->term, fn($q) => $q->where('term', $request->term))
                 ->orderBy('created_at', 'desc');
@@ -229,7 +244,44 @@ class MarksController extends Controller
             // Group by course for better organization
             $marksByCourse = $marks->groupBy('course_id');
 
-            return view('staff.marks.student-report', compact('student', 'marks', 'marksByCourse', 'stats'));
+            // Calculate term averages and annual summary
+            $marksByTerm = $marks->groupBy(function($mark) {
+                return $mark->term ? $mark->term->name : 'Unassigned';
+            });
+
+            $termAverages = [];
+            $termSummaries = [];
+            $allTermAverages = [];
+
+            foreach ($marksByTerm as $termName => $termMarks) {
+                $termAverage = $termMarks->whereNotNull('value')->avg('value');
+                $termAverages[$termName] = round($termAverage, 2);
+                $allTermAverages[] = $termAverage;
+
+                $termSummaries[$termName] = [
+                    'count' => $termMarks->count(),
+                    'average' => round($termAverage, 2),
+                    'exam_count' => $termMarks->where('assessment_type', 'exam')->count(),
+                    'test_count' => $termMarks->where('assessment_type', 'test')->count(),
+                    'highest' => $termMarks->max('value'),
+                    'lowest' => $termMarks->min('value'),
+                ];
+            }
+
+            // Calculate annual average
+            $annualAverage = count($allTermAverages) > 0 ? round(array_sum($allTermAverages) / count($allTermAverages), 2) : 0;
+
+            $stats['annual_average'] = $annualAverage;
+            $stats['term_averages'] = $termAverages;
+            $stats['term_summaries'] = $termSummaries;
+
+            \Log::info('Term averages calculated:', [
+                'term_count' => count($termAverages),
+                'annual_average' => $annualAverage,
+                'term_averages' => $termAverages,
+            ]);
+
+            return view('staff.marks.student-report', compact('student', 'marks', 'marksByCourse', 'stats', 'lessons'));
             
         } catch (\Exception $e) {
             \Log::error('Student Report Error:', [
