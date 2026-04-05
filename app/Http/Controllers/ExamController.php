@@ -1370,10 +1370,22 @@ class ExamController extends Controller
     public function getLessonsByCourse($branchId)
     {
         try {
-            // Get all lesson_branch_course records for the selected branch with teacher details
-            $lessonBranchCourses = \App\Models\LessonBranchCourse::where('branch_id', $branchId)
-                ->with(['lesson', 'course', 'teacher'])
-                ->get();
+            // Debug: Check what branch ID we're receiving
+            \Log::info("getLessonsByCourse called with branchId: {$branchId}");
+            
+            // First verify the branch exists
+            $branch = \App\Models\Branch::find($branchId);
+            \Log::info("Branch found: " . ($branch ? $branch->branch_name ?? $branch->name : 'NOT FOUND'));
+            
+            // Get all lesson_branch_course records for the selected branch with relationships
+            $query = \App\Models\LessonBranchCourse::where('branch_id', $branchId)
+                ->with(['lesson', 'course', 'teacher', 'branch']);
+            
+            \Log::info("Query count: " . $query->count());
+            
+            $lessonBranchCourses = $query->get();
+            
+            \Log::info("LessonBranchCourse records found: " . count($lessonBranchCourses));
 
             // Build arrays
             $courses = [];
@@ -1381,49 +1393,58 @@ class ExamController extends Controller
             $lessonTeacherMap = []; // lessonId => {teacher_id, teacher_name}
 
             foreach ($lessonBranchCourses as $lbc) {
+                \Log::info("Processing LBC: lesson_id={$lbc->lesson_id}, course_id={$lbc->course_id}, branch_id={$lbc->branch_id}");
+                
                 // Add course
                 if ($lbc->course && !isset($courses[$lbc->course->id])) {
                     $courses[$lbc->course->id] = [
                         'id' => $lbc->course->id,
-                        'name' => $lbc->course->course_name,
+                        'name' => $lbc->course->course_name ?? $lbc->course->name,
                     ];
+                    \Log::info("Added course: {$lbc->course->id} - {$lbc->course->course_name}");
                 }
                 
                 // Build lessons by course
-                $courseId = $lbc->course->id;
-                
-                if (!isset($lessonsByCourse[$courseId])) {
-                    $lessonsByCourse[$courseId] = [];
-                }
-                
-                if ($lbc->lesson) {
-                    $lessonData = [
-                        'id' => $lbc->lesson->id,
-                        'title' => $lbc->lesson->title ?? $lbc->lesson->name,
-                    ];
+                if ($lbc->course) {
+                    $courseId = $lbc->course->id;
                     
-                    // Avoid duplicates
-                    $lessonExists = false;
-                    foreach ($lessonsByCourse[$courseId] as $existing) {
-                        if ($existing['id'] == $lessonData['id']) {
-                            $lessonExists = true;
-                            break;
-                        }
+                    if (!isset($lessonsByCourse[$courseId])) {
+                        $lessonsByCourse[$courseId] = [];
                     }
                     
-                    if (!$lessonExists) {
-                        $lessonsByCourse[$courseId][] = $lessonData;
-                    }
-                    
-                    // Map lesson to teacher
-                    if ($lbc->teacher && !isset($lessonTeacherMap[$lbc->lesson->id])) {
-                        $lessonTeacherMap[$lbc->lesson->id] = [
-                            'teacher_id' => $lbc->teacher->id,
-                            'teacher_name' => $lbc->teacher->first_name . ' ' . $lbc->teacher->last_name,
+                    if ($lbc->lesson) {
+                        $lessonData = [
+                            'id' => $lbc->lesson->id,
+                            'title' => $lbc->lesson->title ?? $lbc->lesson->name,
                         ];
+                        
+                        // Avoid duplicates
+                        $lessonExists = false;
+                        foreach ($lessonsByCourse[$courseId] as $existing) {
+                            if ($existing['id'] == $lessonData['id']) {
+                                $lessonExists = true;
+                                break;
+                            }
+                        }
+                        
+                        if (!$lessonExists) {
+                            $lessonsByCourse[$courseId][] = $lessonData;
+                            \Log::info("Added lesson: {$lessonData['id']} to course {$courseId}");
+                        }
+                        
+                        // Map lesson to teacher
+                        if ($lbc->teacher && !isset($lessonTeacherMap[$lbc->lesson->id])) {
+                            $lessonTeacherMap[$lbc->lesson->id] = [
+                                'teacher_id' => $lbc->teacher->id,
+                                'teacher_name' => $lbc->teacher->first_name . ' ' . $lbc->teacher->last_name,
+                            ];
+                            \Log::info("Added teacher mapping: lesson {$lbc->lesson->id} => teacher {$lbc->teacher->id}");
+                        }
                     }
                 }
             }
+
+            \Log::info("Final response - Courses: " . count($courses) . ", LessonsByCourse: " . json_encode($lessonsByCourse));
 
             return response()->json([
                 'success' => true,
@@ -1432,6 +1453,7 @@ class ExamController extends Controller
                 'lessonTeachers' => $lessonTeacherMap, // lessonId => {teacher_id, teacher_name}
             ]);
         } catch (\Exception $e) {
+            \Log::error("getLessonsByCourse error: " . $e->getMessage() . "\n" . $e->getTraceAsString());
             return response()->json([
                 'success' => false,
                 'message' => 'Error fetching lessons and courses: ' . $e->getMessage(),

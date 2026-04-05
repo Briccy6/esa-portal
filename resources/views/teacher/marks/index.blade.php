@@ -649,6 +649,7 @@ body {
                     console.log('Branches populated: ' + branches.length);
                 } else {
                     branchSelect.innerHTML = '<option value="">No branches available for you</option>';
+                    console.warn('No branches returned from API');
                 }
             })
             .catch(error => {
@@ -658,6 +659,441 @@ body {
                 alert('Failed to load branches: ' + error.message);
             });
     }
+    
+    // Load courses when branch is selected
+    document.getElementById('branch_id').addEventListener('change', function() {
+        const branchId = this.value;
+        const courseSelect = document.getElementById('course_id');
+        const lessonSelect = document.getElementById('lesson_id');
+        
+        courseSelect.innerHTML = '<option value="">Select Course</option>';
+        courseSelect.disabled = true;
+        lessonSelect.innerHTML = '<option value="">Select Lesson</option>';
+        lessonSelect.disabled = true;
+        
+        if (!branchId) return;
+        
+        fetch(`/api/teacher/branch/${branchId}/courses`)
+            .then(res => {
+                console.log('Courses API Response Status:', res.status);
+                if (!res.ok) throw new Error('Failed to load courses (HTTP ' + res.status + ')');
+                return res.json();
+            })
+            .then(courses => {
+                console.log('Courses loaded:', courses);
+                if (Array.isArray(courses) && courses.length > 0) {
+                    courseSelect.innerHTML = '<option value="">Select Course</option>';
+                    courses.forEach(course => {
+                        const option = document.createElement('option');
+                        option.value = course.id;
+                        option.textContent = course.course_name + ' (' + course.course_code + ')';
+                        courseSelect.appendChild(option);
+                    });
+                    courseSelect.disabled = false;
+                    console.log('Courses populated: ' + courses.length);
+                } else {
+                    courseSelect.innerHTML = '<option value="">No courses available in this branch</option>';
+                    courseSelect.disabled = true;
+                    console.warn('No courses returned for branch ' + branchId);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading courses:', error);
+                courseSelect.innerHTML = '<option value="">Error loading courses</option>';
+                courseSelect.disabled = true;
+                alert('Failed to load courses: ' + error.message);
+            });
+        
+        updateShowStudentsBtn();
+    });
+    
+    // Load lessons when course is selected
+    document.getElementById('course_id').addEventListener('change', function() {
+        const branchId = document.getElementById('branch_id').value;
+        const courseId = this.value;
+        const lessonSelect = document.getElementById('lesson_id');
+        const lessonInfo = document.getElementById('lesson-info');
+        
+        lessonSelect.innerHTML = '<option value="">Select Lesson</option>';
+        lessonSelect.disabled = true;
+        lessonInfo.style.display = 'none';
+        
+        if (!branchId || !courseId) return;
+        
+        fetch(`/api/teacher/branch/${branchId}/course/${courseId}/lessons`)
+            .then(res => {
+                console.log('Lessons API Response Status:', res.status);
+                if (!res.ok) throw new Error('Failed to load lessons (HTTP ' + res.status + ')');
+                return res.json();
+            })
+            .then(lessons => {
+                console.log('Lessons loaded:', lessons);
+                if (Array.isArray(lessons) && lessons.length > 0) {
+                    lessonSelect.innerHTML = '<option value="">Select Lesson</option>';
+                    lessons.forEach(lesson => {
+                        const option = document.createElement('option');
+                        option.value = lesson.id;
+                        option.textContent = lesson.title;
+                        lessonSelect.appendChild(option);
+                    });
+                    lessonSelect.disabled = false;
+                    lessonInfo.style.display = 'inline-block';
+                    document.getElementById('lesson-count').textContent = lessons.length;
+                    console.log('Lessons populated: ' + lessons.length);
+                } else {
+                    lessonSelect.innerHTML = '<option value="">No lessons assigned to you in this branch-course</option>';
+                    lessonSelect.disabled = true;
+                    lessonInfo.innerHTML = '<i class="bi bi-info-circle me-1"></i>No lessons available for this course in this branch';
+                    lessonInfo.style.display = 'inline-block';
+                    console.warn('No lessons returned for course ' + courseId);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading lessons:', error);
+                lessonSelect.innerHTML = '<option value="">Error loading lessons</option>';
+                lessonSelect.disabled = true;
+                alert('Failed to load lessons: ' + error.message);
+            });
+        
+        updateShowStudentsBtn();
+    });
+
+    document.getElementById('assessment_type').addEventListener('change', function() {
+        const type = this.value;
+        document.getElementById('testMarksOutOfRow').style.display = type === 'test' ? 'flex' : 'none';
+        document.getElementById('examSelectRow').style.display = type === 'exam' ? 'flex' : 'none';
+        if (type === 'exam') {
+            loadExams();
+        }
+        updateShowStudentsBtn();
+    });
+
+    function loadExams() {
+        const courseId = document.getElementById('course_id').value;
+        fetch(`/api/course/${courseId}/exams`)
+            .then(res => res.json())
+            .then(data => {
+                const examSelect = document.getElementById('exam_id');
+                examSelect.innerHTML = '<option value="">Select Exam</option>';
+                if (Array.isArray(data) && data.length > 0) {
+                    data.forEach(function(exam) {
+                        examSelect.innerHTML += `<option value="${exam.id}">${exam.title}</option>`;
+                    });
+                }
+            })
+            .catch(error => {
+                document.getElementById('marks-message').innerHTML = '<div class="text-danger">Error loading exams: ' + error.message + '</div>';
+            });
+    }
+
+    document.getElementById('showStudentsBtn').addEventListener('click', function() {
+        loadStudentsModal();
+    });
+
+    function loadStudentsModal() {
+        const branchId = document.getElementById('branch_id').value;
+        const courseId = document.getElementById('course_id').value;
+        const lessonId = document.getElementById('lesson_id').value;
+        const termId = document.getElementById('term_id').value;
+        const assessmentType = document.getElementById('assessment_type').value;
+        const examId = document.getElementById('exam_id').value;
+        const examDate = document.getElementById('exam_date').value;
+        const marksOutOf = document.getElementById('marks_out_of').value;
+        const testDate = document.getElementById('test_date').value;
+        const modalTbody = document.getElementById('students-modal-list');
+        const modalMsg = document.getElementById('modal-message');
+        
+        modalTbody.innerHTML = '';
+        modalMsg.innerHTML = '';
+
+        console.log('loadStudentsModal called with:', {
+            branchId, courseId, lessonId, termId, assessmentType
+        });
+
+        if (!branchId || !courseId || !lessonId || !termId || !assessmentType || 
+            (assessmentType === 'exam' && (!examId || !examDate)) || 
+            (assessmentType === 'test' && (!marksOutOf || !testDate))) {
+            modalMsg.innerHTML = '<div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-2"></i>Please select all required fields including term.</div>';
+            return;
+        }
+
+        fetch(`/api/teacher/branch/${branchId}/course/${courseId}/students`)
+            .then(res => {
+                console.log('Students API Response Status:', res.status);
+                if (!res.ok) throw new Error('Failed to load students (HTTP ' + res.status + ')');
+                return res.json();
+            })
+            .then(data => {
+                console.log('Students data received:', data);
+                if (Array.isArray(data) && data.length > 0) {
+                    data.forEach(function(student, index) {
+                        modalTbody.innerHTML += `
+                            <tr class="student-row">
+                                <td class="text-center">
+                                    <span class="badge bg-primary rounded-circle">${index + 1}</span>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="me-3">
+                                            <div class="avatar-circle bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; font-weight: 600;">
+                                                ${student.full_name.charAt(0).toUpperCase()}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div class="fw-semibold text-dark">${student.full_name}</div>
+                                            <small class="text-muted">Student ID: ${student.id}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="input-group">
+                                        <input type="number" name="marks[${student.id}][value]" class="form-control mark-input" min="0" max="${assessmentType === 'test' ? marksOutOf : 100}" required placeholder="0">
+                                        <span class="input-group-text">/ ${assessmentType === 'test' ? marksOutOf : 100}</span>
+                                    </div>
+                                    <input type="hidden" name="students[]" value="${student.id}">
+                                </td>
+                                <td class="text-center">
+                                    <span class="percentage-badge" id="percentage-${student.id}">-</span>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                    
+                    console.log('Students populated: ' + data.length);
+
+                    // Enhanced live validation for mark inputs
+                    const markInputs = document.querySelectorAll('.mark-input');
+                    markInputs.forEach(function(input) {
+                        const errorDiv = document.createElement('div');
+                        errorDiv.className = 'text-danger small mt-1';
+                        errorDiv.style.display = 'none';
+                        input.parentNode.parentNode.appendChild(errorDiv);
+
+                        input.addEventListener('input', function() {
+                            const max = parseInt(input.getAttribute('max'), 10);
+                            const value = input.value ? parseInt(input.value, 10) : null;
+                            const studentId = input.name.match(/marks\[(\d+)\]/)[1];
+                            const percentageBadge = document.getElementById('percentage-' + studentId);
+                            
+                            if (value !== null && !isNaN(value) && value >= 0 && value <= max) {
+                                const percentage = Math.round((value / max) * 100);
+                                percentageBadge.textContent = percentage + '%';
+                                percentageBadge.className = 'percentage-badge';
+                                if (percentage >= 75) {
+                                    percentageBadge.classList.add('badge-high');
+                                } else if (percentage >= 50) {
+                                    percentageBadge.classList.add('badge-mid');
+                                } else {
+                                    percentageBadge.classList.add('badge-low');
+                                }
+                                input.classList.remove('is-invalid');
+                                errorDiv.style.display = 'none';
+                            } else if (value !== null && !isNaN(value) && value > max) {
+                                input.classList.add('is-invalid');
+                                errorDiv.textContent = 'Marks (' + value + ') cannot exceed total (' + max + ')';
+                                errorDiv.style.display = 'block';
+                                input.value = max;
+                                const percentage = 100;
+                                percentageBadge.textContent = percentage + '%';
+                                percentageBadge.className = 'percentage-badge badge-high';
+                            } else {
+                                percentageBadge.textContent = '-';
+                                percentageBadge.className = 'percentage-badge';
+                            }
+                        });
+                    });
+                } else {
+                    console.warn('No students found for this course/branch combination');
+                    modalTbody.innerHTML = `
+                        <tr>
+                            <td colspan="4" class="text-center py-5">
+                                <div class="text-muted">
+                                    <i class="bi bi-person-x" style="font-size: 3rem;"></i>
+                                    <div class="mt-3">
+                                        <h5>No Students Found</h5>
+                                        <p class="mb-0">There are no students enrolled in this course/branch combination.</p>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Error loading students:', error);
+                modalTbody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center py-5">
+                            <div class="text-danger">
+                                <i class="bi bi-exclamation-triangle" style="font-size: 3rem;"></i>
+                                <div class="mt-3">
+                                    <h5>Error Loading Students</h5>
+                                    <p class="mb-0">${error.message}</p>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                modalMsg.innerHTML = '<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i><strong>Error:</strong> ' + error.message + '</div>';
+            });
+    }
+
+    // Form submission handler
+    document.addEventListener('submit', function(e) {
+        if (e.target.id !== 'studentsMarksForm') return;
+        
+        e.preventDefault();
+        
+        const saveBtn = document.getElementById('saveMarksBtn');
+        const saveBtnText = document.getElementById('saveBtnText');
+        const modalMsg = document.getElementById('modal-message');
+        const form = e.target;
+        
+        // Validation: Ensure all mark fields are filled
+        const markInputs = form.querySelectorAll('.mark-input');
+        let allFilled = true;
+        let emptyCount = 0;
+        
+        markInputs.forEach(function(input) {
+            if (!input.value || input.value === '' || isNaN(input.value)) {
+                input.classList.add('is-invalid');
+                allFilled = false;
+                emptyCount++;
+            } else {
+                input.classList.remove('is-invalid');
+            }
+        });
+        
+        if (!allFilled) {
+            modalMsg.innerHTML = '<div class="alert alert-warning alert-dismissible fade show"><i class="bi bi-exclamation-triangle me-2"></i> Please fill in all mark fields (' + emptyCount + ' missing). <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+            return;
+        }
+        
+        // Disable button and show loading state
+        saveBtn.disabled = true;
+        saveBtnText.innerHTML = '<i class="bi bi-hourglass-split"></i> Saving...';
+        saveBtn.classList.remove('btn-success');
+        saveBtn.classList.add('btn-outline-secondary');
+        
+        // Clear previous messages
+        modalMsg.innerHTML = '';
+        
+        const formData = new FormData(form);
+        formData.append('branch_id', document.getElementById('branch_id').value);
+        formData.append('course_id', document.getElementById('course_id').value);
+        formData.append('lesson_id', document.getElementById('lesson_id').value);
+        formData.append('term_id', document.getElementById('term_id').value);
+        formData.append('assessment_type', document.getElementById('assessment_type').value);
+        
+        if (document.getElementById('assessment_type').value === 'exam') {
+            formData.append('exam_id', document.getElementById('exam_id').value);
+            formData.append('exam_date', document.getElementById('exam_date').value);
+        }
+        if (document.getElementById('assessment_type').value === 'test') {
+            formData.append('marks_out_of', document.getElementById('marks_out_of').value);
+            formData.append('test_date', document.getElementById('test_date').value);
+        }
+
+        fetch('{{ route("teacher.marks.store") }}', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            // Restore button state
+            saveBtn.disabled = false;
+            saveBtnText.innerHTML = '<i class="bi bi-save"></i> Save Marks';
+            saveBtn.classList.remove('btn-outline-secondary');
+            saveBtn.classList.add('btn-success');
+            
+            if (data.success) {
+                modalMsg.innerHTML = '<div class="alert alert-success alert-dismissible fade show"><i class="bi bi-check-circle me-2"></i>' + data.message + ' <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+                form.reset();
+                document.getElementById('students-modal-list').innerHTML = '';
+                setTimeout(function() {
+                    try {
+                        const modalElement = document.getElementById('studentsModal');
+                        const modal = bootstrap.Modal.getInstance(modalElement);
+                        if (modal) {
+                            modal.hide();
+                        }
+                    } catch(e) {
+                        console.log('Modal close:', e);
+                    }
+                }, 2000);
+            } else {
+                const errorMsg = data.message || 'Failed to save marks.';
+                let errorDetails = '';
+                let debugInfo = '';
+                
+                if (data.debug) {
+                    debugInfo = '<div class="alert alert-info mt-2"><strong>Debug Info:</strong> ' + data.debug + '</div>';
+                }
+                
+                if (data.errors && typeof data.errors === 'object') {
+                    const errorList = [];
+                    for (const field in data.errors) {
+                        const messages = data.errors[field];
+                        const messageText = Array.isArray(messages) ? messages.join(', ') : messages;
+                        errorList.push('<li>' + messageText + '</li>');
+                    }
+                    if (errorList.length > 0) {
+                        errorDetails = '<ul class="mb-0 mt-2">' + errorList.join('') + '</ul>';
+                    }
+                }
+                
+                modalMsg.innerHTML = '<div class="alert alert-danger alert-dismissible fade show"><i class="bi bi-exclamation-circle me-2"></i><strong>Error:</strong> ' + errorMsg + errorDetails + debugInfo + ' <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+                
+                console.error('Marks submission error', {
+                    message: data.message,
+                    errors: data.errors,
+                    debug: data.debug,
+                    fullResponse: data
+                });
+            }
+        })
+        .catch(error => {
+            saveBtn.disabled = false;
+            saveBtnText.innerHTML = '<i class="bi bi-save"></i> Save Marks';
+            saveBtn.classList.remove('btn-outline-secondary');
+            saveBtn.classList.add('btn-success');
+            
+            console.error('Fetch error:', error);
+            document.getElementById('modal-message').innerHTML = '<div class="alert alert-danger alert-dismissible fade show"><i class="bi bi-exclamation-circle me-2"></i><strong>Error:</strong> ' + error.message + ' <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+        });
+    });
+
+    function updateShowStudentsBtn() {
+        const branchId = document.getElementById('branch_id').value;
+        const courseId = document.getElementById('course_id').value;
+        const lessonId = document.getElementById('lesson_id').value;
+        const termId = document.getElementById('term_id').value;
+        const assessmentType = document.getElementById('assessment_type').value;
+        const examId = document.getElementById('exam_id').value;
+        const examDate = document.getElementById('exam_date').value;
+        const marksOutOf = document.getElementById('marks_out_of').value;
+        const testDate = document.getElementById('test_date').value;
+        const btn = document.getElementById('showStudentsBtn');
+        
+        if (!branchId || !courseId || !lessonId || !termId || !assessmentType ||
+            (assessmentType === 'exam' && (!examId || !examDate)) ||
+            (assessmentType === 'test' && (!marksOutOf || !testDate))) {
+            btn.disabled = true;
+        } else {
+            btn.disabled = false;
+        }
+    }
+
+    // Check button state when DOM is loaded
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', updateShowStudentsBtn);
+    } else {
+        updateShowStudentsBtn();
+    }
+</script>
     
     // Load courses when branch is selected
     document.getElementById('branch_id').addEventListener('change', function() {

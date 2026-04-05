@@ -1547,6 +1547,9 @@ Route::middleware(['auth:admin'])->prefix('admin/exams')->name('admin.exams.')->
     Route::post('/{exam}/make-public', [ExamController::class, 'makePublic'])->name('make-public');
     Route::post('/{exam}/make-private', [ExamController::class, 'makePrivate'])->name('make-private');
     
+    // API endpoint for fetching courses and lessons by branch
+    Route::get('/api/lessons-courses/{branchId}', [ExamController::class, 'getLessonsByCourse'])->name('api.lessons-courses');
+    
     // Bulk Question Upload Routes
     Route::get('/bulk-upload', [ExamController::class, 'bulkUploadForm'])->name('bulk-upload');
     Route::post('/bulk-upload', [ExamController::class, 'bulkUpload'])->name('bulk-upload.process');
@@ -1568,6 +1571,9 @@ Route::middleware(['auth:teacher'])->prefix('teacher/exams')->name('teacher.exam
     Route::get('/{exam}/edit', [ExamController::class, 'edit'])->name('edit');
     Route::put('/{exam}', [ExamController::class, 'update'])->name('update');
     Route::delete('/{exam}', [ExamController::class, 'destroy'])->name('destroy');
+    
+    // API endpoint for fetching courses and lessons by branch
+    Route::get('/api/lessons-courses/{branchId}', [ExamController::class, 'getLessonsByCourse'])->name('api.lessons-courses');
     
     // Teacher Question Management Routes
     Route::get('{exam}/questions', [\App\Http\Controllers\Teacher\TeacherQuestionController::class, 'index'])->name('questions');
