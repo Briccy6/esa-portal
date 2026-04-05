@@ -372,30 +372,21 @@
             }
         });
         
-        // Handle form submission validation
+        // Handle form submission
         const form = document.querySelector('form');
         form.addEventListener('submit', function(e) {
             const termRows = document.querySelectorAll('#term-fees-table tbody tr:not([style*="display: none"]):not(#term-fee-row-template)');
-            let hasValidTerm = false;
-            let validRowCount = 0;
             
-            // Remove empty rows and count valid ones
+            // Remove empty rows (rows without a selected term)
             termRows.forEach(row => {
                 const termSelect = row.querySelector('.term-select');
-                if (termSelect && termSelect.value) {
-                    hasValidTerm = true;
-                    validRowCount++;
-                } else {
-                    // Remove rows without a selected term
+                if (!termSelect || !termSelect.value) {
                     row.remove();
                 }
             });
             
-            if (!hasValidTerm) {
-                e.preventDefault();
-                alert('Please add at least one term with fee configuration.');
-                return false;
-            }
+            // Allow submission with or without term fees
+            // (the backend will handle updating the course with 0 or more fees)
         });
     });
 </script>
