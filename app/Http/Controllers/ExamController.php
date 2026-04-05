@@ -1384,7 +1384,7 @@ class ExamController extends Controller
                 }, 'course' => function($q) {
                     $q->select('id', 'course_name');
                 }, 'teacher' => function($q) {
-                    $q->select('id', 'first_name', 'last_name');
+                    $q->select('id', 'teacher_name');
                 }]);
             
             \Log::info("Query count: " . $query->count());
@@ -1443,7 +1443,7 @@ class ExamController extends Controller
                         
                         // Map lesson to teacher
                         if ($lbc->teacher && !isset($lessonTeacherMap[$lbc->lesson->id])) {
-                            $teacherName = $lbc->teacher->first_name . ' ' . $lbc->teacher->last_name;
+                            $teacherName = $lbc->teacher->teacher_name;
                             $lessonTeacherMap[$lbc->lesson->id] = [
                                 'teacher_id' => $lbc->teacher->id,
                                 'teacher_name' => $teacherName,

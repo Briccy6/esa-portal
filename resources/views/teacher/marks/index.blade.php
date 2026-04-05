@@ -801,28 +801,57 @@ body {
         const termId = document.getElementById('term_id').value;
         const examSelect = document.getElementById('exam_id');
         
-        console.log('Loading exams for course:', courseId, 'term:', termId);
+        console.log('=== loadExams() Called ===');
+        console.log('Course ID:', courseId);
+        console.log('Term ID:', termId);
+        console.log('API URL:', `/api/course/${courseId}/exams?term_id=${termId}`);
+        
+        if (!courseId) {
+            console.error('Course ID is missing!');
+            examSelect.innerHTML = '<option value="">Select a course first</option>';
+            return;
+        }
+        
+        if (!termId) {
+            console.error('Term ID is missing!');
+            examSelect.innerHTML = '<option value="">Select a term first</option>';
+            return;
+        }
         
         // Pass term_id as query parameter
         fetch(`/api/course/${courseId}/exams?term_id=${termId}`)
-            .then(res => res.json())
+            .then(res => {
+                console.log('Fetch response status:', res.status);
+                if (!res.ok) {
+                    throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+                }
+                return res.json();
+            })
             .then(data => {
-                console.log('Exams loaded for term ' + termId + ':', data);
+                console.log('Raw API response:', data);
+                console.log('Response is array?', Array.isArray(data));
+                console.log('Data length:', Array.isArray(data) ? data.length : 'N/A');
+                
                 examSelect.innerHTML = '<option value="">Select Exam</option>';
                 if (Array.isArray(data) && data.length > 0) {
                     data.forEach(function(exam) {
+                        console.log('Adding exam:', exam.id, exam.title);
                         examSelect.innerHTML += '<option value="' + exam.id + '">' + exam.title + '</option>';
                     });
-                    console.log('Exams populated: ' + data.length);
+                    console.log('✓ Exams populated: ' + data.length);
                 } else {
                     examSelect.innerHTML = '<option value="">No exams available for this term</option>';
-                    console.warn('No exams returned for this term');
+                    console.warn('⚠ No exams returned for this term');
                 }
             })
             .catch(error => {
-                console.error('Error loading exams:', error);
-                document.getElementById('marks-message').innerHTML = '<div class="text-danger">Error loading exams: ' + error.message + '</div>';
+                console.error('✗ Error loading exams:', error);
+                console.error('Error message:', error.message);
+                console.error('Error stack:', error.stack);
                 examSelect.innerHTML = '<option value="">Error loading exams</option>';
+                if (document.getElementById('marks-message')) {
+                    document.getElementById('marks-message').innerHTML = '<div class="text-danger">Error loading exams: ' + error.message + '</div>';
+                }
             });
     }
 

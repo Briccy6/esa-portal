@@ -80,7 +80,7 @@ class PopulateLessonBranchCourseController extends Controller
                             ]);
                             $created++;
                             $branchName = $branch->branch_name ?? $branch->name;
-                            $output[] = "✓ Created: Branch '$branchName' + Course '{$course->course_name}' + Lesson '{$lesson->title}' + Teacher '{$teacher->first_name} {$teacher->last_name}'";
+                            $output[] = "✓ Created: Branch '$branchName' + Course '{$course->course_name}' + Lesson '{$lesson->title}' + Teacher '{$teacher->teacher_name}'";
                         } else {
                             $skipped++;
                         }
@@ -131,7 +131,7 @@ class PopulateLessonBranchCourseController extends Controller
                 'records' => $records->map(fn($r) => [
                     'lesson' => $r->lesson?->title,
                     'course' => $r->course?->course_name,
-                    'teacher' => $r->teacher?->first_name . ' ' . $r->teacher?->last_name,
+                    'teacher' => $r->teacher?->teacher_name,
                 ])->toArray()
             ];
         }
