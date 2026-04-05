@@ -59,40 +59,26 @@
         .top-navbar {
             position: fixed;
             top: 0;
-            left: var(--sidebar-width);
+            left: 0;
             right: 0;
             height: 70px;
             background: #2c3e50;
-            backdrop-filter: blur(10px);
             box-shadow: var(--shadow);
-            z-index: 1000;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 999;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 2rem;
+            padding: 0 2rem 0 calc(var(--sidebar-width) + 1rem);
             color: white;
+            transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* Enhanced collapse behavior */
-        .sidebar.collapsed ~ .top-navbar {
-            left: var(--sidebar-collapsed) !important;
+        /* Collapsed sidebar — JS adds class to body instead */
+        body.sidebar-collapsed .top-navbar {
+            padding-left: calc(var(--sidebar-collapsed) + 1rem);
         }
-
-        /* Ensure navbar adjusts when sidebar is collapsed */
-        .sidebar.collapsed ~ .main-content {
-            margin-left: var(--sidebar-collapsed) !important;
-        }
-
-        /* Debug: Add visual indicator when sidebar is collapsed */
-        .sidebar.collapsed ~ .top-navbar::before {
-            content: "◀";
-            position: absolute;
-            left: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: rgba(255,255,255,0.5);
-            font-size: 12px;
+        body.sidebar-collapsed .main-content {
+            margin-left: var(--sidebar-collapsed);
         }
 
         .navbar-left {
@@ -467,7 +453,7 @@
             }
 
             .top-navbar {
-                left: 0;
+                padding-left: 1rem;
             }
 
             .main-content {
@@ -476,10 +462,10 @@
             }
 
             .main-content .container-fluid {
-                width: calc(100% + 2rem);
-                margin-left: -1rem;
-                padding-left: 1rem;
-                padding-right: 1rem;
+                width: 100%;
+                margin-left: 0;
+                padding-left: 0;
+                padding-right: 0;
             }
 
             .navbar-right {
@@ -1307,6 +1293,7 @@
             if (menuToggle && sidebar && sidebarOverlay && mainContent) {
                 menuToggle.addEventListener('click', function() {
                     sidebar.classList.toggle('collapsed');
+                    document.body.classList.toggle('sidebar-collapsed');
                     sidebarOverlay.classList.toggle('active');
                     
                     if (sidebar.classList.contains('collapsed')) {
@@ -1318,6 +1305,7 @@
                 
                 sidebarOverlay.addEventListener('click', function() {
                     sidebar.classList.remove('collapsed');
+                    document.body.classList.remove('sidebar-collapsed');
                     sidebarOverlay.classList.remove('active');
                     mainContent.style.marginLeft = 'var(--sidebar-width)';
                 });
