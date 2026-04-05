@@ -70,6 +70,24 @@
                             </select>
                         </div>
 
+                        {{-- EXAM DATE (shown only for exams) --}}
+                        <div class="mb-3" id="exam-date-container" style="display: none;">
+                            <label>Exam Date</label>
+                            <input type="date" name="exam_date" id="exam_date" class="form-control">
+                        </div>
+
+                        {{-- TEST DATE (shown only for tests) --}}
+                        <div class="mb-3" id="test-date-container" style="display: none;">
+                            <label>Test Date</label>
+                            <input type="date" name="test_date" id="test_date" class="form-control">
+                        </div>
+
+                        {{-- MARKS OUT OF (shown only for tests) --}}
+                        <div class="mb-3" id="marks-out-of-container" style="display: none;">
+                            <label>Marks Out Of</label>
+                            <input type="number" name="marks_out_of" id="marks_out_of" class="form-control" min="1" value="100">
+                        </div>
+
                         {{-- (Optional) Status --}}
                         <div class="mb-3">
                             <label>Status</label>
@@ -104,6 +122,48 @@ document.addEventListener('DOMContentLoaded', function() {
     const studentsTableContainer = document.getElementById('students-table-container');
     const saveButton = document.getElementById('save-marks');
     const alertContainer = document.getElementById('alert-container');
+    
+    // Get date and marks fields
+    const examDateContainer = document.getElementById('exam-date-container');
+    const testDateContainer = document.getElementById('test-date-container');
+    const marksOutOfContainer = document.getElementById('marks-out-of-container');
+    const examDateInput = document.getElementById('exam_date');
+    const testDateInput = document.getElementById('test_date');
+    const marksOutOfInput = document.getElementById('marks_out_of');
+
+    // Show/hide fields based on assessment type
+    function updateFieldVisibility() {
+        const type = assessmentType.value;
+        
+        if (type === 'exam') {
+            examDateContainer.style.display = 'block';
+            testDateContainer.style.display = 'none';
+            marksOutOfContainer.style.display = 'none';
+            
+            // Set required attributes
+            examDateInput.setAttribute('required', 'required');
+            testDateInput.removeAttribute('required');
+            marksOutOfInput.removeAttribute('required');
+        } else if (type === 'test') {
+            examDateContainer.style.display = 'none';
+            testDateContainer.style.display = 'block';
+            marksOutOfContainer.style.display = 'block';
+            
+            // Set required attributes
+            examDateInput.removeAttribute('required');
+            testDateInput.setAttribute('required', 'required');
+            marksOutOfInput.setAttribute('required', 'required');
+        } else {
+            examDateContainer.style.display = 'none';
+            testDateContainer.style.display = 'none';
+            marksOutOfContainer.style.display = 'none';
+            
+            // Remove required attributes
+            examDateInput.removeAttribute('required');
+            testDateInput.removeAttribute('required');
+            marksOutOfInput.removeAttribute('required');
+        }
+    }
 
     // Auto-select course when lesson is selected (for teachers)
     lessonSelect.addEventListener('change', function() {
@@ -132,7 +192,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     courseSelect.addEventListener('change', populateExamDropdown);
-    assessmentType.addEventListener('change', populateExamDropdown);
+    assessmentType.addEventListener('change', function() {
+        populateExamDropdown();
+        updateFieldVisibility();
+    });
 
     // Load students & existing marks
     document.getElementById('load-students').addEventListener('click', function() {

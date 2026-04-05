@@ -88,6 +88,16 @@ class ReportCardController extends Controller
             'term_id' => 'nullable|integer|exists:terms,id',
         ]);
 
+        $termIds = $this->normalizeTermIds($request);
+        
+        \Log::info('consolidatedReportCards - Normalized term IDs:', [
+            'raw_input' => $request->input('term_ids'),
+            'normalized_term_ids' => $termIds,
+            'student_id' => $request->student_id,
+            'course_id' => $request->course_id,
+            'academic_year_id' => $request->academic_year_id
+        ]);
+
         $query = ReportCard::query()
             ->where('student_id', $request->integer('student_id'))
             ->where('course_id', $request->integer('course_id'))
@@ -102,14 +112,20 @@ class ReportCardController extends Controller
                 'subjects.testMarks.exam',
             ]);
 
-        $termIds = $this->normalizeTermIds($request);
         if ($termIds !== []) {
             $query->whereIn('term_id', $termIds);
         }
 
-        return $query->get()
+        $results = $query->get()
             ->sortBy(fn (ReportCard $rc) => $rc->term?->start_date?->timestamp ?? $rc->term_id)
             ->values();
+        
+        \Log::info('consolidatedReportCards - Query results:', [
+            'count' => $results->count(),
+            'term_ids_found' => $results->pluck('term_id')->all()
+        ]);
+
+        return $results;
     }
 
     /**
@@ -249,7 +265,21 @@ class ReportCardController extends Controller
 
     public function printConsolidated(Request $request)
     {
+        \Log::info('printConsolidated - Request data:', [
+            'student_id' => $request->student_id,
+            'course_id' => $request->course_id,
+            'academic_year_id' => $request->academic_year_id,
+            'term_ids_raw' => $request->input('term_ids'),
+            'term_id_raw' => $request->input('term_id'),
+            'all_request' => $request->all()
+        ]);
+        
         $reportCards = $this->consolidatedReportCards($request);
+        
+        \Log::info('printConsolidated - Retrieved Report Cards:', [
+            'count' => $reportCards->count(),
+            'term_ids' => $reportCards->pluck('term_id')->all()
+        ]);
 
         if ($reportCards->isEmpty()) {
             abort(404);
@@ -1012,6 +1042,14 @@ class ReportCardController extends Controller
         ]);
 
         $termIds = $this->normalizeTermIds($request);
+        
+        \Log::info('printClassReports - Normalized term IDs:', [
+            'raw_input' => $request->input('term_ids'),
+            'normalized_term_ids' => $termIds,
+            'course_id' => $request->course_id,
+            'academic_year_id' => $request->academic_year_id
+        ]);
+        
         if ($termIds === []) {
             return redirect()->back()
                 ->withErrors(['term_ids' => 'Select at least one term.']);
@@ -1034,6 +1072,11 @@ class ReportCardController extends Controller
             ->orderBy('students.full_name')
             ->select('report_cards.*')
             ->get();
+        
+        \Log::info('printClassReports - Query results:', [
+            'count' => $reportCards->count(),
+            'term_ids_found' => $reportCards->pluck('term_id')->unique()->values()->all()
+        ]);
 
         if ($reportCards->isEmpty()) {
             return redirect()->back()
@@ -1121,9 +1164,19 @@ class ReportCardController extends Controller
     protected function normalizeTermIds(Request $request): array
     {
         $raw = $request->input('term_ids');
+        
+        // Handle case where term_ids is passed as an array
         if (is_array($raw) && count($raw) > 0) {
             return array_values(array_unique(array_filter(array_map('intval', $raw))));
         }
+        
+        // Handle case where term_ids is passed as a comma-separated string
+        if (is_string($raw) && !empty($raw)) {
+            $parts = array_map('trim', explode(',', $raw));
+            return array_values(array_unique(array_filter(array_map('intval', $parts))));
+        }
+        
+        // Handle single term_id parameter
         if ($request->filled('term_id')) {
             return [(int) $request->term_id];
         }
