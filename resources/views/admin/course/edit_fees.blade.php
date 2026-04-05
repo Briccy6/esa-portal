@@ -310,9 +310,9 @@
             if (termSelect.value) {
                 termCount++;
                 const registration = parseFloat(row.querySelector('input[name$="[registration_fee]"]').value) || 0;
-                const tuition = parseFloat(row.querySelector('input[name$="[tuition_fee"]').value) || 0;
-                const practical = parseFloat(row.querySelector('input[name$="[practical_fee"]').value) || 0;
-                const trip = parseFloat(row.querySelector('input[name$="[trip_fee"]').value) || 0;
+                const tuition = parseFloat(row.querySelector('input[name$="[tuition_fee]"]').value) || 0;
+                const practical = parseFloat(row.querySelector('input[name$="[practical_fee]"]').value) || 0;
+                const trip = parseFloat(row.querySelector('input[name$="[trip_fee]"]').value) || 0;
                 
                 totalFees += registration + tuition + practical + trip + studentCardFee;
             }
