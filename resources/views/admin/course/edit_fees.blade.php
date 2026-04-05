@@ -154,7 +154,7 @@
                             @endforeach
                             <tr id="term-fee-row-template" style="display: none;">
                                 <td>
-                                    <select name="term_fees[{index}][term_id]" class="form-select term-select">
+                                    <select name="term_fees[{index}][term_id]" class="form-select term-select" disabled>
                                         <option value="">Select Term</option>
                                         @foreach($terms as $term)
                                             <option value="{{ $term->id }}">
@@ -165,19 +165,19 @@
                                 </td>
                                 <td>
                                     <input type="number" name="term_fees[{index}][registration_fee]" 
-                                           class="form-control" min="0" step="0.01" value="0">
+                                           class="form-control" min="0" step="0.01" value="0" disabled>
                                 </td>
                                 <td>
                                     <input type="number" name="term_fees[{index}][tuition_fee]" 
-                                           class="form-control" min="0" step="0.01" value="0">
+                                           class="form-control" min="0" step="0.01" value="0" disabled>
                                 </td>
                                 <td>
                                     <input type="number" name="term_fees[{index}][practical_fee]" 
-                                           class="form-control" min="0" step="0.01" value="0">
+                                           class="form-control" min="0" step="0.01" value="0" disabled>
                                 </td>
                                 <td>
                                     <input type="number" name="term_fees[{index}][trip_fee]" 
-                                           class="form-control" min="0" step="0.01" value="0">
+                                           class="form-control" min="0" step="0.01" value="0" disabled>
                                 </td>
                                 <td>
                                     <button type="button" class="btn btn-sm btn-danger remove-term-fee">
@@ -236,6 +236,11 @@
         // Replace {index} with actual index
         const index = termFeeRowIndex++;
         newRow.innerHTML = newRow.innerHTML.replace(/{index}/g, index);
+        
+        // Remove disabled attribute from all form controls
+        newRow.querySelectorAll('input, select').forEach(control => {
+            control.removeAttribute('disabled');
+        });
         
         // Add event listeners
         const termSelect = newRow.querySelector('.term-select');
