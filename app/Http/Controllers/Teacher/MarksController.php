@@ -14,9 +14,6 @@ public function index()
 {
     $teacher = auth('teacher')->user();
     
-    // Get announcements for teacher layout
-    $announcements = \App\Models\Announcement::latest()->take(5)->get();
-    
     // Get branches where this teacher has lesson assignments (from lesson_branch_course pivot)
     $branches = \App\Models\Branch::whereHas('lessonBranchCourses', function($query) use ($teacher) {
         $query->where('teacher_id', $teacher->id);
@@ -27,16 +24,13 @@ public function index()
     // Get all terms for term selection
     $terms = \App\Models\Term::orderBy('name')->get();
     
-    return view('teacher.marks.index', compact('branches', 'terms', 'announcements'));
+    return view('teacher.marks.index', compact('branches', 'terms'));
 }
 
     public function create(Lesson $lesson)
     {
-        // Get announcements for teacher layout
-        $announcements = \App\Models\Announcement::latest()->take(5)->get();
-        
         // You can fetch students for this lesson here if needed
-        return view('teacher.marks.create', compact('lesson', 'announcements'));
+        return view('teacher.marks.create', compact('lesson'));
     }
 
     public function store(Request $request)
@@ -336,15 +330,12 @@ public function index()
             return strcasecmp($a['name'], $b['name']);
         });
 
-        return view('teacher.marks.view', compact('groupedMarks', 'students', 'announcements'));
+        return view('teacher.marks.view', compact('groupedMarks', 'students'));
     }
 
     public function editMarks($lessonId, $testDate)
     {
         $teacher = auth('teacher')->user();
-        
-        // Get announcements for teacher layout
-        $announcements = \App\Models\Announcement::latest()->take(5)->get();
         
         // Verify this lesson belongs to the teacher
         $lesson = Lesson::where('id', $lessonId)
@@ -357,7 +348,7 @@ public function index()
             ->with(['student', 'course', 'branch'])
             ->get();
 
-        return view('teacher.marks.edit', compact('lesson', 'marks', 'testDate', 'announcements'));
+        return view('teacher.marks.edit', compact('lesson', 'marks', 'testDate'));
     }
 
     public function updateMarks(Request $request, $lessonId, $testDate)
