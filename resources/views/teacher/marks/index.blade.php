@@ -536,7 +536,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        fetch('/api/course/' + courseId + '/exams?term_id=' + termId)
+        return fetch('/api/course/' + courseId + '/exams?term_id=' + termId)
             .then(res => { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
             .then(function (data) {
                 examSelect.innerHTML = '<option value="">Select Exam</option>';
@@ -566,8 +566,15 @@ document.addEventListener('DOMContentLoaded', function () {
         var examTitle = selectedOption.textContent;
         
         if (examDate) {
-            document.getElementById('exam_date').value = examDate;
-            console.log('Auto-populated exam_date for "' + examTitle + '":', examDate);
+            // Convert ISO datetime (e.g., "2026-01-05T00:00:00.000000Z") to date format (YYYY-MM-DD)
+            var dateObj = new Date(examDate);
+            var year = dateObj.getFullYear();
+            var month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            var day = String(dateObj.getDate()).padStart(2, '0');
+            var formattedDate = year + '-' + month + '-' + day;
+            
+            document.getElementById('exam_date').value = formattedDate;
+            console.log('Auto-populated exam_date for "' + examTitle + '":', formattedDate);
         } else {
             document.getElementById('exam_date').value = '';
             console.log('Cleared exam_date - no exam selected');
