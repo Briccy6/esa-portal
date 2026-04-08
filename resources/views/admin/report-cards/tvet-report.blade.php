@@ -18,10 +18,18 @@
             background: white;
             margin: 0;
             padding: 0;
+            overflow-x: hidden;
+        }
+
+        html {
+            width: 100%;
+            overflow-x: hidden;
         }
         
         .print-area {
             border: 1px solid black;
+            max-width: 100%;
+            overflow-x: hidden;
         }
         
         .header-section {

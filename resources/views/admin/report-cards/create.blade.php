@@ -1,7 +1,13 @@
 @extends('admin.layout')
 
+@push('styles')
+    @include('admin.report-cards.partials.layout-fixes')
+@endpush
+
 @section('content')
-<div class="container py-5">
+<div class="content">
+    <div class="report-container">
+        <div class="container py-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2><i class="fas fa-file-alt me-2"></i>Generate New Report Card</h2>
@@ -155,6 +161,8 @@
                     </div>
                 </form>
             </div>
+        </div>
+    </div>
         </div>
     </div>
 </div>

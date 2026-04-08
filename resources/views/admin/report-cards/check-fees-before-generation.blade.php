@@ -1,7 +1,13 @@
 @extends('admin.layout')
 
+@push('styles')
+    @include('admin.report-cards.partials.layout-fixes')
+@endpush
+
 @section('content')
-<div class="container-fluid">
+<div class="content">
+    <div class="report-container">
+        <div class="container-fluid">
     <div class="row">
         <div class="col-12">
             <div class="card">
@@ -273,6 +279,8 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
         </div>
     </div>
 </div>

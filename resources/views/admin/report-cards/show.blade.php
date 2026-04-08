@@ -1,5 +1,9 @@
 @extends('admin.layout')
 
+@push('styles')
+    @include('admin.report-cards.partials.layout-fixes')
+@endpush
+
 @section('content')
 @php
     $allTermIdsForStudent = $siblingReportCards->pluck('term_id')->push($reportCard->term_id)->unique()->sort()->values();
@@ -11,7 +15,9 @@
         'term_ids' => $allTermIdsForStudent->all(),
     ];
 @endphp
-<div class="container-fluid px-4 py-4">
+<div class="content">
+    <div class="report-container">
+        <div class="container-fluid px-4 py-4">
 
     @if(session('success'))
         <div class="alert alert-success alert-dismissible fade show rc-flash" role="alert">
@@ -528,6 +534,8 @@
                 <i class="fas fa-print"></i> Print PDF
             </a>
         @endif
+    </div>
+        </div>
     </div>
 </div>
 

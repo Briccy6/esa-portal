@@ -1,5 +1,9 @@
 @extends('admin.layout')
 
+@push('styles')
+    @include('admin.report-cards.partials.layout-fixes')
+@endpush
+
 @section('content')
 @php
     $first = $reportCards->first();
@@ -11,7 +15,9 @@
     $averageByTerm = $assessmentMatrix['average_by_term'];
     $termCount = count($terms);
 @endphp
-<div class="container-fluid px-4 py-4">
+<div class="content">
+    <div class="report-container">
+        <div class="container-fluid px-4 py-4">
     <div class="d-flex flex-wrap justify-content-between align-items-start mb-4">
         <div>
             <h1 class="h4 mb-1">Report card — multiple terms (one table)</h1>
@@ -291,6 +297,8 @@
                     {{ $rc->term?->name ?? 'Term' }} · {{ ucfirst($rc->status) }}
                 </a>
             @endforeach
+        </div>
+    </div>
         </div>
     </div>
 </div>

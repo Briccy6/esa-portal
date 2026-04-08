@@ -25,6 +25,12 @@
             line-height: 1.2;
             color: #333;
             background: white;
+            overflow-x: hidden;
+        }
+
+        html {
+            width: 100%;
+            overflow-x: hidden;
         }
         
         .header {

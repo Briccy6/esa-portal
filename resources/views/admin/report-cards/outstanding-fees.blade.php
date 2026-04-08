@@ -1,7 +1,13 @@
 @extends('admin.layout')
 
+@push('styles')
+    @include('admin.report-cards.partials.layout-fixes')
+@endpush
+
 @section('content')
-<div class="container-fluid">
+<div class="content">
+    <div class="report-container">
+        <div class="container-fluid">
     <!-- Header Section -->
     <div class="row mb-4">
         <div class="col-12">
@@ -268,6 +274,8 @@
             </div>
         </div>
     @endif
+        </div>
+    </div>
 </div>
 
 <!-- Include Styles -->
@@ -503,7 +511,7 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         `;
         
-        const container = document.querySelector('.container-fluid');
+        const container = document.querySelector('.report-container .container-fluid') || document.querySelector('.container-fluid');
         container.insertBefore(alertDiv, container.firstChild);
 
         setTimeout(() => alertDiv.remove(), 5000);

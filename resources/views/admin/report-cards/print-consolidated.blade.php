@@ -31,7 +31,7 @@
             margin-bottom: 4mm;
             margin-left: 4mm;
         }
-        html, body { margin: 0; padding: 0; font-family: DejaVu Sans, Arial, sans-serif; font-size: 7px; color: #111; }
+        html, body { margin: 0; padding: 0; font-family: DejaVu Sans, Arial, sans-serif; font-size: 7px; color: #111; width: 100%; overflow-x: hidden; }
         .print-wrap { width: 100%; box-sizing: border-box; }
         .print-header-table { width: 100%; border-collapse: collapse; border-bottom: 1px solid #000; margin-bottom: 4px; }
         .print-header-table td { vertical-align: middle; padding: 6px; font-size: 8px; }

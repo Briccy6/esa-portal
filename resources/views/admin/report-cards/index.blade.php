@@ -1,7 +1,13 @@
 @extends('admin.layout')
 
+@push('styles')
+    @include('admin.report-cards.partials.layout-fixes')
+@endpush
+
 @section('content')
-<div class="container-fluid px-4 py-4">
+<div class="content">
+    <div class="report-container">
+        <div class="container-fluid px-4 py-4">
 
     {{-- ── PAGE HEADER ── --}}
     <div class="rc-page-header mb-4">
@@ -432,6 +438,8 @@
             @endif
         </div>
     </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -504,7 +512,7 @@ function deleteReportCardsGroup(studentId, courseId, academicYearId, termIds, st
 ════════════════════════════════════════════ */
 
 /* FIX: prevent container-fluid from overflowing behind sidebar */
-.main-content .container-fluid {
+.report-container .container-fluid {
     width: 100% !important;
     margin-left: 0 !important;
     padding-left: 0 !important;
