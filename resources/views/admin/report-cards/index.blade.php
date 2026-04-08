@@ -2225,3 +2225,5 @@ document.addEventListener('DOMContentLoaded', function () {
     white-space: nowrap;
 }
 </style>
+
+@endsection

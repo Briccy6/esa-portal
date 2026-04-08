@@ -13,6 +13,56 @@ use Carbon\Carbon;
 class FeePaymentService
 {
     /**
+     * Determine which term IDs should be considered for fee validation for a student.
+     *
+     * Rule: if a student joined in Term 2 or Term 3, do not require fees for terms
+     * that ended before the student's created_at (enrollment date).
+     *
+     * @return int[]
+     */
+    protected static function eligibleTermIdsForStudent(Student $student, ?array $requestedTermIds = null): array
+    {
+        if (! $student->academic_year_id) {
+            return [];
+        }
+
+        $terms = Term::query()
+            ->where('academic_year_id', $student->academic_year_id)
+            ->orderBy('start_date')
+            ->get(['id', 'start_date', 'end_date']);
+
+        if ($terms->isEmpty()) {
+            return [];
+        }
+
+        $enrolledAt = $student->created_at ? Carbon::parse($student->created_at)->startOfDay() : null;
+
+        // Find the first term whose end_date is on/after enrollment date.
+        // If enrollment date is missing, default to the first term.
+        $firstEligibleTermIndex = 0;
+        if ($enrolledAt) {
+            $idx = $terms->search(function (Term $t) use ($enrolledAt) {
+                return Carbon::parse($t->end_date)->endOfDay()->gte($enrolledAt);
+            });
+            if ($idx !== false) {
+                $firstEligibleTermIndex = (int) $idx;
+            } else {
+                // If enrollment is after all term end dates, treat last term as eligible.
+                $firstEligibleTermIndex = max(0, $terms->count() - 1);
+            }
+        }
+
+        $eligible = $terms->slice($firstEligibleTermIndex)->pluck('id')->map(fn ($v) => (int) $v)->all();
+
+        if (is_array($requestedTermIds) && $requestedTermIds !== []) {
+            $requested = array_values(array_unique(array_map('intval', $requestedTermIds)));
+            $eligible = array_values(array_intersect($requested, $eligible));
+        }
+
+        return $eligible;
+    }
+
+    /**
      * Check if a student has paid all required fees for the current academic year
      */
     public static function hasPaidAllFees(Student $student): bool
@@ -58,6 +108,21 @@ class FeePaymentService
         // Get fees from course_term_fees table
         // Fees are tied to the course in course_term_fees, not individual students
         if ($student->course_id && $student->academic_year_id) {
+            // Apply "joined late" rule: only consider terms from the student's enrollment term onward.
+            $termIds = self::eligibleTermIdsForStudent($student, $termIds);
+
+            // If the requested terms are entirely before enrollment, the student owes nothing for this check.
+            if ($termIds === []) {
+                return [
+                    'has_subscription' => false,
+                    'subscription_terms' => null,
+                    'required_fees' => 0,
+                    'total_paid' => 0,
+                    'outstanding' => 0,
+                    'is_fully_paid' => true,
+                    'payment_percentage' => 100,
+                ];
+            }
             
             // ========== FEES QUERY (from course_term_fees table) ==========
             // Student card fee is a one-time fee per academic year (not per term).
@@ -77,7 +142,10 @@ class FeePaymentService
                 ->whereHas('term', function ($q) use ($student) {
                     $q->where('academic_year_id', $student->academic_year_id);
                 })
-                ->orderBy('term_id')
+                ->whereIn('term_id', $termIds)
+                ->with('term:id,start_date')
+                ->get()
+                ->sortBy(fn ($f) => optional($f->term)->start_date ?? '9999-12-31')
                 ->first();
 
             if ($firstYearFee) {
@@ -90,7 +158,7 @@ class FeePaymentService
                                      // Ensure deterministic "first term" selection for registration fee.
                                      ->orderBy('term_id');
             
-            // If specific term IDs provided, filter by those terms only
+            // Filter by eligible term IDs only (already includes requested filter if provided)
             if (!empty($termIds) && is_array($termIds)) {
                 $feeQuery->whereIn('term_id', $termIds);
                 \Log::debug('FeePaymentService: Filtering by term_ids', ['term_ids' => $termIds, 'student_id' => $student->id]);
@@ -167,7 +235,7 @@ class FeePaymentService
                                                   ->whereIn('type', ['registration', 'school_fee', 'practical_fee', 'trip_fee', 'student_card'])
                                                   ->where('status', 'successful');
             
-            // If specific term IDs provided, only get payments for those terms
+            // Only get payments for eligible terms
             if (!empty($termIds) && is_array($termIds)) {
                 $transactionQuery->whereIn('term_id', $termIds);
             }
@@ -220,6 +288,8 @@ class FeePaymentService
      */
     public static function debugFeeCalculation(Student $student, ?array $termIds = null): array
     {
+        $termIds = self::eligibleTermIdsForStudent($student, $termIds);
+
         $result = [
             'student_id' => $student->id,
             'student_name' => $student->full_name,
