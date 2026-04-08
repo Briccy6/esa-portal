@@ -164,6 +164,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const selectionTypeRadios = document.querySelectorAll('.selection-type-radio');
     const courseGroup = document.getElementById('course_group');
     const courseTypeGroup = document.getElementById('course_type_group');
+    const oldTermId = @json(old('term_id'));
+    const termsUrlTemplate = @json(route('babyeyi.get-terms', ['academicYearId' => '__ACADEMIC_YEAR_ID__']));
 
     function updateType() {
         const selected = document.querySelector('input[name="selection_type"]:checked');
@@ -177,13 +179,18 @@ document.addEventListener('DOMContentLoaded', function () {
     selectionTypeRadios.forEach(r => r.addEventListener('change', updateType));
     updateType();
 
-    academicYearSelect.addEventListener('change', function () {
-        const yearId = this.value;
+    function loadTermsForYear(yearId) {
         if (!yearId) {
             termSelect.innerHTML = '<option value="">-- Select Term --</option>';
+            termSelect.disabled = true;
             return;
         }
-        fetch(`/babyeyi/get-terms/${yearId}`)
+
+        termSelect.disabled = true;
+        termSelect.innerHTML = '<option value="">Loading terms...</option>';
+
+        const termsUrl = termsUrlTemplate.replace('__ACADEMIC_YEAR_ID__', encodeURIComponent(yearId));
+        fetch(termsUrl)
             .then(r => r.json())
             .then(data => {
                 termSelect.innerHTML = '<option value="">-- Select Term --</option>';
@@ -193,11 +200,25 @@ document.addEventListener('DOMContentLoaded', function () {
                     opt.textContent = term.name;
                     termSelect.appendChild(opt);
                 });
+                if (oldTermId) termSelect.value = String(oldTermId);
+                termSelect.disabled = false;
             })
             .catch(() => {
-                termSelect.innerHTML = '<option value="">-- Select Term --</option>';
+                termSelect.innerHTML = '<option value="">Error loading terms</option>';
+                termSelect.disabled = true;
             });
+    }
+
+    academicYearSelect.addEventListener('change', function () {
+        loadTermsForYear(this.value);
     });
+
+    // Auto-load terms on initial page load (e.g., after validation errors)
+    if (academicYearSelect.value) {
+        loadTermsForYear(academicYearSelect.value);
+    } else {
+        termSelect.disabled = true;
+    }
 });
 </script>
 @endsection

@@ -1690,28 +1690,37 @@ Route::middleware(['auth:admin,staff,student'])->prefix('to-whom')->name('to-who
     Route::delete('/{letter}', [ToWhomLetterController::class, 'destroy'])->name('destroy');
 });
 
-// Babyeyi Routes - Accessible by secretaries and accountants for managing term registration documents
-Route::middleware(['auth:admin,staff'])->prefix('babyeyi')->name('babyeyi.')->group(function () {
-    Route::get('/', [BabyeyiController::class, 'index'])->name('index');
-    Route::get('/create', [BabyeyiController::class, 'create'])->name('create');
-    Route::post('/', [BabyeyiController::class, 'store'])->name('store');
-    Route::get('/{babyeyi}', [BabyeyiController::class, 'show'])->name('show');
-    Route::get('/{babyeyi}/edit', [BabyeyiController::class, 'edit'])->name('edit');
-    Route::put('/{babyeyi}', [BabyeyiController::class, 'update'])->name('update');
-    Route::delete('/{babyeyi}', [BabyeyiController::class, 'destroy'])->name('destroy');
-    Route::get('/{babyeyi}/preview', [BabyeyiController::class, 'preview'])->name('preview');
-    Route::post('/{babyeyi}/publish', [BabyeyiController::class, 'publish'])->name('publish');
-    Route::get('/{babyeyi}/download', [BabyeyiController::class, 'download'])->name('download');
-    Route::get('/get-terms/{academicYearId}', [BabyeyiController::class, 'getTerms'])->name('get-terms');
-    Route::get('/get-courses', [BabyeyiController::class, 'getCourses'])->name('get-courses');
-    
-    // Bulk operations routes
-    Route::get('/bulk/create', [BabyeyiController::class, 'bulkCreate'])->name('bulk.create');
-    Route::post('/bulk/store', [BabyeyiController::class, 'bulkStore'])->name('bulk.store');
-    Route::get('/bulk/operations', [BabyeyiController::class, 'bulkOperations'])->name('bulk.operations');
-    Route::post('/bulk/publish', [BabyeyiController::class, 'bulkPublish'])->name('bulk.publish');
-    Route::post('/bulk/regenerate', [BabyeyiController::class, 'regenerateForTerm'])->name('bulk.regenerate');
-    Route::post('/quick-generate/{termId}', [BabyeyiController::class, 'quickGenerate'])->name('quick-generate');
+// Babyeyi Routes
+// Admins can view/download existing documents only.
+// Staff can create/edit/publish/generate documents.
+Route::prefix('babyeyi')->name('babyeyi.')->group(function () {
+    // View-only (admin + staff)
+    Route::middleware(['auth:admin,staff'])->group(function () {
+        Route::get('/', [BabyeyiController::class, 'index'])->name('index');
+        Route::get('/{babyeyi}', [BabyeyiController::class, 'show'])->name('show');
+        Route::get('/{babyeyi}/preview', [BabyeyiController::class, 'preview'])->name('preview');
+        Route::get('/{babyeyi}/download', [BabyeyiController::class, 'download'])->name('download');
+        Route::get('/get-terms/{academicYearId}', [BabyeyiController::class, 'getTerms'])->name('get-terms');
+        Route::get('/get-courses', [BabyeyiController::class, 'getCourses'])->name('get-courses');
+    });
+
+    // Write actions (staff only)
+    Route::middleware(['auth:staff'])->group(function () {
+        Route::get('/create', [BabyeyiController::class, 'create'])->name('create');
+        Route::post('/', [BabyeyiController::class, 'store'])->name('store');
+        Route::get('/{babyeyi}/edit', [BabyeyiController::class, 'edit'])->name('edit');
+        Route::put('/{babyeyi}', [BabyeyiController::class, 'update'])->name('update');
+        Route::delete('/{babyeyi}', [BabyeyiController::class, 'destroy'])->name('destroy');
+        Route::post('/{babyeyi}/publish', [BabyeyiController::class, 'publish'])->name('publish');
+
+        // Bulk operations routes (staff only)
+        Route::get('/bulk/create', [BabyeyiController::class, 'bulkCreate'])->name('bulk.create');
+        Route::post('/bulk/store', [BabyeyiController::class, 'bulkStore'])->name('bulk.store');
+        Route::get('/bulk/operations', [BabyeyiController::class, 'bulkOperations'])->name('bulk.operations');
+        Route::post('/bulk/publish', [BabyeyiController::class, 'bulkPublish'])->name('bulk.publish');
+        Route::post('/bulk/regenerate', [BabyeyiController::class, 'regenerateForTerm'])->name('bulk.regenerate');
+        Route::post('/quick-generate/{termId}', [BabyeyiController::class, 'quickGenerate'])->name('quick-generate');
+    });
 });
 
 // PUBLIC: Babyeyi Routes - Accessible by students and public users

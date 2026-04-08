@@ -13,12 +13,7 @@
             <div class="text-muted">Create, edit, preview and publish term registration documents.</div>
         </div>
         <div class="d-flex gap-2 flex-wrap">
-            <a href="{{ route('babyeyi.bulk.create') }}" class="btn btn-success">
-                <i class="fas fa-bolt me-1"></i> Bulk Generate
-            </a>
-            <a href="{{ route('babyeyi.create') }}" class="btn btn-primary">
-                <i class="fas fa-plus me-1"></i> Create New
-            </a>
+            {{-- Admins can only view existing babyeyis --}}
         </div>
     </div>
 
@@ -123,9 +118,6 @@
                                             <a href="{{ route('babyeyi.show', $babyeyi) }}" class="btn btn-outline-primary" title="View">
                                                 <i class="fas fa-eye"></i>
                                             </a>
-                                            <a href="{{ route('babyeyi.edit', $babyeyi) }}" class="btn btn-outline-secondary" title="Edit">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
                                             <a href="{{ route('babyeyi.preview', $babyeyi) }}" class="btn btn-outline-info" title="Preview">
                                                 <i class="fas fa-search"></i>
                                             </a>
@@ -149,10 +141,7 @@
                         <i class="fas fa-inbox" style="font-size: 2.5rem; opacity: 0.25;"></i>
                     </div>
                     <div class="h5 mb-2">No babyeyi documents yet</div>
-                    <div class="text-muted mb-3">Create your first term registration document.</div>
-                    <a href="{{ route('babyeyi.create') }}" class="btn btn-primary">
-                        <i class="fas fa-plus me-1"></i> Create Document
-                    </a>
+                    <div class="text-muted mb-3">Documents will appear here after they are created by staff.</div>
                 </div>
             @endif
         </div>

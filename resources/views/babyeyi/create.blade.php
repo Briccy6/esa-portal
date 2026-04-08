@@ -135,22 +135,47 @@ document.addEventListener('DOMContentLoaded', function() {
     const courseGroup = document.getElementById('course_group');
     const courseTypeGroup = document.getElementById('course_type_group');
     const infoText = document.getElementById('info_text');
+    const oldTermId = @json(old('term_id'));
+    const termsUrlTemplate = @json(route('babyeyi.get-terms', ['academicYearId' => '__ACADEMIC_YEAR_ID__']));
+
+    function loadTermsForYear(yearId) {
+        if (!yearId) {
+            termSelect.innerHTML = '<option value="">-- Select Term --</option>';
+            termSelect.disabled = true;
+            return;
+        }
+
+        termSelect.disabled = true;
+        termSelect.innerHTML = '<option value="">Loading terms...</option>';
+
+        const termsUrl = termsUrlTemplate.replace('__ACADEMIC_YEAR_ID__', encodeURIComponent(yearId));
+        fetch(termsUrl)
+            .then(response => response.json())
+            .then(data => {
+                termSelect.innerHTML = '<option value="">-- Select Term --</option>';
+                data.forEach(term => {
+                    termSelect.innerHTML += `<option value="${term.id}">${term.name}</option>`;
+                });
+                if (oldTermId) termSelect.value = String(oldTermId);
+                termSelect.disabled = false;
+            })
+            .catch(() => {
+                termSelect.innerHTML = '<option value="">Error loading terms</option>';
+                termSelect.disabled = true;
+            });
+    }
 
     // Load terms when academic year changes
     academicYearSelect.addEventListener('change', function() {
-        if (this.value) {
-            fetch(`/babyeyi/get-terms/${this.value}`)
-                .then(response => response.json())
-                .then(data => {
-                    termSelect.innerHTML = '<option value="">-- Select Term --</option>';
-                    data.forEach(term => {
-                        termSelect.innerHTML += `<option value="${term.id}">${term.name}</option>`;
-                    });
-                });
-        } else {
-            termSelect.innerHTML = '<option value="">-- Select Term --</option>';
-        }
+        loadTermsForYear(this.value);
     });
+
+    // Auto-load terms on initial page load (e.g., after validation errors)
+    if (academicYearSelect.value) {
+        loadTermsForYear(academicYearSelect.value);
+    } else {
+        termSelect.disabled = true;
+    }
 
     // Handle selection type changes
     selectionTypeRadios.forEach(radio => {
