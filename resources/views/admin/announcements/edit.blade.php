@@ -6,7 +6,7 @@
 <div class="container">
     <h2>Edit Announcement</h2>
 
-    <form action="{{ route('admin.announcements.update', $announcement->id) }}" method="POST" enctype="multipart/form-data" id="announcementForm">
+    <form action="{{ route('admin.announcements.update', $announcement->id) }}" method="POST" enctype="multipart/form-data" id="announcementForm" novalidate>
         @csrf
         @method('PUT') <!-- Use PUT method for update -->
 
@@ -28,7 +28,7 @@
 
         <div class="mb-3">
             <label>Message Content</label>
-            <textarea name="content" id="content" class="form-control" required>{{ old('content', $announcement->content) }}</textarea>
+            <textarea name="content" id="content" class="form-control">{{ old('content', $announcement->content) }}</textarea>
         </div>
 
         <div class="mb-3">
@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 items: [
                     'heading',
                     '|',
-                    'bold', 'italic', 'underline', 'strikethrough',
+                    'bold', 'italic',
                     '|',
                     'bulletedList', 'numberedList',
                     '|',

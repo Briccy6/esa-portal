@@ -6,7 +6,7 @@
 <div class="container">
     <h2>Create Announcement</h2>
 
-    <form action="{{ route('admin.announcements.store') }}" method="POST" enctype="multipart/form-data" id="announcementForm">
+    <form action="{{ route('admin.announcements.store') }}" method="POST" enctype="multipart/form-data" id="announcementForm" novalidate>
         @csrf
         <div class="mb-3">
             <label>Title</label>
@@ -26,7 +26,7 @@
 
         <div class="mb-3">
             <label>Message Content</label>
-            <textarea name="content" id="content" class="form-control" required></textarea>
+            <textarea name="content" id="content" class="form-control"></textarea>
         </div>
 
         <div class="mb-3">
@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 items: [
                     'heading',
                     '|',
-                    'bold', 'italic', 'underline', 'strikethrough',
+                    'bold', 'italic',
                     '|',
                     'bulletedList', 'numberedList',
                     '|',
