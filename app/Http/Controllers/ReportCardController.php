@@ -1042,7 +1042,6 @@ class ReportCardController extends Controller
 
         $generated = 0;
         $skipped = 0;
-        $skippedFees = 0;
 
         foreach ($termIds as $termId) {
             \Log::info("Processing Term ID: {$termId}");
@@ -1050,13 +1049,10 @@ class ReportCardController extends Controller
             \Log::info("  Term Name: {$termName}");
             
             foreach ($students as $student) {
-                // Check if student has outstanding fees for the selected term(s)
-                $paymentStatus = FeePaymentService::getPaymentStatus($student, [$termId]);
-                if ($paymentStatus['outstanding'] > 0) {
-                    \Log::info("    Student {$student->id} ({$student->full_name}): SKIPPED - Outstanding fees RWF " . number_format($paymentStatus['outstanding'], 2));
-                    $skippedFees++;
-                    continue;
-                }
+                // Outstanding fees were validated in Step 1 before generation.
+                // For admin reporting/printing we still generate report cards for *all*
+                // selected terms, so the printed output matches the admin selection.
+                // Student access/download will remain blocked later by payment status.
 
                 $existing = ReportCard::where('student_id', $student->id)
                     ->where('academic_year_id', $request->academic_year_id)
@@ -1093,15 +1089,11 @@ class ReportCardController extends Controller
         if ($skipped > 0) {
             $message .= " Skipped {$skipped} duplicate(s).";
         }
-        if ($skippedFees > 0) {
-            $message .= " Skipped {$skippedFees} student(s) with outstanding fees.";
-        }
         
         \Log::info('═══ generateForClass END ═══');
         \Log::info('Summary:', [
             'generated' => $generated,
             'skipped' => $skipped,
-            'skipped_fees' => $skippedFees,
             'message' => $message
         ]);
 
@@ -1189,7 +1181,9 @@ class ReportCardController extends Controller
             ->where('report_cards.course_id', $request->course_id)
             ->where('report_cards.academic_year_id', $request->academic_year_id)
             ->whereIn('report_cards.term_id', $termIds)
-            ->where('report_cards.status', 'approved')
+            // After generation, report cards are usually created as `pending`.
+            // Include pending here so the "Print class PDF" reflects all selected terms.
+            ->whereIn('report_cards.status', ['approved', 'pending', 'printed'])
             ->join('students', 'report_cards.student_id', '=', 'students.id')
             ->orderBy('report_cards.term_id')
             ->orderBy('students.full_name')
