@@ -195,9 +195,9 @@
                                 <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#classReportModal">
                                     <i class="fas fa-users me-1"></i> Class Report
                                 </button>
-                                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#reportCardModal">
-                                    <i class="fas fa-id-card me-1"></i> Report Card
-                                </button>
+                                <a href="{{ route('dos.report-cards.index') }}" class="btn btn-success">
+                                    <i class="fas fa-id-card me-1"></i> View Report Cards
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -495,52 +495,6 @@
     </div>
 </div>
 
-<!-- Report Card Modal -->
-<div class="modal fade" id="reportCardModal" tabindex="-1" aria-labelledby="reportCardModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-success text-white">
-                <h5 class="modal-title" id="reportCardModalLabel">
-                    <i class="fas fa-id-card me-2"></i>Generate Report Card
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <form method="POST" action="{{ route('dos.marks.report-card') }}">
-                @csrf
-                <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <label class="form-label">Student *</label>
-                            <select name="student_id" class="form-select" required>
-                                <option value="">Select Student</option>
-                                @foreach(\App\Models\Student::orderBy('full_name')->get() as $student)
-                                    <option value="{{ $student->id }}">{{ $student->full_name }} (ID: {{ $student->id }})</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Term (Optional)</label>
-                            <input type="text" name="term" class="form-control" placeholder="e.g., Term 1">
-                        </div>
-                    </div>
-                    <div class="row mt-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Academic Year (Optional)</label>
-                            <input type="text" name="academic_year" class="form-control" placeholder="e.g., 2025-2026">
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-success">
-                        <i class="fas fa-file-alt me-1"></i> Generate Report Card
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
 <!-- Custom Styles -->
 <style>
     .bg-gradient-primary {
@@ -598,7 +552,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Auto-close modals after form submission
-    const forms = document.querySelectorAll('#studentReportModal form, #classReportModal form, #reportCardModal form');
+    const forms = document.querySelectorAll('#studentReportModal form, #classReportModal form');
     forms.forEach(form => {
         form.addEventListener('submit', function() {
             const modal = this.closest('.modal');

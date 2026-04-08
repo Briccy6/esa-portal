@@ -1132,7 +1132,13 @@ Route::middleware(['auth:staff'])->prefix('dos/marks')->name('dos.marks.')->grou
     Route::post('/bulk-delete', [App\Http\Controllers\DOS\MarksController::class, 'bulkDelete'])->name('bulk-delete');
     Route::match(['get', 'post'], '/student-report', [App\Http\Controllers\DOS\MarksController::class, 'studentReport'])->name('student-report');
     Route::post('/class-report', [App\Http\Controllers\DOS\MarksController::class, 'classReport'])->name('class-report');
-    Route::match(['get', 'post'], '/report-card', [App\Http\Controllers\DOS\MarksController::class, 'reportCard'])->name('report-card');
+});
+
+Route::middleware(['auth:staff'])->prefix('dos/report-cards')->name('dos.report-cards.')->group(function () {
+    Route::get('/', [App\Http\Controllers\DOS\ReportCardReviewController::class, 'index'])->name('index');
+    Route::post('/{reportCard}/approve', [App\Http\Controllers\DOS\ReportCardReviewController::class, 'approve'])->name('approve');
+    Route::get('/{reportCard}/print', [App\Http\Controllers\DOS\ReportCardReviewController::class, 'print'])->name('print');
+    Route::get('/{reportCard}/download', [App\Http\Controllers\DOS\ReportCardReviewController::class, 'download'])->name('download');
 });
 
 Route::get('/api/lessons/{lesson}/course', function($lessonId) {

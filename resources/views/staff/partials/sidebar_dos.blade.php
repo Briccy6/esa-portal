@@ -658,6 +658,13 @@
         </li>
 
         <li class="nav-item">
+          <a href="{{ route('dos.report-cards.index') }}" class="nav-link text-white d-flex align-items-center gap-2">
+            <i class="nav-icon bi bi-file-earmark-text"></i>
+            <span class="nav-text">Report Cards Review</span>
+          </a>
+        </li>
+
+        <li class="nav-item">
           <a href="{{ route('to-whom.index') }}" class="nav-link text-white d-flex align-items-center gap-2">
             <i class="nav-icon bi bi-file-text"></i>
             <span class="nav-text">Professional Letters</span>
