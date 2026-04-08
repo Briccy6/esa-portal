@@ -52,6 +52,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!el || typeof ClassicEditor === 'undefined') return;
 
     let editorInstance = null;
+    let editorReady = false;
     ClassicEditor
         .create(el, {
             toolbar: {
@@ -73,6 +74,7 @@ document.addEventListener('DOMContentLoaded', function () {
         })
         .then(function (editor) {
             editorInstance = editor;
+            editorReady = true;
         })
         .catch(function (error) {
             console.error('CKEditor init failed:', error);
@@ -81,6 +83,12 @@ document.addEventListener('DOMContentLoaded', function () {
     const form = document.getElementById('announcementForm');
     if (form) {
         form.addEventListener('submit', function (e) {
+            if (!editorReady) {
+                e.preventDefault();
+                alert('Editor is still loading. Please wait 1–2 seconds and try again.');
+                return;
+            }
+
             const html = editorInstance ? editorInstance.getData() : (el.value || '');
             const cleaned = (html || '').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
             if (!cleaned) {
@@ -88,7 +96,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 alert('Please enter announcement content.');
                 if (editorInstance) editorInstance.editing.view.focus();
                 else el.focus();
+                return;
             }
+
+            // Ensure the HTML content is submitted with the form
+            el.value = html;
         });
     }
 });
