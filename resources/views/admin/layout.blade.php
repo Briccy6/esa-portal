@@ -443,6 +443,17 @@
             transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
+        /* Safety override:
+           If JS/DOM ends up with an unexpected combination of classes
+           (for example `.sidebar.collapsed` without `body.sidebar-collapsed`),
+           ensure the main content offset still matches the sidebar width. */
+        .sidebar.collapsed ~ .main-content {
+            margin-left: calc(var(--sidebar-collapsed) + 1rem) !important;
+        }
+        .sidebar:not(.collapsed) ~ .main-content {
+            margin-left: calc(var(--sidebar-width) + 1rem) !important;
+        }
+
         /* Mobile Responsiveness */
         @media (max-width: 768px) {
             .sidebar {

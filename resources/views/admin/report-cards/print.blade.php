@@ -7,7 +7,10 @@
     <style>
         @page {
             size: A4 portrait;
-            margin: 0.4cm;
+            margin-top: 0.4cm;
+            margin-right: 0.4cm;
+            margin-bottom: 0.4cm;
+            margin-left: 0.4cm;
         }
         
         body {
