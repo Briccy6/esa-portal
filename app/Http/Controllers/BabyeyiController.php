@@ -240,8 +240,15 @@ class BabyeyiController extends Controller
     {
         $babyeyi->load(['academicYear', 'term', 'course', 'creator', 'editor']);
         $schoolInfo = SchoolInformation::getActive();
+        if (Auth::guard('admin')->check()) {
+            $view = 'admin.babyeyi.preview';
+        } elseif (Auth::guard('staff')->check()) {
+            $view = 'babyeyi.preview';
+        } else {
+            $view = 'babyeyi.preview';
+        }
 
-        return view('babyeyi.preview', compact('babyeyi', 'schoolInfo'));
+        return view($view, compact('babyeyi', 'schoolInfo'));
     }
 
     /**
@@ -264,8 +271,15 @@ class BabyeyiController extends Controller
     {
         $babyeyi->load(['academicYear', 'term', 'course', 'creator', 'editor']);
         $schoolInfo = SchoolInformation::getActive();
+        if (Auth::guard('admin')->check()) {
+            $view = 'admin.babyeyi.show';
+        } elseif (Auth::guard('staff')->check()) {
+            $view = 'babyeyi.show';
+        } else {
+            $view = 'babyeyi.show';
+        }
 
-        return view('babyeyi.show', compact('babyeyi', 'schoolInfo'));
+        return view($view, compact('babyeyi', 'schoolInfo'));
     }
 
     /**
