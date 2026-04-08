@@ -234,7 +234,7 @@
                                                             @if(isset($lessonData['students'][$studentId][$date]))
                                                                 @php
                                                                     $mark = $lessonData['students'][$studentId][$date];
-                                                                    $originalMark = $mark->value . '/' . $mark->marks_out_of;
+                                                                    $originalMark = $mark->value . '/' . ($mark->assessment_type === 'test' ? ($mark->marks_out_of ?? 100) : 100);
                                                                     $percentage = $mark->normalized_percentage;
                                                                     $status = $mark->status;
                                                                 @endphp

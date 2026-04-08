@@ -148,7 +148,7 @@ public function index()
                     'term_id'    => $request->term_id, // Ensure term_id is always set
                     'assessment_type' => $request->assessment_type,
                     'value' => (float)$value,
-                    'status' => 'recorded'
+                    'status' => 'recorded',
                 ];
 
                 // Only add exam_id and exam_date if assessment_type is exam
@@ -244,16 +244,24 @@ public function index()
         // Get announcements for teacher layout
         $announcements = \App\Models\Announcement::latest()->take(5)->get();
         
-        // Get all marks recorded by this teacher with term relationship
-        $marks = Mark::whereHas('lesson', function($query) use ($teacher) {
-            $query->where('teacher_id', $teacher->id);
-        })
-        ->with(['student', 'course', 'branch', 'lesson', 'term'])
-        ->orderBy('term_id')
-        ->orderBy('lesson_id')
-        ->orderBy('test_date')
-        ->orderBy('student_id')
-        ->get();
+        // Get all marks for lessons/branches/courses assigned to this teacher
+        // via lesson_branch_course table.
+        $marks = Mark::query()
+            ->whereExists(function ($q) use ($teacher) {
+                $q->selectRaw(1)
+                  ->from('lesson_branch_course as lbc')
+                  ->whereColumn('lbc.lesson_id', 'marks.lesson_id')
+                  ->whereColumn('lbc.branch_id', 'marks.branch_id')
+                  ->whereColumn('lbc.course_id', 'marks.course_id')
+                  ->where('lbc.teacher_id', $teacher->id);
+            })
+            ->with(['student', 'course', 'branch', 'lesson', 'term'])
+            ->orderBy('term_id')
+            ->orderBy('course_id')
+            ->orderBy('lesson_id')
+            ->orderBy('test_date')
+            ->orderBy('student_id')
+            ->get();
 
         // Group marks by term, then by lesson, then by test date
         $groupedMarks = [];

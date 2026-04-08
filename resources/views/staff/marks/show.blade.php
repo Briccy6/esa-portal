@@ -33,6 +33,120 @@
                 </div>
             </div>
 
+            <!-- Session Marks Management -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-edit me-2"></i>Manage Recorded Marks (Same Lesson Session)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-3"><strong>Course:</strong> {{ $mark->course->course_name ?? 'N/A' }}</div>
+                        <div class="col-md-3"><strong>Branch:</strong> {{ $mark->branch->name ?? 'N/A' }}</div>
+                        <div class="col-md-3"><strong>Lesson:</strong> {{ $mark->lesson->title ?? 'N/A' }}</div>
+                        <div class="col-md-3"><strong>Teacher:</strong> {{ $teacherName }}</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-3"><strong>Assessment:</strong> {{ ucfirst($mark->assessment_type) }}</div>
+                        <div class="col-md-3"><strong>Term:</strong> {{ $mark->term->name ?? 'N/A' }}</div>
+                        <div class="col-md-3">
+                            <strong>Date:</strong>
+                            {{ $mark->assessment_type === 'test' ? ($mark->test_date ? \Carbon\Carbon::parse($mark->test_date)->format('M d, Y') : 'N/A') : ($mark->exam_date ? \Carbon\Carbon::parse($mark->exam_date)->format('M d, Y') : 'N/A') }}
+                        </div>
+                        <div class="col-md-3"><strong>Total records:</strong> {{ $sessionMarks->count() }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <button type="button"
+                                class="btn btn-sm btn-outline-danger"
+                                onclick="dosBulkDelete({ scope: 'lesson_date', lesson_id: {{ $mark->lesson_id }}, term_id: {{ $mark->term_id ?? 'null' }}, assessment_type: '{{ $mark->assessment_type }}', test_date: '{{ $mark->test_date }}' }, 'Delete ALL marks for this lesson/date session?')">
+                            Delete All In This Lesson/Date
+                        </button>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Recorded Mark</th>
+                                    <th>Lesson</th>
+                                    <th>Term</th>
+                                    <th>Date</th>
+                                    <th style="width:220px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($sessionMarks as $sessionMark)
+                                    <tr>
+                                        <td>
+                                            <div class="fw-semibold">{{ $sessionMark->student->full_name ?? 'Unknown' }}</div>
+                                            <small class="text-muted">ID: {{ $sessionMark->student_id }}</small>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex gap-2 align-items-center">
+                                                <input type="number" id="value-{{ $sessionMark->id }}" class="form-control form-control-sm" min="0" value="{{ $sessionMark->value }}" required>
+                                                <span class="small text-muted">/ {{ $sessionMark->assessment_type === 'test' ? ($sessionMark->marks_out_of ?? 100) : 100 }}</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <select id="lesson-{{ $sessionMark->id }}" class="form-select form-select-sm">
+                                                @foreach($availableLessons as $lbc)
+                                                    <option value="{{ $lbc->lesson_id }}" {{ (int)$sessionMark->lesson_id === (int)$lbc->lesson_id ? 'selected' : '' }}>
+                                                        {{ $lbc->lesson?->title ?? ('Lesson '.$lbc->lesson_id) }}
+                                                        @if($lbc->teacher)
+                                                            - {{ $lbc->teacher->name }}
+                                                        @endif
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <select id="term-{{ $sessionMark->id }}" class="form-select form-select-sm">
+                                                @foreach($terms as $term)
+                                                    <option value="{{ $term->id }}" {{ (int)$sessionMark->term_id === (int)$term->id ? 'selected' : '' }}>
+                                                        {{ $term->name }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                        </td>
+                                        <td>
+                                            @if($sessionMark->assessment_type === 'test')
+                                                <input type="date" id="date-{{ $sessionMark->id }}" class="form-control form-control-sm" value="{{ $sessionMark->test_date }}">
+                                            @else
+                                                <small class="text-muted">{{ $sessionMark->exam_date ? \Carbon\Carbon::parse($sessionMark->exam_date)->format('Y-m-d') : 'Exam date' }}</small>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            <button type="button"
+                                                    class="btn btn-sm btn-primary"
+                                                    onclick="dosUpdateMark({{ $sessionMark->id }}, '{{ $sessionMark->assessment_type }}')">
+                                                Save
+                                            </button>
+                                            <form method="POST" action="{{ route('dos.marks.destroy', $sessionMark->id) }}" class="d-inline" onsubmit="return confirm('Delete this student mark?')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                            </form>
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-danger"
+                                                    onclick="dosBulkDelete({ scope: 'student_lesson_date', student_id: {{ $sessionMark->student_id }}, lesson_id: {{ $sessionMark->lesson_id }}, term_id: {{ $sessionMark->term_id ?? 'null' }}, assessment_type: '{{ $sessionMark->assessment_type }}', test_date: '{{ $sessionMark->test_date }}' }, 'Delete this student mark for this lesson/date?')">
+                                                Del Student Session
+                                            </button>
+                                            <button type="button"
+                                                    class="btn btn-sm btn-danger"
+                                                    onclick="dosBulkDelete({ scope: 'student', student_id: {{ $sessionMark->student_id }} }, 'Delete ALL marks for this student across lessons?')">
+                                                Del Student All
+                                            </button>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
             <!-- Mark Details Card -->
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-gradient-primary text-white">
@@ -300,4 +414,57 @@
         }
     }
 </style>
+
+<script>
+async function dosUpdateMark(markId, assessmentType) {
+    const value = document.getElementById(`value-${markId}`)?.value;
+    const lessonId = document.getElementById(`lesson-${markId}`)?.value;
+    const termId = document.getElementById(`term-${markId}`)?.value;
+    const testDateEl = document.getElementById(`date-${markId}`);
+    const payload = {
+        value: value,
+        lesson_id: lessonId,
+        term_id: termId
+    };
+    if (assessmentType === 'test' && testDateEl) {
+        payload.test_date = testDateEl.value;
+    }
+
+    const res = await fetch(`{{ url('/dos/marks') }}/${markId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify(payload)
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.success) {
+        alert(data.message || 'Failed to update mark.');
+        return;
+    }
+    window.location.reload();
+}
+
+async function dosBulkDelete(payload, confirmText) {
+    if (!confirm(confirmText)) return;
+    const res = await fetch(`{{ route('dos.marks.bulk-delete') }}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify(payload)
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.success) {
+        alert(data.message || 'Failed to delete marks.');
+        return;
+    }
+    window.location.href = '{{ route('dos.marks.index') }}';
+}
+</script>
 @endsection

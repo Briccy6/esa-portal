@@ -19,7 +19,7 @@ class Mark extends Model
         'assessment_type',
         'marks_out_of',
         'test_date',
-        'exam_date'
+        'exam_date',
     ];
 
     public function grade()

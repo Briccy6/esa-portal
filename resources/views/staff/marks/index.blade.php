@@ -112,6 +112,16 @@
                                 </select>
                             </div>
                             <div class="col-md-2">
+                                <select name="term_id" class="form-select" id="termFilter">
+                                    <option value="">All Terms</option>
+                                    @foreach($terms as $term)
+                                        <option value="{{ $term->id }}" {{ request('term_id') == $term->id ? 'selected' : '' }}>
+                                            {{ $term->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-2">
                                 <select name="lesson_id" class="form-select" id="lessonFilter">
                                     <option value="">All Lessons</option>
                                     @foreach($lessons as $lesson)
@@ -204,77 +214,101 @@
                 </div>
                 <div class="card-body p-0">
                     @if(count($groupedMarks) > 0 && count($students) > 0)
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-hover">
-                                <thead class="table-dark">
-                                    <tr>
-                                        <th rowspan="2" class="align-middle">Student Reg No</th>
-                                        <th rowspan="2" class="align-middle">Course</th>
-                                        <th rowspan="2" class="align-middle">Branch</th>
-                                        @foreach($groupedMarks as $lessonId => $lessonData)
-                                            <th colspan="{{ count($lessonData['dates']) }}" class="text-center">
-                                                {{ $lessonData['title'] }}
-                                            </th>
-                                        @endforeach
-                                    </tr>
-                                    <tr>
-                                        @foreach($groupedMarks as $lessonId => $lessonData)
-                                            @foreach($lessonData['dates'] as $date => $dateMarks)
-                                                <th class="text-center" style="min-width: 120px;">
-                                                    @if($date === 'no-date')
-                                                        <small>No Date</small>
-                                                    @else
-                                                        <small>{{ \Carbon\Carbon::parse($date)->format('M d, Y') }}</small>
-                                                    @endif
-                                                </th>
-                                            @endforeach
-                                        @endforeach
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($students as $studentId => $studentInfo)
-                                        <tr>
-                                            <td class="align-middle">
-                                                <strong>{{ $studentInfo['reg_number'] ?? $studentId }}</strong>
-                                            </td>
-                                            <td class="align-middle">{{ $studentInfo['course'] }}</td>
-                                            <td class="align-middle">{{ $studentInfo['branch'] }}</td>
-                                            
-                                            @foreach($groupedMarks as $lessonId => $lessonData)
-                                                @foreach($lessonData['dates'] as $date => $dateMarks)
-                                                    <td class="text-center align-middle">
-                                                        @if(isset($lessonData['students'][$studentId][$date]))
-                                                            @php
-                                                                $mark = $lessonData['students'][$studentId][$date];
-                                                                $originalMark = $mark->value . '/' . ($mark->marks_out_of ?? 100);
-                                                                $percentage = $mark->assessment_type === 'test' 
-                                                                    ? round(($mark->value / ($mark->marks_out_of ?? 100)) * 100, 1)
-                                                                    : $mark->value;
-                                                                $status = $mark->status;
-                                                            @endphp
-                                                            
-                                                            <div class="mark-display">
-                                                                <div class="fw-bold {{ $percentage >= 50 ? 'text-success' : 'text-danger' }}">
-                                                                    {{ $percentage }}%
-                                                                </div>
-                                                                <small class="text-muted">{{ $originalMark }}</small>
-                                                                <div>
-                                                                    <span class="badge bg-{{ $status === 'recorded' ? 'success' : ($status === 'updated' ? 'info' : 'warning') }} badge-sm">
-                                                                {{ ucfirst($status) }}
-                                                            </span>
-                                                                </div>
-                                                            </div>
-                                                        @else
-                                                            <span class="text-muted">-</span>
-                                                        @endif
-                                                    </td>
+                        @foreach($groupedMarks as $courseId => $courseData)
+                            <div class="p-3 border-bottom">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-book me-2 text-primary"></i>
+                                    {{ $courseData['name'] }}
+                                </h5>
+                            </div>
+
+                            @foreach($courseData['terms'] as $termId => $termData)
+                                <div class="p-3 bg-light border-bottom">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-calendar-alt me-2"></i>
+                                        Term: {{ $termData['name'] }}
+                                    </h6>
+                                </div>
+
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-hover mb-0">
+                                        <thead class="table-dark">
+                                            <tr>
+                                                <th rowspan="2" class="align-middle">Student Reg No</th>
+                                                <th rowspan="2" class="align-middle">Branch</th>
+                                                @foreach($termData['lessons'] as $lessonId => $lessonData)
+                                                    <th colspan="{{ count($lessonData['dates']) }}" class="text-center">
+                                                        {{ $lessonData['title'] }}
+                                                    </th>
                                                 @endforeach
+                                            </tr>
+                                            <tr>
+                                                @foreach($termData['lessons'] as $lessonId => $lessonData)
+                                                    @foreach($lessonData['dates'] as $date => $dateMarks)
+                                                        <th class="text-center" style="min-width: 170px;">
+                                                            @if($date === 'no-date')
+                                                                <small>No Date</small>
+                                                            @else
+                                                                <small>{{ \Carbon\Carbon::parse($date)->format('M d, Y') }}</small>
+                                                            @endif
+                                                        </th>
+                                                    @endforeach
+                                                @endforeach
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($students as $studentId => $studentInfo)
+                                                @if(($studentInfo['course'] ?? null) !== ($courseData['name'] ?? null))
+                                                    @continue
+                                                @endif
+                                                <tr>
+                                                    <td class="align-middle">
+                                                        <strong>{{ $studentInfo['reg_number'] ?? $studentId }}</strong>
+                                                    </td>
+                                                    <td class="align-middle">{{ $studentInfo['branch'] }}</td>
+
+                                                    @foreach($termData['lessons'] as $lessonId => $lessonData)
+                                                        @foreach($lessonData['dates'] as $date => $dateMarks)
+                                                            <td class="text-center align-middle">
+                                                                @if(isset($lessonData['students'][$studentId][$date]))
+                                                                    @php
+                                                                        $mark = $lessonData['students'][$studentId][$date];
+                                                                        $outOf = $mark->assessment_type === 'test' ? ($mark->marks_out_of ?? 100) : 100;
+                                                                        $originalMark = $mark->value . '/' . $outOf;
+                                                                        $percentage = $mark->assessment_type === 'test'
+                                                                            ? round(($mark->value / $outOf) * 100, 1)
+                                                                            : $mark->value;
+                                                                    @endphp
+
+                                                                    <div class="fw-bold {{ $percentage >= 50 ? 'text-success' : 'text-danger' }}">
+                                                                        {{ $percentage }}%
+                                                                    </div>
+                                                                    <small class="text-muted d-block">{{ $originalMark }}</small>
+                                                                    <div class="mt-2 d-flex justify-content-center gap-1 flex-wrap">
+                                                                        <button type="button"
+                                                                                class="btn btn-sm btn-outline-primary"
+                                                                                onclick="window.location='{{ route('dos.marks.show', $mark->id) }}'">
+                                                                            Open
+                                                                        </button>
+                                                                        <form method="POST" action="{{ route('dos.marks.destroy', $mark->id) }}" onsubmit="return confirm('Delete this mark?')" style="display:inline;">
+                                                                            @csrf
+                                                                            @method('DELETE')
+                                                                            <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                                                        </form>
+                                                                    </div>
+                                                                @else
+                                                                    <span class="text-muted">-</span>
+                                                                @endif
+                                                            </td>
+                                                        @endforeach
+                                                    @endforeach
+                                                </tr>
                                             @endforeach
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            @endforeach
+                        @endforeach
                         
                         <!-- Summary Statistics -->
                         <div class="row mt-4">

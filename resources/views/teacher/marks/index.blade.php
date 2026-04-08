@@ -668,6 +668,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
         modalTbody.innerHTML = '<tr><td colspan="4" class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></td></tr>';
 
+        var existingMarksPromise = fetchJson('/api/teacher/marks/existing?' + new URLSearchParams({
+            branch_id: branchId,
+            course_id: courseId,
+            lesson_id: lessonId,
+            term_id: termId,
+            assessment_type: assessmentType,
+            test_date: testDate || '',
+            exam_id: examId || ''
+        }).toString(), {
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+        }).catch(function() { return { success: false, marks: {} }; });
+
         fetchJson('/api/teacher/branch/' + branchId + '/course/' + courseId + '/students', {
             headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
         })
@@ -682,8 +694,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 var maxMark = assessmentType === 'test' ? marksOutOf : 100;
 
-                students.forEach(function (student, index) {
+                existingMarksPromise.then(function(existingResp) {
+                    var existingMarks = (existingResp && existingResp.marks) ? existingResp.marks : {};
+
+                    students.forEach(function (student, index) {
                     var initials = student.full_name.charAt(0).toUpperCase();
+                    var existing = existingMarks[String(student.id)] || existingMarks[student.id];
+                    var existingValue = existing && (existing.value !== undefined && existing.value !== null) ? String(existing.value) : '';
                     modalTbody.innerHTML += `
                         <tr class="student-row">
                             <td class="text-center">
@@ -702,7 +719,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             </td>
                             <td>
                                 <div class="input-group">
-                                    <input type="number" name="marks[${student.id}][value]" class="form-control mark-input" min="0" max="${maxMark}" placeholder="0">
+                                    <input type="number" name="marks[${student.id}][value]" class="form-control mark-input" min="0" max="${maxMark}" placeholder="0" value="${existingValue}">
                                     <span class="input-group-text">/ ${maxMark}</span>
                                 </div>
                                 <input type="hidden" name="students[]" value="${student.id}">
@@ -713,6 +730,14 @@ document.addEventListener('DOMContentLoaded', function () {
                             </td>
                         </tr>
                     `;
+                    });
+
+                    // Trigger percentage update for prefilled values
+                    document.querySelectorAll('.mark-input').forEach(function (input) {
+                        if (input.value !== '') {
+                            input.dispatchEvent(new Event('input', { bubbles: true }));
+                        }
+                    });
                 });
 
                 // Attach live percentage validation

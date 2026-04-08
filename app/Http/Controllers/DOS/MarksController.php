@@ -24,13 +24,15 @@ class MarksController extends Controller
         $branches = Branch::all();
         $exams = Exam::all();
         $lessons = Lesson::all();
+        $terms = Term::orderBy('name')->get();
         
         // Get marks and group them by lesson and date
-        $query = Mark::with(['student', 'course', 'branch', 'exam', 'lesson', 'grade'])
+        $query = Mark::with(['student', 'course', 'branch', 'exam', 'lesson', 'grade', 'term'])
             ->when($request->course_id, fn($q) => $q->where('course_id', $request->course_id))
             ->when($request->branch_id, fn($q) => $q->where('branch_id', $request->branch_id))
             ->when($request->exam_id, fn($q) => $q->where('exam_id', $request->exam_id))
             ->when($request->lesson_id, fn($q) => $q->where('lesson_id', $request->lesson_id))
+            ->when($request->term_id, fn($q) => $q->where('term_id', $request->term_id))
             ->when($request->assessment_type, fn($q) => $q->where('assessment_type', $request->assessment_type))
             ->when($request->student_search, function($q) use ($request) {
                 $q->whereHas('student', function($q2) use ($request) {
@@ -38,19 +40,25 @@ class MarksController extends Controller
                        ->orWhere('id', $request->student_search);
                 });
             })
+            ->orderBy('course_id')
+            ->orderBy('term_id')
             ->orderBy('lesson_id')
             ->orderBy('test_date')
             ->orderBy('student_id');
 
         $allMarks = $query->get();
         
-        // Group marks by lesson, then by test date (same as teacher)
+        // Group marks by course -> term -> lesson -> date (DOS requested)
         $groupedMarks = [];
         $students = [];
         
         foreach ($allMarks as $mark) {
+            $courseId = $mark->course_id ?: 'no-course';
+            $courseName = $mark->course?->course_name ?? 'Unknown Course';
+            $termId = $mark->term_id ?: 'no-term';
+            $termName = $mark->term?->name ?? 'Unknown Term';
             $lessonId = $mark->lesson_id;
-            $lessonTitle = $mark->lesson->title;
+            $lessonTitle = $mark->lesson?->title ?? 'Lesson ' . $lessonId;
             $testDate = $mark->test_date ?: 'no-date'; // Handle empty dates
             $studentId = $mark->student_id;
             
@@ -64,47 +72,48 @@ class MarksController extends Controller
                 ];
             }
             
-            // Group by lesson
-            if (!isset($groupedMarks[$lessonId])) {
-                $groupedMarks[$lessonId] = [
+            if (!isset($groupedMarks[$courseId])) {
+                $groupedMarks[$courseId] = [
+                    'name' => $courseName,
+                    'terms' => []
+                ];
+            }
+            if (!isset($groupedMarks[$courseId]['terms'][$termId])) {
+                $groupedMarks[$courseId]['terms'][$termId] = [
+                    'name' => $termName,
+                    'lessons' => []
+                ];
+            }
+            if (!isset($groupedMarks[$courseId]['terms'][$termId]['lessons'][$lessonId])) {
+                $groupedMarks[$courseId]['terms'][$termId]['lessons'][$lessonId] = [
                     'title' => $lessonTitle,
                     'dates' => [],
                     'students' => []
                 ];
             }
-            
-            // Collect unique dates for this lesson
-            if (!isset($groupedMarks[$lessonId]['dates'][$testDate])) {
-                $groupedMarks[$lessonId]['dates'][$testDate] = [];
+            if (!isset($groupedMarks[$courseId]['terms'][$termId]['lessons'][$lessonId]['dates'][$testDate])) {
+                $groupedMarks[$courseId]['terms'][$termId]['lessons'][$lessonId]['dates'][$testDate] = [];
             }
-            
-            // Store marks by student for this lesson and date
-            if (!isset($groupedMarks[$lessonId]['students'][$studentId])) {
-                $groupedMarks[$lessonId]['students'][$studentId] = [];
+            if (!isset($groupedMarks[$courseId]['terms'][$termId]['lessons'][$lessonId]['students'][$studentId])) {
+                $groupedMarks[$courseId]['terms'][$termId]['lessons'][$lessonId]['students'][$studentId] = [];
             }
-            
-            $groupedMarks[$lessonId]['students'][$studentId][$testDate] = $mark;
+            $groupedMarks[$courseId]['terms'][$termId]['lessons'][$lessonId]['students'][$studentId][$testDate] = $mark;
         }
 
         // Sort dates within each lesson (put no-date at the end)
-        foreach ($groupedMarks as $lessonId => &$lessonData) {
-            // Separate no-date from actual dates
-            $noDate = [];
-            $actualDates = [];
-            
-            foreach ($lessonData['dates'] as $date => $dateMarks) {
-                if ($date === 'no-date') {
-                    $noDate[$date] = $dateMarks;
-                } else {
-                    $actualDates[$date] = $dateMarks;
+        foreach ($groupedMarks as $courseId => &$courseData) {
+            foreach ($courseData['terms'] as $termId => &$termData) {
+                foreach ($termData['lessons'] as $lessonId => &$lessonData) {
+                    $noDate = [];
+                    $actualDates = [];
+                    foreach ($lessonData['dates'] as $date => $dateMarks) {
+                        if ($date === 'no-date') $noDate[$date] = $dateMarks;
+                        else $actualDates[$date] = $dateMarks;
+                    }
+                    ksort($actualDates);
+                    $lessonData['dates'] = $actualDates + $noDate;
                 }
             }
-            
-            // Sort actual dates
-            ksort($actualDates);
-            
-            // Combine: actual dates first, then no-date
-            $lessonData['dates'] = $actualDates + $noDate;
         }
         
         // Sort students by name
@@ -122,13 +131,44 @@ class MarksController extends Controller
             'lowest_score' => Mark::min('value'),
         ];
 
-        return view('staff.marks.index', compact('groupedMarks', 'students', 'courses', 'branches', 'exams', 'lessons', 'stats'));
+        return view('staff.marks.index', compact('groupedMarks', 'students', 'courses', 'branches', 'exams', 'lessons', 'terms', 'stats'));
     }
 
     public function show($id)
     {
-        $mark = Mark::with(['student.course', 'student.branch', 'student.academicYear', 'course', 'branch', 'exam', 'lesson', 'grade'])->findOrFail($id);
-        return view('staff.marks.show', compact('mark'));
+        $mark = Mark::with(['student.course', 'student.branch', 'student.academicYear', 'course', 'branch', 'exam', 'lesson', 'grade', 'term'])->findOrFail($id);
+
+        $teacherAssignment = LessonBranchCourse::with('teacher')
+            ->where('lesson_id', $mark->lesson_id)
+            ->where('branch_id', $mark->branch_id)
+            ->where('course_id', $mark->course_id)
+            ->first();
+
+        $teacherName = $teacherAssignment?->teacher?->name ?? 'Unassigned';
+
+        $sessionMarksQuery = Mark::with(['student', 'lesson', 'term'])
+            ->where('course_id', $mark->course_id)
+            ->where('branch_id', $mark->branch_id)
+            ->where('lesson_id', $mark->lesson_id)
+            ->where('term_id', $mark->term_id)
+            ->where('assessment_type', $mark->assessment_type);
+
+        if ($mark->assessment_type === 'test') {
+            $sessionMarksQuery->whereDate('test_date', $mark->test_date);
+        } else {
+            $sessionMarksQuery->where('exam_id', $mark->exam_id);
+        }
+
+        $sessionMarks = $sessionMarksQuery->orderBy('student_id')->get();
+
+        $availableLessons = LessonBranchCourse::with(['lesson', 'teacher'])
+            ->where('course_id', $mark->course_id)
+            ->where('branch_id', $mark->branch_id)
+            ->get();
+
+        $terms = Term::orderBy('name')->get();
+
+        return view('staff.marks.show', compact('mark', 'sessionMarks', 'teacherName', 'availableLessons', 'terms'));
     }
 
     public function destroy($id)
@@ -170,6 +210,82 @@ class MarksController extends Controller
             return redirect()->route('dos.marks.index')
                 ->with('error', 'Failed to delete mark: ' . $e->getMessage());
         }
+    }
+
+    public function update(Request $request, Mark $mark)
+    {
+        $data = $request->validate([
+            'value' => 'required|numeric|min:0',
+            'lesson_id' => 'nullable|exists:lessons,id',
+            'term_id' => 'nullable|exists:terms,id',
+            'test_date' => 'nullable|date',
+        ]);
+
+        if (!empty($data['lesson_id'])) {
+            $isValidAssignment = LessonBranchCourse::where('lesson_id', $data['lesson_id'])
+                ->where('course_id', $mark->course_id)
+                ->where('branch_id', $mark->branch_id)
+                ->exists();
+
+            if (!$isValidAssignment) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Selected lesson is not assigned to this course/branch.'
+                ], 422);
+            }
+        }
+
+        $mark->update([
+            'value' => (int)$data['value'],
+            'lesson_id' => $data['lesson_id'] ?? $mark->lesson_id,
+            'term_id' => $data['term_id'] ?? $mark->term_id,
+            'test_date' => ($mark->assessment_type === 'test') ? ($data['test_date'] ?? $mark->test_date) : $mark->test_date,
+            'status' => 'updated',
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true]);
+        }
+
+        return back()->with('success', 'Mark updated successfully.');
+    }
+
+    public function bulkDelete(Request $request)
+    {
+        $data = $request->validate([
+            'scope' => 'required|in:student,lesson_date,student_lesson_date',
+            'student_id' => 'required_if:scope,student|integer',
+            'lesson_id' => 'required_if:scope,lesson_date,student_lesson_date|integer',
+            'term_id' => 'required_if:scope,lesson_date,student_lesson_date|integer',
+            'assessment_type' => 'required_if:scope,lesson_date,student_lesson_date|in:test,exam',
+            'test_date' => 'required_if:assessment_type,test|nullable|date',
+        ]);
+
+        $q = Mark::query();
+
+        if ($data['scope'] === 'student') {
+            $q->where('student_id', $data['student_id']);
+        } else {
+            $q->where('lesson_id', $data['lesson_id'])
+              ->where('term_id', $data['term_id'])
+              ->where('assessment_type', $data['assessment_type']);
+
+            if ($data['assessment_type'] === 'test') {
+                $q->whereDate('test_date', $data['test_date']);
+            }
+
+            if ($data['scope'] === 'student_lesson_date') {
+                $q->where('student_id', $data['student_id']);
+            }
+        }
+
+        $deleted = $q->delete();
+
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true, 'deleted' => $deleted]);
+        }
+
+        return back()->with('success', "Deleted {$deleted} mark record(s).");
     }
 
     public function studentReport(Request $request)

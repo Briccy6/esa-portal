@@ -845,6 +845,59 @@ Route::middleware('auth:teacher')->prefix('teacher')->name('teacher.')->group(fu
     Route::put('marks/update/{lessonId}/{testDate}', [\App\Http\Controllers\Teacher\MarksController::class, 'updateMarks'])->name('marks.update');
 });
 
+// Teacher marks recording helper: fetch existing marks for a context (to prefill inputs)
+Route::middleware('auth:teacher')->get('/api/teacher/marks/existing', function (\Illuminate\Http\Request $request) {
+    $teacher = auth('teacher')->user();
+
+    $validated = \Validator::make($request->all(), [
+        'branch_id' => 'required|integer',
+        'course_id' => 'required|integer',
+        'lesson_id' => 'required|integer',
+        'term_id' => 'required|integer',
+        'assessment_type' => 'required|in:test,exam',
+        'test_date' => 'required_if:assessment_type,test|date',
+        'exam_id' => 'required_if:assessment_type,exam|integer',
+    ])->validate();
+
+    $query = \App\Models\Mark::query()
+        ->where('branch_id', $validated['branch_id'])
+        ->where('course_id', $validated['course_id'])
+        ->where('lesson_id', $validated['lesson_id'])
+        ->where('term_id', $validated['term_id'])
+        ->where('assessment_type', $validated['assessment_type'])
+        ->whereExists(function($q) use ($teacher) {
+            $q->selectRaw(1)
+              ->from('lesson_branch_course as lbc')
+              ->whereColumn('lbc.lesson_id', 'marks.lesson_id')
+              ->whereColumn('lbc.branch_id', 'marks.branch_id')
+              ->whereColumn('lbc.course_id', 'marks.course_id')
+              ->where('lbc.teacher_id', $teacher->id);
+        });
+
+    if ($validated['assessment_type'] === 'test') {
+        $query->whereDate('test_date', $validated['test_date']);
+    } else {
+        $query->where('exam_id', $validated['exam_id']);
+    }
+
+    $marks = $query->get(['id', 'student_id', 'value', 'marks_out_of', 'test_date', 'exam_id', 'assessment_type']);
+
+    $byStudent = [];
+    foreach ($marks as $m) {
+        $byStudent[$m->student_id] = [
+            'id' => $m->id,
+            'value' => $m->value,
+            'marks_out_of' => $m->marks_out_of,
+        ];
+    }
+
+    return response()->json([
+        'success' => true,
+        'marks' => $byStudent,
+        'count' => count($byStudent),
+    ]);
+});
+
 // This route is now handled by the controller below with proper auth middleware
 // Route moved to: Route::middleware(['auth:staff'])->prefix('api/courses') -> getCourseStudents()
 
@@ -1075,6 +1128,8 @@ Route::middleware(['auth:staff'])->prefix('dos/marks')->name('dos.marks.')->grou
     Route::get('/', [App\Http\Controllers\DOS\MarksController::class, 'index'])->name('index');
     Route::get('/{mark}', [App\Http\Controllers\DOS\MarksController::class, 'show'])->name('show');
     Route::delete('/{mark}', [App\Http\Controllers\DOS\MarksController::class, 'destroy'])->name('destroy');
+    Route::put('/{mark}', [App\Http\Controllers\DOS\MarksController::class, 'update'])->name('update');
+    Route::post('/bulk-delete', [App\Http\Controllers\DOS\MarksController::class, 'bulkDelete'])->name('bulk-delete');
     Route::match(['get', 'post'], '/student-report', [App\Http\Controllers\DOS\MarksController::class, 'studentReport'])->name('student-report');
     Route::post('/class-report', [App\Http\Controllers\DOS\MarksController::class, 'classReport'])->name('class-report');
     Route::match(['get', 'post'], '/report-card', [App\Http\Controllers\DOS\MarksController::class, 'reportCard'])->name('report-card');
