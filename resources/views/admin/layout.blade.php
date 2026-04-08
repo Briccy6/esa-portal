@@ -1051,6 +1051,13 @@
                             <span class="nav-text">Staff Members</span>
                         </a>
                     </div>
+
+                    <div class="nav-item">
+                        <a href="{{ route('admin.announcements.index') }}" class="nav-link {{ request()->routeIs('admin.announcements.*') ? 'active' : '' }}">
+                            <i class="fas fa-bullhorn"></i>
+                            <span class="nav-text">Announcements</span>
+                        </a>
+                    </div>
                     
                     <!-- Client Management Submenu -->
                     <div class="nav-section" x-data="{ isOpen: {{ request()->routeIs('admin.clients.*') ? 'true' : 'false' }} }">

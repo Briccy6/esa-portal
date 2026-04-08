@@ -22,7 +22,8 @@ class AnnouncementController extends Controller
     {
         $data = $request->validate([
             'title' => 'required|string|max:255',
-            'audience' => 'required|in:students,staff,public',
+            // Must match DB enum in announcements migration
+            'audience' => 'required|in:public,students,teachers,admin,all',
             'content' => 'required|string',
             'attachment' => 'nullable|file|max:2048',
             'sender' => 'nullable|string|max:255',
@@ -47,7 +48,8 @@ class AnnouncementController extends Controller
     {
         $data = $request->validate([
             'title' => 'required|string|max:255',
-            'audience' => 'required|in:students,staff,public',
+            // Must match DB enum in announcements migration
+            'audience' => 'required|in:public,students,teachers,admin,all',
             'content' => 'required|string',
             'attachment' => 'nullable|file|max:2048',
             'sender' => 'nullable|string|max:255',
