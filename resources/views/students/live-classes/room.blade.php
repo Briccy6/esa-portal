@@ -618,14 +618,18 @@ function postSignal(data) {
 }
 
 // Poll for new chat messages
+let lastChatSignalId = 0;
 async function pollChat() {
     try {
-        const r = await fetch(chatUrl + '?peer={{ auth()->guard('student')->user()->full_name }}&since=0', {
+        const r = await fetch(chatUrl + '?peer={{ auth()->guard('student')->user()->full_name }}&since=' + lastChatSignalId, {
             headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
         });
         if (!r.ok) return;
         const response = await r.json();
         const signals = response.signals || [];
+        if (signals.length > 0) {
+            lastChatSignalId = Math.max(...signals.map(s => s.id));
+        }
         
         // Filter for chat signals only
         const chatSignals = signals.filter(sig => sig.type === 'chat');
@@ -677,12 +681,15 @@ function pollParticipants() {
 // Join WebRTC room
 function joinRoom() {
     // Start polling immediately instead of separate join endpoint
-    fetch(chatUrl + '?peer={{ auth()->guard('student')->user()->full_name }}&since=0', {
+    fetch(chatUrl + '?peer={{ auth()->guard('student')->user()->full_name }}&since=' + lastChatSignalId, {
         headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
     })
     .then(response => response.json())
     .then(data => {
         console.log('Joined room successfully:', data);
+        if (data.signals && data.signals.length > 0) {
+            lastChatSignalId = Math.max(...data.signals.map(s => s.id));
+        }
         
         // Send viewer_ready signal to host
         fetch(signalingUrl + '/send', {

@@ -720,38 +720,8 @@ function reconnect() {
 // Start polling, then join (1s = lower latency than 2s for HTTP signaling)
 setInterval(pollSignals, 1000);
 joinRoom().then(() => pollSignals());
-
-// ═══════════════════════════════════════════════════════════
-// POLL CHAT — persistent chat log, every 3s
-// ═══════════════════════════════════════════════════════════
-// Track the highest signal ID seen for chat
-let lastChatSignalId = 0;
-
-// Poll for chat messages through the signaling endpoint
-async function pollChat() {
-    try {
-        const r = await fetch(`/live-signaling/${ROOM_ID}/poll?peer=${encodeURIComponent(SESSION_ID)}&since=${lastChatSignalId}`, {
-            headers: { 'X-CSRF-TOKEN': CSRF }
-        });
-        if (!r.ok) return;
-        const response = await r.json();
-        const signals = response.signals || [];
-        
-        // Filter for chat signals only
-        const chatSignals = signals.filter(sig => sig.type === 'chat');
-        
-        // Update the last signal ID
-        if (signals.length > 0) {
-            lastChatSignalId = Math.max(...signals.map(s => s.id));
-        }
-        
-        for (const sig of chatSignals) {
-            if (sig.from_peer === SESSION_ID) { continue; }
-            appendChat(sig.payload?.sender, sig.payload?.message, false, sig.from_peer === 'teacher');
-        }
-    } catch(e) { /* silent */ }
-}
-setInterval(pollChat, 3000);
+// Chat signals are handled inside pollSignals() → handleSignal('chat').
+// A separate pollChat loop caused duplicate messages.
 
 // ═══════════════════════════════════════════════════════════
 // POLL PARTICIPANTS — dynamically refresh student list

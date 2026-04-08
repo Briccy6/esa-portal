@@ -588,41 +588,8 @@ async function handleSignal(sig) {
 }
 
 setInterval(pollSignals, 1000);
-
-// ═══════════════════════════════════════════════════════════
-// POLL CHAT — fetch persistent chat log every 3 s so teacher
-// sees student messages even if they were not in the signaling
-// queue at the moment of polling (e.g. after a page refresh).
-// ═══════════════════════════════════════════════════════════
-// Track the highest signal ID seen for chat
-let lastChatSignalId = 0;
-
-// Poll for chat messages through the signaling endpoint
-async function pollChat() {
-    try {
-        const r = await fetch(`/live-signaling/${ROOM_ID}/poll?peer=teacher&since=${lastChatSignalId}`, {
-            headers: { 'X-CSRF-TOKEN': CSRF }
-        });
-        if (!r.ok) return;
-        const response = await r.json();
-        const signals = response.signals || [];
-        
-        // Filter for chat signals only
-        const chatSignals = signals.filter(sig => sig.type === 'chat');
-        
-        // Update the last signal ID
-        if (signals.length > 0) {
-            lastChatSignalId = Math.max(...signals.map(s => s.id));
-        }
-        
-        for (const sig of chatSignals) {
-            // Skip messages sent by the teacher themselves (already shown locally)
-            if (sig.from_peer === 'teacher') { continue; }
-            appendChat(sig.payload?.sender, sig.payload?.message, false);
-        }
-    } catch(e) { /* silent */ }
-}
-setInterval(pollChat, 3000);
+// Chat signals are handled inside pollSignals() → handleSignal('chat').
+// A separate pollChat loop caused duplicate messages.
 
 // ═══════════════════════════════════════════════════════════
 // CAMERA
@@ -732,6 +699,7 @@ screenCtrl.addEventListener('click', async () => {
     try {
         const ss = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
         const senderReplacement = ss.getVideoTracks()[0];
+        const screenAudio = ss.getAudioTracks()[0] || null;
         if (!senderReplacement) {
             toast('No display video track');
             return;
@@ -742,6 +710,17 @@ screenCtrl.addEventListener('click', async () => {
                 vs.replaceTrack(senderReplacement).catch(e => console.warn('replaceTrack screen', e));
             } else {
                 try { pc.addTrack(senderReplacement, ss); } catch(e) { console.warn('addTrack screen', e); }
+            }
+
+            // If the browser provides system/tab audio, stream it during screen share.
+            // (Many browsers only provide this for tab capture.)
+            if (screenAudio) {
+                const as = getOutboundAudioSender(pc);
+                if (as) {
+                    as.replaceTrack(screenAudio).catch(e => console.warn('replaceTrack screen audio', e));
+                } else {
+                    try { pc.addTrack(screenAudio, ss); } catch(e) { console.warn('addTrack screen audio', e); }
+                }
             }
         });
         localVideo.srcObject = ss;
@@ -757,9 +736,14 @@ screenCtrl.addEventListener('click', async () => {
             screenCtrl.querySelector('span').textContent = 'Share';
             screenBanner.classList.remove('show');
             const camVid2 = localStream && localStream.getVideoTracks()[0];
+            const camAud2 = localStream && localStream.getAudioTracks()[0];
             Object.values(peers).forEach(pc => {
                 const vs = getOutboundVideoSender(pc);
                 if (vs && camVid2) vs.replaceTrack(camVid2).catch(() => {});
+
+                // Restore microphone track after screen-share ends.
+                const as = getOutboundAudioSender(pc);
+                if (as && camAud2) as.replaceTrack(camAud2).catch(() => {});
             });
             if (localStream && camVid2) {
                 localVideo.srcObject = localStream;
