@@ -195,7 +195,10 @@ function loadTerms() {
     }
 
     // Fetch terms for selected academic year
-    fetch(`{{ route('babyeyi.get-terms', '') }}/${academicYearId}`)
+    const termsUrlTemplate = @json(route('babyeyi.get-terms', ['academicYearId' => '__ACADEMIC_YEAR_ID__']));
+    const termsUrl = termsUrlTemplate.replace('__ACADEMIC_YEAR_ID__', encodeURIComponent(academicYearId));
+
+    fetch(termsUrl)
         .then(response => response.json())
         .then(data => {
             termSelect.innerHTML = '<option value="">-- Select Term --</option>';
