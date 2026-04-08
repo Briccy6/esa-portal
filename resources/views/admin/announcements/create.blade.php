@@ -16,11 +16,10 @@
         <div class="mb-3">
             <label>Audience</label>
             <select name="audience" class="form-control" required>
-                <option value="all">All</option>
+                <option value="public">All</option>
                 <option value="students">Students</option>
-                <option value="teachers">Teachers</option>
-                <option value="admin">Admin</option>
-                <option value="public">Public</option>
+                <option value="staff">Staff</option>
+                <option value="public">Public (Website)</option>
             </select>
         </div>
 

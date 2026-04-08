@@ -18,11 +18,10 @@
         <div class="mb-3">
             <label>Audience</label>
             <select name="audience" class="form-control" required>
-                <option value="all" {{ $announcement->audience === 'all' ? 'selected' : '' }}>All</option>
+                <option value="public" {{ $announcement->audience === 'public' ? 'selected' : '' }}>All</option>
                 <option value="students" {{ $announcement->audience === 'students' ? 'selected' : '' }}>Students</option>
-                <option value="teachers" {{ $announcement->audience === 'teachers' ? 'selected' : '' }}>Teachers</option>
-                <option value="admin" {{ $announcement->audience === 'admin' ? 'selected' : '' }}>Admin</option>
-                <option value="public" {{ $announcement->audience === 'public' ? 'selected' : '' }}>Public</option>
+                <option value="staff" {{ $announcement->audience === 'staff' ? 'selected' : '' }}>Staff</option>
+                <option value="public" {{ $announcement->audience === 'public' ? 'selected' : '' }}>Public (Website)</option>
             </select>
         </div>
 
