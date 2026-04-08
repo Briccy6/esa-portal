@@ -205,7 +205,7 @@
                                     <div style="display: flex; flex-wrap: wrap; gap: 4px;">
                                         @foreach($liveClass->courses->take(2) as $course)
                                             <span style="background: #f3f4f6; color: #374151; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem;">
-                                                {{ $course->name }}
+                                                {{ $course->course_name }}
                                             </span>
                                         @endforeach
                                         @if($liveClass->courses->count() > 2)

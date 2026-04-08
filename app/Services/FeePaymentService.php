@@ -60,6 +60,30 @@ class FeePaymentService
         if ($student->course_id && $student->academic_year_id) {
             
             // ========== FEES QUERY (from course_term_fees table) ==========
+            // Student card fee is a one-time fee per academic year (not per term).
+            // We take it from the first term's configured fee for the academic year.
+            $studentCardFeeOnce = 0;
+            $studentCardAlreadyPaidInAcademicYear = StudentTransaction::where('student_id', $student->id)
+                ->where('type', 'student_card')
+                ->where('status', 'successful')
+                ->whereHas('term', function ($q) use ($student) {
+                    $q->where('academic_year_id', $student->academic_year_id);
+                })
+                ->exists();
+
+            $firstYearFee = CourseTermFee::query()
+                ->where('course_id', $student->course_id)
+                ->where('is_active', true)
+                ->whereHas('term', function ($q) use ($student) {
+                    $q->where('academic_year_id', $student->academic_year_id);
+                })
+                ->orderBy('term_id')
+                ->first();
+
+            if ($firstYearFee) {
+                $studentCardFeeOnce = (float) ($firstYearFee->student_card_fee ?? 0);
+            }
+
             // Get all course_term_fees for this student's course
             $feeQuery = CourseTermFee::where('course_id', $student->course_id)
                                      ->where('is_active', true)
@@ -102,7 +126,8 @@ class FeePaymentService
                 $otherFeesTotal += ($fee->tuition_fee ?? 0) 
                                  + ($fee->practical_fee ?? 0) 
                                  + ($fee->trip_fee ?? 0) 
-                                 + ($fee->student_card_fee ?? 0);
+                                 // student_card_fee is handled once per academic year below
+                                 ;
             }
             
             // When checking only specific terms (not all terms), check if registration was already paid globally
@@ -131,6 +156,9 @@ class FeePaymentService
             }
             
             $requiredFees = $registrationFee + $otherFeesTotal;
+            if (!$studentCardAlreadyPaidInAcademicYear) {
+                $requiredFees += $studentCardFeeOnce;
+            }
             
             // ========== PAYMENT QUERY (from student_transactions table) ==========
             // Get all successful fee payments for this student (all fee types)
@@ -277,11 +305,20 @@ class FeePaymentService
             // IMPORTANT: Registration fee should only be counted ONCE per academic year, not per term
             $registrationFeeForCalc = 0;
             $totalRequired = 0;
+            $studentCardFeeOnce = 0;
+            $studentCardAlreadyPaidInAcademicYear = StudentTransaction::where('student_id', $student->id)
+                ->where('type', 'student_card')
+                ->where('status', 'successful')
+                ->whereHas('term', function ($q) use ($student) {
+                    $q->where('academic_year_id', $student->academic_year_id);
+                })
+                ->exists();
             
             foreach ($courseTermFeesForCalc as $index => $fee) {
                 // Add registration fee only from the first term
                 if ($index === 0) {
                     $registrationFeeForCalc = ($fee->registration_fee ?? 0);
+                    $studentCardFeeOnce = ($fee->student_card_fee ?? 0);
                 }
                 
                 // Add all fees for calculation
@@ -294,6 +331,11 @@ class FeePaymentService
             
             // Adjust total to only include registration fee once
             $totalRequired = $totalRequired - ($registrationFeeForCalc * max(0, count($courseTermFeesForCalc) - 1));
+            // Adjust total to only include student card fee once per academic year
+            $totalRequired = $totalRequired - ($studentCardFeeOnce * max(0, count($courseTermFeesForCalc) - 1));
+            if ($studentCardAlreadyPaidInAcademicYear) {
+                $totalRequired = $totalRequired - $studentCardFeeOnce;
+            }
             $totalRequired = max(0, $totalRequired);
 
             $txnCalcQuery = StudentTransaction::where('student_id', $student->id)

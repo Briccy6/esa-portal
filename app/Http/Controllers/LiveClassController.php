@@ -16,7 +16,14 @@ class LiveClassController extends Controller
 {
     public function index()
     {
-        $liveClasses = LiveClass::with(['branches', 'courses', 'lessons', 'teacher'])
+        $liveClasses = LiveClass::with([
+                'branches',
+                'courses',
+                'teacher',
+                'lessons.branchCourses.branch',
+                'lessons.branchCourses.course',
+                'lessons.branchCourses.teacher',
+            ])
             ->orderBy('start_time', 'desc')
             ->paginate(10);
         
@@ -31,9 +38,16 @@ class LiveClassController extends Controller
         $student = Auth::guard('student')->user();
         
         $liveClasses = LiveClass::whereHas('courses', function($query) use ($student) {
-            $query->where('course_id', $student->course_id);
+            $query->where('courses.id', $student->course_id);
         })
-        ->with(['branches', 'courses', 'lessons', 'teacher'])
+        ->with([
+            'branches',
+            'courses',
+            'teacher',
+            'lessons.branchCourses.branch',
+            'lessons.branchCourses.course',
+            'lessons.branchCourses.teacher',
+        ])
         ->orderBy('start_time', 'desc')
         ->paginate(10);
 
@@ -42,7 +56,14 @@ class LiveClassController extends Controller
 
     public function homepageLiveClasses()
     {
-        $query = LiveClass::with(['branches', 'courses', 'lessons', 'teacher'])
+        $query = LiveClass::with([
+                'branches',
+                'courses',
+                'teacher',
+                'lessons.branchCourses.branch',
+                'lessons.branchCourses.course',
+                'lessons.branchCourses.teacher',
+            ])
             ->whereIn('status', ['scheduled', 'active'])
             ->where('end_time', '>=', now())
             ->orderBy('start_time', 'asc');
@@ -729,7 +750,14 @@ class LiveClassController extends Controller
             }
         }
 
-        $liveClass->load(['branches', 'courses', 'lessons', 'teacher']);
+        $liveClass->load([
+            'branches',
+            'courses',
+            'teacher',
+            'lessons.branchCourses.branch',
+            'lessons.branchCourses.course',
+            'lessons.branchCourses.teacher',
+        ]);
         
         return view('admin.live-classes.show', compact('liveClass'));
     }
@@ -745,7 +773,14 @@ class LiveClassController extends Controller
             abort(403, 'You are not authorized to access this live class');
         }
 
-        $liveClass->load(['branches', 'courses', 'lessons', 'teacher']);
+        $liveClass->load([
+            'branches',
+            'courses',
+            'teacher',
+            'lessons.branchCourses.branch',
+            'lessons.branchCourses.course',
+            'lessons.branchCourses.teacher',
+        ]);
         
         return view('students.live-classes.show', compact('liveClass'));
     }
@@ -832,7 +867,14 @@ class LiveClassController extends Controller
             abort(403, 'You are not authorized to access this admin live class room');
         }
 
-        $liveClass->load(['branches', 'courses', 'lessons', 'teacher']);
+        $liveClass->load([
+            'branches',
+            'courses',
+            'teacher',
+            'lessons.branchCourses.branch',
+            'lessons.branchCourses.course',
+            'lessons.branchCourses.teacher',
+        ]);
         
         $studentRequests = $liveClass->requests()
             ->with(['user' => function($query) {
@@ -854,7 +896,13 @@ class LiveClassController extends Controller
 
         $student = Auth::guard('student')->user();
         $student->load(['branch', 'course']);
-        $liveClass->load(['courses', 'teacher']);
+        $liveClass->load([
+            'courses',
+            'teacher',
+            'lessons.branchCourses.branch',
+            'lessons.branchCourses.course',
+            'lessons.branchCourses.teacher',
+        ]);
         
         $existingRequest = $liveClass->requests()
             ->where('user_id', $student->id)
@@ -1286,7 +1334,14 @@ class LiveClassController extends Controller
             }
         }
 
-        $liveClass->load(['branches', 'courses', 'lessons', 'teacher']);
+        $liveClass->load([
+            'branches',
+            'courses',
+            'teacher',
+            'lessons.branchCourses.branch',
+            'lessons.branchCourses.course',
+            'lessons.branchCourses.teacher',
+        ]);
         
         $studentRequests = [];
         if (Auth::guard('admin')->check() || Auth::guard('teacher')->check() || Auth::guard('staff')->check()) {

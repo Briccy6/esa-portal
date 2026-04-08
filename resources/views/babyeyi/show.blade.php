@@ -35,10 +35,8 @@
                     <!-- School Header -->
                     @if ($schoolInfo)
                         <div style="text-align: center; border-bottom: 3px solid #333; padding-bottom: 25px; margin-bottom: 35px;">
-                            @if ($schoolInfo->logo_path)
-                                <img src="{{ asset('storage/' . $schoolInfo->logo_path) }}" style="max-height: 90px; margin-bottom: 15px;" alt="School Logo">
-                            @elseif ($schoolInfo->logo)
-                                <img src="data:image/png;base64,{{ base64_encode($schoolInfo->logo) }}" style="max-height: 90px; margin-bottom: 15px;" alt="School Logo">
+                            @if ($schoolInfo->logo_url)
+                                <img src="{{ $schoolInfo->logo_url }}" style="max-height: 90px; margin-bottom: 15px;" alt="School Logo">
                             @else
                                 <div style="width: 90px; height: 90px; margin: 0 auto 15px; background: #f0f0f0; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #ccc; font-size: 40px;">
                                     <i class="fas fa-graduation-cap"></i>

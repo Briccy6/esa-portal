@@ -18,9 +18,19 @@
 
     // Check if registration fee was paid in the same academic year
     $registrationPaidInYear = false;
+    // Student card fee should be paid once per academic year (not per term)
+    $studentCardPaidInYear = false;
     if ($academicYear) {
         $registrationPaidInYear = \App\Models\StudentTransaction::where('student_id', $student->id)
             ->where('type', 'registration')
+            ->whereIn('status', ['successful', 'paid'])
+            ->whereHas('term', function ($query) use ($academicYear) {
+                $query->where('academic_year_id', $academicYear->id);
+            })
+            ->exists();
+
+        $studentCardPaidInYear = \App\Models\StudentTransaction::where('student_id', $student->id)
+            ->where('type', 'student_card')
             ->whereIn('status', ['successful', 'paid'])
             ->whereHas('term', function ($query) use ($academicYear) {
                 $query->where('academic_year_id', $academicYear->id);
@@ -42,12 +52,13 @@
     }
 
     // Total fees for the term - EXCLUDE registration fee if already paid in this academic year
+    $studentCardFeeToCharge = $studentCardPaidInYear ? 0 : $studentCardFee;
     if ($registrationPaidInYear) {
         // Don't include registration fee if already paid in this year
-        $totalToPay = $studentCardFee + ($discountableFees - $discountAmount);
+        $totalToPay = $studentCardFeeToCharge + ($discountableFees - $discountAmount);
     } else {
         // Include all fees if registration not paid yet
-        $totalToPay = $studentCardFee + $registrationFee + ($discountableFees - $discountAmount);
+        $totalToPay = $studentCardFeeToCharge + $registrationFee + ($discountableFees - $discountAmount);
     }
     
     // Outstanding for the current term only
@@ -728,8 +739,8 @@
 
             <!-- Right: School Stamp -->
             <div class="footer-section">
-                @if($schoolInfo && $schoolInfo->stamp_signature_data)
-                    <img src="data:image/jpeg;base64,{{ base64_encode($schoolInfo->stamp_signature_data) }}" alt="Official Stamp" class="footer-stamp" style="max-height: 50px;">
+                @if($schoolInfo && $schoolInfo->stamp_signature_url)
+                    <img src="{{ $schoolInfo->stamp_signature_url }}" alt="Official Stamp" class="footer-stamp" style="max-height: 50px;">
                 @endif
             </div>
         </div>

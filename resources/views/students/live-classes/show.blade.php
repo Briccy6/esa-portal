@@ -74,15 +74,30 @@
                             <h6 class="text-primary mb-3">Class Details</h6>
                             <div class="mb-3">
                                 <small class="text-muted d-block">Course</small>
-                                <strong>{{ $liveClass->course?->course_name ?? 'N/A' }}</strong>
+                                <strong>
+                                    {{
+                                        ($liveClass->courses?->pluck('course_name')?->filter()?->implode(', '))
+                                        ?: ($liveClass->lessons?->flatMap(fn($l) => $l->branchCourses?->pluck('course.course_name') ?? collect())?->filter()?->unique()?->implode(', ') ?? 'N/A')
+                                    }}
+                                </strong>
                             </div>
                             <div class="mb-3">
                                 <small class="text-muted d-block">Teacher</small>
-                                <strong>{{ $liveClass->teacher?->teacher_name ?? 'No teacher assigned' }}</strong>
+                                <strong>
+                                    {{
+                                        ($liveClass->teacher?->teacher_name)
+                                        ?: ($liveClass->lessons?->flatMap(fn($l) => $l->branchCourses?->pluck('teacher.teacher_name') ?? collect())?->filter()?->unique()?->implode(', ') ?? 'No teacher assigned')
+                                    }}
+                                </strong>
                             </div>
                             <div class="mb-3">
                                 <small class="text-muted d-block">Lesson</small>
-                                <strong>{{ $liveClass->lesson?->title ?? 'N/A' }}</strong>
+                                <strong>
+                                    {{
+                                        ($liveClass->lessons?->pluck('title')?->filter()?->implode(', '))
+                                        ?: 'N/A'
+                                    }}
+                                </strong>
                             </div>
                         </div>
                         <div class="col-md-6">

@@ -155,8 +155,18 @@
                                             <br><small class="text-muted">{{ Str::limit($liveClass->description, 50) }}</small>
                                         @endif
                                     </td>
-                                    <td>{{ $liveClass->teacher->teacher_name ?? 'N/A' }}</td>
-                                    <td>{{ $liveClass->course->course_name ?? 'N/A' }}</td>
+                                    <td>
+                                        {{
+                                            ($liveClass->teacher?->teacher_name)
+                                            ?: ($liveClass->lessons?->flatMap(fn($l) => $l->branchCourses?->pluck('teacher.teacher_name') ?? collect())?->filter()?->unique()?->implode(', ') ?? 'N/A')
+                                        }}
+                                    </td>
+                                    <td>
+                                        {{
+                                            ($liveClass->courses?->pluck('course_name')?->filter()?->implode(', '))
+                                            ?: ($liveClass->lessons?->flatMap(fn($l) => $l->branchCourses?->pluck('course.course_name') ?? collect())?->filter()?->unique()?->implode(', ') ?? 'N/A')
+                                        }}
+                                    </td>
                                     <td>
                                         {{ \Carbon\Carbon::parse($liveClass->start_time)->format('d M Y H:i') }}
                                         @if($liveClass->timezone)

@@ -1318,6 +1318,11 @@ class StudentController extends Controller
                 })
                 ->exists();
 
+            // If not yet paid, only charge these one-time fees once (in a single term row)
+            // so they don't repeat across terms on the dashboard/pay cash breakdown.
+            $registrationFeeCharged = false;
+            $studentCardFeeCharged  = false;
+
             foreach ($terms as $term) {
                 // Get fees for this term
                 $termFees = $course->getFeesForTerm($term->id);
@@ -1369,9 +1374,16 @@ class StudentController extends Controller
 
                 // Calculate totals for this term
                 // NOTE: If registration already paid for academic year, don't charge again
-                $registrationFeeForTerm = $registrationFeePaidInAcademicYear ? 0 : $registrationFee;
+                $registrationFeeForTerm = $registrationFeePaidInAcademicYear ? 0 : ($registrationFeeCharged ? 0 : $registrationFee);
                 // NOTE: If student card already paid for academic year, don't charge again
-                $studentCardFeeForTerm = $studentCardFeePaidInAcademicYear ? 0 : $termStudentCardFee;
+                $studentCardFeeForTerm = $studentCardFeePaidInAcademicYear ? 0 : ($studentCardFeeCharged ? 0 : $termStudentCardFee);
+
+                if ($registrationFeeForTerm > 0) {
+                    $registrationFeeCharged = true;
+                }
+                if ($studentCardFeeForTerm > 0) {
+                    $studentCardFeeCharged = true;
+                }
                 
                 $totalTermFees = $registrationFeeForTerm + $tuitionFee + $practicalFee + $tripFeeAmount + $studentCardFeeForTerm;
                 $totalTermPaid = $paidRegistration + $paidSchoolFee + $paidPractical + $paidTrip + $paidStudentCard;

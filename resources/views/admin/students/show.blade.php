@@ -245,6 +245,7 @@
 
                             // Check if registration fee was paid in the same academic year
                             $registrationPaidInYear = false;
+                            $studentCardPaidInYear = false;
                             if ($currentAcademicYear) {
                                 $registrationPaidInYear = \App\Models\StudentTransaction::where('student_id', $student->id)
                                     ->where('type', 'registration')
@@ -253,13 +254,23 @@
                                         $query->where('academic_year_id', $currentAcademicYear->id);
                                     })
                                     ->exists();
+
+                                // Student card fee should only be required once per academic year
+                                $studentCardPaidInYear = \App\Models\StudentTransaction::where('student_id', $student->id)
+                                    ->where('type', 'student_card')
+                                    ->whereIn('status', ['successful', 'paid'])
+                                    ->whereHas('term', function ($query) use ($currentAcademicYear) {
+                                        $query->where('academic_year_id', $currentAcademicYear->id);
+                                    })
+                                    ->exists();
                             }
                             
                             // Total fees after discount - exclude registration if already paid in this academic year
+                            $studentCardFeeToCharge = $studentCardPaidInYear ? 0 : $studentCardFee;
                             if ($registrationPaidInYear) {
-                                $totalFees = $studentCardFee + ($discountableFees - $discountAmount);
+                                $totalFees = $studentCardFeeToCharge + ($discountableFees - $discountAmount);
                             } else {
-                                $totalFees = $registrationFee + $studentCardFee + ($discountableFees - $discountAmount);
+                                $totalFees = $registrationFee + $studentCardFeeToCharge + ($discountableFees - $discountAmount);
                             }
                             
                             // Get payments from student_transactions table

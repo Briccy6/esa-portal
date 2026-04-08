@@ -17,7 +17,13 @@ class TeacherLiveClassController extends Controller
         
         // Get only live classes assigned to this teacher
         $liveClasses = LiveClass::where('teacher_id', $teacher->id)
-            ->with(['branches', 'courses', 'lessons'])
+            ->with([
+                'branches',
+                'courses',
+                'lessons.branchCourses.branch',
+                'lessons.branchCourses.course',
+                'lessons.branchCourses.teacher',
+            ])
             ->orderBy('start_time', 'desc')
             ->paginate(10);
         
@@ -36,7 +42,13 @@ class TeacherLiveClassController extends Controller
         // Get announcements for teacher layout
         $announcements = \App\Models\Announcement::latest()->take(5)->get();
 
-        $liveClass->load(['branches', 'courses', 'lessons', 'participants' => function($query) {
+        $liveClass->load([
+            'branches',
+            'courses',
+            'lessons.branchCourses.branch',
+            'lessons.branchCourses.course',
+            'lessons.branchCourses.teacher',
+            'participants' => function($query) {
             $query->where('is_active', true)->latest();
         }]);
         
@@ -70,7 +82,14 @@ class TeacherLiveClassController extends Controller
             abort(403, 'You are not authorized to access this live class room');
         }
 
-        $liveClass->load(['branches', 'courses', 'lessons', 'teacher']);
+        $liveClass->load([
+            'branches',
+            'courses',
+            'teacher',
+            'lessons.branchCourses.branch',
+            'lessons.branchCourses.course',
+            'lessons.branchCourses.teacher',
+        ]);
         
         // Get announcements for teacher layout
         $announcements = \App\Models\Announcement::latest()->take(5)->get();

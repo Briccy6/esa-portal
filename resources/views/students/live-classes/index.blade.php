@@ -80,13 +80,21 @@
 
                             <div class="mb-2">
                                 <small class="text-muted">
-                                    <i class="bi bi-book"></i> {{ $liveClass->course?->course_name ?? 'N/A' }}
+                                    <i class="bi bi-book"></i>
+                                    {{
+                                        ($liveClass->courses?->pluck('course_name')?->filter()?->implode(', '))
+                                        ?: ($liveClass->lessons?->flatMap(fn($l) => $l->branchCourses?->pluck('course.course_name') ?? collect())?->filter()?->unique()?->implode(', ') ?? 'N/A')
+                                    }}
                                 </small>
                             </div>
 
                             <div class="mb-2">
                                 <small class="text-muted">
-                                    <i class="bi bi-person"></i> {{ $liveClass->teacher?->teacher_name ?? 'No teacher assigned' }}
+                                    <i class="bi bi-person"></i>
+                                    {{
+                                        ($liveClass->teacher?->teacher_name)
+                                        ?: ($liveClass->lessons?->flatMap(fn($l) => $l->branchCourses?->pluck('teacher.teacher_name') ?? collect())?->filter()?->unique()?->implode(', ') ?? 'No teacher assigned')
+                                    }}
                                 </small>
                             </div>
 

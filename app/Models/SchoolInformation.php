@@ -81,6 +81,16 @@ class SchoolInformation extends Model
             return $service->getImageUrl($this->attributes['logo_file_path']);
         }
 
+        // Legacy string path (older schema)
+        if (!empty($this->attributes['logo_path'] ?? null)) {
+            $path = (string) $this->attributes['logo_path'];
+            if (filter_var($path, FILTER_VALIDATE_URL)) {
+                return $path;
+            }
+            $service = app(SchoolImageService::class);
+            return $service->getImageUrl($path);
+        }
+
         // Fallback to BLOB data (deprecated, for backward compatibility)
         $logo = $this->attributes['logo'] ?? null;
         return $logo ? $this->toImageDataUrl($logo) : null;
@@ -98,6 +108,16 @@ class SchoolInformation extends Model
             return $service->getImageUrl($this->attributes['principal_signature_file_path']);
         }
 
+        // Legacy string path (older schema)
+        if (!empty($this->attributes['principal_signature'] ?? null)) {
+            $path = (string) $this->attributes['principal_signature'];
+            if (filter_var($path, FILTER_VALIDATE_URL)) {
+                return $path;
+            }
+            $service = app(SchoolImageService::class);
+            return $service->getImageUrl($path);
+        }
+
         // Fallback to BLOB data (deprecated, for backward compatibility)
         $signature = $this->attributes['principal_signature_data'] ?? null;
         return $signature ? $this->toImageDataUrl($signature) : null;
@@ -113,6 +133,16 @@ class SchoolInformation extends Model
         if (!empty($this->attributes['stamp_signature_file_path'] ?? null)) {
             $service = app(SchoolImageService::class);
             return $service->getImageUrl($this->attributes['stamp_signature_file_path']);
+        }
+
+        // Legacy string path (older schema)
+        if (!empty($this->attributes['stamp_signature'] ?? null)) {
+            $path = (string) $this->attributes['stamp_signature'];
+            if (filter_var($path, FILTER_VALIDATE_URL)) {
+                return $path;
+            }
+            $service = app(SchoolImageService::class);
+            return $service->getImageUrl($path);
         }
 
         // Fallback to BLOB data (deprecated, for backward compatibility)

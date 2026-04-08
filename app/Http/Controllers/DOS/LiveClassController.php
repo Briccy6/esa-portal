@@ -16,7 +16,14 @@ class LiveClassController extends Controller
 {
     public function index()
     {
-        $liveClasses = LiveClass::with(['branches', 'courses', 'lessons', 'teacher'])
+        $liveClasses = LiveClass::with([
+                'branches',
+                'courses',
+                'teacher',
+                'lessons.branchCourses.branch',
+                'lessons.branchCourses.course',
+                'lessons.branchCourses.teacher',
+            ])
             ->orderBy('start_time', 'desc')
             ->paginate(10);
         
@@ -85,7 +92,15 @@ class LiveClassController extends Controller
 
     public function show(LiveClass $liveClass)
     {
-        $liveClass->load(['branches', 'courses', 'lessons', 'teacher', 'participants']);
+        $liveClass->load([
+            'branches',
+            'courses',
+            'teacher',
+            'lessons.branchCourses.branch',
+            'lessons.branchCourses.course',
+            'lessons.branchCourses.teacher',
+            'participants',
+        ]);
         
         return view('dos.live-classes.show', compact('liveClass'));
     }
@@ -199,7 +214,14 @@ class LiveClassController extends Controller
 
     public function room(LiveClass $liveClass)
     {
-        $liveClass->load(['branches', 'courses', 'lessons', 'teacher']);
+        $liveClass->load([
+            'branches',
+            'courses',
+            'teacher',
+            'lessons.branchCourses.branch',
+            'lessons.branchCourses.course',
+            'lessons.branchCourses.teacher',
+        ]);
         
         return view('dos.live-classes.room', compact('liveClass'));
     }

@@ -6,17 +6,11 @@
     $hdrAddress = optional($schoolInfo)->address ?: '';
     $hdrPhone = optional($schoolInfo)->phone ?: '';
     $hdrEmail = optional($schoolInfo)->email ?: '';
-    
-    // Function to convert binary image data to data URL
-    $getImageDataUrl = function($binaryData, $mimeType = 'image/jpeg') {
-        if (empty($binaryData)) return null;
-        return 'data:' . $mimeType . ';base64,' . base64_encode($binaryData);
-    };
-    
-    // Extract image data URLs
-    $logoUrl = $getImageDataUrl(optional($schoolInfo)->logo);
-    $principalSignatureUrl = $getImageDataUrl(optional($schoolInfo)->principal_signature_data);
-    $stampSignatureUrl = $getImageDataUrl(optional($schoolInfo)->stamp_signature_data);
+
+    // Use unified accessors so images update everywhere (file paths or BLOB fallback).
+    $logoUrl = optional($schoolInfo)->logo_url;
+    $principalSignatureUrl = optional($schoolInfo)->principal_signature_url;
+    $stampSignatureUrl = optional($schoolInfo)->stamp_signature_url;
     $principalName = optional($schoolInfo)->principal_name ?: 'School Principal';
 @endphp
 

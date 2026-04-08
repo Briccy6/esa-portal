@@ -441,6 +441,15 @@
             padding: 2rem;
             min-height: calc(100vh - 70px);
             transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        /* Center page content and prevent it from sliding under the sidebar */
+        .main-content-inner {
+            width: 100%;
+            max-width: 1400px;
         }
 
         /* Safety override:
@@ -471,6 +480,10 @@
             .main-content {
                 margin-left: 0;
                 padding: 1rem;
+            }
+
+            .main-content-inner {
+                max-width: none;
             }
 
             .main-content .container-fluid {
@@ -1219,7 +1232,9 @@
 
     <!-- Main Content -->
     <div class="main-content">
-        @yield('content')
+        <div class="main-content-inner">
+            @yield('content')
+        </div>
     </div>
 
     <!-- Scripts -->

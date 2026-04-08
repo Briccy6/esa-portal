@@ -287,24 +287,50 @@
             </div>
 
             <!-- Courses -->
-            @if($liveClass->courses->count() > 0)
+            @php
+                $displayCourseNames = ($liveClass->courses?->pluck('course_name')?->filter()?->unique() ?? collect());
+                if ($displayCourseNames->isEmpty()) {
+                    $displayCourseNames = $liveClass->lessons?->flatMap(fn($l) => $l->branchCourses?->pluck('course.course_name') ?? collect())
+                        ?->filter()
+                        ?->unique()
+                        ?? collect();
+                }
+
+                $displayBranchNames = ($liveClass->branches?->pluck('name')?->filter()?->unique() ?? collect());
+                if ($displayBranchNames->isEmpty()) {
+                    $displayBranchNames = $liveClass->lessons?->flatMap(fn($l) => $l->branchCourses?->pluck('branch.name') ?? collect())
+                        ?->filter()
+                        ?->unique()
+                        ?? collect();
+                }
+
+                $displayTeacherNames = collect([$liveClass->teacher?->teacher_name])->filter();
+                if ($displayTeacherNames->isEmpty()) {
+                    $displayTeacherNames = $liveClass->lessons?->flatMap(fn($l) => $l->branchCourses?->pluck('teacher.teacher_name') ?? collect())
+                        ?->filter()
+                        ?->unique()
+                        ?? collect();
+                }
+            @endphp
+
+            @if($displayCourseNames->count() > 0)
                 <div class="lc-section">
                     <h2 class="lc-section-title">📚 Courses</h2>
                     <div class="lc-tags">
-                        @foreach($liveClass->courses as $course)
-                            <span class="lc-tag">{{ $course->name }}</span>
+                        @foreach($displayCourseNames as $courseName)
+                            <span class="lc-tag">{{ $courseName }}</span>
                         @endforeach
                     </div>
                 </div>
             @endif
 
             <!-- Branches -->
-            @if($liveClass->branches->count() > 0)
+            @if($displayBranchNames->count() > 0)
                 <div class="lc-section">
                     <h2 class="lc-section-title">🏢 Branches</h2>
                     <div class="lc-tags">
-                        @foreach($liveClass->branches as $branch)
-                            <span class="lc-tag">{{ $branch->name }}</span>
+                        @foreach($displayBranchNames as $branchName)
+                            <span class="lc-tag">{{ $branchName }}</span>
                         @endforeach
                     </div>
                 </div>
@@ -328,7 +354,7 @@
                 <div class="lc-info-grid">
                     <div class="lc-info-item">
                         <span class="lc-info-label">Teacher</span>
-                        <span class="lc-info-value">{{ $liveClass->teacher ? $liveClass->teacher->name : 'Not assigned' }}</span>
+                        <span class="lc-info-value">{{ $displayTeacherNames->implode(', ') ?: 'Not assigned' }}</span>
                     </div>
                     <div class="lc-info-item">
                         <span class="lc-info-label">Meeting ID</span>

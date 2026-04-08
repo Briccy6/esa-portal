@@ -392,10 +392,8 @@
                 <div class="footer-cell">
                     <div class="signature-line">
                         @if($hasPrincipalSignature && $schoolInfo)
-                            @if($schoolInfo->principal_signature_data)
+                            @if($schoolInfo->principal_signature_url)
                                 <img src="{{ $schoolInfo->principal_signature_url }}" alt="Signature">
-                            @elseif($schoolInfo->principal_signature)
-                                <img src="{{ asset($schoolInfo->principal_signature) }}" alt="Signature">
                             @endif
                         @endif
                     </div>
@@ -404,10 +402,8 @@
                 <div class="footer-cell">
                     <div class="signature-line">
                         @if($hasStampSignature && $schoolInfo)
-                            @if($schoolInfo->stamp_signature_data)
+                            @if($schoolInfo->stamp_signature_url)
                                 <img src="{{ $schoolInfo->stamp_signature_url }}" alt="Stamp" style="max-height: 12px;">
-                            @elseif($schoolInfo->stamp_signature)
-                                <img src="{{ asset($schoolInfo->stamp_signature) }}" alt="Stamp" style="max-height: 12px;">
                             @endif
                         @endif
                     </div>

@@ -156,28 +156,80 @@ class PaymentScheduleController extends Controller
         $student = Student::with(['course', 'transactions.term'])
                          ->findOrFail($studentId);
         
-        $courseTermFees = $student->course->activeTermFees()->with('term')->get();
+        $courseTermFees = $student->course->activeTermFees()->with(['term.academicYear'])->get();
         
         $paymentHistory = [];
-        
-        foreach ($courseTermFees as $termFee) {
-            $transactions = $student->transactions
-                ->where('term_id', $termFee->term_id)
-                ->orderBy('paid_at', 'desc')
-                ->get();
-            
-            $totalPaid = $transactions->where('status', 'successful')->sum('amount');
-            
-            $paymentHistory[] = [
-                'term' => $termFee->term,
-                'term_fee' => $termFee,
-                'transactions' => $transactions,
-                'total_paid' => $totalPaid,
-                'total_required' => $termFee->total_fees,
-                'remaining' => $termFee->total_fees - $totalPaid,
-                'status' => $totalPaid >= $termFee->total_fees ? 'paid' : 
-                          ($totalPaid > 0 ? 'partial' : 'unpaid'),
-            ];
+
+        // Registration + student card are one-time per academic year (not per term).
+        // For schedule display, only include them once (in the first term of that academic year),
+        // and if already paid in that academic year, exclude them from required totals.
+        $termFeesByYear = $courseTermFees
+            ->groupBy(fn ($tf) => $tf->term?->academic_year_id ?? 'unknown')
+            ->map(fn ($group) => $group->sortBy('term_id')->values());
+
+        foreach ($termFeesByYear as $academicYearId => $yearFees) {
+            if ($academicYearId === 'unknown') {
+                $yearRegistrationAlreadyPaid = false;
+                $yearStudentCardAlreadyPaid = false;
+            } else {
+                $yearRegistrationAlreadyPaid = StudentTransaction::where('student_id', $student->id)
+                    ->where('type', 'registration')
+                    ->where('status', 'successful')
+                    ->whereHas('term', fn ($q) => $q->where('academic_year_id', $academicYearId))
+                    ->exists();
+
+                $yearStudentCardAlreadyPaid = StudentTransaction::where('student_id', $student->id)
+                    ->where('type', 'student_card')
+                    ->where('status', 'successful')
+                    ->whereHas('term', fn ($q) => $q->where('academic_year_id', $academicYearId))
+                    ->exists();
+            }
+
+            $firstTermIdInYear = $yearFees->first()?->term_id;
+
+            foreach ($yearFees as $termFee) {
+                $transactions = $student->transactions
+                    ->where('term_id', $termFee->term_id)
+                    ->sortByDesc('paid_at')
+                    ->values();
+
+                $totalPaid = $transactions->where('status', 'successful')->sum('amount');
+
+                $includeOneTimeFeesThisTerm = ($termFee->term_id === $firstTermIdInYear);
+
+                $requiredRegistration = ($includeOneTimeFeesThisTerm && !$yearRegistrationAlreadyPaid)
+                    ? (float) ($termFee->registration_fee ?? 0)
+                    : 0.0;
+
+                $requiredStudentCard = ($includeOneTimeFeesThisTerm && !$yearStudentCardAlreadyPaid)
+                    ? (float) ($termFee->student_card_fee ?? 0)
+                    : 0.0;
+
+                $requiredTuition = (float) ($termFee->tuition_fee ?? 0);
+                $requiredPractical = (float) ($termFee->practical_fee ?? 0);
+                $requiredTrip = (float) ($termFee->trip_fee ?? 0);
+
+                $totalRequired = $requiredRegistration + $requiredTuition + $requiredPractical + $requiredTrip + $requiredStudentCard;
+                $remaining = max(0, $totalRequired - $totalPaid);
+
+                $paymentHistory[] = [
+                    'term' => $termFee->term,
+                    'term_fee' => $termFee,
+                    'transactions' => $transactions,
+                    'total_paid' => $totalPaid,
+                    'total_required' => $totalRequired,
+                    'remaining' => $remaining,
+                    'status' => $totalPaid >= $totalRequired ? 'paid' :
+                        ($totalPaid > 0 ? 'partial' : 'unpaid'),
+                    'fee_breakdown' => [
+                        'registration' => ['required' => $requiredRegistration, 'paid' => $transactions->where('type', 'registration')->where('status', 'successful')->sum('amount')],
+                        'tuition' => ['required' => $requiredTuition, 'paid' => $transactions->where('type', 'school_fee')->where('status', 'successful')->sum('amount')],
+                        'practical' => ['required' => $requiredPractical, 'paid' => $transactions->where('type', 'practical_fee')->where('status', 'successful')->sum('amount')],
+                        'trip' => ['required' => $requiredTrip, 'paid' => $transactions->where('type', 'trip_fee')->where('status', 'successful')->sum('amount')],
+                        'student_card' => ['required' => $requiredStudentCard, 'paid' => $transactions->where('type', 'student_card')->where('status', 'successful')->sum('amount')],
+                    ],
+                ];
+            }
         }
         
         return view('accountant.student-payment-details', compact(

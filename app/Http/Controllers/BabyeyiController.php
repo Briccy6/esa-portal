@@ -194,8 +194,16 @@ class BabyeyiController extends Controller
     public function edit(Babyeyi $babyeyi)
     {
         $babyeyi->load(['academicYear', 'term', 'course', 'creator']);
+        // Route to appropriate view based on user role
+        if (Auth::guard('admin')->check()) {
+            $view = 'admin.babyeyi.edit';
+        } elseif (Auth::guard('staff')->check()) {
+            $view = 'babyeyi.edit';
+        } else {
+            $view = 'babyeyi.edit';
+        }
 
-        return view('babyeyi.edit', compact('babyeyi'));
+        return view($view, compact('babyeyi'));
     }
 
     /**

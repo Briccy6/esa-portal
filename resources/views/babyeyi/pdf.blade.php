@@ -219,8 +219,22 @@
     <div class="container">
         <!-- Header with School Information -->
         <div class="header">
-            @if ($schoolInfo && $schoolInfo->logo_path)
-                <img src="{{ public_path('storage/' . $schoolInfo->logo_path) }}" class="school-logo" alt="School Logo">
+            @php
+                // DomPDF works best with filesystem paths for local images.
+                // Support both legacy `logo_path` and new `logo_file_path`.
+                $logoFsPath = null;
+                if ($schoolInfo) {
+                    $lp = $schoolInfo->logo_file_path ?? null;
+                    $lp = $lp ?: ($schoolInfo->logo_path ?? null);
+                    if (!empty($lp) && !filter_var($lp, FILTER_VALIDATE_URL)) {
+                        $logoFsPath = public_path('storage/' . ltrim($lp, '/'));
+                    }
+                }
+            @endphp
+            @if (!empty($logoFsPath) && file_exists($logoFsPath))
+                <img src="{{ $logoFsPath }}" class="school-logo" alt="School Logo">
+            @elseif ($schoolInfo && $schoolInfo->logo_url)
+                <img src="{{ $schoolInfo->logo_url }}" class="school-logo" alt="School Logo">
             @endif
             <div class="school-name">{{ $schoolInfo->school_name ?? 'SCHOOL NAME' }}</div>
             @if ($schoolInfo->location)
