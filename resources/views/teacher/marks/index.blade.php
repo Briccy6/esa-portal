@@ -338,10 +338,45 @@ body { background: var(--surface-2); padding: 2.5rem 0 4rem; }
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
+    // ─── Helpers ──────────────────────────────────────────────────────
+    function isJsonResponse(res) {
+        var ct = res.headers && res.headers.get ? (res.headers.get('content-type') || '') : '';
+        return ct.toLowerCase().includes('application/json');
+    }
+
+    function fetchJson(url, options) {
+        return fetch(url, options).then(function (res) {
+            if (isJsonResponse(res)) {
+                return res.json().then(function (data) {
+                    if (!res.ok) {
+                        var msg = (data && (data.message || data.error)) ? (data.message || data.error) : ('HTTP ' + res.status);
+                        var err = new Error(msg);
+                        err.status = res.status;
+                        err.data = data;
+                        throw err;
+                    }
+                    return data;
+                });
+            }
+
+            return res.text().then(function (text) {
+                var msg = 'Request failed (HTTP ' + res.status + ').';
+                if (res.status === 419) msg = 'Session expired (CSRF). Please refresh and login again.';
+                if (res.status === 401 || res.status === 403) msg = 'You are not authorized. Please login again.';
+                if (res.status === 302) msg = 'Redirected to another page. Please login again.';
+                var err = new Error(msg);
+                err.status = res.status;
+                err.raw = text;
+                throw err;
+            });
+        });
+    }
+
     // ─── Load Branches ────────────────────────────────────────────────
     function loadBranches() {
-        fetch('/api/teacher/branches')
-            .then(res => { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
+        fetchJson('/api/teacher/branches', {
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+        })
             .then(branches => {
                 var sel = document.getElementById('branch_id');
                 sel.innerHTML = '<option value="">Select Branch</option>';
@@ -375,8 +410,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (!branchId) { updateBtn(); return; }
 
-        fetch('/api/teacher/branch/' + branchId + '/courses')
-            .then(res => { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
+        fetchJson('/api/teacher/branch/' + branchId + '/courses', {
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+        })
             .then(function (courses) {
                 if (Array.isArray(courses) && courses.length > 0) {
                     courseSelect.innerHTML = '<option value="">Select Course</option>';
@@ -409,8 +445,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (!branchId || !courseId) { updateBtn(); return; }
 
-        fetch('/api/teacher/branch/' + branchId + '/course/' + courseId + '/lessons')
-            .then(res => { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
+        fetchJson('/api/teacher/branch/' + branchId + '/course/' + courseId + '/lessons', {
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+        })
             .then(function (lessons) {
                 if (Array.isArray(lessons) && lessons.length > 0) {
                     lessonSelect.innerHTML = '<option value="">Select Lesson</option>';
@@ -536,8 +573,9 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        return fetch('/api/course/' + courseId + '/exams?term_id=' + termId)
-            .then(res => { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
+        return fetchJson('/api/course/' + courseId + '/exams?term_id=' + termId, {
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+        })
             .then(function (data) {
                 examSelect.innerHTML = '<option value="">Select Exam</option>';
                 if (Array.isArray(data) && data.length > 0) {
@@ -630,8 +668,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
         modalTbody.innerHTML = '<tr><td colspan="4" class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></td></tr>';
 
-        fetch('/api/teacher/branch/' + branchId + '/course/' + courseId + '/students')
-            .then(res => { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
+        fetchJson('/api/teacher/branch/' + branchId + '/course/' + courseId + '/students', {
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+        })
             .then(function (data) {
                 var students = Array.isArray(data) ? data : (data.students || []);
                 modalTbody.innerHTML = '';
@@ -811,12 +850,15 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        fetch('{{ route("teacher.marks.store") }}', {
+        fetchJson('{{ route("teacher.marks.store") }}', {
             method: 'POST',
-            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
             body: formData
         })
-        .then(function (res) { return res.json(); })
         .then(function (data) {
             saveBtn.disabled = false;
             saveBtnText.textContent = 'Save Marks';
@@ -842,7 +884,11 @@ document.addEventListener('DOMContentLoaded', function () {
         .catch(function (err) {
             saveBtn.disabled = false;
             saveBtnText.textContent = 'Save Marks';
-            modalMsg.innerHTML = '<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i>' + err.message + '</div>';
+            var extra = '';
+            if (err && err.status) {
+                extra = ' (HTTP ' + err.status + ')';
+            }
+            modalMsg.innerHTML = '<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i>' + (err.message || 'Failed to save marks') + extra + '</div>';
         });
     });
 
