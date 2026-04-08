@@ -28,7 +28,7 @@
 
         <div class="mb-3">
             <label>Message Content</label>
-            <textarea name="content" id="summernote" class="summernote form-control" required>{{ old('content', $announcement->content) }}</textarea>
+            <textarea name="content" id="content" class="form-control" required>{{ old('content', $announcement->content) }}</textarea>
         </div>
 
         <div class="mb-3">
@@ -60,42 +60,51 @@
     </form>
 </div>
 
-<!-- Summernote (Bootstrap 5 build) -->
-<link href="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-bs5.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-bs5.js"></script>
+<!-- CKEditor 5 (Modern WYSIWYG) -->
+<script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const el = document.getElementById('summernote');
-    if (!el || !window.$ || !$.fn || !$.fn.summernote) return;
+    const el = document.getElementById('content');
+    if (!el || typeof ClassicEditor === 'undefined') return;
 
-    $('#summernote').summernote({
-        placeholder: 'Write the announcement here...',
-        tabsize: 2,
-        height: 280,
-        minHeight: 220,
-        maxHeight: 600,
-        focus: false,
-        toolbar: [
-            ['style', ['style', 'strikethrough', 'superscript', 'subscript']],
-            ['font', ['bold', 'italic', 'underline', 'clear']],
-            ['fontsize', ['fontsize']],
-            ['color', ['color']],
-            ['para', ['ul', 'ol', 'paragraph', 'hr']],
-            ['table', ['table']],
-            ['insert', ['link', 'picture', 'video']],
-            ['view', ['fullscreen', 'codeview', 'help']]
-        ]
-    });
+    let editorInstance = null;
+    ClassicEditor
+        .create(el, {
+            toolbar: {
+                items: [
+                    'heading',
+                    '|',
+                    'bold', 'italic', 'underline', 'strikethrough',
+                    '|',
+                    'bulletedList', 'numberedList',
+                    '|',
+                    'link', 'blockQuote', 'insertTable',
+                    '|',
+                    'undo', 'redo'
+                ]
+            },
+            table: {
+                contentToolbar: ['tableColumn', 'tableRow', 'mergeTableCells']
+            }
+        })
+        .then(function (editor) {
+            editorInstance = editor;
+        })
+        .catch(function (error) {
+            console.error('CKEditor init failed:', error);
+        });
 
     const form = document.getElementById('announcementForm');
     if (form) {
         form.addEventListener('submit', function (e) {
-            const html = $('#summernote').summernote('code');
-            if (!html || html.trim() === '' || html.trim() === '<p><br></p>') {
+            const html = editorInstance ? editorInstance.getData() : (el.value || '');
+            const cleaned = (html || '').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+            if (!cleaned) {
                 e.preventDefault();
                 alert('Please enter announcement content.');
-                $('#summernote').summernote('focus');
+                if (editorInstance) editorInstance.editing.view.focus();
+                else el.focus();
             }
         });
     }
