@@ -334,8 +334,12 @@
                                                     <h5 class="text-success">
                                                         @php
                                                             $totalDates = 0;
-                                                            foreach($groupedMarks as $lessonData) {
-                                                                $totalDates += count($lessonData['dates']);
+                                                            foreach($groupedMarks as $courseData) {
+                                                                foreach(($courseData['terms'] ?? []) as $termData) {
+                                                                    foreach(($termData['lessons'] ?? []) as $lessonData) {
+                                                                        $totalDates += count($lessonData['dates'] ?? []);
+                                                                    }
+                                                                }
                                                             }
                                                         @endphp
                                                         {{ $totalDates }}
@@ -349,10 +353,14 @@
                                                         @php
                                                             $totalMarks = 0;
                                                             foreach($students as $studentId => $studentInfo) {
-                                                                foreach($groupedMarks as $lessonId => $lessonData) {
-                                                                    foreach($lessonData['dates'] as $date => $dateMarks) {
-                                                                        if(isset($lessonData['students'][$studentId][$date])) {
-                                                                            $totalMarks++;
+                                                                foreach($groupedMarks as $courseData) {
+                                                                    foreach(($courseData['terms'] ?? []) as $termData) {
+                                                                        foreach(($termData['lessons'] ?? []) as $lessonData) {
+                                                                            foreach(($lessonData['dates'] ?? []) as $date => $dateMarks) {
+                                                                                if(isset($lessonData['students'][$studentId][$date])) {
+                                                                                    $totalMarks++;
+                                                                                }
+                                                                            }
                                                                         }
                                                                     }
                                                                 }
