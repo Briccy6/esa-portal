@@ -1496,7 +1496,14 @@
                         @forelse($publicAnnouncements as $announcement)
                             <div class="card-shadow-hover bg-white rounded-lg p-6 shadow-md">
                                 <h4 class="font-bold section-heading text-xl mb-2">{{ $announcement->title }}</h4>
-                                <p class="text-text-light leading-relaxed mb-3">{{ $announcement->content }}</p>
+                                <div class="text-text-light leading-relaxed mb-3">{!! $announcement->content !!}</div>
+                                @if($announcement->attachment)
+                                    <div class="mb-3">
+                                        <a class="inline-flex items-center text-accent-color font-semibold" target="_blank" href="{{ asset('storage/' . $announcement->attachment) }}">
+                                            <i class="fas fa-paperclip mr-2"></i>View attachment
+                                        </a>
+                                    </div>
+                                @endif
                                 <span class="text-sm text-accent-color font-semibold flex items-center">
                                     <i class="far fa-calendar-alt mr-2 text-sm"></i>{{ $announcement->created_at->format('M d, Y H:i A') }}
                                 </span>

@@ -74,7 +74,14 @@
                     <li class="mb-2">
                         <strong>{{ $announcement->title }}</strong><br>
                         <small>{{ $announcement->created_at->format('M d, Y') }}</small>
-                        <div>{{ $announcement->content }}</div>
+                        <div>{!! $announcement->content !!}</div>
+                        @if($announcement->attachment)
+                            <div class="mt-1">
+                                <a class="btn btn-sm btn-outline-primary" target="_blank" href="{{ asset('storage/' . $announcement->attachment) }}">
+                                    <i class="fas fa-paperclip me-1"></i>View attachment
+                                </a>
+                            </div>
+                        @endif
                     </li>
                 @empty
                     <li>No announcements at this time.</li>

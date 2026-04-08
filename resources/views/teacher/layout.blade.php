@@ -637,7 +637,7 @@
                                    data-bs-toggle="modal"
                                    data-bs-target="#announcementModal"
                                    data-title="{{ $announcement->title }}"
-                                   data-content="{{ htmlspecialchars($announcement->content, ENT_QUOTES) }}"
+                                   data-content="{{ base64_encode($announcement->content) }}"
                                    data-date="{{ $announcement->created_at->format('M d, Y H:i') }}"
                                    data-sender="{{ $announcement->sender ?? 'Admin' }}"
                                    @if($announcement->attachment)
@@ -1208,12 +1208,23 @@ function showNotification(message, type = 'info') {
 
 // Announcement modal script
 document.addEventListener('DOMContentLoaded', function() {
+    function b64DecodeUnicode(str) {
+        try {
+            return decodeURIComponent(Array.prototype.map.call(atob(str), function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+        } catch (e) {
+            try { return atob(str); } catch (_) { return str; }
+        }
+    }
+
     document.querySelectorAll('.announcement-link').forEach(link => {
         link.addEventListener('click', function() {
             document.getElementById('announcementModalLabel').textContent = this.dataset.title;
             document.getElementById('announcementDate').textContent = "Date: " + this.dataset.date;
             document.getElementById('announcementSender').textContent = "Sender: " + this.dataset.sender;
-            document.getElementById('announcementContent').innerHTML = this.dataset.content.replace(/\n/g, '<br>');
+            const html = this.dataset.content ? b64DecodeUnicode(this.dataset.content) : '';
+            document.getElementById('announcementContent').innerHTML = html;
             if (this.dataset.attachment) {
                 document.getElementById('announcementAttachment').innerHTML =
                     `<a href="${this.dataset.attachment}" target="_blank" class="btn btn-outline-primary btn-sm">

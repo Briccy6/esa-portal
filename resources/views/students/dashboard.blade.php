@@ -1027,7 +1027,14 @@
                             <div class="announcement-item">
                                 <div class="announcement-content">
                                     <h6>{{ $announcement->title }}</h6>
-                                    <p>{{ $announcement->body ?? $announcement->content }}</p>
+                                    <div class="announcement-body">{!! $announcement->content !!}</div>
+                                    @if($announcement->attachment)
+                                        <div class="mt-2">
+                                            <a class="btn btn-sm btn-outline-primary" target="_blank" href="{{ asset('storage/' . $announcement->attachment) }}">
+                                                <i class="bi bi-paperclip me-1"></i>View attachment
+                                            </a>
+                                        </div>
+                                    @endif
                                 </div>
                                 <div class="announcement-meta">
                                     <span class="announcement-date">
