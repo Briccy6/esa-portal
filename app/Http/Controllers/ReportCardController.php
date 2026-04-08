@@ -1042,6 +1042,22 @@ class ReportCardController extends Controller
 
         $generated = 0;
         $skipped = 0;
+        $skippedFees = 0;
+
+        // IMPORTANT:
+        // If a student has outstanding fees for ANY of the selected terms,
+        // we must NOT generate report cards for that student (so they won't appear in print).
+        // But if they are fully paid for all selected terms, we generate for ALL selected terms.
+        $eligibleStudentIds = [];
+        foreach ($students as $student) {
+            $paymentStatus = FeePaymentService::getPaymentStatus($student, $termIds);
+            if (($paymentStatus['outstanding'] ?? 0) > 0) {
+                $skippedFees++;
+                \Log::info("Student {$student->id} ({$student->full_name}): SKIPPED - Outstanding for selected terms RWF " . number_format((float) $paymentStatus['outstanding'], 2));
+                continue;
+            }
+            $eligibleStudentIds[] = $student->id;
+        }
 
         foreach ($termIds as $termId) {
             \Log::info("Processing Term ID: {$termId}");
@@ -1049,10 +1065,9 @@ class ReportCardController extends Controller
             \Log::info("  Term Name: {$termName}");
             
             foreach ($students as $student) {
-                // Outstanding fees were validated in Step 1 before generation.
-                // For admin reporting/printing we still generate report cards for *all*
-                // selected terms, so the printed output matches the admin selection.
-                // Student access/download will remain blocked later by payment status.
+                if (! in_array($student->id, $eligibleStudentIds, true)) {
+                    continue;
+                }
 
                 $existing = ReportCard::where('student_id', $student->id)
                     ->where('academic_year_id', $request->academic_year_id)
@@ -1089,11 +1104,15 @@ class ReportCardController extends Controller
         if ($skipped > 0) {
             $message .= " Skipped {$skipped} duplicate(s).";
         }
+        if ($skippedFees > 0) {
+            $message .= " Skipped {$skippedFees} student(s) with outstanding fees.";
+        }
         
         \Log::info('═══ generateForClass END ═══');
         \Log::info('Summary:', [
             'generated' => $generated,
             'skipped' => $skipped,
+            'skipped_fees' => $skippedFees,
             'message' => $message
         ]);
 

@@ -22,7 +22,8 @@
     <meta charset="UTF-8">
     <title>Assessment — {{ $first->student->full_name }} — all terms</title>
     <style>
-        @page { size: A4 portrait; margin: 8mm; }
+        // Reduce whitespace so the table is closer to the PDF page border.
+        @page { size: A4 portrait; margin: 4mm; }
         html, body { margin: 0; padding: 0; font-family: DejaVu Sans, Arial, sans-serif; font-size: 7px; color: #111; }
         .print-wrap { width: 100%; box-sizing: border-box; }
         .print-header-table { width: 100%; border-collapse: collapse; border-bottom: 1px solid #000; margin-bottom: 4px; }

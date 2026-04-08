@@ -78,7 +78,7 @@
             padding-left: calc(var(--sidebar-collapsed) + 1rem);
         }
         body.sidebar-collapsed .main-content {
-            margin-left: var(--sidebar-collapsed);
+            margin-left: calc(var(--sidebar-collapsed) + 1rem);
         }
 
         .navbar-left {
@@ -435,7 +435,8 @@
 
         /* Main Content */
         .main-content {
-            margin-left: var(--sidebar-width);
+            /* Keep main content fully inside the main column next to the fixed sidebar. */
+            margin-left: calc(var(--sidebar-width) + 1rem);
             margin-top: 70px;
             padding: 2rem;
             min-height: calc(100vh - 70px);
@@ -1297,9 +1298,9 @@
                     sidebarOverlay.classList.toggle('active');
                     
                     if (sidebar.classList.contains('collapsed')) {
-                        mainContent.style.marginLeft = 'var(--sidebar-collapsed)';
+                        mainContent.style.marginLeft = 'calc(var(--sidebar-collapsed) + 1rem)';
                     } else {
-                        mainContent.style.marginLeft = 'var(--sidebar-width)';
+                        mainContent.style.marginLeft = 'calc(var(--sidebar-width) + 1rem)';
                     }
                 });
                 
@@ -1307,7 +1308,7 @@
                     sidebar.classList.remove('collapsed');
                     document.body.classList.remove('sidebar-collapsed');
                     sidebarOverlay.classList.remove('active');
-                    mainContent.style.marginLeft = 'var(--sidebar-width)';
+                    mainContent.style.marginLeft = 'calc(var(--sidebar-width) + 1rem)';
                 });
             }
         });

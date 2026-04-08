@@ -62,7 +62,9 @@ class FeePaymentService
             // ========== FEES QUERY (from course_term_fees table) ==========
             // Get all course_term_fees for this student's course
             $feeQuery = CourseTermFee::where('course_id', $student->course_id)
-                                     ->where('is_active', true);
+                                     ->where('is_active', true)
+                                     // Ensure deterministic "first term" selection for registration fee.
+                                     ->orderBy('term_id');
             
             // If specific term IDs provided, filter by those terms only
             if (!empty($termIds) && is_array($termIds)) {
@@ -106,9 +108,17 @@ class FeePaymentService
             // When checking only specific terms (not all terms), check if registration was already paid globally
             // If it was paid in ANY term (even if not in the selected terms), don't count it again
             if (!empty($termIds) && is_array($termIds)) {
+                // Registration fee is per academic year, so only treat it as "already paid"
+                // when it was paid inside the student's current academic year.
+                $academicYearTermIds = Term::query()
+                    ->where('academic_year_id', $student->academic_year_id)
+                    ->pluck('id')
+                    ->all();
+
                 $registrationAlreadyPaid = StudentTransaction::where('student_id', $student->id)
                                                              ->where('type', 'registration')
                                                              ->where('status', 'successful')
+                                                             ->whereIn('term_id', $academicYearTermIds)
                                                              ->exists();
                 
                 if ($registrationAlreadyPaid) {
