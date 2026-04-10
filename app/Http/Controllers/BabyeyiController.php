@@ -600,17 +600,22 @@ class BabyeyiController extends Controller
      */
     public function destroy(Babyeyi $babyeyi)
     {
-        // Only allow deletion of draft documents
-        if ($babyeyi->status !== Babyeyi::STATUS_DRAFT) {
-            return redirect()->back()
-                ->with('error', 'Only draft documents can be deleted.');
+        // Authorize deletion through policy
+        $this->authorize('delete', $babyeyi);
+
+        // Store reference before deletion
+        $reference = $babyeyi->reference_number;
+        
+        // Delete the babyeyi
+        $deleted = $babyeyi->delete();
+
+        if ($deleted) {
+            return redirect()->route('babyeyi.index')
+                ->with('success', "Babyeyi document ({$reference}) has been deleted successfully.");
         }
 
-        $reference = $babyeyi->reference_number;
-        $babyeyi->delete();
-
-        return redirect()->route('babyeyi.index')
-            ->with('success', "Babyeyi document ({$reference}) has been deleted successfully.");
+        return redirect()->back()
+            ->with('error', 'Failed to delete the document. Please try again.');
     }
 
     /**
