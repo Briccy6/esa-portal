@@ -47,7 +47,7 @@ class BabyeyiController extends Controller
     {
         $academicYears = AcademicYear::orderBy('year', 'desc')->get();
         $terms = collect();
-        $courses = Course::orderBy('name')->get();
+        $courses = Course::orderBy('course_name')->get();
         $courseTypes = $this->getCourseTypes();
 
         // Route to appropriate view based on user role

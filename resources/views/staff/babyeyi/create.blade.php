@@ -125,7 +125,7 @@
                                 <option value="">-- Select Course --</option>
                                 @foreach ($courses as $course)
                                     <option value="{{ $course->id }}" @selected(old('course_id') == $course->id)>
-                                        {{ $course->name }} 
+                                        {{ $course->course_name }} 
                                         @if($course->course_type)
                                             ({{ $course->course_type }})
                                         @endif
@@ -177,7 +177,7 @@
                                                id="course_check_{{ $course->id }}"
                                                @checked(in_array($course->id, (array)old('courses', [])))>
                                         <label class="form-check-label" for="course_check_{{ $course->id }}">
-                                            {{ $course->name }}
+                                            {{ $course->course_name }}
                                             @if($course->course_type)
                                                 <span class="badge bg-secondary">{{ $course->course_type }}</span>
                                             @endif
@@ -211,6 +211,23 @@
                         <div class="alert alert-info mb-4" id="info_alert" role="alert">
                             <i class="fas fa-lightbulb"></i>
                             <span id="info_text">Please select a document type above to proceed.</span>
+                        </div>
+
+                        <!-- Content Editor -->
+                        <div class="mb-4">
+                            <label for="content" class="form-label">
+                                <strong>Document Content</strong>
+                                <span class="text-danger">*</span>
+                            </label>
+                            <textarea class="form-control @error('content') is-invalid @enderror" 
+                                      id="content" name="content" rows="10" required
+                                      placeholder="Enter the content for your term registration document...">{{ old('content') }}</textarea>
+                            @error('content')
+                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                            @enderror
+                            <small class="text-muted d-block mt-2">
+                                <i class="fas fa-info-circle"></i> You can format your document here. It will be used as the template for the selected course(s).
+                            </small>
                         </div>
 
                         <!-- Form Actions -->

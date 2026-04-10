@@ -170,6 +170,14 @@
                                                     <a href="{{ route('babyeyi.download', $babyeyi) }}" class="btn btn-outline-success" title="Download PDF">
                                                         <i class="fas fa-download"></i>
                                                     </a>
+                                                    <form action="{{ route('babyeyi.destroy', $babyeyi) }}" method="POST" style="display: inline;" 
+                                                          onsubmit="return confirm('Are you sure you want to delete this babyeyi? This action cannot be undone.');">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </form>
                                                 </div>
                                             </td>
                                         </tr>
