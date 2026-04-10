@@ -307,20 +307,43 @@ async function ensureStream(video = true, audio = true) {
 // ═══════════════════════════════════════════════════════════
 function getOutboundVideoSender(pc) {
     const senders = pc.getSenders();
+    
+    // First try to find sender with video track
     const withVid = senders.find(s => s.track && s.track.kind === 'video');
     if (withVid) return withVid;
+    
+    // If no video track, find by transceiver kind (important for null track senders)
+    for (const transceiver of pc.getTransceivers()) {
+        if (transceiver.kind === 'video' && transceiver.sender) {
+            return transceiver.sender;
+        }
+    }
+    
+    // Fallback: return senders
     const noTrack = senders.filter(s => !s.track);
+    if (noTrack.length >= 2) return noTrack[1];
     if (noTrack.length) return noTrack[0];
-    return senders[0] || null;
+    return senders[1] || senders[0] || null;
 }
 
 function getOutboundAudioSender(pc) {
     const senders = pc.getSenders();
+    
+    // First try to find sender with audio track
     const withAud = senders.find(s => s.track && s.track.kind === 'audio');
     if (withAud) return withAud;
+    
+    // If no audio track, find by transceiver kind
+    for (const transceiver of pc.getTransceivers()) {
+        if (transceiver.kind === 'audio' && transceiver.sender) {
+            return transceiver.sender;
+        }
+    }
+    
+    // Fallback: first sender should be audio
     const noTrack = senders.filter(s => !s.track);
-    if (noTrack.length >= 2) return noTrack[1];
-    return senders[1] || null;
+    if (noTrack.length) return noTrack[0];
+    return senders[0] || null;
 }
 
 // Screen/camera switches use replaceTrack only (Unified Plan). Extra createOffer rounds
@@ -616,26 +639,105 @@ async function startCamera() {
         micCtrl.querySelector('i').className = 'fas fa-microphone';
         micCtrl.querySelector('span').textContent = 'Mic On';
 
-        // ── FIX #4: Push/replace tracks in all existing peer connections.
-        // Peers created before camera started have sendrecv transceivers but no
-        // actual tracks. We must either replaceTrack on the existing sender or
-        // addTrack if no sender exists yet for that kind.
-        Object.entries(peers).forEach(([sid, pc]) => {
-            localStream.getTracks().forEach(track => {
-                const sender = track.kind === 'video'
-                    ? getOutboundVideoSender(pc)
-                    : getOutboundAudioSender(pc);
-                if (sender) {
-                    sender.replaceTrack(track).catch(e => console.warn('replaceTrack error:', e));
-                } else {
-                    try { pc.addTrack(track, localStream); } catch(e) { console.warn('addTrack error:', e); }
+        // ── FIX #4: Handle peers created before camera started.
+        // Peers may have sendrecv transceivers with no tracks yet.
+        // We need to attach actual media and send new offers.
+        
+        const audio = localStream.getAudioTracks()[0];
+        const video = localStream.getVideoTracks()[0];
+        
+        for (const [sid, pc] of Object.entries(peers)) {
+            try {
+                console.log('📹 Updating peer with camera tracks:', sid);
+                
+                // Try to use existing senders first (via replaceTrack)
+                const audioSender = getOutboundAudioSender(pc);
+                const videoSender = getOutboundVideoSender(pc);
+                
+                let audioAttached = false;
+                let videoAttached = false;
+                
+                if (audioSender && audio) {
+                    try {
+                        await audioSender.replaceTrack(audio);
+                        audioAttached = true;
+                        console.log('✅ Audio replaceTrack succeeded for:', sid);
+                    } catch (e) {
+                        console.warn('⚠️ Audio replaceTrack failed, trying addTrack:', e.message);
+                        try {
+                            pc.addTrack(audio, localStream);
+                            audioAttached = true;
+                            console.log('✅ Audio addTrack succeeded as fallback for:', sid);
+                        } catch (e2) {
+                            console.warn('❌ Audio addTrack also failed:', e2.message);
+                        }
+                    }
+                } else if (audio && !audioSender) {
+                    try {
+                        pc.addTrack(audio, localStream);
+                        audioAttached = true;
+                        console.log('✅ Audio addTrack succeeded (no existing sender):', sid);
+                    } catch (e) {
+                        console.warn('❌ Audio addTrack failed:', e.message);
+                    }
                 }
-            });
-            console.log('📹 Pushed camera tracks to existing peer:', sid);
-        });
+                
+                if (videoSender && video) {
+                    try {
+                        await videoSender.replaceTrack(video);
+                        videoAttached = true;
+                        console.log('✅ Video replaceTrack succeeded for:', sid);
+                    } catch (e) {
+                        console.warn('⚠️ Video replaceTrack failed, trying addTrack:', e.message);
+                        try {
+                            pc.addTrack(video, localStream);
+                            videoAttached = true;
+                            console.log('✅ Video addTrack succeeded as fallback for:', sid);
+                        } catch (e2) {
+                            console.warn('❌ Video addTrack also failed:', e2.message);
+                        }
+                    }
+                } else if (video && !videoSender) {
+                    try {
+                        pc.addTrack(video, localStream);
+                        videoAttached = true;
+                        console.log('✅ Video addTrack succeeded (no existing sender):', sid);
+                    } catch (e) {
+                        console.warn('❌ Video addTrack failed:', e.message);
+                    }
+                }
+                
+                // If tracks weren't attached via replaceTrack or addTrack, 
+                // we need to renegotiate with new offer
+                if (!audioAttached || !videoAttached) {
+                    console.log('⚠️ Tracks not fully attached, sending new offer for renegotiation:', sid);
+                    try {
+                        const newOffer = await pc.createOffer({ iceRestart: false });
+                        await pc.setLocalDescription(newOffer);
+                        postSignal({
+                            type: 'offer',
+                            sdp: newOffer.sdp,
+                            role: 'host',
+                            sessionId: SESSION_ID,
+                            forSession: sid
+                        });
+                        console.log('📤 Sent renegotiation offer to:", sid);
+                    } catch (e) {
+                        console.error('❌ Failed to send renegotiation offer:', e);
+                    }
+                }
+                
+            } catch(e) {
+                console.error('❌ Unexpected error updating peer:', sid, e);
+            }
+        }
 
+        console.log('✅ Camera & mic started - all peers updated');
         toast('Camera & mic started');
-    } catch(e) { toast('Camera access denied'); }
+    } catch(e) { 
+        console.error('❌ Camera access error:', e.message);
+        toast('Camera access denied'); 
+    }
 }
 
 function toggleCamera() {
