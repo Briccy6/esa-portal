@@ -12,7 +12,7 @@ class BabyeyiPolicy
     /**
      * Determine whether the user can view any babyeyi.
      */
-    public function viewAny(Staff|Admin $user): bool
+    public function viewAny($user): bool
     {
         return true;
     }
@@ -20,7 +20,7 @@ class BabyeyiPolicy
     /**
      * Determine whether the user can view the babyeyi.
      */
-    public function view(Staff|Admin $user, Babyeyi $babyeyi): bool
+    public function view($user, Babyeyi $babyeyi): bool
     {
         return true;
     }
@@ -28,16 +28,16 @@ class BabyeyiPolicy
     /**
      * Determine whether the user can create babyeyi.
      */
-    public function create(Staff|Admin $user): bool
+    public function create($user): bool
     {
         // Admins can always create
         if ($user instanceof Admin) {
             return true;
         }
 
-        // Staff secretaries can create
+        // Staff can create
         if ($user instanceof Staff) {
-            return $user->role === 'secretary' || $user->role === 'sec';
+            return true;
         }
 
         return false;
@@ -46,7 +46,7 @@ class BabyeyiPolicy
     /**
      * Determine whether the user can update the babyeyi.
      */
-    public function update(Staff|Admin $user, Babyeyi $babyeyi): bool
+    public function update($user, Babyeyi $babyeyi): bool
     {
         // Admin can always update
         if ($user instanceof Admin) {
@@ -55,7 +55,7 @@ class BabyeyiPolicy
 
         // Staff can only update their own
         if ($user instanceof Staff) {
-            return $babyeyi->created_by === $user->id && ($user->role === 'secretary' || $user->role === 'sec');
+            return $babyeyi->created_by === $user->id;
         }
 
         return false;
@@ -64,7 +64,7 @@ class BabyeyiPolicy
     /**
      * Determine whether the user can delete the babyeyi.
      */
-    public function delete(Staff|Admin $user, Babyeyi $babyeyi): bool
+    public function delete($user, Babyeyi $babyeyi): bool
     {
         // Admin can always delete
         if ($user instanceof Admin) {
@@ -74,8 +74,7 @@ class BabyeyiPolicy
         // Staff can only delete their own draft/preview babyeyi
         if ($user instanceof Staff) {
             return $babyeyi->created_by === $user->id &&
-                   in_array($babyeyi->status, ['draft', 'preview']) &&
-                   ($user->role === 'secretary' || $user->role === 'sec');
+                   in_array($babyeyi->status, ['draft', 'preview']);
         }
 
         return false;
@@ -84,7 +83,7 @@ class BabyeyiPolicy
     /**
      * Determine whether the user can restore the babyeyi.
      */
-    public function restore(Staff|Admin $user, Babyeyi $babyeyi): bool
+    public function restore($user, Babyeyi $babyeyi): bool
     {
         return $user instanceof Admin;
     }
@@ -92,7 +91,7 @@ class BabyeyiPolicy
     /**
      * Determine whether the user can permanently delete the babyeyi.
      */
-    public function forceDelete(Staff|Admin $user, Babyeyi $babyeyi): bool
+    public function forceDelete($user, Babyeyi $babyeyi): bool
     {
         return $user instanceof Admin;
     }
@@ -100,16 +99,16 @@ class BabyeyiPolicy
     /**
      * Determine whether the user can publish the babyeyi.
      */
-    public function publish(Staff|Admin $user, Babyeyi $babyeyi): bool
+    public function publish($user, Babyeyi $babyeyi): bool
     {
         // Admin can always publish
         if ($user instanceof Admin) {
             return true;
         }
 
-        // Staff secretary can publish their own
+        // Staff can publish their own
         if ($user instanceof Staff) {
-            return $babyeyi->created_by === $user->id && ($user->role === 'secretary' || $user->role === 'sec');
+            return $babyeyi->created_by === $user->id;
         }
 
         return false;
@@ -118,7 +117,7 @@ class BabyeyiPolicy
     /**
      * Determine whether the user can download the babyeyi.
      */
-    public function download(Staff|Admin $user, Babyeyi $babyeyi): bool
+    public function download($user, Babyeyi $babyeyi): bool
     {
         return true;
     }
