@@ -140,8 +140,8 @@ Route::get('/', function () {
     return view('welcome', compact('publicAnnouncements'));
 })->name('welcome');
 
-// Public Exam Routes
-Route::prefix('public')->name('public.')->group(function () {
+// Public Exam Routes - Fully accessible without authentication
+Route::prefix('public')->name('public.')->middleware(['web'])->group(function () {
     Route::get('/exams', [PublicExamController::class, 'index'])->name('exams.index');
     Route::get('/exams/{exam}', [PublicExamController::class, 'show'])->name('exams.show');
     Route::get('/exams/{exam}/payment', [PublicExamController::class, 'showPayment'])->name('exams.payment');
