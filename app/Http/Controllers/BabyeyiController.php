@@ -47,7 +47,7 @@ class BabyeyiController extends Controller
     {
         $academicYears = AcademicYear::orderBy('year', 'desc')->get();
         $terms = collect();
-        $courses = collect();
+        $courses = Course::orderBy('name')->get();
         $courseTypes = $this->getCourseTypes();
 
         // Route to appropriate view based on user role
@@ -86,10 +86,13 @@ class BabyeyiController extends Controller
             'selection_type' => 'required|in:single,multiple,by_type',
             'course_id' => 'nullable|exists:courses,id',
             'course_type' => 'nullable|string',
+            'courses' => 'nullable|array',
+            'courses.*' => 'exists:courses,id',
+            'content' => 'required|string',
         ]);
 
         // Generate initial content based on selections
-        $content = $this->generateInitialContent($validated);
+        $content = $validated['content'] ?? $this->generateInitialContent($validated);
 
         $babyeyi = Babyeyi::create([
             'academic_year_id' => $validated['academic_year_id'],
