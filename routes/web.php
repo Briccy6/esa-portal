@@ -154,6 +154,13 @@ Route::prefix('public')->name('public.')->middleware(['web'])->group(function ()
     Route::post('/exams/{exam}/save-session/{session}', [PublicExamController::class, 'saveSession'])->name('exams.save.session');
     Route::post('/exams/{exam}/submit/{session}', [PublicExamController::class, 'submitExam'])->name('exams.submit');
     Route::get('/api/exams/{exam}/check-access', [PublicExamController::class, 'checkAccess'])->name('exams.check-access');
+
+    // Babyeyi Routes - Accessible without authentication
+    Route::prefix('babyeyi')->name('babyeyi.')->group(function () {
+        Route::get('/', [BabyeyiController::class, 'publicIndex'])->name('index');
+        Route::get('/{babyeyi}', [BabyeyiController::class, 'publicShow'])->name('show');
+        Route::get('/{babyeyi}/download', [BabyeyiController::class, 'publicDownload'])->name('download');
+    });
 });
 
 // Public Fees Schedule Routes
@@ -1800,13 +1807,6 @@ Route::prefix('babyeyi')->name('babyeyi.')->group(function () {
         Route::get('/{babyeyi}/preview', [BabyeyiController::class, 'preview'])->name('preview');
         Route::get('/{babyeyi}/download', [BabyeyiController::class, 'download'])->name('download');
     });
-});
-
-// PUBLIC: Babyeyi Routes - Accessible by students and public users
-Route::prefix('public/babyeyi')->name('public.babyeyi.')->group(function () {
-    Route::get('/', [BabyeyiController::class, 'publicIndex'])->name('index');
-    Route::get('/{babyeyi}', [BabyeyiController::class, 'publicShow'])->name('show');
-    Route::get('/{babyeyi}/download', [BabyeyiController::class, 'publicDownload'])->name('download');
 });
 
 // STUDENT: Babyeyi Routes - For authenticated students to view their course-specific babyeyis
