@@ -3,63 +3,64 @@
 @section('title', 'Available Exams - Excellent Servant Academy')
 
 @section('content')
-<div class="bg-slate-950">
-    <!-- ALX-style hero header -->
-    <div class="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white">
-        <div class="container mx-auto px-4 pt-12 pb-10 md:pt-16 md:pb-14">
-            <div class="grid lg:grid-cols-2 gap-10 items-center">
-                <div>
-                    <p class="inline-flex items-center space-x-2 rounded-full bg-white/10 px-4 py-1 mb-4 backdrop-blur-sm border border-white/10 text-xs font-semibold tracking-wide uppercase">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                        <span>Public practice tests</span>
-                    </p>
-                    <h1 class="text-3xl md:text-4xl lg:text-5xl font-extrabold leading-tight mb-3">
-                        Test your exam<br class="hidden md:block">
-                        readiness with ESA.
-                    </h1>
-                    <p class="text-base md:text-lg text-slate-200 max-w-xl mb-6">
-                        Timed, auto‑marked practice exams built by ESA teachers to help you
-                        identify gaps, build confidence, and improve before the real exam day.
-                    </p>
-                    @if($exams->count() > 0)
-                        <div class="flex flex-wrap items-center gap-4 text-sm text-slate-300">
-                            <span>{{ $exams->count() }} practice tests available</span>
-                            @if($exams->first()->courses->count() > 0)
-                                <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10">
-                                    <i class="fas fa-graduation-cap text-xs"></i>
-                                    <span>Sample course: {{ $exams->first()->courses->first()->name }}</span>
-                                </span>
-                            @endif
-                        </div>
-                    @endif
-                </div>
+<!-- ALX-style hero header -->
+<div class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white py-12 md:py-16">
+    <div class="container mx-auto px-4 pt-12 pb-10 md:pt-16 md:pb-14">
+        <div class="grid lg:grid-cols-2 gap-10 items-center">
+            <div>
+                <p class="inline-flex items-center space-x-2 rounded-full bg-white/10 px-4 py-1 mb-4 backdrop-blur-sm border border-white/10 text-xs font-semibold tracking-wide uppercase">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                    <span>Public practice tests</span>
+                </p>
+                <h1 class="text-3xl md:text-4xl lg:text-5xl font-extrabold leading-tight mb-3">
+                    Test your exam<br class="hidden md:block">
+                    readiness with ESA.
+                </h1>
+                <p class="text-base md:text-lg text-slate-200 max-w-xl mb-6">
+                    Timed, auto‑marked practice exams built by ESA teachers to help you
+                    identify gaps, build confidence, and improve before the real exam day.
+                </p>
+                @if($exams->count() > 0)
+                    <div class="flex flex-wrap items-center gap-4 text-sm text-slate-300">
+                        <span>{{ $exams->count() }} practice tests available</span>
+                        @if($exams->first()->courses->count() > 0)
+                            <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10">
+                                <i class="fas fa-graduation-cap text-xs"></i>
+                                <span>Sample course: {{ $exams->first()->courses->first()->name }}</span>
+                            </span>
+                        @endif
+                    </div>
+                @endif
+            </div>
 
-                <!-- Compact summary card on the right -->
-                <div class="bg-white/5 border border-white/10 rounded-2xl p-5 md:p-6 shadow-2xl backdrop-blur-sm">
-                    <h2 class="text-lg font-semibold mb-1">How public exams work</h2>
-                    <p class="text-sm text-slate-200 mb-4">
-                        Choose a practice test, review the details, then start when you&apos;re ready.
-                        You&apos;ll see your score as soon as you submit.
-                    </p>
-                    <ul class="space-y-3 text-sm text-slate-100">
-                        <li class="flex items-start gap-2">
-                            <span class="mt-1 w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                            <span>Multiple‑choice questions, marked automatically.</span>
-                        </li>
-                        <li class="flex items-start gap-2">
-                            <span class="mt-1 w-1.5 h-1.5 rounded-full bg-sky-400"></span>
-                            <span>Clear duration and timing for every exam.</span>
-                        </li>
-                        <li class="flex items-start gap-2">
-                            <span class="mt-1 w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-                            <span>Free and paid options, with token support.</span>
-                        </li>
-                    </ul>
-                </div>
+            <!-- Compact summary card on the right -->
+            <div class="bg-white/5 border border-white/10 rounded-2xl p-5 md:p-6 shadow-2xl backdrop-blur-sm">
+                <h2 class="text-lg font-semibold mb-1">How public exams work</h2>
+                <p class="text-sm text-slate-200 mb-4">
+                    Choose a practice test, review the details, then start when you&apos;re ready.
+                    You&apos;ll see your score as soon as you submit.
+                </p>
+                <ul class="space-y-3 text-sm text-slate-100">
+                    <li class="flex items-start gap-2">
+                        <span class="mt-1 w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                        <span>Multiple‑choice questions, marked automatically.</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="mt-1 w-1.5 h-1.5 rounded-full bg-sky-400"></span>
+                        <span>Clear duration and timing for every exam.</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="mt-1 w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                        <span>Free and paid options, with token support.</span>
+                    </li>
+                </ul>
             </div>
         </div>
     </div>
+</div>
 
+<!-- Main Content Section -->
+<div class="bg-white">
     <div class="container mx-auto px-4 py-8">
 
     <!-- Subscription Banner -->
@@ -335,4 +336,6 @@ document.addEventListener('DOMContentLoaded', function() {
     sortSelect.addEventListener('change', filterExams);
 });
 </script>
+    </div>
+</div>
 @endsection
