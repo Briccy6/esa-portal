@@ -37,7 +37,7 @@ class BabyeyiController extends Controller
         } elseif (Auth::guard('staff')->check()) {
             $view = 'staff.babyeyi.index';
         } else {
-            $view = 'babyeyi.index';
+            $view = 'babyeyi.public-index';
         }
         
         return view($view, compact('babyeyis'));
@@ -281,7 +281,7 @@ class BabyeyiController extends Controller
         } elseif (Auth::guard('staff')->check()) {
             $view = 'staff.babyeyi.show';
         } else {
-            $view = 'babyeyi.show';
+            $view = 'babyeyi.public-show';
         }
 
         return view($view, compact('babyeyi', 'schoolInfo'));
