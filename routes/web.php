@@ -1760,32 +1760,45 @@ Route::middleware(['auth:admin,staff,student'])->prefix('to-whom')->name('to-who
 // Admins can view/download existing documents only.
 // Staff can create/edit/publish/generate documents.
 Route::prefix('babyeyi')->name('babyeyi.')->group(function () {
-    // View-only (admin + staff)
-    Route::middleware(['auth:admin,staff'])->group(function () {
-        Route::get('/', [BabyeyiController::class, 'index'])->name('index');
-        Route::get('/{babyeyi}', [BabyeyiController::class, 'show'])->name('show');
-        Route::get('/{babyeyi}/preview', [BabyeyiController::class, 'preview'])->name('preview');
-        Route::get('/{babyeyi}/download', [BabyeyiController::class, 'download'])->name('download');
-        Route::get('/get-terms/{academicYearId}', [BabyeyiController::class, 'getTerms'])->name('get-terms');
-        Route::get('/get-courses', [BabyeyiController::class, 'getCourses'])->name('get-courses');
-    });
-
-    // Write actions (staff only)
+    // IMPORTANT: Specific routes MUST come before generic {babyeyi} parameter route
+    
+    // Staff write actions (must be before generic routes)
     Route::middleware(['auth:staff'])->group(function () {
         Route::get('/create', [BabyeyiController::class, 'create'])->name('create');
         Route::post('/', [BabyeyiController::class, 'store'])->name('store');
-        Route::get('/{babyeyi}/edit', [BabyeyiController::class, 'edit'])->name('edit');
-        Route::put('/{babyeyi}', [BabyeyiController::class, 'update'])->name('update');
-        Route::delete('/{babyeyi}', [BabyeyiController::class, 'destroy'])->name('destroy');
-        Route::post('/{babyeyi}/publish', [BabyeyiController::class, 'publish'])->name('publish');
-
-        // Bulk operations routes (staff only)
+        
+        // Bulk operations routes (must be before generic /{babyeyi} route)
         Route::get('/bulk/create', [BabyeyiController::class, 'bulkCreate'])->name('bulk.create');
         Route::post('/bulk/store', [BabyeyiController::class, 'bulkStore'])->name('bulk.store');
         Route::get('/bulk/operations', [BabyeyiController::class, 'bulkOperations'])->name('bulk.operations');
         Route::post('/bulk/publish', [BabyeyiController::class, 'bulkPublish'])->name('bulk.publish');
         Route::post('/bulk/regenerate', [BabyeyiController::class, 'regenerateForTerm'])->name('bulk.regenerate');
         Route::post('/quick-generate/{termId}', [BabyeyiController::class, 'quickGenerate'])->name('quick-generate');
+    });
+
+    // Utility routes (must be before generic /{babyeyi} route)
+    Route::middleware(['auth:admin,staff'])->group(function () {
+        Route::get('/get-terms/{academicYearId}', [BabyeyiController::class, 'getTerms'])->name('get-terms');
+        Route::get('/get-courses', [BabyeyiController::class, 'getCourses'])->name('get-courses');
+    });
+
+    // View-only routes including generic show (admin + staff)
+    Route::middleware(['auth:admin,staff'])->group(function () {
+        Route::get('/', [BabyeyiController::class, 'index'])->name('index');
+    });
+
+    Route::middleware(['auth:staff'])->group(function () {
+        Route::get('/{babyeyi}/edit', [BabyeyiController::class, 'edit'])->name('edit');
+        Route::put('/{babyeyi}', [BabyeyiController::class, 'update'])->name('update');
+        Route::delete('/{babyeyi}', [BabyeyiController::class, 'destroy'])->name('destroy');
+        Route::post('/{babyeyi}/publish', [BabyeyiController::class, 'publish'])->name('publish');
+    });
+
+    // Generic show routes (MUST be last - catches {babyeyi} parameter)
+    Route::middleware(['auth:admin,staff'])->group(function () {
+        Route::get('/{babyeyi}', [BabyeyiController::class, 'show'])->name('show');
+        Route::get('/{babyeyi}/preview', [BabyeyiController::class, 'preview'])->name('preview');
+        Route::get('/{babyeyi}/download', [BabyeyiController::class, 'download'])->name('download');
     });
 });
 

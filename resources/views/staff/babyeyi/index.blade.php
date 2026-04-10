@@ -11,7 +11,7 @@
             <p class="text-muted mb-0">Manage babyeyi documents for term registration requirements</p>
         </div>
         <div class="col-md-4 text-end">
-            @can('create', App\Models\Babyeyi::class)
+            @if(auth('staff')->check() || auth('admin')->check())
                 <div class="btn-group" role="group">
                     <a href="{{ route('babyeyi.bulk.create') }}" class="btn btn-success btn-lg">
                         <i class="fas fa-bolt"></i> Bulk Generate
@@ -20,7 +20,7 @@
                         <i class="fas fa-plus"></i> Create New
                     </a>
                 </div>
-            @endcan
+            @endif
         </div>
     </div>
 
