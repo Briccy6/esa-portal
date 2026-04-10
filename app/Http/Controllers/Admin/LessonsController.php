@@ -49,7 +49,7 @@ class LessonsController extends Controller
         // Get filter options
         $branches = Branch::orderBy('name')->get();
         $courses = Course::orderBy('course_name')->get();
-        $teachers = Teacher::orderBy('first_name')->orderBy('last_name')->get();
+        $teachers = Teacher::orderBy('teacher_name')->get();
 
         return view('admin.lessons.index', compact('lessonAssignments', 'branches', 'courses', 'teachers'));
     }
@@ -61,7 +61,7 @@ class LessonsController extends Controller
     {
         $branches = Branch::orderBy('name')->get();
         $courses = Course::orderBy('course_name')->get();
-        $teachers = Teacher::orderBy('first_name')->orderBy('last_name')->get();
+        $teachers = Teacher::orderBy('teacher_name')->get();
         $lessons = Lesson::orderBy('title')->get();
 
         return view('admin.lessons.create', compact('branches', 'courses', 'teachers', 'lessons'));
@@ -100,7 +100,7 @@ class LessonsController extends Controller
         return redirect()->route('admin.lessons.index')->with('success', 
             'Lesson assignment created successfully! ' . $lesson->title . ' assigned to ' . 
             $course->course_name . ' in ' . $branch->name . ' branch with ' . 
-            $teacher->first_name . ' ' . $teacher->last_name . ' as teacher.');
+            $teacher->teacher_name . ' as teacher.');
     }
 
     /**
@@ -120,7 +120,7 @@ class LessonsController extends Controller
         $lesson = $lesson->load(['lesson', 'branch', 'course', 'teacher']);
         $branches = Branch::orderBy('name')->get();
         $courses = Course::orderBy('course_name')->get();
-        $teachers = Teacher::orderBy('first_name')->orderBy('last_name')->get();
+        $teachers = Teacher::orderBy('teacher_name')->get();
         $lessons = Lesson::orderBy('title')->get();
 
         return view('admin.lessons.edit', compact('lesson', 'branches', 'courses', 'teachers', 'lessons'));

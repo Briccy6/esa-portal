@@ -22,42 +22,43 @@
     <meta charset="UTF-8">
     <title>Assessment — {{ $first->student->full_name }} — all terms</title>
     <style>
-        // Reduce whitespace so the table is closer to the PDF page border.
-        // Use explicit left/right margins to avoid DomPDF applying uneven defaults.
+        // Optimize page layout for fitness and margins
         @page {
             size: A4 portrait;
-            margin-top: 4mm;
-            margin-right: 4mm;
-            margin-bottom: 4mm;
-            margin-left: 4mm;
+            margin-top: 3mm;
+            margin-right: 3mm;
+            margin-bottom: 3mm;
+            margin-left: 3mm;
         }
-        html, body { margin: 0; padding: 0; font-family: DejaVu Sans, Arial, sans-serif; font-size: 7px; color: #111; width: 100%; overflow-x: hidden; }
+        html, body { margin: 0; padding: 0; font-family: DejaVu Sans, Arial, sans-serif; font-size: 6.5px; color: #111; width: 100%; overflow-x: hidden; }
         .print-wrap { width: 100%; box-sizing: border-box; }
-        .print-header-table { width: 100%; border-collapse: collapse; border-bottom: 1px solid #000; margin-bottom: 4px; }
-        .print-header-table td { vertical-align: middle; padding: 6px; font-size: 8px; }
+        .print-header-table { width: 100%; border-collapse: collapse; border-bottom: 1px solid #000; margin-bottom: 2px; }
+        .print-header-table td { vertical-align: middle; padding: 3px 4px; font-size: 7px; }
         .print-header-logo { width: 18%; text-align: center; border-right: 1px solid #000; }
         .print-header-logo--right { border-left: 1px solid #000; border-right: none; }
         .print-header-center { width: 64%; text-align: center; }
-        .school-logo-img { max-height: 70px; max-width: 90px; object-fit: contain; }
-        .print-logo-placeholder { width: 70px; height: 70px; margin: 0 auto; background: #ecf0f1; border: 1px dashed #999; font-size: 7px; line-height: 68px; text-align: center; color: #888; }
-        .hdr-line { margin: 0 0 2px 0; }
+        .school-logo-img { max-height: 50px; max-width: 70px; object-fit: contain; }
+        .print-logo-placeholder { width: 50px; height: 50px; margin: 0 auto; background: #ecf0f1; border: 1px dashed #999; font-size: 6px; line-height: 48px; text-align: center; color: #888; }
+        .hdr-line { margin: 0 0 1px 0; font-size: 6.5px; }
         .hdr-line .lbl { font-weight: bold; }
-        .hdr-school-name { font-size: 10px; font-weight: bold; margin: 6px 0; }
-        .hdr-contact { font-size: 7px; }
-        .title-section { background: #f0f0f0; border: 1px solid #000; border-bottom: none; padding: 4px; text-align: center; }
-        .title-section h2 { font-size: 10px; margin: 0; }
-        .legend-section { border: 1px solid #000; border-top: none; padding: 3px 6px; font-size: 6px; margin-bottom: 0; }
-        .matrix-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 6.5px; }
-        .matrix-table th, .matrix-table td { border: 1px solid #000; padding: 2px 3px; text-align: center; vertical-align: middle; word-wrap: break-word; }
+        .hdr-school-name { font-size: 8px; font-weight: bold; margin: 2px 0; }
+        .hdr-contact { font-size: 6px; }
+        .title-section { background: #f0f0f0; border: 1px solid #000; border-bottom: none; padding: 2px; text-align: center; }
+        .title-section h2 { font-size: 9px; margin: 0; }
+        .legend-section { border: 1px solid #000; border-top: none; padding: 2px 4px; font-size: 5.5px; margin-bottom: 0; }
+        .matrix-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 6px; }
+        .matrix-table th, .matrix-table td { border: 1px solid #000; padding: 1px 2px; text-align: center; vertical-align: middle; word-wrap: break-word; }
         .matrix-table .text-left { text-align: left; }
         .matrix-table .bg-gray { background: #f0f0f0; font-weight: bold; }
         .matrix-table .bg-blue { background: #e6f3ff; }
         .matrix-table .bg-yellow { background: #ffffe6; }
-        .term-head { background: #e0e0e0; font-weight: bold; font-size: 6.5px; }
-        .sub-head { background: #f5f5f5; font-size: 6px; }
-        .footer { margin-top: 6px; font-size: 6px; text-align: right; color: #555; }
-        .deliberation-table { width: 100%; border-collapse: collapse; font-size: 6px; margin-top: 4px; }
-        .deliberation-table th, .deliberation-table td { border: 1px solid #000; padding: 2px; }
+        .matrix-table .bg-green { background: #e6ffe6; }
+        .term-head { background: #e0e0e0; font-weight: bold; font-size: 6px; }
+        .sub-head { background: #f5f5f5; font-size: 5.5px; }
+        .footer { margin-top: 3px; font-size: 5.5px; text-align: right; color: #555; }
+        .deliberation-table { width: 100%; border-collapse: collapse; font-size: 5.5px; margin-top: 2px; }
+        .deliberation-table th, .deliberation-table td { border: 1px solid #000; padding: 1px; }
+        .annual-row { font-weight: bold; background: #e6ffe6; }
     </style>
 </head>
 <body>
@@ -104,6 +105,9 @@
                 @foreach($terms as $t)
                     <th colspan="3" class="term-head">{{ $t['name'] }}</th>
                 @endforeach
+                @if(count($terms) > 1)
+                    <th colspan="3" class="term-head">ANNUAL</th>
+                @endif
             </tr>
             <tr class="sub-head">
                 <th>Module</th>
@@ -114,42 +118,85 @@
                     <th>EXAM</th>
                     <th>TOT</th>
                 @endforeach
+                @if(count($terms) > 1)
+                    <th>TEST</th>
+                    <th>EXAM</th>
+                    <th>TOT</th>
+                @endif
             </tr>
         </thead>
         <tbody>
             <tr class="bg-blue">
-                <td colspan="{{ 3 + 3 * $termCount }}" class="text-left font-bold" style="font-weight: bold;">Core competencies — specific</td>
+                <td colspan="{{ 3 + 3 * count($terms) + (count($terms) > 1 ? 3 : 0) }}" class="text-left font-bold" style="font-weight: bold;">Core competencies — specific</td>
             </tr>
             @forelse($mRows as $row)
                 <tr>
                     <td class="text-left">{{ Str::limit($row['module_code'], 24) }}</td>
                     <td class="text-left">{{ Str::limit($row['competence_title'], 28) }}</td>
                     <td>{{ $row['credits'] }}</td>
+                    @php
+                        $annualTest = 0;
+                        $annualExam = 0;
+                        $annualTotal = 0;
+                        $termCount = 0;
+                    @endphp
                     @foreach($terms as $t)
                         @php $cell = $row['by_term_id'][$t['id']] ?? ['test' => '—', 'exam' => '—', 'total' => '—']; @endphp
                         <td>{{ $cell['test'] }}</td>
                         <td>{{ $cell['exam'] }}</td>
                         <td style="font-weight: bold;">{{ $cell['total'] }}</td>
+                        @if(is_numeric($cell['test']) && is_numeric($cell['exam']) && is_numeric($cell['total']))
+                            @php
+                                $annualTest += (float) $cell['test'];
+                                $annualExam += (float) $cell['exam'];
+                                $annualTotal += (float) $cell['total'];
+                                $termCount++;
+                            @endphp
+                        @endif
                     @endforeach
+                    @if(count($terms) > 1)
+                        <td>{{ $termCount > 0 ? number_format($annualTest / $termCount, 1) : '—' }}</td>
+                        <td>{{ $termCount > 0 ? number_format($annualExam / $termCount, 1) : '—' }}</td>
+                        <td style="font-weight: bold;">{{ $termCount > 0 ? number_format($annualTotal / $termCount, 1) : '—' }}</td>
+                    @endif
                 </tr>
             @empty
                 <tr>
-                    <td colspan="{{ 3 + 3 * $termCount }}" style="padding: 12px; color: #666;">No assessment data</td>
+                    <td colspan="{{ 3 + 3 * count($terms) + (count($terms) > 1 ? 3 : 0) }}" style="padding: 12px; color: #666;">No assessment data</td>
                 </tr>
             @endforelse
 
             @if(count($mRows) > 0)
                 <tr class="bg-white">
-                    <td colspan="{{ 3 + 3 * $termCount }}"></td>
+                    <td colspan="{{ 3 + 3 * count($terms) + (count($terms) > 1 ? 3 : 0) }}"></td>
                 </tr>
                 <tr class="bg-blue" style="font-weight: bold;">
                     <td colspan="3" class="text-left">TOTAL</td>
+                    @php
+                        $annualTestTotal = 0;
+                        $annualExamTotal = 0;
+                        $annualGrandTotal = 0;
+                        $termCountForTotal = 0;
+                    @endphp
                     @foreach($terms as $t)
                         @php $tot = $totalsByTerm[$t['id']] ?? null; @endphp
                         <td>{{ $tot['test_sum'] ?? '—' }}</td>
                         <td>{{ $tot['exam_sum'] ?? '—' }}</td>
                         <td>{{ $tot['total_sum'] ?? '—' }}</td>
+                        @if($tot && is_numeric($tot['test_sum']) && is_numeric($tot['exam_sum']) && is_numeric($tot['total_sum']))
+                            @php
+                                $annualTestTotal += (float) $tot['test_sum'];
+                                $annualExamTotal += (float) $tot['exam_sum'];
+                                $annualGrandTotal += (float) $tot['total_sum'];
+                                $termCountForTotal++;
+                            @endphp
+                        @endif
                     @endforeach
+                    @if(count($terms) > 1)
+                        <td>{{ $termCountForTotal > 0 ? number_format($annualTestTotal / $termCountForTotal, 1) : '—' }}</td>
+                        <td>{{ $termCountForTotal > 0 ? number_format($annualExamTotal / $termCountForTotal, 1) : '—' }}</td>
+                        <td>{{ $termCountForTotal > 0 ? number_format($annualGrandTotal / $termCountForTotal, 1) : '—' }}</td>
+                    @endif
                 </tr>
                 <tr class="bg-yellow" style="font-weight: bold;">
                     <td colspan="3" class="text-left">POSITION</td>
@@ -158,15 +205,33 @@
                         <td></td>
                         <td class="text-center">{{ $positionByTerm[$t['id']] ?? '—' }}</td>
                     @endforeach
+                    @if(count($terms) > 1)
+                        <td colspan="3" class="text-center">—</td>
+                    @endif
                 </tr>
                 <tr class="bg-gray" style="font-weight: bold;">
                     <td colspan="3" class="text-left">Percentage %</td>
+                    @php
+                        $annualPercentage = 0;
+                        $percentTermCount = 0;
+                    @endphp
                     @foreach($terms as $t)
                         @php $avg = $averageByTerm[$t['id']] ?? null; @endphp
                         <td></td>
                         <td></td>
                         <td>{{ $avg !== null ? number_format((float) $avg, 1).'%' : '—' }}</td>
+                        @if($avg !== null)
+                            @php
+                                $annualPercentage += (float) $avg;
+                                $percentTermCount++;
+                            @endphp
+                        @endif
                     @endforeach
+                    @if(count($terms) > 1)
+                        <td></td>
+                        <td></td>
+                        <td>{{ $percentTermCount > 0 ? number_format($annualPercentage / $percentTermCount, 1).'%' : '—' }}</td>
+                    @endif
                 </tr>
             @endif
         </tbody>
@@ -177,11 +242,11 @@
             <tr class="bg-gray">
                 <th class="text-left">Deliberation</th>
                 <th>Promotion</th>
-                <th>2nd Sitting</th>
-                <th>Re-assessment</th>
+                <th>2nd Sit</th>
+                <th>Re-assess</th>
                 <th>Repeat</th>
-                <th>Dismissed</th>
-                <th>School Manager<br>{{ $hdrPrincipal }}<br>SIGNATURE<br>____/____/{{ date('Y') }}</th>
+                <th>Dismiss</th>
+                <th style="font-size: 5px;">School Mgr<br>{{ $hdrPrincipal }}<br>SIGN<br>__/__</th>
             </tr>
         </thead>
         <tbody>
@@ -192,12 +257,12 @@
                 <td></td>
                 <td></td>
                 <td></td>
-                <td style="text-align: center;">
+                <td style="text-align: center; padding: 2px;">
                     @if($hasPrincipalSignature)
-                        <img src="{{ $schoolInfo->principal_signature_url }}" alt="" style="max-height: 28px; max-width: 96px; margin-right: 4px;">
+                        <img src="{{ $schoolInfo->principal_signature_url }}" alt="" style="max-height: 18px; max-width: 60px; margin-right: 2px;">
                     @endif
                     @if($hasStampSignature)
-                        <img src="{{ $schoolInfo->stamp_signature_url }}" alt="" style="max-height: 32px; max-width: 70px;">
+                        <img src="{{ $schoolInfo->stamp_signature_url }}" alt="" style="max-height: 20px; max-width: 50px;">
                     @endif
                 </td>
             </tr>
