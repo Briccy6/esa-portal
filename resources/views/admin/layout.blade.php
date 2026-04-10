@@ -980,6 +980,13 @@
                     </div>
                     
                     <div class="nav-item">
+                        <a href="{{ route('admin.lessons.index') }}" class="nav-link {{ request()->routeIs('admin.lessons.*') ? 'active' : '' }}">
+                            <i class="fas fa-graduation-cap"></i>
+                            <span class="nav-text">Lessons</span>
+                        </a>
+                    </div>
+                    
+                    <div class="nav-item">
                         <a href="{{ route('admin.terms.index') }}" class="nav-link {{ request()->routeIs('admin.terms.*') ? 'active' : '' }}">
                             <i class="fas fa-calendar-alt"></i>
                             <span class="nav-text">Terms</span>

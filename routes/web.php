@@ -331,6 +331,10 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::get('/course/{id}/edit-fees', [CourseController::class, 'editFees'])->name('course.edit-fees');
     Route::put('/course/{id}/update-fees', [CourseController::class, 'updateFees'])->name('course.update-fees');
 
+    // Lessons Management Routes
+    Route::resource('lessons', \App\Http\Controllers\Admin\LessonsController::class);
+    Route::get('/lessons/course/{course}', [\App\Http\Controllers\Admin\LessonsController::class, 'getLessonsForCourse'])->name('lessons.get-by-course');
+
     // Teacher assignment
     Route::get('teachers/{teacher}/assign-course', [TeacherController::class, 'assignCourse'])->name('teachers.assignCourse');
     
@@ -409,9 +413,10 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::get('question-banks/{questionBank}/export', [QuestionBankController::class, 'exportQuestions'])->name('question-banks.export');
     Route::post('question-banks/preview-questions', [ExamController::class, 'previewQuestions'])->name('question-banks.preview-questions');
 
-    // NESA Registration Management (disabled)
-    // routes removed per request
-
+    // NESA Registration Management
+    Route::get('nesa', [\App\Http\Controllers\Admin\NesaRegistrationController::class, 'index'])->name('nesa.index');
+    Route::get('nesa/registered', [\App\Http\Controllers\Admin\NesaRegistrationController::class, 'registered'])->name('nesa.registered');
+    Route::get('nesa/pending', [\App\Http\Controllers\Admin\NesaRegistrationController::class, 'pending'])->name('nesa.pending');
     Route::post('nesa/bulk-register', [\App\Http\Controllers\Admin\NesaRegistrationController::class, 'bulkRegister'])->name('nesa.bulk-register');
     Route::post('nesa/{student}/mark-as-registered', [\App\Http\Controllers\Admin\NesaRegistrationController::class, 'markAsRegistered'])->name('nesa.markAsRegistered');
     Route::get('nesa/{student}/edit', [\App\Http\Controllers\Admin\NesaRegistrationController::class, 'edit'])->name('nesa.edit');
