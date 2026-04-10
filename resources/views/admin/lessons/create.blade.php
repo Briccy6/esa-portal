@@ -12,11 +12,33 @@
                 <h1 class="mb-0">
                     <i class="fas fa-plus-circle me-2"></i>Add Lesson Assignment
                 </h1>
-                <p class="text-muted mb-0">Assign a lesson to a branch, course, and teacher</p>
+                <p class="text-muted mb-0">Link a lesson to a course, branch, and teacher</p>
             </div>
             <a href="{{ route('admin.lessons.index') }}" class="btn btn-secondary">
                 <i class="fas fa-arrow-left"></i> Back to Lessons
             </a>
+        </div>
+
+        {{-- ── INFORMATION BOX ── --}}
+        <div class="alert alert-info mb-4" role="alert">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6 class="alert-heading mb-2"><i class="fas fa-lightbulb me-2"></i>About Lesson Assignments</h6>
+                    <ul class="mb-0 small">
+                        <li><strong>Same lesson, multiple courses:</strong> E.g., Mathematics can be taught in Science and Commerce courses</li>
+                        <li><strong>Same lesson, multiple branches:</strong> E.g., Mathematics taught at Kigali and Goma branches</li>
+                        <li><strong>Different teachers:</strong> The same lesson can have different teachers per branch/course combination</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h6 class="alert-heading mb-2"><i class="fas fa-check-circle me-2"></i>Example</h6>
+                    <ul class="mb-0 small">
+                        <li>Mathematics → Science Course → Kigali Branch → Teacher A</li>
+                        <li>Mathematics → Science Course → Goma Branch → Teacher B</li>
+                        <li>Mathematics → Commerce Course → Kigali Branch → Teacher C</li>
+                    </ul>
+                </div>
+            </div>
         </div>
 
         {{-- ── ALERTS ── --}}
@@ -122,10 +144,10 @@
                     </div>
 
                     {{-- Information Box --}}
-                    <div class="alert alert-info mt-3">
+                    <div class="alert alert-info mt-3 mb-3">
                         <i class="fas fa-info-circle me-2"></i>
-                        <strong>Note:</strong> This assignment links a lesson to a specific course in a branch with an assigned teacher. 
-                        Each combination must be unique.
+                        <strong>How it works:</strong> Select a lesson, and optionally assign it to specific course(s) and branch(es) with a designated teacher. 
+                        The same lesson can be assigned multiple times with different teachers for different courses or branches.
                     </div>
 
                     {{-- Form Actions --}}

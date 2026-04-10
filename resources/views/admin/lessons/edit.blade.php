@@ -12,11 +12,35 @@
                 <h1 class="mb-0">
                     <i class="fas fa-edit me-2"></i>Edit Lesson Assignment
                 </h1>
-                <p class="text-muted mb-0">Update lesson assignment details</p>
+                <p class="text-muted mb-0">Modify lesson, course, branch, or teacher assignment</p>
             </div>
             <a href="{{ route('admin.lessons.index') }}" class="btn btn-secondary">
                 <i class="fas fa-arrow-left"></i> Back to Lessons
             </a>
+        </div>
+
+        {{-- ── INFORMATION BOX ── --}}
+        <div class="alert alert-info mb-4" role="alert">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6 class="alert-heading mb-2"><i class="fas fa-lightbulb me-2"></i>Flexible Assignments</h6>
+                    <ul class="mb-0 small">
+                        <li>You can reassign this lesson to a different course</li>
+                        <li>You can reassign this lesson to a different branch</li>
+                        <li>You can change the teacher for this assignment</li>
+                        <li>Each lesson-course-branch combination must be unique</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h6 class="alert-heading mb-2"><i class="fas fa-share-alt me-2"></i>Current Assignment</h6>
+                    <ul class="mb-0 small">
+                        <li><strong>Lesson:</strong> {{ $lesson->lesson->title ?? 'N/A' }}</li>
+                        <li><strong>Course:</strong> {{ $lesson->course->course_name ?? 'N/A' }}</li>
+                        <li><strong>Branch:</strong> {{ $lesson->branch->name ?? 'N/A' }}</li>
+                        <li><strong>Teacher:</strong> {{ $lesson->teacher->first_name ?? '' }} {{ $lesson->teacher->last_name ?? '' }}</li>
+                    </ul>
+                </div>
+            </div>
         </div>
 
         {{-- ── ALERTS ── --}}
@@ -123,15 +147,16 @@
                     </div>
 
                     {{-- Information Box --}}
-                    <div class="alert alert-info mt-3">
+                    <div class="alert alert-info mt-3 mb-3">
                         <i class="fas fa-info-circle me-2"></i>
-                        <strong>Note:</strong> Update the lesson assignment details below. Each combination of lesson, course, and branch must be unique.
+                        <strong>Updating Assignment:</strong> Modify any field below to reassign this lesson to a different course, branch, or teacher.
+                        Each lesson-course-branch combination must remain unique.
                     </div>
 
                     {{-- Current Assignment Info --}}
                     <div class="card bg-light mt-3 mb-3">
                         <div class="card-body">
-                            <h6 class="card-title mb-3">Current Assignment</h6>
+                            <h6 class="card-title mb-3"><i class="fas fa-info-circle me-2"></i>Original Assignment</h6>
                             <div class="row">
                                 <div class="col-md-3">
                                     <small class="text-muted">Lesson</small>

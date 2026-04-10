@@ -41,12 +41,15 @@ class LessonsController extends Controller
             });
         }
 
-        $lessonAssignments = $query->orderBy('branch_id')->orderBy('course_id')->paginate(15);
+        $lessonAssignments = $query->orderBy('branch_id')
+                                   ->orderBy('course_id')
+                                   ->orderBy('lesson_id')
+                                   ->paginate(20);
 
         // Get filter options
-        $branches = Branch::all();
-        $courses = Course::all();
-        $teachers = Teacher::all();
+        $branches = Branch::orderBy('name')->get();
+        $courses = Course::orderBy('course_name')->get();
+        $teachers = Teacher::orderBy('first_name')->orderBy('last_name')->get();
 
         return view('admin.lessons.index', compact('lessonAssignments', 'branches', 'courses', 'teachers'));
     }
@@ -56,10 +59,10 @@ class LessonsController extends Controller
      */
     public function create()
     {
-        $branches = Branch::all();
-        $courses = Course::all();
-        $teachers = Teacher::all();
-        $lessons = Lesson::all();
+        $branches = Branch::orderBy('name')->get();
+        $courses = Course::orderBy('course_name')->get();
+        $teachers = Teacher::orderBy('first_name')->orderBy('last_name')->get();
+        $lessons = Lesson::orderBy('title')->get();
 
         return view('admin.lessons.create', compact('branches', 'courses', 'teachers', 'lessons'));
     }
@@ -84,12 +87,20 @@ class LessonsController extends Controller
         ])->first();
 
         if ($existing) {
-            return back()->with('error', 'This lesson is already assigned to this course in this branch.');
+            return back()->with('error', 'This lesson is already assigned to this course in this branch. You can edit it to change the teacher.');
         }
 
-        LessonBranchCourse::create($validated);
+        $assignment = LessonBranchCourse::create($validated);
+        
+        $lesson = Lesson::find($validated['lesson_id']);
+        $branch = Branch::find($validated['branch_id']);
+        $course = Course::find($validated['course_id']);
+        $teacher = Teacher::find($validated['teacher_id']);
 
-        return redirect()->route('admin.lessons.index')->with('success', 'Lesson assignment created successfully.');
+        return redirect()->route('admin.lessons.index')->with('success', 
+            'Lesson assignment created successfully! ' . $lesson->title . ' assigned to ' . 
+            $course->course_name . ' in ' . $branch->name . ' branch with ' . 
+            $teacher->first_name . ' ' . $teacher->last_name . ' as teacher.');
     }
 
     /**
@@ -97,6 +108,7 @@ class LessonsController extends Controller
      */
     public function show(LessonBranchCourse $lesson)
     {
+        $lesson = $lesson->load(['lesson', 'branch', 'course', 'teacher']);
         return view('admin.lessons.show', compact('lesson'));
     }
 
@@ -105,10 +117,11 @@ class LessonsController extends Controller
      */
     public function edit(LessonBranchCourse $lesson)
     {
-        $branches = Branch::all();
-        $courses = Course::all();
-        $teachers = Teacher::all();
-        $lessons = Lesson::all();
+        $lesson = $lesson->load(['lesson', 'branch', 'course', 'teacher']);
+        $branches = Branch::orderBy('name')->get();
+        $courses = Course::orderBy('course_name')->get();
+        $teachers = Teacher::orderBy('first_name')->orderBy('last_name')->get();
+        $lessons = Lesson::orderBy('title')->get();
 
         return view('admin.lessons.edit', compact('lesson', 'branches', 'courses', 'teachers', 'lessons'));
     }
@@ -133,12 +146,14 @@ class LessonsController extends Controller
         ])->where('id', '!=', $lesson->id)->first();
 
         if ($existing) {
-            return back()->with('error', 'This lesson is already assigned to this course in this branch.');
+            return back()->with('error', 'This lesson is already assigned to this course in this branch with a teacher. Please choose a different combination.');
         }
 
         $lesson->update($validated);
 
-        return redirect()->route('admin.lessons.index')->with('success', 'Lesson assignment updated successfully.');
+        return redirect()->route('admin.lessons.index')->with('success', 'Lesson assignment updated successfully. ' . 
+                     $lesson->lesson->title . ' is now taught in ' . $lesson->branch->name . ' under ' . 
+                     $lesson->course->course_name . ' by ' . $lesson->teacher->first_name . ' ' . $lesson->teacher->last_name);
     }
 
     /**
@@ -146,9 +161,15 @@ class LessonsController extends Controller
      */
     public function destroy(LessonBranchCourse $lesson)
     {
+        $lessonTitle = $lesson->lesson->title ?? 'Lesson';
+        $courseName = $lesson->course->course_name ?? 'Course';
+        $branchName = $lesson->branch->name ?? 'Branch';
+        
         $lesson->delete();
 
-        return redirect()->route('admin.lessons.index')->with('success', 'Lesson assignment deleted successfully.');
+        return redirect()->route('admin.lessons.index')->with('success', 
+            'Lesson assignment deleted! ' . $lessonTitle . ' has been removed from ' . 
+            $courseName . ' in ' . $branchName . ' branch.');
     }
 
     /**
@@ -156,8 +177,17 @@ class LessonsController extends Controller
      */
     public function getLessonsForCourse(Request $request)
     {
-        $lessons = Lesson::where('course_id', $request->course_id)->get();
-        return response()->json($lessons);
+        try {
+            $courseId = $request->route('course');
+            $lessons = Lesson::where('course_id', $courseId)
+                            ->orderBy('title')
+                            ->select('id', 'title', 'course_id', 'lesson_weight', 'max_test_marks', 'max_exam_marks')
+                            ->get();
+            
+            return response()->json($lessons);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Unable to fetch lessons'], 500);
+        }
     }
 
     /**

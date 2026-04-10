@@ -121,55 +121,59 @@
                         <table class="table table-hover mb-0">
                             <thead class="table-light">
                                 <tr>
-                                    <th width="20%">Lesson</th>
-                                    <th width="15%">Course</th>
-                                    <th width="15%">Branch</th>
-                                    <th width="20%">Teacher</th>
-                                    <th width="15%">Max Marks (Test/Exam)</th>
-                                    <th width="15%" class="text-end">Actions</th>
+                                    <th width="22%">Lesson</th>
+                                    <th width="17%">Course</th>
+                                    <th width="17%">Branch</th>
+                                    <th width="22%">Teacher Name</th>
+                                    <th width="12%">Max Marks</th>
+                                    <th width="10%" class="text-center">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach ($lessonAssignments as $assignment)
                                     <tr>
                                         <td>
-                                            <div class="fw-bold">{{ $assignment->lesson->title ?? 'N/A' }}</div>
-                                            <small class="text-muted">
-                                                Weight: {{ $assignment->lesson->lesson_weight ?? 0 }}%
+                                            <div class="fw-bold text-dark">{{ $assignment->lesson->title ?? 'N/A' }}</div>
+                                            <small class="text-muted d-block">
+                                                <i class="fas fa-percentage me-1"></i>Weight: {{ $assignment->lesson->lesson_weight ?? 0 }}%
                                             </small>
                                         </td>
                                         <td>
-                                            <span class="badge bg-info">
+                                            <span class="badge bg-info text-white">
                                                 {{ $assignment->course->course_name ?? 'N/A' }}
                                             </span>
                                         </td>
                                         <td>
-                                            <span class="badge bg-secondary">
+                                            <span class="badge bg-secondary text-white">
                                                 {{ $assignment->branch->name ?? 'N/A' }}
                                             </span>
                                         </td>
                                         <td>
-                                            <i class="fas fa-user me-1"></i>
-                                            {{ $assignment->teacher->first_name ?? '' }} 
-                                            {{ $assignment->teacher->last_name ?? '' }}
+                                            <div class="fw-bold text-success">
+                                                <i class="fas fa-user-tie me-1"></i>
+                                                @if($assignment->teacher)
+                                                    {{ $assignment->teacher->first_name }} {{ $assignment->teacher->last_name }}
+                                                @else
+                                                    <span class="text-danger">No Teacher Assigned</span>
+                                                @endif
+                                            </div>
                                         </td>
                                         <td>
-                                            <span class="text-nowrap">
-                                                {{ $assignment->lesson->max_test_marks ?? '0' }} / 
-                                                {{ $assignment->lesson->max_exam_marks ?? '0' }}
+                                            <span class="text-nowrap badge bg-light text-dark">
+                                                {{ $assignment->lesson->max_test_marks ?? '0' }}/{{ $assignment->lesson->max_exam_marks ?? '0' }}
                                             </span>
                                         </td>
-                                        <td class="text-end">
+                                        <td class="text-center">
                                             <a href="{{ route('admin.lessons.edit', $assignment->id) }}" 
-                                                class="btn btn-sm btn-warning" title="Edit">
+                                                class="btn btn-sm btn-warning" title="Edit Assignment">
                                                 <i class="fas fa-edit"></i>
                                             </a>
                                             <form action="{{ route('admin.lessons.destroy', $assignment->id) }}" 
                                                 method="POST" class="d-inline" 
-                                                onsubmit="return confirm('Are you sure?');">
+                                                onsubmit="return confirm('Delete this assignment?');">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-danger" title="Delete">
+                                                <button type="submit" class="btn btn-sm btn-danger" title="Delete Assignment">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
                                             </form>
