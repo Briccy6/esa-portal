@@ -25,10 +25,7 @@
         // Optimize page layout for fitness and margins
         @page {
             size: A4 portrait;
-            margin-top: 5mm;
-            margin-right: 5mm;
-            margin-bottom: 5mm;
-            margin-left: 5mm;
+            margin: 7mm;
         }
         
         * {
@@ -37,7 +34,7 @@
         
         html, body { 
             margin: 0; 
-            padding: 5mm; 
+            padding: 7mm; 
             font-family: DejaVu Sans, Arial, sans-serif; 
             font-size: 6.5px; 
             color: #111; 
@@ -45,34 +42,36 @@
             overflow-x: hidden; 
             box-sizing: border-box;
             height: 100%;
+            background: white;
         }
-        .print-wrap { width: 100%; max-width: 100%; box-sizing: border-box; padding: 0; margin: 0; overflow: visible; }
-        .print-header-table { width: 100%; border-collapse: collapse; border-bottom: 1px solid #000; margin-bottom: 2px; table-layout: fixed; }
-        .print-header-table td { vertical-align: middle; padding: 3px 4px; font-size: 7px; word-wrap: break-word; overflow-wrap: break-word; }
-        .print-header-logo { width: 18%; text-align: center; border-right: 1px solid #000; }
-        .print-header-logo--right { border-left: 1px solid #000; border-right: none; }
-        .print-header-center { width: 64%; text-align: center; }
-        .school-logo-img { max-height: 50px; max-width: 70px; object-fit: contain; }
-        .print-logo-placeholder { width: 50px; height: 50px; margin: 0 auto; background: #ecf0f1; border: 1px dashed #999; font-size: 6px; line-height: 48px; text-align: center; color: #888; }
-        .hdr-line { margin: 0 0 1px 0; font-size: 6.5px; word-wrap: break-word; overflow-wrap: break-word; }
+        .print-wrap { width: 100%; max-width: 100%; box-sizing: border-box; padding: 0; margin: 0; overflow: visible; border: 2px solid #000; background: white; }
+        .print-header-table { width: 100%; border-collapse: collapse; border-bottom: 1px solid #000; margin: 0; table-layout: fixed; }
+        .print-header-table td { vertical-align: middle; padding: 4px; font-size: 7px; word-wrap: break-word; overflow-wrap: break-word; border-right: 1px solid #000; }
+        .print-header-table td:last-child { border-right: none; }
+        .print-header-logo { width: 18%; text-align: center; }
+        .print-header-logo--right { width: 18%; }
+        .print-header-center { width: 64%; text-align: center; padding: 4px 6px !important; }
+        .school-logo-img { max-height: 55px; max-width: 75px; object-fit: contain; }
+        .print-logo-placeholder { width: 55px; height: 55px; margin: 0 auto; background: #ecf0f1; border: 1px dashed #999; font-size: 6px; line-height: 53px; text-align: center; color: #888; flex-shrink: 0; }
+        .hdr-line { margin: 1px 0; font-size: 6.8px; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.3; }
         .hdr-line .lbl { font-weight: bold; }
-        .hdr-school-name { font-size: 8px; font-weight: bold; margin: 2px 0; }
-        .hdr-contact { font-size: 6px; }
-        .title-section { background: #f0f0f0; border: 1px solid #000; border-bottom: none; padding: 2px; text-align: center; }
-        .title-section h2 { font-size: 9px; margin: 0; }
-        .legend-section { border: 1px solid #000; border-top: none; padding: 2px 4px; font-size: 5.5px; margin-bottom: 0; word-wrap: break-word; }
-        .matrix-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 6px; }
-        .matrix-table th, .matrix-table td { border: 1px solid #000; padding: 1px 2px; text-align: center; vertical-align: middle; word-wrap: break-word; overflow-wrap: break-word; }
-        .matrix-table .text-left { text-align: left; }
+        .hdr-school-name { font-size: 9px; font-weight: bold; margin: 3px 0 2px 0; letter-spacing: 0.3px; }
+        .hdr-contact { font-size: 6px; line-height: 1.2; }
+        .title-section { background: #f0f0f0; border: 1px solid #000; border-bottom: none; padding: 3px; text-align: center; margin: 0; }
+        .title-section h2 { font-size: 10px; margin: 0; font-weight: bold; letter-spacing: 0.4px; }
+        .legend-section { border: 1px solid #000; border-top: none; padding: 3px 5px; font-size: 5.8px; margin: 0; word-wrap: break-word; line-height: 1.3; }
+        .matrix-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 6px; margin: 0; border: 1px solid #000; }
+        .matrix-table th, .matrix-table td { border: 1px solid #000; padding: 2px; text-align: center; vertical-align: middle; word-wrap: break-word; overflow-wrap: break-word; }
+        .matrix-table .text-left { text-align: left; padding-left: 3px; }
         .matrix-table .bg-gray { background: #f0f0f0; font-weight: bold; }
         .matrix-table .bg-blue { background: #e6f3ff; }
         .matrix-table .bg-yellow { background: #ffffe6; }
         .matrix-table .bg-green { background: #e6ffe6; }
-        .term-head { background: #e0e0e0; font-weight: bold; font-size: 6px; }
-        .sub-head { background: #f5f5f5; font-size: 5.5px; }
-        .footer { margin-top: 3px; font-size: 5.5px; text-align: right; color: #555; }
-        .deliberation-table { width: 100%; border-collapse: collapse; font-size: 5.5px; margin-top: 2px; table-layout: fixed; }
-        .deliberation-table th, .deliberation-table td { border: 1px solid #000; padding: 1px; word-wrap: break-word; overflow-wrap: break-word; }
+        .term-head { background: #d9e9f7; font-weight: bold; font-size: 6px; border: 1px solid #000; }
+        .sub-head { background: #f0f0f0; font-size: 5.8px; font-weight: 600; border: 1px solid #000; }
+        .footer { margin: 2px 0 0 0; padding: 2px 4px; font-size: 5.8px; text-align: right; color: #555; border: 1px solid #000; border-top: none; box-sizing: border-box; width: 100%; }
+        .deliberation-table { width: 100%; border-collapse: collapse; font-size: 5.8px; margin: 0; table-layout: fixed; border: 1px solid #000; }
+        .deliberation-table th, .deliberation-table td { border: 1px solid #000; padding: 2px; word-wrap: break-word; overflow-wrap: break-word; }
         .annual-row { font-weight: bold; background: #e6ffe6; }
         
         /* Global overflow prevention */
@@ -90,7 +89,7 @@
         @media print {
             body {
                 margin: 0;
-                padding: 5mm;
+                padding: 7mm;
             }
             
             .print-wrap {
