@@ -7,7 +7,7 @@
 @section('content')
 <div class="content">
     <div class="report-container">
-        <div class="container-fluid px-4 py-4">
+        <div style="padding: 1.5rem; max-width: 100%; width: 100%; margin: 0 auto; box-sizing: border-box;">
 
     {{-- ── PAGE HEADER ── --}}
     <div class="rc-page-header mb-4">
@@ -441,6 +441,7 @@
         </div>
     </div>
 </div>
+@endsection
 
 <script>
 function deleteReportCard(reportCardId, studentName) {

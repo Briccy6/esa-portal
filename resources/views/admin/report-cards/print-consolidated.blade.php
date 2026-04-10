@@ -25,29 +25,44 @@
         // Optimize page layout for fitness and margins
         @page {
             size: A4 portrait;
-            margin-top: 8mm;
-            margin-right: 8mm;
-            margin-bottom: 8mm;
-            margin-left: 8mm;
+            margin-top: 5mm;
+            margin-right: 5mm;
+            margin-bottom: 5mm;
+            margin-left: 5mm;
         }
-        html, body { margin: 0; padding: 8mm; font-family: DejaVu Sans, Arial, sans-serif; font-size: 6.5px; color: #111; width: 100%; overflow-x: hidden; box-sizing: border-box; }
-        .print-wrap { width: 100%; box-sizing: border-box; padding: 0; }
-        .print-header-table { width: 100%; border-collapse: collapse; border-bottom: 1px solid #000; margin-bottom: 2px; }
-        .print-header-table td { vertical-align: middle; padding: 3px 4px; font-size: 7px; }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
+        html, body { 
+            margin: 0; 
+            padding: 5mm; 
+            font-family: DejaVu Sans, Arial, sans-serif; 
+            font-size: 6.5px; 
+            color: #111; 
+            width: 100%; 
+            overflow-x: hidden; 
+            box-sizing: border-box;
+            height: 100%;
+        }
+        .print-wrap { width: 100%; max-width: 100%; box-sizing: border-box; padding: 0; margin: 0; overflow: visible; }
+        .print-header-table { width: 100%; border-collapse: collapse; border-bottom: 1px solid #000; margin-bottom: 2px; table-layout: fixed; }
+        .print-header-table td { vertical-align: middle; padding: 3px 4px; font-size: 7px; word-wrap: break-word; overflow-wrap: break-word; }
         .print-header-logo { width: 18%; text-align: center; border-right: 1px solid #000; }
         .print-header-logo--right { border-left: 1px solid #000; border-right: none; }
         .print-header-center { width: 64%; text-align: center; }
         .school-logo-img { max-height: 50px; max-width: 70px; object-fit: contain; }
         .print-logo-placeholder { width: 50px; height: 50px; margin: 0 auto; background: #ecf0f1; border: 1px dashed #999; font-size: 6px; line-height: 48px; text-align: center; color: #888; }
-        .hdr-line { margin: 0 0 1px 0; font-size: 6.5px; }
+        .hdr-line { margin: 0 0 1px 0; font-size: 6.5px; word-wrap: break-word; overflow-wrap: break-word; }
         .hdr-line .lbl { font-weight: bold; }
         .hdr-school-name { font-size: 8px; font-weight: bold; margin: 2px 0; }
         .hdr-contact { font-size: 6px; }
         .title-section { background: #f0f0f0; border: 1px solid #000; border-bottom: none; padding: 2px; text-align: center; }
         .title-section h2 { font-size: 9px; margin: 0; }
-        .legend-section { border: 1px solid #000; border-top: none; padding: 2px 4px; font-size: 5.5px; margin-bottom: 0; }
+        .legend-section { border: 1px solid #000; border-top: none; padding: 2px 4px; font-size: 5.5px; margin-bottom: 0; word-wrap: break-word; }
         .matrix-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 6px; }
-        .matrix-table th, .matrix-table td { border: 1px solid #000; padding: 1px 2px; text-align: center; vertical-align: middle; word-wrap: break-word; }
+        .matrix-table th, .matrix-table td { border: 1px solid #000; padding: 1px 2px; text-align: center; vertical-align: middle; word-wrap: break-word; overflow-wrap: break-word; }
         .matrix-table .text-left { text-align: left; }
         .matrix-table .bg-gray { background: #f0f0f0; font-weight: bold; }
         .matrix-table .bg-blue { background: #e6f3ff; }
@@ -56,9 +71,34 @@
         .term-head { background: #e0e0e0; font-weight: bold; font-size: 6px; }
         .sub-head { background: #f5f5f5; font-size: 5.5px; }
         .footer { margin-top: 3px; font-size: 5.5px; text-align: right; color: #555; }
-        .deliberation-table { width: 100%; border-collapse: collapse; font-size: 5.5px; margin-top: 2px; }
-        .deliberation-table th, .deliberation-table td { border: 1px solid #000; padding: 1px; }
+        .deliberation-table { width: 100%; border-collapse: collapse; font-size: 5.5px; margin-top: 2px; table-layout: fixed; }
+        .deliberation-table th, .deliberation-table td { border: 1px solid #000; padding: 1px; word-wrap: break-word; overflow-wrap: break-word; }
         .annual-row { font-weight: bold; background: #e6ffe6; }
+        
+        /* Global overflow prevention */
+        div, section, article, header, footer, main, nav, ul, ol, li, p, span, a, label, td, th {
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+        
+        img, svg, canvas, video, iframe {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+        
+        @media print {
+            body {
+                margin: 0;
+                padding: 5mm;
+            }
+            
+            .print-wrap {
+                width: 100%;
+                max-width: 100%;
+                box-sizing: border-box;
+            }
+        }
     </style>
 </head>
 <body>

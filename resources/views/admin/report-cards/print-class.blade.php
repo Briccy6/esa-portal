@@ -7,15 +7,22 @@
     <style>
         @page {
             size: A4 portrait;
-            margin-top: 0.4cm;
-            margin-right: 0.4cm;
-            margin-bottom: 0.4cm;
-            margin-left: 0.4cm;
+            margin-top: 0.3cm;
+            margin-right: 0.3cm;
+            margin-bottom: 0.3cm;
+            margin-left: 0.3cm;
         }
         
         * {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            width: 100%;
+            max-width: 100%;
+            overflow-x: hidden;
             box-sizing: border-box;
         }
         
@@ -25,11 +32,8 @@
             line-height: 1.2;
             color: #333;
             background: white;
-            overflow-x: hidden;
-        }
-
-        html {
-            width: 100%;
+            margin: 0;
+            padding: 0.3cm;
             overflow-x: hidden;
         }
         
@@ -38,6 +42,10 @@
             margin-bottom: 15px;
             border-bottom: 2px solid #2c3e50;
             padding-bottom: 10px;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            overflow: visible;
         }
         
         .school-info {
@@ -45,18 +53,25 @@
             align-items: center;
             justify-content: space-between;
             margin-bottom: 8px;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            overflow: visible;
         }
         
         .logo {
             width: 60px;
             height: 60px;
             object-fit: contain;
+            flex-shrink: 0;
         }
         
         .school-details {
             flex: 1;
             text-align: center;
             margin: 0 15px;
+            min-width: 0;
+            box-sizing: border-box;
         }
         
         .school-name {
@@ -96,6 +111,10 @@
         .student-report {
             page-break-after: always;
             margin-bottom: 30px;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            overflow: visible;
         }
         
         .student-report:last-child {
@@ -109,6 +128,11 @@
             background: #e9ecef;
             border: 1px solid #ced4da;
             border-radius: 4px;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
         .term-section-banner strong {
             font-size: 12px;
@@ -125,12 +149,18 @@
             padding: 8px;
             background: #f8f9fa;
             border-radius: 3px;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            overflow: visible;
+            min-width: 0;
         }
 
         .student-header-left {
             display: flex;
             align-items: center;
             gap: 10px;
+            min-width: 0;
         }
 
         .student-photo {
@@ -169,6 +199,7 @@
             border-collapse: collapse;
             margin-bottom: 10px;
             font-size: 9px;
+            table-layout: fixed;
         }
         
         .marks-table th {
@@ -178,12 +209,16 @@
             text-align: center;
             font-weight: bold;
             border: 1px solid #2c3e50;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
         
         .marks-table td {
             padding: 4px;
             text-align: center;
             border: 1px solid #ddd;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
         
         .marks-table .subject-name {
@@ -207,6 +242,11 @@
             justify-content: space-between;
             margin-bottom: 10px;
             font-size: 9px;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            overflow: visible;
+            gap: 3px;
         }
         
         .summary-section {
@@ -214,7 +254,11 @@
             padding: 8px;
             border-radius: 3px;
             flex: 1;
-            margin: 0 3px;
+            margin: 0;
+            box-sizing: border-box;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            min-width: 0;
         }
         
         .summary-section h4 {
@@ -223,12 +267,16 @@
             color: #2c3e50;
             border-bottom: 1px solid #ddd;
             padding-bottom: 2px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
         
         .summary-item {
             display: flex;
             justify-content: space-between;
             margin: 2px 0;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
         
         .signature-section {
@@ -238,11 +286,18 @@
             padding-top: 10px;
             border-top: 1px solid #ddd;
             font-size: 8px;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            gap: 10px;
         }
         
         .signature-box {
             text-align: center;
-            width: 45%;
+            flex: 1;
+            min-width: 0;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
         
         .signature-line {
@@ -251,10 +306,22 @@
             height: 20px;
         }
         
+        /* Global constraints to prevent content overflow */
+        div, section, article, header, footer, main, nav, ul, ol, li, p, span, a, table {
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+        
+        img, svg, canvas, video, iframe {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+        
         @media print {
             body {
                 margin: 0;
-                padding: 0;
+                padding: 0.3cm;
             }
             
             .student-report {
