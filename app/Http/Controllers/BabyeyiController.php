@@ -91,11 +91,10 @@ class BabyeyiController extends Controller
             'course_type' => 'nullable|string',
             'courses' => 'nullable|array',
             'courses.*' => 'exists:courses,id',
-            'content' => 'required|string',
         ]);
 
-        // Generate initial content based on selections
-        $content = $validated['content'] ?? $this->generateInitialContent($validated);
+        // Create empty content - secretary will fill it in the editor
+        $content = '';
 
         $babyeyi = Babyeyi::create([
             'academic_year_id' => $validated['academic_year_id'],
@@ -109,7 +108,7 @@ class BabyeyiController extends Controller
         ]);
 
         return redirect()->route('babyeyi.edit', $babyeyi)
-            ->with('success', 'Babyeyi template created! Accountant can now edit it.');
+            ->with('success', 'Babyeyi template created! Now add your content using the editor below.');
     }
 
     /**
