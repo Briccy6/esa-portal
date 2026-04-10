@@ -22,59 +22,250 @@
     <meta charset="UTF-8">
     <title>Assessment — {{ $first->student->full_name }} — all terms</title>
     <style>
-        // Optimize page layout for fitness and margins
+        /* A4 Page Setup with Proper Margins */
         @page {
             size: A4 portrait;
-            margin: 7mm;
+            margin: 20mm 20mm 20mm 20mm;
         }
         
         * {
             box-sizing: border-box;
         }
         
-        html, body { 
-            margin: 0; 
-            padding: 7mm; 
-            font-family: DejaVu Sans, Arial, sans-serif; 
-            font-size: 6.5px; 
-            color: #111; 
-            width: 100%; 
-            overflow-x: hidden; 
-            box-sizing: border-box;
+        html {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: DejaVu Sans, Arial, sans-serif;
+            font-size: 6.5px;
+            color: #111;
+            width: 100%;
             height: 100%;
             background: white;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
         }
-        .print-wrap { width: 100%; max-width: 100%; box-sizing: border-box; padding: 0; margin: 0; overflow: visible; border: 2px solid #000; background: white; }
-        .print-header-table { width: 100%; border-collapse: collapse; border-bottom: 1px solid #000; margin: 0; table-layout: fixed; }
-        .print-header-table td { vertical-align: middle; padding: 4px; font-size: 7px; word-wrap: break-word; overflow-wrap: break-word; border-right: 1px solid #000; }
-        .print-header-table td:last-child { border-right: none; }
-        .print-header-logo { width: 18%; text-align: center; }
-        .print-header-logo--right { width: 18%; }
-        .print-header-center { width: 64%; text-align: center; padding: 4px 6px !important; }
-        .school-logo-img { max-height: 55px; max-width: 75px; object-fit: contain; }
-        .print-logo-placeholder { width: 55px; height: 55px; margin: 0 auto; background: #ecf0f1; border: 1px dashed #999; font-size: 6px; line-height: 53px; text-align: center; color: #888; flex-shrink: 0; }
-        .hdr-line { margin: 1px 0; font-size: 6.8px; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.3; }
-        .hdr-line .lbl { font-weight: bold; }
-        .hdr-school-name { font-size: 9px; font-weight: bold; margin: 3px 0 2px 0; letter-spacing: 0.3px; }
-        .hdr-contact { font-size: 6px; line-height: 1.2; }
-        .title-section { background: #f0f0f0; border: 1px solid #000; border-bottom: none; padding: 3px; text-align: center; margin: 0; }
-        .title-section h2 { font-size: 10px; margin: 0; font-weight: bold; letter-spacing: 0.4px; }
-        .legend-section { border: 1px solid #000; border-top: none; padding: 3px 5px; font-size: 5.8px; margin: 0; word-wrap: break-word; line-height: 1.3; }
-        .matrix-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 6px; margin: 0; border: 1px solid #000; }
-        .matrix-table th, .matrix-table td { border: 1px solid #000; padding: 2px; text-align: center; vertical-align: middle; word-wrap: break-word; overflow-wrap: break-word; }
-        .matrix-table .text-left { text-align: left; padding-left: 3px; }
-        .matrix-table .bg-gray { background: #f0f0f0; font-weight: bold; }
-        .matrix-table .bg-blue { background: #e6f3ff; }
-        .matrix-table .bg-yellow { background: #ffffe6; }
-        .matrix-table .bg-green { background: #e6ffe6; }
-        .term-head { background: #d9e9f7; font-weight: bold; font-size: 6px; border: 1px solid #000; }
-        .sub-head { background: #f0f0f0; font-size: 5.8px; font-weight: 600; border: 1px solid #000; }
-        .footer { margin: 2px 0 0 0; padding: 2px 4px; font-size: 5.8px; text-align: right; color: #555; border: 1px solid #000; border-top: none; box-sizing: border-box; width: 100%; }
-        .deliberation-table { width: 100%; border-collapse: collapse; font-size: 5.8px; margin: 0; table-layout: fixed; border: 1px solid #000; }
-        .deliberation-table th, .deliberation-table td { border: 1px solid #000; padding: 2px; word-wrap: break-word; overflow-wrap: break-word; }
-        .annual-row { font-weight: bold; background: #e6ffe6; }
         
-        /* Global overflow prevention */
+        /* Centered container - A4 width minus margins = 170mm */
+        .print-wrap {
+            width: 100%;
+            max-width: 170mm;
+            margin: 0 auto;
+            padding: 0;
+            box-sizing: border-box;
+            border: 2px solid #000;
+            background: white;
+            display: block;
+        }
+        
+        .print-header-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-bottom: 1px solid #000;
+            margin: 0;
+            table-layout: fixed;
+        }
+        
+        .print-header-table td {
+            vertical-align: middle;
+            padding: 4px;
+            font-size: 7px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            border-right: 1px solid #000;
+        }
+        
+        .print-header-table td:last-child {
+            border-right: none;
+        }
+        
+        .print-header-logo {
+            width: 18%;
+            text-align: center;
+            display: table-cell;
+        }
+        
+        .print-header-logo--right {
+            width: 18%;
+            display: table-cell;
+        }
+        
+        .print-header-center {
+            width: 64%;
+            text-align: center;
+            display: table-cell;
+            padding: 4px 6px !important;
+        }
+        
+        .school-logo-img {
+            max-height: 60px;
+            max-width: 80px;
+            object-fit: contain;
+            display: block;
+            margin: 0 auto;
+        }
+        
+        .print-logo-placeholder {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto;
+            background: #ecf0f1;
+            border: 1px dashed #999;
+            font-size: 6px;
+            line-height: 58px;
+            text-align: center;
+            color: #888;
+            flex-shrink: 0;
+            display: inline-block;
+        }
+        
+        .hdr-line {
+            margin: 1px 0;
+            font-size: 6.8px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            line-height: 1.3;
+        }
+        
+        .hdr-line .lbl {
+            font-weight: bold;
+        }
+        
+        .hdr-school-name {
+            font-size: 9px;
+            font-weight: bold;
+            margin: 3px 0 2px 0;
+            letter-spacing: 0.3px;
+        }
+        
+        .hdr-contact {
+            font-size: 6px;
+            line-height: 1.2;
+        }
+        
+        .title-section {
+            background: #f0f0f0;
+            border: 1px solid #000;
+            border-bottom: none;
+            border-top: none;
+            padding: 3px;
+            text-align: center;
+            margin: 0;
+        }
+        
+        .title-section h2 {
+            font-size: 10px;
+            margin: 0;
+            font-weight: bold;
+            letter-spacing: 0.4px;
+        }
+        
+        .legend-section {
+            border: 1px solid #000;
+            border-top: none;
+            padding: 3px 5px;
+            font-size: 5.8px;
+            margin: 0;
+            word-wrap: break-word;
+            line-height: 1.3;
+        }
+        
+        .matrix-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            font-size: 6px;
+            margin: 0;
+            border: 1px solid #000;
+        }
+        
+        .matrix-table th,
+        .matrix-table td {
+            border: 1px solid #000;
+            padding: 2px;
+            text-align: center;
+            vertical-align: middle;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        .matrix-table .text-left {
+            text-align: left;
+            padding-left: 3px;
+        }
+        
+        .matrix-table .bg-gray {
+            background: #f0f0f0;
+            font-weight: bold;
+        }
+        
+        .matrix-table .bg-blue {
+            background: #e6f3ff;
+        }
+        
+        .matrix-table .bg-yellow {
+            background: #ffffe6;
+        }
+        
+        .matrix-table .bg-green {
+            background: #e6ffe6;
+        }
+        
+        .term-head {
+            background: #d9e9f7;
+            font-weight: bold;
+            font-size: 6px;
+            border: 1px solid #000;
+        }
+        
+        .sub-head {
+            background: #f0f0f0;
+            font-size: 5.8px;
+            font-weight: 600;
+            border: 1px solid #000;
+        }
+        
+        .footer {
+            margin: 0;
+            padding: 2px 4px;
+            font-size: 5.8px;
+            text-align: right;
+            color: #555;
+            border: 1px solid #000;
+            border-top: none;
+            box-sizing: border-box;
+            width: 100%;
+        }
+        
+        .deliberation-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 5.8px;
+            margin: 0;
+            table-layout: fixed;
+            border: 1px solid #000;
+        }
+        
+        .deliberation-table th,
+        .deliberation-table td {
+            border: 1px solid #000;
+            padding: 2px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        .annual-row {
+            font-weight: bold;
+            background: #e6ffe6;
+        }
+        
+        /* Ensure all elements stay within bounds */
         div, section, article, header, footer, main, nav, ul, ol, li, p, span, a, label, td, th {
             max-width: 100%;
             box-sizing: border-box;
@@ -86,15 +277,24 @@
             display: block;
         }
         
+        /* Print-specific adjustments */
         @media print {
+            html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100%;
+                height: 100%;
+            }
+            
             body {
-                margin: 0;
-                padding: 7mm;
+                background: white;
             }
             
             .print-wrap {
+                margin: 0 auto;
+                max-width: 170mm;
                 width: 100%;
-                max-width: 100%;
+                page-break-inside: avoid;
                 box-sizing: border-box;
             }
         }

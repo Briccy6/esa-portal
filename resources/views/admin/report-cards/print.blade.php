@@ -7,10 +7,7 @@
     <style>
         @page {
             size: A4 portrait;
-            margin-top: 0.5cm;
-            margin-right: 0.5cm;
-            margin-bottom: 0.5cm;
-            margin-left: 0.5cm;
+            margin: 20mm;
         }
         
         * {
@@ -32,16 +29,19 @@
             background: white;
             overflow-x: hidden;
             box-sizing: border-box;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
         }
         
         .print-area {
             width: 100%;
-            max-width: 100%;
-            padding: 0.5cm;
+            max-width: 170mm;
+            margin: 0 auto;
+            padding: 0;
             box-sizing: border-box;
-            border: 1px solid black;
-            margin: 0;
-            overflow: visible;
+            border: 2px solid black;
+            background: white;
+            display: block;
         }
         
         /* Header: logo | details | logo (table layout for DomPDF) */
@@ -239,13 +239,16 @@
         @media print {
             body {
                 margin: 0;
-                padding: 0.5cm;
+                padding: 0;
+                width: 100%;
+                height: 100%;
             }
             
             .print-area {
-                position: relative;
+                margin: 0 auto;
+                max-width: 170mm;
                 width: 100%;
-                max-width: 100%;
+                box-sizing: border-box;
             }
         }
         

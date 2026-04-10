@@ -7,10 +7,7 @@
     <style>
         @page {
             size: A4 portrait;
-            margin-top: 0.3cm;
-            margin-right: 0.3cm;
-            margin-bottom: 0.3cm;
-            margin-left: 0.3cm;
+            margin: 20mm;
         }
         
         * {
@@ -33,8 +30,19 @@
             color: #333;
             background: white;
             margin: 0;
-            padding: 0.3cm;
+            padding: 0;
             overflow-x: hidden;
+            width: 100%;
+            height: 100%;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        
+        /* Main content wrapper - centered A4 layout */
+        body > * {
+            max-width: 170mm;
+            margin-left: auto;
+            margin-right: auto;
         }
         
         .header {
@@ -319,9 +327,21 @@
         }
         
         @media print {
+            html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100%;
+                height: 100%;
+            }
+            
             body {
-                margin: 0;
-                padding: 0.3cm;
+                background: white;
+            }
+            
+            body > * {
+                max-width: 170mm;
+                margin-left: auto;
+                margin-right: auto;
             }
             
             .student-report {
