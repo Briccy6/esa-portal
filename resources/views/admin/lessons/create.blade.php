@@ -133,7 +133,7 @@
                                 <option value="">-- Select a Teacher --</option>
                                 @foreach ($teachers as $teacher)
                                     <option value="{{ $teacher->id }}" {{ old('teacher_id') == $teacher->id ? 'selected' : '' }}>
-                                        {{ $teacher->first_name }} {{ $teacher->last_name }}
+                                        {{ $teacher->teacher_name }}
                                     </option>
                                 @endforeach
                             </select>

@@ -25,13 +25,13 @@
         // Optimize page layout for fitness and margins
         @page {
             size: A4 portrait;
-            margin-top: 3mm;
-            margin-right: 3mm;
-            margin-bottom: 3mm;
-            margin-left: 3mm;
+            margin-top: 8mm;
+            margin-right: 8mm;
+            margin-bottom: 8mm;
+            margin-left: 8mm;
         }
-        html, body { margin: 0; padding: 0; font-family: DejaVu Sans, Arial, sans-serif; font-size: 6.5px; color: #111; width: 100%; overflow-x: hidden; }
-        .print-wrap { width: 100%; box-sizing: border-box; }
+        html, body { margin: 0; padding: 8mm; font-family: DejaVu Sans, Arial, sans-serif; font-size: 6.5px; color: #111; width: 100%; overflow-x: hidden; box-sizing: border-box; }
+        .print-wrap { width: 100%; box-sizing: border-box; padding: 0; }
         .print-header-table { width: 100%; border-collapse: collapse; border-bottom: 1px solid #000; margin-bottom: 2px; }
         .print-header-table td { vertical-align: middle; padding: 3px 4px; font-size: 7px; }
         .print-header-logo { width: 18%; text-align: center; border-right: 1px solid #000; }
@@ -95,13 +95,13 @@
         <h2>TRAINEE'S ASSESSMENT REPORT (ALL TERMS)</h2>
     </div>
     <div class="legend-section">
-        <strong>TEST</strong> = test average · <strong>EXAM</strong> = exam mark · <strong>TOT</strong> = total for the subject in that term
+        <strong>TEST</strong> = test average · <strong>EXAM</strong> = exam mark · <strong>TOT</strong> = total for the subject in that term · <strong>POSITION</strong> = student rank within class for that term (Rank/Total Students)
     </div>
 
     <table class="matrix-table">
         <thead>
             <tr class="bg-gray">
-                <th colspan="3" class="text-left">Module / Competence / Credits</th>
+                <th colspan="2" class="text-left">Competence / Credits</th>
                 @foreach($terms as $t)
                     <th colspan="3" class="term-head">{{ $t['name'] }}</th>
                 @endforeach
@@ -110,7 +110,6 @@
                 @endif
             </tr>
             <tr class="sub-head">
-                <th>Module</th>
                 <th>Competence</th>
                 <th>Cr</th>
                 @foreach($terms as $t)
@@ -127,12 +126,11 @@
         </thead>
         <tbody>
             <tr class="bg-blue">
-                <td colspan="{{ 3 + 3 * count($terms) + (count($terms) > 1 ? 3 : 0) }}" class="text-left font-bold" style="font-weight: bold;">Core competencies — specific</td>
+                <td colspan="{{ 2 + 3 * count($terms) + (count($terms) > 1 ? 3 : 0) }}" class="text-left font-bold" style="font-weight: bold;">Core competencies — specific</td>
             </tr>
             @forelse($mRows as $row)
                 <tr>
-                    <td class="text-left">{{ Str::limit($row['module_code'], 24) }}</td>
-                    <td class="text-left">{{ Str::limit($row['competence_title'], 28) }}</td>
+                    <td class="text-left">{{ Str::limit($row['competence_title'], 40) }}</td>
                     <td>{{ $row['credits'] }}</td>
                     @php
                         $annualTest = 0;
@@ -162,16 +160,16 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="{{ 3 + 3 * count($terms) + (count($terms) > 1 ? 3 : 0) }}" style="padding: 12px; color: #666;">No assessment data</td>
+                    <td colspan="{{ 2 + 3 * count($terms) + (count($terms) > 1 ? 3 : 0) }}" style="padding: 12px; color: #666;">No assessment data</td>
                 </tr>
             @endforelse
 
             @if(count($mRows) > 0)
                 <tr class="bg-white">
-                    <td colspan="{{ 3 + 3 * count($terms) + (count($terms) > 1 ? 3 : 0) }}"></td>
+                    <td colspan="{{ 2 + 3 * count($terms) + (count($terms) > 1 ? 3 : 0) }}"></td>
                 </tr>
                 <tr class="bg-blue" style="font-weight: bold;">
-                    <td colspan="3" class="text-left">TOTAL</td>
+                    <td colspan="2" class="text-left">TOTAL</td>
                     @php
                         $annualTestTotal = 0;
                         $annualExamTotal = 0;
@@ -199,18 +197,18 @@
                     @endif
                 </tr>
                 <tr class="bg-yellow" style="font-weight: bold;">
-                    <td colspan="3" class="text-left">POSITION</td>
+                    <td colspan="2" class="text-left">POSITION (Rank/Total)</td>
                     @foreach($terms as $t)
                         <td></td>
                         <td></td>
-                        <td class="text-center">{{ $positionByTerm[$t['id']] ?? '—' }}</td>
+                        <td class="text-center" style="font-weight: bold; font-size: 7px;">{{ $positionByTerm[$t['id']] ?? '—' }}</td>
                     @endforeach
                     @if(count($terms) > 1)
                         <td colspan="3" class="text-center">—</td>
                     @endif
                 </tr>
                 <tr class="bg-gray" style="font-weight: bold;">
-                    <td colspan="3" class="text-left">Percentage %</td>
+                    <td colspan="2" class="text-left">Percentage %</td>
                     @php
                         $annualPercentage = 0;
                         $percentTermCount = 0;

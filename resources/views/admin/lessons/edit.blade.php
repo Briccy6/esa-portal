@@ -37,7 +37,7 @@
                         <li><strong>Lesson:</strong> {{ $lesson->lesson->title ?? 'N/A' }}</li>
                         <li><strong>Course:</strong> {{ $lesson->course->course_name ?? 'N/A' }}</li>
                         <li><strong>Branch:</strong> {{ $lesson->branch->name ?? 'N/A' }}</li>
-                        <li><strong>Teacher:</strong> {{ $lesson->teacher->first_name ?? '' }} {{ $lesson->teacher->last_name ?? '' }}</li>
+                        <li><strong>Teacher:</strong> {{ $lesson->teacher->teacher_name ?? 'N/A' }}</li>
                     </ul>
                 </div>
             </div>
@@ -136,7 +136,7 @@
                                 <option value="">-- Select a Teacher --</option>
                                 @foreach ($teachers as $teacher)
                                     <option value="{{ $teacher->id }}" {{ old('teacher_id', $lesson->teacher_id) == $teacher->id ? 'selected' : '' }}>
-                                        {{ $teacher->first_name }} {{ $teacher->last_name }}
+                                        {{ $teacher->teacher_name }}
                                     </option>
                                 @endforeach
                             </select>
@@ -172,7 +172,7 @@
                                 </div>
                                 <div class="col-md-3">
                                     <small class="text-muted">Teacher</small>
-                                    <p class="mb-0 fw-bold">{{ $lesson->teacher->first_name ?? '' }} {{ $lesson->teacher->last_name ?? '' }}</p>
+                                    <p class="mb-0 fw-bold">{{ $lesson->teacher->teacher_name ?? 'N/A' }}</p>
                                 </div>
                             </div>
                         </div>

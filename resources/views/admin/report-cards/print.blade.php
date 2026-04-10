@@ -7,10 +7,10 @@
     <style>
         @page {
             size: A4 portrait;
-            margin-top: 0.4cm;
-            margin-right: 0.4cm;
-            margin-bottom: 0.4cm;
-            margin-left: 0.4cm;
+            margin-top: 0.8cm;
+            margin-right: 0.8cm;
+            margin-bottom: 0.8cm;
+            margin-left: 0.8cm;
         }
         
         body {
@@ -20,8 +20,9 @@
             color: #333;
             background: white;
             margin: 0;
-            padding: 0;
+            padding: 0.8cm;
             overflow-x: hidden;
+            box-sizing: border-box;
         }
 
         html {

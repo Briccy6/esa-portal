@@ -152,7 +152,7 @@
                                             <div class="fw-bold text-success">
                                                 <i class="fas fa-user-tie me-1"></i>
                                                 @if($assignment->teacher)
-                                                    {{ $assignment->teacher->first_name }} {{ $assignment->teacher->last_name }}
+                                                    {{ $assignment->teacher->teacher_name }}
                                                 @else
                                                     <span class="text-danger">No Teacher Assigned</span>
                                                 @endif

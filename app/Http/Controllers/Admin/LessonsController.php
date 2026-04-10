@@ -151,9 +151,10 @@ class LessonsController extends Controller
 
         $lesson->update($validated);
 
-        return redirect()->route('admin.lessons.index')->with('success', 'Lesson assignment updated successfully. ' . 
-                     $lesson->lesson->title . ' is now taught in ' . $lesson->branch->name . ' under ' . 
-                     $lesson->course->course_name . ' by ' . $lesson->teacher->first_name . ' ' . $lesson->teacher->last_name);
+        return redirect()->route('admin.lessons.index')->with('success', 
+            'Lesson assignment updated successfully. ' . 
+            $lesson->lesson->title . ' is now taught in ' . $lesson->branch->name . ' under ' . 
+            $lesson->course->course_name . ' by ' . $lesson->teacher->teacher_name);
     }
 
     /**

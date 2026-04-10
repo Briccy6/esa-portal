@@ -45,7 +45,7 @@
                             </div>
                             <div class="col-md-6">
                                 <h6 class="text-muted mb-2">Teacher</h6>
-                                <p class="h5 mb-0">{{ $lesson->teacher->first_name ?? '' }} {{ $lesson->teacher->last_name ?? '' }}</p>
+                                <p class="h5 mb-0">{{ $lesson->teacher->teacher_name ?? 'N/A' }}</p>
                             </div>
                         </div>
 
