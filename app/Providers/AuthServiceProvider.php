@@ -6,8 +6,10 @@ use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvid
 use Illuminate\Support\Facades\Gate;
 use App\Policies\ExamPolicy;
 use App\Policies\QuestionBankPolicy;
+use App\Policies\BabyeyiPolicy;
 use App\Models\Exam;
 use App\Models\QuestionBank;
+use App\Models\Babyeyi;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -19,6 +21,7 @@ class AuthServiceProvider extends ServiceProvider
     protected $policies = [
         Exam::class => ExamPolicy::class,
         QuestionBank::class => QuestionBankPolicy::class,
+        Babyeyi::class => BabyeyiPolicy::class,
     ];
 
     /**
