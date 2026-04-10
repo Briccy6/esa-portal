@@ -204,7 +204,7 @@ class BabyeyiController extends Controller
         if (Auth::guard('admin')->check()) {
             $view = 'admin.babyeyi.edit';
         } elseif (Auth::guard('staff')->check()) {
-            $view = 'babyeyi.edit';
+            $view = 'staff.babyeyi.edit';
         } else {
             $view = 'babyeyi.edit';
         }
@@ -280,7 +280,7 @@ class BabyeyiController extends Controller
         if (Auth::guard('admin')->check()) {
             $view = 'admin.babyeyi.show';
         } elseif (Auth::guard('staff')->check()) {
-            $view = 'babyeyi.show';
+            $view = 'staff.babyeyi.show';
         } else {
             $view = 'babyeyi.show';
         }
