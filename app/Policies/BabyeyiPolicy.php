@@ -71,10 +71,9 @@ class BabyeyiPolicy
             return true;
         }
 
-        // Staff can only delete their own draft/preview babyeyi
+        // Staff can only delete their own babyeyi
         if ($user instanceof Staff) {
-            return $babyeyi->created_by === $user->id &&
-                   in_array($babyeyi->status, ['draft', 'preview']);
+            return $babyeyi->created_by === $user->id;
         }
 
         return false;
