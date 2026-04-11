@@ -92,6 +92,7 @@
             <td class="bg-gray">EXAM</td>
             <td class="bg-gray">AVG</td>
             <td class="bg-gray">A.A</td>
+            <td class="bg-gray">STATUS</td>
         </tr>
     </thead>
     <tbody>
@@ -100,6 +101,9 @@
                 <td colspan="7" class="font-bold">Core competencies - Specific</td>
             </tr>
             @foreach($reportCard->subjects as $subject)
+                @php
+                    $status = ($subject->total_mark ?? 0) >= 50 ? 'PASS' : 'FAIL';
+                @endphp
                 <tr>
                     <td colspan="4" class="text-left">{{ $subject->subject_name }}</td>
                     <td>{{ $subject->credits ?? 3 }}</td>
@@ -107,6 +111,7 @@
                     <td>{{ number_format(min($subject->exam_mark ?? 0, 100), 2) }}</td>
                     <td class="font-bold">{{ number_format(min($subject->total_mark ?? 0, 100), 2) }}</td>
                     <td class="font-bold">{{ number_format(min($subject->total_mark ?? 0, 100), 2) }}%</td>
+                    <td class="font-bold">{{ $status }}</td>
                 </tr>
             @endforeach
         @else
@@ -127,11 +132,13 @@
                     $totalTest = $reportCard->subjects->sum('test_average');
                     $totalExam = $reportCard->subjects->sum('exam_mark');
                     $totalMark = $reportCard->subjects->sum('total_mark');
+                    $totalStatus = $totalMark >= 50 ? 'PASS' : 'FAIL';
                 @endphp
                 <td>{{ number_format(min($totalTest, 100), 1) }}</td>
                 <td>{{ number_format(min($totalExam, 100), 1) }}</td>
                 <td class="font-bold">{{ number_format(min($totalMark, 100), 1) }}</td>
                 <td class="font-bold">{{ number_format(min($totalMark, 100), 1) }}%</td>
+                <td class="font-bold">{{ $totalStatus }}</td>
             </tr>
 
             <tr class="bg-yellow font-bold">

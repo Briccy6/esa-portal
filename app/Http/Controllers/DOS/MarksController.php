@@ -527,15 +527,20 @@ class MarksController extends Controller
             ->where('branch_id', $student->branch_id)
             ->where('course_id', $student->course_id)
             ->get();
-        
         // Get marks for these lessons
-        $marks = Mark::with(['course', 'exam', 'lesson', 'grade'])
+        $marksQuery = Mark::with(['course', 'exam', 'lesson', 'grade'])
             ->where('student_id', $student->id)
-            ->whereIn('lesson_id', $lessonBranchCourses->pluck('lesson_id'))
-            ->when($request->term, fn($q) => $q->where('term', $request->term))
-            ->when($request->academic_year, fn($q) => $q->where('academic_year', $request->academic_year))
-            ->orderBy('created_at', 'asc')
-            ->get();
+            ->whereIn('lesson_id', $lessonBranchCourses->pluck('lesson_id'));
+        
+        // If term is provided, find the term ID and filter
+        if ($request->term) {
+            $term = \App\Models\Term::where('name', $request->term)->first();
+            if ($term) {
+                $marksQuery->where('term_id', $term->id);
+            }
+        }
+        
+        $marks = $marksQuery->orderBy('created_at', 'asc')->get();
 
         // Group marks by lesson and create subjects structure
         $subjects = collect();
@@ -640,12 +645,19 @@ class MarksController extends Controller
             // Calculate average marks for each student in the class
             $studentAverages = [];
             foreach ($classStudents as $classStudent) {
-                $classStudentMarks = Mark::with('lesson')
+                $classStudentMarksQuery = Mark::with('lesson')
                     ->where('student_id', $classStudent->id)
-                    ->whereIn('lesson_id', $lessonBranchCourses->pluck('lesson_id'))
-                    ->when($request->term, fn($q) => $q->where('term', $request->term))
-                    ->when($request->academic_year, fn($q) => $q->where('academic_year', $request->academic_year))
-                    ->get();
+                    ->whereIn('lesson_id', $lessonBranchCourses->pluck('lesson_id'));
+                
+                // If term is provided, find the term ID and filter
+                if ($request->term) {
+                    $term = \App\Models\Term::where('name', $request->term)->first();
+                    if ($term) {
+                        $classStudentMarksQuery->where('term_id', $term->id);
+                    }
+                }
+                
+                $classStudentMarks = $classStudentMarksQuery->get();
                 
                 // Calculate average for this student
                 $classStudentTotal = 0;
