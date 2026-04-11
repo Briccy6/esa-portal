@@ -103,7 +103,7 @@
                     <div class="card-body">
                         @foreach($blog->images as $image)
                         <div class="d-flex align-items-center gap-2 border rounded p-2 mb-2" id="image-row-{{ $image->id }}">
-                            <img src="{{ asset('storage/' . $image->image_path) }}" alt="{{ $image->alt_text ?? $blog->title }}"
+                            <img src="{{ $image->url }}" alt="{{ $image->alt_text ?? $blog->title }}"
                                  class="rounded flex-shrink-0" style="width:56px;height:56px;object-fit:cover">
                             <div class="flex-grow-1 min-w-0 small">
                                 <div class="fw-medium text-truncate">{{ $image->caption ?? 'No caption' }}</div>

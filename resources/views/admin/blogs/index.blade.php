@@ -73,7 +73,7 @@
                     <div class="row align-items-center g-3">
                         <div class="col-auto d-none d-sm-block">
                             @if($blog->images->first())
-                                <img src="{{ asset('storage/' . $blog->images->first()->image_path) }}"
+                                <img src="{{ $blog->images->first()->url }}"
                                      alt=""
                                      class="rounded"
                                      style="width: 72px; height: 72px; object-fit: cover;">

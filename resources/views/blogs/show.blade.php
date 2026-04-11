@@ -653,8 +653,8 @@
     @php $heroImage = $blog->images->first(); @endphp
     <div class="container py-5">
         <figure class="hero-image-wrap">
-            {{-- ✅ Fixed: uses image_path not url --}}
-            <img src="{{ asset('storage/' . $heroImage->image_path) }}"
+            {{-- Image stored in database - using data URI --}}
+            <img src="{{ $heroImage->url }}"
                  alt="{{ $heroImage->alt_text ?? $blog->title }}">
             @if($heroImage->caption)
                 <figcaption>{{ $heroImage->caption }}</figcaption>
@@ -680,8 +680,8 @@
         <div class="gallery-grid">
             @foreach($blog->images->skip(1) as $image)
                 <div class="gallery-item"
-                     onclick="openModal('{{ asset('storage/' . $image->image_path) }}', '{{ addslashes($image->caption ?? '') }}', '{{ addslashes($image->alt_text ?? $blog->title) }}')">
-                    <img src="{{ asset('storage/' . $image->image_path) }}"
+                     onclick="openModal('{{ $image->url }}', '{{ addslashes($image->caption ?? '') }}', '{{ addslashes($image->alt_text ?? $blog->title) }}')">
+                    <img src="{{ $image->url }}"
                          alt="{{ $image->alt_text ?? $blog->title }}"
                          loading="lazy">
                     @if($image->caption)

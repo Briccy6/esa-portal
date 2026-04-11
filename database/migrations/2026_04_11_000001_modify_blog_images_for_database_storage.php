@@ -12,14 +12,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('blog_images', function (Blueprint $table) {
-            // Add new columns for database storage
-            $table->longBlob('image_data')->nullable()->after('blog_id');
-            $table->string('mime_type')->default('image/jpeg')->after('image_data');
-            $table->string('filename')->nullable()->after('mime_type');
+            // Modify image_path to store as longBlob (binary image data)
+            $table->longBlob('image_path')->nullable()->change();
             
-            // Keep image_path for backward compatibility (can be dropped later)
-            // but make it nullable for new records
-            $table->string('image_path')->nullable()->change();
+            // Use image_alt to store mime_type
+            $table->string('image_alt')->default('image/jpeg')->change();
+            
+            // Use image_caption to store filename
+            // image_caption already exists and is TEXT, so it can handle it
         });
     }
 
@@ -29,8 +29,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('blog_images', function (Blueprint $table) {
-            $table->dropColumn(['image_data', 'mime_type', 'filename']);
             $table->string('image_path')->nullable(false)->change();
+            $table->string('image_alt')->nullable()->change();
         });
     }
 };

@@ -76,15 +76,15 @@ class BlogController extends Controller
             'is_featured'      => $request->boolean('is_featured'),
         ]);
 
-        // Handle images - Store directly to database
+        // Handle images - Store directly in database
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $index => $image) {
                 BlogImage::create([
-                    'blog_id'    => $blog->id,
-                    'image_data' => file_get_contents($image->getRealPath()),
-                    'mime_type' => $image->getMimeType(),
-                    'filename'   => $image->getClientOriginalName(),
-                    'sort_order' => $index,
+                    'blog_id'       => $blog->id,
+                    'image_path'    => file_get_contents($image->getRealPath()), // binary image data
+                    'image_alt'     => $image->getMimeType(),                    // mime type in image_alt
+                    'image_caption' => $image->getClientOriginalName(),          // filename in image_caption
+                    'sort_order'    => $index,
                 ]);
             }
         }
@@ -164,15 +164,15 @@ class BlogController extends Controller
             'is_featured'      => $request->boolean('is_featured'),
         ]);
 
-        // Handle new images - Store directly to database
+        // Handle new images - Store directly in database
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $index => $image) {
                 BlogImage::create([
-                    'blog_id'    => $blog->id,
-                    'image_data' => file_get_contents($image->getRealPath()),
-                    'mime_type' => $image->getMimeType(),
-                    'filename'   => $image->getClientOriginalName(),
-                    'sort_order' => $blog->images()->count() + $index,
+                    'blog_id'       => $blog->id,
+                    'image_path'    => file_get_contents($image->getRealPath()), // binary image data
+                    'image_alt'     => $image->getMimeType(),                    // mime type in image_alt
+                    'image_caption' => $image->getClientOriginalName(),          // filename in image_caption
+                    'sort_order'    => $blog->images()->count() + $index,
                 ]);
             }
         }
