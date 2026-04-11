@@ -102,16 +102,24 @@
             </tr>
             @foreach($reportCard->subjects as $subject)
                 @php
-                    $subjectTest = $subject->test_average ?? 0;
-                    $subjectExam = $subject->exam_mark ?? 0;
-                    $subjectAvg = ($subjectTest + $subjectExam) / 2;
+                    $subjectTest = min(100, max(0, (float) ($subject->test_average ?? 0)));
+                    $subjectExam = min(100, max(0, (float) ($subject->exam_mark ?? 0)));
+                    if ($subjectTest > 0 && $subjectExam > 0) {
+                        $subjectAvg = ($subjectTest + $subjectExam) / 2;
+                    } elseif ($subjectTest > 0) {
+                        $subjectAvg = $subjectTest;
+                    } elseif ($subjectExam > 0) {
+                        $subjectAvg = $subjectExam;
+                    } else {
+                        $subjectAvg = 0;
+                    }
                     $status = $subjectAvg >= 50 ? 'PASS' : 'FAIL';
                 @endphp
                 <tr>
                     <td colspan="4" class="text-left">{{ $subject->subject_name }}</td>
                     <td>{{ $subject->credits ?? 3 }}</td>
-                    <td>{{ number_format(min($subjectTest, 100), 2) }}</td>
-                    <td>{{ number_format(min($subjectExam, 100), 2) }}</td>
+                    <td>{{ number_format($subjectTest, 2) }}</td>
+                    <td>{{ number_format($subjectExam, 2) }}</td>
                     <td class="font-bold">{{ number_format($subjectAvg, 2) }}</td>
                     <td class="font-bold">{{ number_format($subjectAvg, 2) }}%</td>
                     <td class="font-bold">{{ $status }}</td>
@@ -132,11 +140,31 @@
             <tr class="bg-blue font-bold">
                 <td colspan="5" class="text-left">TOTAL</td>
                 @php
-                    $totalTest = $reportCard->subjects->sum('test_average');
-                    $totalExam = $reportCard->subjects->sum('exam_mark');
-                    $totalMark = $reportCard->subjects->sum('total_mark');
+                    $cappedTest = fn ($s) => min(100, max(0, (float) ($s->test_average ?? 0)));
+                    $cappedExam = fn ($s) => min(100, max(0, (float) ($s->exam_mark ?? 0)));
+                    $rowAvg = function ($s) use ($cappedTest, $cappedExam) {
+                        $t = $cappedTest($s);
+                        $e = $cappedExam($s);
+                        if ($t > 0 && $e > 0) {
+                            return ($t + $e) / 2;
+                        }
+                        if ($t > 0) {
+                            return $t;
+                        }
+                        if ($e > 0) {
+                            return $e;
+                        }
+
+                        return 0;
+                    };
                     $subjectCount = $reportCard->subjects->count();
-                    $averageMark = $subjectCount > 0 ? ($totalTest + $totalExam) / 2 / $subjectCount : 0;
+                    $totalTest = $subjectCount > 0 ? $reportCard->subjects->sum($cappedTest) : 0;
+                    $totalExam = $subjectCount > 0 ? $reportCard->subjects->sum($cappedExam) : 0;
+                    $totalMark = $subjectCount > 0 ? $reportCard->subjects->sum('total_mark') : 0;
+                    $averageMark = $subjectCount > 0 ? $reportCard->subjects->avg($rowAvg) : 0;
+                    if ($averageMark === null) {
+                        $averageMark = 0;
+                    }
                     $totalStatus = $averageMark >= 50 ? 'PASS' : 'FAIL';
                 @endphp
                 <td>{{ number_format($totalTest, 1) }}</td>

@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use App\Models\ReportCard;
 use App\Models\Mark;
+use App\Support\AssessmentMarkMath;
 
 class RecalculateExamMarks extends Command
 {
@@ -39,47 +40,35 @@ class RecalculateExamMarks extends Command
                     ->where('lesson_id', $subject->lesson_id)
                     ->where('term_id', $reportCard->term_id)
                     ->where('assessment_type', 'exam')
+                    ->with('exam')
                     ->get();
 
                 if ($examMarks->isEmpty()) {
                     $newExamMark = 0;
                     $this->line("  {$subject->subject_name}: No exam marks found → setting to 0");
                 } else {
-                    // Sum all exam values
-                    $totalExamValue = $examMarks->sum('value');
-                    
-                    // Sum all marks_out_of, using 100 as default if not set
-                    $totalExamOutOf = $examMarks->sum(function($mark) {
-                        if ($mark->marks_out_of && $mark->marks_out_of > 0) {
-                            return $mark->marks_out_of;
-                        }
-                        $examTotalMarks = $mark->exam ? $mark->exam->total_marks : 100;
-                        return $examTotalMarks > 0 ? $examTotalMarks : 100;
-                    });
-
-                    // Normalize to 100-point scale
-                    $newExamMark = $totalExamOutOf > 0 ? ($totalExamValue / $totalExamOutOf) * 100 : 0;
-                    
-                    // Cap at 100
-                    $newExamMark = min($newExamMark, 100);
-
-                    $this->line("  {$subject->subject_name}: {$totalExamValue}/{$totalExamOutOf} → {$newExamMark}");
-                    
-                    // Show raw marks breakdown
+                    $newExamMark = AssessmentMarkMath::aggregatedExamPercentFromMarks($examMarks);
+                    $this->line("  {$subject->subject_name}: aggregated exam % → {$newExamMark}");
                     foreach ($examMarks as $mark) {
-                        $mofo = $mark->marks_out_of && $mark->marks_out_of > 0 ? $mark->marks_out_of : 
-                                ($mark->exam ? $mark->exam->total_marks : 100);
+                        $mofo = $mark->marks_out_of && $mark->marks_out_of > 0 ? $mark->marks_out_of :
+                            ($mark->exam ? $mark->exam->total_marks : 100);
                         $this->line("    - {$mark->value}/{$mofo}");
                     }
                 }
 
-                // Update if changed
-                if ($subject->exam_mark != $newExamMark) {
-                    $old = $subject->exam_mark;
-                    $subject->exam_mark = $newExamMark;
-                    $subject->calculateTotalMark();
-                    $this->line("    ✓ Updated from {$old} to {$newExamMark}");
-                }
+                $oldExam = (float) $subject->exam_mark;
+                $subject->exam_mark = $newExamMark;
+                $subject->calculateTestAverage();
+                $subject->calculateTotalMark();
+                $this->line("    ✓ Exam {$oldExam} → {$newExamMark}, test_avg {$subject->test_average}, total_mark {$subject->total_mark}");
+            }
+
+            $reportCard->refresh();
+            $reportCard->load('subjects');
+            if ($reportCard->subjects->isNotEmpty()) {
+                $reportCard->total_marks = $reportCard->subjects->sum('total_mark');
+                $reportCard->average_marks = (float) $reportCard->subjects->avg('total_mark');
+                $reportCard->save();
             }
         }
 

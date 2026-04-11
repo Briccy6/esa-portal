@@ -13,6 +13,7 @@ use App\Models\Lesson;
 use App\Models\Grade;
 use App\Models\LessonBranchCourse;
 use App\Models\Term;
+use App\Support\AssessmentMarkMath;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -555,73 +556,22 @@ class MarksController extends Controller
                 $subject->subject_code = $lesson->code ?? strtoupper(substr($lesson->title, 0, 3));
                 $subject->credits = 3;
                 
-                // ================================================================
-                // CALCULATE TEST MARKS (normalize each, then average)
-                // ================================================================
+                // Tests: pool to one score out of 100 (sum marks / sum max * 100)
                 $testMarks = $lessonMarks->where('assessment_type', 'test');
-                if ($testMarks->isNotEmpty()) {
-                    // Normalize each test to 100, then calculate average
-                    $normalizedTestMarks = [];
-                    
-                    foreach ($testMarks as $mark) {
-                        $mofo = ($mark->marks_out_of && $mark->marks_out_of > 0) ? $mark->marks_out_of : 100;
-                        
-                        // Normalize this test to 100-point scale
-                        $normalizedTestMarks[] = ($mark->value / $mofo) * 100;
-                    }
-                    
-                    // Calculate average of normalized test marks
-                    if (!empty($normalizedTestMarks)) {
-                        $subject->test_average = array_sum($normalizedTestMarks) / count($normalizedTestMarks);
-                        $subject->test_average = min($subject->test_average, 100);
-                    } else {
-                        $subject->test_average = 0;
-                    }
-                } else {
-                    $subject->test_average = 0;
-                }
-                
-                // ================================================================
-                // CALCULATE EXAM MARKS (sum all exam values, then normalize to 100)
-                // ================================================================
+                $subject->test_average = $testMarks->isNotEmpty()
+                    ? AssessmentMarkMath::pooledTestPercentFromMarksCollection($testMarks)
+                    : 0;
+
+                // Exam: each row on its scale → % then mean (matches report card generation)
                 $examMarks = $lessonMarks->where('assessment_type', 'exam');
-                if ($examMarks->isNotEmpty()) {
-                    // Sum all exam values and marks_out_of
-                    $totalExamValue = $examMarks->sum('value');
-                    $totalExamOutOf = $examMarks->sum(function($mark) {
-                        // If marks_out_of is null or 0, treat as 100
-                        $mofo = ($mark->marks_out_of && $mark->marks_out_of > 0) ? $mark->marks_out_of : 100;
-                        
-                        // Validate: marks_out_of should be >= the value
-                        if ($mofo < $mark->value) {
-                            \Log::warning('[Marks Validation DOS 2] marks_out_of (' . $mofo . ') is less than value (' . $mark->value . ') for mark ID ' . $mark->id);
-                            $mofo = 100;
-                        }
-                        
-                        return $mofo;
-                    });
-                    
-                    // Normalize total to 100-point scale
-                    if ($totalExamOutOf > 0) {
-                        $subject->exam_mark = ($totalExamValue / $totalExamOutOf) * 100;
-                    } else {
-                        $subject->exam_mark = 0;
-                    }
-                } else {
-                    $subject->exam_mark = 0;
-                }
-                // Cap exam_mark at 100
-                $subject->exam_mark = min($subject->exam_mark, 100);
-                
-                // ================================================================
-                // CALCULATE WEIGHTED AVERAGE: 40% test + 60% exam
-                // ================================================================
-                $testWeighted = $subject->test_average * 0.4;      // 40% weight for tests
-                $examWeighted = $subject->exam_mark * 0.6;         // 60% weight for exam
-                $subject->total_mark = $testWeighted + $examWeighted;
-                
-                // Ensure total is capped at 100
-                $subject->total_mark = min($subject->total_mark, 100);
+                $subject->exam_mark = AssessmentMarkMath::aggregatedExamPercentFromMarks($examMarks);
+
+                // Lesson total: (test + exam) / 2 when both exist (TVET trainee report)
+                $subject->total_mark = AssessmentMarkMath::combinedLessonPercent(
+                    (float) $subject->test_average,
+                    (float) $subject->exam_mark
+                );
+                $subject->total_mark = min(100, $subject->total_mark);
                 
                 // Determine grade based on TVET standards
                 if ($subject->total_mark >= 73) {
@@ -675,54 +625,16 @@ class MarksController extends Controller
                 
                 $classStudentLessonMarks = $classStudentMarks->groupBy('lesson_id');
                 foreach ($classStudentLessonMarks as $clessonId => $clessonMarks) {
-                    // Test marks: normalize each, then average
                     $ctestMarks = $clessonMarks->where('assessment_type', 'test');
-                    $ctestAvg = 0;
-                    if ($ctestMarks->isNotEmpty()) {
-                        // Normalize each test to 100, then calculate average
-                        $cnormalizedTestMarks = [];
-                        
-                        foreach ($ctestMarks as $cmark) {
-                            $cmofo = ($cmark->marks_out_of && $cmark->marks_out_of > 0) ? $cmark->marks_out_of : 100;
-                            $cnormalizedTestMarks[] = ($cmark->value / $cmofo) * 100;
-                        }
-                        
-                        if (!empty($cnormalizedTestMarks)) {
-                            $ctestAvg = array_sum($cnormalizedTestMarks) / count($cnormalizedTestMarks);
-                            $ctestAvg = min($ctestAvg, 100);
-                        }
-                    }
-                    
-                    // Exam marks: sum all values and marks_out_of, then normalize
+                    $ctestAvg = $ctestMarks->isNotEmpty()
+                        ? AssessmentMarkMath::pooledTestPercentFromMarksCollection($ctestMarks)
+                        : 0;
+
                     $cexamMarks = $clessonMarks->where('assessment_type', 'exam');
-                    $cexamValue = 0;
-                    if ($cexamMarks->isNotEmpty()) {
-                        // Sum all exam values and marks_out_of
-                        $ctotalExamValue = $cexamMarks->sum('value');
-                        $ctotalExamOutOf = $cexamMarks->sum(function($mark) {
-                            $mofo = ($mark->marks_out_of && $mark->marks_out_of > 0) ? $mark->marks_out_of : 100;
-                            
-                            // Validate: marks_out_of should be >= the value
-                            if ($mofo < $mark->value) {
-                                \Log::warning('[Marks Validation DOS] marks_out_of (' . $mofo . ') is less than value (' . $mark->value . ') for mark ID ' . $mark->id);
-                                $mofo = 100;
-                            }
-                            
-                            return $mofo;
-                        });
-                        
-                        // Normalize to 100
-                        if ($ctotalExamOutOf > 0) {
-                            $cexamValue = ($ctotalExamValue / $ctotalExamOutOf) * 100;
-                        }
-                    }
-                    // Cap exam value at 100
-                    $cexamValue = min($cexamValue, 100);
-                    
-                    // Weighted average for this lesson: 40% test + 60% exam
-                    $lessonTotal = ($ctestAvg * 0.4) + ($cexamValue * 0.6);
-                    // Cap lessonTotal at 100
-                    $lessonTotal = min($lessonTotal, 100);
+                    $cexamValue = AssessmentMarkMath::aggregatedExamPercentFromMarks($cexamMarks);
+
+                    $lessonTotal = AssessmentMarkMath::combinedLessonPercent((float) $ctestAvg, (float) $cexamValue);
+                    $lessonTotal = min(100, $lessonTotal);
                     $classStudentTotal += $lessonTotal;
                     $classStudentCount++;
                 }

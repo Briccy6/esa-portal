@@ -18,6 +18,7 @@ use App\Models\StudentTransaction;
 use App\Models\CourseTermFee;
 use App\Services\FeePaymentService;
 use App\Services\ReportCardService;
+use App\Support\AssessmentMarkMath;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -1393,46 +1394,14 @@ class ReportCardController extends Controller
             $examMarks = $allMarks->where('assessment_type', 'exam');
             $testMarks = $allMarks->where('assessment_type', 'test');
 
-            // Calculate exam mark (normalized to 100)
-            $examMark = 0;
+            // Exam: each row is on its own scale (typically /100); convert to % per row then average — avoids false 100% from sum/sum quirks
+            $examMark = AssessmentMarkMath::aggregatedExamPercentFromMarks($examMarks);
+
             if ($examMarks->isNotEmpty()) {
-                // Sum all exam values and marks_out_of
-                $totalExamValue = $examMarks->sum('value');
-                $totalExamOutOf = $examMarks->sum(function($mark) {
-                    // Use marks_out_of from mark, or exam relation, or default to 100
-                    $mofo = 100; // default
-                    
-                    if ($mark->marks_out_of && $mark->marks_out_of > 0) {
-                        $mofo = $mark->marks_out_of;
-                    } else {
-                        $examTotalMarks = $mark->exam ? $mark->exam->total_marks : 100;
-                        $mofo = $examTotalMarks > 0 ? $examTotalMarks : 100;
-                    }
-                    
-                    // Validate: marks_out_of should be >= the value obtained
-                    // If marks_out_of < value, use value as the max (means student got more than possible, use 100)
-                    if ($mofo < $mark->value) {
-                        \Log::warning('[Marks Validation] marks_out_of (' . $mofo . ') is less than value (' . $mark->value . ') for mark ID ' . $mark->id);
-                        $mofo = 100; // Use standard 100 instead of invalid value
-                    }
-                    
-                    return $mofo;
-                });
-                
-                // Normalize to 100-point scale
-                if ($totalExamOutOf > 0) {
-                    $examMark = ($totalExamValue / $totalExamOutOf) * 100;
-                }
-                
-                // Cap exam mark at 100
-                $examMark = min($examMark, 100);
-                
                 \Log::info('Exam marks calculated: ' . json_encode([
                     'lesson_id' => $lesson->id,
                     'exam_marks_count' => $examMarks->count(),
-                    'total_exam_value' => $totalExamValue,
-                    'total_exam_out_of' => $totalExamOutOf,
-                    'normalized_exam_mark' => $examMark
+                    'aggregated_exam_mark' => $examMark,
                 ]));
             }
 

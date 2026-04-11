@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\AssessmentMarkMath;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -62,66 +63,31 @@ class ReportCardSubject extends Model
 
     public function calculateTotalMark()
     {
-        // Both exam and test are already normalized to 100
-        // Calculate the average of both to get final total out of 100
-        if ($this->exam_mark > 0 && $this->test_average > 0) {
-            // If both exam and test have marks, take average
-            $this->total_mark = ($this->exam_mark + $this->test_average) / 2;
-        } elseif ($this->exam_mark > 0) {
-            // If only exam has marks, use exam mark
-            $this->total_mark = $this->exam_mark;
-        } elseif ($this->test_average > 0) {
-            // If only test has marks, use test average
-            $this->total_mark = $this->test_average;
-        } else {
-            // If no marks, set to 0
-            $this->total_mark = 0;
-        }
-        
-        // Cap all marks at 100
-        $this->total_mark = min($this->total_mark, 100);
-        $this->exam_mark = min($this->exam_mark, 100);
-        $this->test_average = min($this->test_average, 100);
-        
+        $this->exam_mark = min(100.0, max(0.0, (float) $this->exam_mark));
+        $this->test_average = min(100.0, max(0.0, (float) $this->test_average));
+        $this->total_mark = AssessmentMarkMath::combinedLessonPercent($this->test_average, $this->exam_mark);
         $this->save();
     }
 
     public function calculateTestAverage()
     {
         $testMarks = $this->testMarks;
-        
+
         if ($testMarks->isEmpty()) {
             $this->test_average = 0;
             $this->test_total = 0;
             $this->save();
+
             return;
         }
 
-        // Normalize each test mark to 100, then calculate average
-        $normalizedMarks = [];
-        $totalOriginalMarks = 0;
-        
+        // Pool all tests: sum(marks) / sum(max) * 100 → one score out of 100
+        $sumOriginal = 0.0;
         foreach ($testMarks as $mark) {
-            $totalOriginalMarks += $mark->original_mark;
-            
-            // Normalize each test to 100-point scale
-            if ($mark->max_mark > 0) {
-                $normalizedMarks[] = ($mark->original_mark / $mark->max_mark) * 100;
-            }
+            $sumOriginal += (float) $mark->original_mark;
         }
-        
-        $this->test_total = $totalOriginalMarks;
-        
-        // Calculate average of the normalized marks
-        if (!empty($normalizedMarks)) {
-            $this->test_average = array_sum($normalizedMarks) / count($normalizedMarks);
-        } else {
-            $this->test_average = 0;
-        }
-        
-        // Cap test_average at 100
-        $this->test_average = min($this->test_average, 100);
-
+        $this->test_total = $sumOriginal;
+        $this->test_average = AssessmentMarkMath::pooledTestPercentFromReportCardTestMarks($testMarks);
         $this->save();
     }
 }
