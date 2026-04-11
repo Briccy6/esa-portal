@@ -551,33 +551,33 @@
                     body: formData,
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    redirect: 'follow'
+                    }
                 })
-                .then(response => {
-                    // Check if response is successful (2xx status)
-                    if (response.ok) {
-                        // Reset form state
-                        studentForm.style.opacity = '1';
-                        studentForm.style.pointerEvents = 'auto';
-                        submitBtn.disabled = false;
-                        submitBtn.textContent = originalText;
-                        
+                .then(response => response.json())
+                .then(data => {
+                    // Reset form state
+                    studentForm.style.opacity = '1';
+                    studentForm.style.pointerEvents = 'auto';
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = originalText;
+                    
+                    // Check if response indicates success
+                    if (data.success) {
                         // Show success message in a visible location
-                        const pageContent = document.querySelector('.page-content');
-                        if (pageContent) {
-                            const successAlert = document.createElement('div');
-                            successAlert.className = 'alert alert-success alert-dismissible fade show';
-                            successAlert.style.position = 'fixed';
-                            successAlert.style.top = '20px';
-                            successAlert.style.right = '20px';
-                            successAlert.style.zIndex = '9999';
-                            successAlert.style.minWidth = '300px';
-                            successAlert.innerHTML = '<i class="fas fa-check-circle me-2"></i><strong>Success!</strong> Student registered successfully. Reloading...';
-                            document.body.appendChild(successAlert);
-                        }
+                        const successAlert = document.createElement('div');
+                        successAlert.className = 'alert alert-success alert-dismissible fade show';
+                        successAlert.style.position = 'fixed';
+                        successAlert.style.top = '20px';
+                        successAlert.style.right = '20px';
+                        successAlert.style.zIndex = '9999';
+                        successAlert.style.minWidth = '300px';
+                        successAlert.innerHTML = '<i class="fas fa-check-circle me-2"></i><strong>Success!</strong> ' + data.message + ' Reloading...';
+                        document.body.appendChild(successAlert);
                         
-                        // Close modal after short delay
+                        // Clear form for next entry
+                        studentForm.reset();
+                        
+                        // Close modal and reload after delay
                         setTimeout(() => {
                             const modal = bootstrap.Modal.getInstance(document.getElementById('addStudentModal'));
                             if (modal) modal.hide();
@@ -586,20 +586,22 @@
                         }, 1500);
                     } else {
                         // Handle error response
-                        studentForm.style.opacity = '1';
-                        studentForm.style.pointerEvents = 'auto';
-                        submitBtn.disabled = false;
-                        submitBtn.textContent = originalText;
+                        let errorMsg = data.message || 'An error occurred. Please try again.';
                         
-                        return response.json().then(data => {
-                            let errorMsg = data.message || 'An error occurred. Please try again.';
-                            if (data.errors) {
-                                errorMsg = Object.values(data.errors)[0][0] || errorMsg;
+                        // If there are validation errors, show them
+                        if (data.errors && typeof data.errors === 'object') {
+                            const errorMessages = [];
+                            for (const field in data.errors) {
+                                if (data.errors[field] && data.errors[field].length > 0) {
+                                    errorMessages.push(data.errors[field][0]);
+                                }
                             }
-                            alert('Error: ' + errorMsg);
-                        }).catch(() => {
-                            alert('An error occurred. Please check your input and try again.');
-                        });
+                            if (errorMessages.length > 0) {
+                                errorMsg = errorMessages.join('\n');
+                            }
+                        }
+                        
+                        alert('Error: ' + errorMsg);
                     }
                 })
                 .catch(error => {

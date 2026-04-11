@@ -262,7 +262,11 @@ class StudentController extends Controller
                 } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
                     if ($attempt === $maxAttempts) {
                         DB::rollBack();
-                        return back()->with('error', 'Unable to generate unique registration number. Please try again.');
+                        $message = 'Unable to generate unique registration number. Please try again.';
+                        if ($request->ajax()) {
+                            return response()->json(['success' => false, 'message' => $message], 422);
+                        }
+                        return back()->with('error', $message);
                     }
                     usleep(100000);
                     continue;
@@ -271,7 +275,11 @@ class StudentController extends Controller
 
             if (!$student) {
                 DB::rollBack();
-                return back()->with('error', 'Failed to create student record.');
+                $message = 'Failed to create student record.';
+                if ($request->ajax()) {
+                    return response()->json(['success' => false, 'message' => $message], 422);
+                }
+                return back()->with('error', $message);
             }
 
             $student->initializeTokens(10);
@@ -295,16 +303,48 @@ class StudentController extends Controller
 
             DB::commit();
 
-            return back()->with('success', 'Student registered successfully! Registration Number: ' . $student->reg_number);
+            $message = 'Student registered successfully! Registration Number: ' . $student->reg_number;
+            
+            // Return JSON for AJAX requests
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $message,
+                    'student' => [
+                        'id' => $student->id,
+                        'full_name' => $student->full_name,
+                        'reg_number' => $student->reg_number,
+                        'email' => $student->email,
+                    ]
+                ], 201);
+            }
+            
+            return back()->with('success', $message);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $e->errors()
+                ], 422);
+            }
             return back()->withErrors($e->errors())->withInput();
         } catch (\Exception $e) {
             \Log::error('Student creation error', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
-            return back()->with('error', 'An error occurred while creating the student: ' . $e->getMessage())->withInput();
+            $message = 'An error occurred while creating the student: ' . $e->getMessage();
+            
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $message
+                ], 500);
+            }
+            
+            return back()->with('error', $message)->withInput();
         }
     }
 
