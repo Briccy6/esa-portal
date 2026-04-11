@@ -128,7 +128,7 @@ class AccountingReport extends Model
 
     /**
      * Balance sheet from operational tables: student_transactions, expenses, students, courses
-     * (same basis as the cash book), not from journal_entries / journal_items.
+     * Uses course_term_fees for more accurate receivables calculation.
      */
     public static function getBalanceSheetData($asOfDate = null, $termId = null)
     {
@@ -146,32 +146,39 @@ class AccountingReport extends Model
         $liabilities = $deferred;
         $equity = $assets - $liabilities;
 
+        // Build detailed asset lines
         $detailedAssets = [
             [
                 'account_code' => 'CASH',
-                'name' => 'Cash and cash equivalents (student receipts less expenses)',
+                'name' => 'Cash (Student receipts less expenses)',
                 'balance' => (float) $cash,
-            ],
-            [
-                'account_code' => 'AR',
-                'name' => 'Student fees receivable',
-                'balance' => (float) $receivable,
             ],
         ];
 
+        // Add student receivables
+        if ($receivable > 0.005) {
+            $detailedAssets[] = [
+                'account_code' => 'AR-STU',
+                'name' => 'Accounts Receivable - Student Fees',
+                'balance' => (float) $receivable,
+            ];
+        }
+
+        // Build detailed liability lines
         $detailedLiabilities = [];
         if ($deferred > 0.005) {
             $detailedLiabilities[] = [
                 'account_code' => 'DEF',
-                'name' => 'Student fee advances (deferred income)',
+                'name' => 'Student Fee Advances (Deferred Income)',
                 'balance' => (float) $deferred,
             ];
         }
 
+        // Build detailed equity lines
         $detailedEquity = [
             [
-                'account_code' => '',
-                'name' => 'Net assets (unrestricted)',
+                'account_code' => 'EQUITY',
+                'name' => 'Net Assets (Unrestricted)',
                 'balance' => (float) $equity,
             ],
         ];
@@ -180,7 +187,7 @@ class AccountingReport extends Model
 
         return [
             'as_of_date' => $asOfDate,
-            'source' => 'student_transactions_expenses',
+            'source' => 'student_transactions_expenses_course_term_fees',
             'assets' => [
                 'total' => (float) $assets,
                 'details' => $detailedAssets,
@@ -198,6 +205,7 @@ class AccountingReport extends Model
             'meta' => [
                 'total_student_receipts' => (float) $totalReceipts,
                 'total_expenses' => (float) $totalExpenses,
+                'source_description' => 'Built from: student_transactions (paid/successful), expenses, and course_term_fees for accurate fee positions.',
             ],
         ];
     }
@@ -240,15 +248,40 @@ class AccountingReport extends Model
     }
 
     /**
-     * Expected fee total per student (aligned with student fee dashboard logic).
+     * Get expected fees for student from course_term_fees table (most accurate source).
+     * Falls back to course table if course_term_fees not set.
      */
-    private static function expectedTotalFeesForStudent(Student $student): float
+    private static function expectedTotalFeesForStudent(Student $student, $termId = null): float
     {
         $course = $student->course;
         if (!$course) {
             return 0.0;
         }
 
+        // Try to get fees from course_term_fees table first
+        if ($termId) {
+            $courseTermFee = DB::table('course_term_fees')
+                ->where('course_id', $course->id)
+                ->where('term_id', $termId)
+                ->where('is_active', true)
+                ->first();
+
+            if ($courseTermFee) {
+                $registrationFee = (float) ($courseTermFee->registration_fee ?? 0);
+                $tripFee = (float) ($courseTermFee->trip_fee ?? 0);
+                $tuitionFee = (float) ($courseTermFee->tuition_fee ?? 0);
+                $practicalFee = (float) ($courseTermFee->practical_fee ?? 0);
+                $studentCardFee = (float) ($courseTermFee->student_card_fee ?? 2000.0);
+                
+                $discount = (float) ($student->discount ?? 0);
+                $discountableFees = $tripFee + $tuitionFee + $practicalFee;
+                $discountAmount = ($discount > 0) ? ($discountableFees * ($discount / 100)) : 0.0;
+                
+                return $registrationFee + $studentCardFee + ($discountableFees - $discountAmount);
+            }
+        }
+
+        // Fallback to course table defaults
         $registrationFee = (float) ($course->registration_fee ?? 0);
         $tripFee = (float) ($course->trip_fee ?? 0);
         $tuitionFee = (float) ($course->tuition_fee ?? 0);
@@ -288,7 +321,7 @@ class AccountingReport extends Model
             ->with('course')
             ->chunkById(200, function ($students) use ($asOfDate, &$receivable, &$deferred, $termId) {
                 foreach ($students as $student) {
-                    $expected = self::expectedTotalFeesForStudent($student);
+                    $expected = self::expectedTotalFeesForStudent($student, $termId);
                     if ($expected <= 0) {
                         continue;
                     }
@@ -298,6 +331,12 @@ class AccountingReport extends Model
                         $receivable += $diff;
                     } elseif ($diff < 0) {
                         $deferred += abs($diff);
+                    }
+                }
+            });
+
+        return ['receivable' => $receivable, 'deferred' => $deferred];
+    }
                     }
                 }
             });

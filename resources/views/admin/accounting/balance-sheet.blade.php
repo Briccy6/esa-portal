@@ -141,13 +141,17 @@
                         </div>
 
                         <p class="bs-muted small no-print mb-3">
-                            Built from your live tables: <code>student_transactions</code> (paid / successful, through the report date),
-                            <code>expenses</code> (through the report date), and expected fees from <code>students</code> + <code>courses</code>
-                            (same fee rules as the student portal). This matches the cash book cash figure plus fees still owed (or advances if students overpaid).
+                            Built from your live tables: <code>student_transactions</code> (paid/successful, through the report date),
+                            <code>expenses</code> (through the report date), and <code>course_term_fees</code> for accurate fee positions per course and term.
+                            This matches the cash (receipts less expenses) plus fees students still owe based on the course term fee schedule.
                         </p>
                         @if(!empty($data['meta']))
                             <p class="bs-muted small no-print mb-3">
-                                Receipts to date: <strong>{{ number_format($data['meta']['total_student_receipts'], 2) }}</strong> RWF ·
+                                <strong>Report Source:</strong>
+                                @if(!empty($data['meta']['source_description']))
+                                    {{ $data['meta']['source_description'] }}<br>
+                                @endif
+                                <strong>Summary:</strong> Receipts to date: <strong>{{ number_format($data['meta']['total_student_receipts'], 2) }}</strong> RWF ·
                                 Expenses to date: <strong>{{ number_format($data['meta']['total_expenses'], 2) }}</strong> RWF
                             </p>
                         @endif
@@ -198,7 +202,7 @@
                                             </tr>
                                         @empty
                                             <tr>
-                                                <td colspan="2" class="bs-muted">No student fee advances (no overpayments vs expected fees).</td>
+                                                <td colspan="2" class="bs-muted">No liabilities (no student overpayments).</td>
                                             </tr>
                                         @endforelse
                                         <tr class="bs-total-row">
