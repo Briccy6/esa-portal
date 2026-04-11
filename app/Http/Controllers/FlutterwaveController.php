@@ -197,11 +197,18 @@ class FlutterwaveController extends Controller
 
                         if ($paymentCache) {
                             // Update the pending StudentTransaction to paid
-                            StudentTransaction::where('tx_ref', $txRef)->update([
+                            $updateData = [
                                 'transaction_id' => $transactionId,
                                 'status'         => 'paid',
                                 'paid_at'        => now(),
-                            ]);
+                            ];
+                            
+                            // Add term_id if it was provided
+                            if (!empty($paymentCache['term'])) {
+                                $updateData['term_id'] = $paymentCache['term'];
+                            }
+                            
+                            StudentTransaction::where('tx_ref', $txRef)->update($updateData);
 
                             // Record in transcripts
                             Transcript::create([
@@ -285,11 +292,18 @@ class FlutterwaveController extends Controller
                     $paymentCache = cache()->get("additional_payment_{$txRef}");
 
                     if ($paymentCache) {
-                        StudentTransaction::where('tx_ref', $txRef)->update([
+                        $updateData = [
                             'transaction_id' => $payload['data']['id'],
                             'status'         => 'paid',
                             'paid_at'        => now(),
-                        ]);
+                        ];
+                        
+                        // Add term_id if it was provided
+                        if (!empty($paymentCache['term'])) {
+                            $updateData['term_id'] = $paymentCache['term'];
+                        }
+                        
+                        StudentTransaction::where('tx_ref', $txRef)->update($updateData);
 
                         Transcript::create([
                             'student_id'     => $paymentCache['student_id'],
@@ -346,7 +360,7 @@ class FlutterwaveController extends Controller
                 'fee_type'   => 'required|string|in:registration_fee,school_fee,trip_fee,practical_fee,student_card',
                 'amount'     => 'required|numeric|min:1',
                 'total_fee'  => 'required|numeric|min:1',
-                'term'       => 'nullable|string',
+                'term'       => 'nullable|integer|exists:terms,id',
             ]);
 
             // ── 3. Load student ────────────────────────────────────────────────
@@ -382,14 +396,21 @@ class FlutterwaveController extends Controller
             // NOTE: We use StudentTransaction here — NOT Payment model,
             // because the payments table belongs to a different legacy system
             // and does not have the columns this flow needs.
-            StudentTransaction::create([
+            $transactionData = [
                 'student_id' => $student->id,
                 'tx_ref'     => $txRef,
                 'type'       => $validated['fee_type'],
                 'amount'     => $validated['amount'],
                 'currency'   => 'RWF',
                 'status'     => 'pending',
-            ]);
+            ];
+            
+            // Add term_id if it was provided
+            if (!empty($validated['term'])) {
+                $transactionData['term_id'] = $validated['term'];
+            }
+            
+            StudentTransaction::create($transactionData);
 
             Log::info('addPayment: StudentTransaction created', [
                 'tx_ref'     => $txRef,
@@ -403,7 +424,7 @@ class FlutterwaveController extends Controller
                 'tx_ref'          => $txRef,
                 'amount'          => $validated['amount'],
                 'currency'        => 'RWF',
-                'redirect_url'    => route('payment.callback'),
+                'redirect_url'    => route('student.payment.callback'),
                 'payment_options' => 'card,banktransfer,ussd,mobilemoneyruanda',
                 'meta'            => [
                     'student_id'         => $student->id,

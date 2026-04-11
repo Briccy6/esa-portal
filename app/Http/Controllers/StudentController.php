@@ -1813,6 +1813,32 @@ class StudentController extends Controller
                     : back()->with('error', $message);
             }
 
+            // Get academic year ID for checking one-time fees
+            $academicYearId = $student->academic_year_id;
+
+            // ── CHECK FOR ONE-TIME FEE ALREADY PAID IN ACADEMIC YEAR ─────────────────
+            // Registration fee and student card fee should only be paid ONCE per academic year
+            // Check if already paid in ANY term of the same academic year
+            if (in_array($request->fee_type, ['registration_fee', 'student_card'])) {
+                $alreadyPaidInAcademicYear = StudentTransaction::where('student_id', $student->id)
+                    ->where('type', $request->fee_type === 'registration_fee' ? 'registration' : 'student_card')
+                    ->whereIn('status', ['successful', 'paid'])
+                    ->whereHas('term', function ($query) use ($academicYearId) {
+                        $query->where('academic_year_id', $academicYearId);
+                    })
+                    ->exists();
+
+                if ($alreadyPaidInAcademicYear) {
+                    $feeTypeName = $request->fee_type === 'registration_fee' ? 'Registration Fee' : 'Student Card';
+                    $academicYear = AcademicYear::find($academicYearId);
+                    $yearLabel = $academicYear ? $academicYear->year : 'current academic';
+                    $message = "{$feeTypeName} has already been paid for the {$yearLabel} year. This is a one-time fee per academic year and cannot be paid again.";
+                    return $isAjax
+                        ? response()->json(['success' => false, 'message' => $message, 'type' => 'one_time_fee'], 422)
+                        : back()->with('error', $message);
+                }
+            }
+
             // Get term-specific fees or fallback to legacy fees
             $termId = $request->term_id;
             $termFees = null;
@@ -4010,6 +4036,15 @@ class StudentController extends Controller
                 })
                 ->exists();
 
+            // Check if student card fee has been paid in ANY term of the same academic year
+            $studentCardPaidInYear = StudentTransaction::where('student_id', $student->id)
+                ->where('type', 'student_card')
+                ->whereIn('status', ['successful', 'paid'])
+                ->whereHas('term', function ($query) use ($academicYearId) {
+                    $query->where('academic_year_id', $academicYearId);
+                })
+                ->exists();
+
             if ($registrationFee > 0) {
                 // Only show registration fee if not already paid in this academic year
                 if (!$registrationPaidInYear) {
@@ -4066,15 +4101,18 @@ class StudentController extends Controller
             }
 
             if ($studentCardFee > 0) {
-                $remaining = $studentCardFee - $paidStudentCard;
-                if ($remaining > 0) {
-                    $fees[] = [
-                        'type' => 'student_card',
-                        'name' => 'Student Card',
-                        'total' => $studentCardFee,
-                        'paid' => $paidStudentCard,
-                        'remaining' => $remaining,
-                    ];
+                // Only show student card fee if not already paid in this academic year
+                if (!$studentCardPaidInYear) {
+                    $remaining = $studentCardFee - $paidStudentCard;
+                    if ($remaining > 0) {
+                        $fees[] = [
+                            'type' => 'student_card',
+                            'name' => 'Student Card',
+                            'total' => $studentCardFee,
+                            'paid' => $paidStudentCard,
+                            'remaining' => $remaining,
+                        ];
+                    }
                 }
             }
 
