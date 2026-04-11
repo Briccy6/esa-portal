@@ -692,8 +692,8 @@
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="accountingDropdown">
                         <li>
-                            <a class="dropdown-item {{ request()->routeIs('accounting.cashbook') ? 'active' : '' }}" href="{{ route('admin.accounting.cashbook') }}">
-                                <i class="fas fa-book"></i> Cash Book
+                            <a class="dropdown-item {{ request()->routeIs('accounting.cash-book') ? 'active' : '' }}" href="{{ route('admin.accounting.cashbook') }}">
+                                <i class="fas fa-money-check-alt"></i> Cash Book
                             </a>
                         </li>
                         <li>
@@ -702,8 +702,18 @@
                             </a>
                         </li>
                         <li>
-                            <a class="dropdown-item {{ request()->routeIs('accounting.cash-flow-statement') ? 'active' : '' }}" href="{{ route('admin.accounting.cash-flow-statement') }}">
-                                <i class="fas fa-chart-line"></i> Cash Flow
+                            <a class="dropdown-item {{ request()->routeIs('accounting.income-statement') ? 'active' : '' }}" href="{{ route('admin.accounting.income-statement') }}">
+                                <i class="fas fa-chart-line"></i> Income Statement
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item {{ request()->routeIs('accounting.trial-balance') ? 'active' : '' }}" href="{{ route('admin.accounting.trial-balance') }}">
+                                <i class="fas fa-list-ol"></i> Trial Balance
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item {{ request()->routeIs('accounting.general-ledger') ? 'active' : '' }}" href="{{ route('admin.accounting.general-ledger') }}">
+                                <i class="fas fa-book-open"></i> General Ledger
                             </a>
                         </li>
                     </ul>

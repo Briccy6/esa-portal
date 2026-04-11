@@ -1127,7 +1127,12 @@
                     </div>
                     
                     <div class="nav-item">
-            </div>
+                        <a href="{{ route('admin.accounting.index') }}" class="nav-link {{ request()->routeIs('admin.accounting.*') ? 'active' : '' }}">
+                            <i class="fas fa-balance-scale"></i>
+                            <span class="nav-text">Accounting Reports</span>
+                        </a>
+                    </div>
+                </div>
 
             <!-- Reports -->
             <div class="nav-section" x-data="{ isOpen: false }">
@@ -1166,16 +1171,23 @@
                     </div>
 
                     <div class="nav-item">
+                        <a href="{{ route('admin.accounting.cash-flow-forecast') }}" class="nav-link {{ request()->routeIs('admin.accounting.cash-flow-forecast') ? 'active' : '' }}">
+                            <i class="fas fa-chart-area"></i>
+                            <span class="nav-text">Cash Flow Forecast</span>
+                        </a>
+                    </div>
+                    
+                    <div class="nav-item">
                         <a href="{{ route('admin.accounting.balance-sheet') }}" class="nav-link {{ request()->routeIs('admin.accounting.balance-sheet') ? 'active' : '' }}">
                             <i class="fas fa-balance-scale"></i>
                             <span class="nav-text">Balance Sheet</span>
                         </a>
                     </div>
-
+                    
                     <div class="nav-item">
-                        <a href="{{ route('admin.accounting.cash-flow-statement') }}" class="nav-link {{ request()->routeIs('admin.accounting.cash-flow-statement') ? 'active' : '' }}">
-                            <i class="fas fa-chart-line"></i>
-                            <span class="nav-text">Cash Flow</span>
+                        <a href="{{ route('admin.accounting.trial-balance') }}" class="nav-link {{ request()->routeIs('admin.accounting.trial-balance') ? 'active' : '' }}">
+                            <i class="fas fa-list-alt"></i>
+                            <span class="nav-text">Trial Balance</span>
                         </a>
                     </div>
                 </div>
