@@ -97,14 +97,24 @@ class ReportCardSubject extends Model
             return;
         }
 
-        // Sum all original marks and all max marks, then normalize
-        $totalOriginalMarks = $testMarks->sum('original_mark');
-        $totalMaxMarks = $testMarks->sum('max_mark');
+        // Normalize each test mark to 100, then calculate average
+        $normalizedMarks = [];
+        $totalOriginalMarks = 0;
+        
+        foreach ($testMarks as $mark) {
+            $totalOriginalMarks += $mark->original_mark;
+            
+            // Normalize each test to 100-point scale
+            if ($mark->max_mark > 0) {
+                $normalizedMarks[] = ($mark->original_mark / $mark->max_mark) * 100;
+            }
+        }
+        
         $this->test_total = $totalOriginalMarks;
         
-        // Calculate average by summing values and max marks, then normalizing to 100
-        if ($totalMaxMarks > 0) {
-            $this->test_average = ($totalOriginalMarks / $totalMaxMarks) * 100;
+        // Calculate average of the normalized marks
+        if (!empty($normalizedMarks)) {
+            $this->test_average = array_sum($normalizedMarks) / count($normalizedMarks);
         } else {
             $this->test_average = 0;
         }

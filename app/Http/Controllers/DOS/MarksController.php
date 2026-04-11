@@ -556,28 +556,30 @@ class MarksController extends Controller
                 $subject->credits = 3;
                 
                 // ================================================================
-                // CALCULATE TEST MARKS (sum all test values, then normalize to 100)
+                // CALCULATE TEST MARKS (normalize each, then average)
                 // ================================================================
                 $testMarks = $lessonMarks->where('assessment_type', 'test');
                 if ($testMarks->isNotEmpty()) {
-                    // Sum all test values and all marks_out_of
-                    $totalTestValue = $testMarks->sum('value');
-                    $totalTestOutOf = $testMarks->sum(function($mark) {
-                        // If marks_out_of is null or 0, treat as 100
-                        return ($mark->marks_out_of && $mark->marks_out_of > 0) ? $mark->marks_out_of : 100;
-                    });
+                    // Normalize each test to 100, then calculate average
+                    $normalizedTestMarks = [];
                     
-                    // Normalize total to 100-point scale: (total_value / total_out_of) * 100
-                    if ($totalTestOutOf > 0) {
-                        $subject->test_average = ($totalTestValue / $totalTestOutOf) * 100;
+                    foreach ($testMarks as $mark) {
+                        $mofo = ($mark->marks_out_of && $mark->marks_out_of > 0) ? $mark->marks_out_of : 100;
+                        
+                        // Normalize this test to 100-point scale
+                        $normalizedTestMarks[] = ($mark->value / $mofo) * 100;
+                    }
+                    
+                    // Calculate average of normalized test marks
+                    if (!empty($normalizedTestMarks)) {
+                        $subject->test_average = array_sum($normalizedTestMarks) / count($normalizedTestMarks);
+                        $subject->test_average = min($subject->test_average, 100);
                     } else {
                         $subject->test_average = 0;
                     }
                 } else {
                     $subject->test_average = 0;
                 }
-                // Cap test_average at 100
-                $subject->test_average = min($subject->test_average, 100);
                 
                 // ================================================================
                 // CALCULATE EXAM MARKS (sum all exam values, then normalize to 100)
@@ -673,23 +675,23 @@ class MarksController extends Controller
                 
                 $classStudentLessonMarks = $classStudentMarks->groupBy('lesson_id');
                 foreach ($classStudentLessonMarks as $clessonId => $clessonMarks) {
-                    // Test marks: sum all values and marks_out_of, then normalize
+                    // Test marks: normalize each, then average
                     $ctestMarks = $clessonMarks->where('assessment_type', 'test');
                     $ctestAvg = 0;
                     if ($ctestMarks->isNotEmpty()) {
-                        // Sum all test values and marks_out_of
-                        $ctotalTestValue = $ctestMarks->sum('value');
-                        $ctotalTestOutOf = $ctestMarks->sum(function($mark) {
-                            return ($mark->marks_out_of && $mark->marks_out_of > 0) ? $mark->marks_out_of : 100;
-                        });
+                        // Normalize each test to 100, then calculate average
+                        $cnormalizedTestMarks = [];
                         
-                        // Normalize to 100
-                        if ($ctotalTestOutOf > 0) {
-                            $ctestAvg = ($ctotalTestValue / $ctotalTestOutOf) * 100;
+                        foreach ($ctestMarks as $cmark) {
+                            $cmofo = ($cmark->marks_out_of && $cmark->marks_out_of > 0) ? $cmark->marks_out_of : 100;
+                            $cnormalizedTestMarks[] = ($cmark->value / $cmofo) * 100;
+                        }
+                        
+                        if (!empty($cnormalizedTestMarks)) {
+                            $ctestAvg = array_sum($cnormalizedTestMarks) / count($cnormalizedTestMarks);
+                            $ctestAvg = min($ctestAvg, 100);
                         }
                     }
-                    // Cap test average at 100
-                    $ctestAvg = min($ctestAvg, 100);
                     
                     // Exam marks: sum all values and marks_out_of, then normalize
                     $cexamMarks = $clessonMarks->where('assessment_type', 'exam');
