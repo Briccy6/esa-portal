@@ -551,15 +551,31 @@
                     body: formData,
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest'
-                    }
+                    },
+                    redirect: 'follow'
                 })
                 .then(response => {
-                    // Check if response is successful
+                    // Check if response is successful (2xx status)
                     if (response.ok) {
-                        // Show success message
-                        const successAlert = document.createElement('div');
-                        successAlert.className = 'alert alert-success alert-dismissible fade show mt-3';
-                        successAlert.innerHTML = '<i class="fas fa-check-circle me-2"></i><strong>Success!</strong> Student registered successfully. <button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+                        // Reset form state
+                        studentForm.style.opacity = '1';
+                        studentForm.style.pointerEvents = 'auto';
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = originalText;
+                        
+                        // Show success message in a visible location
+                        const pageContent = document.querySelector('.page-content');
+                        if (pageContent) {
+                            const successAlert = document.createElement('div');
+                            successAlert.className = 'alert alert-success alert-dismissible fade show';
+                            successAlert.style.position = 'fixed';
+                            successAlert.style.top = '20px';
+                            successAlert.style.right = '20px';
+                            successAlert.style.zIndex = '9999';
+                            successAlert.style.minWidth = '300px';
+                            successAlert.innerHTML = '<i class="fas fa-check-circle me-2"></i><strong>Success!</strong> Student registered successfully. Reloading...';
+                            document.body.appendChild(successAlert);
+                        }
                         
                         // Close modal after short delay
                         setTimeout(() => {
@@ -570,17 +586,19 @@
                         }, 1500);
                     } else {
                         // Handle error response
+                        studentForm.style.opacity = '1';
+                        studentForm.style.pointerEvents = 'auto';
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = originalText;
+                        
                         return response.json().then(data => {
-                            studentForm.style.opacity = '1';
-                            studentForm.style.pointerEvents = 'auto';
-                            submitBtn.disabled = false;
-                            submitBtn.textContent = originalText;
-                            
                             let errorMsg = data.message || 'An error occurred. Please try again.';
                             if (data.errors) {
                                 errorMsg = Object.values(data.errors)[0][0] || errorMsg;
                             }
                             alert('Error: ' + errorMsg);
+                        }).catch(() => {
+                            alert('An error occurred. Please check your input and try again.');
                         });
                     }
                 })

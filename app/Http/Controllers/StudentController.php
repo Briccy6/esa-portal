@@ -141,9 +141,17 @@ class StudentController extends Controller
             } else {
                 // Regular staff can only see students from their assigned branches
                 $branchIds = $staff->branches()->pluck('branches.id')->toArray();
-                $students = Student::whereIn('branch_id', $branchIds)
-                    ->with(['course', 'branch', 'academicYear'])
-                    ->whereNotIn('id', $dismissedStudentIds);
+                
+                // If staff has no assigned branches, show all students (they have full access)
+                if (empty($branchIds)) {
+                    $students = Student::with(['course', 'branch', 'academicYear'])
+                        ->whereNotIn('id', $dismissedStudentIds);
+                } else {
+                    // Staff has assigned branches - only show students from those branches
+                    $students = Student::whereIn('branch_id', $branchIds)
+                        ->with(['course', 'branch', 'academicYear'])
+                        ->whereNotIn('id', $dismissedStudentIds);
+                }
             }
         }
 
