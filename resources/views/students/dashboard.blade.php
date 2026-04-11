@@ -1110,7 +1110,7 @@
     <div class="modal fade" id="payFeeModal" tabindex="-1" aria-labelledby="payFeeModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content payment-modal">
-                <form id="payFeeForm" action="{{ route('student.payment.process') }}" method="POST">
+                <form id="payFeeForm" action="{{ route('student.fees.pay.process') }}" method="POST">
                     @csrf
                     <input type="hidden" name="fee_type" id="feeTypeInput">
                     <div class="modal-header">
