@@ -65,32 +65,16 @@
         font-size: 0.85rem;
     }
     @media print {
-        /* Page setup */
+        /* Page setup - landscape for single page fit */
         @page {
-            size: A4;
-            margin: 0.5in;
+            size: A4 landscape;
+            margin: 0.3in;
         }
 
         /* Hide all navigation and header elements */
-        .main-sidebar, 
-        .main-header, 
-        .card-header,
-        .card-tools, 
-        .no-print, 
-        .filter-form, 
-        footer, 
-        .nav-section,
-        nav,
-        .navbar,
-        .sidebar,
-        .Header,
-        .user-panel,
-        .treeview,
-        .brand-link,
-        .alert,
-        .alert-info,
-        .alert-warning,
-        .alert-light {
+        .main-sidebar, .main-header, .card-header, .card-tools, .no-print, .filter-form, 
+        footer, .nav-section, nav, .navbar, .sidebar, .Header, .user-panel, .treeview, 
+        .brand-link, .alert, .alert-info, .alert-warning, .alert-light {
             display: none !important;
             visibility: hidden !important;
         }
@@ -100,13 +84,11 @@
             margin: 0 !important;
             padding: 0 !important;
             background: white !important;
+            font-size: 9pt !important;
         }
 
         /* Make content full width */
-        .content-wrapper, 
-        .content-header,
-        .content,
-        .container-fluid {
+        .content-wrapper, .content-header, .content, .container-fluid {
             margin: 0 !important;
             padding: 0 !important;
             width: 100% !important;
@@ -124,19 +106,14 @@
         .card-body {
             margin: 0 !important;
             padding: 0 !important;
+            background: none !important;
         }
 
         .balance-sheet-print {
             padding: 0 !important;
             width: 100%;
             margin: 0;
-        }
-
-        /* Document header with school info */
-        .balance-sheet-print::before {
-            content: '';
-            display: block;
-            page-break-after: avoid;
+            font-size: 8.5pt;
         }
 
         .row {
@@ -146,149 +123,139 @@
             padding: 0 !important;
         }
 
-        .col-lg-6,
-        .col-md-6,
-        .col-12 {
+        .col-lg-6, .col-md-6, .col-12 {
             display: block !important;
             width: 100% !important;
             float: none !important;
             margin: 0 !important;
-            padding: 0.5rem 0 !important;
+            padding: 0 !important;
         }
 
         /* Table improvements */
         table {
             page-break-inside: avoid;
             width: 100%;
+            font-size: 8pt !important;
+            margin: 0.1rem 0 !important;
         }
 
         h5, h4, h3, h2, h1 {
             page-break-after: avoid;
-            margin: 0.5rem 0 0.25rem 0;
+            margin: 0.15rem 0 0.08rem 0 !important;
+            font-size: 9pt !important;
+            line-height: 1.1 !important;
         }
 
-        /* Header styling for printed document */
+        /* Header styling */
         .bs-org-name {
-            font-size: 1.2rem !important;
+            font-size: 9pt !important;
             font-weight: 700 !important;
-            margin: 0.5rem 0 !important;
+            margin: 0.1rem 0 !important;
         }
 
         .bs-title {
-            font-size: 1rem !important;
-            margin: 0.3rem 0 !important;
+            font-size: 8.5pt !important;
+            margin: 0.08rem 0 !important;
         }
 
         .bs-asof {
-            font-size: 0.9rem !important;
-            margin: 0.3rem 0 0.5rem 0 !important;
-            border-bottom: 1px solid #ddd;
-            padding-bottom: 0.5rem;
+            font-size: 7.5pt !important;
+            margin: 0.08rem 0 0.15rem 0 !important;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 0.1rem;
         }
 
-        /* Remove unnecessary info text in print */
-        .bs-muted.small {
-            display: none !important;
-        }
+        .bs-muted.small { display: none !important; }
 
-        /* Print only the tables */
+        /* Tables styling */
         .bs-section-head {
-            margin-top: 0.75rem !important;
-            margin-bottom: 0.25rem !important;
-            font-size: 0.85rem !important;
+            margin-top: 0.2rem !important;
+            margin-bottom: 0.08rem !important;
+            font-size: 7.5pt !important;
+            font-weight: 700;
+            line-height: 1 !important;
         }
 
-        .bs-table {
-            margin: 0.25rem 0 !important;
+        .bs-table { margin: 0.08rem 0 !important; }
+
+        .bs-table td, .bs-table th {
+            padding: 0.08rem 0.2rem !important;
+            font-size: 7.5pt !important;
+            line-height: 1.05 !important;
         }
 
-        .bs-table td,
-        .bs-table th {
-            padding: 0.25rem 0.5rem !important;
-            font-size: 0.85rem !important;
+        .bs-table .bs-num {
+            text-align: right;
+            white-space: nowrap;
         }
 
-        /* Report summary spacing */
-        .row.mt-4 {
-            margin-top: 0.5rem !important;
-            page-break-after: avoid;
-            border-top: 2px solid #2c3e50;
-            padding-top: 0.5rem;
+        .bs-total-row td {
+            font-weight: 700;
+            border-top: 1px solid #999;
+            padding: 0.08rem 0.2rem !important;
         }
 
-        /* Footer-like section */
-        .row.mt-4.pt-4 {
-            margin-top: 1rem !important;
-            padding-top: 0.5rem !important;
+        .bs-grand td {
+            font-weight: 700;
+            border-top: 1.5px solid #999;
+            padding: 0.08rem 0.2rem !important;
         }
 
-        /* Better page spacing */
-        .mb-3 { margin-bottom: 0.25rem !important; }
-        .mb-2 { margin-bottom: 0.15rem !important; }
-        .mb-0 { margin-bottom: 0 !important; }
-        .mt-3 { margin-top: 0.25rem !important; }
-        .mt-2 { margin-top: 0.15rem !important; }
-        .mt-1 { margin-top: 0.1rem !important; }
+        /* Spacing */
+        .mb-3, .mb-2, .mb-0, .mt-3, .mt-2, .mt-1 { margin: 0 !important; }
         .gap-2, .gap-3 { gap: 0 !important; }
-        .pt-4 { padding-top: 0.5rem !important; }
-        .border-top { border-top: 1px solid #ddd !important; }
+        .pt-4 { padding-top: 0.1rem !important; }
+        .border-top { border-top: 1px solid #ccc !important; }
 
-        /* Hide card body styling for cleaner print */
-        .card-body {
-            background: none !important;
-        }
+        .badge { margin: 0 !important; font-size: 6.5pt; }
 
-        /* Optimize badge and button display */
-        .badge {
-            margin: 0 0.25rem 0 0;
-        }
-
-        /* Print-specific header styling */
+        /* Header and footer */
         .print-header {
             text-align: center;
-            margin-bottom: 1rem;
+            margin-bottom: 0.2rem;
             page-break-after: avoid;
-            border-bottom: 2px solid #2c3e50;
-            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #999;
+            padding-bottom: 0.15rem;
         }
 
         .print-header-logo {
-            max-height: 50px;
-            margin-bottom: 0.3rem;
+            max-height: 12px;
+            margin-bottom: 0.02rem;
         }
 
         .print-header-school {
-            font-size: 1.1rem;
+            font-size: 8.5pt;
             font-weight: 700;
-            margin: 0.2rem 0;
+            margin: 0.08rem 0;
+            line-height: 1.1;
         }
 
         .print-header-details {
-            font-size: 0.8rem;
+            font-size: 6.5pt;
             color: #666;
-            margin: 0.2rem 0;
+            margin: 0 0;
+            line-height: 1.05;
         }
 
-        /* Print footer */
         .print-footer {
-            margin-top: 1rem;
-            padding-top: 0.5rem;
+            margin-top: 0.2rem;
+            padding-top: 0.15rem;
             border-top: 1px solid #999;
-            font-size: 0.75rem;
+            font-size: 6pt;
             text-align: center;
             color: #666;
         }
 
-        @media print {
-            .print-header,
-            .print-footer {
-                display: block !important;
-            }
+        .print-footer p {
+            margin: 0.05rem 0;
+            line-height: 1;
+        }
 
-            .print-header-details {
-                font-size: 0.75rem;
-                margin: 0.1rem 0;
-            }
+        .row.mt-4 {
+            margin-top: 0.15rem !important;
+            page-break-after: avoid;
+            border-top: 1px solid #999;
+            padding-top: 0.1rem !important;
         }
     }
 
