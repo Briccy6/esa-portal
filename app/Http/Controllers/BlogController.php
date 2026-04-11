@@ -17,7 +17,15 @@ class BlogController extends Controller
     public function index()
     {
         $blogs = Blog::with(['images', 'documents'])->latest()->paginate(10);
-        return view('admin.blogs.index', compact('blogs'));
+        $stats = [
+            'total' => Blog::count(),
+            'published' => Blog::where('status', 'published')->count(),
+            'drafts' => Blog::where('status', 'draft')->count(),
+            'archived' => Blog::where('status', 'archived')->count(),
+            'views' => (int) Blog::query()->sum('views'),
+        ];
+
+        return view('admin.blogs.index', compact('blogs', 'stats'));
     }
 
     /**

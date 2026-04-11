@@ -3,286 +3,200 @@
 @section('title', 'Blog Management')
 
 @section('content')
-<div class="p-6">
-    <!-- Header Section -->
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div class="flex items-center space-x-3">
-                <div class="bg-gradient-to-br from-purple-500 to-pink-500 p-3 rounded-xl">
-                    <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M2 5a2 2 0 012-2h8a2 2 0 012 2v10a2 2 0 002 2H4a2 2 0 01-2-2V5zm3 1h6v4H5V6zm6 6H5v2h6v-2z" clip-rule="evenodd"/>
-                        <path d="M15 7h1a2 2 0 012 2v5.5a1.5 1.5 0 01-3 0V9a1 1 0 00-1-1h-1v-1z"/>
-                    </svg>
-                </div>
-                <div>
-                    <h1 class="text-2xl font-bold text-gray-900">Blog Management</h1>
-                    <p class="text-gray-600 text-sm mt-1">Create and manage your blog posts</p>
-                </div>
-            </div>
-            <a href="{{ route('admin.blogs.create') }}"
-               class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200 shadow-sm hover:shadow-md">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                </svg>
-                Create New Blog
-            </a>
+<div class="container-fluid py-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
+        <div>
+            <h1 class="h3 mb-1 text-dark"><i class="fas fa-blog text-primary me-2"></i>Blog Management</h1>
+            <p class="text-muted mb-0 small">Create, publish, and manage blog posts for the public site.</p>
         </div>
+        <a href="{{ route('admin.blogs.create') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i> New blog post
+        </a>
     </div>
 
-    <!-- Success / Error Messages -->
     @if(session('success'))
-        <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 flex items-center">
-            <svg class="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-            </svg>
-            <span class="text-green-800 font-medium">{{ session('success') }}</span>
-            <button type="button" class="ml-auto text-green-500 hover:text-green-700" onclick="this.parentElement.remove()">
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
-                </svg>
-            </button>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     @endif
-
     @if(session('error'))
-        <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-center">
-            <svg class="w-5 h-5 text-red-500 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
-            </svg>
-            <span class="text-red-800 font-medium">{{ session('error') }}</span>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            {{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     @endif
 
-    <!-- Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-gray-600 mb-1">Total Posts</p>
-                    <p class="text-2xl font-bold text-gray-900">{{ $blogs->total() }}</p>
-                </div>
-                <div class="bg-blue-100 p-3 rounded-lg">
-                    <svg class="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
-                        <path fill-rule="evenodd" d="M4 5a2 2 0 012-2v1a1 1 0 102 0V3h4v1a1 1 0 102 0V3a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
-                    </svg>
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small">Total posts</div>
+                    <div class="fs-4 fw-bold text-dark">{{ number_format($stats['total'] ?? 0) }}</div>
                 </div>
             </div>
         </div>
-
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-gray-600 mb-1">Published</p>
-                    <p class="text-2xl font-bold text-green-600">{{ $blogs->where('status', 'published')->count() }}</p>
-                </div>
-                <div class="bg-green-100 p-3 rounded-lg">
-                    <svg class="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                    </svg>
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small">Published</div>
+                    <div class="fs-4 fw-bold text-success">{{ number_format($stats['published'] ?? 0) }}</div>
                 </div>
             </div>
         </div>
-
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-gray-600 mb-1">Drafts</p>
-                    <p class="text-2xl font-bold text-yellow-600">{{ $blogs->where('status', 'draft')->count() }}</p>
-                </div>
-                <div class="bg-yellow-100 p-3 rounded-lg">
-                    <svg class="w-6 h-6 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
-                    </svg>
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small">Drafts</div>
+                    <div class="fs-4 fw-bold text-warning">{{ number_format($stats['drafts'] ?? 0) }}</div>
                 </div>
             </div>
         </div>
-
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-gray-600 mb-1">Total Views</p>
-                    <p class="text-2xl font-bold text-purple-600">{{ $blogs->sum('views') }}</p>
-                </div>
-                <div class="bg-purple-100 p-3 rounded-lg">
-                    <svg class="w-6 h-6 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
-                        <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/>
-                    </svg>
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small">Total views</div>
+                    <div class="fs-4 fw-bold text-primary">{{ number_format($stats['views'] ?? 0) }}</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Blog Posts Table -->
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-200">
-            <h2 class="text-lg font-semibold text-gray-900">Blog Posts</h2>
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <span class="fw-semibold"><i class="fas fa-list me-2 text-secondary"></i>All posts</span>
+            <span class="badge bg-secondary">{{ $blogs->total() }} total</span>
         </div>
-
-        @forelse($blogs as $blog)
-            <div class="p-6 border-b border-gray-100 hover:bg-gray-50 transition-colors duration-150">
-                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                    <!-- Blog Info -->
-                    <div class="flex-1">
-                        <div class="flex items-start gap-4">
-                            <div class="flex-shrink-0">
-                                @if($blog->images && $blog->images->first())
-                                    <img src="{{ asset('storage/' . $blog->images->first()->image_path) }}"
-                                         alt="{{ $blog->images->first()->alt_text ?? $blog->title }}"
-                                         class="w-16 h-16 rounded-lg object-cover">
-                                @else
-                                    <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
-                                        <svg class="w-8 h-8 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd" d="M2 5a2 2 0 012-2h8a2 2 0 012 2v10a2 2 0 002 2H4a2 2 0 01-2-2V5zm3 1h6v4H5V6zm6 6H5v2h6v-2z" clip-rule="evenodd"/>
-                                            <path d="M15 7h1a2 2 0 012 2v5.5a1.5 1.5 0 01-3 0V9a1 1 0 00-1-1h-1v-1z"/>
-                                        </svg>
-                                    </div>
+        <div class="card-body p-0">
+            @forelse($blogs as $blog)
+                <div class="border-bottom px-3 py-3 px-md-4 hover-bg-light">
+                    <div class="row align-items-center g-3">
+                        <div class="col-auto d-none d-sm-block">
+                            @if($blog->images->first())
+                                <img src="{{ asset('storage/' . $blog->images->first()->image_path) }}"
+                                     alt=""
+                                     class="rounded"
+                                     style="width: 72px; height: 72px; object-fit: cover;">
+                            @else
+                                <div class="rounded bg-light d-flex align-items-center justify-content-center text-secondary"
+                                     style="width: 72px; height: 72px;">
+                                    <i class="fas fa-image fa-lg"></i>
+                                </div>
+                            @endif
+                        </div>
+                        <div class="col min-w-0">
+                            <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                                <h2 class="h6 mb-0 text-truncate">{{ $blog->title }}</h2>
+                                @if($blog->is_featured)
+                                    <span class="badge bg-warning text-dark"><i class="fas fa-star me-1"></i>Featured</span>
+                                @endif
+                                @php
+                                    $st = $blog->status;
+                                    $badgeClass = $st === 'published' ? 'bg-success' : ($st === 'draft' ? 'bg-secondary' : 'bg-dark');
+                                @endphp
+                                <span class="badge {{ $badgeClass }}">{{ ucfirst($st) }}</span>
+                            </div>
+                            <p class="text-muted small mb-2 mb-md-0 line-clamp-2">{{ \Illuminate\Support\Str::limit(strip_tags($blog->content), 140) }}</p>
+                            <div class="small text-muted">
+                                <i class="far fa-eye me-1"></i>{{ number_format($blog->views ?? 0) }} views
+                                <span class="mx-2">·</span>
+                                {{ $blog->created_at->format('M j, Y') }}
+                                @if($blog->images->count())
+                                    <span class="mx-2">·</span>{{ $blog->images->count() }} image(s)
+                                @endif
+                                @if($blog->documents->count())
+                                    <span class="mx-2">·</span>{{ $blog->documents->count() }} file(s)
                                 @endif
                             </div>
-                            <div class="flex-1 min-w-0">
-                                <div class="flex items-center gap-2 flex-wrap mb-1">
-                                    <h3 class="text-base font-semibold text-gray-900 truncate">{{ $blog->title }}</h3>
-                                    @if($blog->is_featured)
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                            ⭐ Featured
-                                        </span>
-                                    @endif
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
-                                        {{ $blog->status === 'published' ? 'bg-green-100 text-green-800' : ($blog->status === 'draft' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800') }}">
-                                        {{ ucfirst($blog->status) }}
-                                    </span>
-                                </div>
-                                <p class="text-sm text-gray-600 line-clamp-2 mb-2">{{ Str::limit(strip_tags($blog->content), 120) }}</p>
-                                <div class="flex items-center gap-4 text-xs text-gray-500">
-                                    <span class="flex items-center gap-1">
-                                        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                                            <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
-                                            <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/>
-                                        </svg>
-                                        {{ number_format($blog->views) }} views
-                                    </span>
-                                    <span>{{ $blog->created_at->format('M d, Y') }}</span>
-                                    @if($blog->images && $blog->images->count() > 0)
-                                        <span>{{ $blog->images->count() }} image(s)</span>
-                                    @endif
-                                    @if($blog->documents && $blog->documents->count() > 0)
-                                        <span>{{ $blog->documents->count() }} doc(s)</span>
-                                    @endif
-                                </div>
+                        </div>
+                        <div class="col-12 col-lg-auto">
+                            <div class="d-flex flex-wrap gap-2 justify-content-lg-end">
+                                <a href="{{ route('blogs.show', $blog->slug) }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-external-link-alt me-1"></i> View
+                                </a>
+                                <a href="{{ route('admin.blogs.edit', $blog) }}" class="btn btn-sm btn-outline-secondary">
+                                    <i class="fas fa-edit me-1"></i> Edit
+                                </a>
+                                <button type="button"
+                                        class="btn btn-sm {{ $blog->is_featured ? 'btn-warning' : 'btn-outline-warning' }}"
+                                        data-featured-url="{{ route('admin.blogs.toggle-featured', $blog) }}"
+                                        onclick="toggleBlogFeatured(this)"
+                                        title="Toggle featured">
+                                    <i class="fas fa-star"></i>
+                                </button>
+                                <form action="{{ route('admin.blogs.destroy', $blog) }}" method="POST" class="d-inline"
+                                      onsubmit="return confirm('Delete this post permanently?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </form>
                             </div>
                         </div>
                     </div>
-
-                    <!-- Actions -->
-                    <div class="flex items-center gap-2 flex-wrap">
-                        {{-- ✅ Public view uses slug-based route --}}
-                        <a href="{{ route('blogs.show', $blog->slug) }}"
-                           target="_blank"
-                           class="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors duration-150"
-                           title="View Public">
-                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                            </svg>
-                            View
-                        </a>
-                        <a href="{{ route('admin.blogs.edit', $blog) }}"
-                           class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-600 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-150"
-                           title="Edit">
-                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                            </svg>
-                            Edit
-                        </a>
-                        {{-- ✅ Toggle featured uses correct admin route --}}
-                        <button type="button"
-                                class="inline-flex items-center px-3 py-2 text-sm font-medium transition-colors duration-150 rounded-lg
-                                    {{ $blog->is_featured ? 'text-yellow-700 bg-yellow-100 hover:bg-yellow-200' : 'text-purple-600 bg-purple-50 hover:bg-purple-100' }}"
-                                onclick="toggleFeatured({{ $blog->id }}, this)"
-                                title="{{ $blog->is_featured ? 'Remove Featured' : 'Mark as Featured' }}">
-                            <svg class="w-4 h-4" fill="{{ $blog->is_featured ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 20 20">
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                            </svg>
-                        </button>
-                        <form action="{{ route('admin.blogs.destroy', $blog) }}"
-                              method="POST"
-                              class="inline"
-                              onsubmit="return confirm('Are you sure you want to delete this blog post? This action cannot be undone.')">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit"
-                                    class="inline-flex items-center px-3 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors duration-150"
-                                    title="Delete">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                </svg>
-                                Delete
-                            </button>
-                        </form>
-                    </div>
                 </div>
-            </div>
-        @empty
-            <div class="p-12 text-center">
-                <div class="inline-flex items-center justify-center w-20 h-20 bg-gray-100 rounded-full mb-4">
-                    <svg class="w-10 h-10 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M2 5a2 2 0 012-2h8a2 2 0 012 2v10a2 2 0 002 2H4a2 2 0 01-2-2V5zm3 1h6v4H5V6zm6 6H5v2h6v-2z" clip-rule="evenodd"/>
-                        <path d="M15 7h1a2 2 0 012 2v5.5a1.5 1.5 0 01-3 0V9a1 1 0 00-1-1h-1v-1z"/>
-                    </svg>
+            @empty
+                <div class="text-center py-5 px-3">
+                    <div class="text-muted mb-3"><i class="fas fa-newspaper fa-3x"></i></div>
+                    <h3 class="h5">No blog posts yet</h3>
+                    <p class="text-muted mb-4">Create your first post to show content on the public blog.</p>
+                    <a href="{{ route('admin.blogs.create') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i> Create blog post
+                    </a>
                 </div>
-                <h3 class="text-lg font-medium text-gray-900 mb-2">No blog posts found</h3>
-                <p class="text-gray-600 mb-6">Create your first blog post to get started with content marketing.</p>
-                <a href="{{ route('admin.blogs.create') }}"
-                   class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                    </svg>
-                    Create Blog Post
-                </a>
-            </div>
-        @endforelse
-    </div>
-
-    <!-- Pagination -->
-    @if($blogs->hasPages())
-        <div class="mt-6 flex justify-center">
-            {{ $blogs->links() }}
+            @endforelse
         </div>
-    @endif
+        @if($blogs->hasPages())
+            <div class="card-footer bg-white border-0 d-flex justify-content-center py-3">
+                {{ $blogs->links() }}
+            </div>
+        @endif
+    </div>
 </div>
+<style>
+    .hover-bg-light:hover { background-color: #f8f9fa; }
+    .line-clamp-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    .min-w-0 { min-width: 0; }
+</style>
 @endsection
 
-{{-- ✅ Fixed: was @section('scripts') — must be @push('scripts') to match @stack('scripts') in layout --}}
 @push('scripts')
 <script>
-function toggleFeatured(blogId, button) {
-    const originalHTML = button.innerHTML;
-    button.innerHTML = `<svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>`;
-    button.disabled = true;
+function toggleBlogFeatured(btn) {
+    const url = btn.getAttribute('data-featured-url');
+    if (!url) return;
+    const original = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
 
-    fetch(`/admin/blogs/${blogId}/toggle-featured`, {
+    fetch(url, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
         }
     })
-    .then(response => response.json())
-    .then(data => {
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
         if (data.success) {
-            location.reload();
+            window.location.reload();
         } else {
-            alert('Error: ' + data.message);
-            button.innerHTML = originalHTML;
-            button.disabled = false;
+            alert(data.message || 'Could not update featured status.');
+            btn.innerHTML = original;
+            btn.disabled = false;
         }
     })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('An error occurred while toggling featured status.');
-        button.innerHTML = originalHTML;
-        button.disabled = false;
+    .catch(function () {
+        alert('Request failed.');
+        btn.innerHTML = original;
+        btn.disabled = false;
     });
 }
 </script>
