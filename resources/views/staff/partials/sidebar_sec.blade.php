@@ -325,14 +325,14 @@
             </select>
           </div>
           <div class="mb-3">
-            <label for="fee_type" class="form-label">Fee Type</label>
-            <select name="fee_type" id="fee_type" class="form-select" required>
-                <option value="" disabled selected>Select fee type</option>
+            <label for="fee_type" class="form-label">Fee Type (optional - if recording initial payment)</label>
+            <select name="fee_type" id="fee_type" class="form-select">
+                <option value="">-- No initial payment --</option>
             </select>
           </div>
           <div class="mb-3">
             <label for="amount_paid" class="form-label">Initial Cash Payment (optional)</label>
-            <input type="number" name="amount_paid" id="amount_paid" class="form-control" min="0" step="0.01">
+            <input type="number" name="amount_paid" id="amount_paid" class="form-control" min="0" step="0.01" placeholder="Leave blank if no payment">
           </div>
         </div>
         <div class="modal-footer">
@@ -477,7 +477,7 @@
         function updateFeeTypes() {
             const courseId = courseSelect.value;
             const fees = courseFees[courseId] || {};
-            feeTypeSelect.innerHTML = '<option value="" disabled selected>Select fee type</option>';
+            feeTypeSelect.innerHTML = '<option value="">-- No initial payment --</option>';
             const feeLabels = {
                 'registration': 'Registration Fee',
                 'school_fee': 'Tuition Fee',
@@ -488,11 +488,111 @@
                 const label = feeLabels[type] || type.charAt(0).toUpperCase() + type.slice(1);
                 feeTypeSelect.innerHTML += `<option value="${type}">${label} (${fees[type]} RWF)</option>`;
             });
-            feeTypeSelect.disabled = Object.keys(fees).length === 0;
+            // Don't disable anymore - user can submit without selecting a fee type
         }
         if (courseSelect) {
             courseSelect.addEventListener('change', updateFeeTypes);
             if (courseSelect.value) updateFeeTypes();
+        }
+        
+        // Handle student form submission
+        const studentForm = document.querySelector('#addStudentModal form');
+        if (studentForm) {
+            studentForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Validate required fields
+                const fullName = document.getElementById('full_name').value.trim();
+                const phone = document.getElementById('phone').value.trim();
+                const sex = document.getElementById('sex').value;
+                const branchId = document.getElementById('branch_id').value;
+                const academicYearId = document.getElementById('academic_year_id').value;
+                const courseId = document.getElementById('course_id').value;
+                
+                if (!fullName) {
+                    alert('Please enter full name');
+                    return;
+                }
+                if (!phone) {
+                    alert('Please enter phone number');
+                    return;
+                }
+                if (!sex) {
+                    alert('Please select sex');
+                    return;
+                }
+                if (!branchId) {
+                    alert('Please select branch');
+                    return;
+                }
+                if (!academicYearId) {
+                    alert('Please select academic year');
+                    return;
+                }
+                if (!courseId) {
+                    alert('Please select course');
+                    return;
+                }
+                
+                // Show loading state
+                const submitBtn = studentForm.querySelector('button[type="submit"]');
+                const originalText = submitBtn.textContent;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Registering...';
+                
+                // Submit form normally (server will show success/errors on page reload)
+                studentForm.style.opacity = '0.6';
+                studentForm.style.pointerEvents = 'none';
+                
+                // Use fetch to submit and handle response
+                const formData = new FormData(studentForm);
+                fetch(studentForm.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => {
+                    // Check if response is successful
+                    if (response.ok) {
+                        // Show success message
+                        const successAlert = document.createElement('div');
+                        successAlert.className = 'alert alert-success alert-dismissible fade show mt-3';
+                        successAlert.innerHTML = '<i class="fas fa-check-circle me-2"></i><strong>Success!</strong> Student registered successfully. <button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+                        
+                        // Close modal after short delay
+                        setTimeout(() => {
+                            const modal = bootstrap.Modal.getInstance(document.getElementById('addStudentModal'));
+                            if (modal) modal.hide();
+                            // Reload page to show new student
+                            location.reload();
+                        }, 1500);
+                    } else {
+                        // Handle error response
+                        return response.json().then(data => {
+                            studentForm.style.opacity = '1';
+                            studentForm.style.pointerEvents = 'auto';
+                            submitBtn.disabled = false;
+                            submitBtn.textContent = originalText;
+                            
+                            let errorMsg = data.message || 'An error occurred. Please try again.';
+                            if (data.errors) {
+                                errorMsg = Object.values(data.errors)[0][0] || errorMsg;
+                            }
+                            alert('Error: ' + errorMsg);
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    studentForm.style.opacity = '1';
+                    studentForm.style.pointerEvents = 'auto';
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = originalText;
+                    alert('An error occurred while registering student. Please try again.');
+                });
+            });
         }
     });
 </script>
