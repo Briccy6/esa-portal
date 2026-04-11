@@ -65,10 +65,101 @@
         font-size: 0.85rem;
     }
     @media print {
-        .main-sidebar, .main-header, .card-tools, .no-print, .filter-form, footer, .nav-section { display: none !important; }
-        .content-wrapper, .content { margin: 0 !important; padding: 0 !important; }
-        .card { border: none !important; box-shadow: none !important; }
-        .balance-sheet-print { padding: 1rem; }
+        /* Hide all navigation and header elements */
+        .main-sidebar, 
+        .main-header, 
+        .card-header,
+        .card-tools, 
+        .no-print, 
+        .filter-form, 
+        footer, 
+        .nav-section,
+        nav,
+        .navbar,
+        .sidebar,
+        .Header,
+        .user-panel,
+        .treeview,
+        .brand-link {
+            display: none !important;
+            visibility: hidden !important;
+        }
+
+        /* Reset body and wrapper styles */
+        body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: white !important;
+        }
+
+        html {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        /* Make content full width */
+        .content-wrapper, 
+        .content-header,
+        .content,
+        .container-fluid {
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+
+        .card {
+            border: none !important;
+            box-shadow: none !important;
+            page-break-inside: avoid;
+        }
+
+        .balance-sheet-print {
+            padding: 0.5rem !important;
+            width: 100%;
+        }
+
+        .row {
+            display: block !important;
+            width: 100%;
+        }
+
+        .col-lg-6,
+        .col-md-6,
+        .col-12 {
+            display: block !important;
+            width: 100% !important;
+            float: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        /* Optimize for printing */
+        .alert {
+            page-break-inside: avoid;
+        }
+
+        table {
+            page-break-inside: avoid;
+        }
+
+        h5, h4, h3, h2, h1 {
+            page-break-after: avoid;
+        }
+
+        /* Remove extra spacing */
+        .mb-3 { margin-bottom: 0.5rem !important; }
+        .mb-2 { margin-bottom: 0.25rem !important; }
+        .mb-0 { margin-bottom: 0 !important; }
+        .mt-3 { margin-top: 0.5rem !important; }
+        .mt-2 { margin-top: 0.25rem !important; }
+        .gap-2, .gap-3 { gap: 0 !important; }
+
+        /* Print-specific styling */
+        @page {
+            margin: 0;
+            size: A4;
+        }
     }
 </style>
 
