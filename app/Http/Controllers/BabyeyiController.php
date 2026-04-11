@@ -294,7 +294,10 @@ class BabyeyiController extends Controller
     {
         $babyeyi->load(['academicYear', 'term', 'course', 'creator', 'editor']);
         $schoolInfo = SchoolInformation::getActive();
-        $headTeacher = User::role('head_teacher')->first();
+        // Try to find a head teacher, principal, or admin user
+        $headTeacher = User::whereIn('role', ['DOS', 'admin', 'head_teacher'])
+            ->orderBy('role')
+            ->first();
 
         $pdf = PDF::loadView('babyeyi.pdf', compact('babyeyi', 'schoolInfo', 'headTeacher'));
         
@@ -602,8 +605,10 @@ class BabyeyiController extends Controller
      */
     public function destroy(Babyeyi $babyeyi)
     {
-        // Authorize deletion through policy
-        $this->authorize('delete', $babyeyi);
+        // Check if user is admin or the creator
+        if (!Auth::guard('admin')->check() && Auth::id() !== $babyeyi->created_by) {
+            abort(403, 'Unauthorized to delete this document');
+        }
 
         // Store reference before deletion
         $reference = $babyeyi->reference_number;

@@ -12,6 +12,9 @@ class BlogImage extends Model
 
     protected $fillable = [
         'blog_id',
+        'image_data',
+        'mime_type',
+        'filename',
         'image_path',
         'caption',
         'alt_text',
@@ -33,11 +36,22 @@ class BlogImage extends Model
     }
 
     /**
-     * Get the full URL for the image.
+     * Get the full URL for the image (as data URI from database).
      */
     public function getUrlAttribute(): string
     {
-        return asset('storage/' . $this->image_path);
+        // If image is stored in database
+        if ($this->image_data) {
+            $base64 = base64_encode($this->image_data);
+            return 'data:' . $this->mime_type . ';base64,' . $base64;
+        }
+
+        // Fallback to file system (for legacy data)
+        if ($this->image_path) {
+            return asset('storage/' . $this->image_path);
+        }
+
+        return '';
     }
 
     /**
@@ -47,5 +61,13 @@ class BlogImage extends Model
     {
         // For now, return the same URL. You can implement thumbnail generation later.
         return $this->getUrlAttribute();
+    }
+
+    /**
+     * Get the image display name.
+     */
+    public function getDisplayNameAttribute(): string
+    {
+        return $this->filename ?? ($this->image_path ? basename($this->image_path) : 'Image');
     }
 }
