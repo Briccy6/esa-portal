@@ -132,7 +132,8 @@
                     $totalTest = $reportCard->subjects->sum('test_average');
                     $totalExam = $reportCard->subjects->sum('exam_mark');
                     $totalMark = $reportCard->subjects->sum('total_mark');
-                    $averageMark = $reportCard->subjects->count() > 0 ? $totalMark / $reportCard->subjects->count() : 0;
+                    $subjectCount = $reportCard->subjects->count();
+                    $averageMark = $subjectCount > 0 ? ($totalTest + $totalExam) / 2 / $subjectCount : 0;
                     $totalStatus = $averageMark >= 50 ? 'PASS' : 'FAIL';
                 @endphp
                 <td>{{ number_format($totalTest, 1) }}</td>
