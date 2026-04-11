@@ -65,6 +65,12 @@
         font-size: 0.85rem;
     }
     @media print {
+        /* Page setup */
+        @page {
+            size: A4;
+            margin: 0.5in;
+        }
+
         /* Hide all navigation and header elements */
         .main-sidebar, 
         .main-header, 
@@ -80,21 +86,20 @@
         .Header,
         .user-panel,
         .treeview,
-        .brand-link {
+        .brand-link,
+        .alert,
+        .alert-info,
+        .alert-warning,
+        .alert-light {
             display: none !important;
             visibility: hidden !important;
         }
 
         /* Reset body and wrapper styles */
-        body {
+        body, html {
             margin: 0 !important;
             padding: 0 !important;
             background: white !important;
-        }
-
-        html {
-            margin: 0 !important;
-            padding: 0 !important;
         }
 
         /* Make content full width */
@@ -112,16 +117,33 @@
             border: none !important;
             box-shadow: none !important;
             page-break-inside: avoid;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        .card-body {
+            margin: 0 !important;
+            padding: 0 !important;
         }
 
         .balance-sheet-print {
-            padding: 0.5rem !important;
+            padding: 0 !important;
             width: 100%;
+            margin: 0;
+        }
+
+        /* Document header with school info */
+        .balance-sheet-print::before {
+            content: '';
+            display: block;
+            page-break-after: avoid;
         }
 
         .row {
             display: block !important;
             width: 100%;
+            margin: 0 !important;
+            padding: 0 !important;
         }
 
         .col-lg-6,
@@ -131,36 +153,145 @@
             width: 100% !important;
             float: none !important;
             margin: 0 !important;
-            padding: 0 !important;
+            padding: 0.5rem 0 !important;
         }
 
-        /* Optimize for printing */
-        .alert {
-            page-break-inside: avoid;
-        }
-
+        /* Table improvements */
         table {
             page-break-inside: avoid;
+            width: 100%;
         }
 
         h5, h4, h3, h2, h1 {
             page-break-after: avoid;
+            margin: 0.5rem 0 0.25rem 0;
         }
 
-        /* Remove extra spacing */
-        .mb-3 { margin-bottom: 0.5rem !important; }
-        .mb-2 { margin-bottom: 0.25rem !important; }
-        .mb-0 { margin-bottom: 0 !important; }
-        .mt-3 { margin-top: 0.5rem !important; }
-        .mt-2 { margin-top: 0.25rem !important; }
-        .gap-2, .gap-3 { gap: 0 !important; }
+        /* Header styling for printed document */
+        .bs-org-name {
+            font-size: 1.2rem !important;
+            font-weight: 700 !important;
+            margin: 0.5rem 0 !important;
+        }
 
-        /* Print-specific styling */
-        @page {
-            margin: 0;
-            size: A4;
+        .bs-title {
+            font-size: 1rem !important;
+            margin: 0.3rem 0 !important;
+        }
+
+        .bs-asof {
+            font-size: 0.9rem !important;
+            margin: 0.3rem 0 0.5rem 0 !important;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 0.5rem;
+        }
+
+        /* Remove unnecessary info text in print */
+        .bs-muted.small {
+            display: none !important;
+        }
+
+        /* Print only the tables */
+        .bs-section-head {
+            margin-top: 0.75rem !important;
+            margin-bottom: 0.25rem !important;
+            font-size: 0.85rem !important;
+        }
+
+        .bs-table {
+            margin: 0.25rem 0 !important;
+        }
+
+        .bs-table td,
+        .bs-table th {
+            padding: 0.25rem 0.5rem !important;
+            font-size: 0.85rem !important;
+        }
+
+        /* Report summary spacing */
+        .row.mt-4 {
+            margin-top: 0.5rem !important;
+            page-break-after: avoid;
+            border-top: 2px solid #2c3e50;
+            padding-top: 0.5rem;
+        }
+
+        /* Footer-like section */
+        .row.mt-4.pt-4 {
+            margin-top: 1rem !important;
+            padding-top: 0.5rem !important;
+        }
+
+        /* Better page spacing */
+        .mb-3 { margin-bottom: 0.25rem !important; }
+        .mb-2 { margin-bottom: 0.15rem !important; }
+        .mb-0 { margin-bottom: 0 !important; }
+        .mt-3 { margin-top: 0.25rem !important; }
+        .mt-2 { margin-top: 0.15rem !important; }
+        .mt-1 { margin-top: 0.1rem !important; }
+        .gap-2, .gap-3 { gap: 0 !important; }
+        .pt-4 { padding-top: 0.5rem !important; }
+        .border-top { border-top: 1px solid #ddd !important; }
+
+        /* Hide card body styling for cleaner print */
+        .card-body {
+            background: none !important;
+        }
+
+        /* Optimize badge and button display */
+        .badge {
+            margin: 0 0.25rem 0 0;
+        }
+
+        /* Print-specific header styling */
+        .print-header {
+            text-align: center;
+            margin-bottom: 1rem;
+            page-break-after: avoid;
+            border-bottom: 2px solid #2c3e50;
+            padding-bottom: 0.5rem;
+        }
+
+        .print-header-logo {
+            max-height: 50px;
+            margin-bottom: 0.3rem;
+        }
+
+        .print-header-school {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin: 0.2rem 0;
+        }
+
+        .print-header-details {
+            font-size: 0.8rem;
+            color: #666;
+            margin: 0.2rem 0;
+        }
+
+        /* Print footer */
+        .print-footer {
+            margin-top: 1rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid #999;
+            font-size: 0.75rem;
+            text-align: center;
+            color: #666;
+        }
+
+        @media print {
+            .print-header,
+            .print-footer {
+                display: block !important;
+            }
+
+            .print-header-details {
+                font-size: 0.75rem;
+                margin: 0.1rem 0;
+            }
         }
     }
+
 </style>
 
 <div class="container-fluid">
@@ -205,20 +336,23 @@
                     </form>
 
                     <div class="balance-sheet-print p-2 p-md-3">
-                        <div class="text-center mb-3">
+                        <!-- Print Header -->
+                        <div class="print-header">
                             @if($school && $school->logo_url)
-                                <div class="mb-2">
-                                    <img src="{{ $school->logo_url }}" alt="" style="max-height: 56px;">
-                                </div>
+                                <img src="{{ $school->logo_url }}" alt="School Logo" class="print-header-logo">
                             @endif
-                            <div class="bs-org-name">{{ $school ? $school->school_name : config('app.name', 'School') }}</div>
+                            <div class="print-header-school">{{ $school ? $school->school_name : config('app.name', 'School') }}</div>
                             @if($school && ($school->address || $school->phone || $school->email))
-                                <div class="bs-muted">
+                                <div class="print-header-details">
                                     @if($school->address){{ $school->address }}@endif
-                                    @if($school->phone) · {{ $school->phone }}@endif
-                                    @if($school->email) · {{ $school->email }}@endif
+                                    @if($school->phone)<br>{{ $school->phone }}@endif
+                                    @if($school->email)<br>{{ $school->email }}@endif
                                 </div>
                             @endif
+                        </div>
+
+                        <!-- Screen-only header (hidden in print) -->
+                        <div class="text-center mb-3 no-print">
                             <div class="bs-title">Statement of Financial Position</div>
                             <div class="bs-asof">
                                 As at {{ $asOfDate->format('j F Y') }}
@@ -229,6 +363,20 @@
                                     <br><small>{{ $selectedTerm ? $selectedTerm->name . ' - ' . ($selectedTerm->academicYear->year ?? '') : 'Selected Term' }}</small>
                                 @endif
                             </div>
+                        </div>
+
+                        <!-- Print Document Title and Date -->
+                        <div style="text-align: center; margin-bottom: 0.75rem; page-break-after: avoid;">
+                            <h5 style="font-size: 1rem; margin: 0.2rem 0; font-weight: bold;">STATEMENT OF FINANCIAL POSITION</h5>
+                            <p style="font-size: 0.85rem; margin: 0.1rem 0; color: #666;">
+                                As at {{ $asOfDate->format('j F Y') }}
+                                @if($termId && isset($terms))
+                                    @php
+                                        $selectedTerm = $terms->where('id', $termId)->first();
+                                    @endphp
+                                    <br>({{ $selectedTerm ? $selectedTerm->name . ' - ' . ($selectedTerm->academicYear->year ?? '') : 'Selected Term' }})
+                                @endif
+                            </p>
                         </div>
 
                         <p class="bs-muted small no-print mb-3">
@@ -436,7 +584,7 @@
 
                         <div class="row mt-3">
                             <div class="col-12">
-                                <div class="mt-1 d-flex flex-wrap align-items-center gap-3">
+                                <div class="mt-1 d-flex flex-wrap align-items-center gap-3 no-print">
                                     <span class="font-weight-bold">Accounting equation:</span>
                                     @if($data['is_balanced'])
                                         <span class="badge badge-success">Balanced</span>
@@ -449,6 +597,23 @@
                                     @endif
                                 </div>
                             </div>
+                        </div>
+
+                        <!-- Print Footer -->
+                        <div class="print-footer">
+                            <p style="margin: 0; font-size: 0.75rem;">
+                                <strong>{{ $school ? $school->school_name : config('app.name', 'School') }}</strong>
+                                @if($school && $school->email) | {{ $school->email }}@endif
+                            </p>
+                            <p style="margin: 0; font-size: 0.7rem; color: #999;">
+                                Generated: {{ now()->format('j F Y H:i:s') }}
+                                @if($termId && isset($terms))
+                                    @php
+                                        $selectedTerm = $terms->where('id', $termId)->first();
+                                    @endphp
+                                    | {{ $selectedTerm ? $selectedTerm->name : 'All Terms' }}
+                                @endif
+                            </p>
                         </div>
                     </div>
                 </div>
