@@ -844,6 +844,7 @@ document.addEventListener('DOMContentLoaded', function () {
         saveBtn.disabled = true;
         saveBtnText.textContent = 'Saving…';
 
+        // Build request payload as FormData (preserves file structure if needed)
         var formData = new FormData(this);
         
         // Explicitly set the form data to ensure assessment type is correctly transmitted
@@ -875,10 +876,47 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        // Get CSRF token from the form's hidden input (more reliable than page-load-time token)
+        // Try multiple locations to find the token for maximum compatibility
+        var csrfToken = null;
+        
+        // Try 1: Get from the form's _token field (from @csrf)
+        var tokenInput = document.querySelector('#studentsMarksForm input[name="_token"]');
+        if (tokenInput && tokenInput.value) {
+            csrfToken = tokenInput.value;
+        }
+        
+        // Try 2: Fallback to meta tag if available
+        if (!csrfToken) {
+            var metaToken = document.querySelector('meta[name="csrf-token"]');
+            if (metaToken) {
+                csrfToken = metaToken.getAttribute('content');
+            }
+        }
+        
+        // Try 3: Fallback to page-load-time token (last resort)
+        if (!csrfToken) {
+            csrfToken = '{{ csrf_token() }}';
+        }
+        
+        // Ensure token is in FormData (it should be from @csrf, but let's be explicit)
+        if (csrfToken && (!formData.has('_token') || !formData.get('_token'))) {
+            formData.set('_token', csrfToken);
+        }
+        
+        console.log('CSRF Token status:', csrfToken ? 'Found (' + csrfToken.substring(0, 10) + '...)' : 'MISSING - This will cause 419 error!');
+        
+        if (!csrfToken) {
+            modalMsg.innerHTML = '<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i><strong>Session Error:</strong> CSRF token not found. Please refresh the page and try again.</div>';
+            saveBtn.disabled = false;
+            saveBtnText.textContent = 'Save Marks';
+            return;
+        }
+
         fetchJson('{{ route("teacher.marks.store") }}', {
             method: 'POST',
             headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'X-CSRF-TOKEN': csrfToken,
                 'X-Requested-With': 'XMLHttpRequest',
                 'Accept': 'application/json'
             },
@@ -912,6 +950,9 @@ document.addEventListener('DOMContentLoaded', function () {
             var extra = '';
             if (err && err.status) {
                 extra = ' (HTTP ' + err.status + ')';
+                if (err.status === 419) {
+                    extra = ' - Session expired or CSRF token invalid. Please refresh the page and try again.';
+                }
             }
             modalMsg.innerHTML = '<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i>' + (err.message || 'Failed to save marks') + extra + '</div>';
         });
