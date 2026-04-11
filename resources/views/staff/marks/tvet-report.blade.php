@@ -16,7 +16,7 @@
         .print-area {
             border: 1px solid black;
             background: white;
-            margin: 20px 0;
+            margin: 0 0 20px 0;
         }
         
         .header-section {
@@ -331,7 +331,6 @@
                     <td class="bg-gray">EXAM</td>
                     <td class="bg-gray">AVG</td>
                     <td class="bg-gray">A.A</td>
-                    <td class="bg-gray">R.E</td>
                     <td class="bg-gray">Comments</td>
                 </tr>
             </thead>
@@ -349,7 +348,6 @@
                             <td>{{ number_format($subject->exam_mark ?? 0, 2) }}</td>
                             <td>{{ number_format($subject->total_mark ?? 0, 2) }}</td>
                             <td class="font-bold">{{ number_format($subject->total_mark ?? 0, 2) }}%</td>
-                            <td class="font-bold">{{ $subject->grade === 'A' || $subject->grade === 'B' || $subject->grade === 'C' ? 'C' : 'NYC' }}</td>
                             <td class="font-bold">{{ $subject->comments ?? '-' }}</td>
                         </tr>
                     @endforeach
@@ -372,7 +370,6 @@
                         <td>{{ number_format($reportCard->subjects->sum('exam_mark'), 1) }}</td>
                         <td>{{ number_format($reportCard->subjects->sum('total_mark'), 1) }}</td>
                         <td class="font-bold">{{ number_format($reportCard->subjects->sum('total_mark'), 1) }}%</td>
-                        <td class="font-bold">{{ $reportCard->average_marks >= 50 ? 'C' : 'NYC' }}</td>
                         <td></td>
                     </tr>
 

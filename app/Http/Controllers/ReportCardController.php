@@ -1410,6 +1410,9 @@ class ReportCardController extends Controller
                     $examMark = (float) $firstExamMark->value;
                 }
                 
+                // Cap exam mark at 100
+                $examMark = min($examMark, 100);
+                
                 \Log::info('Exam marks calculated: ' . json_encode([
                     'lesson_id' => $lesson->id,
                     'exam_marks_count' => $examMarks->count(),

@@ -74,7 +74,7 @@
         .section-title {
             font-size: 14px;
             font-weight: bold;
-            margin: 20px 0 10px 0;
+            margin: 0 0 10px 0;
             padding-bottom: 5px;
             border-bottom: 1px solid #333;
         }
@@ -121,7 +121,7 @@
         .grade-n { background-color: #6c757d; color: white; }
         
         .summary {
-            margin: 20px 0;
+            margin: 0 0 20px 0;
             display: flex;
             justify-content: space-between;
         }
@@ -241,7 +241,6 @@
                     <th>Exam</th>
                     <th>Total</th>
                     <th>Grade</th>
-                    <th>Remarks</th>
                 </tr>
             </thead>
             <tbody>
@@ -257,7 +256,6 @@
                                     {{ $subject->grade ?? 'N/A' }}
                                 </span>
                             </td>
-                            <td>{{ ($subject->grade === 'A' || $subject->grade === 'B') ? 'C' : 'NYC' }}</td>
                         </tr>
                     @endforeach
                 @else

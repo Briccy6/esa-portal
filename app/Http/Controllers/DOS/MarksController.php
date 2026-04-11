@@ -567,6 +567,8 @@ class MarksController extends Controller
                 } else {
                     $subject->test_average = 0;
                 }
+                // Cap test_average at 100
+                $subject->test_average = min($subject->test_average, 100);
                 
                 // ================================================================
                 // CALCULATE EXAM MARKS (on 100 scale)
@@ -582,6 +584,8 @@ class MarksController extends Controller
                 } else {
                     $subject->exam_mark = 0;
                 }
+                // Cap exam_mark at 100
+                $subject->exam_mark = min($subject->exam_mark, 100);
                 
                 // ================================================================
                 // CALCULATE WEIGHTED AVERAGE: 40% test + 60% exam
@@ -650,6 +654,8 @@ class MarksController extends Controller
                         });
                         $ctestAvg = $ctestValuesNormalized->avg();
                     }
+                    // Cap test average at 100
+                    $ctestAvg = min($ctestAvg, 100);
                     
                     // Exam marks (convert to 100)
                     $cexamMark = $clessonMarks->where('assessment_type', 'exam')->first();
@@ -661,9 +667,13 @@ class MarksController extends Controller
                             $cexamValue = $cexamMark->value;
                         }
                     }
+                    // Cap exam value at 100
+                    $cexamValue = min($cexamValue, 100);
                     
                     // Weighted average for this lesson: 40% test + 60% exam
                     $lessonTotal = ($ctestAvg * 0.4) + ($cexamValue * 0.6);
+                    // Cap lessonTotal at 100
+                    $lessonTotal = min($lessonTotal, 100);
                     $classStudentTotal += $lessonTotal;
                     $classStudentCount++;
                 }

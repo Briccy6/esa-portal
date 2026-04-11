@@ -78,6 +78,11 @@ class ReportCardSubject extends Model
             $this->total_mark = 0;
         }
         
+        // Cap all marks at 100
+        $this->total_mark = min($this->total_mark, 100);
+        $this->exam_mark = min($this->exam_mark, 100);
+        $this->test_average = min($this->test_average, 100);
+        
         $this->save();
     }
 
@@ -107,6 +112,9 @@ class ReportCardSubject extends Model
             $this->test_average = 0;
             $this->test_total = 0;
         }
+        
+        // Cap test_average at 100
+        $this->test_average = min($this->test_average, 100);
 
         $this->save();
     }
