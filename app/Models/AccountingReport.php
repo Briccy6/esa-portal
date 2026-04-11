@@ -337,12 +337,6 @@ class AccountingReport extends Model
 
         return ['receivable' => $receivable, 'deferred' => $deferred];
     }
-                    }
-                }
-            });
-
-        return ['receivable' => $receivable, 'deferred' => $deferred];
-    }
 
     public static function getTrialBalanceData($asOfDate = null)
     {
