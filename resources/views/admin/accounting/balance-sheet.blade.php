@@ -159,6 +159,7 @@
                         <div class="row">
                             <div class="col-lg-6 mb-4 mb-lg-0">
                                 <div class="bs-section-head">Assets</div>
+                                <p class="bs-muted small mb-2">What you own and money owed to you:</p>
                                 <table class="bs-table">
                                     <tbody>
                                         @forelse($data['assets']['details'] as $row)
@@ -183,10 +184,16 @@
                                         </tr>
                                     </tbody>
                                 </table>
+                                <div class="alert alert-info small mt-2 no-print" role="alert">
+                                    <strong>What this means:</strong><br>
+                                    <strong>CASH:</strong> Actual money you have collected from students and kept after paying expenses.<br>
+                                    <strong>AR-STU (Accounts Receivable):</strong> Money that students still owe based on their course fees. This is money you expect to collect.
+                                </div>
                             </div>
 
                             <div class="col-lg-6">
                                 <div class="bs-section-head">Liabilities</div>
+                                <p class="bs-muted small mb-2">Money you owe:</p>
                                 <table class="bs-table">
                                     <tbody>
                                         @forelse($data['liabilities']['details'] as $row)
@@ -213,6 +220,7 @@
                                 </table>
 
                                 <div class="bs-section-head mt-3">Equity</div>
+                                <p class="bs-muted small mb-2">Your school's net worth (Assets - Liabilities):</p>
                                 <table class="bs-table">
                                     <tbody>
                                         @foreach($data['equity']['details'] as $row)
@@ -233,6 +241,9 @@
                                         </tr>
                                     </tbody>
                                 </table>
+                                <div class="alert alert-success small mt-2 no-print" role="alert">
+                                    <strong>What this means:</strong> The school's net worth. Your financial position = Total Assets minus Total Liabilities.
+                                </div>
 
                                 <table class="bs-table mt-2">
                                     <tbody>
@@ -256,6 +267,78 @@
                                 <div class="d-flex justify-content-between bs-grand px-1">
                                     <span>Total liabilities and equity</span>
                                     <span class="bs-num">{{ number_format($data['liabilities']['total'] + $data['equity']['total'], 2) }} RWF</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-4 pt-4 border-top">
+                            <div class="col-12">
+                                <h5 class="mb-3">Balance Sheet Explained</h5>
+                                <div class="alert alert-light border-left border-primary" style="border-left-width: 4px;">
+                                    <p class="mb-2"><strong>What is this Balance Sheet?</strong></p>
+                                    <p class="mb-2">
+                                        A Balance Sheet shows your school's financial position at a specific point in time. It has three main parts:
+                                    </p>
+                                    <div class="row mt-3">
+                                        <div class="col-md-6">
+                                            <strong class="text-primary">1. ASSETS (What you own and are owed)</strong>
+                                            <table class="table table-sm mt-2 mb-0">
+                                                <tr>
+                                                    <td><strong>CASH:</strong></td>
+                                                    <td>{{ number_format($data['meta']['total_student_receipts'] ?? 0, 2) }} - {{ number_format($data['meta']['total_expenses'] ?? 0, 2) }} RWF</td>
+                                                </tr>
+                                                <tr>
+                                                    <td colspan="2" class="small text-muted">Actual money = Total student payments received MINUS total expenses paid out</td>
+                                                </tr>
+                                                @if(collect($data['assets']['details'])->where('account_code', 'AR-STU')->isNotEmpty())
+                                                    @php $arStu = collect($data['assets']['details'])->where('account_code', 'AR-STU')->first(); @endphp
+                                                    <tr>
+                                                        <td><strong>RECEIVABLES:</strong></td>
+                                                        <td>{{ number_format($arStu['balance'] ?? 0, 2) }} RWF</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td colspan="2" class="small text-muted">Money students STILL OWE based on their course fees</td>
+                                                    </tr>
+                                                @endif
+                                            </table>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <strong class="text-danger">2. LIABILITIES (What you owe)</strong>
+                                            @if($data['liabilities']['total'] > 0.01)
+                                                <table class="table table-sm mt-2 mb-0">
+                                                    <tr>
+                                                        <td><strong>STUDENT ADVANCES:</strong></td>
+                                                        <td>{{ number_format($data['liabilities']['total'], 2) }} RWF</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td colspan="2" class="small text-muted">When students paid more than they owed</td>
+                                                    </tr>
+                                                </table>
+                                            @else
+                                                <p class="text-muted">No liabilities (students haven't overpaid)</p>
+                                            @endif
+                                        </div>
+                                    </div>
+                                    
+                                    <hr class="my-3">
+                                    
+                                    <p class="mb-2"><strong class="text-success">3. EQUITY (School's Net Worth)</strong></p>
+                                    <p class="small mb-0">
+                                        <strong>Formula:</strong> Total Assets ({{ number_format($data['assets']['total'], 2) }}) - Total Liabilities ({{ number_format($data['liabilities']['total'], 2) }}) = 
+                                        <strong>{{ number_format($data['equity']['total'], 2) }} RWF</strong>
+                                    </p>
+                                    <p class="small text-muted mt-2 mb-0">
+                                        This is what the school is worth financially.
+                                    </p>
+                                </div>
+
+                                <div class="alert alert-warning mt-3 no-print" role="alert">
+                                    <strong>⚠️ Important Note:</strong> The Total Assets figure ({{ number_format($data['assets']['total'], 2) }} RWF) is the sum of:
+                                    <ul class="mb-0 mt-2">
+                                        <li><strong>{{ number_format($data['meta']['total_student_receipts'] - $data['meta']['total_expenses'], 2) }} RWF</strong> in actual cash (money in hand)</li>
+                                        <li><strong>{{ number_format(collect($data['assets']['details'])->where('account_code', 'AR-STU')->sum('balance'), 2) }} RWF</strong> in expected receivables (money students owe you)</li>
+                                    </ul>
+                                    <strong>Only the CASH figure is money you can spend right now.</strong>
                                 </div>
                             </div>
                         </div>
