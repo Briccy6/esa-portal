@@ -64,6 +64,10 @@
         color: #6c757d;
         font-size: 0.85rem;
     }
+    .print-header-logo {
+        max-height: 20px !important;
+        margin-bottom: 0.3rem;
+    }
     @media print {
         /* Page setup - landscape for single page fit */
         @page {
@@ -219,8 +223,9 @@
         }
 
         .print-header-logo {
-            max-height: 12px;
-            margin-bottom: 0.02rem;
+            display: none !important;
+            max-height: 6px;
+            margin-bottom: 0;
         }
 
         .print-header-school {
