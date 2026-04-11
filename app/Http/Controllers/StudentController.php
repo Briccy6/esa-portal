@@ -1324,6 +1324,11 @@ class StudentController extends Controller
             $studentCardFeeCharged  = false;
 
             foreach ($terms as $term) {
+                // Skip terms from different academic years (only show current academic year)
+                if ($term->academic_year_id !== $student->academic_year_id) {
+                    continue;
+                }
+
                 // Get fees for this term
                 $termFees = $course->getFeesForTerm($term->id);
                 if (!$termFees) {
@@ -1374,10 +1379,13 @@ class StudentController extends Controller
 
                 // Calculate totals for this term
                 // NOTE: If registration already paid for academic year, don't charge again
+                // Only show in the FIRST TERM - use $registrationFeeCharged flag to prevent repeats
                 $registrationFeeForTerm = $registrationFeePaidInAcademicYear ? 0 : ($registrationFeeCharged ? 0 : $registrationFee);
                 // NOTE: If student card already paid for academic year, don't charge again
+                // Only show in the FIRST TERM - use $studentCardFeeCharged flag to prevent repeats
                 $studentCardFeeForTerm = $studentCardFeePaidInAcademicYear ? 0 : ($studentCardFeeCharged ? 0 : $termStudentCardFee);
 
+                // Mark these fees as charged after showing once
                 if ($registrationFeeForTerm > 0) {
                     $registrationFeeCharged = true;
                 }
@@ -1392,7 +1400,7 @@ class StudentController extends Controller
                 // Build fees array for this term
                 $termFeesList = [];
 
-                // Only show registration fee if NOT already paid for academic year
+                // Only show registration fee if NOT already paid for academic year AND not already shown
                 if ($registrationFeeForTerm > 0) {
                     $remainingReg = $registrationFeeForTerm - $paidRegistration;
                     if ($remainingReg > 0) {
@@ -1445,7 +1453,8 @@ class StudentController extends Controller
                     }
                 }
 
-                if ($termStudentCardFee > 0) {
+                // Only show student card fee if NOT already paid for academic year AND not already shown
+                if ($studentCardFeeForTerm > 0) {
                     $remainingStudentCard = $studentCardFeeForTerm - $paidStudentCard;
                     if ($remainingStudentCard > 0) {
                         $termFeesList[] = [
@@ -1620,6 +1629,157 @@ class StudentController extends Controller
             'terms' => $terms,
             'selectedTerm' => $selectedTerm,
         ]);
+    }
+
+    // =========================================================================
+    // PAY FEES (STUDENT SELF-SERVICE PAYMENT)
+    // Route: POST /student/fees/pay
+    // Called from student dashboard pay buttons
+    // =========================================================================
+    public function payFees(Request $request)
+    {
+        try {
+            $student = auth('student')->user();
+            if (!$student) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized. Please log in.'
+                ], 401);
+            }
+
+            $validated = \Validator::make($request->all(), [
+                'fee_type' => 'required|string|in:registration_fee,school_fee,trip_fee,practical_fee,student_card',
+                'pay_amount' => 'required|numeric|min:1',
+            ], [
+                'fee_type.required' => 'Fee type is required.',
+                'fee_type.in' => 'Invalid fee type.',
+                'pay_amount.required' => 'Payment amount is required.',
+                'pay_amount.numeric' => 'Payment amount must be a number.',
+                'pay_amount.min' => 'Payment amount must be at least 1 RWF.',
+            ]);
+
+            if ($validated->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => implode(' ', $validated->errors()->all()),
+                    'errors' => $validated->errors()
+                ], 422);
+            }
+
+            $course = $student->course;
+            if (!$course) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Student course not found.'
+                ], 400);
+            }
+
+            $amount = floatval($request->pay_amount);
+            $feeType = $request->fee_type;
+
+            // Map fee types to proper names
+            $feeTypeNames = [
+                'registration_fee' => 'Registration',
+                'school_fee' => 'School',
+                'trip_fee' => 'Trip',
+                'practical_fee' => 'Practical',
+                'student_card' => 'Student Card'
+            ];
+
+            $feeName = $feeTypeNames[$feeType] ?? $feeType;
+
+            // For one-time fees (registration, student_card), check if already paid in academic year
+            if (in_array($feeType, ['registration_fee', 'student_card'])) {
+                $academicYearId = $student->academic_year_id;
+                
+                $alreadyPaid = StudentTransaction::where('student_id', $student->id)
+                    ->where('type', $feeType)
+                    ->whereIn('status', ['successful', 'paid'])
+                    ->whereHas('term', function ($query) use ($academicYearId) {
+                        $query->where('academic_year_id', $academicYearId);
+                    })
+                    ->exists();
+
+                if ($alreadyPaid) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "{$feeName} fee has already been paid for this academic year.",
+                    ], 400);
+                }
+            }
+
+            // Initialize Flutterwave payment
+            $flutterwaveController = new FlutterwaveController();
+            
+            // Create transaction reference
+            $txRef = strtoupper($feeType) . '-' . $student->id . '-' . time();
+
+            try {
+                // Call Flutterwave API to initialize payment
+                $response = $flutterwaveController->initializePayment(
+                    amount: $amount,
+                    email: $student->email,
+                    fullname: $student->first_name . ' ' . $student->last_name,
+                    phone: $student->phone ?? '',
+                    txRef: $txRef,
+                    paymentType: 'student_fee',
+                    metadata: [
+                        'student_id' => $student->id,
+                        'fee_type' => $feeType,
+                        'fee_name' => $feeName . ' Fee',
+                    ]
+                );
+
+                if ($response['status'] === 'success') {
+                    // Store pending transaction record
+                    StudentTransaction::create([
+                        'student_id' => $student->id,
+                        'tx_ref' => $txRef,
+                        'type' => $feeType,
+                        'amount' => $amount,
+                        'currency' => 'RWF',
+                        'status' => 'pending',
+                        'meta' => json_encode([
+                            'method' => 'flutterwave',
+                            'payment_type' => 'student_fee',
+                            'fee_name' => $feeName . ' Fee',
+                        ]),
+                    ]);
+
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Payment initialized. Redirecting to payment gateway...',
+                        'payment_link' => $response['data']['link'] ?? $response['data']['authorization_url'] ?? null,
+                    ], 200);
+                } else {
+                    return response()->json([
+                        'success' => false,
+                        'message' => $response['message'] ?? 'Failed to initialize payment. Please try again.',
+                    ], 400);
+                }
+            } catch (\Exception $e) {
+                \Log::error('Flutterwave payment initialization failed', [
+                    'student_id' => $student->id,
+                    'error' => $e->getMessage()
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to initialize payment: ' . $e->getMessage(),
+                ], 500);
+            }
+
+        } catch (\Exception $e) {
+            \Log::error('Payment processing failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Payment processing failed. Please try again.',
+            ], 500);
+        }
     }
 
     // =========================================================================
