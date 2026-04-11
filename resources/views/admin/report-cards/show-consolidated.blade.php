@@ -55,7 +55,7 @@
                         <tr>
                             <th colspan="3" class="text-left">Module / competence / credits</th>
                             @foreach($terms as $t)
-                                <th colspan="3">{{ $t['name'] }}</th>
+                                <th colspan="2">{{ $t['name'] }}</th>
                             @endforeach
                         </tr>
                         <tr>
@@ -64,7 +64,6 @@
                             <th>Cr</th>
                             @foreach($terms as $t)
                                 <th>Test</th>
-                                <th>Exam</th>
                                 <th>Tot</th>
                             @endforeach
                         </tr>
@@ -76,14 +75,13 @@
                                 <td class="text-left">{{ Str::limit($row['competence_title'], 36) }}</td>
                                 <td>{{ $row['credits'] }}</td>
                                 @foreach($terms as $t)
-                                    @php $cell = $row['by_term_id'][$t['id']] ?? ['test' => '—', 'exam' => '—', 'total' => '—']; @endphp
+                                    @php $cell = $row['by_term_id'][$t['id']] ?? ['test' => '—', 'total' => '—']; @endphp
                                     <td>{{ $cell['test'] }}</td>
-                                    <td>{{ $cell['exam'] }}</td>
                                     <td><strong>{{ $cell['total'] }}</strong></td>
                                 @endforeach
                             </tr>
                         @empty
-                            <tr><td colspan="{{ 3 + 3 * $termCount }}" class="text-muted">No subjects</td></tr>
+                            <tr><td colspan="{{ 3 + 2 * $termCount }}" class="text-muted">No subjects</td></tr>
                         @endforelse
                         @if(count($mRows) > 0)
                             <tr class="table-secondary font-weight-bold">
@@ -91,21 +89,20 @@
                                 @foreach($terms as $t)
                                     @php $tot = $totalsByTerm[$t['id']] ?? null; @endphp
                                     <td>{{ $tot['test_sum'] ?? '—' }}</td>
-                                    <td>{{ $tot['exam_sum'] ?? '—' }}</td>
                                     <td>{{ $tot['total_sum'] ?? '—' }}</td>
                                 @endforeach
                             </tr>
                             <tr class="table-warning small">
                                 <td colspan="3" class="text-left">Position</td>
                                 @foreach($terms as $t)
-                                    <td colspan="3">{{ $positionByTerm[$t['id']] ?? '—' }}</td>
+                                    <td colspan="2">{{ $positionByTerm[$t['id']] ?? '—' }}</td>
                                 @endforeach
                             </tr>
                             <tr class="table-light small">
                                 <td colspan="3" class="text-left">Average %</td>
                                 @foreach($terms as $t)
                                     @php $avg = $averageByTerm[$t['id']] ?? null; @endphp
-                                    <td colspan="3">{{ $avg !== null ? number_format((float) $avg, 1).'%' : '—' }}</td>
+                                    <td colspan="2">{{ $avg !== null ? number_format((float) $avg, 1).'%' : '—' }}</td>
                                 @endforeach
                             </tr>
                         @endif

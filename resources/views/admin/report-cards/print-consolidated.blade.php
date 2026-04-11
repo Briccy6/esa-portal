@@ -334,7 +334,7 @@
         <h2>TRAINEE'S ASSESSMENT REPORT (ALL TERMS)</h2>
     </div>
     <div class="legend-section">
-        <strong>TEST</strong> = test average · <strong>EXAM</strong> = exam mark · <strong>TOT</strong> = total for the subject in that term · <strong>POSITION</strong> = student rank within class for that term (Rank/Total Students)
+        <strong>TEST</strong> = test average · <strong>TOT</strong> = total for the subject in that term · <strong>POSITION</strong> = student rank within class for that term (Rank/Total Students)
     </div>
 
     <table class="matrix-table">
@@ -342,10 +342,10 @@
             <tr class="bg-gray">
                 <th colspan="2" class="text-left">Competence / Credits</th>
                 @foreach($terms as $t)
-                    <th colspan="3" class="term-head">{{ $t['name'] }}</th>
+                    <th colspan="2" class="term-head">{{ $t['name'] }}</th>
                 @endforeach
                 @if(count($terms) > 1)
-                    <th colspan="3" class="term-head">ANNUAL</th>
+                    <th colspan="2" class="term-head">ANNUAL</th>
                 @endif
             </tr>
             <tr class="sub-head">
@@ -353,19 +353,17 @@
                 <th>Cr</th>
                 @foreach($terms as $t)
                     <th>TEST</th>
-                    <th>EXAM</th>
                     <th>TOT</th>
                 @endforeach
                 @if(count($terms) > 1)
                     <th>TEST</th>
-                    <th>EXAM</th>
                     <th>TOT</th>
                 @endif
             </tr>
         </thead>
         <tbody>
             <tr class="bg-blue">
-                <td colspan="{{ 2 + 3 * count($terms) + (count($terms) > 1 ? 3 : 0) }}" class="text-left font-bold" style="font-weight: bold;">Core competencies — specific</td>
+                <td colspan="{{ 2 + 2 * count($terms) + (count($terms) > 1 ? 2 : 0) }}" class="text-left font-bold" style="font-weight: bold;">Core competencies — specific</td>
             </tr>
             @forelse($mRows as $row)
                 <tr>
@@ -373,19 +371,16 @@
                     <td>{{ $row['credits'] }}</td>
                     @php
                         $annualTest = 0;
-                        $annualExam = 0;
                         $annualTotal = 0;
                         $termCount = 0;
                     @endphp
                     @foreach($terms as $t)
-                        @php $cell = $row['by_term_id'][$t['id']] ?? ['test' => '—', 'exam' => '—', 'total' => '—']; @endphp
+                        @php $cell = $row['by_term_id'][$t['id']] ?? ['test' => '—', 'total' => '—']; @endphp
                         <td>{{ $cell['test'] }}</td>
-                        <td>{{ $cell['exam'] }}</td>
                         <td style="font-weight: bold;">{{ $cell['total'] }}</td>
-                        @if(is_numeric($cell['test']) && is_numeric($cell['exam']) && is_numeric($cell['total']))
+                        @if(is_numeric($cell['test']) && is_numeric($cell['total']))
                             @php
                                 $annualTest += (float) $cell['test'];
-                                $annualExam += (float) $cell['exam'];
                                 $annualTotal += (float) $cell['total'];
                                 $termCount++;
                             @endphp
@@ -393,37 +388,33 @@
                     @endforeach
                     @if(count($terms) > 1)
                         <td>{{ $termCount > 0 ? number_format($annualTest / $termCount, 1) : '—' }}</td>
-                        <td>{{ $termCount > 0 ? number_format($annualExam / $termCount, 1) : '—' }}</td>
                         <td style="font-weight: bold;">{{ $termCount > 0 ? number_format($annualTotal / $termCount, 1) : '—' }}</td>
                     @endif
                 </tr>
             @empty
                 <tr>
-                    <td colspan="{{ 2 + 3 * count($terms) + (count($terms) > 1 ? 3 : 0) }}" style="padding: 12px; color: #666;">No assessment data</td>
+                    <td colspan="{{ 2 + 2 * count($terms) + (count($terms) > 1 ? 2 : 0) }}" style="padding: 12px; color: #666;">No assessment data</td>
                 </tr>
             @endforelse
 
             @if(count($mRows) > 0)
                 <tr class="bg-white">
-                    <td colspan="{{ 2 + 3 * count($terms) + (count($terms) > 1 ? 3 : 0) }}"></td>
+                    <td colspan="{{ 2 + 2 * count($terms) + (count($terms) > 1 ? 2 : 0) }}"></td>
                 </tr>
                 <tr class="bg-blue" style="font-weight: bold;">
                     <td colspan="2" class="text-left">TOTAL</td>
                     @php
                         $annualTestTotal = 0;
-                        $annualExamTotal = 0;
                         $annualGrandTotal = 0;
                         $termCountForTotal = 0;
                     @endphp
                     @foreach($terms as $t)
                         @php $tot = $totalsByTerm[$t['id']] ?? null; @endphp
                         <td>{{ $tot['test_sum'] ?? '—' }}</td>
-                        <td>{{ $tot['exam_sum'] ?? '—' }}</td>
                         <td>{{ $tot['total_sum'] ?? '—' }}</td>
-                        @if($tot && is_numeric($tot['test_sum']) && is_numeric($tot['exam_sum']) && is_numeric($tot['total_sum']))
+                        @if($tot && is_numeric($tot['test_sum']) && is_numeric($tot['total_sum']))
                             @php
                                 $annualTestTotal += (float) $tot['test_sum'];
-                                $annualExamTotal += (float) $tot['exam_sum'];
                                 $annualGrandTotal += (float) $tot['total_sum'];
                                 $termCountForTotal++;
                             @endphp
@@ -431,19 +422,16 @@
                     @endforeach
                     @if(count($terms) > 1)
                         <td>{{ $termCountForTotal > 0 ? number_format($annualTestTotal / $termCountForTotal, 1) : '—' }}</td>
-                        <td>{{ $termCountForTotal > 0 ? number_format($annualExamTotal / $termCountForTotal, 1) : '—' }}</td>
                         <td>{{ $termCountForTotal > 0 ? number_format($annualGrandTotal / $termCountForTotal, 1) : '—' }}</td>
                     @endif
                 </tr>
                 <tr class="bg-yellow" style="font-weight: bold;">
                     <td colspan="2" class="text-left">POSITION (Rank/Total)</td>
                     @foreach($terms as $t)
-                        <td></td>
-                        <td></td>
-                        <td class="text-center" style="font-weight: bold; font-size: 7px;">{{ $positionByTerm[$t['id']] ?? '—' }}</td>
+                        <td colspan="2" class="text-center" style="font-weight: bold; font-size: 7px;">{{ $positionByTerm[$t['id']] ?? '—' }}</td>
                     @endforeach
                     @if(count($terms) > 1)
-                        <td colspan="3" class="text-center">—</td>
+                        <td colspan="2" class="text-center">—</td>
                     @endif
                 </tr>
                 <tr class="bg-gray" style="font-weight: bold;">
@@ -454,9 +442,7 @@
                     @endphp
                     @foreach($terms as $t)
                         @php $avg = $averageByTerm[$t['id']] ?? null; @endphp
-                        <td></td>
-                        <td></td>
-                        <td>{{ $avg !== null ? number_format((float) $avg, 1).'%' : '—' }}</td>
+                        <td colspan="2">{{ $avg !== null ? number_format((float) $avg, 1).'%' : '—' }}</td>
                         @if($avg !== null)
                             @php
                                 $annualPercentage += (float) $avg;
@@ -465,9 +451,7 @@
                         @endif
                     @endforeach
                     @if(count($terms) > 1)
-                        <td></td>
-                        <td></td>
-                        <td>{{ $percentTermCount > 0 ? number_format($annualPercentage / $percentTermCount, 1).'%' : '—' }}</td>
+                        <td colspan="2">{{ $percentTermCount > 0 ? number_format($annualPercentage / $percentTermCount, 1).'%' : '—' }}</td>
                     @endif
                 </tr>
             @endif

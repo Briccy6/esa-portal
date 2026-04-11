@@ -211,20 +211,18 @@ class ReportCardController extends Controller
                 if ($sub) {
                     $byTermId[$tid] = [
                         'test' => $this->formatMarkForMatrix($sub->test_average),
-                        'exam' => $this->formatMarkForMatrix($sub->exam_mark),
-                        'total' => $this->formatMarkForMatrix($sub->total_mark),
+                        // Only show test marks - skip exam marks
+                        'total' => $this->formatMarkForMatrix($sub->test_average),
                         'obs' => ($sub->grade === 'A' || $sub->grade === 'B' ? 'C' : 'NYC'),
                     ];
                     \Log::debug("Subject {$meta['competence_title']} - Term {$tid}:", [
-                        'raw_exam_mark' => $sub->exam_mark,
                         'raw_test_average' => $sub->test_average,
-                        'raw_total_mark' => $sub->total_mark,
+                        'raw_total_mark' => $sub->test_average,
                         'formatted_marks' => $byTermId[$tid],
                     ]);
                 } else {
                     $byTermId[$tid] = [
                         'test' => '—',
-                        'exam' => '—',
                         'total' => '—',
                         'obs' => '—',
                     ];
@@ -247,8 +245,8 @@ class ReportCardController extends Controller
             $totalsByTerm[$tid] = [
                 'credits_sum' => (int) $rc->subjects->sum(fn ($s) => (int) ($s->credits ?? 3)),
                 'test_sum' => $this->formatMarkForMatrix($rc->subjects->sum('test_average')),
-                'exam_sum' => $this->formatMarkForMatrix($rc->subjects->sum('exam_mark')),
-                'total_sum' => $this->formatMarkForMatrix($rc->subjects->sum('total_mark')),
+                // Only show test sum - skip exam sum
+                'total_sum' => $this->formatMarkForMatrix($rc->subjects->sum('test_average')),
             ];
             $positionByTerm[$tid] = $rc->position_display;
             $averageByTerm[$tid] = $rc->average_marks;
