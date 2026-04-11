@@ -205,6 +205,101 @@ class StudentController extends Controller
         return view('students.create', compact('branches', 'courses', 'academicYears'));
     }
 
+    /**
+     * Store a newly created student in storage (staff/accountant registration with optional cash payment)
+     */
+    public function store(Request $request)
+    {
+        try {
+            // Validate input
+            $validated = $request->validate([
+                'full_name'         => 'required|string|max:255',
+                'email'             => 'nullable|email|unique:students,email',
+                'phone'             => 'required|string|max:20',
+                'sex'               => 'required|in:Male,Female,Other',
+                'branch_id'         => 'required|exists:branches,id',
+                'course_id'         => 'required|exists:courses,id',
+                'academic_year_id'  => 'required|exists:academic_years,id',
+                'fee_type'          => 'nullable|string|in:registration_fee,school_fee,trip_fee,practical_fee,student_card',
+                'amount_paid'       => 'nullable|numeric|min:0',
+            ]);
+
+            DB::beginTransaction();
+
+            // Generate unique registration number
+            $course = Course::findOrFail($validated['course_id']);
+            $academicYear = AcademicYear::findOrFail($validated['academic_year_id']);
+            
+            $maxAttempts = 5;
+            $student = null;
+
+            for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+                try {
+                    $regNumber = $this->generateUniqueRegNumber($course->abbreviation, $academicYear->year);
+
+                    $student = Student::create([
+                        'full_name'        => $validated['full_name'],
+                        'email'            => $validated['email'] ?? 'noemail+' . uniqid() . '@example.com', // Generate temporary email if not provided
+                        'phone'            => $validated['phone'],
+                        'sex'              => $validated['sex'],
+                        'branch_id'        => $validated['branch_id'],
+                        'course_id'        => $validated['course_id'],
+                        'academic_year_id' => $validated['academic_year_id'],
+                        'reg_number'       => $regNumber,
+                        'password'         => bcrypt(Str::random(12)), // Random password for manual registration
+                    ]);
+
+                    break;
+
+                } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
+                    if ($attempt === $maxAttempts) {
+                        DB::rollBack();
+                        return back()->with('error', 'Unable to generate unique registration number. Please try again.');
+                    }
+                    usleep(100000);
+                    continue;
+                }
+            }
+
+            if (!$student) {
+                DB::rollBack();
+                return back()->with('error', 'Failed to create student record.');
+            }
+
+            $student->initializeTokens(10);
+
+            // Record cash payment if provided
+            if (!empty($validated['fee_type']) && !empty($validated['amount_paid']) && $validated['amount_paid'] > 0) {
+                StudentTransaction::create([
+                    'student_id' => $student->id,
+                    'tx_ref'     => 'CASH-' . $student->id . '-' . time() . '-' . uniqid(),
+                    'type'       => $validated['fee_type'],
+                    'amount'     => $validated['amount_paid'],
+                    'currency'   => 'RWF',
+                    'status'     => 'successful',
+                    'meta'       => json_encode([
+                        'method'      => 'cash',
+                        'recorded_by' => auth()->user()->name ?? auth()->user()->email ?? 'staff',
+                    ]),
+                    'paid_at'    => now(),
+                ]);
+            }
+
+            DB::commit();
+
+            return back()->with('success', 'Student registered successfully! Registration Number: ' . $student->reg_number);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return back()->withErrors($e->errors())->withInput();
+        } catch (\Exception $e) {
+            \Log::error('Student creation error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return back()->with('error', 'An error occurred while creating the student: ' . $e->getMessage())->withInput();
+        }
+    }
+
     public function getAcademicYears()
     {
         return AcademicYear::orderByDesc('starting_date')->get();
