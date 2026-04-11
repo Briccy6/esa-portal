@@ -551,19 +551,23 @@ class MarksController extends Controller
                 $subject->credits = 3;
                 
                 // ================================================================
-                // CALCULATE TEST MARKS (multiple marks average to 100)
+                // CALCULATE TEST MARKS (sum all test values, then normalize to 100)
                 // ================================================================
                 $testMarks = $lessonMarks->where('assessment_type', 'test');
                 if ($testMarks->isNotEmpty()) {
-                    // Convert all test marks to 100-point scale, then average
-                    $testValuesNormalized = $testMarks->map(function($mark) {
-                        // If mark is on different scale, convert to 100
-                        if ($mark->marks_out_of && $mark->marks_out_of > 0 && $mark->marks_out_of != 100) {
-                            return ($mark->value / $mark->marks_out_of) * 100;
-                        }
-                        return $mark->value; // Already on 100 scale
+                    // Sum all test values and all marks_out_of
+                    $totalTestValue = $testMarks->sum('value');
+                    $totalTestOutOf = $testMarks->sum(function($mark) {
+                        // If marks_out_of is null or 0, treat as 100
+                        return ($mark->marks_out_of && $mark->marks_out_of > 0) ? $mark->marks_out_of : 100;
                     });
-                    $subject->test_average = $testValuesNormalized->avg();
+                    
+                    // Normalize total to 100-point scale: (total_value / total_out_of) * 100
+                    if ($totalTestOutOf > 0) {
+                        $subject->test_average = ($totalTestValue / $totalTestOutOf) * 100;
+                    } else {
+                        $subject->test_average = 0;
+                    }
                 } else {
                     $subject->test_average = 0;
                 }
@@ -571,15 +575,22 @@ class MarksController extends Controller
                 $subject->test_average = min($subject->test_average, 100);
                 
                 // ================================================================
-                // CALCULATE EXAM MARKS (on 100 scale)
+                // CALCULATE EXAM MARKS (sum all exam values, then normalize to 100)
                 // ================================================================
-                $examMark = $lessonMarks->where('assessment_type', 'exam')->first();
-                if ($examMark) {
-                    // Convert exam mark to 100-point scale if needed
-                    if ($examMark->marks_out_of && $examMark->marks_out_of > 0 && $examMark->marks_out_of != 100) {
-                        $subject->exam_mark = ($examMark->value / $examMark->marks_out_of) * 100;
+                $examMarks = $lessonMarks->where('assessment_type', 'exam');
+                if ($examMarks->isNotEmpty()) {
+                    // Sum all exam values and marks_out_of
+                    $totalExamValue = $examMarks->sum('value');
+                    $totalExamOutOf = $examMarks->sum(function($mark) {
+                        // If marks_out_of is null or 0, treat as 100
+                        return ($mark->marks_out_of && $mark->marks_out_of > 0) ? $mark->marks_out_of : 100;
+                    });
+                    
+                    // Normalize total to 100-point scale
+                    if ($totalExamOutOf > 0) {
+                        $subject->exam_mark = ($totalExamValue / $totalExamOutOf) * 100;
                     } else {
-                        $subject->exam_mark = $examMark->value;
+                        $subject->exam_mark = 0;
                     }
                 } else {
                     $subject->exam_mark = 0;
@@ -642,29 +653,37 @@ class MarksController extends Controller
                 
                 $classStudentLessonMarks = $classStudentMarks->groupBy('lesson_id');
                 foreach ($classStudentLessonMarks as $clessonId => $clessonMarks) {
-                    // Test marks (convert to 100)
+                    // Test marks: sum all values and marks_out_of, then normalize
                     $ctestMarks = $clessonMarks->where('assessment_type', 'test');
                     $ctestAvg = 0;
                     if ($ctestMarks->isNotEmpty()) {
-                        $ctestValuesNormalized = $ctestMarks->map(function($mark) {
-                            if ($mark->marks_out_of && $mark->marks_out_of > 0 && $mark->marks_out_of != 100) {
-                                return ($mark->value / $mark->marks_out_of) * 100;
-                            }
-                            return $mark->value;
+                        // Sum all test values and marks_out_of
+                        $ctotalTestValue = $ctestMarks->sum('value');
+                        $ctotalTestOutOf = $ctestMarks->sum(function($mark) {
+                            return ($mark->marks_out_of && $mark->marks_out_of > 0) ? $mark->marks_out_of : 100;
                         });
-                        $ctestAvg = $ctestValuesNormalized->avg();
+                        
+                        // Normalize to 100
+                        if ($ctotalTestOutOf > 0) {
+                            $ctestAvg = ($ctotalTestValue / $ctotalTestOutOf) * 100;
+                        }
                     }
                     // Cap test average at 100
                     $ctestAvg = min($ctestAvg, 100);
                     
-                    // Exam marks (convert to 100)
-                    $cexamMark = $clessonMarks->where('assessment_type', 'exam')->first();
+                    // Exam marks: sum all values and marks_out_of, then normalize
+                    $cexamMarks = $clessonMarks->where('assessment_type', 'exam');
                     $cexamValue = 0;
-                    if ($cexamMark) {
-                        if ($cexamMark->marks_out_of && $cexamMark->marks_out_of > 0 && $cexamMark->marks_out_of != 100) {
-                            $cexamValue = ($cexamMark->value / $cexamMark->marks_out_of) * 100;
-                        } else {
-                            $cexamValue = $cexamMark->value;
+                    if ($cexamMarks->isNotEmpty()) {
+                        // Sum all exam values and marks_out_of
+                        $ctotalExamValue = $cexamMarks->sum('value');
+                        $ctotalExamOutOf = $cexamMarks->sum(function($mark) {
+                            return ($mark->marks_out_of && $mark->marks_out_of > 0) ? $mark->marks_out_of : 100;
+                        });
+                        
+                        // Normalize to 100
+                        if ($ctotalExamOutOf > 0) {
+                            $cexamValue = ($ctotalExamValue / $ctotalExamOutOf) * 100;
                         }
                     }
                     // Cap exam value at 100

@@ -97,20 +97,16 @@ class ReportCardSubject extends Model
             return;
         }
 
-        $totalNormalized = 0;
-        $totalWeight = 0;
-
-        foreach ($testMarks as $testMark) {
-            $totalNormalized += $testMark->normalized_mark * $testMark->weight;
-            $totalWeight += $testMark->weight;
-        }
-
-        if ($totalWeight > 0) {
-            $this->test_average = $totalNormalized / $totalWeight;
-            $this->test_total = $testMarks->sum('original_mark');
+        // Sum all original marks and all max marks, then normalize
+        $totalOriginalMarks = $testMarks->sum('original_mark');
+        $totalMaxMarks = $testMarks->sum('max_mark');
+        $this->test_total = $totalOriginalMarks;
+        
+        // Calculate average by summing values and max marks, then normalizing to 100
+        if ($totalMaxMarks > 0) {
+            $this->test_average = ($totalOriginalMarks / $totalMaxMarks) * 100;
         } else {
             $this->test_average = 0;
-            $this->test_total = 0;
         }
         
         // Cap test_average at 100

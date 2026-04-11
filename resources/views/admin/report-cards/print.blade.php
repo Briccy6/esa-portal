@@ -36,7 +36,7 @@
         .print-area {
             width: 100%;
             max-width: 170mm;
-            margin: 0 auto;
+            margin: 20mm auto 0;
             padding: 0;
             box-sizing: border-box;
             border: 2px solid black;

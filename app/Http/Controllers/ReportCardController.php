@@ -1396,18 +1396,20 @@ class ReportCardController extends Controller
             // Calculate exam mark (normalized to 100)
             $examMark = 0;
             if ($examMarks->isNotEmpty()) {
-                // For exam marks, take the first exam mark (exams are typically 1 per subject per term)
-                $firstExamMark = $examMarks->first();
+                // Sum all exam values and marks_out_of
+                $totalExamValue = $examMarks->sum('value');
+                $totalExamOutOf = $examMarks->sum(function($mark) {
+                    // Use marks_out_of from mark, or exam relation, or default to 100
+                    if ($mark->marks_out_of && $mark->marks_out_of > 0) {
+                        return $mark->marks_out_of;
+                    }
+                    $examTotalMarks = $mark->exam ? $mark->exam->total_marks : 100;
+                    return $examTotalMarks > 0 ? $examTotalMarks : 100;
+                });
                 
-                // Get total_marks from the exam relationship
-                $examTotalMarks = $firstExamMark->exam ? $firstExamMark->exam->total_marks : 100;
-                
-                // Always normalize to 100-point scale
-                if ($examTotalMarks && $examTotalMarks > 0) {
-                    $examMark = ($firstExamMark->value / $examTotalMarks) * 100;
-                } else {
-                    // If no total_marks, assume it's already on 0-100 scale
-                    $examMark = (float) $firstExamMark->value;
+                // Normalize to 100-point scale
+                if ($totalExamOutOf > 0) {
+                    $examMark = ($totalExamValue / $totalExamOutOf) * 100;
                 }
                 
                 // Cap exam mark at 100
@@ -1416,8 +1418,8 @@ class ReportCardController extends Controller
                 \Log::info('Exam marks calculated: ' . json_encode([
                     'lesson_id' => $lesson->id,
                     'exam_marks_count' => $examMarks->count(),
-                    'first_exam_value' => $firstExamMark->value,
-                    'exam_total_marks' => $examTotalMarks,
+                    'total_exam_value' => $totalExamValue,
+                    'total_exam_out_of' => $totalExamOutOf,
                     'normalized_exam_mark' => $examMark
                 ]));
             }
