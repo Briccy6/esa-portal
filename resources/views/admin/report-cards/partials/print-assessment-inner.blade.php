@@ -132,12 +132,12 @@
                     $totalTest = $reportCard->subjects->sum('test_average');
                     $totalExam = $reportCard->subjects->sum('exam_mark');
                     $totalMark = $reportCard->subjects->sum('total_mark');
-                    $totalStatus = $totalMark >= 50 ? 'PASS' : 'FAIL';
+                    $totalStatus = $totalMark >= ($reportCard->subjects->count() * 50) ? 'PASS' : 'FAIL';
                 @endphp
-                <td>{{ number_format(min($totalTest, 100), 1) }}</td>
-                <td>{{ number_format(min($totalExam, 100), 1) }}</td>
-                <td class="font-bold">{{ number_format(min($totalMark, 100), 1) }}</td>
-                <td class="font-bold">{{ number_format(min($totalMark, 100), 1) }}%</td>
+                <td>{{ number_format($totalTest, 1) }}</td>
+                <td>{{ number_format($totalExam, 1) }}</td>
+                <td class="font-bold">{{ number_format($totalMark, 1) }}</td>
+                <td class="font-bold">{{ number_format($totalMark, 1) }}%</td>
                 <td class="font-bold">{{ $totalStatus }}</td>
             </tr>
 
