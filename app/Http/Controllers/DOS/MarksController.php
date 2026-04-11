@@ -588,7 +588,15 @@ class MarksController extends Controller
                     $totalExamValue = $examMarks->sum('value');
                     $totalExamOutOf = $examMarks->sum(function($mark) {
                         // If marks_out_of is null or 0, treat as 100
-                        return ($mark->marks_out_of && $mark->marks_out_of > 0) ? $mark->marks_out_of : 100;
+                        $mofo = ($mark->marks_out_of && $mark->marks_out_of > 0) ? $mark->marks_out_of : 100;
+                        
+                        // Validate: marks_out_of should be >= the value
+                        if ($mofo < $mark->value) {
+                            \Log::warning('[Marks Validation DOS 2] marks_out_of (' . $mofo . ') is less than value (' . $mark->value . ') for mark ID ' . $mark->id);
+                            $mofo = 100;
+                        }
+                        
+                        return $mofo;
                     });
                     
                     // Normalize total to 100-point scale
@@ -690,7 +698,15 @@ class MarksController extends Controller
                         // Sum all exam values and marks_out_of
                         $ctotalExamValue = $cexamMarks->sum('value');
                         $ctotalExamOutOf = $cexamMarks->sum(function($mark) {
-                            return ($mark->marks_out_of && $mark->marks_out_of > 0) ? $mark->marks_out_of : 100;
+                            $mofo = ($mark->marks_out_of && $mark->marks_out_of > 0) ? $mark->marks_out_of : 100;
+                            
+                            // Validate: marks_out_of should be >= the value
+                            if ($mofo < $mark->value) {
+                                \Log::warning('[Marks Validation DOS] marks_out_of (' . $mofo . ') is less than value (' . $mark->value . ') for mark ID ' . $mark->id);
+                                $mofo = 100;
+                            }
+                            
+                            return $mofo;
                         });
                         
                         // Normalize to 100

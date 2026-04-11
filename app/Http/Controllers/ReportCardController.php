@@ -1400,11 +1400,23 @@ class ReportCardController extends Controller
                 $totalExamValue = $examMarks->sum('value');
                 $totalExamOutOf = $examMarks->sum(function($mark) {
                     // Use marks_out_of from mark, or exam relation, or default to 100
+                    $mofo = 100; // default
+                    
                     if ($mark->marks_out_of && $mark->marks_out_of > 0) {
-                        return $mark->marks_out_of;
+                        $mofo = $mark->marks_out_of;
+                    } else {
+                        $examTotalMarks = $mark->exam ? $mark->exam->total_marks : 100;
+                        $mofo = $examTotalMarks > 0 ? $examTotalMarks : 100;
                     }
-                    $examTotalMarks = $mark->exam ? $mark->exam->total_marks : 100;
-                    return $examTotalMarks > 0 ? $examTotalMarks : 100;
+                    
+                    // Validate: marks_out_of should be >= the value obtained
+                    // If marks_out_of < value, use value as the max (means student got more than possible, use 100)
+                    if ($mofo < $mark->value) {
+                        \Log::warning('[Marks Validation] marks_out_of (' . $mofo . ') is less than value (' . $mark->value . ') for mark ID ' . $mark->id);
+                        $mofo = 100; // Use standard 100 instead of invalid value
+                    }
+                    
+                    return $mofo;
                 });
                 
                 // Normalize to 100-point scale

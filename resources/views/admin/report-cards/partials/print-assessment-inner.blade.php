@@ -102,15 +102,18 @@
             </tr>
             @foreach($reportCard->subjects as $subject)
                 @php
-                    $status = ($subject->total_mark ?? 0) >= 50 ? 'PASS' : 'FAIL';
+                    $subjectTest = $subject->test_average ?? 0;
+                    $subjectExam = $subject->exam_mark ?? 0;
+                    $subjectAvg = ($subjectTest + $subjectExam) / 2;
+                    $status = $subjectAvg >= 50 ? 'PASS' : 'FAIL';
                 @endphp
                 <tr>
                     <td colspan="4" class="text-left">{{ $subject->subject_name }}</td>
                     <td>{{ $subject->credits ?? 3 }}</td>
-                    <td>{{ number_format(min($subject->test_average ?? 0, 100), 2) }}</td>
-                    <td>{{ number_format(min($subject->exam_mark ?? 0, 100), 2) }}</td>
-                    <td class="font-bold">{{ number_format(min($subject->total_mark ?? 0, 100), 2) }}</td>
-                    <td class="font-bold">{{ number_format(min($subject->total_mark ?? 0, 100), 2) }}%</td>
+                    <td>{{ number_format(min($subjectTest, 100), 2) }}</td>
+                    <td>{{ number_format(min($subjectExam, 100), 2) }}</td>
+                    <td class="font-bold">{{ number_format($subjectAvg, 2) }}</td>
+                    <td class="font-bold">{{ number_format($subjectAvg, 2) }}%</td>
                     <td class="font-bold">{{ $status }}</td>
                 </tr>
             @endforeach
