@@ -54,9 +54,9 @@
 <!-- Qualification Info -->
 <div class="qualification-section">
     <div class="qualification-row">
-        <div class="qualification-cell font-bold">Qualification code</div>
+        <div class="qualification-cell font-bold">{{ $reportCard->course->course_name ?? 'COURSE NAME' }}</div>
         <div class="qualification-cell">
-            <span class="font-bold">Qualification Title:</span> TVET CERTIFICATE III IN {{ $reportCard->course->course_name ?? 'SOFTWARE DEVELOPMENT' }}
+            <span class="font-bold">Qualification Title:</span> {{ $reportCard->course->course_type ?? 'TVET CERTIFICATE III' }}
         </div>
         <div class="qualification-cell"></div>
     </div>
