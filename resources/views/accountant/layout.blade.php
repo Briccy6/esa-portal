@@ -692,27 +692,27 @@
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="accountingDropdown">
                         <li>
-                            <a class="dropdown-item {{ request()->routeIs('accounting.cash-book') ? 'active' : '' }}" href="{{ route('admin.accounting.cashbook') }}">
+                            <a class="dropdown-item {{ request()->routeIs('accounting.cash-book') ? 'active' : '' }}" href="{{ route('accounting.cash-book') }}">
                                 <i class="fas fa-money-check-alt"></i> Cash Book
                             </a>
                         </li>
                         <li>
-                            <a class="dropdown-item {{ request()->routeIs('accounting.balance-sheet') ? 'active' : '' }}" href="{{ route('admin.accounting.balance-sheet') }}">
+                            <a class="dropdown-item {{ request()->routeIs('accounting.balance-sheet') ? 'active' : '' }}" href="{{ route('accounting.balance-sheet') }}">
                                 <i class="fas fa-balance-scale"></i> Balance Sheet
                             </a>
                         </li>
                         <li>
-                            <a class="dropdown-item {{ request()->routeIs('accounting.income-statement') ? 'active' : '' }}" href="{{ route('admin.accounting.income-statement') }}">
+                            <a class="dropdown-item {{ request()->routeIs('accounting.income-statement') ? 'active' : '' }}" href="{{ route('accounting.income-statement') }}">
                                 <i class="fas fa-chart-line"></i> Income Statement
                             </a>
                         </li>
                         <li>
-                            <a class="dropdown-item {{ request()->routeIs('accounting.trial-balance') ? 'active' : '' }}" href="{{ route('admin.accounting.trial-balance') }}">
+                            <a class="dropdown-item {{ request()->routeIs('accounting.trial-balance') ? 'active' : '' }}" href="{{ route('accounting.trial-balance') }}">
                                 <i class="fas fa-list-ol"></i> Trial Balance
                             </a>
                         </li>
                         <li>
-                            <a class="dropdown-item {{ request()->routeIs('accounting.general-ledger') ? 'active' : '' }}" href="{{ route('admin.accounting.general-ledger') }}">
+                            <a class="dropdown-item {{ request()->routeIs('accounting.general-ledger') ? 'active' : '' }}" href="{{ route('accounting.general-ledger') }}">
                                 <i class="fas fa-book-open"></i> General Ledger
                             </a>
                         </li>

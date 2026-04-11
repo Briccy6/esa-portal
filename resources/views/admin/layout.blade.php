@@ -1133,6 +1133,7 @@
                         </a>
                     </div>
                 </div>
+            </div>
 
             <!-- Reports -->
             <div class="nav-section" x-data="{ isOpen: false }">
