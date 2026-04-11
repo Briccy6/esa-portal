@@ -1290,9 +1290,9 @@ class StudentController extends Controller
         $totalAllTermsPaid = 0;
 
         if ($course) {
-            // Get all terms ordered by start date
+            // Get all terms ordered by start date (ASC = earliest first)
             $terms = Term::with('academicYear')
-                ->orderBy('start_date', 'desc')
+                ->orderBy('start_date', 'asc')
                 ->get();
 
             // ─── CHECK REGISTRATION FEE STATUS FOR ACADEMIC YEAR ─────────────────
@@ -1614,7 +1614,7 @@ class StudentController extends Controller
     public function showPaymentForm($studentId)
     {
         $student = Student::with('course', 'course.academicYear')->findOrFail($studentId);
-        $terms = Term::with('academicYear')->orderBy('start_date', 'desc')->get();
+        $terms = Term::with('academicYear')->orderBy('start_date', 'asc')->get();
         
         // Get pre-selected term if passed via query string
         $selectedTermId = request('term_id');
@@ -1708,66 +1708,23 @@ class StudentController extends Controller
                 }
             }
 
-            // Initialize Flutterwave payment
+            // Use FlutterwaveController's addPayment method to initialize payment
             $flutterwaveController = new FlutterwaveController();
             
-            // Create transaction reference
-            $txRef = strtoupper($feeType) . '-' . $student->id . '-' . time();
+            // Create a request object for the addPayment method
+            $paymentRequest = new Request([
+                'student_id' => $student->id,
+                'fee_type' => $feeType,
+                'amount' => $amount,
+                'total_fee' => $amount,
+                'term' => $student->academicYear->year ?? null,
+            ]);
 
-            try {
-                // Call Flutterwave API to initialize payment
-                $response = $flutterwaveController->initializePayment(
-                    amount: $amount,
-                    email: $student->email,
-                    fullname: $student->first_name . ' ' . $student->last_name,
-                    phone: $student->phone ?? '',
-                    txRef: $txRef,
-                    paymentType: 'student_fee',
-                    metadata: [
-                        'student_id' => $student->id,
-                        'fee_type' => $feeType,
-                        'fee_name' => $feeName . ' Fee',
-                    ]
-                );
-
-                if ($response['status'] === 'success') {
-                    // Store pending transaction record
-                    StudentTransaction::create([
-                        'student_id' => $student->id,
-                        'tx_ref' => $txRef,
-                        'type' => $feeType,
-                        'amount' => $amount,
-                        'currency' => 'RWF',
-                        'status' => 'pending',
-                        'meta' => json_encode([
-                            'method' => 'flutterwave',
-                            'payment_type' => 'student_fee',
-                            'fee_name' => $feeName . ' Fee',
-                        ]),
-                    ]);
-
-                    return response()->json([
-                        'success' => true,
-                        'message' => 'Payment initialized. Redirecting to payment gateway...',
-                        'payment_link' => $response['data']['link'] ?? $response['data']['authorization_url'] ?? null,
-                    ], 200);
-                } else {
-                    return response()->json([
-                        'success' => false,
-                        'message' => $response['message'] ?? 'Failed to initialize payment. Please try again.',
-                    ], 400);
-                }
-            } catch (\Exception $e) {
-                \Log::error('Flutterwave payment initialization failed', [
-                    'student_id' => $student->id,
-                    'error' => $e->getMessage()
-                ]);
-
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to initialize payment: ' . $e->getMessage(),
-                ], 500);
-            }
+            // Call the addPayment method which handles all Flutterwave integration
+            $response = $flutterwaveController->addPayment($paymentRequest);
+            
+            // Return the response from addPayment
+            return $response;
 
         } catch (\Exception $e) {
             \Log::error('Payment processing failed', [

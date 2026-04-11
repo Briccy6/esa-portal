@@ -403,7 +403,7 @@ class FlutterwaveController extends Controller
                 'tx_ref'          => $txRef,
                 'amount'          => $validated['amount'],
                 'currency'        => 'RWF',
-                'redirect_url'    => route('student.payment.callback'),
+                'redirect_url'    => route('payment.callback'),
                 'payment_options' => 'card,banktransfer,ussd,mobilemoneyruanda',
                 'meta'            => [
                     'student_id'         => $student->id,
