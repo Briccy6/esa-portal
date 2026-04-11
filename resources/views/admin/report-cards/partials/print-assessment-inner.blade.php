@@ -92,7 +92,6 @@
             <td class="bg-gray">EXAM</td>
             <td class="bg-gray">AVG</td>
             <td class="bg-gray">A.A</td>
-            <td class="bg-gray">R.E</td>
         </tr>
     </thead>
     <tbody>
@@ -104,12 +103,10 @@
                 <tr>
                     <td colspan="4" class="text-left">{{ $subject->subject_name }}</td>
                     <td>{{ $subject->credits ?? 3 }}</td>
-                    <td>{{ $subject->test_average ?? '-' }}</td>
-                    <td>{{ $subject->exam_mark ?? '-' }}</td>
-                    <td class="font-bold">{{ $subject->total_mark ?? '-' }}</td>
-                    <td class="font-bold">{{ number_format($subject->total_mark ?? 0, 2) }}%</td>
-                    <td class="font-bold">{{ $subject->grade === 'A' || $subject->grade === 'B' ? 'C' : 'NYC' }}</td>
-
+                    <td>{{ number_format(min($subject->test_average ?? 0, 100), 2) }}</td>
+                    <td>{{ number_format(min($subject->exam_mark ?? 0, 100), 2) }}</td>
+                    <td class="font-bold">{{ number_format(min($subject->total_mark ?? 0, 100), 2) }}</td>
+                    <td class="font-bold">{{ number_format(min($subject->total_mark ?? 0, 100), 2) }}%</td>
                 </tr>
             @endforeach
         @else
@@ -126,11 +123,15 @@
             </tr>
             <tr class="bg-blue font-bold">
                 <td colspan="5" class="text-left">TOTAL</td>
-                <td>{{ number_format($reportCard->subjects->sum('test_average'), 1) }}</td>
-                <td>{{ number_format($reportCard->subjects->sum('exam_mark'), 1) }}</td>
-                <td class="font-bold">{{ number_format($reportCard->subjects->sum('total_mark'), 1) }}</td>
-                <td class="font-bold">{{ number_format($reportCard->subjects->sum('total_mark'), 1) }}%</td>
-                <td class="font-bold">{{ $reportCard->average_marks >= 50 ? 'C' : 'NYC' }}</td>
+                @php
+                    $totalTest = $reportCard->subjects->sum('test_average');
+                    $totalExam = $reportCard->subjects->sum('exam_mark');
+                    $totalMark = $reportCard->subjects->sum('total_mark');
+                @endphp
+                <td>{{ number_format(min($totalTest, 100), 1) }}</td>
+                <td>{{ number_format(min($totalExam, 100), 1) }}</td>
+                <td class="font-bold">{{ number_format(min($totalMark, 100), 1) }}</td>
+                <td class="font-bold">{{ number_format(min($totalMark, 100), 1) }}%</td>
             </tr>
 
             <tr class="bg-yellow font-bold">

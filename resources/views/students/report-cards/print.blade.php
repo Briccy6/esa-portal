@@ -248,9 +248,9 @@
                     @foreach($reportCard->subjects as $subject)
                         <tr>
                             <td>{{ $subject->subject_name ?? 'N/A' }}</td>
-                            <td>{{ $subject->test_average ? number_format($subject->test_average, 1) : 'N/A' }}</td>
-                            <td>{{ $subject->exam_mark ? number_format($subject->exam_mark, 1) : 'N/A' }}</td>
-                            <td><strong>{{ $subject->total_mark ? number_format($subject->total_mark, 1) : 'N/A' }}</strong></td>
+                            <td>{{ $subject->test_average ? number_format(min($subject->test_average, 100), 1) : 'N/A' }}</td>
+                            <td>{{ $subject->exam_mark ? number_format(min($subject->exam_mark, 100), 1) : 'N/A' }}</td>
+                            <td><strong>{{ $subject->total_mark ? number_format(min($subject->total_mark, 100), 1) : 'N/A' }}</strong></td>
                             <td>
                                 <span class="grade grade-{{ strtolower($subject->grade ?? 'n') }}">
                                     {{ $subject->grade ?? 'N/A' }}
