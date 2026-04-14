@@ -7,7 +7,10 @@
     color: white;
     padding: 2rem 0;
     margin-bottom: 2rem;
+    margin-top: 1rem;
     border-radius: 15px;
+    position: relative;
+    z-index: 1;
 }
 
 .exams-header h1 {
@@ -27,6 +30,8 @@
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
     border: 1px solid #e5e7eb;
     margin-bottom: 2rem;
+    position: relative;
+    z-index: 1;
 }
 
 .exams-card .card-header {
@@ -34,6 +39,8 @@
     color: white;
     border: none;
     padding: 1.5rem;
+    z-index: 1;
+    position: relative;
 }
 
 .filters-card {
@@ -43,6 +50,8 @@
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
     border: 1px solid #e5e7eb;
     margin-bottom: 2rem;
+    position: relative;
+    z-index: 1;
 }
 
 .filters-card .card-header {
@@ -50,6 +59,8 @@
     color: white;
     border: none;
     padding: 1.5rem;
+    position: relative;
+    z-index: 1;
 }
 
 .form-label {
@@ -74,6 +85,8 @@
     border-radius: 10px;
     overflow: hidden;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    position: relative;
+    z-index: 1;
 }
 
 .exams-table .table {
@@ -236,6 +249,12 @@
     font-size: 0.875rem;
 }
 
+.container-fluid {
+    padding-top: 1rem !important;
+    position: relative;
+    z-index: 1;
+}
+
 @media (max-width: 768px) {
     .exams-table .table th {
         font-size: 0.75rem;
@@ -256,9 +275,9 @@
 @endsection
 
 @section('content')
-<div class="container-fluid">
+<div class="container-fluid" style="padding-top: 2rem;">
     <!-- Header -->
-    <div class="exams-header">
+    <div class="exams-header" style="margin-top: 0;">
         <div class="container">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
@@ -438,16 +457,19 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Render filtered exams
         filtered.forEach(exam => {
-            const courseBadges = exam.courses.slice(0, 2).map(c => 
-                `<span class="badge badge-custom badge-secondary">${c.course_name}</span>`
-            ).join('');
+            const courseBadges = exam.courses && exam.courses.length > 0 ? 
+                exam.courses.slice(0, 2).map(c => 
+                    `<span class="badge badge-custom badge-secondary" style="background: #6366f1; color: white; display: inline-block; margin-right: 3px;">${c.course_name}</span>`
+                ).join('') : '<span class="text-muted">No course</span>';
             
-            const extraCourses = exam.courses.length > 2 ? 
-                `<span class="badge badge-custom badge-secondary">+${exam.courses.length - 2}</span>` : '';
+            const extraCourses = exam.courses && exam.courses.length > 2 ? 
+                `<span class="badge badge-custom badge-secondary" style="background: #6366f1; color: white;">+${exam.courses.length - 2}</span>` : '';
+            
+            const examType = exam.exam_type || 'Unknown';
             
             const statusBadge = exam.is_public ? 
-                '<span class="badge badge-custom badge-success">Public</span>' :
-                '<span class="badge badge-custom badge-warning">Private</span>';
+                '<span class="badge badge-custom badge-success" style="background: #10b981; color: white;">Public</span>' :
+                '<span class="badge badge-custom badge-warning" style="background: #f59e0b; color: white;">Private</span>';
             
             const row = document.createElement('tr');
             row.innerHTML = `
@@ -455,11 +477,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     <strong>${exam.title}</strong>
                     ${exam.description ? `<br><small class="text-muted">${exam.description.substring(0, 50)}</small>` : ''}
                 </td>
-                <td>${courseBadges} ${extraCourses}</td>
+                <td style="min-width: 150px;">
+                    ${courseBadges} ${extraCourses}
+                </td>
                 <td>${new Date(exam.class_date).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'})}</td>
-                <td><span class="badge badge-custom badge-info">${exam.exam_type}</span></td>
+                <td>
+                    <span class="badge badge-custom badge-info" style="background: #06b6d4; color: white; display: inline-block;">${examType}</span>
+                </td>
                 <td><strong>${exam.total_marks}</strong></td>
-                <td>${statusBadge}</td>
+                <td>
+                    ${statusBadge}
+                </td>
                 <td>
                     <div class="btn-group" role="group">
                         <a href="/teacher/exams/${exam.id}" class="btn btn-action btn-view" title="View Exam">

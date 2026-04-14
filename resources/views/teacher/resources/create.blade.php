@@ -355,44 +355,97 @@
 </div>
 
 <script>
-    // Courses and lessons data
+    // Data from controller
+    const branchCourseData = @json($branchCourseData);
+    const branchLessonData = @json($branchLessonData);
     const coursesData = @json($courses);
+    const lessonsData = @json($lessons);
+
+    const branchSelect = document.getElementById('branch_id');
     const courseSelect = document.getElementById('course_id');
     const lessonSelect = document.getElementById('lesson_id');
     const submitBtn = document.getElementById('submitBtn');
 
     let validationState = {
+        branch: false,
         course: false,
         lesson: false,
         docFileOrLink: false
     };
 
-    // Populate lessons when course changes
-    courseSelect.addEventListener('change', function() {
-        const selectedCourseId = parseInt(this.value);
+    // Helper function to find course by ID
+    function getCourseById(courseId) {
+        return coursesData.find(c => c.id === courseId);
+    }
+
+    // Helper function to find lesson by ID
+    function getLessonById(lessonId) {
+        return lessonsData.find(l => l.id === lessonId);
+    }
+
+    // When branch changes, update courses
+    branchSelect.addEventListener('change', function() {
+        const selectedBranchId = parseInt(this.value);
+        
+        courseSelect.innerHTML = '<option value="">Select Course</option>';
+        courseSelect.disabled = true;
         lessonSelect.innerHTML = '<option value="">Select Lesson</option>';
         lessonSelect.disabled = true;
+        
+        validationState.branch = false;
+        validationState.course = false;
         validationState.lesson = false;
 
-        if (!selectedCourseId) {
-            validationState.course = false;
+        if (!selectedBranchId) {
             updateSubmitButton();
             return;
         }
 
-        const course = coursesData.find(c => c.id === selectedCourseId);
-        if (course && course.lessons && course.lessons.length > 0) {
-            course.lessons.forEach(lesson => {
-                lessonSelect.innerHTML += `<option value="${lesson.id}">${lesson.title}</option>`;
+        // Get courses for this branch
+        const courseIds = branchCourseData[selectedBranchId];
+        if (courseIds && courseIds.length > 0) {
+            courseIds.forEach(courseId => {
+                const course = getCourseById(courseId);
+                if (course) {
+                    courseSelect.innerHTML += `<option value="${course.id}">${course.course_name}</option>`;
+                }
             });
-            lessonSelect.disabled = false;
-            validationState.course = true;
-        } else {
-            validationState.course = false;
+            courseSelect.disabled = false;
+            validationState.branch = true;
         }
         updateSubmitButton();
     });
 
+    // When course changes, update lessons
+    courseSelect.addEventListener('change', function() {
+        const selectedBranchId = parseInt(branchSelect.value);
+        const selectedCourseId = parseInt(this.value);
+
+        lessonSelect.innerHTML = '<option value="">Select Lesson</option>';
+        lessonSelect.disabled = true;
+        validationState.course = false;
+        validationState.lesson = false;
+
+        if (!selectedCourseId) {
+            updateSubmitButton();
+            return;
+        }
+
+        // Get lessons for this branch and course
+        const key = `${selectedBranchId}_${selectedCourseId}`;
+        const lessons = branchLessonData[key];
+        
+        if (lessons && lessons.length > 0) {
+            lessons.forEach(lesson => {
+                lessonSelect.innerHTML += `<option value="${lesson.id}">${lesson.title}</option>`;
+            });
+            lessonSelect.disabled = false;
+            validationState.course = true;
+        }
+        updateSubmitButton();
+    });
+
+    // When lesson changes
     lessonSelect.addEventListener('change', function() {
         validationState.lesson = !!this.value;
         updateSubmitButton();
@@ -414,7 +467,7 @@
     }
 
     function updateSubmitButton() {
-        const isValid = validationState.course && validationState.lesson && validationState.docFileOrLink;
+        const isValid = validationState.branch && validationState.course && validationState.lesson && validationState.docFileOrLink;
         submitBtn.disabled = !isValid;
         if (!isValid) {
             submitBtn.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Please complete the form and provide either a document file or link';

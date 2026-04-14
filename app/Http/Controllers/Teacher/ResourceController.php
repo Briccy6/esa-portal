@@ -6,7 +6,8 @@ use Illuminate\Http\Request;
 use App\Models\Resource;
 use App\Models\Course;
 use App\Models\Lesson;
-use App\Models\Branch; 
+use App\Models\Branch;
+use App\Models\LessonBranchCourse; 
 class ResourceController extends Controller
 {
     public function index(Request $request)
@@ -42,7 +43,7 @@ class ResourceController extends Controller
         $teacher = auth('teacher')->user();
         
         // Load lesson_branch_course data for this teacher
-        $lessonBranchCourses = \App\Models\LessonBranchCourse::where('teacher_id', $teacher->id)
+        $lessonBranchCourses = LessonBranchCourse::where('teacher_id', $teacher->id)
             ->with(['branch:id,name', 'course:id,course_name', 'lesson:id,title,course_id'])
             ->get();
         
@@ -122,25 +123,41 @@ class ResourceController extends Controller
     
     public function store(Request $request)
     {
+        $teacher = auth('teacher')->user();
+        
         $request->validate([
             'branch_id' => 'required|exists:branches,id',
             'course_id' => 'required|exists:courses,id',
             'lesson_id' => 'required|exists:lessons,id',
             'youtube_link' => 'nullable|url',
-            'document_upload' => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx,txt,xls,xlsx|max:10240', // 10MB max
-            'document_name' => 'nullable|required_without:document_upload|url', // Required if no file upload
-            'video_upload' => 'nullable|file|mimes:mp4,avi,mov,wmv,flv,webm|max:102400', // 100MB max
+            'document_upload' => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx,txt,xls,xlsx|max:10240',
+            'document_name' => 'nullable|required_without:document_upload|url',
+            'video_upload' => 'nullable|file|mimes:mp4,avi,mov,wmv,flv,webm|max:102400',
         ]);
 
+        // Validate that this branch-course-lesson combination exists for this teacher in lesson_branch_course
+        $lessonBranchCourseExists = LessonBranchCourse::where([
+            'teacher_id' => $teacher->id,
+            'branch_id' => $request->branch_id,
+            'course_id' => $request->course_id,
+            'lesson_id' => $request->lesson_id,
+        ])->exists();
+
+        if (!$lessonBranchCourseExists) {
+            return redirect()->back()
+                ->withErrors(['lesson' => 'The selected lesson-branch-course combination is not available for you.'])
+                ->withInput();
+        }
+
         $resourceData = [
-            'teacher_id' => auth('teacher')->id(),
+            'teacher_id' => $teacher->id,
             'branch_id' => $request->branch_id,
             'course_id' => $request->course_id,
             'lesson_id' => $request->lesson_id,
             'youtube_link' => $request->youtube_link,
-            'price' => 0.00, // Default price
-            'is_free' => true, // Default to free
-            'is_public' => false, // Default to private (admin controls visibility)
+            'price' => 0.00,
+            'is_free' => true,
+            'is_public' => false,
         ];
 
         // Handle document upload or link
@@ -170,9 +187,6 @@ class ResourceController extends Controller
         }
 
         $resource = Resource::create($resourceData);
-        
-        // Note: Watermarks will be applied by admin when resource is made public
-        // Teachers only upload content, admins control pricing and visibility
 
         return redirect()->route('teacher.resources.index')->with('success', 'Resource uploaded successfully!');
     }
@@ -229,14 +243,67 @@ public function edit($id)
         ->where('teacher_id', $teacher->id)
         ->firstOrFail();
 
-    $branches = $teacher->branches;
-    $courses = $teacher->courses()->with('lessons:id,course_id,title')->get();
-    $lessons = Lesson::where('course_id', $resource->course_id)->get();
+    // Load lesson_branch_course data for this teacher
+    $lessonBranchCourses = LessonBranchCourse::where('teacher_id', $teacher->id)
+        ->with(['branch:id,name', 'course:id,course_name', 'lesson:id,title,course_id'])
+        ->get();
+    
+    // Get unique branches from lesson_branch_course
+    $branches = $lessonBranchCourses->pluck('branch')->unique('id')->values();
+    
+    // Organize data by branch and course for JavaScript
+    $branchCourseData = [];
+    $branchLessonData = [];
+    
+    foreach ($lessonBranchCourses as $lbc) {
+        $branchId = $lbc->branch_id;
+        $courseId = $lbc->course_id;
+        $lessonId = $lbc->lesson_id;
+        
+        // Build branch -> courses mapping
+        if (!isset($branchCourseData[$branchId])) {
+            $branchCourseData[$branchId] = [];
+        }
+        if (!in_array($courseId, $branchCourseData[$branchId])) {
+            $branchCourseData[$branchId][] = $courseId;
+        }
+        
+        // Build (branch, course) -> lessons mapping
+        $key = "{$branchId}_{$courseId}";
+        if (!isset($branchLessonData[$key])) {
+            $branchLessonData[$key] = [];
+        }
+        $branchLessonData[$key][] = [
+            'id' => $lessonId,
+            'title' => $lbc->lesson->title,
+        ];
+    }
+    
+    // Get course details for all courses used
+    $allCourseIds = array_unique(array_merge(...array_values($branchCourseData)));
+    $courses = \App\Models\Course::whereIn('id', $allCourseIds)->get();
+    
+    // Get all lessons used
+    $allLessonIds = [];
+    foreach ($branchLessonData as $lessons) {
+        foreach ($lessons as $lesson) {
+            $allLessonIds[] = $lesson['id'];
+        }
+    }
+    $lessons = \App\Models\Lesson::whereIn('id', array_unique($allLessonIds))->get();
     
     // Get announcements for teacher layout
     $announcements = \App\Models\Announcement::latest()->take(5)->get();
 
-    return view('teacher.resources.edit', compact('resource', 'branches', 'courses', 'lessons', 'announcements'));
+    return view('teacher.resources.edit', compact(
+        'resource',
+        'branches', 
+        'courses', 
+        'lessons', 
+        'branchCourseData',
+        'branchLessonData',
+        'announcements'
+    ));
 }
 public function update(Request $request, $id)
 {

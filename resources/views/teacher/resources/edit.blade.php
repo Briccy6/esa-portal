@@ -38,49 +38,9 @@
                     <div class="row g-4">
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="course_id" class="form-label">
-                                    <i class="fas fa-graduation-cap"></i>
-                                    Course
-                                </label>
-                                <select name="course_id" id="course_id" class="form-select" required>
-                                    <option value="">Select Course</option>
-                                    @foreach($courses as $course)
-                                        <option value="{{ $course->id }}" {{ $resource->course_id == $course->id ? 'selected' : '' }}>
-                                            {{ $course->course_name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                @error('course_id')
-                                    <div class="error-message show">{{ $message }}</div>
-                                @enderror
-                            </div>
-                        </div>
-
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="lesson_id" class="form-label">
-                                    <i class="fas fa-book-open"></i>
-                                    Lesson
-                                </label>
-                                <select name="lesson_id" id="lesson_id" class="form-select" required>
-                                    <option value="">Select Lesson</option>
-                                    @foreach($lessons as $lesson)
-                                        <option value="{{ $lesson->id }}" {{ $resource->lesson_id == $lesson->id ? 'selected' : '' }}>
-                                            {{ $lesson->title }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                @error('lesson_id')
-                                    <div class="error-message show">{{ $message }}</div>
-                                @enderror
-                            </div>
-                        </div>
-
-                        <div class="col-md-6">
-                            <div class="form-group">
                                 <label for="branch_id" class="form-label">
                                     <i class="fas fa-code-branch"></i>
-                                    Branch
+                                    Branch *
                                 </label>
                                 <select name="branch_id" id="branch_id" class="form-select" required>
                                     <option value="">Select Branch</option>
@@ -93,6 +53,49 @@
                                 @error('branch_id')
                                     <div class="error-message show">{{ $message }}</div>
                                 @enderror
+                                <div class="form-text">Select the branch first to see available courses</div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="course_id" class="form-label">
+                                    <i class="fas fa-graduation-cap"></i>
+                                    Course *
+                                </label>
+                                <select name="course_id" id="course_id" class="form-select" required>
+                                    <option value="">Select Course</option>
+                                    @foreach($courses as $course)
+                                        <option value="{{ $course->id }}" {{ $resource->course_id == $course->id ? 'selected' : '' }}>
+                                            {{ $course->course_name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('course_id')
+                                    <div class="error-message show">{{ $message }}</div>
+                                @enderror
+                                <div class="form-text">Select a course in the chosen branch</div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="lesson_id" class="form-label">
+                                    <i class="fas fa-book-open"></i>
+                                    Lesson *
+                                </label>
+                                <select name="lesson_id" id="lesson_id" class="form-select" required>
+                                    <option value="">Select Lesson</option>
+                                    @foreach($lessons as $lesson)
+                                        <option value="{{ $lesson->id }}" {{ $resource->lesson_id == $lesson->id ? 'selected' : '' }}>
+                                            {{ $lesson->title }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('lesson_id')
+                                    <div class="error-message show">{{ $message }}</div>
+                                @enderror
+                                <div class="form-text">Select a lesson in the chosen course</div>
                             </div>
                         </div>
 
@@ -178,4 +181,74 @@
         </div>
     </div>
 </div>
+
+<script>
+    // Data from controller
+    const branchCourseData = @json($branchCourseData);
+    const branchLessonData = @json($branchLessonData);
+    const coursesData = @json($courses);
+    const lessonsData = @json($lessons);
+
+    const branchSelect = document.getElementById('branch_id');
+    const courseSelect = document.getElementById('course_id');
+    const lessonSelect = document.getElementById('lesson_id');
+
+    // Helper function to find course by ID
+    function getCourseById(courseId) {
+        return coursesData.find(c => c.id === courseId);
+    }
+
+    // Helper function to find lesson by ID
+    function getLessonById(lessonId) {
+        return lessonsData.find(l => l.id === lessonId);
+    }
+
+    // When branch changes, update courses
+    branchSelect.addEventListener('change', function() {
+        const selectedBranchId = parseInt(this.value);
+        
+        courseSelect.innerHTML = '<option value="">Select Course</option>';
+        lessonSelect.innerHTML = '<option value="">Select Lesson</option>';
+        lessonSelect.disabled = true;
+
+        if (!selectedBranchId) {
+            return;
+        }
+
+        // Get courses for this branch
+        const courseIds = branchCourseData[selectedBranchId];
+        if (courseIds && courseIds.length > 0) {
+            courseIds.forEach(courseId => {
+                const course = getCourseById(courseId);
+                if (course) {
+                    courseSelect.innerHTML += `<option value="${course.id}">${course.course_name}</option>`;
+                }
+            });
+        }
+    });
+
+    // When course changes, update lessons
+    courseSelect.addEventListener('change', function() {
+        const selectedBranchId = parseInt(branchSelect.value);
+        const selectedCourseId = parseInt(this.value);
+
+        lessonSelect.innerHTML = '<option value="">Select Lesson</option>';
+        lessonSelect.disabled = true;
+
+        if (!selectedCourseId) {
+            return;
+        }
+
+        // Get lessons for this branch and course
+        const key = `${selectedBranchId}_${selectedCourseId}`;
+        const lessons = branchLessonData[key];
+        
+        if (lessons && lessons.length > 0) {
+            lessons.forEach(lesson => {
+                lessonSelect.innerHTML += `<option value="${lesson.id}">${lesson.title}</option>`;
+            });
+            lessonSelect.disabled = false;
+        }
+    });
+</script>
 @endsection
