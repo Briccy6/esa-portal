@@ -378,9 +378,7 @@
                 <td style="text-align:center;font-weight:700;font-size:.95rem;">${exam.total_marks ?? '—'}</td>
                 <td style="text-align:center;">${status}</td>
                 <td style="text-align:right;">
-                    // <a href="/teacher/exams/${exam.id}" class="btn-act btn-view">
-                    //     <i class="bi bi-eye"></i> View
-                    // </a>
+                    
                     <a href="/teacher/exams/${exam.id}/questions" class="btn-act btn-addq">
                         <i class="bi bi-plus-circle"></i> Add Q
                     </a>
