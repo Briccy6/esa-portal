@@ -228,6 +228,7 @@
                                 <th class="text-center"><i class="fas fa-medal me-1 text-warning"></i> Grade</th>
                                 <th class="text-center"><i class="fas fa-trophy me-1 text-info"></i> Position</th>
                                 <th class="text-center"><i class="fas fa-circle me-1 text-secondary"></i> Status</th>
+                                <th class="text-center"><i class="fas fa-wallet me-1 text-danger"></i> Fees Status</th>
                                 <th class="text-center"><i class="fas fa-cogs me-1 text-dark"></i> Actions</th>
                             </tr>
                         </thead>
@@ -381,6 +382,25 @@
                                         @endphp
                                         <div class="rc-term-metric rc-term-metric--center">
                                             <span class="rc-badge rc-badge--tiny {{ $sc }}">{{ ucfirst($reportCard->status) }}</span>
+                                        </div>
+                                    @endforeach
+                                </td>
+
+                                {{-- Fees status per term --}}
+                                <td class="text-center rc-cell-stack">
+                                    @foreach($group as $reportCard)
+                                        @php
+                                            $paymentStatus = \App\Services\FeePaymentService::getPaymentStatus($reportCard->student, [(int) $reportCard->term_id]);
+                                            $outstanding = (float) ($paymentStatus['outstanding'] ?? 0);
+                                        @endphp
+                                        <div class="rc-term-metric rc-term-metric--center">
+                                            @if($outstanding > 0)
+                                                <span class="rc-badge rc-badge--tiny rc-badge--red">
+                                                    Outstanding: {{ number_format($outstanding, 2) }}
+                                                </span>
+                                            @else
+                                                <span class="rc-badge rc-badge--tiny rc-badge--green">Paid</span>
+                                            @endif
                                         </div>
                                     @endforeach
                                 </td>
