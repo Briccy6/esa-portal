@@ -18,6 +18,9 @@
     @if(session('success'))
         <div class="alert alert-success">{{ session('success') }}</div>
     @endif
+    @if(session('warning'))
+        <div class="alert alert-warning">{{ session('warning') }}</div>
+    @endif
 
     <div class="card shadow-sm">
         <div class="table-responsive">
@@ -44,6 +47,11 @@
                                 <span class="badge bg-{{ $reportCard->status === 'approved' ? 'success' : ($reportCard->status === 'printed' ? 'info' : 'warning') }}">
                                     {{ ucfirst($reportCard->status ?? 'pending') }}
                                 </span>
+                                @if(!empty($reportCard->has_outstanding_fees))
+                                    <span class="badge bg-danger ms-1">
+                                        Outstanding: {{ number_format($reportCard->outstanding_amount ?? 0, 2) }}
+                                    </span>
+                                @endif
                             </td>
                             <td>{{ $reportCard->created_at?->format('Y-m-d H:i') }}</td>
                             <td class="d-flex gap-2 flex-wrap">
@@ -53,12 +61,17 @@
                                         <button class="btn btn-sm btn-success">Approve</button>
                                     </form>
                                 @endif
-                                <a class="btn btn-sm btn-outline-primary" target="_blank" href="{{ route('dos.report-cards.print', $reportCard) }}">
-                                    Print
-                                </a>
-                                <a class="btn btn-sm btn-outline-secondary" href="{{ route('dos.report-cards.download', $reportCard) }}">
-                                    Download
-                                </a>
+                                @if(empty($reportCard->has_outstanding_fees))
+                                    <a class="btn btn-sm btn-outline-primary" target="_blank" href="{{ route('dos.report-cards.print', $reportCard) }}">
+                                        Print
+                                    </a>
+                                    <a class="btn btn-sm btn-outline-secondary" href="{{ route('dos.report-cards.download', $reportCard) }}">
+                                        Download
+                                    </a>
+                                @else
+                                    <button class="btn btn-sm btn-outline-secondary" disabled title="Blocked until outstanding fees are cleared">Print blocked</button>
+                                    <button class="btn btn-sm btn-outline-secondary" disabled title="Blocked until outstanding fees are cleared">Download blocked</button>
+                                @endif
                             </td>
                         </tr>
                     @empty

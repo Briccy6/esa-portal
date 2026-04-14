@@ -279,6 +279,13 @@ class ReportCardController extends Controller
             abort(404);
         }
 
+        foreach ($reportCards as $reportCard) {
+            if ($this->reportCardHasOutstandingFees($reportCard)) {
+                return redirect()->route('admin.report-cards.index')
+                    ->with('warning', 'Cannot print/download report card while outstanding fees exist for the selected term.');
+            }
+        }
+
         if ($reportCards->count() === 1) {
             return redirect()->route('admin.report-cards.show', $reportCards->first());
         }
@@ -310,6 +317,13 @@ class ReportCardController extends Controller
 
         if ($reportCards->isEmpty()) {
             abort(404);
+        }
+
+        foreach ($reportCards as $reportCard) {
+            if ($this->reportCardHasOutstandingFees($reportCard)) {
+                return redirect()->route('admin.report-cards.index')
+                    ->with('warning', 'Cannot print/download report card while outstanding fees exist for the selected term.');
+            }
         }
 
         // Get the requested term IDs - if only 1 term was requested, use single report view
@@ -412,34 +426,9 @@ class ReportCardController extends Controller
                 ->withErrors(['term_ids' => 'Select at least one term.']);
         }
 
-        // Check if student has outstanding fees for the selected terms
+        // Keep fee checking, but do not block generation.
         $student = Student::find($request->student_id);
         $paymentStatus = FeePaymentService::getPaymentStatus($student, $termIds);
-        
-        if ($paymentStatus['outstanding'] > 0) {
-            \Log::warning("Report card generation rejected for student {$student->id} ({$student->full_name}): Outstanding fees: RWF " . number_format($paymentStatus['outstanding'], 2));
-            
-            // Return JSON for AJAX request with modal
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'has_outstanding_fees' => true,
-                    'student_id' => $student->id,
-                    'student_name' => $student->full_name,
-                    'student_email' => $student->email,
-                    'outstanding_amount' => $paymentStatus['outstanding'],
-                    'required_fees' => $paymentStatus['required_fees'],
-                    'total_paid' => $paymentStatus['total_paid'],
-                    'message' => "Cannot generate report card. Student has outstanding fees."
-                ]);
-            }
-
-            return redirect()->back()
-                ->withInput()
-                ->with('warning', "Cannot generate report card for {$student->full_name}. Outstanding fees: " . 
-                    config('app.currency_symbol', 'RWF') . " " . number_format($paymentStatus['outstanding'], 2) . 
-                    ". Use the 'Outstanding Fees' section to send payment reminder email.");
-        }
 
         $created = 0;
         $skipped = 0;
@@ -485,6 +474,9 @@ class ReportCardController extends Controller
             $msg .= "; skipped {$skipped} (already exist)";
         }
         $msg .= '.';
+        if (($paymentStatus['outstanding'] ?? 0) > 0) {
+            $msg .= ' Note: this student still has outstanding fees, so print/download stays blocked until payment is complete.';
+        }
 
         if ($created === 1 && $firstId) {
             return redirect()->route('admin.report-cards.show', $firstId)
@@ -1043,19 +1035,13 @@ class ReportCardController extends Controller
         $skipped = 0;
         $skippedFees = 0;
 
-        // IMPORTANT:
-        // If a student has outstanding fees for ANY of the selected terms,
-        // we must NOT generate report cards for that student (so they won't appear in print).
-        // But if they are fully paid for all selected terms, we generate for ALL selected terms.
-        $eligibleStudentIds = [];
+        // Keep outstanding-fees checking for visibility and reminders, but still generate cards.
         foreach ($students as $student) {
             $paymentStatus = FeePaymentService::getPaymentStatus($student, $termIds);
             if (($paymentStatus['outstanding'] ?? 0) > 0) {
                 $skippedFees++;
-                \Log::info("Student {$student->id} ({$student->full_name}): SKIPPED - Outstanding for selected terms RWF " . number_format((float) $paymentStatus['outstanding'], 2));
-                continue;
+                \Log::info("Student {$student->id} ({$student->full_name}): HAS OUTSTANDING RWF " . number_format((float) $paymentStatus['outstanding'], 2) . " - report will still be generated, output remains blocked.");
             }
-            $eligibleStudentIds[] = $student->id;
         }
 
         foreach ($termIds as $termId) {
@@ -1064,10 +1050,6 @@ class ReportCardController extends Controller
             \Log::info("  Term Name: {$termName}");
             
             foreach ($students as $student) {
-                if (! in_array($student->id, $eligibleStudentIds, true)) {
-                    continue;
-                }
-
                 $existing = ReportCard::where('student_id', $student->id)
                     ->where('academic_year_id', $request->academic_year_id)
                     ->where('term_id', $termId)
@@ -1104,7 +1086,7 @@ class ReportCardController extends Controller
             $message .= " Skipped {$skipped} duplicate(s).";
         }
         if ($skippedFees > 0) {
-            $message .= " Skipped {$skippedFees} student(s) with outstanding fees.";
+            $message .= " {$skippedFees} student(s) currently have outstanding fees (their print/download is blocked until outstanding is zero).";
         }
         $message .= " You can run this again after payment; only missing students will be generated.";
         
@@ -1122,6 +1104,11 @@ class ReportCardController extends Controller
 
    public function printReport(ReportCard $reportCard)
 {
+    if ($this->reportCardHasOutstandingFees($reportCard)) {
+        return redirect()->route('admin.report-cards.index')
+            ->with('warning', 'Cannot print/download report card while outstanding fees exist for this student/term.');
+    }
+
     \Log::info('🖨️ printReport (SINGLE CARD):', [
         'report_card_id' => $reportCard->id,
         'student_id' => $reportCard->student_id,
@@ -1208,6 +1195,14 @@ class ReportCardController extends Controller
             ->orderBy('students.full_name')
             ->select('report_cards.*')
             ->get();
+
+        $reportCards = $reportCards->filter(function ($reportCard) {
+            return ! $this->reportCardHasOutstandingFees($reportCard);
+        })->values();
+
+        $reportCards = $reportCards->filter(function ($reportCard) {
+            return ! $this->reportCardHasOutstandingFees($reportCard);
+        })->values();
         
         \Log::info('Print query results:', [
             'total_records' => $reportCards->count(),
@@ -1332,6 +1327,14 @@ class ReportCardController extends Controller
         }
 
         return [];
+    }
+
+    protected function reportCardHasOutstandingFees(ReportCard $reportCard): bool
+    {
+        $reportCard->loadMissing('student');
+        $paymentStatus = FeePaymentService::getPaymentStatus($reportCard->student, [(int) $reportCard->term_id]);
+
+        return ((float) ($paymentStatus['outstanding'] ?? 0)) > 0;
     }
 
     public function generateReportCardData(ReportCard $reportCard)

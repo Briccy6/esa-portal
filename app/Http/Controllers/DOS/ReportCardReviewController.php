@@ -5,6 +5,7 @@ namespace App\Http\Controllers\DOS;
 use App\Http\Controllers\Controller;
 use App\Models\ReportCard;
 use App\Models\SchoolInformation;
+use App\Services\FeePaymentService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -18,6 +19,14 @@ class ReportCardReviewController extends Controller
             ->orderByDesc('created_at')
             ->paginate(25)
             ->withQueryString();
+
+        $reportCards->getCollection()->transform(function (ReportCard $reportCard) {
+            $paymentStatus = FeePaymentService::getPaymentStatus($reportCard->student, [(int) $reportCard->term_id]);
+            $reportCard->has_outstanding_fees = ((float) ($paymentStatus['outstanding'] ?? 0)) > 0;
+            $reportCard->outstanding_amount = (float) ($paymentStatus['outstanding'] ?? 0);
+
+            return $reportCard;
+        });
 
         return view('staff.report-cards.index', compact('reportCards'));
     }
@@ -46,6 +55,10 @@ class ReportCardReviewController extends Controller
     private function pdfResponse(ReportCard $reportCard, bool $download)
     {
         $reportCard->load(['student', 'course', 'academicYear', 'term', 'approvedBy', 'subjects.lesson', 'subjects.testMarks.exam']);
+        $paymentStatus = FeePaymentService::getPaymentStatus($reportCard->student, [(int) $reportCard->term_id]);
+        if (((float) ($paymentStatus['outstanding'] ?? 0)) > 0) {
+            return back()->with('warning', 'Print/Download blocked. Student still has outstanding fees for this term.');
+        }
 
         $schoolInfo = SchoolInformation::getActive();
         [$studentPhotoBase64, $studentPhotoMime] = $this->resolveStudentPhotoData($reportCard->student->passport_photo);

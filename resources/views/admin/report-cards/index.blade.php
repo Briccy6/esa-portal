@@ -396,6 +396,10 @@
                                             'term_ids' => $termIdsInGroup,
                                         ];
                                         $multipleTermsInGroup = count($termIdsInGroup) > 1;
+                                    $hasOutstandingInGroup = $group->contains(function ($rc) {
+                                        $status = \App\Services\FeePaymentService::getPaymentStatus($rc->student, [(int) $rc->term_id]);
+                                        return ((float) ($status['outstanding'] ?? 0)) > 0;
+                                    });
                                     @endphp
                                     <div class="dropdown rc-student-actions">
                                         <button class="btn btn-sm btn-primary dropdown-toggle" type="button"
@@ -405,7 +409,7 @@
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end shadow-sm">
                                             {{-- View/Print Section --}}
-                                            @if($multipleTermsInGroup)
+                                            @if($multipleTermsInGroup && !$hasOutstandingInGroup)
                                                 <li>
                                                     <a href="{{ route('admin.report-cards.consolidated', $consolidatedQuery) }}" class="dropdown-item" target="_blank">
                                                         <i class="fas fa-eye me-2 text-info"></i> View all ({{ count($termIdsInGroup) }} terms)
@@ -416,7 +420,7 @@
                                                         <i class="fas fa-print me-2 text-success"></i> Print all ({{ count($termIdsInGroup) }} terms)
                                                     </a>
                                                 </li>
-                                            @else
+                                            @elseif(!$hasOutstandingInGroup)
                                                 @php $rc = $group->first(); @endphp
                                                 <li>
                                                     <a href="{{ route('admin.report-cards.show', $rc->id) }}" class="dropdown-item" target="_blank">
@@ -427,6 +431,12 @@
                                                     <a href="{{ route('admin.report-cards.print', $rc->id) }}" class="dropdown-item" target="_blank">
                                                         <i class="fas fa-print me-2 text-success"></i> Print
                                                     </a>
+                                                </li>
+                                            @else
+                                                <li>
+                                                    <span class="dropdown-item text-muted">
+                                                        <i class="fas fa-lock me-2 text-danger"></i> Print/Download blocked (Outstanding fees)
+                                                    </span>
                                                 </li>
                                             @endif
                                             <li><hr class="dropdown-divider"></li>
