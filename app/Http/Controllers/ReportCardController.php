@@ -74,6 +74,144 @@ class ReportCardController extends Controller
     }
 
     /**
+     * AJAX endpoint for searching and sorting report cards
+     * Returns JSON with paginated and filtered results
+     */
+    public function searchSort(Request $request)
+    {
+        $search = trim($request->get('search', ''));
+        $sort = $request->get('sort', 'newest');
+        $page = max(1, (int) $request->get('page', 1));
+        $perPage = 20;
+
+        // Get all report cards with relationships
+        $all = ReportCard::query()
+            ->with(['student.branch', 'course', 'academicYear', 'term'])
+            ->orderByDesc('created_at')
+            ->get();
+
+        // Group by student-course-year
+        $groups = $all
+            ->groupBy(fn (ReportCard $rc) => $rc->student_id.'-'.$rc->course_id.'-'.$rc->academic_year_id)
+            ->map(function ($items) {
+                return $items->sortBy(function (ReportCard $rc) {
+                    return $rc->term?->start_date?->timestamp ?? $rc->term_id;
+                })->values();
+            });
+
+        // Apply search filter
+        if ($search) {
+            $searchLower = strtolower($search);
+            $groups = $groups->filter(function ($group) use ($searchLower) {
+                $first = $group->first();
+                $student = $first->student->full_name ?? '';
+                $course = $first->course->course_name ?? '';
+                $branch = $first->student->branch->name ?? '';
+                $year = $first->academicYear->year ?? '';
+                $terms = $group->pluck('term.name')->implode(' ');
+                
+                $haystack = strtolower("$student $course $branch $year $terms");
+                return strpos($haystack, $searchLower) !== false;
+            })->values();
+        }
+
+        // Apply sorting based on sort parameter
+        $groups = $groups->sort(function ($a, $b) use ($sort) {
+            $aFirst = $a->first();
+            $bFirst = $b->first();
+
+            $aStudent = $aFirst->student->full_name ?? '';
+            $bStudent = $bFirst->student->full_name ?? '';
+            $aCourse = $aFirst->course->course_name ?? '';
+            $bCourse = $bFirst->course->course_name ?? '';
+            $aBranch = $aFirst->student->branch->name ?? '';
+            $bBranch = $bFirst->student->branch->name ?? '';
+            $aTs = $a->max('created_at')?->timestamp ?? 0;
+            $bTs = $b->max('created_at')?->timestamp ?? 0;
+            $aMinTs = $a->min('created_at')?->timestamp ?? 0;
+            $bMinTs = $b->min('created_at')?->timestamp ?? 0;
+
+            return match ($sort) {
+                'oldest' => $aMinTs <=> $bMinTs,
+                'student_asc' => $aStudent <=> $bStudent,
+                'student_desc' => $bStudent <=> $aStudent,
+                'class_asc' => $aCourse <=> $bCourse,
+                'class_desc' => $bCourse <=> $aCourse,
+                'branch_asc' => $aBranch <=> $bBranch,
+                'branch_desc' => $bBranch <=> $aBranch,
+                'outstanding_asc' => $this->getGroupOutstanding($a) <=> $this->getGroupOutstanding($b),
+                'outstanding_desc' => $this->getGroupOutstanding($b) <=> $this->getGroupOutstanding($a),
+                default => $bTs <=> $aTs, // newest
+            };
+        })->values();
+
+        // Apply pagination
+        $total = $groups->count();
+        $slice = $groups->slice(($page - 1) * $perPage, $perPage)->values();
+
+        return response()->json([
+            'success' => true,
+            'total' => $total,
+            'page' => $page,
+            'perPage' => $perPage,
+            'pages' => ceil($total / $perPage),
+            'results' => $slice->map(function ($group) {
+                $first = $group->first();
+                $overallAvg = (float) $group->avg('average_marks');
+                $overallGrade = match (true) {
+                    $overallAvg >= 90 => 'A+',
+                    $overallAvg >= 80 => 'A',
+                    $overallAvg >= 70 => 'B+',
+                    $overallAvg >= 60 => 'B',
+                    $overallAvg >= 50 => 'C',
+                    $overallAvg >= 40 => 'D',
+                    default => 'F',
+                };
+
+                $outstanding = 0;
+                foreach ($group as $rc) {
+                    $status = FeePaymentService::getPaymentStatus($rc->student, [(int) $rc->term_id]);
+                    $outstanding += (float) ($status['outstanding'] ?? 0);
+                }
+
+                return [
+                    'student_id' => $first->student_id,
+                    'student_name' => $first->student->full_name,
+                    'course_id' => $first->course_id,
+                    'course_name' => $first->course->course_name,
+                    'branch_name' => $first->student->branch->name ?? 'N/A',
+                    'year' => $first->academicYear->year,
+                    'overall_avg' => number_format($overallAvg, 1),
+                    'overall_grade' => $overallGrade,
+                    'outstanding' => number_format($outstanding, 2),
+                    'terms' => $group->pluck('term.name')->filter()->values()->all(),
+                    'group_data' => [
+                        'student' => strtolower($first->student->full_name ?? ''),
+                        'course' => strtolower($first->course->course_name ?? ''),
+                        'branch' => strtolower($first->student->branch->name ?? ''),
+                        'year' => strtolower($first->academicYear->year ?? ''),
+                        'terms' => strtolower($group->pluck('term.name')->implode(' ')),
+                        'generated_at' => $group->max('created_at')?->timestamp ?? 0,
+                    ]
+                ];
+            })->all(),
+        ]);
+    }
+
+    /**
+     * Calculate total outstanding fees for a group of report cards
+     */
+    private function getGroupOutstanding($group)
+    {
+        $outstanding = 0;
+        foreach ($group as $rc) {
+            $status = FeePaymentService::getPaymentStatus($rc->student, [(int) $rc->term_id]);
+            $outstanding += (float) ($status['outstanding'] ?? 0);
+        }
+        return $outstanding;
+    }
+
+    /**
      * All report cards for one student + course + academic year.
      * Optional query: term_ids[] or term_id — when set, only those terms are included
      * (matches what the admin selected for generation or what you pass from the list/detail screen).

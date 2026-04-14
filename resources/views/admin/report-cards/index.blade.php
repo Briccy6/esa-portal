@@ -166,11 +166,17 @@
         <div class="rc-card__body p-0">
             <div class="p-3 border-bottom bg-light d-flex gap-2 flex-wrap align-items-center">
                 <input type="text" id="reportSearchInput" class="form-control" style="max-width: 360px;" placeholder="Live search student, course, branch, year, term...">
-                <select id="reportSortSelect" class="form-select" style="max-width: 240px;">
+                <select id="reportSortSelect" class="form-select" style="max-width: 280px;">
                     <option value="newest">Newest generated first</option>
                     <option value="oldest">Oldest generated first</option>
                     <option value="student_asc">Student name (A-Z)</option>
                     <option value="student_desc">Student name (Z-A)</option>
+                    <option value="class_asc">Class / Course (A-Z)</option>
+                    <option value="class_desc">Class / Course (Z-A)</option>
+                    <option value="branch_asc">Branch (A-Z)</option>
+                    <option value="branch_desc">Branch (Z-A)</option>
+                    <option value="outstanding_desc">Outstanding fees (High to Low)</option>
+                    <option value="outstanding_asc">Outstanding fees (Low to High)</option>
                 </select>
             </div>
             @if($reportCardGroups->isEmpty())
@@ -1528,56 +1534,234 @@ document.addEventListener('DOMContentLoaded', function () {
 document.addEventListener('DOMContentLoaded', function () {
     const searchInput = document.getElementById('reportSearchInput');
     const sortSelect = document.getElementById('reportSortSelect');
+    
+    if (!searchInput || !sortSelect) return;
+
+    // Update the sort select options
+    sortSelect.innerHTML = `
+        <option value="newest">Newest generated first</option>
+        <option value="oldest">Oldest generated first</option>
+        <option value="student_asc">Student name (A-Z)</option>
+        <option value="student_desc">Student name (Z-A)</option>
+        <option value="class_asc">Class / Course (A-Z)</option>
+        <option value="class_desc">Class / Course (Z-A)</option>
+        <option value="branch_asc">Branch (A-Z)</option>
+        <option value="branch_desc">Branch (Z-A)</option>
+        <option value="outstanding_desc">Outstanding fees (High to Low)</option>
+        <option value="outstanding_asc">Outstanding fees (Low to High)</option>
+    `;
+
     const tbody = document.querySelector('.rc-table tbody');
     if (!tbody) return;
 
-    const rows = Array.from(tbody.querySelectorAll('tr.rc-table__row--grouped'));
+    // Debounce function to avoid excessive AJAX calls
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
 
-    function sortRows(mode) {
-        const sorted = [...rows].sort((a, b) => {
-            const aStudent = (a.dataset.student || '').toLowerCase();
-            const bStudent = (b.dataset.student || '').toLowerCase();
-            const aTs = Number(a.dataset.generatedAt || 0);
-            const bTs = Number(b.dataset.generatedAt || 0);
+    // Fetch and render results
+    async function fetchAndRender(page = 1) {
+        const search = searchInput.value.trim();
+        const sort = sortSelect.value;
+        
+        try {
+            const response = await fetch(`{{ route('admin.report-cards.search-sort') }}?search=${encodeURIComponent(search)}&sort=${sort}&page=${page}`);
+            const data = await response.json();
+            
+            if (!data.success) {
+                console.error('Error:', data.message);
+                return;
+            }
 
-            if (mode === 'oldest') return aTs - bTs;
-            if (mode === 'student_asc') return aStudent.localeCompare(bStudent);
-            if (mode === 'student_desc') return bStudent.localeCompare(aStudent);
-            return bTs - aTs; // newest
+            // Render table rows
+            renderTableRows(data.results);
+            
+            // Update pagination info
+            updatePaginationInfo(data);
+        } catch (error) {
+            console.error('Error fetching results:', error);
+        }
+    }
+
+    // Render table rows from JSON data
+    function renderTableRows(results) {
+        tbody.innerHTML = '';
+        
+        if (results.length === 0) {
+            const emptyRow = document.createElement('tr');
+            emptyRow.innerHTML = `
+                <td colspan="10" style="text-align: center; padding: 3rem 0; color: #6c757d;">
+                    <i class="fas fa-search" style="font-size: 2rem; margin-bottom: 1rem; display: block; opacity: 0.5;"></i>
+                    <div style="font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem;">No report cards found</div>
+                    <div style="font-size: 0.875rem;">Try adjusting your search or sort filters</div>
+                </td>
+            `;
+            tbody.appendChild(emptyRow);
+            return;
+        }
+
+        results.forEach(group => {
+            const row = document.createElement('tr');
+            row.className = 'rc-table__row rc-table__row--grouped';
+            row.dataset.student = group.group_data.student;
+            row.dataset.course = group.group_data.course;
+            row.dataset.branch = group.group_data.branch;
+            row.dataset.year = group.group_data.year;
+            row.dataset.terms = group.group_data.terms;
+            row.dataset.generatedAt = group.group_data.generated_at;
+
+            const termsHtml = group.terms.map(t => `<span class="rc-term-pill">${t}</span>`).join('');
+            const outstandingDisplay = parseFloat(group.outstanding) > 0 
+                ? `<span class="rc-badge rc-badge--tiny rc-badge--red">Outstanding: ${group.outstanding}</span>`
+                : `<span class="rc-badge rc-badge--tiny rc-badge--green">Paid</span>`;
+            
+            const gradeColorClass = {
+                'A+': 'rc-badge--green', 'A': 'rc-badge--green',
+                'B+': 'rc-badge--blue', 'B': 'rc-badge--blue',
+                'C': 'rc-badge--yellow', 'D': 'rc-badge--gray', 'F': 'rc-badge--red'
+            }[group.overall_grade] || 'rc-badge--red';
+
+            const avgColorClass = group.overall_avg >= 70 ? 'rc-avg--high' : (group.overall_avg >= 50 ? 'rc-avg--mid' : 'rc-avg--low');
+
+            row.innerHTML = `
+                <td class="text-center rc-cell-stack">
+                    <div class="rc-term-metric rc-term-metric--center">
+                        <label class="mb-0 d-flex align-items-center gap-1">
+                            <input type="checkbox" class="report-card-checkbox" name="report_card_ids[]" value="0" disabled>
+                            <span class="rc-term-pill">${group.terms[0] || '—'}</span>
+                        </label>
+                    </div>
+                </td>
+                <td>
+                    <div class="rc-student-cell">
+                        <div class="rc-avatar rc-avatar--blue">
+                            <div style="color: #fff; font-size: 0.8rem; font-weight: 700;">
+                                ${group.student_name.charAt(0).toUpperCase()}
+                            </div>
+                        </div>
+                        <div class="rc-student-cell__info">
+                            <span class="rc-student-cell__name">${group.student_name}</span>
+                            <span class="rc-student-cell__id">ID: ${group.student_id}</span>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div class="rc-course-cell">
+                        <i class="fas fa-graduation-cap text-info me-1"></i>
+                        <span title="${group.course_name}">
+                            ${group.course_name.substring(0, 22)}
+                        </span>
+                    </div>
+                </td>
+                <td class="text-center rc-cell-stack">
+                    <div class="rc-meta rc-meta--block">
+                        <span class="rc-meta__year">${group.year}</span>
+                    </div>
+                    ${termsHtml}
+                </td>
+                <td class="text-center rc-cell-stack">
+                    <span class="rc-avg rc-avg--overall ${avgColorClass}">
+                        ${group.overall_avg}%
+                    </span>
+                    <span class="rc-stack-label">overall</span>
+                </td>
+                <td class="text-center rc-cell-stack">
+                    <span class="rc-badge ${gradeColorClass} rc-badge--overall">${group.overall_grade}</span>
+                </td>
+                <td class="text-center rc-cell-stack">
+                    <span class="rc-dash">—</span>
+                </td>
+                <td class="text-center rc-cell-stack">
+                    <span class="rc-badge rc-badge--tiny rc-badge--yellow">Pending</span>
+                </td>
+                <td class="text-center rc-cell-stack">
+                    ${outstandingDisplay}
+                </td>
+                <td class="text-center rc-table__actions">
+                    <button class="btn btn-sm btn-primary" disabled title="Live search - details updated on demand">
+                        Actions
+                    </button>
+                </td>
+            `;
+            
+            tbody.appendChild(row);
         });
-
-        sorted.forEach(row => tbody.appendChild(row));
     }
 
-    function filterRows() {
-        const q = (searchInput?.value || '').trim().toLowerCase();
-        rows.forEach(row => {
-            const hay = [
-                row.dataset.student || '',
-                row.dataset.course || '',
-                row.dataset.branch || '',
-                row.dataset.year || '',
-                row.dataset.terms || '',
-                row.dataset.status || '',
-                row.textContent || ''
-            ].join(' ').toLowerCase();
-            row.style.display = !q || hay.includes(q) ? '' : 'none';
-        });
+    // Update pagination info and UI
+    function updatePaginationInfo(data) {
+        const paginationContainer = document.querySelector('.rc-pagination');
+        if (!paginationContainer) return;
+
+        let paginationHtml = '<p style="text-align: center; margin: 1rem 0; color: #6c757d;">';
+        paginationHtml += `Showing <strong>${(data.page - 1) * data.perPage + 1}</strong>-<strong>${Math.min(data.page * data.perPage, data.total)}</strong> of <strong>${data.total}</strong> `;
+        paginationHtml += `${data.total === 1 ? 'student' : 'students'}</p>`;
+
+        if (data.pages > 1) {
+            paginationHtml += '<div style="display: flex; justify-content: center; gap: 5px; flex-wrap: wrap;">';
+            
+            // Previous button
+            if (data.page > 1) {
+                paginationHtml += `<button class="btn btn-sm btn-outline-primary" onclick="window.fetchReportCardPage(${data.page - 1})">Previous</button>`;
+            }
+
+            // Page numbers
+            const startPage = Math.max(1, data.page - 2);
+            const endPage = Math.min(data.pages, data.page + 2);
+
+            if (startPage > 1) {
+                paginationHtml += `<button class="btn btn-sm btn-outline-primary" onclick="window.fetchReportCardPage(1)">1</button>`;
+                if (startPage > 2) paginationHtml += `<span style="align-self: center; padding: 0 5px;">...</span>`;
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                if (i === data.page) {
+                    paginationHtml += `<button class="btn btn-sm btn-primary" disabled>${i}</button>`;
+                } else {
+                    paginationHtml += `<button class="btn btn-sm btn-outline-primary" onclick="window.fetchReportCardPage(${i})">${i}</button>`;
+                }
+            }
+
+            if (endPage < data.pages) {
+                if (endPage < data.pages - 1) paginationHtml += `<span style="align-self: center; padding: 0 5px;">...</span>`;
+                paginationHtml += `<button class="btn btn-sm btn-outline-primary" onclick="window.fetchReportCardPage(${data.pages})">${data.pages}</button>`;
+            }
+
+            // Next button
+            if (data.page < data.pages) {
+                paginationHtml += `<button class="btn btn-sm btn-outline-primary" onclick="window.fetchReportCardPage(${data.page + 1})">Next</button>`;
+            }
+
+            paginationHtml += '</div>';
+        }
+
+        paginationContainer.innerHTML = paginationHtml;
     }
 
-    if (sortSelect) {
-        sortSelect.addEventListener('change', function () {
-            sortRows(this.value);
-            filterRows();
-        });
-        sortRows(sortSelect.value || 'newest');
-    }
+    // Expose pagination function to global scope
+    window.fetchReportCardPage = function(page) {
+        fetchAndRender(page);
+    };
 
-    if (searchInput) {
-        searchInput.addEventListener('input', filterRows);
-    }
+    // Event listeners
+    searchInput.addEventListener('input', debounce(function () {
+        fetchAndRender(1);
+    }, 300));
 
-    filterRows();
+    sortSelect.addEventListener('change', function () {
+        fetchAndRender(1);
+    });
+
+    // Initial load
+    fetchAndRender(1);
 });
 </script>
 <script>

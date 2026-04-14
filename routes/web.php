@@ -463,6 +463,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
 
     // Report Cards
     Route::get('report-cards', [ReportCardController::class, 'index'])->name('report-cards.index');
+    Route::get('report-cards/search-sort', [ReportCardController::class, 'searchSort'])->name('report-cards.search-sort');
     Route::get('report-cards/create', [ReportCardController::class, 'create'])->name('report-cards.create');
     Route::post('report-cards', [ReportCardController::class, 'store'])->name('report-cards.store');
     Route::post('report-cards/check-fees-for-generation', [ReportCardController::class, 'checkOutstandingFeesForGeneration'])->name('report-cards.check-fees-for-generation');
