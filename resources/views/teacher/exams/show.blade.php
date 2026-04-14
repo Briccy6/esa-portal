@@ -8,7 +8,7 @@
             <a href="{{ route('teacher.exams.index') }}" class="btn btn-outline-secondary me-2">
                 <i class="bi bi-arrow-left me-2"></i>Back to Exams
             </a>
-            @if(auth()->check() && auth()->user()->id === $exam->teacher_id)
+            @if(auth('teacher')->check() && auth('teacher')->user()->id === $exam->teacher_id)
                 <a href="{{ route('teacher.exams.edit', $exam) }}" class="btn btn-primary">
                     <i class="bi bi-pencil me-2"></i>Edit Exam
                 </a>
@@ -115,7 +115,7 @@
                         <a href="{{ route('teacher.exams.questions', $exam) }}" class="btn btn-outline-info">
                             <i class="bi bi-question-circle me-2"></i>Manage Questions
                         </a>
-                        @if(auth()->check() && auth()->user()->id === $exam->teacher_id)
+                        @if(auth('teacher')->check() && auth('teacher')->user()->id === $exam->teacher_id)
                             <a href="{{ route('teacher.exams.edit', $exam) }}" class="btn btn-outline-primary w-100">
                                 <i class="bi bi-pencil me-2"></i>Edit Exam
                             </a>
@@ -149,7 +149,7 @@
                     </div>
                     <div class="mb-2">
                         <strong>Academic Year:</strong>
-                        <p>{{ $exam->academicYear ? $exam->academicYear->year : 'Not specified' }}</p>
+                        <p>{{ $exam->academic_year ? $exam->academic_year->year : 'Not specified' }}</p>
                     </div>
                     <div class="mb-2">
                         <strong>Term:</strong>
