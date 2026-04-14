@@ -77,9 +77,16 @@ class FeePaymentService
     /**
      * Check if a student has paid all required fees for the current academic year
      */
-    public static function hasPaidAllFees(Student $student): bool
+    /**
+     * Check if a student has paid all required fees
+     * 
+     * @param Student $student
+     * @param array|null $termIds - Optional: specific term(s) to check. If null, checks all terms.
+     * @return bool
+     */
+    public static function hasPaidAllFees(Student $student, ?array $termIds = null): bool
     {
-        $paymentStatus = self::getPaymentStatus($student);
+        $paymentStatus = self::getPaymentStatus($student, $termIds);
         return $paymentStatus['is_fully_paid'];
     }
     

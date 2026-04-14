@@ -8,9 +8,11 @@
             <a href="{{ route('teacher.exams.index') }}" class="btn btn-outline-secondary me-2">
                 <i class="bi bi-arrow-left me-2"></i>Back to Exams
             </a>
-            <a href="{{ route('teacher.exams.edit', $exam) }}" class="btn btn-primary">
-                <i class="bi bi-pencil me-2"></i>Edit Exam
-            </a>
+            @if(auth()->check() && auth()->user()->id === $exam->teacher_id)
+                <a href="{{ route('teacher.exams.edit', $exam) }}" class="btn btn-primary">
+                    <i class="bi bi-pencil me-2"></i>Edit Exam
+                </a>
+            @endif
         </div>
     </div>
 
@@ -113,22 +115,24 @@
                         <a href="{{ route('teacher.exams.questions', $exam) }}" class="btn btn-outline-info">
                             <i class="bi bi-question-circle me-2"></i>Manage Questions
                         </a>
-                        <a href="{{ route('teacher.exams.edit', $exam) }}" class="btn btn-outline-primary">
-                            <i class="bi bi-pencil me-2"></i>Edit Exam
-                        </a>
-                        @if(!$exam->is_public)
-                            <button class="btn btn-outline-success" onclick="makePublic()">
-                                <i class="bi bi-globe me-2"></i>Make Public
-                            </button>
+                        @if(auth()->check() && auth()->user()->id === $exam->teacher_id)
+                            <a href="{{ route('teacher.exams.edit', $exam) }}" class="btn btn-outline-primary">
+                                <i class="bi bi-pencil me-2"></i>Edit Exam
+                            </a>
+                            @if(!$exam->is_public)
+                                <button class="btn btn-outline-success" onclick="makePublic()">
+                                    <i class="bi bi-globe me-2"></i>Make Public
+                                </button>
+                            @endif
+                            <form action="{{ route('teacher.exams.destroy', $exam) }}" method="POST" class="d-inline">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-outline-danger w-100" 
+                                        onclick="return confirm('Are you sure you want to delete this exam? This action cannot be undone and will remove all associated data.')">
+                                    <i class="bi bi-trash me-2"></i>Delete Exam
+                                </button>
+                            </form>
                         @endif
-                        <form action="{{ route('teacher.exams.destroy', $exam) }}" method="POST" class="d-inline">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn btn-outline-danger w-100" 
-                                    onclick="return confirm('Are you sure you want to delete this exam? This action cannot be undone and will remove all associated data.')">
-                                <i class="bi bi-trash me-2"></i>Delete Exam
-                            </button>
-                        </form>
                     </div>
                 </div>
             </div>

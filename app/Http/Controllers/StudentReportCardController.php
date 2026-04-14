@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ReportCard;
 use App\Models\ReportCardSetting;
 use App\Models\Student;
+use App\Services\FeePaymentService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -46,11 +47,12 @@ class StudentReportCardController extends Controller
         
         $now = \Carbon\Carbon::now();
         
-        // Get outstanding fees
-        $outstanding = $this->getOutstandingFees($student);
+        // Get outstanding fees for THIS SPECIFIC TERM ONLY
+        // The student should only be blocked if they have outstanding fees for the term of this report card
+        $outstanding = $this->getTermOutstandingFees($student, $reportCard->term_id);
 
         // BUSINESS LOGIC:
-        // 1. If student has outstanding fees => BLOCKED
+        // 1. If student has outstanding fees for THIS term => BLOCKED
         if ($outstanding > 0) {
             return view('reportcard.blocked', compact('outstanding', 'reportCard'));
         }
@@ -69,7 +71,21 @@ class StudentReportCardController extends Controller
     }
 
     /**
-     * Get outstanding fees for a student
+     * Get outstanding fees for a student for a SPECIFIC TERM
+     * This ensures we only block access if the student has outstanding fees for that term
+     * 
+     * @param Student $student
+     * @param int $termId
+     * @return float Outstanding fees for the specific term
+     */
+    private function getTermOutstandingFees($student, $termId)
+    {
+        $paymentStatus = FeePaymentService::getPaymentStatus($student, [(int) $termId]);
+        return (float) ($paymentStatus['outstanding'] ?? 0);
+    }
+
+    /**
+     * Get outstanding fees for a student across all terms
      * Adjust this method based on your database schema for tracking fees
      */
     private function getOutstandingFees($student)
@@ -100,7 +116,9 @@ class StudentReportCardController extends Controller
                 $releaseAt = $settings && $settings->report_card_available_at 
                     ? \Carbon\Carbon::parse($settings->report_card_available_at) 
                     : null;
-                $outstanding = $this->getOutstandingFees($student);
+                
+                // Get outstanding fees for THIS SPECIFIC TERM ONLY
+                $outstanding = $this->getTermOutstandingFees($student, $reportCard->term_id);
 
                 // Determine access status
                 if ($outstanding > 0) {

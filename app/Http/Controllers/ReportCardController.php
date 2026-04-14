@@ -1660,9 +1660,10 @@ class ReportCardController extends Controller
         }
 
         // Check if student can access this report card
-        $accessStatus = ReportCardService::getAccessStatus($student);
+        // Pass the specific term_id for term-specific fee checking
+        $accessStatus = ReportCardService::getAccessStatus($student, $reportCard->term_id);
         
-        // If student has outstanding fees, show payment page with Flutterwave button
+        // If student has outstanding fees for this term, show payment page with Flutterwave button
         if (!$accessStatus['payment_status']['is_fully_paid']) {
             $outstanding = $accessStatus['payment_status']['outstanding'];
             return view('students.report-cards.payment', compact('outstanding', 'reportCard'));
@@ -1704,8 +1705,9 @@ class ReportCardController extends Controller
         }
 
         // Check if student can access this report card
-        if (!ReportCardService::canAccessReportCard($student)) {
-            $accessStatus = ReportCardService::getAccessStatus($student);
+        // Pass the specific term_id for term-specific fee checking
+        if (!ReportCardService::canAccessReportCard($student, $reportCard->term_id)) {
+            $accessStatus = ReportCardService::getAccessStatus($student, $reportCard->term_id);
             return response()->json([
                 'success' => false,
                 'message' => $accessStatus['reason']

@@ -10,11 +10,21 @@ class ReportCardService
 {
     /**
      * Check if a student can access their report card
+     * 
+     * @param Student $student
+     * @param int|array|null $termIds - Optional: specific term(s) to check. If null, checks all terms.
+     * @return bool
      */
-    public static function canAccessReportCard(Student $student): bool
+    public static function canAccessReportCard(Student $student, $termIds = null): bool
     {
-        // Check 1: Student must have paid all fees
-        if (!FeePaymentService::hasPaidAllFees($student)) {
+        // Normalize term IDs to array
+        $termIdsArray = null;
+        if ($termIds !== null) {
+            $termIdsArray = is_array($termIds) ? $termIds : [(int)$termIds];
+        }
+        
+        // Check 1: Student must have paid all fees for the specified terms
+        if (!FeePaymentService::hasPaidAllFees($student, $termIdsArray)) {
             return false;
         }
         
@@ -30,11 +40,21 @@ class ReportCardService
     
     /**
      * Get report card access status for a student
+     * 
+     * @param Student $student
+     * @param int|array|null $termIds - Optional: specific term(s) to check. If null, checks all terms.
+     * @return array
      */
-    public static function getAccessStatus(Student $student): array
+    public static function getAccessStatus(Student $student, $termIds = null): array
     {
+        // Normalize term IDs to array
+        $termIdsArray = null;
+        if ($termIds !== null) {
+            $termIdsArray = is_array($termIds) ? $termIds : [(int)$termIds];
+        }
+        
         $setting = ReportCardSetting::getActive();
-        $paymentStatus = FeePaymentService::getPaymentStatus($student);
+        $paymentStatus = FeePaymentService::getPaymentStatus($student, $termIdsArray);
         
         $canAccess = false;
         $reason = '';
