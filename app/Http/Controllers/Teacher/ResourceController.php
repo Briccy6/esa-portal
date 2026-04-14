@@ -40,14 +40,67 @@ class ResourceController extends Controller
     public function create()
     {
         $teacher = auth('teacher')->user();
-        $branches = $teacher->branches; // Only branches assigned to this teacher
-        $courses = $teacher->courses()->with('lessons:id,course_id,title')->get();
-        $lessons = []; // Initialize as empty
+        
+        // Load lesson_branch_course data for this teacher
+        $lessonBranchCourses = \App\Models\LessonBranchCourse::where('teacher_id', $teacher->id)
+            ->with(['branch:id,name', 'course:id,course_name', 'lesson:id,title,course_id'])
+            ->get();
+        
+        // Get unique branches from lesson_branch_course
+        $branches = $lessonBranchCourses->pluck('branch')->unique('id')->values();
+        
+        // Organize data by branch and course for JavaScript
+        $branchCourseData = [];
+        $branchLessonData = [];
+        
+        foreach ($lessonBranchCourses as $lbc) {
+            $branchId = $lbc->branch_id;
+            $courseId = $lbc->course_id;
+            $lessonId = $lbc->lesson_id;
+            
+            // Build branch -> courses mapping
+            if (!isset($branchCourseData[$branchId])) {
+                $branchCourseData[$branchId] = [];
+            }
+            if (!in_array($courseId, $branchCourseData[$branchId])) {
+                $branchCourseData[$branchId][] = $courseId;
+            }
+            
+            // Build (branch, course) -> lessons mapping
+            $key = "{$branchId}_{$courseId}";
+            if (!isset($branchLessonData[$key])) {
+                $branchLessonData[$key] = [];
+            }
+            $branchLessonData[$key][] = [
+                'id' => $lessonId,
+                'title' => $lbc->lesson->title,
+            ];
+        }
+        
+        // Get course details for all courses used
+        $allCourseIds = array_unique(array_merge(...array_values($branchCourseData)));
+        $courses = \App\Models\Course::whereIn('id', $allCourseIds)->get();
+        
+        // Get all lessons used
+        $allLessonIds = [];
+        foreach ($branchLessonData as $lessons) {
+            foreach ($lessons as $lesson) {
+                $allLessonIds[] = $lesson['id'];
+            }
+        }
+        $lessons = \App\Models\Lesson::whereIn('id', array_unique($allLessonIds))->get();
         
         // Get announcements for teacher layout
         $announcements = \App\Models\Announcement::latest()->take(5)->get();
 
-        return view('teacher.resources.create', compact('courses', 'branches', 'lessons', 'announcements'));
+        return view('teacher.resources.create', compact(
+            'branches', 
+            'courses', 
+            'lessons', 
+            'branchCourseData',
+            'branchLessonData',
+            'announcements'
+        ));
     }
     
 

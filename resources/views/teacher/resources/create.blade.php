@@ -222,39 +222,8 @@
 
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="course_id" class="form-label">
-                                    <i class="bi bi-mortarboard"></i> Course
-                                </label>
-                                <select name="course_id" id="course_id" class="form-select" required>
-                                    <option value="">Select Course</option>
-                                    @foreach($courses as $course)
-                                        <option value="{{ $course->id }}">{{ $course->course_name }}</option>
-                                    @endforeach
-                                </select>
-                                @error('course_id')
-                                    <div class="error-message show">{{ $message }}</div>
-                                @enderror
-                            </div>
-                        </div>
-
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="lesson_id" class="form-label">
-                                    <i class="bi bi-book"></i> Lesson
-                                </label>
-                                <select name="lesson_id" id="lesson_id" class="form-select" required disabled>
-                                    <option value="">Select Lesson</option>
-                                </select>
-                                @error('lesson_id')
-                                    <div class="error-message show">{{ $message }}</div>
-                                @enderror
-                            </div>
-                        </div>
-
-                        <div class="col-md-6">
-                            <div class="form-group">
                                 <label for="branch_id" class="form-label">
-                                    <i class="bi bi-diagram-3"></i> Branch
+                                    <i class="bi bi-diagram-3"></i> Branch *
                                 </label>
                                 <select name="branch_id" id="branch_id" class="form-select" required>
                                     <option value="">Select Branch</option>
@@ -265,6 +234,37 @@
                                 @error('branch_id')
                                     <div class="error-message show">{{ $message }}</div>
                                 @enderror
+                                <div class="form-text">Select the branch first to see available courses</div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="course_id" class="form-label">
+                                    <i class="bi bi-mortarboard"></i> Course *
+                                </label>
+                                <select name="course_id" id="course_id" class="form-select" required disabled>
+                                    <option value="">Select Course</option>
+                                </select>
+                                @error('course_id')
+                                    <div class="error-message show">{{ $message }}</div>
+                                @enderror
+                                <div class="form-text">Select a course in the chosen branch</div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="lesson_id" class="form-label">
+                                    <i class="bi bi-book"></i> Lesson *
+                                </label>
+                                <select name="lesson_id" id="lesson_id" class="form-select" required disabled>
+                                    <option value="">Select Lesson</option>
+                                </select>
+                                @error('lesson_id')
+                                    <div class="error-message show">{{ $message }}</div>
+                                @enderror
+                                <div class="form-text">Select a lesson in the chosen course</div>
                             </div>
                         </div>
 

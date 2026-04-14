@@ -263,11 +263,8 @@
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <h1><i class="bi bi-clipboard-data"></i> My Exams</h1>
-                    <p class="mb-0">Create and manage examinations for your students</p>
+                    <p class="mb-0">View and manage question banks for examinations</p>
                 </div>
-                <a href="{{ route('teacher.exams.create') }}" class="btn btn-light">
-                    <i class="bi bi-plus-circle me-2"></i>Create New Exam
-                </a>
             </div>
         </div>
     </div>
@@ -276,46 +273,25 @@
     <div class="container">
         <div class="filters-card">
             <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-funnel"></i> Filter & Search Exams</h5>
+                <h5 class="mb-0"><i class="bi bi-funnel"></i> Search Exams</h5>
             </div>
             <div class="card-body p-4">
-                <form method="GET" action="{{ route('teacher.exams.index') }}">
-                    <div class="row g-3">
-                        <div class="col-md-3">
-                            <label for="course_filter" class="form-label">Filter by Course</label>
-                            <select name="course_filter" id="course_filter" class="form-select">
-                                <option value="">All Courses</option>
-                                @foreach($courses as $course)
-                                    <option value="{{ $course->id }}" {{ request('course_filter') == $course->id ? 'selected' : '' }}>
-                                        {{ $course->course_name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label for="status_filter" class="form-label">Filter by Status</label>
-                            <select name="status_filter" id="status_filter" class="form-select">
-                                <option value="">All Status</option>
-                                <option value="draft" {{ request('status_filter') == 'draft' ? 'selected' : '' }}>Draft</option>
-                                <option value="published" {{ request('status_filter') == 'published' ? 'selected' : '' }}>Published</option>
-                                <option value="completed" {{ request('status_filter') == 'completed' ? 'selected' : '' }}>Completed</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label for="search" class="form-label">Search</label>
-                            <input type="text" name="search" id="search" class="form-control" 
-                                   value="{{ request('search') }}" placeholder="Search exams...">
-                        </div>
-                        <div class="col-md-3 d-flex align-items-end">
-                            <button type="submit" class="btn btn-outline-custom me-2">
-                                <i class="bi bi-search"></i> Search
-                            </button>
-                            <a href="{{ route('teacher.exams.index') }}" class="btn btn-outline-secondary">
-                                <i class="bi bi-arrow-clockwise"></i> Reset
-                            </a>
-                        </div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="liveSearch" class="form-label">Search by Exam Title, Course</label>
+                        <input type="text" id="liveSearch" class="form-control" 
+                               placeholder="Type to search..." autocomplete="off">
                     </div>
-                </form>
+                    <div class="col-md-6">
+                        <label for="courseFilter" class="form-label">Filter by Course</label>
+                        <select id="courseFilter" class="form-select">
+                            <option value="">All Courses</option>
+                            @foreach($courses as $course)
+                                <option value="{{ $course->id }}">{{ $course->course_name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -374,23 +350,12 @@
                                         </td>
                                         <td>
                                             <div class="btn-group" role="group">
-                                                <a href="{{ route('teacher.exams.show', $exam) }}" class="btn btn-action btn-view" title="View">
+                                                <a href="{{ route('teacher.exams.show', $exam) }}" class="btn btn-action btn-view" title="View Exam">
                                                     <i class="bi bi-eye"></i> View
                                                 </a>
-                                                <a href="{{ route('teacher.exams.edit', $exam) }}" class="btn btn-action btn-edit" title="Edit">
-                                                    <i class="bi bi-pencil"></i> Edit
+                                                <a href="{{ route('teacher.exams.questions', $exam) }}" class="btn btn-action btn-questions" title="Add Questions">
+                                                    <i class="bi bi-plus-circle"></i> Add Questions
                                                 </a>
-                                                <a href="{{ route('teacher.exams.questions', $exam) }}" class="btn btn-action btn-questions" title="Questions">
-                                                    <i class="bi bi-question-circle"></i> Questions
-                                                </a>
-                                                <form action="{{ route('teacher.exams.destroy', $exam) }}" method="POST" class="d-inline">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="btn btn-action btn-delete" title="Delete" 
-                                                            onclick="return confirm('Are you sure you want to delete this exam? This action cannot be undone and will remove all associated data.')">
-                                                        <i class="bi bi-trash"></i> Delete
-                                                    </button>
-                                                </form>
                                             </div>
                                         </td>
                                     </tr>
@@ -402,24 +367,122 @@
                     <!-- Pagination -->
                     <div class="d-flex justify-content-between align-items-center p-3">
                         <div class="pagination-info">
-                            Showing {{ $exams->firstItem() }} to {{ $exams->lastItem() }} of {{ $exams->total() }} exams
+                            Showing <span id="resultCount">0</span> of {{ $exams->total() }} exams
                         </div>
-                        <div>
-                            {{ $exams->links() }}
-                        </div>
+                        <div id="paginationContainer"></div>
                     </div>
                 @else
                     <div class="empty-state m-4">
                         <i class="bi bi-clipboard-x display-1"></i>
                         <h4 class="mt-4">No Exams Found</h4>
-                        <p class="text-muted mb-4">You haven't created any exams yet.</p>
-                        <a href="{{ route('teacher.exams.create') }}" class="btn btn-primary-custom">
-                            <i class="bi bi-plus-circle me-2"></i>Create Your First Exam
-                        </a>
+                        <p class="text-muted mb-4">You don't have any exams available yet.</p>
                     </div>
                 @endif
             </div>
         </div>
     </div>
 </div>
+
+@section('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Store all exams data
+    const allExams = @json($exams->items());
+    
+    const searchInput = document.getElementById('liveSearch');
+    const courseFilter = document.getElementById('courseFilter');
+    const tbody = document.querySelector('.exams-table tbody');
+    
+    if (!searchInput || !tbody) return;
+    
+    // Debounce search
+    function debounce(func, wait) {
+        let timeout;
+        return function(...args) {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func(...args), wait);
+        };
+    }
+    
+    // Filter and render exams
+    function filterAndRender() {
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        const courseId = courseFilter.value;
+        
+        // Filter exams based on search and course
+        const filtered = allExams.filter(exam => {
+            const matchesSearch = !searchTerm || 
+                exam.title.toLowerCase().includes(searchTerm) ||
+                exam.subject.toLowerCase().includes(searchTerm) ||
+                (exam.courses && exam.courses.some(c => c.course_name.toLowerCase().includes(searchTerm))) ||
+                exam.exam_type.toLowerCase().includes(searchTerm);
+            
+            const matchesCourse = !courseId || 
+                (exam.courses && exam.courses.some(c => c.id == courseId));
+            
+            return matchesSearch && matchesCourse;
+        });
+        
+        // Clear table
+        tbody.innerHTML = '';
+        
+        if (filtered.length === 0) {
+            const emptyRow = document.createElement('tr');
+            emptyRow.innerHTML = `<td colspan="7" class="text-center py-4 text-muted">
+                <i class="bi bi-search"></i> No exams found matching your search
+            </td>`;
+            tbody.appendChild(emptyRow);
+            document.getElementById('resultCount').textContent = '0';
+            return;
+        }
+        
+        // Render filtered exams
+        filtered.forEach(exam => {
+            const courseBadges = exam.courses.slice(0, 2).map(c => 
+                `<span class="badge badge-custom badge-secondary">${c.course_name}</span>`
+            ).join('');
+            
+            const extraCourses = exam.courses.length > 2 ? 
+                `<span class="badge badge-custom badge-secondary">+${exam.courses.length - 2}</span>` : '';
+            
+            const statusBadge = exam.is_public ? 
+                '<span class="badge badge-custom badge-success">Public</span>' :
+                '<span class="badge badge-custom badge-warning">Private</span>';
+            
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>
+                    <strong>${exam.title}</strong>
+                    ${exam.description ? `<br><small class="text-muted">${exam.description.substring(0, 50)}</small>` : ''}
+                </td>
+                <td>${courseBadges} ${extraCourses}</td>
+                <td>${new Date(exam.class_date).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'})}</td>
+                <td><span class="badge badge-custom badge-info">${exam.exam_type}</span></td>
+                <td><strong>${exam.total_marks}</strong></td>
+                <td>${statusBadge}</td>
+                <td>
+                    <div class="btn-group" role="group">
+                        <a href="/teacher/exams/${exam.id}" class="btn btn-action btn-view" title="View Exam">
+                            <i class="bi bi-eye"></i> View
+                        </a>
+                        <a href="/teacher/exams/${exam.id}/questions" class="btn btn-action btn-questions" title="Add Questions">
+                            <i class="bi bi-plus-circle"></i> Add Questions
+                        </a>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+        
+        document.getElementById('resultCount').textContent = filtered.length;
+    }
+    
+    // Event listeners
+    searchInput.addEventListener('input', debounce(filterAndRender, 300));
+    courseFilter.addEventListener('change', filterAndRender);
+    
+    // Initial render
+    filterAndRender();
+});
+</script>
 @endsection

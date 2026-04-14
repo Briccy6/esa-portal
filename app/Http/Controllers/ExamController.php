@@ -71,6 +71,11 @@ class ExamController extends Controller
      */
     public function create()
     {
+        // Teachers are NOT allowed to create exams
+        if (auth('teacher')->check()) {
+            abort(403, 'Teachers are not allowed to create exams. They can only add questions to existing exams.');
+        }
+        
         // Check if admin is authenticated
         if (auth('admin')->check()) {
             \Log::info('Admin user detected, returning admin create view');
@@ -201,6 +206,11 @@ class ExamController extends Controller
      */
     public function store(Request $request)
     {
+        // Teachers are NOT allowed to create exams
+        if (auth('teacher')->check()) {
+            abort(403, 'Teachers are not allowed to create exams. They can only add questions to existing exams.');
+        }
+        
         $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -353,22 +363,12 @@ class ExamController extends Controller
      */
     public function edit(Exam $exam)
     {
+        // Teachers are NOT allowed to edit exams
         if (auth('teacher')->check()) {
-            $user = auth('teacher')->user();
-            // Teacher can only access their assigned courses and lessons
-            $courses = $user->courses ?? collect();
-            $lessons = $user->lessons ?? collect();
-            $branches = $user->branches ?? collect();
-            $teachers = collect([$user]);
-            $academicYears = \App\Models\AcademicYear::orderBy('year', 'desc')->get();
-            $terms = \App\Models\Term::all();
-            $exam->load(['courses', 'lessons', 'academic_year', 'term', 'teacher', 'branch']);
-            
-            // Get announcements for teacher layout
-            $announcements = \App\Models\Announcement::latest()->take(5)->get();
-            
-            return view('teacher.exams.edit', compact('exam', 'courses', 'lessons', 'branches', 'teachers', 'academicYears', 'terms', 'announcements'));
-        } elseif (auth('staff')->check() && auth('staff')->user()->role === 'DOS') {
+            abort(403, 'Teachers are not allowed to edit exams. They can only add questions to existing exams.');
+        }
+        
+        if (auth('staff')->check() && auth('staff')->user()->role === 'DOS') {
             $courses = Course::all();
             $lessons = Lesson::all();
             $branches = \App\Models\Branch::all();
@@ -396,6 +396,11 @@ class ExamController extends Controller
      */
     public function update(Request $request, Exam $exam)
     {
+        // Teachers are NOT allowed to update exams
+        if (auth('teacher')->check()) {
+            abort(403, 'Teachers are not allowed to edit exams. They can only add questions to existing exams.');
+        }
+        
         // Debug: Log the incoming request data
         \Log::info('Exam update request data:', [
             'is_public' => $request->has('is_public'),
@@ -522,6 +527,11 @@ class ExamController extends Controller
      */
     public function destroy(Exam $exam)
     {
+        // Teachers are NOT allowed to delete exams
+        if (auth('teacher')->check()) {
+            abort(403, 'Teachers are not allowed to delete exams.');
+        }
+        
         try {
             // Begin transaction to ensure data integrity
             \DB::beginTransaction();
@@ -1036,6 +1046,11 @@ class ExamController extends Controller
     }
     public function makePublic(Request $request, Exam $exam)
     {
+        // Teachers are NOT allowed to make exams public
+        if (auth('teacher')->check()) {
+            abort(403, 'Teachers are not allowed to change exam visibility.');
+        }
+        
         $request->validate([
             'public_price' => 'required|numeric|min:0',
             'token_cost' => 'required|integer|min:0',
@@ -1069,6 +1084,11 @@ class ExamController extends Controller
      */
     public function makePrivate(Exam $exam)
     {
+        // Teachers are NOT allowed to make exams private
+        if (auth('teacher')->check()) {
+            abort(403, 'Teachers are not allowed to change exam visibility.');
+        }
+        
         try {
             $exam->update([
                 'is_public' => false,
