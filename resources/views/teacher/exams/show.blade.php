@@ -116,15 +116,15 @@
                             <i class="bi bi-question-circle me-2"></i>Manage Questions
                         </a>
                         @if(auth()->check() && auth()->user()->id === $exam->teacher_id)
-                            <a href="{{ route('teacher.exams.edit', $exam) }}" class="btn btn-outline-primary">
+                            <a href="{{ route('teacher.exams.edit', $exam) }}" class="btn btn-outline-primary w-100">
                                 <i class="bi bi-pencil me-2"></i>Edit Exam
                             </a>
                             @if(!$exam->is_public)
-                                <button class="btn btn-outline-success" onclick="makePublic()">
+                                <button class="btn btn-outline-success w-100" onclick="makePublic()">
                                     <i class="bi bi-globe me-2"></i>Make Public
                                 </button>
                             @endif
-                            <form action="{{ route('teacher.exams.destroy', $exam) }}" method="POST" class="d-inline">
+                            <form action="{{ route('teacher.exams.destroy', $exam) }}" method="POST" style="width: 100%;">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="btn btn-outline-danger w-100" 

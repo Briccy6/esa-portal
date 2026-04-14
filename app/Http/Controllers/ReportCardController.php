@@ -1639,16 +1639,27 @@ class ReportCardController extends Controller
             return redirect()->route('login')->with('error', 'Please login to access your report cards.');
         }
 
-        $accessStatus = ReportCardService::getAccessStatus($student);
-        
-        // Get student's report cards
+        // Get student's report cards with proper term-specific access status
         $reportCards = ReportCard::where('student_id', $student->id)
                                 ->with(['course', 'academicYear', 'term'])
                                 ->orderByDesc('academic_year_id')
                                 ->orderBy('term_id')
-                                ->get();
-
-        return view('students.report-cards.index', compact('reportCards', 'accessStatus'));
+                                ->get()
+                                ->map(function($reportCard) use ($student) {
+                                    // Get access status for this specific report card's term
+                                    $accessStatus = ReportCardService::getAccessStatus($student, $reportCard->term_id);
+                                    
+                                    return [
+                                        'reportCard' => $reportCard,
+                                        'accessStatus' => $accessStatus,
+                                        'can_access' => $accessStatus['can_access'],
+                                        'reason' => $accessStatus['reason'],
+                                        'is_payment_issue' => !$accessStatus['payment_status']['is_fully_paid'],
+                                        'outstanding' => $accessStatus['payment_status']['outstanding'],
+                                    ];
+                                });
+        
+        return view('students.report-cards.index', compact('reportCards'));
     }
 
     public function studentShow(ReportCard $reportCard)
