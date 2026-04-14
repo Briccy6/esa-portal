@@ -1231,7 +1231,7 @@ class ReportCardController extends Controller
             $studentPhotosByReportId[$reportCard->id] = $this->resolveStudentPhotoData($reportCard->student->passport_photo);
         }
 
-        $pdf = Pdf::loadView('admin.report-cards.print-class', compact('reportCards', 'schoolInfo', 'studentPhotosByReportId'))
+        $pdf = Pdf::loadView('admin.report-cards.print-class-unified', compact('reportCards', 'schoolInfo', 'studentPhotosByReportId'))
             ->setPaper('a4', 'portrait')
             ->setOption(['margin-top' => 10, 'margin-bottom' => 10]);
 

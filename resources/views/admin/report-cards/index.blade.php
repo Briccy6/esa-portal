@@ -163,6 +163,15 @@
             <span class="rc-card__header-count">{{ $reportCardGroups->total() }} {{ Str::plural('student', $reportCardGroups->total()) }}</span>
         </div>
         <div class="rc-card__body p-0">
+            <div class="p-3 border-bottom bg-light d-flex gap-2 flex-wrap align-items-center">
+                <input type="text" id="reportSearchInput" class="form-control" style="max-width: 320px;" placeholder="Live search student, course, year, term...">
+                <select id="reportSortSelect" class="form-select" style="max-width: 240px;">
+                    <option value="newest">Newest generated first</option>
+                    <option value="oldest">Oldest generated first</option>
+                    <option value="student_asc">Student name (A-Z)</option>
+                    <option value="student_desc">Student name (Z-A)</option>
+                </select>
+            </div>
             @if($reportCardGroups->isEmpty())
                 <div class="rc-empty">
                     <div class="rc-empty__icon"><i class="fas fa-id-card"></i></div>
@@ -243,7 +252,18 @@
                                     default => 'rc-badge--red',
                                 };
                             @endphp
-                            <tr class="rc-table__row rc-table__row--grouped">
+                            @php
+                                $groupGeneratedAt = $group->max('created_at')?->timestamp ?? 0;
+                                $termsText = $group->pluck('term.name')->filter()->implode(' ');
+                                $statusesText = $group->pluck('status')->implode(' ');
+                            @endphp
+                            <tr class="rc-table__row rc-table__row--grouped"
+                                data-student="{{ strtolower($first->student->full_name ?? '') }}"
+                                data-course="{{ strtolower($first->course->course_name ?? '') }}"
+                                data-year="{{ strtolower($first->academicYear->year ?? '') }}"
+                                data-terms="{{ strtolower($termsText) }}"
+                                data-status="{{ strtolower($statusesText) }}"
+                                data-generated-at="{{ $groupGeneratedAt }}">
                                 <td class="text-center rc-cell-stack">
                                     @foreach($group as $reportCard)
                                         <div class="rc-term-metric rc-term-metric--center">
@@ -1468,6 +1488,61 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Init
     renderAll();
+});
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const searchInput = document.getElementById('reportSearchInput');
+    const sortSelect = document.getElementById('reportSortSelect');
+    const tbody = document.querySelector('.rc-table tbody');
+    if (!tbody) return;
+
+    const rows = Array.from(tbody.querySelectorAll('tr.rc-table__row--grouped'));
+
+    function sortRows(mode) {
+        const sorted = [...rows].sort((a, b) => {
+            const aStudent = (a.dataset.student || '').toLowerCase();
+            const bStudent = (b.dataset.student || '').toLowerCase();
+            const aTs = Number(a.dataset.generatedAt || 0);
+            const bTs = Number(b.dataset.generatedAt || 0);
+
+            if (mode === 'oldest') return aTs - bTs;
+            if (mode === 'student_asc') return aStudent.localeCompare(bStudent);
+            if (mode === 'student_desc') return bStudent.localeCompare(aStudent);
+            return bTs - aTs; // newest
+        });
+
+        sorted.forEach(row => tbody.appendChild(row));
+    }
+
+    function filterRows() {
+        const q = (searchInput?.value || '').trim().toLowerCase();
+        rows.forEach(row => {
+            const hay = [
+                row.dataset.student || '',
+                row.dataset.course || '',
+                row.dataset.year || '',
+                row.dataset.terms || '',
+                row.dataset.status || '',
+                row.textContent || ''
+            ].join(' ').toLowerCase();
+            row.style.display = !q || hay.includes(q) ? '' : 'none';
+        });
+    }
+
+    if (sortSelect) {
+        sortSelect.addEventListener('change', function () {
+            sortRows(this.value);
+            filterRows();
+        });
+        sortRows(sortSelect.value || 'newest');
+    }
+
+    if (searchInput) {
+        searchInput.addEventListener('input', filterRows);
+    }
+
+    filterRows();
 });
 </script>
 <script>
