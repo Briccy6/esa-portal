@@ -17,7 +17,15 @@ class BlogController extends Controller
     public function index()
     {
         $blogs = Blog::with(['images', 'documents'])->latest()->paginate(10);
-        return view('admin.blogs.index', compact('blogs'));
+        $stats = [
+            'total' => Blog::count(),
+            'published' => Blog::where('status', 'published')->count(),
+            'drafts' => Blog::where('status', 'draft')->count(),
+            'archived' => Blog::where('status', 'archived')->count(),
+            'views' => (int) Blog::query()->sum('views'),
+        ];
+
+        return view('admin.blogs.index', compact('blogs', 'stats'));
     }
 
     /**
@@ -68,14 +76,15 @@ class BlogController extends Controller
             'is_featured'      => $request->boolean('is_featured'),
         ]);
 
-        // Handle images
+        // Handle images - Store directly in database
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $index => $image) {
-                $path = $image->store('blogs/images', 'public');
                 BlogImage::create([
-                    'blog_id'    => $blog->id,
-                    'image_path' => $path,
-                    'sort_order' => $index,
+                    'blog_id'       => $blog->id,
+                    'image_path'    => file_get_contents($image->getRealPath()), // binary image data
+                    'image_alt'     => $image->getMimeType(),                    // mime type in image_alt
+                    'image_caption' => $image->getClientOriginalName(),          // filename in image_caption
+                    'sort_order'    => $index,
                 ]);
             }
         }
@@ -155,14 +164,15 @@ class BlogController extends Controller
             'is_featured'      => $request->boolean('is_featured'),
         ]);
 
-        // Handle new images
+        // Handle new images - Store directly in database
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $index => $image) {
-                $path = $image->store('blogs/images', 'public');
                 BlogImage::create([
-                    'blog_id'    => $blog->id,
-                    'image_path' => $path,
-                    'sort_order' => $blog->images()->count() + $index,
+                    'blog_id'       => $blog->id,
+                    'image_path'    => file_get_contents($image->getRealPath()), // binary image data
+                    'image_alt'     => $image->getMimeType(),                    // mime type in image_alt
+                    'image_caption' => $image->getClientOriginalName(),          // filename in image_caption
+                    'sort_order'    => $blog->images()->count() + $index,
                 ]);
             }
         }
@@ -189,16 +199,10 @@ class BlogController extends Controller
      */
     public function destroy(Blog $blog)
     {
-        foreach ($blog->images as $image) {
-            Storage::disk('public')->delete($image->image_path);
-            $image->delete();
-        }
-
-        foreach ($blog->documents as $document) {
-            Storage::disk('public')->delete($document->document_path);
-            $document->delete();
-        }
-
+        // Images are stored in database, no need to delete files
+        // Just delete database records (cascade will handle images via foreign key)
+        $blog->images()->delete();
+        $blog->documents()->delete();
         $blog->delete();
 
         return redirect()->route('admin.blogs.index')->with('success', 'Blog deleted successfully.');
@@ -224,7 +228,7 @@ class BlogController extends Controller
      */
     public function deleteImage(BlogImage $image)
     {
-        Storage::disk('public')->delete($image->image_path);
+        // Image is stored in database, no file to delete
         $image->delete();
 
         return response()->json(['success' => true, 'message' => 'Image deleted successfully']);

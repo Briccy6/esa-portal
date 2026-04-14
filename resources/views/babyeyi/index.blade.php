@@ -7,11 +7,11 @@
             <h1>Babyeyi Documents</h1>
         </div>
         <div class="col-md-4 text-right">
-            @can('create', App\Models\Babyeyi::class)
+            @if(auth('staff')->check() || auth('admin')->check())
                 <a href="{{ route('babyeyi.create') }}" class="btn btn-primary">
                     <i class="fas fa-plus"></i> Create Babyeyi
                 </a>
-            @endcan
+            @endif
         </div>
     </div>
 

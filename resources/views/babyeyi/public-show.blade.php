@@ -165,6 +165,7 @@
     </div>
 </div>
 
+@push('styles')
 <style>
 .document-content {
     font-family: 'Calibri', 'Arial', sans-serif;
@@ -230,4 +231,6 @@ code {
     font-family: 'Courier New', monospace;
 }
 </style>
+@endpush
+
 @endsection

@@ -64,12 +64,206 @@
         color: #6c757d;
         font-size: 0.85rem;
     }
-    @media print {
-        .main-sidebar, .main-header, .card-tools, .no-print, .filter-form, footer, .nav-section { display: none !important; }
-        .content-wrapper, .content { margin: 0 !important; padding: 0 !important; }
-        .card { border: none !important; box-shadow: none !important; }
-        .balance-sheet-print { padding: 1rem; }
+    .print-header-logo {
+        max-height: 20px !important;
+        margin-bottom: 0.3rem;
     }
+    @media print {
+        /* Page setup - landscape for single page fit */
+        @page {
+            size: A4 landscape;
+            margin: 0.3in;
+        }
+
+        /* Hide all navigation and header elements */
+        .main-sidebar, .main-header, .card-header, .card-tools, .no-print, .filter-form, 
+        footer, .nav-section, nav, .navbar, .sidebar, .Header, .user-panel, .treeview, 
+        .brand-link, .alert, .alert-info, .alert-warning, .alert-light {
+            display: none !important;
+            visibility: hidden !important;
+        }
+
+        /* Reset body and wrapper styles */
+        body, html {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: white !important;
+            font-size: 9pt !important;
+        }
+
+        /* Make content full width */
+        .content-wrapper, .content-header, .content, .container-fluid {
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+
+        .card {
+            border: none !important;
+            box-shadow: none !important;
+            page-break-inside: avoid;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        .card-body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: none !important;
+        }
+
+        .balance-sheet-print {
+            padding: 0 !important;
+            width: 100%;
+            margin: 0;
+            font-size: 8.5pt;
+        }
+
+        .row {
+            display: block !important;
+            width: 100%;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        .col-lg-6, .col-md-6, .col-12 {
+            display: block !important;
+            width: 100% !important;
+            float: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        /* Table improvements */
+        table {
+            page-break-inside: avoid;
+            width: 100%;
+            font-size: 8pt !important;
+            margin: 0.1rem 0 !important;
+        }
+
+        h5, h4, h3, h2, h1 {
+            page-break-after: avoid;
+            margin: 0.15rem 0 0.08rem 0 !important;
+            font-size: 9pt !important;
+            line-height: 1.1 !important;
+        }
+
+        /* Header styling */
+        .bs-org-name {
+            font-size: 9pt !important;
+            font-weight: 700 !important;
+            margin: 0.1rem 0 !important;
+        }
+
+        .bs-title {
+            font-size: 8.5pt !important;
+            margin: 0.08rem 0 !important;
+        }
+
+        .bs-asof {
+            font-size: 7.5pt !important;
+            margin: 0.08rem 0 0.15rem 0 !important;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 0.1rem;
+        }
+
+        .bs-muted.small { display: none !important; }
+
+        /* Tables styling */
+        .bs-section-head {
+            margin-top: 0.2rem !important;
+            margin-bottom: 0.08rem !important;
+            font-size: 7.5pt !important;
+            font-weight: 700;
+            line-height: 1 !important;
+        }
+
+        .bs-table { margin: 0.08rem 0 !important; }
+
+        .bs-table td, .bs-table th {
+            padding: 0.08rem 0.2rem !important;
+            font-size: 7.5pt !important;
+            line-height: 1.05 !important;
+        }
+
+        .bs-table .bs-num {
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        .bs-total-row td {
+            font-weight: 700;
+            border-top: 1px solid #999;
+            padding: 0.08rem 0.2rem !important;
+        }
+
+        .bs-grand td {
+            font-weight: 700;
+            border-top: 1.5px solid #999;
+            padding: 0.08rem 0.2rem !important;
+        }
+
+        /* Spacing */
+        .mb-3, .mb-2, .mb-0, .mt-3, .mt-2, .mt-1 { margin: 0 !important; }
+        .gap-2, .gap-3 { gap: 0 !important; }
+        .pt-4 { padding-top: 0.1rem !important; }
+        .border-top { border-top: 1px solid #ccc !important; }
+
+        .badge { margin: 0 !important; font-size: 6.5pt; }
+
+        /* Header and footer */
+        .print-header {
+            text-align: center;
+            margin-bottom: 0.2rem;
+            page-break-after: avoid;
+            border-bottom: 1px solid #999;
+            padding-bottom: 0.15rem;
+        }
+
+        .print-header-logo {
+            display: none !important;
+            max-height: 6px;
+            margin-bottom: 0;
+        }
+
+        .print-header-school {
+            font-size: 8.5pt;
+            font-weight: 700;
+            margin: 0.08rem 0;
+            line-height: 1.1;
+        }
+
+        .print-header-details {
+            font-size: 6.5pt;
+            color: #666;
+            margin: 0 0;
+            line-height: 1.05;
+        }
+
+        .print-footer {
+            margin-top: 0.2rem;
+            padding-top: 0.15rem;
+            border-top: 1px solid #999;
+            font-size: 6pt;
+            text-align: center;
+            color: #666;
+        }
+
+        .print-footer p {
+            margin: 0.05rem 0;
+            line-height: 1;
+        }
+
+        .row.mt-4 {
+            margin-top: 0.15rem !important;
+            page-break-after: avoid;
+            border-top: 1px solid #999;
+            padding-top: 0.1rem !important;
+        }
+    }
+
 </style>
 
 <div class="container-fluid">
@@ -114,20 +308,23 @@
                     </form>
 
                     <div class="balance-sheet-print p-2 p-md-3">
-                        <div class="text-center mb-3">
+                        <!-- Print Header -->
+                        <div class="print-header">
                             @if($school && $school->logo_url)
-                                <div class="mb-2">
-                                    <img src="{{ $school->logo_url }}" alt="" style="max-height: 56px;">
-                                </div>
+                                <img src="{{ $school->logo_url }}" alt="School Logo" class="print-header-logo">
                             @endif
-                            <div class="bs-org-name">{{ $school ? $school->school_name : config('app.name', 'School') }}</div>
+                            <div class="print-header-school">{{ $school ? $school->school_name : config('app.name', 'School') }}</div>
                             @if($school && ($school->address || $school->phone || $school->email))
-                                <div class="bs-muted">
+                                <div class="print-header-details">
                                     @if($school->address){{ $school->address }}@endif
-                                    @if($school->phone) · {{ $school->phone }}@endif
-                                    @if($school->email) · {{ $school->email }}@endif
+                                    @if($school->phone)<br>{{ $school->phone }}@endif
+                                    @if($school->email)<br>{{ $school->email }}@endif
                                 </div>
                             @endif
+                        </div>
+
+                        <!-- Screen-only header (hidden in print) -->
+                        <div class="text-center mb-3 no-print">
                             <div class="bs-title">Statement of Financial Position</div>
                             <div class="bs-asof">
                                 As at {{ $asOfDate->format('j F Y') }}
@@ -140,14 +337,32 @@
                             </div>
                         </div>
 
+                        <!-- Print Document Title and Date -->
+                        <div style="text-align: center; margin-bottom: 0.75rem; page-break-after: avoid;">
+                            <h5 style="font-size: 1rem; margin: 0.2rem 0; font-weight: bold;">STATEMENT OF FINANCIAL POSITION</h5>
+                            <p style="font-size: 0.85rem; margin: 0.1rem 0; color: #666;">
+                                As at {{ $asOfDate->format('j F Y') }}
+                                @if($termId && isset($terms))
+                                    @php
+                                        $selectedTerm = $terms->where('id', $termId)->first();
+                                    @endphp
+                                    <br>({{ $selectedTerm ? $selectedTerm->name . ' - ' . ($selectedTerm->academicYear->year ?? '') : 'Selected Term' }})
+                                @endif
+                            </p>
+                        </div>
+
                         <p class="bs-muted small no-print mb-3">
-                            Built from your live tables: <code>student_transactions</code> (paid / successful, through the report date),
-                            <code>expenses</code> (through the report date), and expected fees from <code>students</code> + <code>courses</code>
-                            (same fee rules as the student portal). This matches the cash book cash figure plus fees still owed (or advances if students overpaid).
+                            Built from your live tables: <code>student_transactions</code> (paid/successful, through the report date),
+                            <code>expenses</code> (through the report date), and <code>course_term_fees</code> for accurate fee positions per course and term.
+                            This matches the cash (receipts less expenses) plus fees students still owe based on the course term fee schedule.
                         </p>
                         @if(!empty($data['meta']))
                             <p class="bs-muted small no-print mb-3">
-                                Receipts to date: <strong>{{ number_format($data['meta']['total_student_receipts'], 2) }}</strong> RWF ·
+                                <strong>Report Source:</strong>
+                                @if(!empty($data['meta']['source_description']))
+                                    {{ $data['meta']['source_description'] }}<br>
+                                @endif
+                                <strong>Summary:</strong> Receipts to date: <strong>{{ number_format($data['meta']['total_student_receipts'], 2) }}</strong> RWF ·
                                 Expenses to date: <strong>{{ number_format($data['meta']['total_expenses'], 2) }}</strong> RWF
                             </p>
                         @endif
@@ -155,6 +370,7 @@
                         <div class="row">
                             <div class="col-lg-6 mb-4 mb-lg-0">
                                 <div class="bs-section-head">Assets</div>
+                                <p class="bs-muted small mb-2">What you own and money owed to you:</p>
                                 <table class="bs-table">
                                     <tbody>
                                         @forelse($data['assets']['details'] as $row)
@@ -179,10 +395,16 @@
                                         </tr>
                                     </tbody>
                                 </table>
+                                <div class="alert alert-info small mt-2 no-print" role="alert">
+                                    <strong>What this means:</strong><br>
+                                    <strong>CASH:</strong> Actual money you have collected from students and kept after paying expenses.<br>
+                                    <strong>AR-STU (Accounts Receivable):</strong> Money that students still owe based on their course fees. This is money you expect to collect.
+                                </div>
                             </div>
 
                             <div class="col-lg-6">
                                 <div class="bs-section-head">Liabilities</div>
+                                <p class="bs-muted small mb-2">Money you owe:</p>
                                 <table class="bs-table">
                                     <tbody>
                                         @forelse($data['liabilities']['details'] as $row)
@@ -198,7 +420,7 @@
                                             </tr>
                                         @empty
                                             <tr>
-                                                <td colspan="2" class="bs-muted">No student fee advances (no overpayments vs expected fees).</td>
+                                                <td colspan="2" class="bs-muted">No liabilities (no student overpayments).</td>
                                             </tr>
                                         @endforelse
                                         <tr class="bs-total-row">
@@ -209,6 +431,7 @@
                                 </table>
 
                                 <div class="bs-section-head mt-3">Equity</div>
+                                <p class="bs-muted small mb-2">Your school's net worth (Assets - Liabilities):</p>
                                 <table class="bs-table">
                                     <tbody>
                                         @foreach($data['equity']['details'] as $row)
@@ -229,6 +452,9 @@
                                         </tr>
                                     </tbody>
                                 </table>
+                                <div class="alert alert-success small mt-2 no-print" role="alert">
+                                    <strong>What this means:</strong> The school's net worth. Your financial position = Total Assets minus Total Liabilities.
+                                </div>
 
                                 <table class="bs-table mt-2">
                                     <tbody>
@@ -256,9 +482,81 @@
                             </div>
                         </div>
 
+                        <div class="row mt-4 pt-4 border-top">
+                            <div class="col-12">
+                                <h5 class="mb-3">Balance Sheet Explained</h5>
+                                <div class="alert alert-light border-left border-primary" style="border-left-width: 4px;">
+                                    <p class="mb-2"><strong>What is this Balance Sheet?</strong></p>
+                                    <p class="mb-2">
+                                        A Balance Sheet shows your school's financial position at a specific point in time. It has three main parts:
+                                    </p>
+                                    <div class="row mt-3">
+                                        <div class="col-md-6">
+                                            <strong class="text-primary">1. ASSETS (What you own and are owed)</strong>
+                                            <table class="table table-sm mt-2 mb-0">
+                                                <tr>
+                                                    <td><strong>CASH:</strong></td>
+                                                    <td>{{ number_format($data['meta']['total_student_receipts'] ?? 0, 2) }} - {{ number_format($data['meta']['total_expenses'] ?? 0, 2) }} RWF</td>
+                                                </tr>
+                                                <tr>
+                                                    <td colspan="2" class="small text-muted">Actual money = Total student payments received MINUS total expenses paid out</td>
+                                                </tr>
+                                                @if(collect($data['assets']['details'])->where('account_code', 'AR-STU')->isNotEmpty())
+                                                    @php $arStu = collect($data['assets']['details'])->where('account_code', 'AR-STU')->first(); @endphp
+                                                    <tr>
+                                                        <td><strong>RECEIVABLES:</strong></td>
+                                                        <td>{{ number_format($arStu['balance'] ?? 0, 2) }} RWF</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td colspan="2" class="small text-muted">Money students STILL OWE based on their course fees</td>
+                                                    </tr>
+                                                @endif
+                                            </table>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <strong class="text-danger">2. LIABILITIES (What you owe)</strong>
+                                            @if($data['liabilities']['total'] > 0.01)
+                                                <table class="table table-sm mt-2 mb-0">
+                                                    <tr>
+                                                        <td><strong>STUDENT ADVANCES:</strong></td>
+                                                        <td>{{ number_format($data['liabilities']['total'], 2) }} RWF</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td colspan="2" class="small text-muted">When students paid more than they owed</td>
+                                                    </tr>
+                                                </table>
+                                            @else
+                                                <p class="text-muted">No liabilities (students haven't overpaid)</p>
+                                            @endif
+                                        </div>
+                                    </div>
+                                    
+                                    <hr class="my-3">
+                                    
+                                    <p class="mb-2"><strong class="text-success">3. EQUITY (School's Net Worth)</strong></p>
+                                    <p class="small mb-0">
+                                        <strong>Formula:</strong> Total Assets ({{ number_format($data['assets']['total'], 2) }}) - Total Liabilities ({{ number_format($data['liabilities']['total'], 2) }}) = 
+                                        <strong>{{ number_format($data['equity']['total'], 2) }} RWF</strong>
+                                    </p>
+                                    <p class="small text-muted mt-2 mb-0">
+                                        This is what the school is worth financially.
+                                    </p>
+                                </div>
+
+                                <div class="alert alert-warning mt-3 no-print" role="alert">
+                                    <strong>⚠️ Important Note:</strong> The Total Assets figure ({{ number_format($data['assets']['total'], 2) }} RWF) is the sum of:
+                                    <ul class="mb-0 mt-2">
+                                        <li><strong>{{ number_format($data['meta']['total_student_receipts'] - $data['meta']['total_expenses'], 2) }} RWF</strong> in actual cash (money in hand)</li>
+                                        <li><strong>{{ number_format(collect($data['assets']['details'])->where('account_code', 'AR-STU')->sum('balance'), 2) }} RWF</strong> in expected receivables (money students owe you)</li>
+                                    </ul>
+                                    <strong>Only the CASH figure is money you can spend right now.</strong>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="row mt-3">
                             <div class="col-12">
-                                <div class="mt-1 d-flex flex-wrap align-items-center gap-3">
+                                <div class="mt-1 d-flex flex-wrap align-items-center gap-3 no-print">
                                     <span class="font-weight-bold">Accounting equation:</span>
                                     @if($data['is_balanced'])
                                         <span class="badge badge-success">Balanced</span>
@@ -271,6 +569,23 @@
                                     @endif
                                 </div>
                             </div>
+                        </div>
+
+                        <!-- Print Footer -->
+                        <div class="print-footer">
+                            <p style="margin: 0; font-size: 0.75rem;">
+                                <strong>{{ $school ? $school->school_name : config('app.name', 'School') }}</strong>
+                                @if($school && $school->email) | {{ $school->email }}@endif
+                            </p>
+                            <p style="margin: 0; font-size: 0.7rem; color: #999;">
+                                Generated: {{ now()->format('j F Y H:i:s') }}
+                                @if($termId && isset($terms))
+                                    @php
+                                        $selectedTerm = $terms->where('id', $termId)->first();
+                                    @endphp
+                                    | {{ $selectedTerm ? $selectedTerm->name : 'All Terms' }}
+                                @endif
+                            </p>
                         </div>
                     </div>
                 </div>

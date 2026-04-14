@@ -60,7 +60,8 @@ class PublicExamController extends Controller
      */
     public function show(Exam $exam)
     {
-        if (!$exam->isPubliclyAccessible()) {
+        // Allow public viewing of any exam that's marked public, don't abort
+        if (!$exam->is_public) {
             abort(404, 'Exam not available for public access');
         }
 
@@ -89,12 +90,13 @@ class PublicExamController extends Controller
      */
     public function showPayment(Exam $exam)
     {
-        if (!$exam->requiresPayment()) {
-            return redirect()->route('public.exams.show', $exam);
+        // Only allow payment for public exams
+        if (!$exam->is_public) {
+            abort(404, 'Exam not available for public access');
         }
 
-        if (!$exam->isPubliclyAccessible()) {
-            abort(404, 'Exam not available for public access');
+        if (!$exam->requiresPayment()) {
+            return redirect()->route('public.exams.show', $exam);
         }
 
         $flutterwavePublicKey = $this->flutterwavePublicKey;

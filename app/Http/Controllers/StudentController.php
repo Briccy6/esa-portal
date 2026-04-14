@@ -141,9 +141,17 @@ class StudentController extends Controller
             } else {
                 // Regular staff can only see students from their assigned branches
                 $branchIds = $staff->branches()->pluck('branches.id')->toArray();
-                $students = Student::whereIn('branch_id', $branchIds)
-                    ->with(['course', 'branch', 'academicYear'])
-                    ->whereNotIn('id', $dismissedStudentIds);
+                
+                // If staff has no assigned branches, show all students (they have full access)
+                if (empty($branchIds)) {
+                    $students = Student::with(['course', 'branch', 'academicYear'])
+                        ->whereNotIn('id', $dismissedStudentIds);
+                } else {
+                    // Staff has assigned branches - only show students from those branches
+                    $students = Student::whereIn('branch_id', $branchIds)
+                        ->with(['course', 'branch', 'academicYear'])
+                        ->whereNotIn('id', $dismissedStudentIds);
+                }
             }
         }
 
@@ -203,6 +211,141 @@ class StudentController extends Controller
         $academicYears = AcademicYear::all();
 
         return view('students.create', compact('branches', 'courses', 'academicYears'));
+    }
+
+    /**
+     * Store a newly created student in storage (staff/accountant registration with optional cash payment)
+     */
+    public function store(Request $request)
+    {
+        try {
+            // Validate input
+            $validated = $request->validate([
+                'full_name'         => 'required|string|max:255',
+                'email'             => 'nullable|email|unique:students,email',
+                'phone'             => 'required|string|max:20',
+                'sex'               => 'required|in:Male,Female,Other',
+                'branch_id'         => 'required|exists:branches,id',
+                'course_id'         => 'required|exists:courses,id',
+                'academic_year_id'  => 'required|exists:academic_years,id',
+                'fee_type'          => 'nullable|string|in:registration_fee,school_fee,trip_fee,practical_fee,student_card',
+                'amount_paid'       => 'nullable|numeric|min:0',
+            ]);
+
+            DB::beginTransaction();
+
+            // Generate unique registration number
+            $course = Course::findOrFail($validated['course_id']);
+            $academicYear = AcademicYear::findOrFail($validated['academic_year_id']);
+            
+            $maxAttempts = 5;
+            $student = null;
+
+            for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+                try {
+                    $regNumber = $this->generateUniqueRegNumber($course->abbreviation, $academicYear->year);
+
+                    $student = Student::create([
+                        'full_name'        => $validated['full_name'],
+                        'email'            => $validated['email'] ?? 'noemail+' . uniqid() . '@example.com', // Generate temporary email if not provided
+                        'phone'            => $validated['phone'],
+                        'sex'              => $validated['sex'],
+                        'branch_id'        => $validated['branch_id'],
+                        'course_id'        => $validated['course_id'],
+                        'academic_year_id' => $validated['academic_year_id'],
+                        'reg_number'       => $regNumber,
+                        'password'         => bcrypt(Str::random(12)), // Random password for manual registration
+                    ]);
+
+                    break;
+
+                } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
+                    if ($attempt === $maxAttempts) {
+                        DB::rollBack();
+                        $message = 'Unable to generate unique registration number. Please try again.';
+                        if ($request->ajax()) {
+                            return response()->json(['success' => false, 'message' => $message], 422);
+                        }
+                        return back()->with('error', $message);
+                    }
+                    usleep(100000);
+                    continue;
+                }
+            }
+
+            if (!$student) {
+                DB::rollBack();
+                $message = 'Failed to create student record.';
+                if ($request->ajax()) {
+                    return response()->json(['success' => false, 'message' => $message], 422);
+                }
+                return back()->with('error', $message);
+            }
+
+            $student->initializeTokens(10);
+
+            // Record cash payment if provided
+            if (!empty($validated['fee_type']) && !empty($validated['amount_paid']) && $validated['amount_paid'] > 0) {
+                StudentTransaction::create([
+                    'student_id' => $student->id,
+                    'tx_ref'     => 'CASH-' . $student->id . '-' . time() . '-' . uniqid(),
+                    'type'       => $validated['fee_type'],
+                    'amount'     => $validated['amount_paid'],
+                    'currency'   => 'RWF',
+                    'status'     => 'successful',
+                    'meta'       => json_encode([
+                        'method'      => 'cash',
+                        'recorded_by' => auth()->user()->name ?? auth()->user()->email ?? 'staff',
+                    ]),
+                    'paid_at'    => now(),
+                ]);
+            }
+
+            DB::commit();
+
+            $message = 'Student registered successfully! Registration Number: ' . $student->reg_number;
+            
+            // Return JSON for AJAX requests
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $message,
+                    'student' => [
+                        'id' => $student->id,
+                        'full_name' => $student->full_name,
+                        'reg_number' => $student->reg_number,
+                        'email' => $student->email,
+                    ]
+                ], 201);
+            }
+            
+            return back()->with('success', $message);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $e->errors()
+                ], 422);
+            }
+            return back()->withErrors($e->errors())->withInput();
+        } catch (\Exception $e) {
+            \Log::error('Student creation error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            $message = 'An error occurred while creating the student: ' . $e->getMessage();
+            
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $message
+                ], 500);
+            }
+            
+            return back()->with('error', $message)->withInput();
+        }
     }
 
     public function getAcademicYears()
@@ -1290,9 +1433,9 @@ class StudentController extends Controller
         $totalAllTermsPaid = 0;
 
         if ($course) {
-            // Get all terms ordered by start date
+            // Get all terms ordered by start date (ASC = earliest first)
             $terms = Term::with('academicYear')
-                ->orderBy('start_date', 'desc')
+                ->orderBy('start_date', 'asc')
                 ->get();
 
             // ─── CHECK REGISTRATION FEE STATUS FOR ACADEMIC YEAR ─────────────────
@@ -1324,6 +1467,11 @@ class StudentController extends Controller
             $studentCardFeeCharged  = false;
 
             foreach ($terms as $term) {
+                // Skip terms from different academic years (only show current academic year)
+                if ($term->academic_year_id !== $student->academic_year_id) {
+                    continue;
+                }
+
                 // Get fees for this term
                 $termFees = $course->getFeesForTerm($term->id);
                 if (!$termFees) {
@@ -1374,10 +1522,13 @@ class StudentController extends Controller
 
                 // Calculate totals for this term
                 // NOTE: If registration already paid for academic year, don't charge again
+                // Only show in the FIRST TERM - use $registrationFeeCharged flag to prevent repeats
                 $registrationFeeForTerm = $registrationFeePaidInAcademicYear ? 0 : ($registrationFeeCharged ? 0 : $registrationFee);
                 // NOTE: If student card already paid for academic year, don't charge again
+                // Only show in the FIRST TERM - use $studentCardFeeCharged flag to prevent repeats
                 $studentCardFeeForTerm = $studentCardFeePaidInAcademicYear ? 0 : ($studentCardFeeCharged ? 0 : $termStudentCardFee);
 
+                // Mark these fees as charged after showing once
                 if ($registrationFeeForTerm > 0) {
                     $registrationFeeCharged = true;
                 }
@@ -1392,7 +1543,7 @@ class StudentController extends Controller
                 // Build fees array for this term
                 $termFeesList = [];
 
-                // Only show registration fee if NOT already paid for academic year
+                // Only show registration fee if NOT already paid for academic year AND not already shown
                 if ($registrationFeeForTerm > 0) {
                     $remainingReg = $registrationFeeForTerm - $paidRegistration;
                     if ($remainingReg > 0) {
@@ -1445,7 +1596,8 @@ class StudentController extends Controller
                     }
                 }
 
-                if ($termStudentCardFee > 0) {
+                // Only show student card fee if NOT already paid for academic year AND not already shown
+                if ($studentCardFeeForTerm > 0) {
                     $remainingStudentCard = $studentCardFeeForTerm - $paidStudentCard;
                     if ($remainingStudentCard > 0) {
                         $termFeesList[] = [
@@ -1605,7 +1757,7 @@ class StudentController extends Controller
     public function showPaymentForm($studentId)
     {
         $student = Student::with('course', 'course.academicYear')->findOrFail($studentId);
-        $terms = Term::with('academicYear')->orderBy('start_date', 'desc')->get();
+        $terms = Term::with('academicYear')->orderBy('start_date', 'asc')->get();
         
         // Get pre-selected term if passed via query string
         $selectedTermId = request('term_id');
@@ -1620,6 +1772,114 @@ class StudentController extends Controller
             'terms' => $terms,
             'selectedTerm' => $selectedTerm,
         ]);
+    }
+
+    // =========================================================================
+    // PAY FEES (STUDENT SELF-SERVICE PAYMENT)
+    // Route: POST /student/fees/pay
+    // Called from student dashboard pay buttons
+    // =========================================================================
+    public function payFees(Request $request)
+    {
+        try {
+            $student = auth('student')->user();
+            if (!$student) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized. Please log in.'
+                ], 401);
+            }
+
+            $validated = \Validator::make($request->all(), [
+                'fee_type' => 'required|string|in:registration_fee,school_fee,trip_fee,practical_fee,student_card',
+                'pay_amount' => 'required|numeric|min:1',
+            ], [
+                'fee_type.required' => 'Fee type is required.',
+                'fee_type.in' => 'Invalid fee type.',
+                'pay_amount.required' => 'Payment amount is required.',
+                'pay_amount.numeric' => 'Payment amount must be a number.',
+                'pay_amount.min' => 'Payment amount must be at least 1 RWF.',
+            ]);
+
+            if ($validated->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => implode(' ', $validated->errors()->all()),
+                    'errors' => $validated->errors()
+                ], 422);
+            }
+
+            $course = $student->course;
+            if (!$course) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Student course not found.'
+                ], 400);
+            }
+
+            $amount = floatval($request->pay_amount);
+            $feeType = $request->fee_type;
+
+            // Map fee types to proper names
+            $feeTypeNames = [
+                'registration_fee' => 'Registration',
+                'school_fee' => 'School',
+                'trip_fee' => 'Trip',
+                'practical_fee' => 'Practical',
+                'student_card' => 'Student Card'
+            ];
+
+            $feeName = $feeTypeNames[$feeType] ?? $feeType;
+
+            // For one-time fees (registration, student_card), check if already paid in academic year
+            if (in_array($feeType, ['registration_fee', 'student_card'])) {
+                $academicYearId = $student->academic_year_id;
+                
+                $alreadyPaid = StudentTransaction::where('student_id', $student->id)
+                    ->where('type', $feeType)
+                    ->whereIn('status', ['successful', 'paid'])
+                    ->whereHas('term', function ($query) use ($academicYearId) {
+                        $query->where('academic_year_id', $academicYearId);
+                    })
+                    ->exists();
+
+                if ($alreadyPaid) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "{$feeName} fee has already been paid for this academic year.",
+                    ], 400);
+                }
+            }
+
+            // Use FlutterwaveController's addPayment method to initialize payment
+            $flutterwaveController = new FlutterwaveController();
+            
+            // Create a request object for the addPayment method
+            $paymentRequest = new Request([
+                'student_id' => $student->id,
+                'fee_type' => $feeType,
+                'amount' => $amount,
+                'total_fee' => $amount,
+                'term' => $student->academicYear->year ?? null,
+            ]);
+
+            // Call the addPayment method which handles all Flutterwave integration
+            $response = $flutterwaveController->addPayment($paymentRequest);
+            
+            // Return the response from addPayment
+            return $response;
+
+        } catch (\Exception $e) {
+            \Log::error('Payment processing failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Payment processing failed. Please try again.',
+            ], 500);
+        }
     }
 
     // =========================================================================
@@ -1694,6 +1954,32 @@ class StudentController extends Controller
                 return $isAjax
                     ? response()->json(['success' => false, 'message' => $message], 400)
                     : back()->with('error', $message);
+            }
+
+            // Get academic year ID for checking one-time fees
+            $academicYearId = $student->academic_year_id;
+
+            // ── CHECK FOR ONE-TIME FEE ALREADY PAID IN ACADEMIC YEAR ─────────────────
+            // Registration fee and student card fee should only be paid ONCE per academic year
+            // Check if already paid in ANY term of the same academic year
+            if (in_array($request->fee_type, ['registration_fee', 'student_card'])) {
+                $alreadyPaidInAcademicYear = StudentTransaction::where('student_id', $student->id)
+                    ->where('type', $request->fee_type === 'registration_fee' ? 'registration' : 'student_card')
+                    ->whereIn('status', ['successful', 'paid'])
+                    ->whereHas('term', function ($query) use ($academicYearId) {
+                        $query->where('academic_year_id', $academicYearId);
+                    })
+                    ->exists();
+
+                if ($alreadyPaidInAcademicYear) {
+                    $feeTypeName = $request->fee_type === 'registration_fee' ? 'Registration Fee' : 'Student Card';
+                    $academicYear = AcademicYear::find($academicYearId);
+                    $yearLabel = $academicYear ? $academicYear->year : 'current academic';
+                    $message = "{$feeTypeName} has already been paid for the {$yearLabel} year. This is a one-time fee per academic year and cannot be paid again.";
+                    return $isAjax
+                        ? response()->json(['success' => false, 'message' => $message, 'type' => 'one_time_fee'], 422)
+                        : back()->with('error', $message);
+                }
             }
 
             // Get term-specific fees or fallback to legacy fees
@@ -3893,6 +4179,15 @@ class StudentController extends Controller
                 })
                 ->exists();
 
+            // Check if student card fee has been paid in ANY term of the same academic year
+            $studentCardPaidInYear = StudentTransaction::where('student_id', $student->id)
+                ->where('type', 'student_card')
+                ->whereIn('status', ['successful', 'paid'])
+                ->whereHas('term', function ($query) use ($academicYearId) {
+                    $query->where('academic_year_id', $academicYearId);
+                })
+                ->exists();
+
             if ($registrationFee > 0) {
                 // Only show registration fee if not already paid in this academic year
                 if (!$registrationPaidInYear) {
@@ -3949,15 +4244,18 @@ class StudentController extends Controller
             }
 
             if ($studentCardFee > 0) {
-                $remaining = $studentCardFee - $paidStudentCard;
-                if ($remaining > 0) {
-                    $fees[] = [
-                        'type' => 'student_card',
-                        'name' => 'Student Card',
-                        'total' => $studentCardFee,
-                        'paid' => $paidStudentCard,
-                        'remaining' => $remaining,
-                    ];
+                // Only show student card fee if not already paid in this academic year
+                if (!$studentCardPaidInYear) {
+                    $remaining = $studentCardFee - $paidStudentCard;
+                    if ($remaining > 0) {
+                        $fees[] = [
+                            'type' => 'student_card',
+                            'name' => 'Student Card',
+                            'total' => $studentCardFee,
+                            'paid' => $paidStudentCard,
+                            'remaining' => $remaining,
+                        ];
+                    }
                 }
             }
 

@@ -16,7 +16,7 @@
         .print-area {
             border: 1px solid black;
             background: white;
-            margin: 20px 0;
+            margin: 0 0 20px 0;
         }
         
         .header-section {
@@ -331,7 +331,6 @@
                     <td class="bg-gray">EXAM</td>
                     <td class="bg-gray">AVG</td>
                     <td class="bg-gray">A.A</td>
-                    <td class="bg-gray">R.E</td>
                     <td class="bg-gray">Comments</td>
                 </tr>
             </thead>
@@ -345,11 +344,10 @@
                         <tr>
                             <td colspan="4" class="text-left">{{ $subject->subject_name }}</td>
                             <td>{{ $subject->credits ?? 3 }}</td>
-                            <td>{{ number_format($subject->test_average ?? 0, 2) }}</td>
-                            <td>{{ number_format($subject->exam_mark ?? 0, 2) }}</td>
-                            <td>{{ number_format($subject->total_mark ?? 0, 2) }}</td>
-                            <td class="font-bold">{{ number_format($subject->total_mark ?? 0, 2) }}%</td>
-                            <td class="font-bold">{{ $subject->grade === 'A' || $subject->grade === 'B' || $subject->grade === 'C' ? 'C' : 'NYC' }}</td>
+                            <td>{{ number_format(min($subject->test_average ?? 0, 100), 2) }}</td>
+                            <td>{{ number_format(min($subject->exam_mark ?? 0, 100), 2) }}</td>
+                            <td>{{ number_format(min($subject->total_mark ?? 0, 100), 2) }}</td>
+                            <td class="font-bold">{{ number_format(min($subject->total_mark ?? 0, 100), 2) }}%</td>
                             <td class="font-bold">{{ $subject->comments ?? '-' }}</td>
                         </tr>
                     @endforeach
@@ -366,13 +364,17 @@
                     <tr class="bg-white font-bold">
                         <td colspan="8" class="text-left"></td>
                     </tr>
+                    @php
+                        $totalTestAvg = $reportCard->subjects->sum('test_average');
+                        $totalExamMark = $reportCard->subjects->sum('exam_mark');
+                        $totalMark = $reportCard->subjects->sum('total_mark');
+                    @endphp
                     <tr class="bg-blue font-bold">
                         <td colspan="5" class="text-left">TOTAL</td>
-                        <td>{{ number_format($reportCard->subjects->sum('test_average'), 1) }}</td>
-                        <td>{{ number_format($reportCard->subjects->sum('exam_mark'), 1) }}</td>
-                        <td>{{ number_format($reportCard->subjects->sum('total_mark'), 1) }}</td>
-                        <td class="font-bold">{{ number_format($reportCard->subjects->sum('total_mark'), 1) }}%</td>
-                        <td class="font-bold">{{ $reportCard->average_marks >= 50 ? 'C' : 'NYC' }}</td>
+                        <td>{{ number_format(min($totalTestAvg, 100), 1) }}</td>
+                        <td>{{ number_format(min($totalExamMark, 100), 1) }}</td>
+                        <td>{{ number_format(min($totalMark, 100), 1) }}</td>
+                        <td class="font-bold">{{ number_format(min($totalMark, 100), 1) }}%</td>
                         <td></td>
                     </tr>
 

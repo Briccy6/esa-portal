@@ -470,25 +470,39 @@
 
     <script>
     function selectTermAndFee(termId, feeType, remaining) {
-        // Store the selected term and fee for later use
-        localStorage.setItem('selectedTermId', termId);
-        localStorage.setItem('selectedFeeType', feeType);
-        localStorage.setItem('selectedFeeRemaining', remaining);
+        // Populate payment modal with fee details
+        const feeTypeInput = document.getElementById('feeTypeInput');
+        const payAmountInput = document.getElementById('payAmountInput');
         
-        // Show a toast or notification
-        const alert = document.createElement('div');
-        alert.className = 'alert alert-info alert-dismissible fade show';
-        alert.innerHTML = `
-            <i class="fas fa-check-circle me-2"></i>
-            Selected: <strong>${feeType.replace('_', ' ').toUpperCase()}</strong> - ${remaining} RWF to pay
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
-        document.body.prepend(alert);
+        if (feeTypeInput) {
+            feeTypeInput.value = feeType;
+        }
+        if (payAmountInput) {
+            payAmountInput.value = remaining;
+        }
         
-        // Scroll to payment section if exists
-        const paymentSection = document.querySelector('.payment-instructions');
-        if (paymentSection) {
-            paymentSection.scrollIntoView({ behavior: 'smooth' });
+        // Open the payment modal
+        const modalElement = document.getElementById('payFeeModal');
+        if (modalElement) {
+            try {
+                if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                    new bootstrap.Modal(modalElement).show();
+                } else {
+                    modalElement.classList.add('show');
+                    modalElement.style.display = 'block';
+                    document.body.classList.add('modal-open');
+                    const backdrop = document.createElement('div');
+                    backdrop.className = 'modal-backdrop fade show';
+                    document.body.appendChild(backdrop);
+                }
+            } catch (error) {
+                console.error('Error showing payment modal:', error);
+                // Fallback: show alert
+                alert('Error opening payment modal. Please try again.');
+            }
+        } else {
+            console.error('Payment modal not found');
+            alert('Payment modal not found. Please refresh the page.');
         }
     }
     </script>
@@ -1110,7 +1124,7 @@
     <div class="modal fade" id="payFeeModal" tabindex="-1" aria-labelledby="payFeeModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content payment-modal">
-                <form id="payFeeForm" action="{{ route('student.payment.process') }}" method="POST">
+                <form id="payFeeForm" action="{{ route('student.fees.pay.process') }}" method="POST">
                     @csrf
                     <input type="hidden" name="fee_type" id="feeTypeInput">
                     <div class="modal-header">
@@ -1542,9 +1556,7 @@ document.addEventListener('DOMContentLoaded', function () {
             body: JSON.stringify({
                 student_id: {{ auth('student')->user()->id }},
                 fee_type:   document.getElementById('feeTypeInput').value,
-                amount:     document.getElementById('payAmountInput').value,
-                total_fee:  document.getElementById('payAmountInput').value,
-                term:       '{{ $student->academicYear->year ?? "Current" }}'
+                pay_amount: document.getElementById('payAmountInput').value
             })
         })
         .then(r => r.json())

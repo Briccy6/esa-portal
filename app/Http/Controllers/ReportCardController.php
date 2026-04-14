@@ -18,6 +18,7 @@ use App\Models\StudentTransaction;
 use App\Models\CourseTermFee;
 use App\Services\FeePaymentService;
 use App\Services\ReportCardService;
+use App\Support\AssessmentMarkMath;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -211,20 +212,18 @@ class ReportCardController extends Controller
                 if ($sub) {
                     $byTermId[$tid] = [
                         'test' => $this->formatMarkForMatrix($sub->test_average),
-                        'exam' => $this->formatMarkForMatrix($sub->exam_mark),
-                        'total' => $this->formatMarkForMatrix($sub->total_mark),
+                        // Only show test marks - skip exam marks
+                        'total' => $this->formatMarkForMatrix($sub->test_average),
                         'obs' => ($sub->grade === 'A' || $sub->grade === 'B' ? 'C' : 'NYC'),
                     ];
                     \Log::debug("Subject {$meta['competence_title']} - Term {$tid}:", [
-                        'raw_exam_mark' => $sub->exam_mark,
                         'raw_test_average' => $sub->test_average,
-                        'raw_total_mark' => $sub->total_mark,
+                        'raw_total_mark' => $sub->test_average,
                         'formatted_marks' => $byTermId[$tid],
                     ]);
                 } else {
                     $byTermId[$tid] = [
                         'test' => '—',
-                        'exam' => '—',
                         'total' => '—',
                         'obs' => '—',
                     ];
@@ -247,8 +246,8 @@ class ReportCardController extends Controller
             $totalsByTerm[$tid] = [
                 'credits_sum' => (int) $rc->subjects->sum(fn ($s) => (int) ($s->credits ?? 3)),
                 'test_sum' => $this->formatMarkForMatrix($rc->subjects->sum('test_average')),
-                'exam_sum' => $this->formatMarkForMatrix($rc->subjects->sum('exam_mark')),
-                'total_sum' => $this->formatMarkForMatrix($rc->subjects->sum('total_mark')),
+                // Only show test sum - skip exam sum
+                'total_sum' => $this->formatMarkForMatrix($rc->subjects->sum('test_average')),
             ];
             $positionByTerm[$tid] = $rc->position_display;
             $averageByTerm[$tid] = $rc->average_marks;
@@ -1395,29 +1394,14 @@ class ReportCardController extends Controller
             $examMarks = $allMarks->where('assessment_type', 'exam');
             $testMarks = $allMarks->where('assessment_type', 'test');
 
-            // Calculate exam mark (normalized to 100)
-            $examMark = 0;
+            // Exam: each row is on its own scale (typically /100); convert to % per row then average — avoids false 100% from sum/sum quirks
+            $examMark = AssessmentMarkMath::aggregatedExamPercentFromMarks($examMarks);
+
             if ($examMarks->isNotEmpty()) {
-                // For exam marks, take the first exam mark (exams are typically 1 per subject per term)
-                $firstExamMark = $examMarks->first();
-                
-                // Get total_marks from the exam relationship
-                $examTotalMarks = $firstExamMark->exam ? $firstExamMark->exam->total_marks : 100;
-                
-                // Always normalize to 100-point scale
-                if ($examTotalMarks && $examTotalMarks > 0) {
-                    $examMark = ($firstExamMark->value / $examTotalMarks) * 100;
-                } else {
-                    // If no total_marks, assume it's already on 0-100 scale
-                    $examMark = (float) $firstExamMark->value;
-                }
-                
                 \Log::info('Exam marks calculated: ' . json_encode([
                     'lesson_id' => $lesson->id,
                     'exam_marks_count' => $examMarks->count(),
-                    'first_exam_value' => $firstExamMark->value,
-                    'exam_total_marks' => $examTotalMarks,
-                    'normalized_exam_mark' => $examMark
+                    'aggregated_exam_mark' => $examMark,
                 ]));
             }
 

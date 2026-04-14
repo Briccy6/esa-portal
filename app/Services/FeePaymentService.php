@@ -12,6 +12,18 @@ use Carbon\Carbon;
 
 class FeePaymentService
 {
+    /** Matches `student_transactions.status` values that count as paid (same as payment transcript). */
+    public static function paidTransactionStatuses(): array
+    {
+        return ['successful', 'paid', 'completed'];
+    }
+
+    /** Registration fee rows may be stored as either type in `student_transactions.type`. */
+    public static function registrationTransactionTypes(): array
+    {
+        return ['registration', 'registration_fee'];
+    }
+
     /**
      * Determine which term IDs should be considered for fee validation for a student.
      *
@@ -123,16 +135,24 @@ class FeePaymentService
                     'payment_percentage' => 100,
                 ];
             }
+
+            $yearTermIds = Term::query()
+                ->where('academic_year_id', $student->academic_year_id)
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
             
             // ========== FEES QUERY (from course_term_fees table) ==========
             // Student card fee is a one-time fee per academic year (not per term).
             // We take it from the first term's configured fee for the academic year.
             $studentCardFeeOnce = 0;
+            // Payments often have term_id NULL — must still count (same as payment transcript).
             $studentCardAlreadyPaidInAcademicYear = StudentTransaction::where('student_id', $student->id)
                 ->where('type', 'student_card')
-                ->where('status', 'successful')
-                ->whereHas('term', function ($q) use ($student) {
-                    $q->where('academic_year_id', $student->academic_year_id);
+                ->whereIn('status', self::paidTransactionStatuses())
+                ->where(function ($q) use ($yearTermIds) {
+                    $q->whereNull('term_id')
+                        ->orWhereIn('term_id', $yearTermIds);
                 })
                 ->exists();
 
@@ -198,29 +218,22 @@ class FeePaymentService
                                  ;
             }
             
-            // When checking only specific terms (not all terms), check if registration was already paid globally
-            // If it was paid in ANY term (even if not in the selected terms), don't count it again
-            if (!empty($termIds) && is_array($termIds)) {
-                // Registration fee is per academic year, so only treat it as "already paid"
-                // when it was paid inside the student's current academic year.
-                $academicYearTermIds = Term::query()
-                    ->where('academic_year_id', $student->academic_year_id)
-                    ->pluck('id')
-                    ->all();
+            // Registration is once per academic year; exclude from required if already paid (any term in year or NULL term_id).
+            $registrationAlreadyPaid = StudentTransaction::where('student_id', $student->id)
+                ->whereIn('type', self::registrationTransactionTypes())
+                ->whereIn('status', self::paidTransactionStatuses())
+                ->where(function ($q) use ($yearTermIds) {
+                    $q->whereNull('term_id')
+                        ->orWhereIn('term_id', $yearTermIds);
+                })
+                ->exists();
 
-                $registrationAlreadyPaid = StudentTransaction::where('student_id', $student->id)
-                                                             ->where('type', 'registration')
-                                                             ->where('status', 'successful')
-                                                             ->whereIn('term_id', $academicYearTermIds)
-                                                             ->exists();
-                
-                if ($registrationAlreadyPaid) {
-                    \Log::debug('FeePaymentService: Registration already paid globally, excluding from required fees', [
-                        'student_id' => $student->id,
-                        'term_ids' => $termIds,
-                    ]);
-                    $registrationFee = 0;
-                }
+            if ($registrationAlreadyPaid) {
+                \Log::debug('FeePaymentService: Registration already paid for academic year, excluding from required fees', [
+                    'student_id' => $student->id,
+                    'term_ids' => $termIds,
+                ]);
+                $registrationFee = 0;
             }
             
             $requiredFees = $registrationFee + $otherFeesTotal;
@@ -229,19 +242,39 @@ class FeePaymentService
             }
             
             // ========== PAYMENT QUERY (from student_transactions table) ==========
-            // Get all successful fee payments for this student (all fee types)
-            // Includes: registration, school_fee (tuition), practical_fee, trip_fee, student_card
-            $transactionQuery = StudentTransaction::where('student_id', $student->id)
-                                                  ->whereIn('type', ['registration', 'school_fee', 'practical_fee', 'trip_fee', 'student_card'])
-                                                  ->where('status', 'successful');
-            
-            // Only get payments for eligible terms
-            if (!empty($termIds) && is_array($termIds)) {
-                $transactionQuery->whereIn('term_id', $termIds);
-            }
-            
-            // Sum all amount values from student_transactions
-            $totalPaid = $transactionQuery->sum('amount');
+            // Term-scoped fees: tuition / practical / trip — only count payments for the terms being checked.
+            $paidStatuses = self::paidTransactionStatuses();
+            $termFeeTypes = ['school_fee', 'practical_fee', 'trip_fee'];
+
+            $sumTermScoped = (float) StudentTransaction::query()
+                ->where('student_id', $student->id)
+                ->whereIn('status', $paidStatuses)
+                ->whereIn('type', $termFeeTypes)
+                ->when(! empty($termIds), fn ($q) => $q->whereIn('term_id', $termIds))
+                ->sum('amount');
+
+            // Year-wide: registration + student card (include term_id NULL so cash/online rows match transcript).
+            $sumRegistrationYear = (float) StudentTransaction::query()
+                ->where('student_id', $student->id)
+                ->whereIn('type', self::registrationTransactionTypes())
+                ->whereIn('status', $paidStatuses)
+                ->where(function ($q) use ($yearTermIds) {
+                    $q->whereNull('term_id')
+                        ->orWhereIn('term_id', $yearTermIds);
+                })
+                ->sum('amount');
+
+            $sumStudentCardYear = (float) StudentTransaction::query()
+                ->where('student_id', $student->id)
+                ->where('type', 'student_card')
+                ->whereIn('status', $paidStatuses)
+                ->where(function ($q) use ($yearTermIds) {
+                    $q->whereNull('term_id')
+                        ->orWhereIn('term_id', $yearTermIds);
+                })
+                ->sum('amount');
+
+            $totalPaid = $sumTermScoped + $sumRegistrationYear + $sumStudentCardYear;
             
             \Log::debug('FeePaymentService: Payment summary', [
                 'student_id' => $student->id,
@@ -337,92 +370,34 @@ class FeePaymentService
                 ];
             }
 
-            // Get student transactions (all fee types)
-            // Includes: registration, school_fee (tuition), practical_fee, trip_fee, student_card
-            $transactionQuery = StudentTransaction::where('student_id', $student->id)
-                                                  ->whereIn('type', ['registration', 'school_fee', 'practical_fee', 'trip_fee', 'student_card'])
-                                                  ->orderBy('created_at', 'desc');
-            
-            if (!empty($termIds) && is_array($termIds)) {
-                $transactionQuery->whereIn('term_id', $termIds);
-            }
-            
-            $transactions = $transactionQuery->get();
+            // Fee-related transactions (same types as live calculation; do not hide NULL term_id rows)
+            $feeTypesForList = array_merge(
+                self::registrationTransactionTypes(),
+                ['school_fee', 'practical_fee', 'trip_fee', 'student_card']
+            );
+            $transactions = StudentTransaction::where('student_id', $student->id)
+                ->whereIn('type', $feeTypesForList)
+                ->orderByDesc('created_at')
+                ->limit(100)
+                ->get();
 
             foreach ($transactions as $txn) {
                 $result['student_transactions'][] = [
                     'date' => $txn->created_at->format('Y-m-d H:i'),
+                    'type' => $txn->type,
+                    'term_id' => $txn->term_id,
                     'status' => $txn->status,
                     'amount' => $txn->amount,
                     'tx_ref' => $txn->tx_ref ?? 'N/A',
                 ];
             }
 
-            // Calculation breakdown
-            $feeCalcQuery = CourseTermFee::where('course_id', $student->course_id)
-                                         ->where('is_active', true);
-            
-            if (!empty($termIds) && is_array($termIds)) {
-                $feeCalcQuery->whereIn('term_id', $termIds);
-            } else {
-                $feeCalcQuery->whereHas('term', function ($query) use ($student) {
-                    $query->where('academic_year_id', $student->academic_year_id);
-                });
-            }
-            
-            $courseTermFeesForCalc = $feeCalcQuery->get();
-            
-            // IMPORTANT: Registration fee should only be counted ONCE per academic year, not per term
-            $registrationFeeForCalc = 0;
-            $totalRequired = 0;
-            $studentCardFeeOnce = 0;
-            $studentCardAlreadyPaidInAcademicYear = StudentTransaction::where('student_id', $student->id)
-                ->where('type', 'student_card')
-                ->where('status', 'successful')
-                ->whereHas('term', function ($q) use ($student) {
-                    $q->where('academic_year_id', $student->academic_year_id);
-                })
-                ->exists();
-            
-            foreach ($courseTermFeesForCalc as $index => $fee) {
-                // Add registration fee only from the first term
-                if ($index === 0) {
-                    $registrationFeeForCalc = ($fee->registration_fee ?? 0);
-                    $studentCardFeeOnce = ($fee->student_card_fee ?? 0);
-                }
-                
-                // Add all fees for calculation
-                $totalRequired += ($fee->registration_fee ?? 0) 
-                                + ($fee->tuition_fee ?? 0) 
-                                + ($fee->practical_fee ?? 0) 
-                                + ($fee->trip_fee ?? 0) 
-                                + ($fee->student_card_fee ?? 0);
-            }
-            
-            // Adjust total to only include registration fee once
-            $totalRequired = $totalRequired - ($registrationFeeForCalc * max(0, count($courseTermFeesForCalc) - 1));
-            // Adjust total to only include student card fee once per academic year
-            $totalRequired = $totalRequired - ($studentCardFeeOnce * max(0, count($courseTermFeesForCalc) - 1));
-            if ($studentCardAlreadyPaidInAcademicYear) {
-                $totalRequired = $totalRequired - $studentCardFeeOnce;
-            }
-            $totalRequired = max(0, $totalRequired);
-
-            $txnCalcQuery = StudentTransaction::where('student_id', $student->id)
-                                             ->where('type', 'school_fee')
-                                             ->where('status', 'successful');
-            
-            if (!empty($termIds) && is_array($termIds)) {
-                $txnCalcQuery->whereIn('term_id', $termIds);
-            }
-            
-            $totalPaidSuccessful = $txnCalcQuery->sum('amount');
-
+            $ps = $result['payment_status'];
             $result['calculation'] = [
-                'total_required' => $totalRequired,
-                'total_paid_successful' => $totalPaidSuccessful,
-                'outstanding' => max(0, $totalRequired - $totalPaidSuccessful),
-                'percentage_paid' => $totalRequired > 0 ? round(($totalPaidSuccessful / $totalRequired) * 100, 2) : 0
+                'total_required' => $ps['required_fees'],
+                'total_paid' => $ps['total_paid'],
+                'outstanding' => $ps['outstanding'],
+                'percentage_paid' => round((float) $ps['payment_percentage'], 2),
             ];
         }
 

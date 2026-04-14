@@ -125,7 +125,7 @@
                                 <option value="">-- Select Course --</option>
                                 @foreach ($courses as $course)
                                     <option value="{{ $course->id }}" @selected(old('course_id') == $course->id)>
-                                        {{ $course->name }} 
+                                        {{ $course->course_name }} 
                                         @if($course->course_type)
                                             ({{ $course->course_type }})
                                         @endif
@@ -163,6 +163,33 @@
                             </small>
                         </div>
 
+                        <!-- Multiple Courses Selection -->
+                        <div class="mb-3" id="multiple_courses_group" style="display: none;">
+                            <label class="form-label">
+                                <strong>Select Courses</strong>
+                                <span class="text-danger">*</span>
+                            </label>
+                            <div id="courses_container" style="max-height: 300px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 0.375rem; padding: 0.75rem;">
+                                @foreach ($courses as $course)
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input course-checkbox" type="checkbox" 
+                                               name="courses[]" value="{{ $course->id }}" 
+                                               id="course_check_{{ $course->id }}"
+                                               @checked(in_array($course->id, (array)old('courses', [])))>
+                                        <label class="form-check-label" for="course_check_{{ $course->id }}">
+                                            {{ $course->course_name }}
+                                            @if($course->course_type)
+                                                <span class="badge bg-secondary">{{ $course->course_type }}</span>
+                                            @endif
+                                        </label>
+                                    </div>
+                                @endforeach
+                            </div>
+                            <small class="text-muted d-block mt-2">
+                                <i class="fas fa-info-circle"></i> Select one or more courses to include. Fee tables will be excluded.
+                            </small>
+                        </div>
+
                         <!-- Info Alert -->
                         <div class="alert alert-info mb-4" id="info_alert" role="alert">
                             <i class="fas fa-lightbulb"></i>
@@ -194,6 +221,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const selectionTypeRadios = document.querySelectorAll('.selection-type-radio');
     const courseGroup = document.getElementById('course_group');
     const courseTypeGroup = document.getElementById('course_type_group');
+    const multipleCoursesGroup = document.getElementById('multiple_courses_group');
     const infoText = document.getElementById('info_text');
     const checkBoxes = document.querySelectorAll('.form-check');
     const oldTermId = @json(old('term_id'));
@@ -243,6 +271,7 @@ document.addEventListener('DOMContentLoaded', function() {
         radio.addEventListener('change', function() {
             courseGroup.style.display = 'none';
             courseTypeGroup.style.display = 'none';
+            multipleCoursesGroup.style.display = 'none';
 
             if (this.value === 'single') {
                 courseGroup.style.display = 'block';
@@ -250,8 +279,9 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if (this.value === 'by_type') {
                 courseTypeGroup.style.display = 'block';
                 infoText.innerHTML = '<i class="fas fa-layer-group"></i> All courses of this type will be included. Fee table will be excluded.';
-            } else {
-                infoText.innerHTML = '<i class="fas fa-books"></i> Multiple courses will be included. Fee table will be excluded.';
+            } else if (this.value === 'multiple') {
+                multipleCoursesGroup.style.display = 'block';
+                infoText.innerHTML = '<i class="fas fa-books"></i> Selected courses will be included. Fee tables will be excluded.';
             }
         });
     });

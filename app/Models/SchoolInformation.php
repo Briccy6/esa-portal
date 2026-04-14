@@ -70,12 +70,18 @@ class SchoolInformation extends Model
     }
 
     /**
-     * Get logo URL - prioritizes file storage over BLOB
-     * Returns file URL if available, falls back to BLOB data URL for backward compatibility
+     * Get logo URL - prioritizes BLOB data over file storage
+     * Returns BLOB data URL if available, falls back to file storage for backward compatibility
      */
     public function getLogoUrlAttribute(): ?string
     {
-        // Prioritize stored file path
+        // Prioritize BLOB data stored directly in database
+        $logo = $this->attributes['logo'] ?? null;
+        if ($logo) {
+            return $this->toImageDataUrl($logo);
+        }
+
+        // Fallback to stored file path (legacy)
         if (!empty($this->attributes['logo_file_path'] ?? null)) {
             $service = app(SchoolImageService::class);
             return $service->getImageUrl($this->attributes['logo_file_path']);
@@ -91,18 +97,22 @@ class SchoolInformation extends Model
             return $service->getImageUrl($path);
         }
 
-        // Fallback to BLOB data (deprecated, for backward compatibility)
-        $logo = $this->attributes['logo'] ?? null;
-        return $logo ? $this->toImageDataUrl($logo) : null;
+        return null;
     }
 
     /**
-     * Get principal signature URL - prioritizes file storage over BLOB
-     * Returns file URL if available, falls back to BLOB data URL for backward compatibility
+     * Get principal signature URL - prioritizes BLOB data over file storage
+     * Returns BLOB data URL if available, falls back to file storage for backward compatibility
      */
     public function getPrincipalSignatureUrlAttribute(): ?string
     {
-        // Prioritize stored file path
+        // Prioritize BLOB data stored directly in database
+        $signature = $this->attributes['principal_signature_data'] ?? null;
+        if ($signature) {
+            return $this->toImageDataUrl($signature);
+        }
+
+        // Fallback to stored file path (legacy)
         if (!empty($this->attributes['principal_signature_file_path'] ?? null)) {
             $service = app(SchoolImageService::class);
             return $service->getImageUrl($this->attributes['principal_signature_file_path']);
@@ -118,18 +128,22 @@ class SchoolInformation extends Model
             return $service->getImageUrl($path);
         }
 
-        // Fallback to BLOB data (deprecated, for backward compatibility)
-        $signature = $this->attributes['principal_signature_data'] ?? null;
-        return $signature ? $this->toImageDataUrl($signature) : null;
+        return null;
     }
 
     /**
-     * Get stamp signature URL - prioritizes file storage over BLOB
-     * Returns file URL if available, falls back to BLOB data URL for backward compatibility
+     * Get stamp signature URL - prioritizes BLOB data over file storage
+     * Returns BLOB data URL if available, falls back to file storage for backward compatibility
      */
     public function getStampSignatureUrlAttribute(): ?string
     {
-        // Prioritize stored file path
+        // Prioritize BLOB data stored directly in database
+        $signature = $this->attributes['stamp_signature_data'] ?? null;
+        if ($signature) {
+            return $this->toImageDataUrl($signature);
+        }
+
+        // Fallback to stored file path (legacy)
         if (!empty($this->attributes['stamp_signature_file_path'] ?? null)) {
             $service = app(SchoolImageService::class);
             return $service->getImageUrl($this->attributes['stamp_signature_file_path']);
@@ -145,8 +159,6 @@ class SchoolInformation extends Model
             return $service->getImageUrl($path);
         }
 
-        // Fallback to BLOB data (deprecated, for backward compatibility)
-        $signature = $this->attributes['stamp_signature_data'] ?? null;
-        return $signature ? $this->toImageDataUrl($signature) : null;
+        return null;
     }
 }

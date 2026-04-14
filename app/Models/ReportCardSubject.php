@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\AssessmentMarkMath;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -62,52 +63,31 @@ class ReportCardSubject extends Model
 
     public function calculateTotalMark()
     {
-        // Both exam and test are already normalized to 100
-        // Calculate the average of both to get final total out of 100
-        if ($this->exam_mark > 0 && $this->test_average > 0) {
-            // If both exam and test have marks, take average
-            $this->total_mark = ($this->exam_mark + $this->test_average) / 2;
-        } elseif ($this->exam_mark > 0) {
-            // If only exam has marks, use exam mark
-            $this->total_mark = $this->exam_mark;
-        } elseif ($this->test_average > 0) {
-            // If only test has marks, use test average
-            $this->total_mark = $this->test_average;
-        } else {
-            // If no marks, set to 0
-            $this->total_mark = 0;
-        }
-        
+        $this->exam_mark = min(100.0, max(0.0, (float) $this->exam_mark));
+        $this->test_average = min(100.0, max(0.0, (float) $this->test_average));
+        $this->total_mark = AssessmentMarkMath::combinedLessonPercent($this->test_average, $this->exam_mark);
         $this->save();
     }
 
     public function calculateTestAverage()
     {
         $testMarks = $this->testMarks;
-        
+
         if ($testMarks->isEmpty()) {
             $this->test_average = 0;
             $this->test_total = 0;
             $this->save();
+
             return;
         }
 
-        $totalNormalized = 0;
-        $totalWeight = 0;
-
-        foreach ($testMarks as $testMark) {
-            $totalNormalized += $testMark->normalized_mark * $testMark->weight;
-            $totalWeight += $testMark->weight;
+        // Pool all tests: sum(marks) / sum(max) * 100 → one score out of 100
+        $sumOriginal = 0.0;
+        foreach ($testMarks as $mark) {
+            $sumOriginal += (float) $mark->original_mark;
         }
-
-        if ($totalWeight > 0) {
-            $this->test_average = $totalNormalized / $totalWeight;
-            $this->test_total = $testMarks->sum('original_mark');
-        } else {
-            $this->test_average = 0;
-            $this->test_total = 0;
-        }
-
+        $this->test_total = $sumOriginal;
+        $this->test_average = AssessmentMarkMath::pooledTestPercentFromReportCardTestMarks($testMarks);
         $this->save();
     }
 }

@@ -140,8 +140,8 @@ Route::get('/', function () {
     return view('welcome', compact('publicAnnouncements'));
 })->name('welcome');
 
-// Public Exam Routes
-Route::prefix('public')->name('public.')->group(function () {
+// Public Exam Routes - Fully accessible without authentication
+Route::prefix('public')->name('public.')->middleware(['web'])->group(function () {
     Route::get('/exams', [PublicExamController::class, 'index'])->name('exams.index');
     Route::get('/exams/{exam}', [PublicExamController::class, 'show'])->name('exams.show');
     Route::get('/exams/{exam}/payment', [PublicExamController::class, 'showPayment'])->name('exams.payment');
@@ -154,6 +154,13 @@ Route::prefix('public')->name('public.')->group(function () {
     Route::post('/exams/{exam}/save-session/{session}', [PublicExamController::class, 'saveSession'])->name('exams.save.session');
     Route::post('/exams/{exam}/submit/{session}', [PublicExamController::class, 'submitExam'])->name('exams.submit');
     Route::get('/api/exams/{exam}/check-access', [PublicExamController::class, 'checkAccess'])->name('exams.check-access');
+
+    // Babyeyi Routes - Accessible without authentication
+    Route::prefix('babyeyi')->name('babyeyi.')->group(function () {
+        Route::get('/', [BabyeyiController::class, 'publicIndex'])->name('index');
+        Route::get('/{babyeyi}', [BabyeyiController::class, 'publicShow'])->name('show');
+        Route::get('/{babyeyi}/download', [BabyeyiController::class, 'publicDownload'])->name('download');
+    });
 });
 
 // Public Fees Schedule Routes
@@ -331,6 +338,10 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::get('/course/{id}/edit-fees', [CourseController::class, 'editFees'])->name('course.edit-fees');
     Route::put('/course/{id}/update-fees', [CourseController::class, 'updateFees'])->name('course.update-fees');
 
+    // Lessons Management Routes
+    Route::resource('lessons', \App\Http\Controllers\Admin\LessonsController::class);
+    Route::get('/lessons/course/{course}', [\App\Http\Controllers\Admin\LessonsController::class, 'getLessonsForCourse'])->name('lessons.get-by-course');
+
     // Teacher assignment
     Route::get('teachers/{teacher}/assign-course', [TeacherController::class, 'assignCourse'])->name('teachers.assignCourse');
     
@@ -409,9 +420,10 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::get('question-banks/{questionBank}/export', [QuestionBankController::class, 'exportQuestions'])->name('question-banks.export');
     Route::post('question-banks/preview-questions', [ExamController::class, 'previewQuestions'])->name('question-banks.preview-questions');
 
-    // NESA Registration Management (disabled)
-    // routes removed per request
-
+    // NESA Registration Management
+    Route::get('nesa', [\App\Http\Controllers\Admin\NesaRegistrationController::class, 'index'])->name('nesa.index');
+    Route::get('nesa/registered', [\App\Http\Controllers\Admin\NesaRegistrationController::class, 'registered'])->name('nesa.registered');
+    Route::get('nesa/pending', [\App\Http\Controllers\Admin\NesaRegistrationController::class, 'pending'])->name('nesa.pending');
     Route::post('nesa/bulk-register', [\App\Http\Controllers\Admin\NesaRegistrationController::class, 'bulkRegister'])->name('nesa.bulk-register');
     Route::post('nesa/{student}/mark-as-registered', [\App\Http\Controllers\Admin\NesaRegistrationController::class, 'markAsRegistered'])->name('nesa.markAsRegistered');
     Route::get('nesa/{student}/edit', [\App\Http\Controllers\Admin\NesaRegistrationController::class, 'edit'])->name('nesa.edit');
@@ -1755,26 +1767,14 @@ Route::middleware(['auth:admin,staff,student'])->prefix('to-whom')->name('to-who
 // Admins can view/download existing documents only.
 // Staff can create/edit/publish/generate documents.
 Route::prefix('babyeyi')->name('babyeyi.')->group(function () {
-    // View-only (admin + staff)
-    Route::middleware(['auth:admin,staff'])->group(function () {
-        Route::get('/', [BabyeyiController::class, 'index'])->name('index');
-        Route::get('/{babyeyi}', [BabyeyiController::class, 'show'])->name('show');
-        Route::get('/{babyeyi}/preview', [BabyeyiController::class, 'preview'])->name('preview');
-        Route::get('/{babyeyi}/download', [BabyeyiController::class, 'download'])->name('download');
-        Route::get('/get-terms/{academicYearId}', [BabyeyiController::class, 'getTerms'])->name('get-terms');
-        Route::get('/get-courses', [BabyeyiController::class, 'getCourses'])->name('get-courses');
-    });
-
-    // Write actions (staff only)
+    // IMPORTANT: Specific routes MUST come before generic {babyeyi} parameter route
+    
+    // Staff write actions (must be before generic routes)
     Route::middleware(['auth:staff'])->group(function () {
         Route::get('/create', [BabyeyiController::class, 'create'])->name('create');
         Route::post('/', [BabyeyiController::class, 'store'])->name('store');
-        Route::get('/{babyeyi}/edit', [BabyeyiController::class, 'edit'])->name('edit');
-        Route::put('/{babyeyi}', [BabyeyiController::class, 'update'])->name('update');
-        Route::delete('/{babyeyi}', [BabyeyiController::class, 'destroy'])->name('destroy');
-        Route::post('/{babyeyi}/publish', [BabyeyiController::class, 'publish'])->name('publish');
-
-        // Bulk operations routes (staff only)
+        
+        // Bulk operations routes (must be before generic /{babyeyi} route)
         Route::get('/bulk/create', [BabyeyiController::class, 'bulkCreate'])->name('bulk.create');
         Route::post('/bulk/store', [BabyeyiController::class, 'bulkStore'])->name('bulk.store');
         Route::get('/bulk/operations', [BabyeyiController::class, 'bulkOperations'])->name('bulk.operations');
@@ -1782,13 +1782,31 @@ Route::prefix('babyeyi')->name('babyeyi.')->group(function () {
         Route::post('/bulk/regenerate', [BabyeyiController::class, 'regenerateForTerm'])->name('bulk.regenerate');
         Route::post('/quick-generate/{termId}', [BabyeyiController::class, 'quickGenerate'])->name('quick-generate');
     });
-});
 
-// PUBLIC: Babyeyi Routes - Accessible by students and public users
-Route::prefix('public/babyeyi')->name('public.babyeyi.')->group(function () {
-    Route::get('/', [BabyeyiController::class, 'publicIndex'])->name('index');
-    Route::get('/{babyeyi}', [BabyeyiController::class, 'publicShow'])->name('show');
-    Route::get('/{babyeyi}/download', [BabyeyiController::class, 'publicDownload'])->name('download');
+    // Utility routes (must be before generic /{babyeyi} route)
+    Route::middleware(['auth:admin,staff'])->group(function () {
+        Route::get('/get-terms/{academicYearId}', [BabyeyiController::class, 'getTerms'])->name('get-terms');
+        Route::get('/get-courses', [BabyeyiController::class, 'getCourses'])->name('get-courses');
+    });
+
+    // View-only routes including generic show (admin + staff)
+    Route::middleware(['auth:admin,staff'])->group(function () {
+        Route::get('/', [BabyeyiController::class, 'index'])->name('index');
+    });
+
+    Route::middleware(['auth:staff'])->group(function () {
+        Route::get('/{babyeyi}/edit', [BabyeyiController::class, 'edit'])->name('edit');
+        Route::put('/{babyeyi}', [BabyeyiController::class, 'update'])->name('update');
+        Route::delete('/{babyeyi}', [BabyeyiController::class, 'destroy'])->name('destroy');
+        Route::post('/{babyeyi}/publish', [BabyeyiController::class, 'publish'])->name('publish');
+    });
+
+    // Generic show routes (MUST be last - catches {babyeyi} parameter)
+    Route::middleware(['auth:admin,staff'])->group(function () {
+        Route::get('/{babyeyi}', [BabyeyiController::class, 'show'])->name('show');
+        Route::get('/{babyeyi}/preview', [BabyeyiController::class, 'preview'])->name('preview');
+        Route::get('/{babyeyi}/download', [BabyeyiController::class, 'download'])->name('download');
+    });
 });
 
 // STUDENT: Babyeyi Routes - For authenticated students to view their course-specific babyeyis

@@ -152,9 +152,11 @@ public function index()
                 ];
 
                 // Only add exam_id and exam_date if assessment_type is exam
+                // For exams, always set marks_out_of to 100 (standard exam marks)
                 if ($request->assessment_type === 'exam') {
                     $createData['exam_id'] = $request->exam_id;
                     $createData['exam_date'] = $request->exam_date;
+                    $createData['marks_out_of'] = 100; // Exams are always out of 100
                 }
 
                 // Only add marks_out_of and test_date if assessment_type is test

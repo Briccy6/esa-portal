@@ -7,10 +7,18 @@
     <style>
         @page {
             size: A4 portrait;
-            margin-top: 0.4cm;
-            margin-right: 0.4cm;
-            margin-bottom: 0.4cm;
-            margin-left: 0.4cm;
+            margin: 20mm;
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
         }
         
         body {
@@ -19,20 +27,21 @@
             line-height: 1.4;
             color: #333;
             background: white;
-            margin: 0;
-            padding: 0;
             overflow-x: hidden;
-        }
-
-        html {
-            width: 100%;
-            overflow-x: hidden;
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
         }
         
         .print-area {
-            border: 1px solid black;
-            max-width: 100%;
-            overflow-x: hidden;
+            width: 100%;
+            max-width: 170mm;
+            margin: 20mm auto 0;
+            padding: 0;
+            box-sizing: border-box;
+            border: 2px solid black;
+            background: white;
+            display: block;
         }
         
         /* Header: logo | details | logo (table layout for DomPDF) */
@@ -40,6 +49,7 @@
             width: 100%;
             border-collapse: collapse;
             border-bottom: 1px solid #000;
+            table-layout: fixed;
         }
         .print-header-table td {
             vertical-align: middle;
@@ -140,6 +150,7 @@
             width: 100%;
             border-collapse: collapse;
             font-size: 8px;
+            table-layout: fixed;
         }
         
         .assessment-table th,
@@ -147,6 +158,9 @@
             border: 1px solid black;
             padding: 2px;
             text-align: center;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
         }
         
         .assessment-table .text-left {
@@ -189,6 +203,7 @@
             border-collapse: collapse;
             font-size: 8px;
             margin-top: 1px;
+            table-layout: fixed;
         }
         
         .deliberation-table th,
@@ -196,6 +211,8 @@
             border: 1px solid black;
             padding: 2px;
             text-align: center;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
         
         .deliberation-table .text-left {
@@ -223,14 +240,28 @@
             body {
                 margin: 0;
                 padding: 0;
+                width: 100%;
+                height: 100%;
             }
             
             .print-area {
-                position: absolute;
-                left: 0;
-                top: 0;
+                margin: 0 auto;
+                max-width: 170mm;
                 width: 100%;
+                box-sizing: border-box;
             }
+        }
+        
+        /* Global overflow prevention */
+        div, section, article, header, footer, main, nav, ul, ol, li, p, span, a, label, td, th {
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+        
+        img, svg, canvas, video, iframe {
+            max-width: 100%;
+            height: auto;
+            display: block;
         }
     </style>
 </head>

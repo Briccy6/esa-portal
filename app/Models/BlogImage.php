@@ -12,15 +12,13 @@ class BlogImage extends Model
 
     protected $fillable = [
         'blog_id',
-        'image_path',
-        'caption',
-        'alt_text',
+        'image_path',      // stores binary image data
+        'image_alt',       // stores mime_type
+        'image_caption',   // stores filename
         'sort_order',
-        'featured',
     ];
 
     protected $casts = [
-        'featured' => 'boolean',
         'sort_order' => 'integer',
     ];
 
@@ -33,11 +31,32 @@ class BlogImage extends Model
     }
 
     /**
-     * Get the full URL for the image.
+     * Get mime type (stored in image_alt column).
+     */
+    public function getMimeTypeAttribute(): ?string
+    {
+        return $this->attributes['image_alt'] ?? 'image/jpeg';
+    }
+
+    /**
+     * Get filename (stored in image_caption column).
+     */
+    public function getFilenameAttribute(): ?string
+    {
+        return $this->attributes['image_caption'];
+    }
+
+    /**
+     * Get the image as a data URI (for binary image data stored in image_path).
      */
     public function getUrlAttribute(): string
     {
-        return asset('storage/' . $this->image_path);
+        if ($this->image_path && $this->image_alt) {
+            $base64 = base64_encode($this->image_path);
+            return 'data:' . $this->image_alt . ';base64,' . $base64;
+        }
+
+        return '';
     }
 
     /**
@@ -45,7 +64,14 @@ class BlogImage extends Model
      */
     public function getThumbnailUrlAttribute(): string
     {
-        // For now, return the same URL. You can implement thumbnail generation later.
         return $this->getUrlAttribute();
+    }
+
+    /**
+     * Get the image display name.
+     */
+    public function getDisplayNameAttribute(): string
+    {
+        return $this->image_caption ?? 'Image';
     }
 }

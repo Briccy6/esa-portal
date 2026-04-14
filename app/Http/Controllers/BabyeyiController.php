@@ -16,9 +16,12 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class BabyeyiController extends Controller
 {
+    use AuthorizesRequests;
+
     /**
      * Display a listing of babyeyis.
      */
@@ -34,7 +37,7 @@ class BabyeyiController extends Controller
         } elseif (Auth::guard('staff')->check()) {
             $view = 'staff.babyeyi.index';
         } else {
-            $view = 'babyeyi.index';
+            $view = 'babyeyi.public-index';
         }
         
         return view($view, compact('babyeyis'));
@@ -47,7 +50,7 @@ class BabyeyiController extends Controller
     {
         $academicYears = AcademicYear::orderBy('year', 'desc')->get();
         $terms = collect();
-        $courses = collect();
+        $courses = Course::orderBy('course_name')->get();
         $courseTypes = $this->getCourseTypes();
 
         // Route to appropriate view based on user role
@@ -86,10 +89,12 @@ class BabyeyiController extends Controller
             'selection_type' => 'required|in:single,multiple,by_type',
             'course_id' => 'nullable|exists:courses,id',
             'course_type' => 'nullable|string',
+            'courses' => 'nullable|array',
+            'courses.*' => 'exists:courses,id',
         ]);
 
-        // Generate initial content based on selections
-        $content = $this->generateInitialContent($validated);
+        // Create empty content - secretary will fill it in the editor
+        $content = '';
 
         $babyeyi = Babyeyi::create([
             'academic_year_id' => $validated['academic_year_id'],
@@ -103,7 +108,7 @@ class BabyeyiController extends Controller
         ]);
 
         return redirect()->route('babyeyi.edit', $babyeyi)
-            ->with('success', 'Babyeyi template created! Accountant can now edit it.');
+            ->with('success', 'Babyeyi template created! Now add your content using the editor below.');
     }
 
     /**
@@ -198,7 +203,7 @@ class BabyeyiController extends Controller
         if (Auth::guard('admin')->check()) {
             $view = 'admin.babyeyi.edit';
         } elseif (Auth::guard('staff')->check()) {
-            $view = 'babyeyi.edit';
+            $view = 'staff.babyeyi.edit';
         } else {
             $view = 'babyeyi.edit';
         }
@@ -274,9 +279,9 @@ class BabyeyiController extends Controller
         if (Auth::guard('admin')->check()) {
             $view = 'admin.babyeyi.show';
         } elseif (Auth::guard('staff')->check()) {
-            $view = 'babyeyi.show';
+            $view = 'staff.babyeyi.show';
         } else {
-            $view = 'babyeyi.show';
+            $view = 'babyeyi.public-show';
         }
 
         return view($view, compact('babyeyi', 'schoolInfo'));
@@ -289,7 +294,10 @@ class BabyeyiController extends Controller
     {
         $babyeyi->load(['academicYear', 'term', 'course', 'creator', 'editor']);
         $schoolInfo = SchoolInformation::getActive();
-        $headTeacher = User::role('head_teacher')->first();
+        // Try to find a head teacher, principal, or admin user
+        $headTeacher = User::whereIn('role', ['DOS', 'admin', 'head_teacher'])
+            ->orderBy('role')
+            ->first();
 
         $pdf = PDF::loadView('babyeyi.pdf', compact('babyeyi', 'schoolInfo', 'headTeacher'));
         
@@ -597,17 +605,24 @@ class BabyeyiController extends Controller
      */
     public function destroy(Babyeyi $babyeyi)
     {
-        // Only allow deletion of draft documents
-        if ($babyeyi->status !== Babyeyi::STATUS_DRAFT) {
-            return redirect()->back()
-                ->with('error', 'Only draft documents can be deleted.');
+        // Check if user is admin or the creator
+        if (!Auth::guard('admin')->check() && Auth::id() !== $babyeyi->created_by) {
+            abort(403, 'Unauthorized to delete this document');
         }
 
+        // Store reference before deletion
         $reference = $babyeyi->reference_number;
-        $babyeyi->delete();
+        
+        // Delete the babyeyi
+        $deleted = $babyeyi->delete();
 
-        return redirect()->route('babyeyi.index')
-            ->with('success', "Babyeyi document ({$reference}) has been deleted successfully.");
+        if ($deleted) {
+            return redirect()->route('babyeyi.index')
+                ->with('success', "Babyeyi document ({$reference}) has been deleted successfully.");
+        }
+
+        return redirect()->back()
+            ->with('error', 'Failed to delete the document. Please try again.');
     }
 
     /**

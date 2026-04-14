@@ -609,7 +609,7 @@
             <article class="blog-card" data-title="{{ strtolower($blog->title) }}" data-status="published" data-featured="1">
                 <div class="card-img-wrap">
                     @if($blog->images && $blog->images->count() > 0)
-                        <img src="{{ asset('storage/' . $blog->images->first()->image_path) }}"
+                        <img src="{{ $blog->images->first()->url }}"
                              alt="{{ $blog->images->first()->alt_text ?? $blog->title }}"
                              loading="lazy">
                     @else
@@ -661,7 +661,7 @@
                      data-featured="{{ $blog->is_featured ? '1' : '0' }}">
                 <div class="card-img-wrap">
                     @if($blog->images && $blog->images->count() > 0)
-                        <img src="{{ asset('storage/' . $blog->images->first()->image_path) }}"
+                        <img src="{{ $blog->images->first()->url }}"
                              alt="{{ $blog->images->first()->alt_text ?? $blog->title }}"
                              loading="lazy">
                     @else
