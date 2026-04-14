@@ -61,7 +61,7 @@
                         <label class="rc-label">&nbsp;</label>
                         <div class="d-flex flex-column gap-2 w-100">
                             <button type="submit" class="rc-btn rc-btn--teal w-100">
-                                <i class="fas fa-bolt me-1"></i> Generate for Class
+                                <i class="fas fa-bolt me-1"></i> Generate / Update Class Reports
                             </button>
                             <button type="button" class="rc-btn rc-btn--primary w-100" id="btnDownloadClassReportCards" title="PDF of all approved report cards for the selected class, year, and term(s)">
                                 <i class="fas fa-download me-1"></i> Download class report cards (PDF)
@@ -149,6 +149,7 @@
                         <div class="ms-pills" id="termPills"></div>
 
                         <span class="rc-hint">💡 Click items to select/deselect. Use <strong>Select All</strong> or search to filter.</span>
+                        <span class="rc-hint d-block mt-1"><strong>Tip:</strong> You can run <em>Generate / Update Class Reports</em> any time after a student pays. It safely creates only missing reports and keeps existing ones.</span>
                         <span class="rc-hint d-block mt-1"><strong>Download class PDF</strong> builds one file with every <em>approved</em> student report for the course, year, and term(s) you select.</span>
                     </div>
                 </div>

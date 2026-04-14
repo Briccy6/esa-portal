@@ -254,6 +254,10 @@
                                                 <i class="bi bi-envelope-exclamation me-1"></i> No Email
                                             </button>
                                         @endif
+                                        <a href="{{ route('admin.report-cards.create', ['student_id' => $student['id'], 'course_id' => $student['course']['id'] ?? null, 'academic_year_id' => $student['academic_year_id'] ?? null]) }}"
+                                           class="btn btn-outline-success">
+                                            <i class="bi bi-file-earmark-plus me-1"></i> Generate
+                                        </a>
                                     </div>
                                 </td>
                             </tr>

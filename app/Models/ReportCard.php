@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class ReportCard extends Model
 {
@@ -134,23 +135,64 @@ class ReportCard extends Model
             return;
         }
 
-        // Count total students in this course/year for accurate class size
-        // This ensures positions are accurate even if not all students have had report cards generated
-        $totalStudentsInClass = Student::where('course_id', $courseId)
+        $studentIdsInClass = Student::where('course_id', $courseId)
             ->where('academic_year_id', $academicYearId)
-            ->count();
+            ->pluck('id')
+            ->all();
 
+        $totalStudentsInClass = count($studentIdsInClass);
+        if ($totalStudentsInClass === 0) {
+            return;
+        }
+
+        // Compute cohort-wide ranking baseline from marks so generated cards
+        // get positions against the full class, not only generated report cards.
+        $averagesByStudent = DB::table('marks')
+            ->selectRaw("
+                student_id,
+                AVG(
+                    CASE
+                        WHEN assessment_type = 'test' THEN
+                            CASE
+                                WHEN marks_out_of IS NOT NULL AND marks_out_of > 0
+                                    THEN (value / marks_out_of) * 100
+                                ELSE value
+                            END
+                        ELSE value
+                    END
+                ) AS cohort_avg
+            ")
+            ->where('course_id', $courseId)
+            ->where('term_id', $termId)
+            ->whereIn('student_id', $studentIdsInClass)
+            ->groupBy('student_id')
+            ->pluck('cohort_avg', 'student_id');
+
+        $scoreBoard = collect($studentIdsInClass)->map(function ($studentId) use ($averagesByStudent) {
+            return [
+                'student_id' => (int) $studentId,
+                // Students without marks are ranked at the end.
+                'score' => $averagesByStudent->has($studentId)
+                    ? (float) $averagesByStudent[$studentId]
+                    : -1.0,
+            ];
+        })->sortByDesc('score')->values();
+
+        $rankByStudent = [];
         $rank = 1;
-        foreach ($cards as $i => $card) {
+        foreach ($scoreBoard as $i => $entry) {
             if ($i > 0) {
-                $prev = $cards[$i - 1];
-                $cmp = (float) $card->average_marks <=> (float) $prev->average_marks;
-                if ($cmp < 0) {
+                $prev = $scoreBoard[$i - 1];
+                if ((float) $entry['score'] < (float) $prev['score']) {
                     $rank = $i + 1;
                 }
             }
+            $rankByStudent[(int) $entry['student_id']] = $rank;
+        }
+
+        foreach ($cards as $card) {
             $card->total_students = $totalStudentsInClass;
-            $card->class_position = $rank;
+            $card->class_position = $rankByStudent[(int) $card->student_id] ?? null;
             $card->saveQuietly();
         }
     }

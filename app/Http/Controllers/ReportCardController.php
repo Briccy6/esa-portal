@@ -1106,6 +1106,7 @@ class ReportCardController extends Controller
         if ($skippedFees > 0) {
             $message .= " Skipped {$skippedFees} student(s) with outstanding fees.";
         }
+        $message .= " You can run this again after payment; only missing students will be generated.";
         
         \Log::info('═══ generateForClass END ═══');
         \Log::info('Summary:', [

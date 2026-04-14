@@ -44,7 +44,7 @@
                             <select name="student_id" id="student_id" class="form-control @error('student_id') is-invalid @enderror" required>
                                 <option value="">Select Student</option>
                                 @foreach($students as $student)
-                                    <option value="{{ $student->id }}" {{ old('student_id') == $student->id ? 'selected' : '' }}>
+                                    <option value="{{ $student->id }}" {{ (string) old('student_id', request('student_id')) === (string) $student->id ? 'selected' : '' }}>
                                         {{ $student->full_name }} - {{ $student->reg_number ?? 'No Reg No' }}
                                     </option>
                                 @endforeach
@@ -60,7 +60,7 @@
                             <select name="course_id" id="course_id" class="form-control @error('course_id') is-invalid @enderror" required>
                                 <option value="">Select Course</option>
                                 @foreach($courses as $course)
-                                    <option value="{{ $course->id }}" {{ old('course_id') == $course->id ? 'selected' : '' }}>
+                                    <option value="{{ $course->id }}" {{ (string) old('course_id', request('course_id')) === (string) $course->id ? 'selected' : '' }}>
                                         {{ $course->course_name }}
                                     </option>
                                 @endforeach
@@ -79,7 +79,7 @@
                                 <select name="academic_year_id" id="academic_year_id" class="form-control @error('academic_year_id') is-invalid @enderror" required>
                                     <option value="">Select Academic Year</option>
                                     @foreach($academicYears as $year)
-                                        <option value="{{ $year->id }}" {{ old('academic_year_id') == $year->id ? 'selected' : '' }}>
+                                        <option value="{{ $year->id }}" {{ (string) old('academic_year_id', request('academic_year_id')) === (string) $year->id ? 'selected' : '' }}>
                                             {{ $year->year }}
                                             @if($year->is_ongoing) <span class="badge badge-success">Current</span> @endif
                                         </option>
