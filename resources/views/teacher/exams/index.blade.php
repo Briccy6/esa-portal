@@ -91,6 +91,7 @@
 
 .exams-table .table {
     margin-bottom: 0;
+    table-layout: auto;
 }
 
 .exams-table .table thead {
@@ -100,103 +101,177 @@
 
 .exams-table .table thead th {
     border: none;
-    padding: 1rem;
-    font-weight: 600;
+    padding: 1.25rem 1rem;
+    font-weight: 700;
     text-transform: uppercase;
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     letter-spacing: 0.5px;
+    white-space: nowrap;
+    text-align: left;
 }
 
-.exams-table .table td {
-    padding: 0.875rem;
+.exams-table .table tbody td {
+    padding: 1.25rem 1rem;
     vertical-align: middle;
     border-bottom: 1px solid #e5e7eb;
+    font-size: 0.95rem;
+}
+
+.exams-table .table tbody tr {
+    transition: all 0.2s ease;
 }
 
 .exams-table .table tbody tr:hover {
-    background-color: #eff6ff;
+    background-color: #f0f9ff;
+}
+
+.exams-table .table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Column width adjustments */
+.exams-table .table th:nth-child(1),
+.exams-table .table td:nth-child(1) {
+    min-width: 200px;
+    width: 25%;
+}
+
+.exams-table .table th:nth-child(2),
+.exams-table .table td:nth-child(2) {
+    min-width: 150px;
+    width: 20%;
+}
+
+.exams-table .table th:nth-child(3),
+.exams-table .table td:nth-child(3) {
+    min-width: 100px;
+    width: 12%;
+}
+
+.exams-table .table th:nth-child(4),
+.exams-table .table td:nth-child(4) {
+    min-width: 100px;
+    width: 12%;
+}
+
+.exams-table .table th:nth-child(5),
+.exams-table .table td:nth-child(5) {
+    min-width: 80px;
+    width: 10%;
+    text-align: center;
+}
+
+.exams-table .table th:nth-child(6),
+.exams-table .table td:nth-child(6) {
+    min-width: 90px;
+    width: 12%;
+    text-align: center;
+}
+
+.exams-table .table th:nth-child(7),
+.exams-table .table td:nth-child(7) {
+    min-width: 200px;
+    width: 9%;
+    text-align: right;
 }
 
 .badge-custom {
-    padding: 0.375rem 0.75rem;
-    border-radius: 20px;
-    font-weight: 600;
-    font-size: 0.8rem;
+    padding: 0.5rem 0.875rem;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-block;
+    white-space: nowrap;
+    margin-right: 0.5rem;
+    margin-bottom: 0.375rem;
 }
 
 .badge-info {
-    background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+    background: #06b6d4;
     color: white;
 }
 
 .badge-success {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    background: #10b981;
     color: white;
 }
 
 .badge-warning {
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    background: #f59e0b;
     color: white;
 }
 
 .badge-secondary {
-    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+    background: #6366f1;
     color: white;
 }
 
 .btn-action {
-    padding: 0.5rem 0.75rem;
+    padding: 0.625rem 1rem;
     border-radius: 6px;
-    font-size: 0.875rem;
-    font-weight: 500;
+    font-size: 0.8rem;
+    font-weight: 600;
     transition: all 0.2s ease;
     border: none;
     text-decoration: none;
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    margin-right: 0.5rem;
 }
 
 .btn-view {
-    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    background: #3b82f6;
     color: white;
 }
 
 .btn-view:hover {
+    background: #1d4ed8;
     transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
     color: white;
+    text-decoration: none;
 }
 
 .btn-edit {
-    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    background: #6366f1;
     color: white;
 }
 
 .btn-edit:hover {
+    background: #4f46e5;
     transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(99, 102, 241, 0.3);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
     color: white;
+    text-decoration: none;
 }
 
 .btn-questions {
-    background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+    background: #06b6d4;
     color: white;
 }
 
 .btn-questions:hover {
+    background: #0891b2;
     transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(6, 182, 212, 0.3);
+    box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
     color: white;
+    text-decoration: none;
 }
 
 .btn-delete {
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    background: #ef4444;
     color: white;
 }
 
 .btn-delete:hover {
+    background: #dc2626;
     transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
     color: white;
+    text-decoration: none;
 }
 
 .btn-primary-custom {
@@ -253,6 +328,28 @@
     padding-top: 1rem !important;
     position: relative;
     z-index: 1;
+}
+
+.table-responsive {
+    min-height: auto;
+}
+
+.table {
+    font-size: 0.95rem;
+}
+
+.table thead th {
+    background-color: #f8fafc;
+    border-bottom: 2px solid #e2e8f0;
+    color: #1e293b;
+}
+
+.table tbody tr {
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.table tbody tr:last-child {
+    border-bottom: none;
 }
 
 @media (max-width: 768px) {
@@ -324,14 +421,14 @@
             <div class="card-body p-0">
                 @if($exams->count() > 0)
                     <div class="table-responsive exams-table">
-                        <table class="table table-striped table-hover">
+                        <table class="table table-hover" style="margin-bottom: 0;">
                             <thead>
                                 <tr>
                                     <th>Title</th>
                                     <th>Course</th>
                                     <th>Date</th>
                                     <th>Type</th>
-                                    <th>Total Marks</th>
+                                    <th>Marks</th>
                                     <th>Status</th>
                                     <th>Actions</th>
                                 </tr>
@@ -459,42 +556,48 @@ document.addEventListener('DOMContentLoaded', function() {
         filtered.forEach(exam => {
             const courseBadges = exam.courses && exam.courses.length > 0 ? 
                 exam.courses.slice(0, 2).map(c => 
-                    `<span class="badge badge-custom badge-secondary" style="background: #6366f1; color: white; display: inline-block; margin-right: 3px;">${c.course_name}</span>`
+                    `<span class="badge badge-custom badge-secondary">${c.course_name}</span>`
                 ).join('') : '<span class="text-muted">No course</span>';
             
             const extraCourses = exam.courses && exam.courses.length > 2 ? 
-                `<span class="badge badge-custom badge-secondary" style="background: #6366f1; color: white;">+${exam.courses.length - 2}</span>` : '';
+                `<span class="badge badge-custom badge-secondary">+${exam.courses.length - 2} More</span>` : '';
             
             const examType = exam.exam_type || 'Unknown';
             
             const statusBadge = exam.is_public ? 
-                '<span class="badge badge-custom badge-success" style="background: #10b981; color: white;">Public</span>' :
-                '<span class="badge badge-custom badge-warning" style="background: #f59e0b; color: white;">Private</span>';
+                '<span class="badge badge-custom badge-success">Public</span>' :
+                '<span class="badge badge-custom badge-warning">Private</span>';
             
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>
-                    <strong>${exam.title}</strong>
-                    ${exam.description ? `<br><small class="text-muted">${exam.description.substring(0, 50)}</small>` : ''}
+                    <strong style="color: #1f2937; font-size: 0.95rem;">${exam.title}</strong>
+                    ${exam.description ? `<div style="font-size: 0.85rem; color: #6b7280; margin-top: 0.25rem;">${exam.description.substring(0, 60)}</div>` : ''}
                 </td>
-                <td style="min-width: 150px;">
-                    ${courseBadges} ${extraCourses}
-                </td>
-                <td>${new Date(exam.class_date).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'})}</td>
                 <td>
-                    <span class="badge badge-custom badge-info" style="background: #06b6d4; color: white; display: inline-block;">${examType}</span>
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.375rem;">
+                        ${courseBadges} ${extraCourses}
+                    </div>
                 </td>
-                <td><strong>${exam.total_marks}</strong></td>
                 <td>
+                    <span style="color: #374151; font-weight: 500;">${new Date(exam.class_date).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'})}</span>
+                </td>
+                <td>
+                    <span class="badge badge-custom badge-info">${examType.toUpperCase()}</span>
+                </td>
+                <td style="text-align: center;">
+                    <span style="font-weight: 700; color: #1f2937; font-size: 1rem;">${exam.total_marks}</span>
+                </td>
+                <td style="text-align: center;">
                     ${statusBadge}
                 </td>
-                <td>
-                    <div class="btn-group" role="group">
-                        <a href="/teacher/exams/${exam.id}" class="btn btn-action btn-view" title="View Exam">
+                <td style="text-align: right;">
+                    <div style="display: flex; justify-content: flex-end; gap: 0.5rem; flex-wrap: wrap;">
+                        <a href="/teacher/exams/${exam.id}" class="btn btn-action btn-view" title="View Exam Details">
                             <i class="bi bi-eye"></i> View
                         </a>
-                        <a href="/teacher/exams/${exam.id}/questions" class="btn btn-action btn-questions" title="Add Questions">
-                            <i class="bi bi-plus-circle"></i> Add Questions
+                        <a href="/teacher/exams/${exam.id}/questions" class="btn btn-action btn-questions" title="Add Questions to This Exam">
+                            <i class="bi bi-plus-circle"></i> Add Q
                         </a>
                     </div>
                 </td>
