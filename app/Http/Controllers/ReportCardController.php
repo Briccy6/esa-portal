@@ -32,7 +32,7 @@ class ReportCardController extends Controller
     public function index()
     {
         $all = ReportCard::query()
-            ->with(['student', 'course', 'academicYear', 'term'])
+            ->with(['student.branch', 'course', 'academicYear', 'term'])
             ->orderByDesc('created_at')
             ->get();
 

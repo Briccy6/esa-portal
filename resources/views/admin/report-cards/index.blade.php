@@ -164,7 +164,7 @@
         </div>
         <div class="rc-card__body p-0">
             <div class="p-3 border-bottom bg-light d-flex gap-2 flex-wrap align-items-center">
-                <input type="text" id="reportSearchInput" class="form-control" style="max-width: 320px;" placeholder="Live search student, course, year, term...">
+                <input type="text" id="reportSearchInput" class="form-control" style="max-width: 360px;" placeholder="Live search student, course, branch, year, term...">
                 <select id="reportSortSelect" class="form-select" style="max-width: 240px;">
                     <option value="newest">Newest generated first</option>
                     <option value="oldest">Oldest generated first</option>
@@ -256,10 +256,12 @@
                                 $groupGeneratedAt = $group->max('created_at')?->timestamp ?? 0;
                                 $termsText = $group->pluck('term.name')->filter()->implode(' ');
                                 $statusesText = $group->pluck('status')->implode(' ');
+                                $branchText = $first->student?->branch?->name ?? '';
                             @endphp
                             <tr class="rc-table__row rc-table__row--grouped"
                                 data-student="{{ strtolower($first->student->full_name ?? '') }}"
                                 data-course="{{ strtolower($first->course->course_name ?? '') }}"
+                                data-branch="{{ strtolower($branchText) }}"
                                 data-year="{{ strtolower($first->academicYear->year ?? '') }}"
                                 data-terms="{{ strtolower($termsText) }}"
                                 data-status="{{ strtolower($statusesText) }}"
@@ -1522,6 +1524,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const hay = [
                 row.dataset.student || '',
                 row.dataset.course || '',
+                row.dataset.branch || '',
                 row.dataset.year || '',
                 row.dataset.terms || '',
                 row.dataset.status || '',
