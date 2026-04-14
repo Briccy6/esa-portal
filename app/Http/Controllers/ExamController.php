@@ -27,7 +27,7 @@ class ExamController extends Controller
             $courseIds = $teacher->courses()->pluck('courses.id')->toArray();
             $lessonIds = $teacher->lessons()->pluck('lessons.id')->toArray();
 
-            $exams = Exam::where(function($q) use ($courseIds, $lessonIds) {
+            $examQuery = Exam::where(function($q) use ($courseIds, $lessonIds) {
                     $q->whereHas('courses', function($q2) use ($courseIds) {
                         $q2->whereIn('courses.id', $courseIds);
                     })
@@ -36,15 +36,18 @@ class ExamController extends Controller
                     });
                 })
                 ->with(['courses', 'lessons'])
-                ->latest()
-                ->paginate(10);
+                ->latest();
+
+            // $exams kept for any legacy blade usage; $allExams powers live search
+            $exams    = $examQuery->paginate(10);
+            $allExams = $examQuery->get(); // full collection for JS live search
 
             $courses = $teacher->courses ?? collect();
             
             // Get announcements for teacher layout
             $announcements = \App\Models\Announcement::latest()->take(5)->get();
             
-            return view('teacher.exams.index', compact('exams', 'courses', 'announcements'));
+            return view('teacher.exams.index', compact('exams', 'allExams', 'courses', 'announcements'));
         } elseif (auth('staff')->check()) {
             $staff = auth('staff')->user();
             if ($staff->role === 'DOS') {
