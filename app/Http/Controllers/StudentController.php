@@ -93,6 +93,14 @@ class StudentController extends Controller
             abort(403, 'Unauthorized');
         }
 
+        // Check for outstanding fees
+        $outstanding = $student->getOutstandingFees();
+        
+        // If student has outstanding fees, redirect with warning
+        if ($outstanding > 0) {
+            return redirect()->route('student.dashboard')->with('warning', 'You have outstanding fees. Please settle them to view your academic performance.');
+        }
+
         $marks = \App\Models\Mark::where('student_id', $student->id)
             ->with(['course', 'branch'])
             ->get();
@@ -2237,6 +2245,47 @@ class StudentController extends Controller
         );
 
         return back()->with('success', 'Transcript sent to student.');
+    }
+
+    /**
+     * Allow student to send themselves a transcript email
+     */
+    public function studentSendTranscript()
+    {
+        $student = Auth::guard('student')->user();
+        $transactions = StudentTransaction::where('student_id', $student->id)
+            ->orderBy('paid_at')
+            ->get();
+
+        $registrationFee = $student->course->registration_fee ?? 0;
+        $tripFee         = $student->course->trip_fee ?? 0;
+        $tuitionFee      = $student->course->tuition_fee ?? 0;
+        $praticalFee     = $student->course->pratical_fee ?? 0;
+        $discount        = $student->discount ?? 0;
+        $studentCardFee  = 2000;
+
+        $discountableFees = $tripFee + $tuitionFee + $praticalFee;
+        $discountAmount   = ($discount > 0) ? ($discountableFees * ($discount / 100)) : 0;
+        $totalToBePaid    = $registrationFee + $studentCardFee + ($discountableFees - $discountAmount);
+
+        $totalPaid   = StudentTransaction::where('student_id', $student->id)
+            ->whereIn('status', ['successful', 'paid'])
+            ->sum('amount');
+        $outstanding = $totalToBePaid - $totalPaid;
+
+        Mail::to($student->email)->send(
+            new \App\Mail\StudentTranscriptMail(
+                $student,
+                $transactions,
+                $totalToBePaid,
+                $totalPaid,
+                $outstanding,
+                $studentCardFee,
+                $discountAmount
+            )
+        );
+
+        return back()->with('success', 'Transcript has been sent to your email address.');
     }
 
     // =========================================================================

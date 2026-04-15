@@ -389,6 +389,12 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a href="{{ route('student.transcript.send') }}" class="nav-link" title="Send your academic transcript via email">
+                                <i class="bi bi-envelope-paper"></i>
+                                Academic Transcript
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a href="{{ route('to-whom.index') }}" class="nav-link {{ request()->routeIs('to-whom.*') ? 'active' : '' }}">
                                 <i class="bi bi-file-text"></i>
                                 Professional Letters

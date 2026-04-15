@@ -1763,13 +1763,48 @@ document.addEventListener('DOMContentLoaded', function () {
                     ${outstandingDisplay}
                 </td>
                 <td class="text-center rc-table__actions">
-                    <button class="btn btn-sm btn-primary" disabled title="Live search - details updated on demand">
-                        Actions
-                    </button>
+                    <div class="dropdown rc-student-actions">
+                        <button class="btn btn-sm btn-primary dropdown-toggle" type="button"
+                                data-bs-toggle="dropdown" data-bs-auto-close="true"
+                                aria-expanded="false">
+                            Actions
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                            <li>
+                                <span class="dropdown-item text-muted" style="cursor: default;">
+                                    <i class="fas fa-info-circle me-2"></i> View details in full page
+                                </span>
+                            </li>
+                        </ul>
+                    </div>
                 </td>
             `;
             
             tbody.appendChild(row);
+        });
+        
+        // After rendering, reinitialize all Bootstrap dropdowns
+        console.log('🔄 Re-initializing Bootstrap dropdowns after table render...');
+        const newDropdownToggles = tbody.querySelectorAll('[data-bs-toggle="dropdown"]');
+        console.log(`Found ${newDropdownToggles.length} dropdowns to initialize`);
+        
+        newDropdownToggles.forEach((btn, idx) => {
+            // Assign unique ID if missing
+            if (!btn.id) {
+                btn.id = `dropdown-toggle-search-${idx}`;
+            }
+            
+            try {
+                // Dispose old instance if exists
+                const oldInstance = bootstrap.Dropdown.getInstance(btn);
+                if (oldInstance) oldInstance.dispose();
+                
+                // Create new instance
+                new bootstrap.Dropdown(btn);
+                console.log(`✅ Dropdown ${idx + 1} re-initialized`);
+            } catch (e) {
+                console.error(`❌ Error re-initializing dropdown ${idx + 1}:`, e);
+            }
         });
     }
 

@@ -1186,6 +1186,7 @@ Route::middleware('auth:student')->get('/student/dashboard', [StudentController:
 Route::middleware('auth:student')->get('/student/report-cards', [StudentController::class, 'reportCards'])->name('student.report-cards');
 Route::middleware('auth:student')->get('/student/report-cards/{reportCardId}/download', [StudentController::class, 'downloadReportCard'])->name('student.report-cards.download');
 Route::middleware('auth:student')->get('/student/payment-transcript', [StudentController::class, 'paymentTranscriptPrint'])->name('student.payment-transcript');
+Route::middleware('auth:student')->get('/student/transcript/send', [StudentController::class, 'studentSendTranscript'])->name('student.transcript.send');
 Route::post('/student/login/submit', [StudentController::class, 'loginWithPassword'])->name('student.login.submit');
 Route::post('/student/login/validate-reg-number', [StudentController::class, 'validateRegNumber'])->name('student.login.validateRegNumber');
 Route::post('/student/login/validate-id-value', [StudentController::class, 'validateIdValue'])->name('student.login.validateIdValue');
