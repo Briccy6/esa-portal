@@ -1175,10 +1175,30 @@ function deleteReportCardsGroup(studentId, courseId, academicYearId, termIds, st
 .rc-table__actions {
     overflow: visible !important;
     vertical-align: middle;
+    pointer-events: auto !important;
+}
+.rc-student-actions {
+    pointer-events: auto !important;
+    position: relative;
+    z-index: 1049;
 }
 .rc-student-actions .dropdown-menu {
     min-width: 15rem;
     z-index: 1055;
+}
+.rc-student-actions .dropdown-toggle {
+    pointer-events: auto !important;
+    z-index: 1050;
+    position: relative;
+}
+.rc-student-actions .dropdown-toggle:not(:disabled) {
+    cursor: pointer !important;
+}
+.rc-student-actions .dropdown-menu {
+    pointer-events: auto !important;
+}
+.rc-student-actions .dropdown-item {
+    pointer-events: auto !important;
 }
 .rc-action-btn {
     display: inline-flex; align-items: center; justify-content: center;
@@ -1302,11 +1322,37 @@ function deleteReportCardsGroup(studentId, courseId, academicYearId, termIds, st
 </style>
 
 <script>
+// Debug dropdown initialization
 document.addEventListener('DOMContentLoaded', function () {
-    // ── State ──────────────────────────────────────────────
+    console.log('✅ DOM Loaded - Checking Bootstrap Dropdowns...');
+    
+    // Find all dropdown toggles
+    const dropdownToggles = document.querySelectorAll('[data-bs-toggle="dropdown"]');
+    console.log(`Found ${dropdownToggles.length} dropdown toggle buttons`);
+    
+    // Initialize each dropdown
+    dropdownToggles.forEach((btn, idx) => {
+        console.log(`Dropdown ${idx + 1}:`, btn.textContent.trim(), btn);
+        try {
+            // Bootstrap 5 way to initialize dropdowns
+            new bootstrap.Dropdown(btn);
+            console.log(`✅ Dropdown ${idx + 1} initialized successfully`);
+        } catch (e) {
+            console.error(`❌ Error initializing dropdown ${idx + 1}:`, e);
+        }
+    });
+    
+    // Verify Bootstrap is loaded
+    if (typeof bootstrap === 'undefined') {
+        console.error('❌ Bootstrap JS is not loaded!');
+    } else {
+        console.log('✅ Bootstrap is loaded');
+    }
+    
+    // State ──────────────────────────────────────────────
     const selected = new Set(); // set of string values
 
-    // ── Element refs ──────────────────────────────────────
+    // Element refs ──────────────────────────────────────
     const dropdown      = document.getElementById('termDropdown');
     const trigger       = document.getElementById('termTrigger');
     const triggerLabel  = document.getElementById('termTriggerLabel');
