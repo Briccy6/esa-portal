@@ -521,24 +521,41 @@
         setTimeout(() => alertDiv.remove(), 5000);
     }
 
+    // ═══════════════════════════════════════════════════════════════
     // Auto-refresh outstanding fees status every 10 seconds
+    // ONLY runs on this page - protected by multiple safety checks
+    // ═══════════════════════════════════════════════════════════════
+    
     let refreshInterval;
+    let isOutstandingFeesPage = false;
 
     function startAutoRefresh() {
+        if (!isOutstandingFeesPage) {
+            console.warn('⛔ BLOCKED: Auto-refresh attempted to start on non-outstanding-fees page');
+            return;
+        }
         // Refresh every 10 seconds (adjust as needed)
         refreshInterval = setInterval(refreshOutstandingStatus, 10000);
         // Log for debugging
-        console.log('Auto-refresh started - checking every 10 seconds');
+        console.log('✅ Auto-refresh started - checking every 10 seconds');
     }
 
     function stopAutoRefresh() {
+        if (!isOutstandingFeesPage) return;
+        
         if (refreshInterval) {
             clearInterval(refreshInterval);
-            console.log('Auto-refresh stopped');
+            console.log('⏹️  Auto-refresh stopped');
         }
     }
 
     async function refreshOutstandingStatus() {
+        if (!isOutstandingFeesPage) {
+            console.warn('⛔ BLOCKED: refreshOutstandingStatus attempted on non-outstanding-fees page');
+            stopAutoRefresh();
+            return;
+        }
+        
         const studentRows = document.querySelectorAll('.student-row');
         
         for (const row of studentRows) {
@@ -548,6 +565,8 @@
     }
 
     async function updateStudentOutstandingStatus(studentId, rowElement) {
+        if (!isOutstandingFeesPage) return;
+        
         try {
             const response = await fetch(`/admin/report-cards/outstanding-fees/${studentId}/status`, {
                 method: 'GET',
@@ -712,14 +731,17 @@
             console.log('Student rows found:', studentRows.length);
             
             if (studentRows.length > 0) {
-                console.log('✅ Outstanding Fees page detected - starting auto-refresh');
+                console.log('✅ Outstanding Fees page CONFIRMED - marking as outstanding fees page');
+                isOutstandingFeesPage = true; // SET FLAG
                 startAutoRefresh();
                 window.addEventListener('beforeunload', stopAutoRefresh);
             } else {
                 console.log('⚠️ studentsTable exists but no student rows found - auto-refresh disabled');
+                isOutstandingFeesPage = false;
             }
         } else {
             console.log('⚠️ Outstanding Fees page NOT detected (studentsTable not found) - auto-refresh disabled');
+            isOutstandingFeesPage = false;
         }
     });
 </script>
