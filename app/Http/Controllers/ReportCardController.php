@@ -1978,4 +1978,31 @@ class ReportCardController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * AJAX endpoint to get current outstanding fees status for a student
+     */
+    public function getStudentOutstandingStatus(Student $student)
+    {
+        try {
+            $paymentStatus = FeePaymentService::getPaymentStatus($student);
+            
+            return response()->json([
+                'success' => true,
+                'student_id' => $student->id,
+                'outstanding_amount' => (float) ($paymentStatus['outstanding'] ?? 0),
+                'required_fees' => (float) ($paymentStatus['required_fees'] ?? 0),
+                'total_paid' => (float) ($paymentStatus['total_paid'] ?? 0),
+                'payment_percentage' => (float) ($paymentStatus['payment_percentage'] ?? 0),
+                'has_outstanding' => ((float) ($paymentStatus['outstanding'] ?? 0)) > 0
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error getting student outstanding status: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error retrieving student information',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

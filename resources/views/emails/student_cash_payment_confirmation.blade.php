@@ -183,7 +183,11 @@
                 <div class="payment-amount">
                     💰 Payment Received: <span style="color: #28a745;">{{ number_format($amountPaid, 2) }} RWF</span>
                 </div>
-                <p style="color: #666; font-size: 14px;">Thank you for your cash payment for <strong>{{ $feeType === 'school_fee' ? 'Tuition' : ucfirst($feeType) }} Fee</strong>. We have successfully processed and recorded your transaction.</p>
+                <p style="color: #666; font-size: 14px;">Thank you for your cash payment for <strong>{{ $feeType === 'school_fee' ? 'Tuition' : ucfirst(str_replace('_', ' ', $feeType)) }} Fee</strong>. We have successfully processed and recorded your transaction.
+                @if($term)
+                    <br><strong>Term:</strong> {{ $term->term_name }}
+                @endif
+                </p>
             </div>
             
             <div class="balance-info">
@@ -219,8 +223,8 @@
                     <span class="balance-value" style="color: #28a745;">{{ number_format($paidFees, 2) }} RWF</span>
                 </div>
                 <div class="balance-item" style="border-top: 1px solid #ddd; padding-top: 10px; margin-top: 10px;">
-                    <span class="balance-label"><strong>Remaining Balance:</strong></span>
-                    <span class="balance-value" style="color: #dc3545;"><strong>{{ number_format($balance, 2) }} RWF</strong></span>
+                    <span class="balance-label"><strong>Outstanding Balance (System Calculated):</strong></span>
+                    <span class="balance-value" style="color: #dc3545;"><strong>{{ number_format($outstandingBalance, 2) }} RWF</strong></span>
                 </div>
                 <div class="balance-item">
                     <span class="balance-label">Payment Deadline:</span>
@@ -231,7 +235,7 @@
             <div class="warning">
                 <h3 style="margin-bottom: 10px; color: #721c24; font-size: 16px;">⚠️ Important Notice</h3>
                 <div class="warning-text">
-                    Please note: You must pay the remaining balance of <strong>{{ number_format($balance, 2) }} RWF</strong> by <span class="warning-deadline">{{ $deadline->format('F j, Y') }}</span> (30 days from today). 
+                    Please note: You must pay the remaining balance of <strong>{{ number_format($outstandingBalance, 2) }} RWF</strong> by <span class="warning-deadline">{{ $deadline->format('F j, Y') }}</span> (30 days from today). 
                     After this date, you will not have access to school facilities until your balance is cleared.
                 </div>
             </div>

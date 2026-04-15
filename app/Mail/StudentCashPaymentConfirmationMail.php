@@ -12,7 +12,7 @@ class StudentCashPaymentConfirmationMail extends Mailable
 
     public $student;
     public $amountPaid;
-    public $balance;
+    public $outstandingBalance;
     public $deadline;
     public $totalFees;
     public $paidFees;
@@ -22,15 +22,17 @@ class StudentCashPaymentConfirmationMail extends Mailable
     public $practicalFee;
     public $discountAmount;
     public $feeType;
+    public $term;
+    public $studentCardFee;
 
     /**
      * Create a new message instance.
      */
-    public function __construct($student, $amountPaid, $balance, $deadline, $totalFees, $paidFees, $registrationFee, $tripFee, $tuitionFee, $practicalFee, $discountAmount, $feeType)
+    public function __construct($student, $amountPaid, $outstandingBalance, $deadline, $totalFees, $paidFees, $registrationFee, $tripFee, $tuitionFee, $practicalFee, $discountAmount, $feeType, $studentCardFee = 0, $term = null)
     {
         $this->student = $student;
         $this->amountPaid = $amountPaid;
-        $this->balance = $balance;
+        $this->outstandingBalance = $outstandingBalance;
         $this->deadline = $deadline;
         $this->totalFees = $totalFees;
         $this->paidFees = $paidFees;
@@ -40,10 +42,14 @@ class StudentCashPaymentConfirmationMail extends Mailable
         $this->practicalFee = $practicalFee;
         $this->discountAmount = $discountAmount;
         $this->feeType = $feeType;
+        $this->studentCardFee = $studentCardFee;
+        $this->term = $term;
     }
+    
     public function build()
     {
         return $this->subject('Cash Payment Confirmation')
             ->view('emails.student_cash_payment_confirmation');
     }
 }
+

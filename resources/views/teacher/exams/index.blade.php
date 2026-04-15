@@ -348,7 +348,7 @@
     function render() {
         const total      = filtered.length;
         const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
-        currentPage      = Math.min(currentPage, totalPages);
+        currentPage      = Math.max(1, Math.min(currentPage, totalPages));
 
         const start = (currentPage - 1) * PER_PAGE;
         const end   = Math.min(start + PER_PAGE, total);
@@ -407,9 +407,12 @@
             if (!disabled && !active) {
                 a.addEventListener('click', e => {
                     e.preventDefault();
-                    currentPage = page;
+                    currentPage = Math.max(1, page);
                     render();
-                    document.querySelector('.ex-card').scrollIntoView({behavior:'smooth',block:'start'});
+                    const scrollTarget = document.querySelector('.ex-card');
+                    if (scrollTarget) {
+                        scrollTarget.scrollIntoView({behavior:'smooth',block:'start'});
+                    }
                 });
             }
             li.appendChild(a);

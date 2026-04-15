@@ -520,5 +520,181 @@
 
         setTimeout(() => alertDiv.remove(), 5000);
     }
+
+    // Auto-refresh outstanding fees status every 10 seconds
+    let refreshInterval;
+
+    function startAutoRefresh() {
+        // Refresh every 10 seconds (adjust as needed)
+        refreshInterval = setInterval(refreshOutstandingStatus, 10000);
+        // Log for debugging
+        console.log('Auto-refresh started - checking every 10 seconds');
+    }
+
+    function stopAutoRefresh() {
+        if (refreshInterval) {
+            clearInterval(refreshInterval);
+            console.log('Auto-refresh stopped');
+        }
+    }
+
+    async function refreshOutstandingStatus() {
+        const studentRows = document.querySelectorAll('.student-row');
+        
+        for (const row of studentRows) {
+            const studentId = row.querySelector('.student-checkbox').value;
+            await updateStudentOutstandingStatus(studentId, row);
+        }
+    }
+
+    async function updateStudentOutstandingStatus(studentId, rowElement) {
+        try {
+            const response = await fetch(`/admin/report-cards/outstanding-fees/${studentId}/status`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                console.error(`Failed to fetch status for student ${studentId}`);
+                return;
+            }
+
+            const data = await response.json();
+
+            if (!data.success) {
+                console.error(`Error fetching status: ${data.message}`);
+                return;
+            }
+
+            // Update the row with new data
+            if (data.has_outstanding === false) {
+                // Student has NO outstanding fees - remove row with animation
+                rowElement.style.opacity = '0.5';
+                rowElement.style.textDecoration = 'line-through';
+                
+                // Add a badge to show the row is being removed
+                const outstandingCell = rowElement.querySelector('td:nth-child(9)');
+                if (outstandingCell) {
+                    outstandingCell.innerHTML = '<span class="badge bg-success">Paid</span>';
+                }
+
+                // Disable action buttons
+                const buttons = rowElement.querySelectorAll('.btn-group button, .btn-group a');
+                buttons.forEach(btn => {
+                    btn.disabled = true;
+                    btn.style.opacity = '0.5';
+                    btn.style.cursor = 'not-allowed';
+                    btn.style.pointerEvents = 'none';
+                    btn.setAttribute('title', 'Student has completed payment');
+                    
+                    // Prevent click on links
+                    if (btn.tagName === 'A') {
+                        btn.onclick = (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            return false;
+                        };
+                    }
+                });
+
+                // Show a notification and remove after a delay
+                console.log(`Student ${studentId} has completed payment`);
+                
+                // Remove the row after 5 seconds
+                setTimeout(() => {
+                    rowElement.remove();
+                    // Update statistics
+                    updateStatistics();
+                }, 5000);
+            } else {
+                // Student still has outstanding fees - update the amounts
+                const requiredFeesCell = rowElement.querySelector('td:nth-child(7)');
+                const paidCell = rowElement.querySelector('td:nth-child(8)');
+                const outstandingCell = rowElement.querySelector('td:nth-child(9)');
+                const percentageCell = rowElement.querySelector('td:nth-child(10)');
+
+                if (requiredFeesCell) {
+                    requiredFeesCell.innerHTML = `<strong>{{ config('app.currency_symbol', 'RWF') }} ${formatCurrency(data.required_fees)}</strong>`;
+                }
+                if (paidCell) {
+                    paidCell.innerHTML = `<span class="text-success">{{ config('app.currency_symbol', 'RWF') }} ${formatCurrency(data.total_paid)}</span>`;
+                }
+                if (outstandingCell) {
+                    outstandingCell.innerHTML = `<span class="badge bg-danger fs-6">{{ config('app.currency_symbol', 'RWF') }} ${formatCurrency(data.outstanding_amount)}</span>`;
+                }
+                if (percentageCell) {
+                    const percentage = data.payment_percentage;
+                    const barColor = percentage >= 75 ? 'bg-success' : (percentage >= 50 ? 'bg-warning' : 'bg-danger');
+                    percentageCell.innerHTML = `
+                        <div class="progress" style="height: 20px; width: 80px;">
+                            <div class="progress-bar ${barColor}" 
+                                role="progressbar" 
+                                style="width: ${percentage}%"
+                                aria-valuenow="${percentage}" 
+                                aria-valuemin="0" 
+                                aria-valuemax="100">
+                                <small>${Math.round(percentage)}%</small>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // Ensure action buttons are enabled
+                const buttons = rowElement.querySelectorAll('.btn-group button, .btn-group a');
+                buttons.forEach(btn => {
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                    btn.style.cursor = 'pointer';
+                    btn.style.pointerEvents = 'auto';
+                    btn.removeAttribute('title');
+                    
+                    // Remove click prevention
+                    if (btn.tagName === 'A') {
+                        btn.onclick = null;
+                    }
+                });
+            }
+        } catch (error) {
+            console.error(`Error updating student ${studentId}:`, error);
+        }
+    }
+
+    function formatCurrency(amount) {
+        return new Intl.NumberFormat('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(amount);
+    }
+
+    function updateStatistics() {
+        // Recalculate and update the statistics cards
+        let totalStudents = 0;
+        let totalOutstanding = 0;
+        let totalPaid = 0;
+
+        document.querySelectorAll('.student-row').forEach(row => {
+            totalStudents++;
+            const outstandingText = row.querySelector('td:nth-child(9)').textContent.replace(/[^0-9.]/g, '');
+            const paidText = row.querySelector('td:nth-child(8)').textContent.replace(/[^0-9.]/g, '');
+            totalOutstanding += parseFloat(outstandingText) || 0;
+            totalPaid += parseFloat(paidText) || 0;
+        });
+
+        // Check if there are no more students with outstanding fees
+        if (totalStudents === 0) {
+            // Reload the page or show a message
+            location.reload();
+        }
+    }
+
+    // Start auto-refresh when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        startAutoRefresh();
+
+        // Optional: Stop auto-refresh when user leaves the page
+        window.addEventListener('beforeunload', stopAutoRefresh);
+    });
 </script>
 @endsection

@@ -2128,18 +2128,24 @@ class StudentController extends Controller
                 ->whereIn('status', ['successful', 'paid'])
                 ->sum('amount');
 
-            $balance      = $totalFees - $paidFees;
+            // Use FeePaymentService to get accurate outstanding based on the term paid
+            $termId = $request->term_id ?? null;
+            $paymentStatus = \App\Services\FeePaymentService::getPaymentStatus($student, $termId ? [$termId] : null);
+            $outstandingBalance = $paymentStatus['outstanding'];
             $newRemaining = $remainingAmount - $amountPaid;
 
             DB::commit();
 
+            // Get term if available
+            $term = $termId ? \App\Models\Term::find($termId) : null;
+
             try {
                 Mail::to($student->email)->send(
                     new \App\Mail\StudentCashPaymentConfirmationMail(
-                        $student, $amountPaid, $balance, now()->addDays(30),
+                        $student, $amountPaid, $outstandingBalance, now()->addDays(30),
                         $totalFees, $paidFees, $registrationFee, $tripFee,
                         $schoolFee, $practicalFee, $discountAmount,
-                        $request->fee_type, $studentCardFee
+                        $request->fee_type, $studentCardFee, $term
                     )
                 );
             } catch (\Exception $e) {

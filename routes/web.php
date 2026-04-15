@@ -486,6 +486,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
 
     // Outstanding Fees Management
     Route::get('report-cards/outstanding-fees/list', [ReportCardController::class, 'outstandingFees'])->name('report-cards.outstanding-fees');
+    Route::get('report-cards/outstanding-fees/{student}/status', [ReportCardController::class, 'getStudentOutstandingStatus'])->name('report-cards.student-outstanding-status');
     Route::post('report-cards/outstanding-fees/{student}/email', [ReportCardController::class, 'sendOutstandingFeesEmail'])->name('report-cards.send-outstanding-email');
     Route::post('report-cards/outstanding-fees/bulk-email', [ReportCardController::class, 'bulkSendOutstandingFeesEmails'])->name('report-cards.bulk-send-outstanding-email');
 
