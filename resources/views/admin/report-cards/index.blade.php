@@ -1865,15 +1865,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Event listeners
     searchInput.addEventListener('input', debounce(function () {
-        fetchAndRender(1);
+        const searchTerm = searchInput.value.trim();
+        // Only fetch if user actually typed something, otherwise show server table
+        if (searchTerm.length > 0 || sortSelect.value !== 'newest') {
+            fetchAndRender(1);
+        }
     }, 300));
 
     sortSelect.addEventListener('change', function () {
         fetchAndRender(1);
     });
 
-    // Initial load
-    fetchAndRender(1);
+    // Initial load - DISABLED: Let server-rendered table load with full functionality
+    // Only fetch when user actively searches or sorts
+    // fetchAndRender(1);  // COMMENTED OUT - use server-rendered HTML instead
 });
 </script>
 <script>
