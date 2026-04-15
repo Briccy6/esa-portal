@@ -1543,11 +1543,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Click outside to close (but don't interfere with Bootstrap dropdowns)
     document.addEventListener('click', function (e) {
-        // Don't close if clicking on Bootstrap dropdown elements
+        // Don't close if clicking on Bootstrap dropdown elements (both static and dynamic)
         const isDropdownAction = e.target.closest('[data-bs-toggle="dropdown"]') || 
                                e.target.closest('.dropdown-menu') ||
                                e.target.closest('.rc-student-actions') ||
-                               e.target.closest('.dropdown-item');
+                               e.target.closest('.dropdown-item') ||
+                               e.target.classList.contains('dropdown-toggle');
         
         if (isDropdownAction) {
             console.log('📍 Action dropdown clicked - allowing event');
@@ -1783,29 +1784,31 @@ document.addEventListener('DOMContentLoaded', function () {
             tbody.appendChild(row);
         });
         
-        // After rendering, reinitialize all Bootstrap dropdowns
+        // After rendering, reinitialize all Bootstrap dropdowns with a small delay
         console.log('🔄 Re-initializing Bootstrap dropdowns after table render...');
-        const newDropdownToggles = tbody.querySelectorAll('[data-bs-toggle="dropdown"]');
-        console.log(`Found ${newDropdownToggles.length} dropdowns to initialize`);
-        
-        newDropdownToggles.forEach((btn, idx) => {
-            // Assign unique ID if missing
-            if (!btn.id) {
-                btn.id = `dropdown-toggle-search-${idx}`;
-            }
+        setTimeout(() => {
+            const newDropdownToggles = tbody.querySelectorAll('[data-bs-toggle="dropdown"]');
+            console.log(`Found ${newDropdownToggles.length} dropdowns to initialize`);
             
-            try {
-                // Dispose old instance if exists
-                const oldInstance = bootstrap.Dropdown.getInstance(btn);
-                if (oldInstance) oldInstance.dispose();
+            newDropdownToggles.forEach((btn, idx) => {
+                // Assign unique ID if missing
+                if (!btn.id) {
+                    btn.id = `dropdown-toggle-search-${idx}`;
+                }
                 
-                // Create new instance
-                new bootstrap.Dropdown(btn);
-                console.log(`✅ Dropdown ${idx + 1} re-initialized`);
-            } catch (e) {
-                console.error(`❌ Error re-initializing dropdown ${idx + 1}:`, e);
-            }
-        });
+                try {
+                    // Dispose old instance if exists
+                    const oldInstance = bootstrap.Dropdown.getInstance(btn);
+                    if (oldInstance) oldInstance.dispose();
+                    
+                    // Create new instance
+                    new bootstrap.Dropdown(btn);
+                    console.log(`✅ Dropdown ${idx + 1} re-initialized successfully`);
+                } catch (e) {
+                    console.error(`❌ Error re-initializing dropdown ${idx + 1}:`, e);
+                }
+            });
+        }, 100); // 100ms delay to ensure DOM is fully rendered
     }
 
     // Update pagination info and UI
