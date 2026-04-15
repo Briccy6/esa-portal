@@ -1326,12 +1326,23 @@ function deleteReportCardsGroup(studentId, courseId, academicYearId, termIds, st
 document.addEventListener('DOMContentLoaded', function () {
     console.log('✅ DOM Loaded - Checking Bootstrap Dropdowns...');
     
-    // Find all dropdown toggles
+    // Find all dropdown toggles and assign unique IDs + link to menus
     const dropdownToggles = document.querySelectorAll('[data-bs-toggle="dropdown"]');
     console.log(`Found ${dropdownToggles.length} dropdown toggle buttons`);
     
     // Initialize each dropdown
     dropdownToggles.forEach((btn, idx) => {
+        // Assign unique ID if missing
+        if (!btn.id) {
+            btn.id = `dropdown-toggle-${idx}`;
+        }
+        
+        // Link dropdown-menu if next element is one
+        const nextUL = btn.nextElementSibling;
+        if (nextUL && nextUL.classList.contains('dropdown-menu')) {
+            nextUL.setAttribute('data-bs-toggle-id', btn.id);
+        }
+        
         console.log(`Dropdown ${idx + 1}:`, btn.textContent.trim(), btn);
         try {
             // Bootstrap 5 way to initialize dropdowns
@@ -1348,6 +1359,15 @@ document.addEventListener('DOMContentLoaded', function () {
     } else {
         console.log('✅ Bootstrap is loaded');
     }
+    
+    // Add event listener to prevent term filter from blocking action menu clicks
+    document.addEventListener('click', function(e) {
+        // If it's a dropdown action item, let it pass through
+        if (e.target.closest('.dropdown-item') || e.target.closest('[data-bs-toggle="dropdown"]')) {
+            console.log('📍 Dropdown action clicked - allowing event propagation');
+            return;
+        }
+    }, true);
     
     // State ──────────────────────────────────────────────
     const selected = new Set(); // set of string values
@@ -1521,10 +1541,21 @@ document.addEventListener('DOMContentLoaded', function () {
         panel.style.display === 'none' ? openPanel() : closePanel();
     });
 
-    // Click outside to close
+    // Click outside to close (but don't interfere with Bootstrap dropdowns)
     document.addEventListener('click', function (e) {
+        // Don't close if clicking on Bootstrap dropdown elements
+        const isDropdownAction = e.target.closest('[data-bs-toggle="dropdown"]') || 
+                               e.target.closest('.dropdown-menu') ||
+                               e.target.closest('.rc-student-actions') ||
+                               e.target.closest('.dropdown-item');
+        
+        if (isDropdownAction) {
+            console.log('📍 Action dropdown clicked - allowing event');
+            return;
+        }
+        
         if (!dropdown.contains(e.target)) closePanel();
-    });
+    }); // Use bubble phase (default)
 
     // Select option
     list.addEventListener('click', function (e) {
