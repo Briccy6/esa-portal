@@ -557,14 +557,20 @@
             });
 
             if (!response.ok) {
-                console.error(`Failed to fetch status for student ${studentId}`);
+                console.warn(`Failed to fetch status for student ${studentId}: ${response.status}`);
                 return;
             }
 
             const data = await response.json();
 
             if (!data.success) {
-                console.error(`Error fetching status: ${data.message}`);
+                console.warn(`Error fetching status for student ${studentId}: ${data.message}`);
+                return;
+            }
+
+            // Verify row still exists and belongs to this table
+            if (!rowElement || !rowElement.parentElement) {
+                console.log(`Row for student ${studentId} no longer exists in DOM`);
                 return;
             }
 
@@ -604,9 +610,11 @@
                 
                 // Remove the row after 5 seconds
                 setTimeout(() => {
-                    rowElement.remove();
-                    // Update statistics
-                    updateStatistics();
+                    if (rowElement.parentElement) {
+                        rowElement.remove();
+                        // Update statistics
+                        updateStatistics();
+                    }
                 }, 5000);
             } else {
                 // Student still has outstanding fees - update the amounts
@@ -691,10 +699,28 @@
 
     // Start auto-refresh when page loads
     document.addEventListener('DOMContentLoaded', function() {
-        startAutoRefresh();
-
-        // Optional: Stop auto-refresh when user leaves the page
-        window.addEventListener('beforeunload', stopAutoRefresh);
+        // Debug logging
+        console.log('DOMContentLoaded event fired');
+        console.log('Current URL:', window.location.href);
+        
+        // Only start auto-refresh if we're on the outstanding-fees page
+        const studentsTable = document.getElementById('studentsTable');
+        console.log('studentsTable element found:', !!studentsTable);
+        
+        if (studentsTable) {
+            const studentRows = studentsTable.querySelectorAll('tbody tr.student-row');
+            console.log('Student rows found:', studentRows.length);
+            
+            if (studentRows.length > 0) {
+                console.log('✅ Outstanding Fees page detected - starting auto-refresh');
+                startAutoRefresh();
+                window.addEventListener('beforeunload', stopAutoRefresh);
+            } else {
+                console.log('⚠️ studentsTable exists but no student rows found - auto-refresh disabled');
+            }
+        } else {
+            console.log('⚠️ Outstanding Fees page NOT detected (studentsTable not found) - auto-refresh disabled');
+        }
     });
 </script>
 @endsection
