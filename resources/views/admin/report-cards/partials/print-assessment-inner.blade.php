@@ -38,9 +38,11 @@
         </td>
         <td class="print-header-logo print-header-logo--right">
             @if(!empty($studentPhotoBase64))
-                <img src="data:{{ $studentPhotoMime ?? 'image/jpeg' }};base64,{{ $studentPhotoBase64 }}" alt="Student Photo" style="width: 120px; height: 150px; object-fit: cover; border: 2px solid #333;">
+                <div style="text-align: center; padding: 8px;">
+                    <img src="data:{{ $studentPhotoMime ?? 'image/jpeg' }};base64,{{ $studentPhotoBase64 }}" alt="Student Photo" style="width: 140px; height: 180px; object-fit: cover; border: 3px solid #2c3e50; box-shadow: 0 4px 8px rgba(0,0,0,0.15); border-radius: 4px; display: block;">
+                </div>
             @else
-                <div class="print-logo-placeholder" style="width: 120px; height: 150px; font-size: 14px;">PHOTO</div>
+                <div class="print-logo-placeholder" style="width: 140px; height: 180px; font-size: 14px; margin: 8px auto; border-radius: 4px;">PHOTO</div>
             @endif
         </td>
     </tr>
