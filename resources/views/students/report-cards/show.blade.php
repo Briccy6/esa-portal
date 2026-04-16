@@ -323,7 +323,7 @@
 
     <!-- Report Card Content (same as admin print) -->
     <div class="print-area">
-        @include('admin.report-cards.partials.print-assessment-inner', compact('reportCard', 'schoolInfo', 'studentPhotoBase64', 'studentPhotoMime'))
+        @include('students.report-cards.partials.print-assessment-inner', compact('reportCard', 'schoolInfo', 'studentPhotoBase64', 'studentPhotoMime'))
     </div>
 </body>
 </html>

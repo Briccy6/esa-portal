@@ -134,8 +134,8 @@ class StudentReportCardController extends Controller
             }
         }
 
-        // Generate PDF using the admin professional print design
-        $pdf = Pdf::loadView('admin.report-cards.print', compact('reportCard', 'schoolInfo', 'studentPhotoBase64', 'studentPhotoMime'))
+        // Generate PDF using the student professional print design
+        $pdf = Pdf::loadView('students.report-cards.print', compact('reportCard', 'schoolInfo', 'studentPhotoBase64', 'studentPhotoMime'))
             ->setPaper('a4', 'portrait')
             ->setOption([
                 'margin-top'        => 0,

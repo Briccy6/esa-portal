@@ -1,12 +1,24 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="utf-8">
-    <title>Report Card - {{ $reportCard->student->full_name }}</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trainee Assessment Report - {{ $reportCard->student->full_name }}</title>
     <style>
         @page {
-            margin: 1cm;
-            size: A4;
+            size: A4 portrait;
+            margin: 20mm;
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
         }
         
         body {
@@ -14,297 +26,247 @@
             font-size: 12px;
             line-height: 1.4;
             color: #333;
-            margin: 0;
+            background: white;
+            overflow-x: hidden;
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        
+        .print-area {
+            width: 100%;
+            max-width: 170mm;
+            margin: 20mm auto 0;
             padding: 0;
+            box-sizing: border-box;
+            border: 2px solid black;
+            background: white;
+            display: block;
         }
         
-        .report-card {
-            max-width: 100%;
+        /* Header: logo | details | logo (table layout for DomPDF) */
+        .print-header-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-bottom: 1px solid #000;
+            table-layout: fixed;
+        }
+        .print-header-table td {
+            vertical-align: middle;
+            padding: 10px 8px;
+        }
+        .print-header-logo {
+            width: 22%;
+            text-align: center;
+            border-right: 1px solid #000;
+        }
+        .print-header-logo--right {
+            border-right: none;
+            border-left: 1px solid #000;
+        }
+        .print-header-center {
+            width: 56%;
+            text-align: center;
+            padding: 12px 14px !important;
+        }
+        .print-header-logo img,
+        .school-logo-img {
+            max-height: 88px;
+            max-width: 110px;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+        }
+        .print-logo-placeholder {
+            width: 88px;
+            height: 88px;
             margin: 0 auto;
-        }
-        
-        .header {
+            background: #ecf0f1;
+            border: 2px dashed #bdc3c7;
             text-align: center;
-            margin-bottom: 30px;
-            border-bottom: 2px solid #333;
-            padding-bottom: 20px;
+            font-size: 8px;
+            color: #7f8c8d;
+            font-weight: bold;
+            line-height: 84px;
         }
-        
-        .header h2 {
-            margin: 0 0 5px 0;
-            font-size: 20px;
+        .hdr-line {
+            font-size: 10px;
+            line-height: 1.45;
+            margin: 0 0 3px 0;
+        }
+        .hdr-line .lbl {
             font-weight: bold;
         }
-        
-        .header p {
+        .hdr-school-name {
+            font-size: 12px;
+            font-weight: bold;
+            margin: 10px 0 6px 0;
+            letter-spacing: 0.3px;
+        }
+        .hdr-contact {
+            font-size: 9px;
+            line-height: 1.5;
             margin: 2px 0;
-            font-size: 11px;
         }
         
-        .student-info {
-            margin-bottom: 25px;
-        }
-        
-        .info-row {
-            display: flex;
-            margin-bottom: 10px;
-        }
-        
-        .info-col {
-            flex: 1;
-        }
-        
-        .info-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        .info-table td {
-            border: 1px solid #333;
-            padding: 5px 8px;
-            font-size: 11px;
-        }
-        
-        .info-table td:first-child {
-            width: 35%;
-            background-color: #f0f0f0;
-            font-weight: bold;
-        }
-        
-        .section-title {
-            font-size: 14px;
-            font-weight: bold;
-            margin: 0 0 10px 0;
-            padding-bottom: 5px;
-            border-bottom: 1px solid #333;
-        }
-        
-        .marks-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-        
-        .marks-table th {
-            background-color: #333;
-            color: white;
-            border: 1px solid #333;
-            padding: 6px 8px;
-            text-align: center;
-            font-size: 11px;
-            font-weight: bold;
-        }
-        
-        .marks-table td {
-            border: 1px solid #333;
-            padding: 5px 8px;
-            font-size: 11px;
+        .title-section {
+            background: #f0f0f0;
+            border-bottom: 1px solid black;
+            padding: 4px;
             text-align: center;
         }
         
-        .marks-table td:first-child {
+        .title-section h2 {
+            font-size: 12px;
+            font-weight: bold;
+            margin: 0;
+        }
+        
+        .qualification-section {
+            border-bottom: 1px solid black;
+        }
+        
+        .qualification-row {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            font-size: 10px;
+        }
+        
+        .qualification-cell {
+            padding: 4px;
+        }
+        
+        .qualification-cell:not(:last-child) {
+            border-right: 1px solid black;
+        }
+        
+        .legend-section {
+            border-bottom: 1px solid black;
+            padding: 4px;
+            font-size: 8px;
+        }
+        
+        .assessment-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 8px;
+            table-layout: fixed;
+        }
+        
+        .assessment-table th,
+        .assessment-table td {
+            border: 1px solid black;
+            padding: 2px;
+            text-align: center;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        .assessment-table .text-left {
             text-align: left;
         }
         
-        .grade {
+        .assessment-table .bg-gray {
+            background: #f0f0f0;
+        }
+        
+        .assessment-table .bg-blue {
+            background: #e6f3ff;
+        }
+        
+        .assessment-table .bg-green {
+            background: #e6ffe6;
+        }
+        
+        .assessment-table .bg-yellow {
+            background: #ffffe6;
+        }
+        
+        .assessment-table .font-bold {
             font-weight: bold;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-size: 10px;
         }
         
-        .grade-a { background-color: #28a745; color: white; }
-        .grade-b { background-color: #17a2b8; color: white; }
-        .grade-c { background-color: #ffc107; color: #000; }
-        .grade-d { background-color: #fd7e14; color: white; }
-        .grade-e { background-color: #dc3545; color: white; }
-        .grade-n { background-color: #6c757d; color: white; }
-        
-        .summary {
-            margin: 0 0 20px 0;
-            display: flex;
-            justify-content: space-between;
+        .competent-mark {
+            color: green;
+            font-weight: bold;
         }
         
-        .summary-item {
+        .not-competent-mark {
+            color: red;
+            text-decoration: underline;
+            font-weight: bold;
+        }
+        
+        .deliberation-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 8px;
+            margin-top: 1px;
+            table-layout: fixed;
+        }
+        
+        .deliberation-table th,
+        .deliberation-table td {
+            border: 1px solid black;
+            padding: 2px;
             text-align: center;
-            padding: 10px;
-            border: 1px solid #333;
-            min-width: 120px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
         
-        .summary-value {
-            font-size: 16px;
-            font-weight: bold;
-            margin-bottom: 2px;
+        .deliberation-table .text-left {
+            text-align: left;
         }
         
-        .summary-label {
-            font-size: 10px;
-            text-transform: uppercase;
-        }
-        
-        .remarks {
-            margin: 20px 0;
-            padding: 10px;
-            background-color: #f9f9f9;
-            border-left: 3px solid #333;
-            font-style: italic;
+        .deliberation-table .bg-gray {
+            background: #f0f0f0;
         }
         
         .footer {
-            margin-top: 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
+            background: #f0f0f0;
+            padding: 2px;
+            text-align: right;
+            font-size: 7px;
+            border-top: 1px solid black;
         }
         
-        .approval-info {
-            font-size: 10px;
+        .checkbox {
+            width: 16px;
+            height: 16px;
         }
         
-        .signature {
-            text-align: center;
+        @media print {
+            body {
+                margin: 0;
+                padding: 0;
+                width: 100%;
+                height: 100%;
+            }
+            
+            .print-area {
+                margin: 0 auto;
+                max-width: 170mm;
+                width: 100%;
+                box-sizing: border-box;
+            }
         }
         
-        .signature-line {
-            border-bottom: 1px solid #333;
-            margin-bottom: 2px;
-            min-width: 150px;
+        /* Global overflow prevention */
+        div, section, article, header, footer, main, nav, ul, ol, li, p, span, a, label, td, th {
+            max-width: 100%;
+            box-sizing: border-box;
         }
         
-        .signature-text {
-            font-size: 9px;
-            color: #666;
-        }
-        
-        .no-print {
-            display: none;
+        img, svg, canvas, video, iframe {
+            max-width: 100%;
+            height: auto;
+            display: block;
         }
     </style>
 </head>
 <body>
-    <div class="report-card">
-        <!-- Header -->
-        <div class="header">
-            <h2>{{ $schoolInfo->school_name ?? 'ESA School' }}</h2>
-            <p>{{ $schoolInfo->address ?? 'School Address' }}</p>
-            <p>{{ $schoolInfo->phone ?? 'Phone Number' }}</p>
-            <p><strong>ACADEMIC REPORT CARD</strong></p>
-        </div>
-
-        <!-- Student Information -->
-        <div class="student-info">
-            <div class="info-row">
-                <div class="info-col">
-                    <table class="info-table">
-                        <tr>
-                            <td>Student Name</td>
-                            <td>{{ $reportCard->student->full_name }}</td>
-                        </tr>
-                        <tr>
-                            <td>Registration No.</td>
-                            <td>{{ $reportCard->student->registration_number ?? 'N/A' }}</td>
-                        </tr>
-                        <tr>
-                            <td>Class/Course</td>
-                            <td>{{ $reportCard->course->course_name ?? 'N/A' }}</td>
-                        </tr>
-                    </table>
-                </div>
-                <div class="info-col">
-                    <table class="info-table">
-                        <tr>
-                            <td>Academic Year</td>
-                            <td>{{ $reportCard->academicYear->year ?? 'N/A' }}</td>
-                        </tr>
-                        <tr>
-                            <td>Term</td>
-                            <td>{{ $reportCard->term->name ?? 'N/A' }}</td>
-                        </tr>
-                        <tr>
-                            <td>Date Issued</td>
-                            <td>{{ $reportCard->updated_at->format('M j, Y') }}</td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Academic Performance -->
-        <div class="section-title">ACADEMIC PERFORMANCE</div>
-        <table class="marks-table">
-            <thead>
-                <tr>
-                    <th>Subject</th>
-                    <th>Test Avg</th>
-                    <th>Exam</th>
-                    <th>Total</th>
-                    <th>Grade</th>
-                </tr>
-            </thead>
-            <tbody>
-                @if($reportCard->subjects && $reportCard->subjects->count() > 0)
-                    @foreach($reportCard->subjects as $subject)
-                        <tr>
-                            <td>{{ $subject->subject_name ?? 'N/A' }}</td>
-                            <td>{{ $subject->test_average ? number_format(min($subject->test_average, 100), 1) : 'N/A' }}</td>
-                            <td>{{ $subject->exam_mark ? number_format(min($subject->exam_mark, 100), 1) : 'N/A' }}</td>
-                            <td><strong>{{ $subject->total_mark ? number_format(min($subject->total_mark, 100), 1) : 'N/A' }}</strong></td>
-                            <td>
-                                <span class="grade grade-{{ strtolower($subject->grade ?? 'n') }}">
-                                    {{ $subject->grade ?? 'N/A' }}
-                                </span>
-                            </td>
-                        </tr>
-                    @endforeach
-                @else
-                    <tr>
-                        <td colspan="6" style="text-align: center; font-style: italic;">
-                            No subjects found for this report card
-                        </td>
-                    </tr>
-                @endif
-            </tbody>
-        </table>
-
-        <!-- Summary -->
-        <div class="summary">
-            <div class="summary-item">
-                <div class="summary-value">{{ $reportCard->total_marks ? number_format($reportCard->total_marks, 1) : 'N/A' }}</div>
-                <div class="summary-label">Total Marks</div>
-            </div>
-            <div class="summary-item">
-                <div class="summary-value">{{ $reportCard->average_marks ? number_format($reportCard->average_marks, 1) : 'N/A' }}%</div>
-                <div class="summary-label">Average</div>
-            </div>
-            <div class="summary-item">
-                <div class="summary-value">{{ $reportCard->position_display ?? 'N/A' }}</div>
-                <div class="summary-label">Position</div>
-            </div>
-        </div>
-
-        <!-- Remarks -->
-        @if($reportCard->remarks)
-        <div class="remarks">
-            <strong>Remarks:</strong> {{ $reportCard->remarks }}
-        </div>
-        @endif
-
-        <!-- Footer -->
-        <div class="footer">
-            <div class="approval-info">
-                <p><strong>Status:</strong> {{ ucfirst($reportCard->status) }}</p>
-                @if($reportCard->approved_by)
-                    <p><strong>Approved by:</strong> {{ $reportCard->approvedBy->name ?? 'Administrator' }}</p>
-                    <p><strong>Approved on:</strong> {{ $reportCard->approved_at->format('M j, Y g:i A') }}</p>
-                @endif
-            </div>
-            <div class="signature">
-                <div class="signature-line"></div>
-                <div class="signature-text">School Administrator Signature</div>
-            </div>
-        </div>
+    <div class="print-area">
+        @include('students.report-cards.partials.print-assessment-inner', compact('reportCard', 'schoolInfo', 'studentPhotoBase64', 'studentPhotoMime'))
     </div>
 </body>
 </html>
