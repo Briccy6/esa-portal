@@ -1639,6 +1639,9 @@ class ReportCardController extends Controller
             return redirect()->route('login')->with('error', 'Please login to access your report cards.');
         }
 
+        // Get overall access status for the student
+        $accessStatus = ReportCardService::getAccessStatus($student);
+
         // Get student's report cards with proper term-specific access status
         $reportCards = ReportCard::where('student_id', $student->id)
                                 ->with(['course', 'academicYear', 'term'])
@@ -1659,7 +1662,7 @@ class ReportCardController extends Controller
                                     ];
                                 });
         
-        return view('students.report-cards.index', compact('reportCards'));
+        return view('students.report-cards.index', compact('reportCards', 'accessStatus'));
     }
 
     public function studentShow(ReportCard $reportCard)
