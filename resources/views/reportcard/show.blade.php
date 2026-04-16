@@ -1,156 +1,177 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container mx-auto py-8 px-4">
-    <div class="max-w-4xl mx-auto">
-        <!-- Header -->
-        <div class="mb-8">
-            <div class="flex items-center justify-between mb-6">
-                <h1 class="text-3xl font-bold text-gray-900">Report Card</h1>
-                <button 
-                    onclick="window.print()"
-                    class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg flex items-center gap-2"
-                >
-                    <i class="fas fa-print"></i>
-                    Print Report Card
-                </button>
-            </div>
+<div style="max-width: 900px; margin: 0 auto; padding: 40px 20px;">
+    <!-- Buttons Section -->
+    <div style="margin-bottom: 30px; display: flex; gap: 10px; justify-content: center;">
+        <a href="{{ route('student.report-cards.download', $reportCard->id) }}"
+           style="background-color: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-flex; align-items: center; gap: 8px; font-weight: 600;">
+            <i class="fas fa-download"></i>Download PDF
+        </a>
+        <button onclick="window.print()"
+           style="background-color: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-weight: 600;">
+            <i class="fas fa-print"></i>Print Report Card
+        </button>
+        <a href="/student/report-cards"
+           style="background-color: #6c757d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-flex; align-items: center; gap: 8px; font-weight: 600;">
+            <i class="fas fa-arrow-left"></i>Back to Report Cards
+        </a>
+    </div>
 
-            <div class="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-3">
-                <i class="fas fa-check-circle text-green-600 text-xl"></i>
-                <div>
-                    <p class="font-semibold text-green-900">Access Granted</p>
-                    <p class="text-sm text-green-700">All fees paid. You can now view your report card.</p>
-                </div>
-            </div>
+    <!-- Report Card Content -->
+    <div style="background-color: white; padding: 40px; border: 1px solid #ddd; box-shadow: 0 0 5px rgba(0,0,0,0.1);">
+        
+        <!-- Header -->
+        <div style="text-align: center; margin-bottom: 40px; border-bottom: 2px solid #333; padding-bottom: 30px;">
+            <h2 style="margin: 0 0 10px 0; font-size: 22px; font-weight: bold;">{{ $schoolInfo->school_name ?? 'ESA School' }}</h2>
+            <p style="margin: 5px 0; font-size: 12px;">{{ $schoolInfo->address ?? 'School Address' }}</p>
+            <p style="margin: 5px 0; font-size: 12px;">{{ $schoolInfo->phone ?? 'Phone Number' }}</p>
+            <p style="margin: 10px 0 0 0; font-size: 12px;"><strong>ACADEMIC REPORT CARD</strong></p>
         </div>
 
-        <!-- Report Card Content -->
-        <div class="bg-white border border-gray-300 rounded-lg shadow-lg p-8">
-            <div class="grid grid-cols-2 gap-8 mb-8">
-                <!-- Student Info -->
-                <div>
-                    <h2 class="text-sm font-bold text-gray-700 uppercase mb-4">Student Information</h2>
-                    <div class="space-y-2 text-sm">
-                        <div>
-                            <p class="text-gray-600">Name</p>
-                            <p class="font-semibold text-gray-900">{{ $student->full_name ?? 'N/A' }}</p>
-                        </div>
-                        <div>
-                            <p class="text-gray-600">Registration Number</p>
-                            <p class="font-semibold text-gray-900">{{ $student->reg_number ?? 'N/A' }}</p>
-                        </div>
-                        <div>
-                            <p class="text-gray-600">Email</p>
-                            <p class="font-semibold text-gray-900">{{ $student->email ?? 'N/A' }}</p>
-                        </div>
-                    </div>
+        <!-- Student Information -->
+        <div style="margin-bottom: 35px;">
+            <div style="display: flex; gap: 40px;">
+                <!-- Left Column -->
+                <div style="flex: 1;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr>
+                            <td style="border: 1px solid #333; padding: 8px; background-color: #f0f0f0; font-weight: bold; width: 35%;">Student Name</td>
+                            <td style="border: 1px solid #333; padding: 8px;">{{ $reportCard->student->full_name }}</td>
+                        </tr>
+                        <tr>
+                            <td style="border: 1px solid #333; padding: 8px; background-color: #f0f0f0; font-weight: bold;">Registration No.</td>
+                            <td style="border: 1px solid #333; padding: 8px;">{{ $reportCard->student->registration_number ?? 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <td style="border: 1px solid #333; padding: 8px; background-color: #f0f0f0; font-weight: bold;">Class/Course</td>
+                            <td style="border: 1px solid #333; padding: 8px;">{{ $reportCard->course->course_name ?? 'N/A' }}</td>
+                        </tr>
+                    </table>
                 </div>
-
-                <!-- Academic Info -->
-                <div>
-                    <h2 class="text-sm font-bold text-gray-700 uppercase mb-4">Academic Information</h2>
-                    <div class="space-y-2 text-sm">
-                        <div>
-                            <p class="text-gray-600">Branch</p>
-                            <p class="font-semibold text-gray-900">{{ $student->branch->name ?? 'N/A' }}</p>
-                        </div>
-                        <div>
-                            <p class="text-gray-600">Course</p>
-                            <p class="font-semibold text-gray-900">{{ $student->course->name ?? 'N/A' }}</p>
-                        </div>
-                        <div>
-                            <p class="text-gray-600">Academic Year</p>
-                            <p class="font-semibold text-gray-900">{{ $student->academicYear->year ?? 'N/A' }}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Grades Table -->
-            @if($reportCard ?? null)
-            <div class="mb-8">
-                <h2 class="text-sm font-bold text-gray-700 uppercase mb-4">Academic Performance</h2>
-                <div class="overflow-x-auto">
-                    <table class="w-full border-collapse">
-                        <thead>
-                            <tr class="bg-gray-100 border-b-2 border-gray-300">
-                                <th class="border border-gray-300 p-3 text-left text-sm font-semibold text-gray-900">Subject</th>
-                                <th class="border border-gray-300 p-3 text-center text-sm font-semibold text-gray-900">Score</th>
-                                <th class="border border-gray-300 p-3 text-center text-sm font-semibold text-gray-900">Grade</th>
-                                <th class="border border-gray-300 p-3 text-center text-sm font-semibold text-gray-900">Remarks</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($reportCard as $record)
-                            <tr class="border-b border-gray-200 hover:bg-gray-50">
-                                <td class="border border-gray-300 p-3 text-sm text-gray-900">{{ $record->subject ?? 'N/A' }}</td>
-                                <td class="border border-gray-300 p-3 text-center text-sm font-semibold text-gray-900">{{ $record->score ?? 'N/A' }}</td>
-                                <td class="border border-gray-300 p-3 text-center text-sm font-semibold 
-                                    @if(($record->grade ?? 'F') === 'A') text-green-600 @elseif(in_array($record->grade ?? 'F', ['B', 'C'])) text-blue-600 @else text-red-600 @endif
-                                ">
-                                    {{ $record->grade ?? 'N/A' }}
-                                </td>
-                                <td class="border border-gray-300 p-3 text-center text-sm text-gray-700">{{ $record->remarks ?? '-' }}</td>
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="4" class="border border-gray-300 p-6 text-center text-gray-500">
-                                    No grades available yet
-                                </td>
-                            </tr>
-                            @endforelse
-                        </tbody>
+                
+                <!-- Right Column -->
+                <div style="flex: 1;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr>
+                            <td style="border: 1px solid #333; padding: 8px; background-color: #f0f0f0; font-weight: bold; width: 35%;">Academic Year</td>
+                            <td style="border: 1px solid #333; padding: 8px;">{{ $reportCard->academicYear->year ?? 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <td style="border: 1px solid #333; padding: 8px; background-color: #f0f0f0; font-weight: bold;">Term</td>
+                            <td style="border: 1px solid #333; padding: 8px;">{{ $reportCard->term->name ?? 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <td style="border: 1px solid #333; padding: 8px; background-color: #f0f0f0; font-weight: bold;">Date Issued</td>
+                            <td style="border: 1px solid #333; padding: 8px;">{{ $reportCard->updated_at ? $reportCard->updated_at->format('M j, Y') : 'N/A' }}</td>
+                        </tr>
                     </table>
                 </div>
             </div>
-            @else
-            <div class="mb-8 p-6 bg-gray-50 border border-gray-200 rounded-lg text-center text-gray-600">
-                <i class="fas fa-file-search text-4xl mb-4 text-gray-400"></i>
-                <p>Report card data not yet available</p>
-            </div>
-            @endif
+        </div>
 
-            <!-- Summary -->
-            <div class="bg-gray-50 border border-gray-200 rounded-lg p-6">
-                <h2 class="text-sm font-bold text-gray-700 uppercase mb-4">Summary</h2>
-                <div class="grid grid-cols-3 gap-4">
-                    <div class="text-center">
-                        <p class="text-gray-600 text-sm mb-1">Total Subjects</p>
-                        <p class="text-2xl font-bold text-gray-900">{{ $reportCard->subjects->count() ?? 0 }}</p>
-                    </div>
-                    <div class="text-center">
-                        <p class="text-gray-600 text-sm mb-1">Average Score</p>
-                        <p class="text-2xl font-bold text-blue-600">
-                            {{ $reportCard->average_marks ? round($reportCard->average_marks, 2) : 'N/A' }}
-                        </p>
-                    </div>
-                    <div class="text-center">
-                        <p class="text-gray-600 text-sm mb-1">Date Generated</p>
-                        <p class="text-sm font-semibold text-gray-900">{{ now()->format('M d, Y') }}</p>
-                    </div>
-                </div>
+        <!-- Academic Performance -->
+        <div style="margin-bottom: 30px;">
+            <h3 style="font-size: 14px; font-weight: bold; margin: 0 0 15px 0; padding-bottom: 8px; border-bottom: 1px solid #333;">ACADEMIC PERFORMANCE</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background-color: #333; color: white;">
+                        <th style="border: 1px solid #333; padding: 10px; text-align: center; font-size: 12px; font-weight: bold;">Subject</th>
+                        <th style="border: 1px solid #333; padding: 10px; text-align: center; font-size: 12px; font-weight: bold;">Test Avg</th>
+                        <th style="border: 1px solid #333; padding: 10px; text-align: center; font-size: 12px; font-weight: bold;">Exam</th>
+                        <th style="border: 1px solid #333; padding: 10px; text-align: center; font-size: 12px; font-weight: bold;">Total</th>
+                        <th style="border: 1px solid #333; padding: 10px; text-align: center; font-size: 12px; font-weight: bold;">Grade</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if($reportCard->subjects && $reportCard->subjects->count() > 0)
+                        @foreach($reportCard->subjects as $subject)
+                            <tr>
+                                <td style="border: 1px solid #333; padding: 8px; font-size: 12px; text-align: left;">{{ $subject->subject_name ?? 'N/A' }}</td>
+                                <td style="border: 1px solid #333; padding: 8px; font-size: 12px; text-align: center;">{{ $subject->test_average ? number_format(min($subject->test_average, 100), 1) : 'N/A' }}</td>
+                                <td style="border: 1px solid #333; padding: 8px; font-size: 12px; text-align: center;">{{ $subject->exam_mark ? number_format(min($subject->exam_mark, 100), 1) : 'N/A' }}</td>
+                                <td style="border: 1px solid #333; padding: 8px; font-size: 12px; text-align: center; font-weight: bold;">{{ $subject->total_mark ? number_format(min($subject->total_mark, 100), 1) : 'N/A' }}</td>
+                                <td style="border: 1px solid #333; padding: 8px; font-size: 12px; text-align: center;">
+                                    <span style="padding: 3px 8px; border-radius: 3px; font-weight: bold; font-size: 11px; color: white;
+                                        @if(strtolower($subject->grade ?? 'n') === 'a') background-color: #28a745;
+                                        @elseif(strtolower($subject->grade ?? 'n') === 'b') background-color: #17a2b8;
+                                        @elseif(strtolower($subject->grade ?? 'n') === 'c') background-color: #ffc107; color: #000;
+                                        @elseif(strtolower($subject->grade ?? 'n') === 'd') background-color: #fd7e14;
+                                        @elseif(strtolower($subject->grade ?? 'n') === 'e') background-color: #dc3545;
+                                        @else background-color: #6c757d;
+                                        @endif
+                                    ">{{ $subject->grade ?? 'N/A' }}</span>
+                                </td>
+                            </tr>
+                        @endforeach
+                    @else
+                        <tr>
+                            <td colspan="5" style="border: 1px solid #333; padding: 20px; font-size: 12px; text-align: center; font-style: italic; color: #999;">
+                                No subjects found for this report card
+                            </td>
+                        </tr>
+                    @endif
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Summary -->
+        <div style="margin-bottom: 30px; display: flex; justify-content: space-between; gap: 20px;">
+            <div style="flex: 1; text-align: center; padding: 15px; border: 1px solid #333; background-color: #f9f9f9;">
+                <div style="font-size: 20px; font-weight: bold; margin-bottom: 5px;">{{ $reportCard->total_marks ? number_format($reportCard->total_marks, 1) : 'N/A' }}</div>
+                <div style="font-size: 11px; text-transform: uppercase; color: #666;">Total Marks</div>
+            </div>
+            <div style="flex: 1; text-align: center; padding: 15px; border: 1px solid #333; background-color: #f9f9f9;">
+                <div style="font-size: 20px; font-weight: bold; margin-bottom: 5px;">{{ $reportCard->average_marks ? number_format($reportCard->average_marks, 1) : 'N/A' }}%</div>
+                <div style="font-size: 11px; text-transform: uppercase; color: #666;">Average</div>
+            </div>
+            <div style="flex: 1; text-align: center; padding: 15px; border: 1px solid #333; background-color: #f9f9f9;">
+                <div style="font-size: 20px; font-weight: bold; margin-bottom: 5px;">{{ $reportCard->position_display ?? 'N/A' }}</div>
+                <div style="font-size: 11px; text-transform: uppercase; color: #666;">Position</div>
             </div>
         </div>
 
+        <!-- Remarks -->
+        @if($reportCard->remarks)
+        <div style="margin-bottom: 30px; padding: 15px; background-color: #f9f9f9; border-left: 3px solid #333; font-style: italic; font-size: 12px;">
+            <strong>Remarks:</strong> {{ $reportCard->remarks }}
+        </div>
+        @endif
+
         <!-- Footer -->
-        <div class="mt-8 text-center text-sm text-gray-500">
-            <p>This is an electronically generated report card. For official purposes, please contact your school administration.</p>
-            <p class="mt-2">Generated on {{ now()->format('F d, Y H:i A') }}</p>
+        <div style="margin-top: 60px; padding-top: 30px; border-top: 1px solid #ddd; display: flex; justify-content: space-between; align-items: flex-end;">
+            <div style="font-size: 11px;">
+                <p style="margin: 0 0 5px 0;"><strong>Status:</strong> {{ ucfirst($reportCard->status) }}</p>
+                @if($reportCard->approved_by)
+                    <p style="margin: 5px 0;"><strong>Approved by:</strong> {{ $reportCard->approvedBy->name ?? 'Administrator' }}</p>
+                    <p style="margin: 5px 0;"><strong>Approved on:</strong> {{ $reportCard->approved_at ? $reportCard->approved_at->format('M j, Y g:i A') : 'N/A' }}</p>
+                @endif
+            </div>
+            <div style="text-align: center; min-width: 180px;">
+                <div style="border-bottom: 1px solid #333; margin-bottom: 5px; height: 60px;"></div>
+                <div style="font-size: 10px; color: #666;">School Administrator Signature</div>
+            </div>
         </div>
     </div>
 </div>
 
 <style>
     @media print {
-        .container {
+        body {
+            margin: 0;
+            padding: 0;
+        }
+        div[style*="margin-bottom: 30px; display: flex"] {
+            display: none !important;
+        }
+        div[style*="max-width: 900px"] {
             max-width: 100%;
+            margin: 0;
+            padding: 0;
         }
-        button {
-            display: none;
-        }
-        .container > :first-child > .flex {
-            display: none;
+        div[style*="background-color: white"] {
+            box-shadow: none;
+            page-break-inside: avoid;
         }
     }
 </style>

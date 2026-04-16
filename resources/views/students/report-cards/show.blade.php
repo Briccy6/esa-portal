@@ -24,6 +24,9 @@
                     <a href="{{ route('student.report-cards.download', $reportCard) }}" class="btn btn-success ms-2">
                         <i class="bi bi-download me-2"></i>Download PDF
                     </a>
+                    <button onclick="window.print()" class="btn btn-primary ms-2">
+                        <i class="bi bi-printer me-2"></i>Print
+                    </button>
                 </div>
             </div>
         </div>
@@ -322,12 +325,45 @@
 @media print {
     .report-card-container {
         box-shadow: none;
-        border: 1px solid #000;
+        border: 1px solid #333;
     }
     
-    .btn {
-        display: none;
+    .btn, .d-flex.justify-content-between {
+        display: none !important;
     }
+    
+    body {
+        margin: 0;
+        padding: 0;
+    }
+    
+    .container-fluid {
+        margin: 0;
+        padding: 0;
+    }
+    
+    .row, .col-12 {
+        margin: 0;
+        padding: 0;
+    }
+    
+    .report-card-container {
+        border-radius: 0;
+        padding: 1rem;
+        margin: 0;
+    }
+    
+    .summary-card {
+        background: #f8f9fa;
+        color: #333;
+        border: 1px solid #333;
+    }
+    
+    .summary-value {
+        color: #333;
+    }
+    
+    page-break-inside: avoid;
 }
 </style>
 @endsection

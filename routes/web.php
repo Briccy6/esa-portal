@@ -1414,6 +1414,7 @@ Route::middleware('auth:student')->prefix('student')->name('student.')->group(fu
     // Student Report Card Routes
     Route::get('/report-cards', [App\Http\Controllers\StudentReportCardController::class, 'index'])->name('report-cards.index');
     Route::get('/report-cards/{id}', [App\Http\Controllers\StudentReportCardController::class, 'show'])->name('report-cards.show');
+    Route::get('/report-cards/{id}/download', [App\Http\Controllers\StudentReportCardController::class, 'download'])->name('report-cards.download');
     Route::get('/report-cards-status', [App\Http\Controllers\StudentReportCardController::class, 'accessStatus'])->name('report-cards.status');
 });
 

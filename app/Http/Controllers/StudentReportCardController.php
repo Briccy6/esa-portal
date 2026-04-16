@@ -6,9 +6,11 @@ use App\Models\ReportCard;
 use App\Models\ReportCardSetting;
 use App\Models\Student;
 use App\Services\FeePaymentService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class StudentReportCardController extends Controller
 {
@@ -68,6 +70,35 @@ class StudentReportCardController extends Controller
 
         // 3. All checks passed => ACCESSIBLE
         return view('reportcard.show', compact('reportCard', 'student'));
+    }
+
+    /**
+     * Download report card as PDF
+     */
+    public function download($id)
+    {
+        $student = Auth::user();
+        $reportCard = ReportCard::where('id', $id)
+            ->where('student_id', $student->id)
+            ->with(['student', 'course', 'academicYear', 'term', 'subjects.lesson', 'subjects.testMarks.exam'])
+            ->firstOrFail();
+
+        // Get outstanding fees for THIS SPECIFIC TERM ONLY
+        $outstanding = $this->getTermOutstandingFees($student, $reportCard->term_id);
+
+        // Block download if fees are outstanding
+        if ($outstanding > 0) {
+            return redirect()->route('student.report-cards.show', $id)
+                ->with('error', 'Cannot download report card. Outstanding fees: RWF ' . number_format($outstanding, 2));
+        }
+
+        // Generate PDF using the Barryvdh DomPDF package
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('reportcard.pdf', compact('reportCard'))
+            ->setPaper('a4', 'portrait');
+
+        $filename = 'report-card-' . \Illuminate\Support\Str::slug($reportCard->student->full_name) . '-' . $reportCard->academicYear->year . '.pdf';
+
+        return $pdf->download($filename);
     }
 
     /**
