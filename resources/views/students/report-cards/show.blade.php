@@ -314,11 +314,6 @@
     <!-- Action Buttons (hidden when printing) -->
     <div class="action-buttons">
         <a href="{{ route('student.report-cards.index') }}" class="btn-back">← Back to Report Cards</a>
-        <form action="{{ route('student.report-cards.download', $reportCard) }}" method="POST" style="display: inline;">
-            @csrf
-            <button type="submit" class="btn-primary">📥 Download PDF</button>
-        </form>
-        <button onclick="window.print()" class="btn-print">🖨️ Print</button>
     </div>
 
     <!-- Report Card Content (same as admin print) -->
