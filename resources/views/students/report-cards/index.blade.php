@@ -125,8 +125,6 @@
                                         <th>Academic Year</th>
                                         <th>Term</th>
                                         <th>Course</th>
-                                        <th>Average Marks</th>
-                                        <th>Status</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -138,33 +136,7 @@
                                             <td>{{ $reportCard->course->course_name ?? 'N/A' }}</td>
                                             <td>
                                                 @if($reportCard->canAccessThisTerm)
-                                                    @if($reportCard->average_marks)
-                                                        <span class="badge bg-{{ $reportCard->average_marks >= 70 ? 'success' : ($reportCard->average_marks >= 50 ? 'warning' : 'danger') }}">
-                                                            {{ number_format($reportCard->average_marks, 1) }}%
-                                                        </span>
-                                                    @else
-                                                        <span class="badge bg-secondary">N/A</span>
-                                                    @endif
-                                                @else
-                                                    <span class="badge bg-info">Position: {{ $reportCard->position_display ?? 'N/A' }}</span>
-                                                @endif
-                                            </td>
-                                            <td>
-                                                @if($reportCard->canAccessThisTerm)
-                                                    @if($reportCard->status === 'approved')
-                                                        <span class="badge bg-success">Approved</span>
-                                                    @elseif($reportCard->status === 'printed')
-                                                        <span class="badge bg-info">Printed</span>
-                                                    @else
-                                                        <span class="badge bg-warning">Pending</span>
-                                                    @endif
-                                                @else
-                                                    <span class="text-muted">—</span>
-                                                @endif
-                                            </td>
-                                            <td>
-                                                <div class="btn-group btn-group-sm">
-                                                    @if($reportCard->canAccessThisTerm)
+                                                    <div class="btn-group btn-group-sm">
                                                         <a href="{{ route('student.report-cards.show', $reportCard) }}" 
                                                            class="btn btn-outline-primary" title="View">
                                                             <i class="bi bi-eye"></i>
@@ -173,12 +145,21 @@
                                                            class="btn btn-outline-success" title="Download">
                                                             <i class="bi bi-download"></i>
                                                         </a>
+                                                    </div>
+                                                @else
+                                                    @if(!$reportCard->termAccessStatus['payment_status']['is_fully_paid'])
+                                                        <button class="btn btn-sm btn-outline-warning" disabled 
+                                                                title="Outstanding: {{ number_format($reportCard->termAccessStatus['payment_status']['outstanding']) }} Rwf">
+                                                            <i class="bi bi-exclamation-circle me-1"></i>
+                                                            {{ number_format($reportCard->termAccessStatus['payment_status']['outstanding']) }} Rwf
+                                                        </button>
                                                     @else
-                                                        <button class="btn btn-outline-secondary" disabled title="Access Restricted">
-                                                            <i class="bi bi-lock"></i>
+                                                        <button class="btn btn-sm btn-outline-secondary" disabled title="{{ $reportCard->termAccessStatus['reason'] }}">
+                                                            <i class="bi bi-lock me-1"></i>
+                                                            {{ $reportCard->termAccessStatus['reason'] }}
                                                         </button>
                                                     @endif
-                                                </div>
+                                                @endif
                                             </td>
                                         </tr>
                                     @endforeach
