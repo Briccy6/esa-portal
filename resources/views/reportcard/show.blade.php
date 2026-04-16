@@ -117,12 +117,12 @@
                 <div class="grid grid-cols-3 gap-4">
                     <div class="text-center">
                         <p class="text-gray-600 text-sm mb-1">Total Subjects</p>
-                        <p class="text-2xl font-bold text-gray-900">{{ count($reportCard ?? []) }}</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ $reportCard->subjects->count() ?? 0 }}</p>
                     </div>
                     <div class="text-center">
                         <p class="text-gray-600 text-sm mb-1">Average Score</p>
                         <p class="text-2xl font-bold text-blue-600">
-                            {{ $reportCard ? round(array_sum(array_column($reportCard, 'score')) / count($reportCard), 2) : 'N/A' }}
+                            {{ $reportCard->average_marks ? round($reportCard->average_marks, 2) : 'N/A' }}
                         </p>
                     </div>
                     <div class="text-center">
