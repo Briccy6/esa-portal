@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ReportCard;
 use App\Models\ReportCardSetting;
+use App\Models\SchoolInformation;
 use App\Models\Student;
 use App\Services\FeePaymentService;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -80,7 +81,7 @@ class StudentReportCardController extends Controller
         $student = Auth::user();
         $reportCard = ReportCard::where('id', $id)
             ->where('student_id', $student->id)
-            ->with(['student', 'course', 'academicYear', 'term', 'subjects.lesson', 'subjects.testMarks.exam'])
+            ->with(['student', 'course', 'academicYear', 'term', 'subjects.lesson', 'subjects.testMarks.exam', 'approvedBy'])
             ->firstOrFail();
 
         // Get outstanding fees for THIS SPECIFIC TERM ONLY
@@ -92,13 +93,26 @@ class StudentReportCardController extends Controller
                 ->with('error', 'Cannot download report card. Outstanding fees: RWF ' . number_format($outstanding, 2));
         }
 
-        // Generate PDF using the Barryvdh DomPDF package
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('reportcard.pdf', compact('reportCard'))
-            ->setPaper('a4', 'portrait');
+        // Get school info for the PDF
+        $schoolInfo = SchoolInformation::getActive();
 
-        $filename = 'report-card-' . \Illuminate\Support\Str::slug($reportCard->student->full_name) . '-' . $reportCard->academicYear->year . '.pdf';
+        // Generate PDF using the admin professional print design
+        $pdf = Pdf::loadView('admin.report-cards.print', compact('reportCard', 'schoolInfo'))
+            ->setPaper('a4', 'portrait')
+            ->setOption([
+                'margin-top'        => 0,
+                'margin-bottom'     => 0,
+                'margin-left'       => 0,
+                'margin-right'      => 0,
+                'isRemoteEnabled'   => true,
+                'isHtml5ParserEnabled' => true,
+            ]);
 
-        return $pdf->download($filename);
+        $termSlug = Str::slug($reportCard->term->name ?? 'term');
+
+        return $pdf->download(
+            'report-card-' . Str::slug($reportCard->student->full_name) . '-' . $reportCard->academicYear->year . '-' . $termSlug . '.pdf'
+        );
     }
 
     /**

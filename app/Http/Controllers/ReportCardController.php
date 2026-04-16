@@ -1719,10 +1719,8 @@ class ReportCardController extends Controller
         // Pass the specific term_id for term-specific fee checking
         if (!ReportCardService::canAccessReportCard($student, $reportCard->term_id)) {
             $accessStatus = ReportCardService::getAccessStatus($student, $reportCard->term_id);
-            return response()->json([
-                'success' => false,
-                'message' => $accessStatus['reason']
-            ], 403);
+            return redirect()->route('student.report-cards.show', $reportCard)
+                ->with('error', $accessStatus['reason']);
         }
 
         $reportCard->load([
@@ -1736,24 +1734,22 @@ class ReportCardController extends Controller
         ]);
 
         $schoolInfo = SchoolInformation::getActive();
-        ['base64' => $studentPhotoBase64, 'mime' => $studentPhotoMime] = $this->resolveStudentPhotoData(
-            $reportCard->student->passport_photo
-        );
 
-        $pdf = Pdf::loadView('students.report-cards.print', compact(
-                'reportCard', 'schoolInfo', 'studentPhotoBase64', 'studentPhotoMime'
-            ))
+        // Use the professional admin print design
+        $pdf = Pdf::loadView('admin.report-cards.print', compact('reportCard', 'schoolInfo'))
             ->setPaper('a4', 'portrait')
             ->setOption([
-                'margin-top'        => 10,
-                'margin-bottom'     => 10,
+                'margin-top'        => 0,
+                'margin-bottom'     => 0,
+                'margin-left'       => 0,
+                'margin-right'      => 0,
                 'isRemoteEnabled'   => true,
                 'isHtml5ParserEnabled' => true,
             ]);
 
         $termSlug = Str::slug($reportCard->term->name ?? 'term');
 
-        return $pdf->stream(
+        return $pdf->download(
             'report-card-'.Str::slug($reportCard->student->full_name).'-'.$reportCard->academicYear->year.'-'.$termSlug.'.pdf'
         );
     }

@@ -2,368 +2,637 @@
 
 @section('title', 'Report Card - ' . $reportCard->student->full_name)
 
-@section('content')
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h1 class="page-title">
-                        <i class="bi bi-file-earmark-text me-2"></i>Report Card
-                    </h1>
-                    <p class="page-subtitle">
-                        {{ $reportCard->student->full_name }} - 
-                        {{ $reportCard->academicYear->year ?? 'N/A' }} - 
-                        {{ $reportCard->term->name ?? 'N/A' }}
-                    </p>
-                </div>
-                <div>
-                    <a href="{{ route('student.report-cards.index') }}" class="btn btn-secondary">
-                        <i class="bi bi-arrow-left me-2"></i>Back to Report Cards
-                    </a>
-                    <a href="{{ route('student.report-cards.download', $reportCard) }}" class="btn btn-success ms-2">
-                        <i class="bi bi-download me-2"></i>Download PDF
-                    </a>
-                    <button onclick="window.print()" class="btn btn-primary ms-2">
-                        <i class="bi bi-printer me-2"></i>Print
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col-12">
-            <div class="report-card-container">
-                <!-- School Header -->
-                <div class="report-card-header text-center mb-4">
-                    <h2>{{ $schoolInfo->school_name ?? 'ESA School' }}</h2>
-                    <p class="text-muted">{{ $schoolInfo->address ?? 'School Address' }}</p>
-                    <p class="text-muted">{{ $schoolInfo->phone ?? 'Phone Number' }}</p>
-                </div>
-
-                <!-- Student Information -->
-                <div class="student-info-section mb-4">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <table class="table table-bordered">
-                                <tr>
-                                    <td><strong>Student Name:</strong></td>
-                                    <td>{{ $reportCard->student->full_name }}</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Registration Number:</strong></td>
-                                    <td>{{ $reportCard->student->registration_number ?? 'N/A' }}</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Class/Course:</strong></td>
-                                    <td>{{ $reportCard->course->course_name ?? 'N/A' }}</td>
-                                </tr>
-                            </table>
-                        </div>
-                        <div class="col-md-6">
-                            <table class="table table-bordered">
-                                <tr>
-                                    <td><strong>Academic Year:</strong></td>
-                                    <td>{{ $reportCard->academicYear->year ?? 'N/A' }}</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Term:</strong></td>
-                                    <td>{{ $reportCard->term->name ?? 'N/A' }}</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Date Issued:</strong></td>
-                                    <td>{{ $reportCard->updated_at->format('M j, Y') }}</td>
-                                </tr>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Subjects and Marks -->
-                <div class="marks-section mb-4">
-                    <h4 class="section-title">Academic Performance</h4>
-                    <div class="table-responsive">
-                        <table class="table table-bordered marks-table">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th>Subject</th>
-                                    <th>Test Average</th>
-                                    <th>Exam Mark</th>
-                                    <th>Total Mark</th>
-                                    <th>Grade</th>
-                                    <th>Remarks</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @if($reportCard->subjects && $reportCard->subjects->count() > 0)
-                                    @foreach($reportCard->subjects as $subject)
-                                        <tr>
-                                            <td>{{ $subject->subject_name ?? 'N/A' }}</td>
-                                            <td class="text-center">
-                                                {{ $subject->test_average ? number_format($subject->test_average, 1) : 'N/A' }}
-                                            </td>
-                                            <td class="text-center">
-                                                {{ $subject->exam_mark ? number_format($subject->exam_mark, 1) : 'N/A' }}
-                                            </td>
-                                            <td class="text-center fw-bold">
-                                                {{ $subject->total_mark ? number_format($subject->total_mark, 1) : 'N/A' }}
-                                            </td>
-                                            <td class="text-center">
-                                                <span class="grade-badge grade-{{ strtolower($subject->grade ?? 'n') }}">
-                                                    {{ $subject->grade ?? 'N/A' }}
-                                                </span>
-                                            </td>
-                                            <td class="text-center">
-                                                {{ ($subject->grade === 'A' || $subject->grade === 'B') ? 'C' : 'NYC' }}
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                @else
-                                    <tr>
-                                        <td colspan="6" class="text-center text-muted">
-                                            No subjects found for this report card
-                                        </td>
-                                    </tr>
-                                @endif
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Summary Statistics -->
-                <div class="summary-section mb-4">
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="summary-card">
-                                <div class="summary-value">
-                                    {{ $reportCard->total_marks ? number_format($reportCard->total_marks, 1) : 'N/A' }}
-                                </div>
-                                <div class="summary-label">Total Marks</div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="summary-card">
-                                <div class="summary-value">
-                                    {{ $reportCard->average_marks ? number_format($reportCard->average_marks, 1) : 'N/A' }}%
-                                </div>
-                                <div class="summary-label">Average Marks</div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="summary-card">
-                                <div class="summary-value">
-                                    {{ $reportCard->position_display ?? 'N/A' }}
-                                </div>
-                                <div class="summary-label">Class Position</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Remarks -->
-                @if($reportCard->remarks)
-                <div class="remarks-section mb-4">
-                    <h4 class="section-title">Remarks</h4>
-                    <div class="remarks-content">
-                        {{ $reportCard->remarks }}
-                    </div>
-                </div>
-                @endif
-
-                <!-- Approval Information -->
-                <div class="approval-section">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <p class="mb-1">
-                                <strong>Status:</strong> 
-                                <span class="badge bg-{{ $reportCard->status === 'approved' ? 'success' : ($reportCard->status === 'printed' ? 'info' : 'warning') }}">
-                                    {{ ucfirst($reportCard->status) }}
-                                </span>
-                            </p>
-                            @if($reportCard->approved_by)
-                                <p class="mb-1">
-                                    <strong>Approved by:</strong> {{ $reportCard->approvedBy->name ?? 'Administrator' }}
-                                </p>
-                                <p class="mb-1">
-                                    <strong>Approved on:</strong> {{ $reportCard->approved_at->format('M j, Y g:i A') }}
-                                </p>
-                            @endif
-                        </div>
-                        <div class="col-md-6 text-end">
-                            <div class="signature-area">
-                                <p class="mb-1">_________________________</p>
-                                <p class="text-muted">School Administrator Signature</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
+@push('styles')
 <style>
-.report-card-container {
-    background: white;
-    border-radius: 12px;
-    padding: 2rem;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    border: 1px solid #e0e0e0;
+/* Admin-style Report Card Design for Students */
+.rc-page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 2rem;
+    margin-bottom: 2rem;
 }
 
-.report-card-header h2 {
-    color: #333;
-    font-weight: bold;
-    margin-bottom: 0.5rem;
+.rc-page-header__left {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
 }
 
-.student-info-section .table {
-    margin-bottom: 0;
+.rc-page-header__icon {
+    font-size: 2.5rem;
+    color: #667eea;
 }
 
-.student-info-section .table td {
-    padding: 0.75rem;
-    border-color: #dee2e6;
-}
-
-.student-info-section .table td:first-child {
-    width: 40%;
-    background-color: #f8f9fa;
-    font-weight: 500;
-}
-
-.section-title {
-    color: #333;
-    font-weight: bold;
-    margin-bottom: 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 2px solid #667eea;
-}
-
-.marks-table th {
-    background-color: #343a40;
-    border-color: #343a40;
-    color: white;
-    font-weight: 500;
-}
-
-.marks-table td {
-    vertical-align: middle;
-    border-color: #dee2e6;
-}
-
-.grade-badge {
-    padding: 0.25rem 0.5rem;
-    border-radius: 12px;
-    font-weight: bold;
-    font-size: 0.875rem;
-}
-
-.grade-a { background-color: #28a745; color: white; }
-.grade-b { background-color: #17a2b8; color: white; }
-.grade-c { background-color: #ffc107; color: #212529; }
-.grade-d { background-color: #fd7e14; color: white; }
-.grade-e { background-color: #dc3545; color: white; }
-.grade-n { background-color: #6c757d; color: white; }
-
-.summary-card {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 1.5rem;
-    border-radius: 12px;
-    text-align: center;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    margin-bottom: 1rem;
-}
-
-.summary-value {
+.rc-page-header__title {
     font-size: 2rem;
     font-weight: bold;
-    line-height: 1;
-    margin-bottom: 0.5rem;
+    margin: 0 0 0.5rem 0;
+    color: #333;
 }
 
-.summary-label {
+.rc-page-header__sub {
+    color: #666;
+    font-size: 1rem;
+    margin: 0;
+    word-break: break-word;
+}
+
+.rc-meta-sep {
+    color: #ccc;
+    margin: 0 0.5rem;
+}
+
+.rc-page-header__actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.rc-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    font-weight: 500;
     font-size: 0.875rem;
-    opacity: 0.9;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.rc-btn--primary {
+    background-color: #667eea;
+    color: white;
+}
+
+.rc-btn--primary:hover {
+    background-color: #5568d3;
+    color: white;
+    text-decoration: none;
+}
+
+.rc-btn--ghost {
+    background-color: #f0f0f0;
+    color: #333;
+    border: 1px solid #ddd;
+}
+
+.rc-btn--ghost:hover {
+    background-color: #e8e8e8;
+    color: #333;
+    text-decoration: none;
+}
+
+.rc-card {
+    background: white;
+    border-radius: 0.5rem;
+    border: 1px solid #e8e8e8;
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.rc-card__header {
+    padding: 1rem;
+    font-weight: 600;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: white;
+}
+
+.rc-card__header--green {
+    background-color: #10b981;
+}
+
+.rc-card__header--blue {
+    background-color: #3b82f6;
+}
+
+.rc-card__body {
+    padding: 1.5rem;
+}
+
+.rc-card p-0 .rc-card__body {
+    padding: 0;
+}
+
+.rc-school-banner {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+}
+
+.rc-school-banner__logo {
+    flex-shrink: 0;
+}
+
+.rc-school-logo {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+}
+
+.rc-school-logo--placeholder {
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f0f0f0;
+    border-radius: 0.5rem;
+    color: #999;
+    font-size: 2rem;
+}
+
+.rc-school-name {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 0.25rem;
+}
+
+.rc-school-meta {
+    font-size: 0.875rem;
+    color: #666;
+    line-height: 1.4;
+}
+
+.rc-chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.rc-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    background-color: #f0f0f0;
+    color: #333;
+}
+
+.rc-chip--year {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.rc-chip--term {
+    background-color: #dbeafe;
+    color: #075985;
+}
+
+.rc-chip--ok {
+    background-color: #dcfce7;
+    color: #166534;
+}
+
+.rc-chip--info {
+    background-color: #e0e7ff;
+    color: #3730a3;
+}
+
+.rc-chip--warn {
+    background-color: #fed7aa;
+    color: #92400e;
+}
+
+.rc-chip--muted {
+    background-color: #f3f4f6;
+    color: #6b7280;
+}
+
+.rc-siblings {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e8e8e8;
+}
+
+.rc-siblings__label {
+    font-size: 0.875rem;
+    color: #666;
+    font-weight: 500;
+}
+
+.rc-sibling-link {
+    display: inline-block;
+    margin: 0.5rem 0.5rem 0 0;
+    padding: 0.5rem 0.75rem;
+    background-color: #f0f0f0;
+    border-radius: 0.375rem;
+    text-decoration: none;
+    color: #333;
+    font-size: 0.875rem;
+    border: 1px solid #ddd;
+    transition: all 0.2s;
+}
+
+.rc-sibling-link:hover {
+    background-color: #e8e8e8;
+    border-color: #999;
+}
+
+.rc-sibling-avg {
+    margin-left: 0.5rem;
+    color: #667eea;
+    font-weight: bold;
+}
+
+.rc-detail-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+.rc-detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #e8e8e8;
+}
+
+.rc-detail-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.rc-detail-k {
+    font-weight: 600;
+    color: #666;
+    min-width: 120px;
+}
+
+.rc-detail-v {
+    color: #333;
+    text-align: right;
+    word-break: break-word;
+}
+
+.rc-photo {
+    width: 150px;
+    height: 180px;
+    object-fit: cover;
+    border-radius: 0.375rem;
+    border: 1px solid #ddd;
+}
+
+.rc-photo--empty {
+    width: 150px;
+    height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f0f0f0;
+    border-radius: 0.375rem;
+    border: 1px solid #ddd;
+    color: #999;
+}
+
+.rc-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.rc-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.rc-table th {
+    background-color: #f3f4f6;
+    padding: 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: #333;
+    border-bottom: 2px solid #e8e8e8;
+}
+
+.rc-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #e8e8e8;
+    color: #333;
+}
+
+.rc-table tbody tr:hover {
+    background-color: #f9f9f9;
+}
+
+.rc-table__row td:first-child {
+    font-weight: 600;
+}
+
+.rc-table-foot td {
+    font-weight: 600;
+    background-color: #f9f9f9;
+    border-top: 2px solid #e8e8e8;
+}
+
+.rc-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    font-weight: 600;
+    font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
-.remarks-content {
-    background-color: #f8f9fa;
-    padding: 1rem;
-    border-radius: 8px;
-    border-left: 4px solid #667eea;
-    font-style: italic;
+.rc-badge--green {
+    background-color: #d1fae5;
+    color: #065f46;
 }
 
-.approval-section {
-    margin-top: 2rem;
-    padding-top: 1rem;
-    border-top: 1px solid #dee2e6;
+.rc-badge--blue {
+    background-color: #dbeafe;
+    color: #075985;
 }
 
-.signature-area p {
-    margin-bottom: 0.25rem;
+.rc-badge--yellow {
+    background-color: #fef3c7;
+    color: #92400e;
 }
 
-.page-title {
-    font-size: 2.5rem;
-    font-weight: bold;
-    color: #333;
-    margin-bottom: 0.5rem;
+.rc-badge--red {
+    background-color: #fee2e2;
+    color: #991b1b;
 }
 
-.page-subtitle {
-    color: #666;
-    font-size: 1.1rem;
-    margin-bottom: 0;
+.rc-text-center {
+    text-align: center;
+}
+
+.rc-text-muted {
+    color: #999;
+    font-size: 0.875rem;
+}
+
+@media (min-width: 768px) {
+    .rc-page-header {
+        flex-wrap: nowrap;
+    }
+    
+    .rc-page-header__actions {
+        justify-content: flex-start;
+    }
 }
 
 @media print {
-    .report-card-container {
-        box-shadow: none;
-        border: 1px solid #333;
-    }
-    
-    .btn, .d-flex.justify-content-between {
+    .rc-page-header__actions,
+    .rc-btn {
         display: none !important;
     }
     
-    body {
-        margin: 0;
-        padding: 0;
+    .rc-card {
+        box-shadow: none;
+        page-break-inside: avoid;
     }
-    
-    .container-fluid {
-        margin: 0;
-        padding: 0;
-    }
-    
-    .row, .col-12 {
-        margin: 0;
-        padding: 0;
-    }
-    
-    .report-card-container {
-        border-radius: 0;
-        padding: 1rem;
-        margin: 0;
-    }
-    
-    .summary-card {
-        background: #f8f9fa;
-        color: #333;
-        border: 1px solid #333;
-    }
-    
-    .summary-value {
-        color: #333;
-    }
-    
-    page-break-inside: avoid;
 }
 </style>
+@endpush
+
+@section('content')
+<div class="container-fluid px-4 py-4">
+    <div class="mb-4">
+        <!-- Page Header -->
+        <div class="rc-page-header">
+            <div class="rc-page-header__left">
+                <div class="rc-page-header__icon">
+                    <i class="bi bi-id-card"></i>
+                </div>
+                <div>
+                    <h1 class="rc-page-header__title">Report Card</h1>
+                    <p class="rc-page-header__sub">
+                        {{ $reportCard->student->full_name }}
+                        <span class="rc-meta-sep">·</span>
+                        {{ $reportCard->course->course_name }}
+                        <span class="rc-meta-sep">·</span>
+                        {{ $reportCard->academicYear->year }}
+                        <span class="rc-meta-sep">·</span>
+                        {{ $reportCard->term?->name ?? '—' }}
+                    </p>
+                </div>
+            </div>
+            <div class="rc-page-header__actions">
+                <a href="{{ route('student.report-cards.index') }}" class="rc-btn rc-btn--ghost">
+                    <i class="bi bi-arrow-left"></i> Back
+                </a>
+                <a href="{{ route('student.report-cards.download', $reportCard) }}" class="rc-btn rc-btn--primary">
+                    <i class="bi bi-download"></i> Download PDF
+                </a>
+                <button onclick="window.print()" class="rc-btn rc-btn--ghost">
+                    <i class="bi bi-printer"></i> Print
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- School Banner -->
+    @if($schoolInfo)
+    <div class="rc-card mb-4">
+        <div class="rc-card__body rc-school-banner">
+            <div class="rc-school-banner__logo">
+                @if($schoolInfo->logo_url)
+                    <img src="{{ $schoolInfo->logo_url }}" alt="" class="rc-school-logo">
+                @else
+                    <div class="rc-school-logo--placeholder"><i class="bi bi-building"></i></div>
+                @endif
+            </div>
+            <div class="rc-school-banner__text">
+                <div class="rc-school-name">{{ $schoolInfo->school_name }}</div>
+                <div class="rc-school-meta">
+                    {{ $schoolInfo->address }}
+                    @if($schoolInfo->phone) · Tel: {{ $schoolInfo->phone }} @endif
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    <!-- Year / Term Info -->
+    <div class="rc-card mb-4">
+        <div class="rc-card__body py-3">
+            <div class="rc-chip-row">
+                <span class="rc-chip rc-chip--year">
+                    <i class="bi bi-calendar-alt"></i> {{ $reportCard->academicYear->year }}
+                </span>
+                <span class="rc-chip rc-chip--term">
+                    <i class="bi bi-bookmark"></i> {{ $reportCard->term?->name ?? 'Term' }}
+                </span>
+                @if($reportCard->term && $reportCard->term->start_date && $reportCard->term->end_date)
+                    <span class="rc-chip rc-chip--muted">
+                        {{ $reportCard->term->start_date->format('M j, Y') }} — {{ $reportCard->term->end_date->format('M j, Y') }}
+                    </span>
+                @endif
+                @php
+                    $st = $reportCard->status;
+                    $stClass = $st === 'approved' ? 'rc-chip--ok' : ($st === 'printed' ? 'rc-chip--info' : 'rc-chip--warn');
+                @endphp
+                <span class="rc-chip {{ $stClass }}">{{ ucfirst($st) }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Two Column: Student & Academic Info -->
+    <div class="row">
+        <div class="col-lg-6 mb-4">
+            <div class="rc-card h-100">
+                <div class="rc-card__header rc-card__header--green">
+                    <i class="bi bi-person"></i> Student Information
+                </div>
+                <div class="rc-card__body">
+                    <div class="rc-detail-grid">
+                        <div class="rc-detail-row"><span class="rc-detail-k">Name</span><span class="rc-detail-v">{{ $reportCard->student->full_name }}</span></div>
+                        <div class="rc-detail-row"><span class="rc-detail-k">Registration</span><span class="rc-detail-v">{{ $reportCard->student->reg_number ?? 'N/A' }}</span></div>
+                        <div class="rc-detail-row"><span class="rc-detail-k">Course</span><span class="rc-detail-v">{{ $reportCard->course->course_name }}</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6 mb-4">
+            <div class="rc-card h-100">
+                <div class="rc-card__header rc-card__header--blue">
+                    <i class="bi bi-graph-up"></i> Academic Summary
+                </div>
+                <div class="rc-card__body">
+                    <div class="rc-detail-grid">
+                        <div class="rc-detail-row"><span class="rc-detail-k">Academic Year</span><span class="rc-detail-v">{{ $reportCard->academicYear->year }}</span></div>
+                        <div class="rc-detail-row"><span class="rc-detail-k">Term</span><span class="rc-detail-v">{{ $reportCard->term?->name ?? '—' }}</span></div>
+                        <div class="rc-detail-row"><span class="rc-detail-k">Class Position</span><span class="rc-detail-v">{{ $reportCard->position_display }}</span></div>
+                        <div class="rc-detail-row"><span class="rc-detail-k">Average Marks</span><span class="rc-detail-v"><strong>{{ number_format($reportCard->average_marks, 1) }}%</strong></span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Subject Performance Table -->
+    <div class="rc-card mb-4">
+        <div class="rc-card__header rc-card__header--green">
+            <i class="bi bi-table"></i> Subject Performance
+        </div>
+        <div class="rc-card__body p-0">
+            <div class="rc-table-wrap">
+                <table class="rc-table">
+                    <thead>
+                        <tr>
+                            <th>Subject</th>
+                            <th class="rc-text-center">Test Avg</th>
+                            <th class="rc-text-center">Exam</th>
+                            <th class="rc-text-center">Total</th>
+                            <th class="rc-text-center">Grade</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($reportCard->subjects as $subject)
+                            <tr class="rc-table__row">
+                                <td><strong>{{ $subject->subject_name }}</strong></td>
+                                <td class="rc-text-center">{{ number_format($subject->test_average, 1) }}</td>
+                                <td class="rc-text-center">{{ number_format($subject->exam_mark, 1) }}</td>
+                                <td class="rc-text-center"><strong>{{ number_format($subject->total_mark, 1) }}</strong></td>
+                                <td class="rc-text-center">
+                                    @php
+                                        $g = $subject->grade;
+                                        $gc = match(true) {
+                                            in_array($g, ['A+','A']) => 'rc-badge--green',
+                                            in_array($g, ['B+','B']) => 'rc-badge--blue',
+                                            $g === 'C' => 'rc-badge--yellow',
+                                            default => 'rc-badge--red',
+                                        };
+                                    @endphp
+                                    <span class="rc-badge {{ $gc }}">{{ $g }}</span>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="5" class="rc-text-center py-5 rc-text-muted">No subjects recorded for this report card.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                    @if($reportCard->subjects->isNotEmpty())
+                        <tfoot>
+                            <tr class="rc-table-foot">
+                                <td><strong>Total / Average</strong></td>
+                                <td class="rc-text-center">{{ number_format($reportCard->subjects->avg('test_average'), 1) }}</td>
+                                <td class="rc-text-center">{{ number_format($reportCard->subjects->avg('exam_mark'), 1) }}</td>
+                                <td class="rc-text-center"><strong>{{ number_format($reportCard->average_marks, 1) }}</strong></td>
+                                <td class="rc-text-center">
+                                    @php
+                                        $og = $reportCard->grade;
+                                        $ogc = match(true) {
+                                            in_array($og, ['A+','A']) => 'rc-badge--green',
+                                            in_array($og, ['B+','B']) => 'rc-badge--blue',
+                                            $og === 'C' => 'rc-badge--yellow',
+                                            default => 'rc-badge--red',
+                                        };
+                                    @endphp
+                                    <span class="rc-badge {{ $ogc }}">{{ $og }}</span>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    @endif
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Summary -->
+    <div class="row mb-4">
+        <div class="col-md-6 mb-3">
+            <div class="rc-card h-100">
+                <div class="rc-card__header rc-card__header--green"><i class="bi bi-bar-chart"></i> Performance Summary</div>
+                <div class="rc-card__body">
+                    <div class="rc-detail-grid">
+                        <div class="rc-detail-row"><span class="rc-detail-k">Subjects</span><span class="rc-detail-v">{{ $reportCard->subjects->count() }}</span></div>
+                        <div class="rc-detail-row"><span class="rc-detail-k">Average</span><span class="rc-detail-v"><strong>{{ number_format($reportCard->average_marks, 1) }}%</strong></span></div>
+                        <div class="rc-detail-row"><span class="rc-detail-k">Total Marks</span><span class="rc-detail-v">{{ number_format($reportCard->total_marks, 1) }}</span></div>
+                        <div class="rc-detail-row"><span class="rc-detail-k">Final Grade</span><span class="rc-detail-v">
+                            @php $fg = $reportCard->grade; $fgc = match(true) { in_array($fg, ['A+','A']) => 'rc-badge--green', in_array($fg, ['B+','B']) => 'rc-badge--blue', $fg === 'C' => 'rc-badge--yellow', default => 'rc-badge--red' }; @endphp
+                            <span class="rc-badge {{ $fgc }}">{{ $fg }}</span>
+                        </span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="rc-card h-100">
+                <div class="rc-card__header rc-card__header--blue"><i class="bi bi-trophy"></i> Class Standing</div>
+                <div class="rc-card__body">
+                    <div class="rc-detail-grid">
+                        <div class="rc-detail-row"><span class="rc-detail-k">Position</span><span class="rc-detail-v">{{ $reportCard->position_display ?? 'N/A' }}</span></div>
+                        <div class="rc-detail-row"><span class="rc-detail-k">Total Students</span><span class="rc-detail-v">{{ $reportCard->total_students ?? '—' }}</span></div>
+                        <div class="rc-detail-row"><span class="rc-detail-k">Year / Term</span><span class="rc-detail-v">{{ $reportCard->academicYear->year }} · {{ $reportCard->term?->name ?? '—' }}</span></div>
+                        @if($reportCard->approvedBy)
+                            <div class="rc-detail-row"><span class="rc-detail-k">Approved By</span><span class="rc-detail-v">{{ $reportCard->approvedBy->name ?? '—' }}</span></div>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Remarks -->
+    @if($reportCard->remarks)
+    <div class="rc-card mb-4">
+        <div class="rc-card__header rc-card__header--blue"><i class="bi bi-chat-left-text"></i> Remarks</div>
+        <div class="rc-card__body">
+            {{ $reportCard->remarks }}
+        </div>
+    </div>
+    @endif
+
+</div>
 @endsection
