@@ -95,9 +95,47 @@ class StudentReportCardController extends Controller
 
         // Get school info for the PDF
         $schoolInfo = SchoolInformation::getActive();
+        
+        // Resolve student photo data for professional admin print design
+        $studentPhotoBase64 = null;
+        $studentPhotoMime = 'image/jpeg';
+        
+        if (!empty($reportCard->student->passport_photo)) {
+            $photoPath = $reportCard->student->passport_photo;
+            
+            if (filter_var($photoPath, FILTER_VALIDATE_URL)) {
+                try {
+                    $imageData = file_get_contents($photoPath);
+                    if ($imageData !== false) {
+                        $studentPhotoBase64 = base64_encode($imageData);
+                    }
+                } catch (\Exception $e) {
+                    \Log::warning('Could not load remote student photo: '.$e->getMessage());
+                }
+            } else {
+                $localPath = public_path($photoPath);
+                if (!file_exists($localPath)) {
+                    $localPath = storage_path('app/public/'.ltrim($photoPath, '/'));
+                }
+                
+                if (file_exists($localPath)) {
+                    $imageData = file_get_contents($localPath);
+                    if ($imageData !== false) {
+                        $ext = strtolower(pathinfo($localPath, PATHINFO_EXTENSION));
+                        $studentPhotoMime = match ($ext) {
+                            'png' => 'image/png',
+                            'gif' => 'image/gif',
+                            'webp' => 'image/webp',
+                            default => 'image/jpeg',
+                        };
+                        $studentPhotoBase64 = base64_encode($imageData);
+                    }
+                }
+            }
+        }
 
         // Generate PDF using the admin professional print design
-        $pdf = Pdf::loadView('admin.report-cards.print', compact('reportCard', 'schoolInfo'))
+        $pdf = Pdf::loadView('admin.report-cards.print', compact('reportCard', 'schoolInfo', 'studentPhotoBase64', 'studentPhotoMime'))
             ->setPaper('a4', 'portrait')
             ->setOption([
                 'margin-top'        => 0,

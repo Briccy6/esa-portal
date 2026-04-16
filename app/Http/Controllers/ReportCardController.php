@@ -1703,8 +1703,13 @@ class ReportCardController extends Controller
         ]);
 
         $schoolInfo = SchoolInformation::getActive();
+        
+        // Resolve student photo data for professional admin print design
+        ['base64' => $studentPhotoBase64, 'mime' => $studentPhotoMime] = $this->resolveStudentPhotoData(
+            $reportCard->student->passport_photo
+        );
 
-        return view('students.report-cards.show', compact('reportCard', 'schoolInfo'));
+        return view('students.report-cards.show', compact('reportCard', 'schoolInfo', 'studentPhotoBase64', 'studentPhotoMime'));
     }
 
     public function studentDownload(ReportCard $reportCard)
@@ -1734,9 +1739,14 @@ class ReportCardController extends Controller
         ]);
 
         $schoolInfo = SchoolInformation::getActive();
+        
+        // Resolve student photo data for professional admin print design
+        ['base64' => $studentPhotoBase64, 'mime' => $studentPhotoMime] = $this->resolveStudentPhotoData(
+            $reportCard->student->passport_photo
+        );
 
         // Use the professional admin print design
-        $pdf = Pdf::loadView('admin.report-cards.print', compact('reportCard', 'schoolInfo'))
+        $pdf = Pdf::loadView('admin.report-cards.print', compact('reportCard', 'schoolInfo', 'studentPhotoBase64', 'studentPhotoMime'))
             ->setPaper('a4', 'portrait')
             ->setOption([
                 'margin-top'        => 0,

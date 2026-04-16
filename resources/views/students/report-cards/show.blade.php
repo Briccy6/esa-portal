@@ -1,17 +1,332 @@
-@extends('students.app')
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trainee Assessment Report - {{ $reportCard->student->full_name }}</title>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 20mm;
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
 
-@section('title', 'Report Card - ' . $reportCard->student->full_name)
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #333;
+            background: white;
+            overflow-x: hidden;
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
 
-@push('styles')
-<style>
-/* Admin-style Report Card Design for Students */
-.rc-page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 2rem;
-    margin-bottom: 2rem;
-}
+        .action-buttons {
+            padding: 15px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .action-buttons a,
+        .action-buttons button {
+            padding: 8px 16px;
+            font-size: 14px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            cursor: pointer;
+            background: white;
+            color: #495057;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .action-buttons a:hover,
+        .action-buttons button:hover {
+            background: #e2e6ea;
+            border-color: #adb5bd;
+        }
+
+        .action-buttons .btn-primary {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+
+        .action-buttons .btn-primary:hover {
+            background: #0056b3;
+            border-color: #0056b3;
+        }
+
+        .print-area {
+            width: 100%;
+            max-width: 170mm;
+            margin: 0 auto;
+            padding: 0;
+            box-sizing: border-box;
+            border: 2px solid black;
+            background: white;
+            display: block;
+        }
+        
+        /* Header: logo | details | logo (table layout for DomPDF) */
+        .print-header-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-bottom: 1px solid #000;
+            table-layout: fixed;
+        }
+        .print-header-table td {
+            vertical-align: middle;
+            padding: 10px 8px;
+        }
+        .print-header-logo {
+            width: 22%;
+            text-align: center;
+            border-right: 1px solid #000;
+        }
+        .print-header-logo--right {
+            border-right: none;
+            border-left: 1px solid #000;
+        }
+        .print-header-center {
+            width: 56%;
+            text-align: center;
+            padding: 12px 14px !important;
+        }
+        .print-header-logo img,
+        .school-logo-img {
+            max-height: 88px;
+            max-width: 110px;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+        }
+        .print-logo-placeholder {
+            width: 88px;
+            height: 88px;
+            margin: 0 auto;
+            background: #ecf0f1;
+            border: 2px dashed #bdc3c7;
+            text-align: center;
+            font-size: 8px;
+            color: #7f8c8d;
+            font-weight: bold;
+            line-height: 84px;
+        }
+        .hdr-line {
+            font-size: 10px;
+            line-height: 1.45;
+            margin: 0 0 3px 0;
+        }
+        .hdr-line .lbl {
+            font-weight: bold;
+        }
+        .hdr-school-name {
+            font-size: 12px;
+            font-weight: bold;
+            margin: 10px 0 6px 0;
+            letter-spacing: 0.3px;
+        }
+        .hdr-contact {
+            font-size: 9px;
+            line-height: 1.5;
+            margin: 2px 0;
+        }
+        
+        .title-section {
+            background: #f0f0f0;
+            border-bottom: 1px solid black;
+            padding: 4px;
+            text-align: center;
+        }
+        
+        .title-section h2 {
+            font-size: 12px;
+            font-weight: bold;
+            margin: 0;
+        }
+        
+        .qualification-section {
+            border-bottom: 1px solid black;
+        }
+        
+        .qualification-row {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            font-size: 10px;
+        }
+        
+        .qualification-cell {
+            padding: 4px;
+        }
+        
+        .qualification-cell:not(:last-child) {
+            border-right: 1px solid black;
+        }
+        
+        .legend-section {
+            border-bottom: 1px solid black;
+            padding: 4px;
+            font-size: 8px;
+        }
+        
+        .assessment-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 8px;
+            table-layout: fixed;
+        }
+        
+        .assessment-table th,
+        .assessment-table td {
+            border: 1px solid black;
+            padding: 2px;
+            text-align: center;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        .assessment-table .text-left {
+            text-align: left;
+        }
+        
+        .assessment-table .bg-gray {
+            background: #f0f0f0;
+        }
+        
+        .assessment-table .bg-blue {
+            background: #e6f3ff;
+        }
+        
+        .assessment-table .bg-green {
+            background: #e6ffe6;
+        }
+        
+        .assessment-table .bg-yellow {
+            background: #ffffe6;
+        }
+        
+        .assessment-table .font-bold {
+            font-weight: bold;
+        }
+        
+        .competent-mark {
+            color: green;
+            font-weight: bold;
+        }
+        
+        .not-competent-mark {
+            color: red;
+            text-decoration: underline;
+            font-weight: bold;
+        }
+        
+        .deliberation-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 8px;
+            margin-top: 1px;
+            table-layout: fixed;
+        }
+        
+        .deliberation-table th,
+        .deliberation-table td {
+            border: 1px solid black;
+            padding: 2px;
+            text-align: center;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        .deliberation-table .text-left {
+            text-align: left;
+        }
+        
+        .deliberation-table .bg-gray {
+            background: #f0f0f0;
+        }
+        
+        .footer {
+            background: #f0f0f0;
+            padding: 2px;
+            text-align: right;
+            font-size: 7px;
+            border-top: 1px solid black;
+        }
+        
+        .checkbox {
+            width: 16px;
+            height: 16px;
+        }
+        
+        @media print {
+            body {
+                margin: 0;
+                padding: 0;
+                width: 100%;
+                height: 100%;
+                background: white;
+            }
+            
+            .action-buttons {
+                display: none !important;
+            }
+            
+            .print-area {
+                margin: 0 auto;
+                max-width: 170mm;
+                width: 100%;
+                box-sizing: border-box;
+                border: none;
+                box-shadow: none;
+            }
+        }
+        
+        /* Global overflow prevention */
+        div, section, article, header, footer, main, nav, ul, ol, li, p, span, a, label, td, th {
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+        
+        img, svg, canvas, video, iframe {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <!-- Action Buttons (hidden when printing) -->
+    <div class="action-buttons">
+        <a href="{{ route('student.report-cards.index') }}" class="btn-back">← Back to Report Cards</a>
+        <form action="{{ route('student.report-cards.download', $reportCard) }}" method="POST" style="display: inline;">
+            @csrf
+            <button type="submit" class="btn-primary">📥 Download PDF</button>
+        </form>
+        <button onclick="window.print()" class="btn-print">🖨️ Print</button>
+    </div>
+
+    <!-- Report Card Content (same as admin print) -->
+    <div class="print-area">
+        @include('admin.report-cards.partials.print-assessment-inner', compact('reportCard', 'schoolInfo', 'studentPhotoBase64', 'studentPhotoMime'))
+    </div>
+</body>
+</html>
 
 .rc-page-header__left {
     display: flex;
