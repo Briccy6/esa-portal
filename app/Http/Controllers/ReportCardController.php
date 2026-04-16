@@ -1647,20 +1647,7 @@ class ReportCardController extends Controller
                                 ->with(['course', 'academicYear', 'term'])
                                 ->orderByDesc('academic_year_id')
                                 ->orderBy('term_id')
-                                ->get()
-                                ->map(function($reportCard) use ($student) {
-                                    // Get access status for this specific report card's term
-                                    $accessStatus = ReportCardService::getAccessStatus($student, $reportCard->term_id);
-                                    
-                                    return [
-                                        'reportCard' => $reportCard,
-                                        'accessStatus' => $accessStatus,
-                                        'can_access' => $accessStatus['can_access'],
-                                        'reason' => $accessStatus['reason'],
-                                        'is_payment_issue' => !$accessStatus['payment_status']['is_fully_paid'],
-                                        'outstanding' => $accessStatus['payment_status']['outstanding'],
-                                    ];
-                                });
+                                ->get();
         
         return view('students.report-cards.index', compact('reportCards', 'accessStatus'));
     }
