@@ -1451,8 +1451,9 @@ class StudentController extends Controller
             $academicYearId = $student->academic_year_id;
             
             // Check if student has paid registration fee in ANY term of the current academic year
+            // Registration can be stored as either 'registration' or 'registration_fee' type
             $registrationFeePaidInAcademicYear = StudentTransaction::where('student_id', $student->id)
-                ->where('type', 'registration')
+                ->whereIn('type', ['registration', 'registration_fee'])
                 ->whereIn('status', ['successful', 'paid'])
                 ->whereHas('term', function ($query) use ($academicYearId) {
                     $query->where('academic_year_id', $academicYearId);
@@ -1487,9 +1488,10 @@ class StudentController extends Controller
                 }
 
                 // Calculate paid amounts for this term
+                // Registration can be stored as either 'registration' or 'registration_fee' type
                 $paidRegistration = StudentTransaction::where('student_id', $student->id)
                     ->where('term_id', $term->id)
-                    ->where('type', 'registration')
+                    ->whereIn('type', ['registration', 'registration_fee'])
                     ->whereIn('status', ['successful', 'paid'])
                     ->sum('amount');
 
