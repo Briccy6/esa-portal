@@ -137,26 +137,34 @@
                                             <td>{{ $reportCard->term->name ?? 'N/A' }}</td>
                                             <td>{{ $reportCard->course->course_name ?? 'N/A' }}</td>
                                             <td>
-                                                @if($reportCard->average_marks)
-                                                    <span class="badge bg-{{ $reportCard->average_marks >= 70 ? 'success' : ($reportCard->average_marks >= 50 ? 'warning' : 'danger') }}">
-                                                        {{ number_format($reportCard->average_marks, 1) }}%
-                                                    </span>
+                                                @if($reportCard->canAccessThisTerm)
+                                                    @if($reportCard->average_marks)
+                                                        <span class="badge bg-{{ $reportCard->average_marks >= 70 ? 'success' : ($reportCard->average_marks >= 50 ? 'warning' : 'danger') }}">
+                                                            {{ number_format($reportCard->average_marks, 1) }}%
+                                                        </span>
+                                                    @else
+                                                        <span class="badge bg-secondary">N/A</span>
+                                                    @endif
                                                 @else
-                                                    <span class="badge bg-secondary">N/A</span>
+                                                    <span class="badge bg-info">Position: {{ $reportCard->position_display ?? 'N/A' }}</span>
                                                 @endif
                                             </td>
                                             <td>
-                                                @if($reportCard->status === 'approved')
-                                                    <span class="badge bg-success">Approved</span>
-                                                @elseif($reportCard->status === 'printed')
-                                                    <span class="badge bg-info">Printed</span>
+                                                @if($reportCard->canAccessThisTerm)
+                                                    @if($reportCard->status === 'approved')
+                                                        <span class="badge bg-success">Approved</span>
+                                                    @elseif($reportCard->status === 'printed')
+                                                        <span class="badge bg-info">Printed</span>
+                                                    @else
+                                                        <span class="badge bg-warning">Pending</span>
+                                                    @endif
                                                 @else
-                                                    <span class="badge bg-warning">Pending</span>
+                                                    <span class="text-muted">—</span>
                                                 @endif
                                             </td>
                                             <td>
                                                 <div class="btn-group btn-group-sm">
-                                                    @if($accessStatus['can_access'])
+                                                    @if($reportCard->canAccessThisTerm)
                                                         <a href="{{ route('student.report-cards.show', $reportCard) }}" 
                                                            class="btn btn-outline-primary" title="View">
                                                             <i class="bi bi-eye"></i>

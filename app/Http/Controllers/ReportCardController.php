@@ -1642,12 +1642,22 @@ class ReportCardController extends Controller
         // Get overall access status for the student
         $accessStatus = ReportCardService::getAccessStatus($student);
 
-        // Get student's report cards with proper term-specific access status
+        // Get student's report cards with term-specific access status
         $reportCards = ReportCard::where('student_id', $student->id)
                                 ->with(['course', 'academicYear', 'term'])
                                 ->orderByDesc('academic_year_id')
                                 ->orderBy('term_id')
-                                ->get();
+                                ->get()
+                                ->map(function($reportCard) use ($student) {
+                                    // Get access status for THIS SPECIFIC term only
+                                    $termAccessStatus = ReportCardService::getAccessStatus($student, [$reportCard->term_id]);
+                                    
+                                    // Attach term-specific access info to the report card
+                                    $reportCard->termAccessStatus = $termAccessStatus;
+                                    $reportCard->canAccessThisTerm = $termAccessStatus['can_access'];
+                                    
+                                    return $reportCard;
+                                });
         
         return view('students.report-cards.index', compact('reportCards', 'accessStatus'));
     }
