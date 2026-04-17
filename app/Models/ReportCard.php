@@ -158,6 +158,12 @@ class ReportCard extends Model
                                     THEN (value / marks_out_of) * 100
                                 ELSE value
                             END
+                        WHEN assessment_type = 'exam' THEN
+                            CASE
+                                WHEN marks_out_of IS NOT NULL AND marks_out_of > 0
+                                    THEN (value / marks_out_of) * 100
+                                ELSE value
+                            END
                         ELSE value
                     END
                 ) AS cohort_avg
