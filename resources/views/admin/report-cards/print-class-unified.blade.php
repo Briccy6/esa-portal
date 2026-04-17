@@ -72,9 +72,10 @@
         @php
             $studentPhotoBase64 = $studentPhotosByReportId[$reportCard->id]['base64'] ?? null;
             $studentPhotoMime = $studentPhotosByReportId[$reportCard->id]['mime'] ?? 'image/jpeg';
+            $positionData = $positionsByReportId[$reportCard->id] ?? ['position' => null, 'total' => 0];
         @endphp
         <div class="print-area">
-            @include('admin.report-cards.partials.print-assessment-inner', compact('reportCard', 'schoolInfo', 'studentPhotoBase64', 'studentPhotoMime'))
+            @include('admin.report-cards.partials.print-assessment-inner', compact('reportCard', 'schoolInfo', 'studentPhotoBase64', 'studentPhotoMime', 'positionData'))
         </div>
         @if(!$loop->last)
             <div style="page-break-after: always;"></div>

@@ -1378,7 +1378,10 @@ class ReportCardController extends Controller
             $studentPhotosByReportId[$reportCard->id] = $this->resolveStudentPhotoData($reportCard->student->passport_photo);
         }
 
-        $pdf = Pdf::loadView('admin.report-cards.print-class-unified', compact('reportCards', 'schoolInfo', 'studentPhotosByReportId'))
+        // Calculate positions efficiently for all report cards in bulk (by term)
+        $positionsByReportId = $this->calculateBulkPositions($reportCards);
+
+        $pdf = Pdf::loadView('admin.report-cards.print-class-unified', compact('reportCards', 'schoolInfo', 'studentPhotosByReportId', 'positionsByReportId'))
             ->setPaper('a4', 'portrait')
             ->setOption(['margin-top' => 10, 'margin-bottom' => 10]);
 
@@ -1487,6 +1490,55 @@ class ReportCardController extends Controller
         $paymentStatus = FeePaymentService::getPaymentStatus($reportCard->student, [(int) $reportCard->term_id]);
 
         return ((float) ($paymentStatus['outstanding'] ?? 0)) > 0;
+    }
+
+    /**
+     * Calculate positions efficiently for all report cards in bulk.
+     * Avoids O(n²) complexity by grouping by term and calculating once per term.
+     * 
+     * @param \Illuminate\Support\Collection $reportCards
+     * @return array<int, array{position: int|null, total: int}>
+     */
+    protected function calculateBulkPositions($reportCards): array
+    {
+        $positions = [];
+
+        // Group by term for efficient batch processing
+        $cardsByTerm = $reportCards->groupBy('term_id');
+
+        foreach ($cardsByTerm as $termId => $termsCards) {
+            // Get all cards for this term, sorted by average marks
+            $sortedCards = ReportCard::where('course_id', $termsCards->first()->course_id)
+                ->where('academic_year_id', $termsCards->first()->academic_year_id)
+                ->where('term_id', $termId)
+                ->whereNotNull('average_marks')
+                ->orderByDesc('average_marks')
+                ->orderBy('id')
+                ->get(['id', 'average_marks']);
+
+            $totalInCohort = ReportCard::where('course_id', $termsCards->first()->course_id)
+                ->where('academic_year_id', $termsCards->first()->academic_year_id)
+                ->where('term_id', $termId)
+                ->count();
+
+            // Assign positions with tie handling
+            $currentRank = 1;
+            $previousScore = null;
+
+            foreach ($sortedCards as $index => $card) {
+                if ($previousScore !== null && $card->average_marks != $previousScore) {
+                    $currentRank = $index + 1;
+                }
+                $previousScore = $card->average_marks;
+
+                $positions[$card->id] = [
+                    'position' => $currentRank,
+                    'total' => $totalInCohort,
+                ];
+            }
+        }
+
+        return $positions;
     }
 
     public function generateReportCardData(ReportCard $reportCard)

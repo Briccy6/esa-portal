@@ -475,7 +475,12 @@
                     <div class="summary-item">
                         <span>Position:</span>
                         @php
-                            $calcPos = $reportCard->calculateDynamicPosition();
+                            // Use precomputed positions if available (for bulk exports), otherwise use accessor
+                            if (isset($positionsByReportId) && isset($positionsByReportId[$reportCard->id])) {
+                                $calcPos = $positionsByReportId[$reportCard->id];
+                            } else {
+                                $calcPos = $reportCard->calculateDynamicPosition();
+                            }
                         @endphp
                         <strong>{{ $calcPos['position'] ?? 'N/A' }}</strong>
                     </div>
