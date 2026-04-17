@@ -647,6 +647,9 @@ class ReportCardController extends Controller
 
         $schoolInfo = SchoolInformation::getActive();
 
+        // Calculate dynamic position based on current average marks
+        $positionData = $reportCard->calculateDynamicPosition();
+
         $siblingReportCards = ReportCard::query()
             ->where('student_id', $reportCard->student_id)
             ->where('course_id', $reportCard->course_id)
@@ -656,7 +659,7 @@ class ReportCardController extends Controller
             ->orderBy('term_id')
             ->get();
 
-        return view('admin.report-cards.show', compact('reportCard', 'schoolInfo', 'siblingReportCards'));
+        return view('admin.report-cards.show', compact('reportCard', 'schoolInfo', 'positionData', 'siblingReportCards'));
     }
 
     public function edit(ReportCard $reportCard)
@@ -1273,13 +1276,16 @@ class ReportCardController extends Controller
         'subjects.testMarks.exam',
     ]);
 
+    // Calculate dynamic position based on current average marks
+    $positionData = $reportCard->calculateDynamicPosition();
+
     $schoolInfo = SchoolInformation::getActive();
     ['base64' => $studentPhotoBase64, 'mime' => $studentPhotoMime] = $this->resolveStudentPhotoData(
         $reportCard->student->passport_photo
     );
 
     $pdf = Pdf::loadView('admin.report-cards.print', compact(
-            'reportCard', 'schoolInfo', 'studentPhotoBase64', 'studentPhotoMime'
+            'reportCard', 'schoolInfo', 'studentPhotoBase64', 'studentPhotoMime', 'positionData'
         ))
         ->setPaper('a4', 'portrait')
         ->setOption([
@@ -1712,12 +1718,15 @@ class ReportCardController extends Controller
 
         $schoolInfo = SchoolInformation::getActive();
         
+        // Calculate dynamic position based on current average marks
+        $positionData = $reportCard->calculateDynamicPosition();
+        
         // Resolve student photo data for professional admin print design
         ['base64' => $studentPhotoBase64, 'mime' => $studentPhotoMime] = $this->resolveStudentPhotoData(
             $reportCard->student->passport_photo
         );
 
-        return view('students.report-cards.show', compact('reportCard', 'schoolInfo', 'studentPhotoBase64', 'studentPhotoMime'));
+        return view('students.report-cards.show', compact('reportCard', 'schoolInfo', 'positionData', 'studentPhotoBase64', 'studentPhotoMime'));
     }
 
     public function studentDownload(ReportCard $reportCard)
@@ -1748,13 +1757,16 @@ class ReportCardController extends Controller
 
         $schoolInfo = SchoolInformation::getActive();
         
+        // Calculate dynamic position based on current average marks
+        $positionData = $reportCard->calculateDynamicPosition();
+        
         // Resolve student photo data for professional admin print design
         ['base64' => $studentPhotoBase64, 'mime' => $studentPhotoMime] = $this->resolveStudentPhotoData(
             $reportCard->student->passport_photo
         );
 
         // Use the professional student print design
-        $pdf = Pdf::loadView('students.report-cards.print', compact('reportCard', 'schoolInfo', 'studentPhotoBase64', 'studentPhotoMime'))
+        $pdf = Pdf::loadView('students.report-cards.print', compact('reportCard', 'schoolInfo', 'studentPhotoBase64', 'studentPhotoMime', 'positionData'))
             ->setPaper('a4', 'portrait')
             ->setOption([
                 'margin-top'        => 0,

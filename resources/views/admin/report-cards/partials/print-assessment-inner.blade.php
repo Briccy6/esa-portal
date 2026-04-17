@@ -181,7 +181,13 @@
                 <td></td>
                 <td></td>
                 <td></td>
-                <td colspan="2" class="text-center">{{ $reportCard->class_position ?? '-' }} out of {{ $reportCard->total_students ?? '-' }}</td>
+                <td colspan="2" class="text-center">
+                    @php
+                        $position = $positionData['position'] ?? $reportCard->calculated_position ?? '-';
+                        $total = $positionData['total'] ?? $reportCard->calculated_total ?? '-';
+                    @endphp
+                    {{ $position }} out of {{ $total }}
+                </td>
             </tr>
 
             <tr class="bg-gray font-bold">

@@ -385,7 +385,10 @@
                         <td></td>
                         <td></td>
                         <td></td>
-                        <td colspan="2">{{ $reportCard->class_position ?? '-' }} out of {{ $reportCard->total_students ?? '-' }}</td>
+                        @php
+                            $calcPos = $reportCard->calculateDynamicPosition();
+                        @endphp
+                        <td colspan="2">{{ $calcPos['position'] ?? '-' }} out of {{ $calcPos['total'] ?? '-' }}</td>
                         <td></td>
                     </tr>
                     

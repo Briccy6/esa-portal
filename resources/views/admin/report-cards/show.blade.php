@@ -285,8 +285,12 @@
                 <div class="rc-card__header rc-card__header--blue"><i class="fas fa-trophy me-2"></i> Class standing</div>
                 <div class="rc-card__body">
                     <div class="rc-detail-grid">
-                        <div class="rc-detail-row"><span class="rc-detail-k">Position</span><span class="rc-detail-v">{{ $reportCard->class_position ?? 'N/A' }}</span></div>
-                        <div class="rc-detail-row"><span class="rc-detail-k">Total students</span><span class="rc-detail-v">{{ $reportCard->total_students ?? '—' }}</span></div>
+                        @php
+                            $position = $positionData['position'] ?? $reportCard->calculated_position ?? 'N/A';
+                            $total = $positionData['total'] ?? $reportCard->calculated_total ?? '—';
+                        @endphp
+                        <div class="rc-detail-row"><span class="rc-detail-k">Position</span><span class="rc-detail-v">{{ $position }}</span></div>
+                        <div class="rc-detail-row"><span class="rc-detail-k">Total students</span><span class="rc-detail-v">{{ $total }}</span></div>
                         <div class="rc-detail-row"><span class="rc-detail-k">Year / term</span><span class="rc-detail-v">{{ $reportCard->academicYear->year }} · {{ $reportCard->term?->name ?? '—' }}</span></div>
                     </div>
                 </div>

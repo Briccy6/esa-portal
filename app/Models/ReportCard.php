@@ -79,12 +79,90 @@ class ReportCard extends Model
         return 'F';
     }
 
-    public function getPositionDisplayAttribute()
+    /**
+     * Dynamically calculate position and total students based on current average marks.
+     * This ensures the position always reflects the current ranking.
+     * 
+     * @return array{position: int|null, total: int}
+     */
+    public function calculateDynamicPosition(): array
     {
-        if ($this->class_position && $this->total_students) {
-            return "{$this->class_position}/{$this->total_students}";
+        // Get all students in the same cohort (course, academic year, term)
+        $cohortCards = static::where('course_id', $this->course_id)
+            ->where('academic_year_id', $this->academic_year_id)
+            ->where('term_id', $this->term_id)
+            ->whereNotNull('average_marks')
+            ->orderByDesc('average_marks')
+            ->orderBy('id') // Tiebreaker: use ID if marks are equal
+            ->get();
+
+        $totalStudents = static::where('course_id', $this->course_id)
+            ->where('academic_year_id', $this->academic_year_id)
+            ->where('term_id', $this->term_id)
+            ->count();
+
+        // Find this student's position in the cohort (1-indexed)
+        $position = null;
+        $currentRank = 1;
+        $previousScore = null;
+
+        foreach ($cohortCards as $index => $card) {
+            // Handle ties: if marks are equal, keep same rank
+            if ($previousScore !== null && $card->average_marks != $previousScore) {
+                $currentRank = $index + 1;
+            }
+            $previousScore = $card->average_marks;
+
+            if ((int) $card->id === (int) $this->id) {
+                $position = $currentRank;
+                break;
+            }
+        }
+
+        return [
+            'position' => $position,
+            'total' => $totalStudents,
+        ];
+    }
+
+    /**
+     * Get calculated position and total students.
+     * Formats as "position/total" string for display.
+     */
+    public function getCalculatedPositionDisplayAttribute(): string
+    {
+        $data = $this->calculateDynamicPosition();
+        if ($data['position'] !== null && $data['total'] > 0) {
+            return "{$data['position']}/{$data['total']}";
         }
         return 'N/A';
+    }
+
+    /**
+     * Get calculated position number only.
+     */
+    public function getCalculatedPositionAttribute(): ?int
+    {
+        return $this->calculateDynamicPosition()['position'];
+    }
+
+    /**
+     * Get total students in cohort.
+     */
+    public function getCalculatedTotalAttribute(): int
+    {
+        return $this->calculateDynamicPosition()['total'];
+    }
+
+    /**
+     * Legacy method - kept for backwards compatibility.
+     * Always uses dynamic calculation to ensure accuracy.
+     * Database values are maintained for historical reference only.
+     */
+    public function getPositionDisplayAttribute()
+    {
+        // Always use dynamic calculation for current accuracy
+        return $this->calculated_position_display;
     }
 
     public function scopeForStudent($query, $studentId)

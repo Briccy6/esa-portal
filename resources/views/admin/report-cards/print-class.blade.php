@@ -474,11 +474,14 @@
                     <h4>Class Standing</h4>
                     <div class="summary-item">
                         <span>Position:</span>
-                        <strong>{{ $reportCard->class_position ?? 'N/A' }}</strong>
+                        @php
+                            $calcPos = $reportCard->calculateDynamicPosition();
+                        @endphp
+                        <strong>{{ $calcPos['position'] ?? 'N/A' }}</strong>
                     </div>
                     <div class="summary-item">
                         <span>Total Students:</span>
-                        <strong>{{ $reportCard->total_students }}</strong>
+                        <strong>{{ $calcPos['total'] }}</strong>
                     </div>
                     <div class="summary-item">
                         <span>Term:</span>

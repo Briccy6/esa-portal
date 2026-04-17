@@ -923,7 +923,7 @@
                 <div class="rc-card__body">
                     <div class="rc-detail-grid">
                         <div class="rc-detail-row"><span class="rc-detail-k">Position</span><span class="rc-detail-v">{{ $reportCard->position_display ?? 'N/A' }}</span></div>
-                        <div class="rc-detail-row"><span class="rc-detail-k">Total Students</span><span class="rc-detail-v">{{ $reportCard->total_students ?? '—' }}</span></div>
+                        <div class="rc-detail-row"><span class="rc-detail-k">Total Students</span><span class="rc-detail-v">{{ $reportCard->calculated_total ?? $reportCard->total_students ?? '—' }}</span></div>
                         <div class="rc-detail-row"><span class="rc-detail-k">Year / Term</span><span class="rc-detail-v">{{ $reportCard->academicYear->year }} · {{ $reportCard->term?->name ?? '—' }}</span></div>
                         @if($reportCard->approvedBy)
                             <div class="rc-detail-row"><span class="rc-detail-k">Approved By</span><span class="rc-detail-v">{{ $reportCard->approvedBy->name ?? '—' }}</span></div>
