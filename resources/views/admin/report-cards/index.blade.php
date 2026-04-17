@@ -612,12 +612,12 @@ document.addEventListener('DOMContentLoaded', function () {
             if (group.multiple_terms && !group.has_outstanding) {
                 actionsHtml = `
                     <li>
-                        <a href="{{ route('admin.report-cards.consolidated', '') }}?student_id=${group.student_id}&course_id=${group.course_id}&academic_year_id=${group.academic_year_id}&term_ids[]=${group.term_ids.join('&term_ids[]=')}" class="dropdown-item" target="_blank">
+                        <a href="/admin/report-cards/consolidated?student_id=${group.student_id}&course_id=${group.course_id}&academic_year_id=${group.academic_year_id}&term_ids[]=${group.term_ids.join('&term_ids[]=')}" class="dropdown-item" target="_blank">
                             <i class="fas fa-eye me-2 text-info"></i> View all (${group.term_ids.length} terms)
                         </a>
                     </li>
                     <li>
-                        <a href="{{ route('admin.report-cards.consolidated-print', '') }}?student_id=${group.student_id}&course_id=${group.course_id}&academic_year_id=${group.academic_year_id}&term_ids[]=${group.term_ids.join('&term_ids[]=')}" class="dropdown-item" target="_blank">
+                        <a href="/admin/report-cards/consolidated/print?student_id=${group.student_id}&course_id=${group.course_id}&academic_year_id=${group.academic_year_id}&term_ids[]=${group.term_ids.join('&term_ids[]=')}" class="dropdown-item" target="_blank">
                             <i class="fas fa-print me-2 text-success"></i> Print all (${group.term_ids.length} terms)
                         </a>
                     </li>
@@ -625,12 +625,12 @@ document.addEventListener('DOMContentLoaded', function () {
             } else if (!group.has_outstanding) {
                 actionsHtml = `
                     <li>
-                        <a href="{{ route('admin.report-cards.show', '') }}/${group.first_report_card_id}" class="dropdown-item" target="_blank">
+                        <a href="/admin/report-cards/${group.first_report_card_id}" class="dropdown-item" target="_blank">
                             <i class="fas fa-eye me-2 text-info"></i> View
                         </a>
                     </li>
                     <li>
-                        <a href="{{ route('admin.report-cards.print', '') }}/${group.first_report_card_id}" class="dropdown-item" target="_blank">
+                        <a href="/admin/report-cards/${group.first_report_card_id}/print" class="dropdown-item" target="_blank">
                             <i class="fas fa-print me-2 text-success"></i> Print
                         </a>
                     </li>
