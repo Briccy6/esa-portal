@@ -353,6 +353,11 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::put('/report-card-settings/{reportCardSetting}', [App\Http\Controllers\Admin\ReportCardSettingController::class, 'update'])->name('report-card-settings.update');
     Route::delete('/report-card-settings/{reportCardSetting}', [App\Http\Controllers\Admin\ReportCardSettingController::class, 'destroy'])->name('report-card-settings.destroy');
     Route::post('/report-card-settings/{reportCardSetting}/toggle-status', [App\Http\Controllers\Admin\ReportCardSettingController::class, 'toggleStatus'])->name('report-card-settings.toggle-status');
+    
+    // Recalculate Report Card Positions
+    Route::get('/recalculate-positions', [App\Http\Controllers\Admin\RecalculatePositionsController::class, 'index'])->name('recalculate-positions.index');
+    Route::post('/recalculate-positions/execute', [App\Http\Controllers\Admin\RecalculatePositionsController::class, 'execute'])->name('recalculate-positions.execute');
+    
     Route::post('teachers/{teacher}/assign-course', [TeacherController::class, 'storeCourseAssignment'])->name('teachers.storeCourseAssignment');
 
     // Student fees

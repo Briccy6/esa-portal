@@ -24,6 +24,9 @@
             <a href="{{ route('admin.report-cards.outstanding-fees') }}" class="rc-btn rc-btn--warning">
                 <i class="fas fa-exclamation-triangle"></i> Outstanding Fees
             </a>
+            <a href="{{ route('admin.recalculate-positions.index') }}" class="rc-btn rc-btn--warning" title="Recalculate student rankings for all report cards">
+                <i class="fas fa-recycle"></i> Recalculate Positions
+            </a>
             <a href="{{ route('admin.report-cards.create') }}" class="rc-btn rc-btn--primary">
                 <i class="fas fa-plus"></i> Generate Report Card
             </a>
