@@ -124,14 +124,31 @@ class ReportCard extends Model
      */
     public static function recalculatePositionsForCohort(int $courseId, int $academicYearId, int $termId): void
     {
+        \Log::info('🔄 RECALCULATE POSITIONS START', [
+            'course_id' => $courseId,
+            'academic_year_id' => $academicYearId,
+            'term_id' => $termId,
+        ]);
+
         $cards = static::where('course_id', $courseId)
             ->where('academic_year_id', $academicYearId)
             ->where('term_id', $termId)
             ->orderByDesc('average_marks')
             ->orderBy('id')
+            ->with('student')
             ->get();
 
+        \Log::info('Found report cards:', [
+            'count' => $cards->count(),
+            'cards' => $cards->map(fn($c) => [
+                'id' => $c->id,
+                'student_name' => $c->student->full_name ?? 'Unknown',
+                'average_marks' => $c->average_marks,
+            ])->all(),
+        ]);
+
         if ($cards->count() === 0) {
+            \Log::warning('❌ No report cards found for this cohort');
             return;
         }
 
@@ -140,8 +157,14 @@ class ReportCard extends Model
             ->pluck('id')
             ->all();
 
+        \Log::info('Students in class:', [
+            'total_count' => count($studentIdsInClass),
+            'student_ids' => $studentIdsInClass,
+        ]);
+
         $totalStudentsInClass = count($studentIdsInClass);
         if ($totalStudentsInClass === 0) {
+            \Log::warning('⚠️ No students found in class');
             return;
         }
 
@@ -174,6 +197,11 @@ class ReportCard extends Model
             ->groupBy('student_id')
             ->pluck('cohort_avg', 'student_id');
 
+        \Log::info('Averages from marks table:', [
+            'count' => $averagesByStudent->count(),
+            'data' => $averagesByStudent->all(),
+        ]);
+
         $scoreBoard = collect($studentIdsInClass)->map(function ($studentId) use ($averagesByStudent) {
             return [
                 'student_id' => (int) $studentId,
@@ -183,6 +211,11 @@ class ReportCard extends Model
                     : -1.0,
             ];
         })->sortByDesc('score')->values();
+
+        \Log::info('Sorted scoreBoard:', [
+            'count' => $scoreBoard->count(),
+            'scores' => $scoreBoard->all(),
+        ]);
 
         $rankByStudent = [];
         $rank = 1;
@@ -196,11 +229,33 @@ class ReportCard extends Model
             $rankByStudent[(int) $entry['student_id']] = $rank;
         }
 
+        \Log::info('Rank assignments:', [
+            'count' => count($rankByStudent),
+            'ranks' => $rankByStudent,
+        ]);
+
+        $updateCount = 0;
         foreach ($cards as $card) {
+            $newPosition = $rankByStudent[(int) $card->student_id] ?? null;
             $card->total_students = $totalStudentsInClass;
-            $card->class_position = $rankByStudent[(int) $card->student_id] ?? null;
+            $card->class_position = $newPosition;
             $card->saveQuietly();
+            $updateCount++;
+            
+            \Log::info("Updated position for student {$card->student->full_name}", [
+                'card_id' => $card->id,
+                'student_id' => $card->student_id,
+                'new_position' => $newPosition,
+                'total_students' => $totalStudentsInClass,
+            ]);
         }
+
+        \Log::info("✅ RECALCULATE POSITIONS COMPLETE", [
+            'updated_count' => $updateCount,
+            'course_id' => $courseId,
+            'academic_year_id' => $academicYearId,
+            'term_id' => $termId,
+        ]);
     }
 
     public function calculateClassPosition(): void
