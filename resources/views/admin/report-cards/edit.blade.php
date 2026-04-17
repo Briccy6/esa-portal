@@ -67,7 +67,6 @@
                                                 <th>Exam (60%)</th>
                                                 <th>Test Avg (40%)</th>
                                                 <th>Total</th>
-                                                <th>Grade</th>
                                                 <th>Remarks</th>
                                             </tr>
                                         </thead>
@@ -88,11 +87,6 @@
                                                                step="0.01" min="0" max="100">
                                                     </td>
                                                     <td><strong>{{ number_format($subject->total_mark, 2) }}</strong></td>
-                                                    <td>
-                                                        <span class="badge badge-{{ $subject->grade == 'A' || $subject->grade == 'A+' ? 'success' : ($subject->grade == 'B' || $subject->grade == 'B+' ? 'info' : ($subject->grade == 'C' ? 'warning' : 'danger')) }}">
-                                                            {{ $subject->grade }}
-                                                        </span>
-                                                    </td>
                                                     <td>
                                                         <input type="text" name="subjects[{{ $index }}][remarks]" 
                                                                value="{{ $subject->remarks }}" 

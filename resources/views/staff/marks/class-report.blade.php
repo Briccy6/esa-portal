@@ -152,7 +152,7 @@
                                 @php
                                     $rank = 1;
                                 @endphp
-                                @foreach($marks as $mark)
+                                @foreach($studentPerformance as $performance)
                                     <tr>
                                         <td>
                                             <span class="badge bg-primary">#{{ $rank }}</span>
@@ -162,32 +162,30 @@
                                                 <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
                                                     <i class="fas fa-user text-primary"></i>
                                                 </div>
-                                                <span class="fw-semibold">{{ $mark->student->name ?? 'Unknown' }}</span>
+                                                <span class="fw-semibold">{{ $performance->student->full_name ?? 'Unknown' }}</span>
                                             </div>
                                         </td>
-                                        <td>{{ $mark->student_id }}</td>
+                                        <td>{{ $performance->student->reg_number ?? $performance->student_id }}</td>
                                         <td class="text-center">
-                                            <span class="fw-bold {{ $mark->value >= ($mark->marks_out_of * 0.5) ? 'text-success' : 'text-danger' }}">
-                                                {{ $mark->value ?? 0 }}
+                                            <span class="fw-bold {{ $performance->total_marks >= 50 ? 'text-success' : ($performance->total_marks > 0 ? 'text-danger' : 'text-muted') }}">
+                                                {{ number_format($performance->total_marks, 1) }}
                                             </span>
                                         </td>
                                         <td class="text-center">
                                             <span class="badge bg-info text-white">
-                                                {{ $mark->value ? number_format($mark->value, 1) : '0.0' }}
+                                                {{ number_format($performance->average_marks, 1) }}%
                                             </span>
                                         </td>
                                         <td class="text-center">
-                                            @if($mark->grade)
-                                                <span class="badge bg-light text-dark">{{ $mark->grade->name }}</span>
-                                            @else
-                                                <span class="text-muted">-</span>
-                                            @endif
+                                            <span class="badge bg-light text-dark">{{ $performance->grade }}</span>
                                         </td>
                                         <td class="text-center">
-                                            @if($mark->value >= ($mark->marks_out_of * 0.5))
+                                            @if($performance->pass_status === 'Pass')
                                                 <span class="badge bg-success">Pass</span>
-                                            @else
+                                            @elseif($performance->pass_status === 'Fail')
                                                 <span class="badge bg-danger">Fail</span>
+                                            @else
+                                                <span class="badge bg-secondary">N/A</span>
                                             @endif
                                         </td>
                                     </tr>
@@ -196,7 +194,7 @@
                                     @endphp
                                 @endforeach
                                 
-                                @if($marks->isEmpty())
+                                @if(empty($studentPerformance))
                                     <tr>
                                         <td colspan="7" class="text-center py-4">
                                             <i class="fas fa-info-circle text-muted mb-2"></i>
@@ -211,7 +209,10 @@
             </div>
 
             <!-- Students Without Marks -->
-            @if($students->count() > $stats['students_with_marks'])
+            @php
+                $studentsWithoutMarks = array_filter($studentPerformance, fn($p) => $p->marks_count == 0);
+            @endphp
+            @if(!empty($studentsWithoutMarks))
                 <div class="card shadow-sm mt-4">
                     <div class="card-header bg-gradient-warning text-dark">
                         <h5 class="mb-0">
@@ -220,15 +221,11 @@
                     </div>
                     <div class="card-body">
                         <div class="row">
-                            @php
-                                $studentsWithMarks = $marks->pluck('student_id')->toArray();
-                                $studentsWithoutMarks = $students->whereNotIn('id', $studentsWithMarks);
-                            @endphp
-                            @foreach($studentsWithoutMarks as $student)
+                            @foreach($studentsWithoutMarks as $performance)
                                 <div class="col-md-4 mb-2">
                                     <div class="d-flex align-items-center">
                                         <i class="fas fa-user text-muted me-2"></i>
-                                        <span>{{ $student->name }} (ID: {{ $student->id }})</span>
+                                        <span>{{ $performance->student->full_name }} ({{ $performance->student->reg_number ?? 'N/A' }})</span>
                                     </div>
                                 </div>
                             @endforeach

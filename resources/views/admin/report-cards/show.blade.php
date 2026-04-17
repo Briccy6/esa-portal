@@ -191,7 +191,6 @@
                             <th class="text-center">Exam (60%)</th>
                             <th class="text-center">Test avg (40%)</th>
                             <th class="text-center">Total</th>
-                            <th class="text-center">Grade</th>
                             <th>Remarks</th>
                         </tr>
                     </thead>
@@ -202,23 +201,11 @@
                                 <td class="text-center">{{ number_format($subject->exam_mark, 2) }}</td>
                                 <td class="text-center">{{ number_format($subject->test_average, 2) }}</td>
                                 <td class="text-center"><strong>{{ number_format($subject->total_mark, 2) }}</strong></td>
-                                <td class="text-center">
-                                    @php
-                                        $g = $subject->grade;
-                                        $gc = match(true) {
-                                            in_array($g, ['A+','A']) => 'rc-badge--green',
-                                            in_array($g, ['B+','B']) => 'rc-badge--blue',
-                                            $g === 'C' => 'rc-badge--yellow',
-                                            default => 'rc-badge--red',
-                                        };
-                                    @endphp
-                                    <span class="rc-badge {{ $gc }}">{{ $g }}</span>
-                                </td>
                                 <td class="text-muted small">{{ $subject->remarks ?? '—' }}</td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="text-center py-5 text-muted">No subjects recorded for this report card.</td>
+                                <td colspan="5" class="text-center py-5 text-muted">No subjects recorded for this report card.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -229,18 +216,6 @@
                                 <td class="text-center">{{ number_format($reportCard->subjects->avg('exam_mark'), 2) }}</td>
                                 <td class="text-center">{{ number_format($reportCard->subjects->avg('test_average'), 2) }}</td>
                                 <td class="text-center"><strong>{{ number_format($reportCard->average_marks, 2) }}</strong></td>
-                                <td class="text-center">
-                                    @php
-                                        $og = $reportCard->grade;
-                                        $ogc = match(true) {
-                                            in_array($og, ['A+','A']) => 'rc-badge--green',
-                                            in_array($og, ['B+','B']) => 'rc-badge--blue',
-                                            $og === 'C' => 'rc-badge--yellow',
-                                            default => 'rc-badge--red',
-                                        };
-                                    @endphp
-                                    <span class="rc-badge {{ $ogc }}">{{ $og }}</span>
-                                </td>
                                 <td></td>
                             </tr>
                         </tfoot>
@@ -301,10 +276,6 @@
                         <div class="rc-detail-row"><span class="rc-detail-k">Subjects</span><span class="rc-detail-v">{{ $reportCard->subjects->count() }}</span></div>
                         <div class="rc-detail-row"><span class="rc-detail-k">Average</span><span class="rc-detail-v"><strong>{{ number_format($reportCard->average_marks, 2) }}%</strong></span></div>
                         <div class="rc-detail-row"><span class="rc-detail-k">Total marks</span><span class="rc-detail-v">{{ number_format($reportCard->total_marks, 2) }}</span></div>
-                        <div class="rc-detail-row"><span class="rc-detail-k">Final grade</span><span class="rc-detail-v">
-                            @php $fg = $reportCard->grade; $fgc = match(true) { in_array($fg, ['A+','A']) => 'rc-badge--green', in_array($fg, ['B+','B']) => 'rc-badge--blue', $fg === 'C' => 'rc-badge--yellow', default => 'rc-badge--red' }; @endphp
-                            <span class="rc-badge {{ $fgc }}">{{ $fg }}</span>
-                        </span></div>
                     </div>
                 </div>
             </div>

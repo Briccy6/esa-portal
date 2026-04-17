@@ -426,8 +426,7 @@ class MarksController extends Controller
         $query = Mark::with(['student', 'grade'])
             ->where('course_id', $course->id)
             ->where('branch_id', $branch->id)
-            ->when($request->exam_id, fn($q) => $q->where('exam_id', $request->exam_id))
-            ->orderBy('value', 'desc');
+            ->when($request->exam_id, fn($q) => $q->where('exam_id', $request->exam_id));
 
         $marks = $query->get();
         
@@ -437,22 +436,81 @@ class MarksController extends Controller
                           ->orderBy('full_name')
                           ->get();
 
+        // ========================================================================
+        // Calculate average marks per student and rank them
+        // ========================================================================
+        $studentPerformance = [];
+        
+        foreach ($students as $student) {
+            $studentMarks = $marks->where('student_id', $student->id);
+            
+            if ($studentMarks->isNotEmpty()) {
+                $totalMarks = 0;
+                $totalCount = 0;
+                $grades = [];
+                
+                foreach ($studentMarks as $mark) {
+                    // Convert each mark to percentage if needed
+                    $markOutOf = $mark->marks_out_of ?? 100;
+                    $percentage = ($mark->value / $markOutOf) * 100;
+                    $totalMarks += $percentage;
+                    $totalCount++;
+                    
+                    if ($mark->grade) {
+                        $grades[] = $mark->grade->name;
+                    }
+                }
+                
+                $avgMarks = $totalCount > 0 ? $totalMarks / $totalCount : 0;
+                $primaryGrade = !empty($grades) ? $grades[0] : '-';
+                
+                $studentPerformance[] = (object)[
+                    'student' => $student,
+                    'student_id' => $student->id,
+                    'total_marks' => $studentMarks->sum('value'),
+                    'average_marks' => $avgMarks,
+                    'marks_count' => $totalCount,
+                    'grade' => $primaryGrade,
+                    'pass_status' => $avgMarks >= 50 ? 'Pass' : 'Fail',
+                ];
+            } else {
+                // Student with no marks
+                $studentPerformance[] = (object)[
+                    'student' => $student,
+                    'student_id' => $student->id,
+                    'total_marks' => 0,
+                    'average_marks' => 0,
+                    'marks_count' => 0,
+                    'grade' => '-',
+                    'pass_status' => 'N/A',
+                ];
+            }
+        }
+        
+        // Sort by average marks in descending order (highest first)
+        usort($studentPerformance, function($a, $b) {
+            return $b->average_marks <=> $a->average_marks;
+        });
+
         // Class statistics
+        $allAverages = array_filter(array_map(fn($p) => $p->average_marks, $studentPerformance), fn($v) => $v > 0);
         $stats = [
             'total_students' => $students->count(),
-            'students_with_marks' => $marks->pluck('student_id')->unique()->count(),
-            'average_score' => $marks->whereNotNull('value')->avg('value'),
-            'highest_score' => $marks->max('value'),
-            'lowest_score' => $marks->min('value'),
-            'pass_rate' => $this->calculatePassRate($marks),
+            'students_with_marks' => count(array_filter($studentPerformance, fn($p) => $p->marks_count > 0)),
+            'average_score' => !empty($allAverages) ? array_sum($allAverages) / count($allAverages) : 0,
+            'highest_score' => !empty($allAverages) ? max($allAverages) : 0,
+            'lowest_score' => !empty($allAverages) ? min($allAverages) : 0,
+            'pass_rate' => count(array_filter($studentPerformance, fn($p) => $p->pass_status === 'Pass')) / max(1, count($studentPerformance)) * 100,
         ];
 
         // Grade distribution
-        $gradeDistribution = $marks->groupBy('grade.name')->map(function($group) {
-            return $group->count();
-        });
+        $gradeDistribution = collect($studentPerformance)
+            ->groupBy('grade')
+            ->map(function($group) {
+                return $group->count();
+            });
 
-        return view('staff.marks.class-report', compact('course', 'branch', 'marks', 'students', 'stats', 'gradeDistribution'));
+        return view('staff.marks.class-report', compact('course', 'branch', 'studentPerformance', 'students', 'stats', 'gradeDistribution'));
     }
 
     public function reportCard(Request $request)

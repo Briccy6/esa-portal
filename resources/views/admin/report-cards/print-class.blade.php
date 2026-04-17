@@ -239,12 +239,6 @@
             font-weight: bold;
         }
         
-        .grade-a { color: #27ae60; font-weight: bold; }
-        .grade-b { color: #3498db; font-weight: bold; }
-        .grade-c { color: #f39c12; font-weight: bold; }
-        .grade-d { color: #e67e22; font-weight: bold; }
-        .grade-f { color: #e74c3c; font-weight: bold; }
-        
         .summary-box {
             display: flex;
             justify-content: space-between;
@@ -439,8 +433,7 @@
                         <th style="width: 18%;">Exam (60%)</th>
                         <th style="width: 18%;">Test Avg (40%)</th>
                         <th style="width: 12%;">Total</th>
-                        <th style="width: 10%;">Grade</th>
-                        <th style="width: 12%;">Remarks</th>
+                        <th style="width: 22%;">Remarks</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -450,7 +443,6 @@
                             <td>{{ number_format($subject->exam_mark, 2) }}</td>
                             <td>{{ number_format($subject->test_average, 2) }}</td>
                             <td><strong>{{ number_format($subject->total_mark, 2) }}</strong></td>
-                            <td class="grade-{{ strtolower(substr($subject->grade, 0, 1)) }}">{{ $subject->grade }}</td>
                             <td>{{ $subject->remarks ?? '-' }}</td>
                         </tr>
                     @endforeach
@@ -460,7 +452,6 @@
                         <td><strong>{{ number_format($reportCard->subjects->avg('exam_mark'), 2) }}</strong></td>
                         <td><strong>{{ number_format($reportCard->subjects->avg('test_average'), 2) }}</strong></td>
                         <td><strong>{{ number_format($reportCard->average_marks, 2) }}</strong></td>
-                        <td class="grade-{{ strtolower(substr($reportCard->grade, 0, 1)) }}"><strong>{{ $reportCard->grade }}</strong></td>
                         <td>-</td>
                     </tr>
                 </tbody>
@@ -476,10 +467,6 @@
                     <div class="summary-item">
                         <span>Average:</span>
                         <strong>{{ number_format($reportCard->average_marks, 2) }}%</strong>
-                    </div>
-                    <div class="summary-item">
-                        <span>Grade:</span>
-                        <strong class="grade-{{ strtolower(substr($reportCard->grade, 0, 1)) }}">{{ $reportCard->grade }}</strong>
                     </div>
                 </div>
                 

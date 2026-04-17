@@ -43,8 +43,12 @@ class ReportCardController extends Controller
                     return $rc->term?->start_date?->timestamp ?? $rc->term_id;
                 })->values();
             })
-            ->sortByDesc(function ($items) {
-                return $items->max('updated_at') ?? $items->max('created_at');
+            ->sortBy(function ($items) {
+                // Sort by average marks DESC (highest first), then by position ASC
+                $avgMarks = $items->avg('average_marks');
+                $minPosition = $items->min('class_position') ?? 999999;
+                // Return composite sort key: negative average for DESC, then position
+                return [-$avgMarks, $minPosition];
             })
             ->values();
 
@@ -130,6 +134,8 @@ class ReportCardController extends Controller
             $bTs = $b->max('created_at')?->timestamp ?? 0;
             $aMinTs = $a->min('created_at')?->timestamp ?? 0;
             $bMinTs = $b->min('created_at')?->timestamp ?? 0;
+            $aAvg = $a->avg('average_marks');
+            $bAvg = $b->avg('average_marks');
 
             return match ($sort) {
                 'oldest' => $aMinTs <=> $bMinTs,
@@ -141,6 +147,8 @@ class ReportCardController extends Controller
                 'branch_desc' => $bBranch <=> $aBranch,
                 'outstanding_asc' => $this->getGroupOutstanding($a) <=> $this->getGroupOutstanding($b),
                 'outstanding_desc' => $this->getGroupOutstanding($b) <=> $this->getGroupOutstanding($a),
+                'marks_asc' => $aAvg <=> $bAvg,
+                'marks_desc' => $bAvg <=> $aAvg,
                 default => $bTs <=> $aTs, // newest
             };
         })->values();

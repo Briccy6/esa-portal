@@ -231,7 +231,6 @@
                                 <th><i class="fas fa-book me-1 text-info"></i> Course</th>
                                 <th class="text-center"><i class="fas fa-calendar me-1 text-secondary"></i> Year / terms</th>
                                 <th class="text-center"><i class="fas fa-percentage me-1 text-primary"></i> Average</th>
-                                <th class="text-center"><i class="fas fa-medal me-1 text-warning"></i> Grade</th>
                                 <th class="text-center"><i class="fas fa-trophy me-1 text-info"></i> Position</th>
                                 <th class="text-center"><i class="fas fa-circle me-1 text-secondary"></i> Status</th>
                                 <th class="text-center"><i class="fas fa-wallet me-1 text-danger"></i> Fees Status</th>
@@ -239,26 +238,11 @@
                             </tr>
                         </thead>
                         <tbody>
+                            @php $rankCounter = 1; @endphp
                             @foreach($reportCardGroups as $group)
                             @php
                                 $first = $group->first();
                                 $overallAvg = (float) $group->avg('average_marks');
-                                $overallGrade = match (true) {
-                                    $overallAvg >= 90 => 'A+',
-                                    $overallAvg >= 80 => 'A',
-                                    $overallAvg >= 70 => 'B+',
-                                    $overallAvg >= 60 => 'B',
-                                    $overallAvg >= 50 => 'C',
-                                    $overallAvg >= 40 => 'D',
-                                    default => 'F',
-                                };
-                                $ogc = match (true) {
-                                    in_array($overallGrade, ['A+','A'], true) => 'rc-badge--green',
-                                    in_array($overallGrade, ['B+','B'], true) => 'rc-badge--blue',
-                                    $overallGrade === 'C' => 'rc-badge--yellow',
-                                    $overallGrade === 'D' => 'rc-badge--gray',
-                                    default => 'rc-badge--red',
-                                };
                             @endphp
                             @php
                                 $groupGeneratedAt = $group->max('created_at')?->timestamp ?? 0;
@@ -287,19 +271,24 @@
                                 {{-- Student (once per group) --}}
                                 <td>
                                     <div class="rc-student-cell">
-                                        <div class="rc-avatar @if(!$first->student->passport_photo) rc-avatar--blue @endif">
-                                            @if($first->student->passport_photo)
-                                                @if(str_contains($first->student->passport_photo, 'http'))
-                                                    <img src="{{ $first->student->passport_photo }}" alt="{{ $first->student->full_name }}">
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <span style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: linear-gradient(135deg, #007bff, #0056b3); color: white; border-radius: 50%; font-weight: bold; font-size: 0.85rem; flex-shrink: 0;">
+                                                #{{ $rankCounter }}
+                                            </span>
+                                            <div class="rc-avatar @if(!$first->student->passport_photo) rc-avatar--blue @endif">
+                                                @if($first->student->passport_photo)
+                                                    @if(str_contains($first->student->passport_photo, 'http'))
+                                                        <img src="{{ $first->student->passport_photo }}" alt="{{ $first->student->full_name }}">
+                                                    @else
+                                                        <img src="{{ asset($first->student->passport_photo) }}" alt="{{ $first->student->full_name }}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                                        <div style="display: none; width: 34px; height: 34px; background: #0d6efd; border-radius: 50%; align-items: center; justify-content: center;">
+                                                            <div style="color: #fff; font-size: 0.8rem; font-weight: 700;">{{ strtoupper(substr($first->student->full_name, 0, 1)) }}</div>
+                                                        </div>
+                                                    @endif
                                                 @else
-                                                    <img src="{{ asset($first->student->passport_photo) }}" alt="{{ $first->student->full_name }}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                                                    <div style="display: none; width: 34px; height: 34px; background: #0d6efd; border-radius: 50%; align-items: center; justify-content: center;">
-                                                        <div style="color: #fff; font-size: 0.8rem; font-weight: 700;">{{ strtoupper(substr($first->student->full_name, 0, 1)) }}</div>
-                                                    </div>
+                                                    {{ strtoupper(substr($first->student->full_name, 0, 1)) }}
                                                 @endif
-                                            @else
-                                                {{ strtoupper(substr($first->student->full_name, 0, 1)) }}
-                                            @endif
+                                            </div>
                                         </div>
                                         <div class="rc-student-cell__info">
                                             <span class="rc-student-cell__name">{{ $first->student->full_name }}</span>
@@ -339,26 +328,6 @@
                                         <div class="rc-term-metric">
                                             <span class="rc-term-metric__t">{{ Str::limit($reportCard->term?->name ?? '—', 8) }}</span>
                                             <span class="rc-avg rc-avg--small {{ $avg >= 70 ? 'rc-avg--high' : ($avg >= 50 ? 'rc-avg--mid' : 'rc-avg--low') }}">{{ number_format($avg, 1) }}%</span>
-                                        </div>
-                                    @endforeach
-                                </td>
-
-                                {{-- Grade: overall + per term --}}
-                                <td class="text-center rc-cell-stack">
-                                    <span class="rc-badge {{ $ogc }} rc-badge--overall">{{ $overallGrade }}</span>
-                                    @foreach($group as $reportCard)
-                                        @php
-                                            $g = $reportCard->grade;
-                                            $gc = match(true) {
-                                                in_array($g, ['A+','A']) => 'rc-badge--green',
-                                                in_array($g, ['B+','B']) => 'rc-badge--blue',
-                                                $g === 'C'              => 'rc-badge--yellow',
-                                                $g === 'D'              => 'rc-badge--gray',
-                                                default                 => 'rc-badge--red',
-                                            };
-                                        @endphp
-                                        <div class="rc-term-metric rc-term-metric--center">
-                                            <span class="rc-badge rc-badge--tiny {{ $gc }}">{{ $g }}</span>
                                         </div>
                                     @endforeach
                                 </td>
@@ -482,6 +451,7 @@
                                     </div>
                                 </td>
                             </tr>
+                            @php $rankCounter++; @endphp
                             @endforeach
                         </tbody>
                     </table>
