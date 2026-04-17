@@ -1731,7 +1731,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     <span class="rc-dash">—</span>
                 </td>
                 <td class="text-center rc-cell-stack">
-                    <span class="rc-badge rc-badge--tiny rc-badge--yellow">Pending</span>
+                    <span class="rc-badge rc-badge--tiny rc-badge--${group.status === 'approved' ? 'green' : 'yellow'}">${group.status === 'approved' ? 'Approved' : 'Pending'}</span>
                 </td>
                 <td class="text-center rc-cell-stack">
                     ${outstandingDisplay}
@@ -1744,10 +1744,52 @@ document.addEventListener('DOMContentLoaded', function () {
                             Actions
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                            ${group.multiple_terms && !group.has_outstanding ? `
+                                <li>
+                                    <a href="{{ route('admin.report-cards.consolidated', '') }}" class="dropdown-item consolidatedViewLink" data-student="${group.student_id}" data-course="${group.course_id}" data-year="${group.academic_year_id}" data-terms="${group.term_ids.join(',')}" target="_blank">
+                                        <i class="fas fa-eye me-2 text-info"></i> View all (${group.term_ids.length} terms)
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="javascript:void(0);" class="dropdown-item consolidatedPrintLink" data-student="${group.student_id}" data-course="${group.course_id}" data-year="${group.academic_year_id}" data-terms="${group.term_ids.join(',')}" target="_blank">
+                                        <i class="fas fa-print me-2 text-success"></i> Print all (${group.term_ids.length} terms)
+                                    </a>
+                                </li>
+                            ` : (group.multiple_terms && group.has_outstanding ? `
+                                <li>
+                                    <span class="dropdown-item text-muted" style="cursor: default;">
+                                        <i class="fas fa-lock me-2 text-danger"></i> Print/Download blocked (Outstanding fees)
+                                    </span>
+                                </li>
+                            ` : (!group.has_outstanding ? `
+                                <li>
+                                    <a href="{{ route('admin.report-cards.show', '0') }}" class="dropdown-item singleViewLink" data-id="${group.first_report_card_id}" target="_blank">
+                                        <i class="fas fa-eye me-2 text-info"></i> View
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="{{ route('admin.report-cards.print', '0') }}" class="dropdown-item singlePrintLink" data-id="${group.first_report_card_id}" target="_blank">
+                                        <i class="fas fa-print me-2 text-success"></i> Print
+                                    </a>
+                                </li>
+                            ` : `
+                                <li>
+                                    <span class="dropdown-item text-muted" style="cursor: default;">
+                                        <i class="fas fa-lock me-2 text-danger"></i> Print/Download blocked (Outstanding fees)
+                                    </span>
+                                </li>
+                            `))}
+                            <li><hr class="dropdown-divider"></li>
                             <li>
-                                <span class="dropdown-item text-muted" style="cursor: default;">
-                                    <i class="fas fa-info-circle me-2"></i> View details in full page
-                                </span>
+                                ${group.multiple_terms ? `
+                                    <button class="dropdown-item text-danger" onclick="deleteReportCardsGroup('${group.student_id}', '${group.course_id}', '${group.academic_year_id}', '${group.term_ids.join(',')}', '${group.student_name.replace(/'/g, "\\'")}')">
+                                        <i class="fas fa-trash me-2"></i> Delete all (${group.term_ids.length} terms)
+                                    </button>
+                                ` : `
+                                    <button class="dropdown-item text-danger" onclick="deleteReportCard(${group.first_report_card_id}, '${group.student_name.replace(/'/g, "\\'")}')">
+                                        <i class="fas fa-trash me-2"></i> Delete report
+                                    </button>
+                                `}
                             </li>
                         </ul>
                     </div>
@@ -1755,6 +1797,30 @@ document.addEventListener('DOMContentLoaded', function () {
             `;
             
             tbody.appendChild(row);
+            
+            // Update route links after creating the row
+            row.querySelectorAll('.consolidatedViewLink').forEach(link => {
+                const terms = link.dataset.terms.split(',');
+                let href = "{{ route('admin.report-cards.consolidated', ['student_id' => 'STUDENT', 'course_id' => 'COURSE', 'academic_year_id' => 'YEAR']) }}";
+                href = href.replace('STUDENT', link.dataset.student).replace('COURSE', link.dataset.course).replace('YEAR', link.dataset.year);
+                // Add term_ids as query parameters
+                const termParams = terms.map((t, i) => `term_ids[${i}]=${t}`).join('&');
+                link.href = href + (href.includes('?') ? '&' : '?') + termParams;
+            });
+            row.querySelectorAll('.consolidatedPrintLink').forEach(link => {
+                const terms = link.dataset.terms.split(',');
+                let href = "{{ route('admin.report-cards.consolidated-print', ['student_id' => 'STUDENT', 'course_id' => 'COURSE', 'academic_year_id' => 'YEAR']) }}";
+                href = href.replace('STUDENT', link.dataset.student).replace('COURSE', link.dataset.course).replace('YEAR', link.dataset.year);
+                // Add term_ids as query parameters
+                const termParams = terms.map((t, i) => `term_ids[${i}]=${t}`).join('&');
+                link.href = href + (href.includes('?') ? '&' : '?') + termParams;
+            });
+            row.querySelectorAll('.singleViewLink').forEach(link => {
+                link.href = link.href.replace(/\/0$/, '/' + link.dataset.id);
+            });
+            row.querySelectorAll('.singlePrintLink').forEach(link => {
+                link.href = link.href.replace(/\/0$/, '/' + link.dataset.id);
+            });
         });
         
         // After rendering, reinitialize all Bootstrap dropdowns with a small delay

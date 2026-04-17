@@ -182,6 +182,14 @@ class ReportCardController extends Controller
                     $outstanding += (float) ($status['outstanding'] ?? 0);
                 }
 
+                // Calculate if group has outstanding fees
+                $hasOutstanding = (float) $outstanding > 0;
+                
+                // Get term IDs and report card IDs for actions
+                $termIds = $group->pluck('term_id')->unique()->sort()->values()->all();
+                $multipleTerms = count($termIds) > 1;
+                $reportCardIds = $group->pluck('id')->values()->all();
+
                 return [
                     'student_id' => $first->student_id,
                     'student_name' => $first->student->full_name,
@@ -189,10 +197,17 @@ class ReportCardController extends Controller
                     'course_name' => $first->course->course_name,
                     'branch_name' => $first->student->branch->name ?? 'N/A',
                     'year' => $first->academicYear->year,
+                    'academic_year_id' => $first->academic_year_id,
                     'overall_avg' => number_format($overallAvg, 1),
                     'overall_grade' => $overallGrade,
                     'outstanding' => number_format($outstanding, 2),
+                    'has_outstanding' => $hasOutstanding,
                     'terms' => $group->pluck('term.name')->filter()->values()->all(),
+                    'term_ids' => $termIds,
+                    'report_card_ids' => $reportCardIds,
+                    'multiple_terms' => $multipleTerms,
+                    'status' => $first->status ?? 'pending',
+                    'first_report_card_id' => $first->id,
                     'group_data' => [
                         'student' => strtolower($first->student->full_name ?? ''),
                         'course' => strtolower($first->course->course_name ?? ''),
