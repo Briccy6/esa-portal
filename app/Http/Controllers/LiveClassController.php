@@ -1354,6 +1354,30 @@ class LiveClassController extends Controller
                 ->latest()
                 ->get();
         }
+
+        // Ensure teacher is registered as participant if they're the class instructor
+        if (Auth::guard('teacher')->check() && Auth::guard('teacher')->user()->id == $liveClass->teacher_id) {
+            $teacher = Auth::guard('teacher')->user();
+            $existingTeacherParticipant = $liveClass->participants()
+                ->where('user_id', $teacher->id)
+                ->where('user_type', 'teacher')
+                ->where('is_active', true)
+                ->whereNull('left_at')
+                ->first();
+            
+            if (!$existingTeacherParticipant) {
+                $liveClass->participants()->create([
+                    'user_id'      => $teacher->id,
+                    'user_type'    => 'teacher',
+                    'email'        => $teacher->email,
+                    'name'         => $teacher->name,
+                    'joined_at'    => now(),
+                    'is_active'    => true,
+                    'ip_address'   => request()->ip(),
+                    'browser_info' => request()->userAgent(),
+                ]);
+            }
+        }
         
         // Determine which view to show based on user type
         $isPublicUser = false;
@@ -1369,6 +1393,8 @@ class LiveClassController extends Controller
         $participantName = 'Guest';
         if (Auth::guard('student')->check()) {
             $participantName = Auth::guard('student')->user()->full_name;
+        } elseif (Auth::guard('teacher')->check() && $isTeacher) {
+            $participantName = Auth::guard('teacher')->user()->name;
         } elseif (isset($paymentSession['name'])) {
             $participantName = $paymentSession['name'];
         } elseif (isset($previousPayment)) {
@@ -1384,11 +1410,14 @@ class LiveClassController extends Controller
         $viewerParticipantId = session('lc_viewer_participant_' . $liveClass->id);
         
         // Determine the correct view based on user type
-        if (Auth::guard('student')->check() || $isPublicUser) {
+        if (Auth::guard('teacher')->check() && Auth::guard('teacher')->user()->id == $liveClass->teacher_id) {
+            // Teacher gets the broadcaster room with screen share and camera controls
+            $viewName = 'teacher.live-classes.room';
+        } elseif (Auth::guard('student')->check() || $isPublicUser) {
             // Student and Public users get the WebRTC viewer room
             $viewName = 'live-classes.public-room';
         } else {
-            // Admin/teacher/staff get the admin room view
+            // Admin/staff get the admin room view
             $viewName = 'live-classes.room';
         }
         
