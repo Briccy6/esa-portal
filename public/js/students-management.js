@@ -87,13 +87,18 @@ function fetchStudents(url) {
         const doc = parser.parseFromString(html, 'text/html');
         const newContent = doc.querySelector('#studentsTableContainer');
         
+        hideLoading(container);
+        
         if (newContent) {
             container.innerHTML = newContent.innerHTML;
         } else {
             container.innerHTML = html;
         }
         
-        hideLoading(container);
+        // Re-enable pointer events after content is updated
+        container.style.pointerEvents = 'auto';
+        container.style.opacity = '1';
+        
         initializeTooltips();
     })
     .catch(error => {
