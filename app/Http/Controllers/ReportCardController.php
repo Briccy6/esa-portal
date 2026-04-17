@@ -1304,6 +1304,10 @@ class ReportCardController extends Controller
 
     public function printClassReports(Request $request)
     {
+        // Increase memory limit for large PDF generation (157+ students)
+        $currentLimit = ini_get('memory_limit');
+        ini_set('memory_limit', '512M');
+        
         $request->validate([
             'course_id' => 'required|exists:courses,id',
             'academic_year_id' => 'required|exists:academic_years,id',
@@ -1315,6 +1319,10 @@ class ReportCardController extends Controller
         $termIds = $this->normalizeTermIds($request);
         
         \Log::info('═══ printClassReports START ═══');
+        \Log::info('Memory configuration:', [
+            'previous_limit' => $currentLimit,
+            'new_limit' => ini_get('memory_limit'),
+        ]);
         \Log::info('Request parameters:', [
             'course_id' => $request->course_id,
             'academic_year_id' => $request->academic_year_id,
@@ -1373,9 +1381,16 @@ class ReportCardController extends Controller
         }
 
         $schoolInfo = SchoolInformation::getActive();
+        
+        // Lazy load photos only when needed to reduce memory footprint
         $studentPhotosByReportId = [];
         foreach ($reportCards as $reportCard) {
-            $studentPhotosByReportId[$reportCard->id] = $this->resolveStudentPhotoData($reportCard->student->passport_photo);
+            // Only load photo if file exists to avoid unnecessary processing
+            if ($reportCard->student->passport_photo) {
+                $studentPhotosByReportId[$reportCard->id] = $this->resolveStudentPhotoData($reportCard->student->passport_photo);
+            } else {
+                $studentPhotosByReportId[$reportCard->id] = ['base64' => null, 'mime' => 'image/jpeg'];
+            }
         }
 
         // Calculate positions efficiently for all report cards in bulk (by term)
