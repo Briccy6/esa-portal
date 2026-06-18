@@ -235,6 +235,11 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
+// Shared academic year switcher for admin, staff, and teacher portals
+Route::post('/academic-year/switch', [\App\Http\Controllers\Admin\AcademicYearController::class, 'switch'])
+    ->middleware('auth:admin,staff,teacher')
+    ->name('academic_year.switch');
+
 // Admin auth routes
 Route::prefix('admin')->group(function () {
     Route::get('/login', [AdminAuthController::class, 'showLoginForm'])->name('admin.login.form');
@@ -284,7 +289,7 @@ Route::middleware('auth:teacher')->prefix('teacher')->name('teacher.')->group(fu
 });
 
 // Admin protected routes
-Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth:admin', 'admin.academic_year'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\AdminAuthController::class, 'dashboard'])->name('dashboard');
 
     Route::resource('students', StudentController::class);
@@ -1015,8 +1020,12 @@ Route::middleware('auth:teacher')->get('/api/teacher/branch/{branchId}/courses',
         
         \Log::info('Course IDs found', ['course_ids' => $courseIds, 'count' => count($courseIds)]);
 
-        // Fetch the actual course records
-        $courses = \App\Models\Course::whereIn('id', $courseIds)
+        // Fetch the actual course records for the selected academic year
+        $coursesQuery = \App\Models\Course::whereIn('id', $courseIds);
+        if ($yearId = \App\Services\AcademicYearContext::selectedId()) {
+            $coursesQuery->where('academic_year_id', $yearId);
+        }
+        $courses = $coursesQuery
             ->orderBy('course_name')
             ->get(['id', 'course_name', 'course_code']);
         
@@ -1099,10 +1108,16 @@ Route::middleware('auth:teacher')->get('/api/teacher/branch/{branchId}/course/{c
         $branch = \App\Models\Branch::findOrFail($branchId);
         $course = \App\Models\Course::findOrFail($courseId);
         
-        // Get students enrolled in this branch and course
-        $students = \App\Models\Student::where('course_id', $courseId)
+        // Get students enrolled in this branch and course for the selected academic year
+        $studentsQuery = \App\Models\Student::where('course_id', $courseId)
             ->where('branch_id', $branchId)
-            ->where('status', '!=', 'inactive')
+            ->where('status', '!=', 'inactive');
+
+        if ($yearId = \App\Services\AcademicYearContext::selectedId()) {
+            $studentsQuery->where('academic_year_id', $yearId);
+        }
+
+        $students = $studentsQuery
             ->orderBy('full_name')
             ->get(['id', 'full_name', 'reg_number', 'email']);
         

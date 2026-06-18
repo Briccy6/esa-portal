@@ -1,5 +1,6 @@
 @extends('dos.layout')
 @section('content')
+@include('partials.academic-year-banner')
 @if(session('meet_link'))
     <div class="alert alert-success">
         Google Meet Link: <a href="{{ session('meet_link') }}" target="_blank">{{ session('meet_link') }}</a>

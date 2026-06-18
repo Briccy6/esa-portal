@@ -116,6 +116,16 @@
                         <input type="text" name="telephone" id="telephoneSearch" class="form-control search-input" placeholder="Phone" value="{{ request('telephone') }}">
                     </div>
                     <div class="col-md-2">
+                        <select name="academic_year_id" id="academicYearFilter" class="form-control search-input" data-default-year="{{ $selectedYearId ?? ($adminSelectedAcademicYear?->id ?? '') }}">
+                            <option value="">All Academic Years</option>
+                            @foreach(($adminAcademicYears ?? []) as $year)
+                                <option value="{{ $year->id }}" @selected(($selectedYearId ?? request('academic_year_id')) == $year->id)>
+                                    {{ $year->year }}{{ $year->is_ongoing ? ' (Current)' : '' }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-2">
                         <input type="text" name="course" id="courseSearch" class="form-control search-input" placeholder="Course" value="{{ request('course') }}">
                     </div>
                     <div class="col-md-1">
@@ -1042,12 +1052,13 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Add event listeners to all search inputs
-    const searchInputs = ['nameSearch', 'regNumberSearch', 'emailSearch', 'telephoneSearch', 'courseSearch'];
+    const searchInputs = ['nameSearch', 'regNumberSearch', 'emailSearch', 'telephoneSearch', 'academicYearFilter', 'courseSearch'];
     
     searchInputs.forEach(inputId => {
         const input = document.getElementById(inputId);
         if (input) {
-            input.addEventListener('input', function() {
+            const eventType = input.tagName === 'SELECT' ? 'change' : 'input';
+            input.addEventListener(eventType, function() {
                 console.log('Search input detected:', inputId, this.value);
                 clearTimeout(searchTimeout);
                 searchTimeout = setTimeout(performSearch, searchDelay);
@@ -1088,6 +1099,7 @@ function performSearch() {
         reg_number: document.getElementById('regNumberSearch').value.trim(),
         email: document.getElementById('emailSearch').value.trim(),
         telephone: document.getElementById('telephoneSearch').value.trim(),
+        academic_year_id: document.getElementById('academicYearFilter').value,
         course: document.getElementById('courseSearch').value.trim()
     };
 
@@ -1200,6 +1212,10 @@ function clearFilters() {
     document.getElementById('regNumberSearch').value = '';
     document.getElementById('emailSearch').value = '';
     document.getElementById('telephoneSearch').value = '';
+    const yearFilter = document.getElementById('academicYearFilter');
+    if (yearFilter) {
+        yearFilter.value = yearFilter.dataset.defaultYear || '';
+    }
     document.getElementById('courseSearch').value = '';
     performSearch();
 }

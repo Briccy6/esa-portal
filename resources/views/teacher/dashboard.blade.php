@@ -3,6 +3,7 @@
 
 @section('content')
 <div class="container py-4">
+@include('partials.academic-year-banner')
     <h1 class="mb-4">Welcome, {{ Auth::guard('teacher')->user()->teacher_name ?? 'Teacher' }}!</h1>
     <div class="row g-4">
         <!-- Marks Card -->

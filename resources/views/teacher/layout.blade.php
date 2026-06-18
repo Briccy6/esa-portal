@@ -433,6 +433,12 @@
         </span>
         
         <div class="ms-auto d-flex align-items-center">
+            @include('partials.academic-year-switcher', [
+                'switcherClass' => 'me-3',
+                'labelClass' => 'text-white-50',
+                'selectClass' => 'bg-dark text-white border-secondary',
+            ])
+
             <!-- Message Icon Dropdown -->
             <div class="dropdown me-3">
                 <a href="#" class="text-white position-relative" id="messagesDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 1.5rem;">

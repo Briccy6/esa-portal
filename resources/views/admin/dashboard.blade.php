@@ -134,6 +134,10 @@
 @section('content')
 <div class="container-fluid">
 
+    @if(isset($selectedAcademicYear) && $selectedAcademicYear)
+    @include('partials.academic-year-banner')
+    @endif
+
     <!-- Summary Cards -->
     <div class="row mb-4">
         <div class="col-xl-3 col-md-6 mb-4">

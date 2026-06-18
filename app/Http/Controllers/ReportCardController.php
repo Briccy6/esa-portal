@@ -1740,6 +1740,7 @@ class ReportCardController extends Controller
 
         // Get student's report cards with term-specific access status
         $reportCards = ReportCard::where('student_id', $student->id)
+                                ->where('academic_year_id', $student->academic_year_id)
                                 ->with(['course', 'academicYear', 'term'])
                                 ->orderByDesc('academic_year_id')
                                 ->orderBy('term_id')

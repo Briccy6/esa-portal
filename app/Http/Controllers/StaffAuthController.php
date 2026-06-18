@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Services\AcademicYearContext;
 
 class StaffAuthController extends Controller
 {
@@ -27,7 +28,6 @@ class StaffAuthController extends Controller
             $staff = Auth::guard('staff')->user();
             $role = $staff->role;
 
-            // Log the authentication attempt for debugging
             \Log::info('Staff login attempt', [
                 'email' => $request->email,
                 'role' => $role,
@@ -56,120 +56,133 @@ class StaffAuthController extends Controller
         return redirect()->route('staff.login');
     }
 
-  // Replace the dashboard() method in App\Http\Controllers\StaffAuthController.php
-// Replace the dashboard() method in App\Http\Controllers\StaffAuthController.php
+    public function dashboard()
+    {
+        $staff = Auth::guard('staff')->user();
+        $role = $staff->role;
+        $selectedAcademicYear = AcademicYearContext::selected();
+        $academicYearId = $selectedAcademicYear?->id;
 
-public function dashboard()
-{
-    $staff = Auth::guard('staff')->user();
-    $role = $staff->role;
+        \Log::info('Staff dashboard access', [
+            'staff_id' => $staff->id,
+            'role' => $role,
+            'email' => $staff->email
+        ]);
 
-    \Log::info('Staff dashboard access', [
-        'staff_id' => $staff->id,
-        'role' => $role,
-        'email' => $staff->email
-    ]);
+        if ($role === 'DOS') {
+            $attendanceQuery = \App\Models\Attendance::query()
+                ->where('date', '>=', now()->subDays(7)->toDateString());
 
-    if ($role === 'DOS') {
-        $attendanceStats = \App\Models\Attendance::selectRaw('date, COUNT(*) as total, SUM(status = "P") as present, SUM(status != "P") as absent')
-            ->where('date', '>=', now()->subDays(7)->toDateString())
-            ->groupBy('date')
-            ->orderBy('date')
-            ->get();
+            if ($academicYearId) {
+                $attendanceQuery->whereHas('student', fn ($q) => $q->where('academic_year_id', $academicYearId));
+            }
 
-        $studiedHours = \App\Models\TeacherDaily::selectRaw('date, SUM(hours_studied) as hours')
-            ->where('date', '>=', now()->subDays(7)->toDateString())
-            ->groupBy('date')
-            ->orderBy('date')
-            ->get();
+            $attendanceStats = $attendanceQuery
+                ->selectRaw('date, COUNT(*) as total, SUM(status = "P") as present, SUM(status != "P") as absent')
+                ->groupBy('date')
+                ->orderBy('date')
+                ->get();
 
-        return view('staff.dashboard_dos', compact('attendanceStats', 'studiedHours'));
-    } 
-    elseif ($role === 'Accountant') {
-        $branches = $staff->branches; // Eloquent relationship
-        $branchStats = [];
-        
-        // Get all expenses for this staff
-        $allExpenses = \App\Models\Expense::where('paid_by', $staff->id)->get();
-        
-        foreach ($branches as $branch) {
-            // Get all students in this branch
-            $studentIds = \App\Models\Student::where('branch_id', $branch->id)->pluck('id');
+            $studiedHours = \App\Models\TeacherDaily::selectRaw('date, SUM(hours_studied) as hours')
+                ->where('date', '>=', now()->subDays(7)->toDateString())
+                ->groupBy('date')
+                ->orderBy('date')
+                ->get();
 
-            // Sum income for all students in this branch
-            $totalIncome = \App\Models\StudentTransaction::whereIn('status', ['successful', 'paid'])
-                ->whereIn('student_id', $studentIds)
-                ->sum('amount');
-
-            // Expenses: cannot filter by branch, so show all for this staff
-            $branchExpenses = $allExpenses; // or filter by date/type if needed
-            $totalExpenses = $branchExpenses->sum('amount');
-            $expensesCount = $branchExpenses->count();
-
-            $studentsCount = $studentIds->count();
-
-            // Get courses and their student counts for this branch
-            $courseData = \App\Models\Course::whereHas('branches', function($q) use ($branch) {
-                $q->where('branch_id', $branch->id);
-            })
-            ->withCount(['students' => function($q) use ($branch) {
-                $q->where('branch_id', $branch->id);
-            }])
-            ->get()
-            ->map(function($course) {
-                return [
-                    'id' => $course->id, // NEW: Add course ID
-                    'name' => $course->abbreviation ?? $course->course_name,
-                    'count' => $course->students_count
-                ];
-            })
-            ->filter(function($course) {
-                return $course['count'] > 0; // Only show courses with students
-            })
-            ->values()
-            ->toArray();
-
-            $branchStats[] = [
-                'branch' => $branch,
-                'totalIncome' => $totalIncome,
-                'totalExpenses' => $totalExpenses,
-                'studentsCount' => $studentsCount,
-                'expensesCount' => $expensesCount,
-                'courseData' => $courseData // NEW: Course data for charts
-            ];
+            return view('staff.dashboard_dos', compact('attendanceStats', 'studiedHours', 'selectedAcademicYear'));
         }
-        
-        return view('staff.dashboard_accountant', compact('branchStats'));
-    } 
-    else {
+
+        if ($role === 'Accountant') {
+            $branches = $staff->branches;
+            $branchStats = [];
+            $allExpenses = AcademicYearContext::filterExpenses(
+                \App\Models\Expense::where('paid_by', $staff->id)
+            )->get();
+
+            foreach ($branches as $branch) {
+                $studentQuery = \App\Models\Student::where('branch_id', $branch->id);
+                if ($academicYearId) {
+                    $studentQuery->where('academic_year_id', $academicYearId);
+                }
+                $studentIds = $studentQuery->pluck('id');
+
+                $totalIncome = \App\Models\StudentTransaction::whereIn('status', ['successful', 'paid'])
+                    ->whereIn('student_id', $studentIds)
+                    ->sum('amount');
+
+                $branchExpenses = $allExpenses;
+                $totalExpenses = $branchExpenses->sum('amount');
+                $expensesCount = $branchExpenses->count();
+                $studentsCount = $studentIds->count();
+
+                $courseQuery = \App\Models\Course::whereHas('branches', function ($q) use ($branch) {
+                    $q->where('branch_id', $branch->id);
+                });
+
+                if ($academicYearId) {
+                    $courseQuery->where('academic_year_id', $academicYearId);
+                }
+
+                $courseData = $courseQuery
+                    ->withCount(['students' => function ($q) use ($branch, $academicYearId) {
+                        $q->where('branch_id', $branch->id);
+                        if ($academicYearId) {
+                            $q->where('academic_year_id', $academicYearId);
+                        }
+                    }])
+                    ->get()
+                    ->map(function ($course) {
+                        return [
+                            'id' => $course->id,
+                            'name' => $course->abbreviation ?? $course->course_name,
+                            'count' => $course->students_count,
+                        ];
+                    })
+                    ->filter(fn ($course) => $course['count'] > 0)
+                    ->values()
+                    ->toArray();
+
+                $branchStats[] = [
+                    'branch' => $branch,
+                    'totalIncome' => $totalIncome,
+                    'totalExpenses' => $totalExpenses,
+                    'studentsCount' => $studentsCount,
+                    'expensesCount' => $expensesCount,
+                    'courseData' => $courseData,
+                ];
+            }
+
+            return view('staff.dashboard_accountant', compact('branchStats', 'selectedAcademicYear'));
+        }
+
         abort(403, 'Unauthorized action. Role: ' . $role);
     }
-}
 
-/**
- * Get students by course and branch for modal display
- */
-public function getStudentsByCourseAndBranch($courseId, $branchId)
-{
-    $staff = Auth::guard('staff')->user();
-    
-    // Verify staff has access to this branch
-    $hasAccess = $staff->branches()->where('branches.id', $branchId)->exists();
-    
-    if (!$hasAccess) {
-        return response()->json(['error' => 'Unauthorized'], 403);
+    public function getStudentsByCourseAndBranch($courseId, $branchId)
+    {
+        $staff = Auth::guard('staff')->user();
+
+        $hasAccess = $staff->branches()->where('branches.id', $branchId)->exists();
+
+        if (! $hasAccess) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $studentsQuery = \App\Models\Student::where('course_id', $courseId)
+            ->where('branch_id', $branchId);
+
+        if ($yearId = AcademicYearContext::selectedId()) {
+            $studentsQuery->where('academic_year_id', $yearId);
+        }
+
+        $students = $studentsQuery
+            ->select('id', 'full_name', 'reg_number', 'email', 'phone', 'passport_photo')
+            ->orderBy('full_name')
+            ->get();
+
+        return response()->json([
+            'students' => $students,
+            'count' => $students->count(),
+        ]);
     }
-    
-    // Get students for this course and branch
-    $students = \App\Models\Student::where('course_id', $courseId)
-        ->where('branch_id', $branchId)
-        ->select('id', 'full_name', 'reg_number', 'email', 'phone', 'passport_photo')
-        ->orderBy('full_name')
-        ->get();
-    
-    return response()->json([
-        'students' => $students,
-        'count' => $students->count()
-    ]);
-}
 }

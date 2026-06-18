@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AcademicYear;
+use App\Services\AcademicYearContext;
 use Illuminate\Http\Request;
 
 class AcademicYearController extends Controller
@@ -28,7 +29,12 @@ class AcademicYearController extends Controller
     'is_ongoing' => 'required|boolean',
 ]);
 
-        AcademicYear::create($validated);
+        $year = AcademicYear::create($validated);
+
+        if ($validated['is_ongoing']) {
+            AcademicYear::ensureSingleOngoing($year->id);
+            AcademicYearContext::setSelected($year->id);
+        }
 
         return redirect()->route('admin.academic_year.index')->with('success', 'Academic year created successfully.');
     }
@@ -49,6 +55,11 @@ class AcademicYearController extends Controller
 
         $academicYear->update($validated);
 
+        if ($validated['is_ongoing']) {
+            AcademicYear::ensureSingleOngoing($academicYear->id);
+            AcademicYearContext::setSelected($academicYear->id);
+        }
+
         return redirect()->route('admin.academic_year.index')->with('success', 'Academic year updated successfully.');
     }
 
@@ -59,5 +70,16 @@ class AcademicYearController extends Controller
     }
     public function lock(){
         return redirect()->route('admin.academic_year.index')->with('error', 'Access to this function is restricted.');
+    }
+
+    public function switch(Request $request)
+    {
+        $validated = $request->validate([
+            'academic_year_id' => 'required|exists:academic_years,id',
+        ]);
+
+        AcademicYearContext::setSelected((int) $validated['academic_year_id']);
+
+        return back()->with('success', 'Academic year view updated.');
     }
 }

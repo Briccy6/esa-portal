@@ -177,7 +177,12 @@
                 ESA-Parnel Staff Portal
             </a>
             
-            <div class="navbar-nav ms-auto">
+            <div class="navbar-nav ms-auto d-flex align-items-center">
+                @include('partials.academic-year-switcher', [
+                    'switcherClass' => 'me-3',
+                    'labelClass' => 'text-white-50',
+                    'selectClass' => 'bg-dark text-white border-secondary',
+                ])
                 <div class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                         <i class="fas fa-user me-2"></i>

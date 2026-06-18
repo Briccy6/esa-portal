@@ -18,6 +18,7 @@ use App\Models\StudentSubscription;
 use App\Models\Client;
 use App\Models\ClientTransaction;
 use App\Models\ClientSubscription;
+use App\Services\AcademicYearContext;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -59,17 +60,26 @@ class AdminAuthController extends Controller
     public function dashboard(Request $request)
     {
         try {
+            $selectedAcademicYear = AcademicYearContext::selected();
+            $academicYearId = $selectedAcademicYear?->id;
+
             // Basic counts (fast queries)
-            $totalStudents = Student::count();
-            $pendingTransactions = StudentTransaction::where('status', 'pending')->count();
+            $totalStudents = AcademicYearContext::filterStudents(Student::query())->count();
+            $pendingTransactions = AcademicYearContext::filterTransactions(
+                StudentTransaction::where('status', 'pending')
+            )->count();
             $totalTeachers = class_exists(Teacher::class) ? Teacher::count() : 0;
             $totalStaff = class_exists(Staff::class) ? Staff::count() : 0;
             
-            // Calculate total revenue from ALL successful student transactions
-            $totalRevenue = StudentTransaction::where('status', 'successful')->sum('amount') ?? 0;
+            // Calculate total revenue from successful student transactions for selected year
+            $totalRevenue = AcademicYearContext::filterTransactions(
+                StudentTransaction::where('status', 'successful')
+            )->sum('amount') ?? 0;
             
             // Revenue breakdown by type for detailed analysis
-            $revenueByType = StudentTransaction::where('status', 'successful')
+            $revenueByType = AcademicYearContext::filterTransactions(
+                StudentTransaction::where('status', 'successful')
+            )
                 ->select('type', DB::raw('sum(amount) as total'))
                 ->groupBy('type')
                 ->pluck('total', 'type')
@@ -85,16 +95,18 @@ class AdminAuthController extends Controller
             $studentCardRevenue = $revenueByType['student_card'] ?? 0;
             $examRevenue = $revenueByType['exam_purchase'] ?? 0;
             
-            // Calculate total expenses from expenses table
-            $totalExpenses = Expense::sum('amount') ?? 0;
+            // Calculate total expenses for selected academic year
+            $totalExpenses = AcademicYearContext::filterExpenses(Expense::query())->sum('amount') ?? 0;
             
             $netProfit = $totalRevenue - $totalExpenses;
             $profitMargin = $totalRevenue > 0 ? round(($netProfit / $totalRevenue) * 100, 2) : 0;
             
-            // Monthly breakdowns for ALL transaction types
-            $monthlyRevenueByType = StudentTransaction::where('status', 'successful')
-                ->whereMonth('created_at', Carbon::now()->month)
-                ->whereYear('created_at', Carbon::now()->year)
+            // Monthly breakdowns for transaction types in selected year
+            $monthlyRevenueByType = AcademicYearContext::filterTransactions(
+                StudentTransaction::where('status', 'successful')
+                    ->whereMonth('created_at', Carbon::now()->month)
+                    ->whereYear('created_at', Carbon::now()->year)
+            )
                 ->select('type', DB::raw('sum(amount) as total'))
                 ->groupBy('type')
                 ->pluck('total', 'type')
@@ -110,8 +122,12 @@ class AdminAuthController extends Controller
             $monthlyExamRevenue = $monthlyRevenueByType['exam_purchase'] ?? 0;
 
             // Recent data for dashboard tables
-            $recentStudents = Student::with(['branch', 'course'])->latest()->take(10)->get();
-            $recentExpenses = Expense::with(['branch'])->latest()->take(10)->get();
+            $recentStudents = AcademicYearContext::filterStudents(
+                Student::with(['branch', 'course'])
+            )->latest()->take(10)->get();
+            $recentExpenses = AcademicYearContext::filterExpenses(
+                Expense::with(['branch'])
+            )->latest()->take(10)->get();
 
             // Client statistics
             $totalClients = Client::count();
@@ -122,80 +138,91 @@ class AdminAuthController extends Controller
             $recentClients = Client::with(['activeSubscription'])->latest()->take(5)->get();
 
             // NESA Registration Statistics
-            $nesaRegistered = Student::where('nesa_registered', true)->count();
-            $nesaNotRegistered = Student::where('nesa_registered', false)->count();
+            $nesaRegistered = AcademicYearContext::filterStudents(
+                Student::where('nesa_registered', true)
+            )->count();
+            $nesaNotRegistered = AcademicYearContext::filterStudents(
+                Student::where('nesa_registered', false)
+            )->count();
             
             // Student Approval Statistics (using registration fee payment as approval indicator)
-            $approvedStudents = Student::where('payed_registration_fees', true)->count();
-            $notApprovedStudents = Student::where('payed_registration_fees', false)->count();
+            $approvedStudents = AcademicYearContext::filterStudents(
+                Student::where('payed_registration_fees', true)
+            )->count();
+            $notApprovedStudents = AcademicYearContext::filterStudents(
+                Student::where('payed_registration_fees', false)
+            )->count();
 
             // Student demographics
-            $studentsByGender = Student::select('sex', DB::raw('count(*) as total'))
+            $studentsByGender = AcademicYearContext::filterStudents(Student::query())
+                ->select('sex', DB::raw('count(*) as total'))
                 ->groupBy('sex')
                 ->get();
 
-            $registrationPaidPercent = Student::where('payed_registration_fees', true)->count() > 0 
-                ? round((Student::where('payed_registration_fees', true)->count() / Student::count()) * 100, 1)
+            $registrationPaidPercent = $totalStudents > 0
+                ? round(($approvedStudents / $totalStudents) * 100, 1)
                 : 0;
 
             $tuitionPaidPercent = 0; // No tuition fee tracking
 
             // Comprehensive fee payment data from student_transactions
             $feePaymentData = [
-                'registration_fees' => StudentTransaction::where('status', 'successful')
-                    ->whereIn('type', ['registration', 'registration_fee'])
-                    ->sum('amount'),
-                'school_fees' => StudentTransaction::where('status', 'successful')
-                    ->where('type', 'school_fee')
-                    ->sum('amount'),
-                'subscription_fees' => StudentTransaction::where('status', 'successful')
-                    ->where('type', 'subscription')
-                    ->sum('amount'),
-                'student_card_fees' => StudentTransaction::where('status', 'successful')
-                    ->where('type', 'student_card')
-                    ->sum('amount'),
-                'exam_fees' => StudentTransaction::where('status', 'successful')
-                    ->where('type', 'exam_purchase')
-                    ->sum('amount'),
-                'token_fees' => StudentTransaction::where('status', 'successful')
-                    ->where('type', 'token_purchase')
-                    ->sum('amount'),
-                'live_class_fees' => StudentTransaction::where('status', 'successful')
-                    ->where('type', 'live_class')
-                    ->sum('amount'),
-                'resource_fees' => StudentTransaction::where('status', 'successful')
-                    ->where('type', 'resource')
-                    ->sum('amount')
+                'registration_fees' => AcademicYearContext::filterTransactions(
+                    StudentTransaction::where('status', 'successful')->whereIn('type', ['registration', 'registration_fee'])
+                )->sum('amount'),
+                'school_fees' => AcademicYearContext::filterTransactions(
+                    StudentTransaction::where('status', 'successful')->where('type', 'school_fee')
+                )->sum('amount'),
+                'subscription_fees' => AcademicYearContext::filterTransactions(
+                    StudentTransaction::where('status', 'successful')->where('type', 'subscription')
+                )->sum('amount'),
+                'student_card_fees' => AcademicYearContext::filterTransactions(
+                    StudentTransaction::where('status', 'successful')->where('type', 'student_card')
+                )->sum('amount'),
+                'exam_fees' => AcademicYearContext::filterTransactions(
+                    StudentTransaction::where('status', 'successful')->where('type', 'exam_purchase')
+                )->sum('amount'),
+                'token_fees' => AcademicYearContext::filterTransactions(
+                    StudentTransaction::where('status', 'successful')->where('type', 'token_purchase')
+                )->sum('amount'),
+                'live_class_fees' => AcademicYearContext::filterTransactions(
+                    StudentTransaction::where('status', 'successful')->where('type', 'live_class')
+                )->sum('amount'),
+                'resource_fees' => AcademicYearContext::filterTransactions(
+                    StudentTransaction::where('status', 'successful')->where('type', 'resource')
+                )->sum('amount'),
             ];
 
-            // Expenses by branch and type (fixed to use branch names)
-            $expensesByBranch = Expense::select('branches.name as branch', DB::raw('sum(expenses.amount) as total'))
-                ->leftJoin('branches', 'expenses.paid_by', '=', 'branches.id')
-                ->groupBy('branches.name', 'expenses.paid_by')
-                ->get();
+            // Expenses by branch and type
+            $expensesByBranch = AcademicYearContext::filterExpenses(
+                Expense::select('branches.name as branch', DB::raw('sum(expenses.amount) as total'))
+                    ->leftJoin('branches', 'expenses.paid_by', '=', 'branches.id')
+            )->groupBy('branches.name', 'expenses.paid_by')->get();
                 
-            $expensesByType = Expense::select('expense_type', DB::raw('sum(amount) as total'))
-                ->groupBy('expense_type')
-                ->get();
+            $expensesByType = AcademicYearContext::filterExpenses(
+                Expense::select('expense_type', DB::raw('sum(amount) as total'))
+            )->groupBy('expense_type')->get();
             
-            $expenseTrend = Expense::select(
+            $expenseTrend = AcademicYearContext::filterExpenses(
+                Expense::select(
                     DB::raw('DATE_FORMAT(expense_date, "%b %Y") as month'),
                     DB::raw('sum(amount) as amount'),
                     DB::raw('YEAR(expense_date) as year'),
                     DB::raw('MONTH(expense_date) as month_num')
-                )
-                ->where('expense_date', '>=', Carbon::now()->subMonths(6))
-                ->groupBy('year', 'month_num', 'month')
+                )->where('expense_date', '>=', Carbon::now()->subMonths(6))
+            )->groupBy('year', 'month_num', 'month')
                 ->orderBy('year')
                 ->orderBy('month_num')
                 ->get();
+
+            $yearFilterSql = $academicYearId ? ' AND s.academic_year_id = ' . (int) $academicYearId : '';
 
             // Branch financial health with actual revenue from student transactions
             $branchFinancialHealth = Branch::select('branches.name', 
                     DB::raw('(SELECT COALESCE(sum(st.amount), 0) 
                               FROM student_transactions st 
                               JOIN students s ON st.student_id = s.id 
-                              WHERE s.branch_id = branches.id AND st.status = "successful") as revenue'),
+                              WHERE s.branch_id = branches.id AND st.status = "successful"' . $yearFilterSql . ') as revenue'),
                     DB::raw('(SELECT COALESCE(sum(expenses.amount), 0) FROM expenses WHERE expenses.paid_by = branches.id) as expenses'))
                 ->get();
 
@@ -205,22 +232,23 @@ class AdminAuthController extends Controller
                               FROM student_transactions st 
                               JOIN students s ON st.student_id = s.id 
                               WHERE s.branch_id = branches.id AND st.status = "successful" 
-                              AND st.type IN ("school_fee", "registration", "registration_fee")) as expected'))
+                              AND st.type IN ("school_fee", "registration", "registration_fee")' . $yearFilterSql . ') as expected'))
                 ->get();
 
             $tuitionPaidByBranch = Branch::select('name as branch',
                     DB::raw('(SELECT COALESCE(sum(st.amount), 0) 
                               FROM student_transactions st 
                               JOIN students s ON st.student_id = s.id 
-                              WHERE s.branch_id = branches.id AND st.status = "successful") as paid'))
+                              WHERE s.branch_id = branches.id AND st.status = "successful"' . $yearFilterSql . ') as paid'))
                 ->pluck('paid', 'branch');
 
             // Students by course and gender (with error handling)
             $studentsByCourseGender = collect();
             try {
-                $studentsByCourseGender = Student::select('sex', 'courses.course_name as course_name', 'courses.id as course_id', DB::raw('count(*) as total'))
-                    ->join('courses', 'students.course_id', '=', 'courses.id')
-                    ->groupBy('sex', 'courses.id', 'courses.course_name')
+                $studentsByCourseGender = AcademicYearContext::filterStudents(
+                    Student::select('sex', 'courses.course_name as course_name', 'courses.id as course_id', DB::raw('count(*) as total'))
+                        ->join('courses', 'students.course_id', '=', 'courses.id')
+                )->groupBy('sex', 'courses.id', 'courses.course_name')
                     ->get()
                     ->map(function($item) {
                         $item->course = (object)['name' => $item->course_name, 'id' => $item->course_id];
@@ -228,12 +256,12 @@ class AdminAuthController extends Controller
                         return $item;
                     });
             } catch (\Exception $e) {
-                // If courses table doesn't exist or has issues, return empty collection
                 $studentsByCourseGender = collect();
             }
 
             // Cache the results for 1 hour
             $dashboardData = compact(
+                'selectedAcademicYear',
                 'totalStudents',
                 'pendingTransactions',
                 'totalTeachers',

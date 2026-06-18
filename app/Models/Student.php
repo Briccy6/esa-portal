@@ -324,32 +324,31 @@ class Student extends Authenticatable
      */
     public function getOutstandingFees()
     {
-        // Calculate from course term fees
         if ($this->course) {
-            // Get the current term
-            $currentTerm = \App\Models\Term::where('start_date', '<=', now())
-                                           ->where('end_date', '>=', now())
-                                           ->first();
-            
+            $currentTerm = \App\Models\Term::where('academic_year_id', $this->academic_year_id)
+                ->where('start_date', '<=', now())
+                ->where('end_date', '>=', now())
+                ->first();
+
             if ($currentTerm) {
                 $courseTermFee = \App\Models\CourseTermFee::where('course_id', $this->course_id)
-                                                           ->where('term_id', $currentTerm->id)
-                                                           ->where('is_active', true)
-                                                           ->first();
-                
+                    ->where('term_id', $currentTerm->id)
+                    ->where('is_active', true)
+                    ->first();
+
                 if ($courseTermFee) {
                     $totalFees = $courseTermFee->total_fees;
                     $paidAmount = $this->transactions()
                         ->where('type', 'school_fee')
                         ->where('status', 'successful')
+                        ->whereHas('term', fn ($q) => $q->where('academic_year_id', $this->academic_year_id))
                         ->sum('amount');
-                    
+
                     return max(0, $totalFees - $paidAmount);
                 }
             }
         }
 
-        // Check if there's a direct outstanding_amount field
         return max(0, $this->outstanding_amount ?? 0);
     }
 

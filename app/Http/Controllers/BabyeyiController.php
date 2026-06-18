@@ -398,17 +398,16 @@ class BabyeyiController extends Controller
      */
     public function studentDashboard()
     {
-        $user = Auth::user();
-        $student = Student::with('course')->where('email', $user->email)->first();
+        $student = auth('student')->user();
+        $student?->load('course');
 
-        // Debug info
         $debug = [];
-        $debug['user_email'] = $user->email;
-        $debug['student_found'] = !is_null($student);
+        $debug['student_found'] = ! is_null($student);
         $debug['student_id'] = $student?->id;
         $debug['student_course_id'] = $student?->course_id;
+        $debug['academic_year_id'] = $student?->academic_year_id;
 
-        if (!$student || !$student->course_id) {
+        if (! $student || ! $student->course_id) {
             $debug['message'] = 'No course assigned to student';
             
             return view('babyeyi.student-dashboard', [
@@ -421,14 +420,13 @@ class BabyeyiController extends Controller
             ]);
         }
 
-        // Get the student's course
         $studentCourse = $student->course;
         $debug['course_name'] = $studentCourse?->name;
         $debug['course_type'] = $studentCourse?->course_type;
 
-        // Query 1: Published babyeyis for this exact course
         $exactCourseQuery = Babyeyi::where('status', Babyeyi::STATUS_PUBLISHED)
-            ->where('course_id', $student->course_id);
+            ->where('course_id', $student->course_id)
+            ->where('academic_year_id', $student->academic_year_id);
         
         $debug['exact_course_count'] = $exactCourseQuery->count();
 
@@ -440,7 +438,8 @@ class BabyeyiController extends Controller
         // Query 2: If no exact course match, try by course_type
         if ($babyeyis->isEmpty() && $studentCourse && $studentCourse->course_type) {
             $courseTypeQuery = Babyeyi::where('status', Babyeyi::STATUS_PUBLISHED)
-                ->where('course_type', $studentCourse->course_type);
+                ->where('course_type', $studentCourse->course_type)
+                ->where('academic_year_id', $student->academic_year_id);
             
             $debug['course_type_count'] = $courseTypeQuery->count();
             
@@ -455,7 +454,8 @@ class BabyeyiController extends Controller
         // Query 3: ALWAYS include babyeyis for ALL COURSES (course_id = NULL AND course_type = NULL)
         $allCoursesQuery = Babyeyi::where('status', Babyeyi::STATUS_PUBLISHED)
             ->whereNull('course_id')
-            ->whereNull('course_type');
+            ->whereNull('course_type')
+            ->where('academic_year_id', $student->academic_year_id);
         
         $debug['all_courses_count'] = $allCoursesQuery->count();
         
@@ -495,18 +495,17 @@ class BabyeyiController extends Controller
      */
     public function studentShow(Babyeyi $babyeyi)
     {
-        $user = Auth::user();
-        $student = Student::with('course')->where('email', $user->email)->first();
+        $student = auth('student')->user();
+        $student?->load('course');
 
-        if (!$student) {
+        if (! $student) {
             abort(403, 'You do not have access to this document.');
         }
 
-        // Verify access - student can view babyeyis if:
-        // 1. Exact course match: babyeyi->course_id === student->course_id
-        // 2. Course type match: babyeyi->course_type === student->course->course_type
-        // 3. For all courses: babyeyi->course_id IS NULL AND babyeyi->course_type IS NULL
-        
+        if ($babyeyi->academic_year_id !== $student->academic_year_id) {
+            abort(403, 'You do not have access to this document.');
+        }
+
         $hasAccess = false;
 
         // Check 1: Exact course match
@@ -549,18 +548,17 @@ class BabyeyiController extends Controller
      */
     public function studentDownload(Babyeyi $babyeyi)
     {
-        $user = Auth::user();
-        $student = Student::with('course')->where('email', $user->email)->first();
+        $student = auth('student')->user();
+        $student?->load('course');
 
-        if (!$student) {
+        if (! $student) {
             abort(403, 'You do not have access to this document.');
         }
 
-        // Verify access - student can download babyeyis if:
-        // 1. Exact course match: babyeyi->course_id === student->course_id
-        // 2. Course type match: babyeyi->course_type === student->course->course_type
-        // 3. For all courses: babyeyi->course_id IS NULL AND babyeyi->course_type IS NULL
-        
+        if ($babyeyi->academic_year_id !== $student->academic_year_id) {
+            abort(403, 'You do not have access to this document.');
+        }
+
         $hasAccess = false;
 
         // Check 1: Exact course match

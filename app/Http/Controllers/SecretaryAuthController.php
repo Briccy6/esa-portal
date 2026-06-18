@@ -7,8 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Student;
 use App\Models\Token;
 use App\Models\TokenTransaction;
-use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
+use App\Services\AcademicYearContext;
 
 class SecretaryAuthController extends Controller
 {
@@ -38,43 +37,38 @@ class SecretaryAuthController extends Controller
 
     public function dashboard()
     {
-        // Total students
-        $totalStudents = Student::count();
+        $selectedAcademicYear = AcademicYearContext::selected();
 
-        // Total tokens in circulation
+        $totalStudents = AcademicYearContext::filterStudents(Student::query())->count();
         $totalTokens = Token::sum('balance');
+        $pendingRegistrations = AcademicYearContext::filterStudents(
+            Student::where('nesa_registered', false)
+        )->count();
+        $lowBalanceStudents = AcademicYearContext::filterStudents(
+            Student::whereHas('token', fn ($query) => $query->where('balance', '<', 5))
+        )->count();
 
-        // Pending registrations (students not NESA registered)
-        $pendingRegistrations = Student::where('nesa_registered', false)->count();
+        $recentStudents = AcademicYearContext::filterStudents(
+            Student::with(['course', 'branch'])
+        )->orderBy('created_at', 'desc')->take(5)->get();
 
-        // Students with low token balance (< 5)
-        $lowBalanceStudents = Student::whereHas('token', function($query) {
-            $query->where('balance', '<', 5);
-        })->count();
-
-        // Recent students (last 10)
-        $recentStudents = Student::with(['course', 'branch'])
+        $recentTransactions = TokenTransaction::whereHas('student', function ($query) {
+            if ($yearId = AcademicYearContext::selectedId()) {
+                $query->where('academic_year_id', $yearId);
+            }
+        })
+            ->with('student')
             ->orderBy('created_at', 'desc')
             ->take(5)
             ->get();
 
-        // Recent token transactions
-        $recentTransactions = TokenTransaction::with('student')
-            ->orderBy('created_at', 'desc')
-            ->take(5)
-            ->get();
-
-        // Students needing attention (low balance or pending NESA)
-        $studentsNeedingAttention = Student::with(['token', 'course', 'branch'])
-            ->where(function($query) {
-                $query->where('nesa_registered', false)
-                      ->orWhereHas('token', function($subQuery) {
-                          $subQuery->where('balance', '<', 5);
-                      });
-            })
-            ->orderBy('created_at', 'desc')
-            ->take(10)
-            ->get();
+        $studentsNeedingAttention = AcademicYearContext::filterStudents(
+            Student::with(['token', 'course', 'branch'])
+                ->where(function ($query) {
+                    $query->where('nesa_registered', false)
+                        ->orWhereHas('token', fn ($subQuery) => $subQuery->where('balance', '<', 5));
+                })
+        )->orderBy('created_at', 'desc')->take(10)->get();
 
         return view('secretary.dashboard', compact(
             'totalStudents',
@@ -83,7 +77,8 @@ class SecretaryAuthController extends Controller
             'lowBalanceStudents',
             'recentStudents',
             'recentTransactions',
-            'studentsNeedingAttention'
+            'studentsNeedingAttention',
+            'selectedAcademicYear'
         ));
     }
 }

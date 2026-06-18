@@ -43,7 +43,8 @@ class StudentController extends Controller
     {
         $student = auth('student')->user();
 
-        $exams = \App\Models\Exam::where(function ($query) use ($student) {
+        $exams = \App\Models\Exam::where('academic_year_id', $student->academic_year_id)
+            ->where(function ($query) use ($student) {
             $query->whereHas('courses', function ($q) use ($student) {
                 $q->where('courses.id', $student->course_id);
             })
@@ -64,6 +65,10 @@ class StudentController extends Controller
     {
         $student = auth('student')->user();
         $invoices = \App\Models\StudentTransaction::where('student_id', $student->id)
+            ->where(function ($query) use ($student) {
+                $query->whereHas('term', fn ($q) => $q->where('academic_year_id', $student->academic_year_id))
+                    ->orWhereNull('term_id');
+            })
             ->whereIn('status', ['paid', 'successful', 'pending'])
             ->orderByDesc('created_at')
             ->get();
@@ -80,6 +85,7 @@ class StudentController extends Controller
         foreach ($courses as $course) {
             $course->lessons = \App\Models\Lesson::with(['teacher', 'terms'])
                 ->where('course_id', $course->id)
+                ->whereHas('terms', fn ($q) => $q->where('academic_year_id', $student->academic_year_id))
                 ->get();
         }
 
@@ -102,6 +108,7 @@ class StudentController extends Controller
         }
 
         $marks = \App\Models\Mark::where('student_id', $student->id)
+            ->whereHas('term', fn ($q) => $q->where('academic_year_id', $student->academic_year_id))
             ->with(['course', 'branch'])
             ->get();
 
@@ -134,10 +141,23 @@ class StudentController extends Controller
 
         // Get dismissed student IDs to exclude them from active list
         $dismissedStudentIds = DismissedStudent::pluck('original_student_id')->toArray();
+        $selectedYearId = null;
 
         if ($admin) {
             $students = Student::with(['course', 'branch', 'academicYear'])
                 ->whereNotIn('id', $dismissedStudentIds);
+
+            if ($request->has('academic_year_id')) {
+                $selectedYearId = $request->input('academic_year_id') ?: null;
+                if ($selectedYearId) {
+                    $students->where('academic_year_id', $selectedYearId);
+                }
+            } else {
+                $selectedYearId = \App\Services\AcademicYearContext::selectedId();
+                if ($selectedYearId) {
+                    $students->where('academic_year_id', $selectedYearId);
+                }
+            }
         } else {
             // Check if staff is the authorized accountant (can see all branches)
             $isAuthorizedAccountant = $staff && str_ends_with($staff->email, '@excellentservantacademy.com');
@@ -161,6 +181,18 @@ class StudentController extends Controller
                         ->whereNotIn('id', $dismissedStudentIds);
                 }
             }
+
+            if ($request->has('academic_year_id')) {
+                $selectedYearId = $request->input('academic_year_id') ?: null;
+                if ($selectedYearId) {
+                    $students->where('academic_year_id', $selectedYearId);
+                }
+            } else {
+                $selectedYearId = \App\Services\AcademicYearContext::selectedId();
+                if ($selectedYearId) {
+                    $students->where('academic_year_id', $selectedYearId);
+                }
+            }
         }
 
         if ($request->filled('name')) {
@@ -175,7 +207,9 @@ class StudentController extends Controller
         if ($request->filled('telephone')) {
             $students->where('phone', 'like', '%' . $request->telephone . '%');
         }
-        if ($request->filled('academic_year')) {
+        if (! $admin && $request->filled('academic_year_id')) {
+            $students->where('academic_year_id', $request->academic_year_id);
+        } elseif ($request->filled('academic_year')) {
             $students->whereHas('academicYear', function ($q) use ($request) {
                 $q->where('year', 'like', '%' . $request->academic_year . '%');
             });
@@ -206,7 +240,7 @@ class StudentController extends Controller
         }
 
         if ($admin) {
-            return view('admin.students.index', compact('students', 'allStudents'));
+            return view('admin.students.index', compact('students', 'allStudents', 'selectedYearId'));
         } else {
             return view('students.index', compact('students', 'allStudents'));
         }

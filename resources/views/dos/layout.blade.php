@@ -751,6 +751,12 @@
         Loading time...
       </div>
 
+      @include('partials.academic-year-switcher', [
+          'switcherClass' => 'me-3',
+          'labelClass' => 'text-muted',
+          'selectClass' => 'bg-white',
+      ])
+
       <!-- User dropdown -->
       <div class="user-dropdown position-relative">
         <button class="user-btn" onclick="toggleUserDropdown()">

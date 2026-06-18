@@ -14,11 +14,16 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,
             'custom.post.size' => \App\Http\Middleware\CustomValidatePostSize::class,
+            'admin.academic_year' => \App\Http\Middleware\SetAdminAcademicYear::class,
+            'academic.year' => \App\Http\Middleware\SetAdminAcademicYear::class,
         ]);
         
         // Replace the default ValidatePostSize with our custom one
         $middleware->remove(\Illuminate\Http\Middleware\ValidatePostSize::class);
-        $middleware->web(append: \App\Http\Middleware\CustomValidatePostSize::class);
+        $middleware->web(append: [
+            \App\Http\Middleware\CustomValidatePostSize::class,
+            \App\Http\Middleware\SetAdminAcademicYear::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

@@ -254,6 +254,11 @@
                 <span>School Management System</span>
             </div>
             <div class="user-info">
+                @include('partials.academic-year-switcher', [
+                    'switcherClass' => 'me-3',
+                    'labelClass' => 'text-muted',
+                    'selectClass' => 'bg-white',
+                ])
                 <div class="user-avatar">
                     {{ substr(Auth::guard('staff')->user()->name ?? 'S', 0, 1) }}
                 </div>

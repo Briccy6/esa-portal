@@ -4,6 +4,7 @@
 
 @section('content')
 <div class="container-fluid">
+@include('partials.academic-year-banner')
 
     <!-- Summary Cards -->
     <div class="row mb-4">

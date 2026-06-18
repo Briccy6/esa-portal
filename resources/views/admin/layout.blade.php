@@ -893,6 +893,14 @@
         </div>
         
         <div class="navbar-right">
+            @if(isset($adminAcademicYears) && $adminAcademicYears->count())
+            @include('partials.academic-year-switcher', [
+                'switcherClass' => 'me-3',
+                'labelClass' => 'text-white-50',
+                'selectStyle' => 'background: #34495e; color: #fff; border-color: #4a6741;',
+            ])
+            @endif
+
             <div class="current-time">
                 <i class="fas fa-clock"></i>
                 <span id="currentTime">--:--:--</span>

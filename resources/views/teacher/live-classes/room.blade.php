@@ -622,13 +622,36 @@ const camOff     = document.getElementById('camOff');
 const camCtrl    = document.getElementById('camCtrl');
 const micCtrl    = document.getElementById('micCtrl');
 
-document.getElementById('startCamBtn').addEventListener('click', startCamera);
-camCtrl.addEventListener('click', toggleCamera);
+document.getElementById('startCamBtn').addEventListener('click', async () => {
+    let btn = document.getElementById('startCamBtn');
+    btn.disabled = true;
+    btn.textContent = 'Requesting permissions...';
+    try {
+        await startCamera();
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '✓ Camera Started';
+    }
+});
+camCtrl.addEventListener('click', async () => {
+    if (!localStream) {
+        await startCamera();
+    } else {
+        toggleCamera();
+    }
+});
 micCtrl.addEventListener('click', toggleMic);
 
 async function startCamera() {
     try {
-        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        console.log('🎬 Starting camera...');
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            localStream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: true });
+            console.log('✅ Camera stream obtained:', localStream);
+        } else {
+            throw new Error('getUserMedia not supported');
+        }
+        
         localVideo.srcObject = localStream;
         localVideo.style.display = 'block';
         camOff.style.display = 'none';
@@ -772,7 +795,10 @@ const screenCtrl   = document.getElementById('screenCtrl');
 const screenBanner = document.getElementById('screenBanner');
 
 screenCtrl.addEventListener('click', async () => {
+    console.log('🖥️ Screen share button clicked, current state:', { sharing, peersCount: Object.keys(peers).length });
+    
     if (sharing) {
+        console.log('🛑 Stopping screen share...');
         const cur = localVideo.srcObject;
         if (cur instanceof MediaStream) {
             cur.getTracks().forEach(t => t.stop());
@@ -796,22 +822,31 @@ screenCtrl.addEventListener('click', async () => {
             camOff.style.display = 'flex';
         }
         toast('Screen sharing stopped');
+        console.log('✅ Screen share stopped');
         return;
     }
+    
     try {
-        const ss = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+        console.log('📺 Requesting display media...');
+        const ss = await navigator.mediaDevices.getDisplayMedia({ video: { cursor: 'always' }, audio: false });
+        console.log('✅ Display media obtained:', ss);
+        
         const senderReplacement = ss.getVideoTracks()[0];
         const screenAudio = ss.getAudioTracks()[0] || null;
+        
         if (!senderReplacement) {
             toast('No display video track');
+            console.error('❌ No video track in display media');
             return;
         }
-        Object.values(peers).forEach(pc => {
+        
+        console.log('📤 Sharing screen with', Object.keys(peers).length, 'peers');
+        Object.values(peers).forEach((pc, i) => {
             const vs = getOutboundVideoSender(pc);
             if (vs) {
-                vs.replaceTrack(senderReplacement).catch(e => console.warn('replaceTrack screen', e));
+                vs.replaceTrack(senderReplacement).catch(e => console.warn('replaceTrack screen on peer', i, e));
             } else {
-                try { pc.addTrack(senderReplacement, ss); } catch(e) { console.warn('addTrack screen', e); }
+                try { pc.addTrack(senderReplacement, ss); } catch(e) { console.warn('addTrack screen on peer', i, e); }
             }
 
             // If the browser provides system/tab audio, stream it during screen share.
@@ -832,7 +867,11 @@ screenCtrl.addEventListener('click', async () => {
         screenCtrl.classList.add('on');
         screenCtrl.querySelector('span').textContent = 'Sharing';
         screenBanner.classList.add('show');
+        console.log('✅ Screen sharing started');
+        toast('Screen sharing started');
+        
         senderReplacement.addEventListener('ended', async () => {
+            console.log('🛑 Screen share ended (user stopped sharing)');
             sharing = false;
             screenCtrl.classList.remove('on');
             screenCtrl.querySelector('span').textContent = 'Share';
@@ -855,9 +894,18 @@ screenCtrl.addEventListener('click', async () => {
                 localVideo.style.display = 'none';
                 camOff.style.display = 'flex';
             }
+            toast('Returned to camera');
         });
-        toast('Screen sharing started');
-    } catch(e) { toast('Screen share cancelled'); }
+    } catch(e) { 
+        console.error('❌ Screen share error:', e.message, e.name);
+        if (e.name === 'NotAllowedError') {
+            toast('Screen share cancelled');
+        } else if (e.name === 'NotFoundError') {
+            toast('No screen to share');
+        } else {
+            toast('Screen share failed: ' + e.message);
+        }
+    }
 });
 
 // ═══════════════════════════════════════════════════════════

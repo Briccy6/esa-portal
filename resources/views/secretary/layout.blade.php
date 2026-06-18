@@ -464,6 +464,12 @@
         </div>
         
         <div class="navbar-right">
+            @include('partials.academic-year-switcher', [
+                'switcherClass' => 'me-3',
+                'labelClass' => 'text-white-50',
+                'selectClass' => '',
+            ])
+
             <div class="current-time">
                 <i class="fas fa-clock"></i>
                 <span id="currentTime">--:--:--</span>

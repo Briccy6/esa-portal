@@ -35,9 +35,17 @@ class AcademicYear extends Model
 
   
     public function courses()
-{
-    return $this->hasMany(Course::class);
-}
+    {
+        return $this->hasMany(Course::class);
+    }
 
+    public function scopeOngoing($query)
+    {
+        return $query->where('is_ongoing', true);
+    }
 
+    public static function ensureSingleOngoing(int $activeId): void
+    {
+        static::where('id', '!=', $activeId)->update(['is_ongoing' => false]);
+    }
 }

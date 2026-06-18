@@ -15,7 +15,7 @@ class UpdateAcademicYearStatus extends Command
         $today = Carbon::today();
 
         AcademicYear::all()->each(function ($year) use ($today) {
-            $isOngoing = $today->between($year->start_date, $year->end_date);
+            $isOngoing = $today->between($year->starting_date, $year->expiry_date);
             $year->update(['is_ongoing' => $isOngoing]);
         });
 

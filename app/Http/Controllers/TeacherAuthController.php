@@ -8,6 +8,7 @@ use App\Models\Teacher;
 use App\Models\Course;
 use App\Models\Lesson;
 use App\Models\Unit;
+use App\Services\AcademicYearContext;
 class TeacherAuthController extends Controller
 {
     public function showLoginForm()
@@ -47,26 +48,43 @@ class TeacherAuthController extends Controller
     {
         $teacher = Auth::guard('teacher')->user();
         $systemName = config('app.name', 'School System');
-        $courses = $teacher->courses()->with('lessons.units')->get();
-        $announcements = \App\Models\Announcement::latest()->take(5)->get(); // or whatever logic you want
-        return view('teacher.dashboard', compact('teacher', 'systemName', 'courses', 'announcements'));
+        $selectedAcademicYear = AcademicYearContext::selected();
+        $yearId = $selectedAcademicYear?->id;
+
+        $coursesQuery = $teacher->courses()->with('lessons.units');
+        if ($yearId) {
+            $coursesQuery->where('courses.academic_year_id', $yearId);
+        }
+        $courses = $coursesQuery->get();
+
+        $announcements = \App\Models\Announcement::latest()->take(5)->get();
+        return view('teacher.dashboard', compact('teacher', 'systemName', 'courses', 'announcements', 'selectedAcademicYear'));
     }
     public function courseDetails()
     {
         $teacher = Auth::guard('teacher')->user();
         $systemName = config('app.name', 'School System');
-        
-        // Get announcements for teacher layout
+        $yearId = AcademicYearContext::selectedId();
+
         $announcements = \App\Models\Announcement::latest()->take(5)->get();
-        
-        $courses = $teacher->courses()->with([
-            // Only lessons where teacher_id matches the logged-in teacher
+
+        $coursesQuery = $teacher->courses()->with([
             'lessons' => function ($query) use ($teacher) {
                 $query->where('teacher_id', $teacher->id);
             },
             'lessons.units',
-            'students'
-        ])->get();
+            'students' => function ($query) use ($yearId) {
+                if ($yearId) {
+                    $query->where('academic_year_id', $yearId);
+                }
+            },
+        ]);
+
+        if ($yearId) {
+            $coursesQuery->where('courses.academic_year_id', $yearId);
+        }
+
+        $courses = $coursesQuery->get();
 
         // Collect all unit IDs for this teacher's courses
         $unitIds = [];
