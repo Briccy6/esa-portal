@@ -507,6 +507,18 @@
                                     </div>
 
                                     <div class="form-group">
+                                        <label for="sex" class="form-label">
+                                            Sex <span class="required">*</span>
+                                        </label>
+                                        <select name="sex" id="sex" class="form-select" required>
+                                            <option value="">Select Sex</option>
+                                            <option value="Male">Male</option>
+                                            <option value="Female">Female</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group">
                                         <label for="identification_type" class="form-label">
                                             Identification Type <span class="required">*</span>
                                         </label>
@@ -864,6 +876,8 @@ function setupFileInputs() {
 // Form validation setup
 function setupFormValidation() {
     const form = document.getElementById('registrationForm');
+    if (!form) return;
+
     const inputs = form.querySelectorAll('input[required], select[required]');
     
     inputs.forEach(input => {
@@ -934,7 +948,13 @@ function validateField(field) {
 // Form submission setup
 function setupFormSubmission() {
     const form = document.getElementById('registrationForm');
-    const submitBtn = form.querySelector('button[type="submit"]');
+    if (!form) return;
+
+    const submitBtn = document.querySelector('button[form="registrationForm"]') || form.querySelector('button[type="submit"]');
+    if (!submitBtn) {
+        console.error('Registration submit button not found.');
+        return;
+    }
     
     form.addEventListener('submit', function(e) {
         e.preventDefault();
@@ -977,6 +997,8 @@ function setupFormSubmission() {
 // Auto-save functionality
 function setupAutoSave() {
     const form = document.getElementById('registrationForm');
+    if (!form) return;
+
     const inputs = form.querySelectorAll('input, select');
     let autoSaveTimer;
     
@@ -996,6 +1018,8 @@ function setupAutoSave() {
 // Save form data to localStorage
 function saveFormData() {
     const form = document.getElementById('registrationForm');
+    if (!form) return;
+
     const formData = new FormData(form);
     const data = {};
     
@@ -1015,6 +1039,8 @@ function restoreFormData() {
     try {
         const data = JSON.parse(savedData);
         const form = document.getElementById('registrationForm');
+        if (!form) return;
+
         let hasRestoredData = false;
         
         Object.keys(data).forEach(key => {
@@ -1059,7 +1085,7 @@ function restoreFormData() {
 
 // Clear saved data on successful submission
 window.addEventListener('beforeunload', function() {
-    const submitBtn = document.querySelector('button[type="submit"]');
+    const submitBtn = document.querySelector('button[form="registrationForm"]') || document.querySelector('button[type="submit"]');
     if (submitBtn && submitBtn.classList.contains('loading')) {
         localStorage.removeItem('studentRegistrationDraft');
     }

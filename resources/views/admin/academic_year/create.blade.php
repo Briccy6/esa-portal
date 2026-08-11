@@ -34,12 +34,8 @@
             <input type="date" name="expiry_date" id="expiry_date" class="form-control" value="{{ old('expiry_date') }}" required>
         </div>
 
-        <div class="mb-3">
-            <label for="is_ongoing" class="form-label">Status</label>
-            <select name="is_ongoing" id="is_ongoing" class="form-select" required>
-                <option value="1" {{ old('is_ongoing') == '1' ? 'selected' : '' }}>Active</option>
-                <option value="0" {{ old('is_ongoing') == '0' ? 'selected' : '' }}>Ended</option>
-            </select>
+        <div class="alert alert-info">
+            <strong>Automatic status:</strong> the system will mark this academic year as Active, Upcoming, or Ended automatically based on its start and expiry dates.
         </div>
 
         <button type="submit" class="btn btn-primary">Create Academic Year</button>

@@ -22,17 +22,15 @@ class AcademicYearController extends Controller
 
     public function store(Request $request)
     {
-       $validated = $request->validate([
-    'year' => 'required|string|unique:academic_years,year',
-    'starting_date' => 'required|date|before_or_equal:expiry_date',
-    'expiry_date' => 'required|date|after_or_equal:starting_date',
-    'is_ongoing' => 'required|boolean',
-]);
+        $validated = $request->validate([
+            'year' => 'required|string|unique:academic_years,year',
+            'starting_date' => 'required|date|before_or_equal:expiry_date',
+            'expiry_date' => 'required|date|after_or_equal:starting_date',
+        ]);
 
         $year = AcademicYear::create($validated);
 
-        if ($validated['is_ongoing']) {
-            AcademicYear::ensureSingleOngoing($year->id);
+        if ($year->resolveStatus() === 'active') {
             AcademicYearContext::setSelected($year->id);
         }
 
@@ -50,13 +48,11 @@ class AcademicYearController extends Controller
             'year' => 'required|string|unique:academic_years,year,' . $academicYear->id,
             'starting_date' => 'required|date|before_or_equal:expiry_date',
             'expiry_date' => 'required|date|after_or_equal:starting_date',
-            'is_ongoing' => 'required|boolean',
         ]);
 
         $academicYear->update($validated);
 
-        if ($validated['is_ongoing']) {
-            AcademicYear::ensureSingleOngoing($academicYear->id);
+        if ($academicYear->resolveStatus() === 'active') {
             AcademicYearContext::setSelected($academicYear->id);
         }
 

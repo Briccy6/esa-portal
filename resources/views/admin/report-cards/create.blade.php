@@ -81,7 +81,13 @@
                                     @foreach($academicYears as $year)
                                         <option value="{{ $year->id }}" {{ (string) old('academic_year_id', request('academic_year_id')) === (string) $year->id ? 'selected' : '' }}>
                                             {{ $year->year }}
-                                            @if($year->is_ongoing) <span class="badge badge-success">Current</span> @endif
+                                            @if($year->status === 'active')
+                                                <span class="badge badge-success">Active</span>
+                                            @elseif($year->status === 'upcoming')
+                                                <span class="badge badge-info">Upcoming</span>
+                                            @else
+                                                <span class="badge badge-secondary">Ended</span>
+                                            @endif
                                         </option>
                                     @endforeach
                                 </select>

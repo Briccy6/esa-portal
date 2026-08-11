@@ -11,7 +11,7 @@ use App\Models\LessonUnit;
 use App\Models\Branch;
 use App\Models\LessonBranchCourse;
 use Illuminate\Support\Facades\DB;
-use App\Models\AcademicYear;
+use App\Services\AcademicYearContext;
 use App\Models\TimetableSession;
 use App\Models\ReportCardSubject;
 use App\Models\Mark;
@@ -73,7 +73,7 @@ class LessonController extends Controller
 
         // For DOS dashboard, we need multi-branch, multi-course support
         if (auth('staff')->check() && auth('staff')->user()->role === 'DOS') {
-            $ongoingAcademicYear = AcademicYear::where('is_ongoing', true)->first();
+            $ongoingAcademicYear = AcademicYearContext::current();
             
             // Build a mapping of courses to their teachers for JavaScript
             $courseTeachersData = [];
@@ -106,7 +106,7 @@ class LessonController extends Controller
                 ->get();
         }
 
-        $ongoingAcademicYear = AcademicYear::where('is_ongoing', true)->first();
+        $ongoingAcademicYear = AcademicYearContext::current();
 
         return view('staff.lessons.create', compact('courses', 'teachers', 'ongoingAcademicYear', 'terms'));
     }

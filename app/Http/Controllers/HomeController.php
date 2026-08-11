@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use App\Models\Course; // Make sure you import your Course model
 use App\Models\Announcement; // Make sure you import your Announcement model
+use App\Services\AcademicYearContext;
 
 class HomeController extends Controller
 {
@@ -16,8 +17,8 @@ class HomeController extends Controller
      */
     public function index()
     {
-        // Find the ID of the ongoing academic year
-    $ongoingAcademicYearId = AcademicYear::where('is_ongoing', true)->value('id');
+        // Resolve the academic year for the current date
+    $ongoingAcademicYearId = AcademicYearContext::current()?->id;
 
     $courses = [];
     if ($ongoingAcademicYearId) {

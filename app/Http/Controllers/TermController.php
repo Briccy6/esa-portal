@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Services\AcademicYearContext;
 use App\Models\AcademicYear;
 use App\Models\Term;
 use App\Models\CourseTermFee;
@@ -13,10 +14,10 @@ class TermController extends Controller
 {
     public function index()
     {
-        $academicYear = AcademicYear::where('is_ongoing', true)->first();
+        $academicYear = AcademicYearContext::current();
 
         if (!$academicYear) {
-            return redirect()->back()->with('error', 'No ongoing academic year found.');
+            return redirect()->back()->with('error', 'No academic year found for the current date.');
         }
 
         $terms = Term::where('academic_year_id', $academicYear->id)
@@ -28,10 +29,10 @@ class TermController extends Controller
 
     public function create()
     {
-        $academicYear = AcademicYear::where('is_ongoing', true)->first();
+        $academicYear = AcademicYearContext::current();
 
         if (!$academicYear) {
-            return redirect()->back()->with('error', 'No ongoing academic year found.');
+            return redirect()->back()->with('error', 'No academic year found for the current date.');
         }
 
         $existingTerms = Term::where('academic_year_id', $academicYear->id)
@@ -64,7 +65,7 @@ class TermController extends Controller
     {
         try {
             // Get the ongoing academic year as default
-            $ongoingYear = AcademicYear::where('is_ongoing', true)->first();
+            $ongoingYear = AcademicYearContext::current();
             
             $rules = [
                 'academic_year_id' => 'required|exists:academic_years,id',

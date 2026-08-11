@@ -3,10 +3,13 @@
     <div>
         <i class="fas fa-calendar-alt me-2"></i>
         Showing data for academic year <strong>{{ $selectedAcademicYear->year }}</strong>
-        @if($selectedAcademicYear->is_ongoing)
-            <span class="badge bg-success ms-2">Current</span>
+        @php($status = $selectedAcademicYear->status ?? 'active')
+        @if($status === 'active')
+            <span class="badge bg-success ms-2">Active</span>
+        @elseif($status === 'upcoming')
+            <span class="badge bg-info ms-2">Upcoming</span>
         @else
-            <span class="badge bg-secondary ms-2">Past Year</span>
+            <span class="badge bg-secondary ms-2">Ended</span>
         @endif
     </div>
     <small class="text-muted">Use the academic year selector in the top bar to switch years.</small>

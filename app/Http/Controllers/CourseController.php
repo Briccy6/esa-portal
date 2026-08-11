@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Course;
 use Illuminate\Http\Request;
-use App\Models\AcademicYear;
+use App\Services\AcademicYearContext;
 use App\Models\Branch; // Add this line
 use Illuminate\Support\Facades\DB;
 
@@ -79,11 +79,11 @@ class CourseController extends Controller
         }
     }
 
-    // 🔥 FIX: fetch ongoing academic year
-    $ongoingAcademicYear = AcademicYear::where('is_ongoing', true)->first();
+    // Resolve the academic year for the current date
+    $ongoingAcademicYear = AcademicYearContext::current();
 
     if (!$ongoingAcademicYear) {
-        return redirect()->back()->withErrors(['academic_year' => 'No ongoing academic year is set.']);
+        return redirect()->back()->withErrors(['academic_year' => 'No academic year is available for the current date.']);
     }
 
     DB::beginTransaction();

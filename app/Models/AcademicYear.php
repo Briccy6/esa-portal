@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -23,7 +25,8 @@ class AcademicYear extends Model
         'expiry_date' => 'date',
         'is_ongoing' => 'boolean',
     ];
-     public function terms()
+
+    public function terms()
     {
         return $this->hasMany(Term::class);
     }
@@ -33,19 +36,58 @@ class AcademicYear extends Model
         return $this->hasMany(Student::class);
     }
 
-  
     public function courses()
     {
         return $this->hasMany(Course::class);
     }
 
-    public function scopeOngoing($query)
+    public function resolveStatus($date = null): string
     {
-        return $query->where('is_ongoing', true);
+        $today = $date instanceof CarbonInterface
+            ? Carbon::parse($date)
+            : ($date ? Carbon::parse($date) : Carbon::today());
+
+        if ($this->starting_date && $today->lt(Carbon::parse($this->starting_date))) {
+            return 'upcoming';
+        }
+
+        if ($this->expiry_date && $today->gt(Carbon::parse($this->expiry_date))) {
+            return 'ended';
+        }
+
+        return 'active';
+    }
+
+    public function getStatusAttribute(): string
+    {
+        return $this->resolveStatus();
+    }
+
+    public function getIsOngoingAttribute($value): bool
+    {
+        return $this->resolveStatus() === 'active';
+    }
+
+    public function scopeOngoing($query, $date = null)
+    {
+        $today = $date instanceof CarbonInterface
+            ? Carbon::parse($date)
+            : ($date ? Carbon::parse($date) : Carbon::today());
+
+        return $query
+            ->whereDate('starting_date', '<=', $today->toDateString())
+            ->whereDate('expiry_date', '>=', $today->toDateString());
     }
 
     public static function ensureSingleOngoing(int $activeId): void
     {
+        $activeYear = static::find($activeId);
+
+        if (! $activeYear) {
+            return;
+        }
+
+        $activeYear->update(['is_ongoing' => $activeYear->resolveStatus() === 'active']);
         static::where('id', '!=', $activeId)->update(['is_ongoing' => false]);
     }
 }

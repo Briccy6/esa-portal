@@ -137,7 +137,7 @@
                                 <option value="">Select Academic Year</option>
                                 @if($ongoingAcademicYear)
                                     <option value="{{ $ongoingAcademicYear->id }}" selected>
-                                        {{ $ongoingAcademicYear->year }} (Current)
+                                        {{ $ongoingAcademicYear->year }} ({{ ucfirst($ongoingAcademicYear->status) }})
                                     </option>
                                 @endif
                             </select>

@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Course;
-use App\Models\AcademicYear;
+use App\Services\AcademicYearContext;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -47,10 +47,10 @@ class RegisteredUserController extends Controller
 
         $course = Course::findOrFail($request->course);
 
-        $academicYear = AcademicYear::where('is_ongoing', true)->first();
+        $academicYear = AcademicYearContext::current();
 
         if (!$academicYear) {
-            return back()->withErrors(['academic_year' => 'No ongoing academic year found. Please contact admin.']);
+            return back()->withErrors(['academic_year' => 'No academic year is available for the current date. Please contact admin.']);
         }
 
         $studentCount = User::where('course_id', $course->id)

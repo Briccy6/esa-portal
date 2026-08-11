@@ -119,7 +119,7 @@
                         </thead>
                         <tbody>
                             @forelse($academicYears as $year)
-                                <tr class="table-row" data-year="{{ $year->year }}" data-status="{{ $year->is_ongoing ? 'active' : 'ended' }}">
+                                <tr class="table-row" data-year="{{ $year->year }}" data-status="{{ $year->status }}">
                                     <td class="year-cell">
                                         <div class="cell-content">
                                             <span class="year-badge">{{ $year->year }}</span>
@@ -141,10 +141,15 @@
                                     </td>
                                     <td class="status-cell">
                                         <div class="cell-content">
-                                            @if($year->is_ongoing)
+                                            @if($year->status === 'active')
                                                 <span class="status-badge status-active">
                                                     <i class="fas fa-check-circle"></i>
                                                     Active
+                                                </span>
+                                            @elseif($year->status === 'upcoming')
+                                                <span class="status-badge status-upcoming">
+                                                    <i class="fas fa-clock"></i>
+                                                    Upcoming
                                                 </span>
                                             @else
                                                 <span class="status-badge status-ended">
@@ -547,6 +552,11 @@
     .status-active {
         background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
         color: #155724;
+    }
+
+    .status-upcoming {
+        background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+        color: #0c5460;
     }
 
     .status-ended {

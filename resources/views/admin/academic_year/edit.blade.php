@@ -684,38 +684,8 @@ input[type="date"].aye-input {
                         <div class="aye-sec-line"></div>
                     </div>
 
-                    <div class="aye-status-row">
-                        <label class="aye-status-opt">
-                            <input
-                                type="radio"
-                                name="is_ongoing"
-                                value="1"
-                                {{ old('is_ongoing', $academicYear->is_ongoing) ? 'checked' : '' }}
-                            >
-                            <div class="aye-tile">
-                                <div class="aye-pip on"></div>
-                                <div>
-                                    <div class="aye-tile-name">Active</div>
-                                    <div class="aye-tile-sub">Currently ongoing</div>
-                                </div>
-                            </div>
-                        </label>
-
-                        <label class="aye-status-opt inactive">
-                            <input
-                                type="radio"
-                                name="is_ongoing"
-                                value="0"
-                                {{ !old('is_ongoing', $academicYear->is_ongoing) ? 'checked' : '' }}
-                            >
-                            <div class="aye-tile">
-                                <div class="aye-pip off"></div>
-                                <div>
-                                    <div class="aye-tile-name">Inactive</div>
-                                    <div class="aye-tile-sub">Not the current year</div>
-                                </div>
-                            </div>
-                        </label>
+                    <div class="alert alert-info mb-0">
+                        <strong>Automatic status:</strong> this academic year will be shown as <span class="fw-semibold">Active</span>, <span class="fw-semibold">Upcoming</span>, or <span class="fw-semibold">Ended</span> automatically from its dates.
                     </div>
 
                 </div>{{-- /body --}}

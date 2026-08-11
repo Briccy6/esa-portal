@@ -120,7 +120,7 @@
                             <option value="">All Academic Years</option>
                             @foreach(($adminAcademicYears ?? []) as $year)
                                 <option value="{{ $year->id }}" @selected(($selectedYearId ?? request('academic_year_id')) == $year->id)>
-                                    {{ $year->year }}{{ $year->is_ongoing ? ' (Current)' : '' }}
+                                    {{ $year->year }} ({{ ucfirst($year->status) }})
                                 </option>
                             @endforeach
                         </select>

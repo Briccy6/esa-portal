@@ -5,7 +5,7 @@
     <select name="academic_year_id" id="academicYearSelectGlobal" class="form-select form-select-sm {{ $selectClass ?? '' }}" style="min-width: 140px; {{ $selectStyle ?? '' }}" onchange="this.form.submit()">
         @foreach($adminAcademicYears as $year)
             <option value="{{ $year->id }}" @selected(($adminSelectedAcademicYear?->id ?? null) === $year->id)>
-                {{ $year->year }}{{ $year->is_ongoing ? ' (Current)' : '' }}
+                {{ $year->year }} ({{ ucfirst($year->status) }})
             </option>
         @endforeach
     </select>
