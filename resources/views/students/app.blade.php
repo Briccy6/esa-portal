@@ -342,7 +342,7 @@
                                 Dashboard
                             </a>
                         </li>
-                                               
+                                                
                     </ul>
                 </div>
 
@@ -369,8 +369,7 @@
                             </a>
                         </li>
                         <li class="nav-item">
-       
-<a href="{{ route('student.resources.index') }}" class="nav-link {{ request()->routeIs('student.resources.index') ? 'active' : '' }}">
+                            <a href="{{ route('student.resources.index') }}" class="nav-link {{ request()->routeIs('student.resources.index') ? 'active' : '' }}">
     <i class="bi bi-file-earmark-text"></i>
     Study References
 </a>

@@ -74,6 +74,16 @@
                 <x-input-error :messages="$errors->get('course')" class="mt-2" />
             </div>
 
+            <!-- Branch -->
+            <div>
+                <x-input-label for="branch" :value="__('Branch')" />
+                <select id="branch" name="branch" class="block mt-1 w-full rounded border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" required>
+                    <option value="">Select branch</option>
+                    {{-- populated by JS when a course is selected --}}
+                </select>
+                <x-input-error :messages="$errors->get('branch')" class="mt-2" />
+            </div>
+
             <!-- Study Mode -->
             <div>
                 <x-input-label for="study_mode" :value="__('Preferred Study Mode')" />
@@ -97,7 +107,8 @@
                 <x-input-error :messages="$errors->get('location')" class="mt-2" />
             </div>
 
- 
+            
+
             <!-- Password -->
             <div>
                 <x-input-label for="password" :value="__('Password')" />
@@ -144,4 +155,45 @@
             </div>
         </div>
     </form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const courseSelect = document.getElementById('course');
+    const branchSelect = document.getElementById('branch');
+
+    async function loadBranches(courseId) {
+        branchSelect.innerHTML = '<option value="">Loading branches…</option>';
+        if (!courseId) {
+            branchSelect.innerHTML = '<option value="">Select branch</option>';
+            return;
+        }
+        try {
+            const res = await fetch(`/branches-by-course?course_id=${courseId}`, { credentials: 'same-origin' });
+            if (!res.ok) {
+                throw new Error('Failed to fetch branches');
+            }
+            const branches = await res.json();
+            branchSelect.innerHTML = '<option value="">Select branch</option>';
+            branches.forEach(b => {
+                const opt = document.createElement('option');
+                opt.value = b.id;
+                opt.text = b.name;
+                if (String(b.id) === "{{ old('branch') ?? '' }}") opt.selected = true;
+                branchSelect.appendChild(opt);
+            });
+        } catch (e) {
+            branchSelect.innerHTML = '<option value="">Failed to load branches</option>';
+            console.error('Failed to load branches', e);
+        }
+    }
+
+    courseSelect?.addEventListener('change', (e) => loadBranches(e.target.value));
+
+    // Load branches if a course is pre-selected (old input)
+    if (courseSelect?.value) {
+        loadBranches(courseSelect.value);
+    }
+});
+</script>
+
 </x-guest-layout>
