@@ -354,7 +354,14 @@ public function getBranchesByCourse(Request $request) {
     if (!$courseId) {
         return response()->json([]);
     }
-    $branches = Branch::where('course_id', $courseId)->get(['id', 'name']);
+
+    // Use the Course -> branches relationship (many-to-many pivot) instead of expecting a course_id FK on branches
+    $course = Course::with('branches')->find($courseId);
+    if (!$course) {
+        return response()->json([]);
+    }
+
+    $branches = $course->branches()->get(['id', 'name']);
     return response()->json($branches);
 }
 
