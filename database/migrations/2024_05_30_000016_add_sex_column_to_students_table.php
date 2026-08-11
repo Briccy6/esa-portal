@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('students', function (Blueprint $table) {
             if (!Schema::hasColumn('students', 'sex')) {
-                $table->enum('sex', ['male', 'female', 'other'])->nullable()->after('full_name');
+                $table->string('sex')->nullable()->after('full_name');
             }
         });
     }
