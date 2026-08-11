@@ -57,6 +57,7 @@ use App\Http\Controllers\SecretaryAuthController;
 use App\Http\Controllers\ReportCardController;
 use App\Http\Controllers\PublicExamController;
 use App\Http\Controllers\PopulateLessonBranchCourseController;
+use App\Http\Controllers\PaymentScheduleController;
 use Illuminate\Http\Request;
 
 /*
