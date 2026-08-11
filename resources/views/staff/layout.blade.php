@@ -25,6 +25,7 @@
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f8f9fa;
+            overflow-x: hidden;
         }
 
         .navbar {
@@ -165,6 +166,17 @@
             border: none;
             border-radius: 10px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        @media (max-width: 768px) {
+            .btn, .nav-link, button {
+                min-height: 44px;
+            }
+
+            .form-control, input, select, textarea {
+                font-size: 16px;
+                min-height: 44px;
+            }
         }
     </style>
 </head>

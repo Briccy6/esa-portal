@@ -430,7 +430,7 @@
   }
 
   /* Mobile Responsive */
-  @media (max-width: 991.98px) {
+  @media (max-width: 768px) {
     #sidebar {
       transform: translateX(-100%);
     }
@@ -461,6 +461,15 @@
 
     body.sidebar-open {
       overflow: hidden;
+    }
+
+    .btn, .nav-link, button {
+      min-height: 44px;
+    }
+
+    .form-control, input, select, textarea {
+      font-size: 16px;
+      min-height: 44px;
     }
   }
 
@@ -902,7 +911,7 @@
 
   // Handle window resize
   window.addEventListener('resize', function() {
-    if (window.innerWidth > 991.98) {
+    if (window.innerWidth > 768) {
       const sidebar = document.getElementById('sidebar');
       const overlay = document.getElementById('sidebar-overlay');
       

@@ -19,10 +19,10 @@
             <tbody>
                 @forelse($invoices as $invoice)
                     <tr>
-                        <td>{{ $invoice->tx_ref }}</td>
-                        <td>{{ ucfirst($invoice->type) }}</td>
-                        <td>{{ number_format($invoice->amount, 2) }} {{ $invoice->currency }}</td>
-                        <td>
+                        <td data-label="Reference">{{ $invoice->tx_ref }}</td>
+                        <td data-label="Type">{{ ucfirst($invoice->type) }}</td>
+                        <td data-label="Amount">{{ number_format($invoice->amount, 2) }} {{ $invoice->currency }}</td>
+                        <td data-label="Status">
                             @if($invoice->status === 'successful' || $invoice->status === 'paid')
                                 <span class="badge bg-success">{{ ucfirst($invoice->status) }}</span>
                             @elseif($invoice->status === 'pending')
@@ -31,7 +31,7 @@
                                 <span class="badge bg-danger">{{ ucfirst($invoice->status) }}</span>
                             @endif
                         </td>
-                        <td>{{ $invoice->paid_at ? \Carbon\Carbon::parse($invoice->paid_at)->format('Y-m-d') : '-' }}</td>
+                        <td data-label="Date">{{ $invoice->paid_at ? \Carbon\Carbon::parse($invoice->paid_at)->format('Y-m-d') : '-' }}</td>
                     </tr>
                 @empty
                     <tr>
@@ -157,16 +157,54 @@ h2::after {
     border-bottom: none;
 }
 
-/* Badge styling */
-.badge {
-    font-size: 0.75rem;
-    font-weight: 600;
-    padding: 0.5rem 0.75rem;
-    border-radius: 20px;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-}
+    @media (max-width: 640px) {
+        .table-responsive {
+            overflow: visible;
+        }
 
+        .table {
+            border: none;
+        }
+
+        .table thead {
+            display: none;
+        }
+
+        .table tbody tr {
+            display: block;
+            margin-bottom: 1rem;
+            border: 1px solid #e9ecef;
+            border-radius: 14px;
+            background: #fff;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+
+        .table tbody td {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.85rem 1rem;
+            font-size: 0.95rem;
+            border-bottom: 1px solid #f1f3f5;
+        }
+
+        .table tbody td:last-child {
+            border-bottom: none;
+        }
+
+        .table tbody td::before {
+            content: attr(data-label);
+            font-weight: 700;
+            color: #6c757d;
+            margin-right: 0.75rem;
+            flex: 1 0 45%;
+            white-space: normal;
+        }
+
+        .table tbody td {
+            flex-wrap: wrap;
+        }
+    }
 .badge.bg-success {
     background-color: #28a745 !important;
     color: white;

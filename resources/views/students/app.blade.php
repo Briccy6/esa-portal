@@ -28,6 +28,7 @@
             min-height: 100vh;
             background-color: #f8fafc;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            overflow-x: hidden;
         }
 
         /* Top Navigation */
@@ -297,6 +298,15 @@
 
             .sidebar-header {
                 padding: 1rem 1.25rem 0.75rem;
+            }
+
+            .btn, .nav-link, button {
+                min-height: 44px;
+            }
+
+            .form-control, input, select, textarea {
+                font-size: 16px;
+                min-height: 44px;
             }
         }
     </style>

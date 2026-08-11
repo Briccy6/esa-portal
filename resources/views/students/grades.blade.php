@@ -51,22 +51,22 @@
                     <tbody>
                         @forelse($marks as $mark)
                             <tr class="grade-row">
-                                <td class="ps-4 py-3">
+                                <td class="ps-4 py-3" data-label="Course">
                                     <div class="fw-semibold text-dark">
                                         {{ $mark->course->course_name ?? '-' }}
                                     </div>
                                 </td>
-                                <td class="py-3">
+                                <td class="py-3" data-label="Branch">
                                     <span class="badge bg-info bg-opacity-10 text-info px-2 py-1 rounded-pill">
                                         {{ $mark->branch->name ?? '-' }}
                                     </span>
                                 </td>
-                                <td class="py-3">
+                                <td class="py-3" data-label="Exam">
                                     <div class="text-dark">
                                         {{ $mark->exam->title ?? '-' }}
                                     </div>
                                 </td>
-                                <td class="py-3 text-center">
+                                <td class="py-3 text-center" data-label="Mark">
                                     @php
                                         $markValue = $mark->value;
                                         $markClass = 'text-success';
@@ -242,6 +242,51 @@
     
     .grade-row:hover {
         transform: none;
+    }
+}
+
+@media (max-width: 640px) {
+    .table-responsive {
+        overflow: visible;
+    }
+
+    .table thead {
+        display: none;
+    }
+
+    .table tbody tr {
+        display: block;
+        margin-bottom: 1rem;
+        border: 1px solid #e9ecef;
+        border-radius: 14px;
+        background: #fff;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+    }
+
+    .table tbody td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.85rem 1rem;
+        font-size: 0.95rem;
+        border-bottom: 1px solid #f1f3f5;
+    }
+
+    .table tbody td:last-child {
+        border-bottom: none;
+    }
+
+    .table tbody td::before {
+        content: attr(data-label);
+        font-weight: 700;
+        color: #6c757d;
+        margin-right: 0.75rem;
+        flex: 1 0 45%;
+        white-space: normal;
+    }
+
+    .table tbody td {
+        flex-wrap: wrap;
     }
 }
 </style>

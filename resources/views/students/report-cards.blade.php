@@ -397,6 +397,43 @@ body { background: var(--bg); color: var(--text); font-family: var(--font); }
     margin-bottom: .5rem;
 }
 .rc-empty p { font-size: .85rem; max-width: 360px; margin: 0 auto; }
+
+@media (max-width: 640px) {
+    .rc-wrap {
+        padding: 1.25rem 0.75rem 2rem;
+    }
+
+    .rc-hero,
+    .rc-fee-alert,
+    .rc-countdown-wrap,
+    .rc-card,
+    .authority-section,
+    .transcript-footer {
+        border-radius: 18px;
+    }
+
+    .rc-card {
+        margin-bottom: 1rem;
+    }
+
+    .rc-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .rc-digit-block {
+        min-width: 48px;
+        width: 48px;
+    }
+
+    .rc-approved {
+        font-size: .8rem;
+    }
+
+    .rc-dl-btn {
+        font-size: .92rem;
+        padding: .85rem 1rem;
+    }
+}
 </style>
 @endsection
 

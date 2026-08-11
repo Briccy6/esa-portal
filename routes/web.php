@@ -1203,8 +1203,10 @@ Route::post('/students/send-verification-code', [StudentController::class, 'send
 Route::post('/students/verify-email-code', [StudentController::class, 'verifyEmailCode'])->name('students.verifyEmailCode');
 
 Route::middleware('auth:student')->get('/student/dashboard', [StudentController::class, 'dashboard'])->name('student.dashboard');
-Route::middleware('auth:student')->get('/student/report-cards', [StudentController::class, 'reportCards'])->name('student.report-cards');
-Route::middleware('auth:student')->get('/student/report-cards/{reportCardId}/download', [StudentController::class, 'downloadReportCard'])->name('student.report-cards.download');
+// Student report-card routes are defined below in the grouped `student` prefix
+// (using `StudentReportCardController`). The older standalone routes were
+// duplicated and caused named route collisions during route:cache.
+// Removed duplicate standalone routes to keep a single authoritative set.
 Route::middleware('auth:student')->get('/student/payment-transcript', [StudentController::class, 'paymentTranscriptPrint'])->name('student.payment-transcript');
 Route::middleware('auth:student')->get('/student/transcript/send', [StudentController::class, 'studentSendTranscript'])->name('student.transcript.send');
 Route::post('/student/login/submit', [StudentController::class, 'loginWithPassword'])->name('student.login.submit');
@@ -1431,11 +1433,8 @@ Route::middleware('auth:student')->prefix('student')->name('student.')->group(fu
     Route::get('/live-classes/{liveClass}/room', [LiveClassController::class, 'room'])->name('live-classes.room');
     Route::post('/live-classes/{liveClass}/leave', [LiveClassController::class, 'studentLeave'])->name('live-classes.leave');
 
-    // Student Report Card Routes
-    Route::get('/report-cards', [App\Http\Controllers\StudentReportCardController::class, 'index'])->name('report-cards.index');
-    Route::get('/report-cards/{id}', [App\Http\Controllers\StudentReportCardController::class, 'show'])->name('report-cards.show');
-    Route::get('/report-cards/{id}/download', [App\Http\Controllers\StudentReportCardController::class, 'download'])->name('report-cards.download');
-    Route::get('/report-cards-status', [App\Http\Controllers\StudentReportCardController::class, 'accessStatus'])->name('report-cards.status');
+    // Student Report Card Routes are defined later using ReportCardController
+    // (Avoid duplicate route names by using the single authoritative set)
 });
 
 

@@ -588,6 +588,28 @@
             opacity: 1;
         }
 
+        @media (max-width: 768px) {
+            .carousel-item {
+                background-attachment: scroll;
+            }
+
+            .hero-carousel {
+                height: 520px;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .hero-carousel {
+                height: 420px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero-carousel {
+                height: 360px;
+            }
+        }
+
         .carousel-overlay {
             background: linear-gradient(135deg, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.6) 100%);
             width: 100%;
@@ -1135,12 +1157,12 @@
                     <p class="text-sm font-medium tracking-wide uppercase">Excellence in digital learning</p>
                 </div>
 
-                <h2 class="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight mb-4">
+                <h2 class="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight mb-4 text-slate-950">
                     Build exam confidence<br>
                     with a modern <span class="text-accent-color">ESA</span> portal.
                 </h2>
 
-                <p class="text-lg md:text-xl text-gray-200 max-w-xl mb-8">
+                <p class="text-lg md:text-xl text-slate-700 max-w-xl mb-8">
                     Practice real exams, access curated notes, and join a learning community
                     designed to help you perform at your best — anytime, on any device.
                 </p>
@@ -1159,7 +1181,7 @@
                     </a>
                 </div>
 
-                <div class="flex flex-wrap items-center gap-6 text-sm text-gray-300">
+                <div class="flex flex-wrap items-center gap-6 text-sm text-slate-600">
                     <div class="flex items-center space-x-2">
                         <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
                         <span>Secure online assessments</span>
@@ -1200,7 +1222,7 @@
                             Learning hub
                         </p>
                         <h3 class="text-xl font-bold mb-2">Notes & videos</h3>
-                        <p class="text-sm text-slate-200 mb-4">
+                        <p class="text-sm text-slate-600 mb-4">
                             Curriculum‑aligned notes, documents, and videos from experienced ESA teachers.
                         </p>
                     </div>

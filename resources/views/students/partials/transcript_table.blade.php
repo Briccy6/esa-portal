@@ -533,12 +533,71 @@
     margin-left: auto;
     margin-bottom: 5px;
 }
-</style>
 
-<div class="transcript-container">
-    <!-- Print Button -->
-    <div class="d-print-none mb-3">
-        <button onclick="window.print()" class="btn btn-primary">
+    @media (max-width: 640px) {
+        .transcript-container {
+            padding: 0 0.5rem 1rem;
+        }
+
+        .student-info-section table,
+        .student-info-section td {
+            display: block;
+            width: 100%;
+        }
+
+        .student-info-section td {
+            padding: 0.5rem 0;
+        }
+
+        .table-responsive {
+            overflow: visible;
+        }
+
+        .table thead {
+            display: none;
+        }
+
+        .table tbody tr {
+            display: block;
+            margin-bottom: 1rem;
+            border: 1px solid #e9ecef;
+            border-radius: 14px;
+            background: #fff;
+            overflow: hidden;
+        }
+
+        .table tbody td {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.85rem 1rem;
+            border-bottom: 1px solid #f1f3f5;
+            font-size: 0.95rem;
+        }
+
+        .table tbody td:last-child {
+            border-bottom: none;
+        }
+
+        .table tbody td::before {
+            content: attr(data-label);
+            font-weight: 700;
+            color: #6c757d;
+            margin-right: 0.75rem;
+            flex: 1 0 45%;
+            white-space: normal;
+        }
+
+        .table tbody td {
+            flex-wrap: wrap;
+        }
+
+        .rc-empty,
+        .authority-section,
+        .transcript-footer {
+            padding: 0 0.5rem;
+        }
+    }
             <i class="fas fa-print"></i> Print Transcript
         </button>
     </div>
@@ -637,19 +696,19 @@
                                     $termName = $payment->term ? $payment->term->name : 'No Term';
                                 @endphp
                                 <tr id="payment-row-{{ $payment->id }}">
-                                    <td>{{ $index + 1 }}</td>
-                                    <td>{{ $displayDate }}</td>
-                                    <td><span class="badge bg-info">{{ $termName }}</span></td>
-                                    <td><span class="badge bg-primary">{{ $displayType }}</span></td>
-                                    <td><strong>{{ number_format($payment->amount, 2) }} RWF</strong></td>
-                                    <td>
+                                    <td data-label="#">{{ $index + 1 }}</td>
+                                    <td data-label="Date">{{ $displayDate }}</td>
+                                    <td data-label="Term"><span class="badge bg-info">{{ $termName }}</span></td>
+                                    <td data-label="Fee Type"><span class="badge bg-primary">{{ $displayType }}</span></td>
+                                    <td data-label="Amount"><strong>{{ number_format($payment->amount, 2) }} RWF</strong></td>
+                                    <td data-label="Payment Method" data-label="Payment Method">
                                         @if(strtolower($method) === 'cash')
                                             <span class="badge bg-success"><i class="fas fa-money-bill-wave"></i> Cash</span>
                                         @else
                                             <span class="badge bg-primary"><i class="fas fa-credit-card"></i> Online</span>
                                         @endif
                                     </td>
-                                    <td>
+                                    <td data-label="Status" data-label="Status">
                                         @if(in_array($payment->status, ['successful', 'paid']))
                                             <span class="badge bg-success">Paid</span>
                                         @elseif($payment->status === 'pending')
@@ -660,7 +719,7 @@
                                     </td>
 
                                     @if($isAuthorizedUser)
-                                        <td class="text-center d-print-none">
+                                        <td class="text-center d-print-none" data-label="Actions">
                                             <button type="button"
                                                     class="btn btn-sm btn-warning me-1"
                                                     onclick="openEditModal({{ $payment->id }})"
