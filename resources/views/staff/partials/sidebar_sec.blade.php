@@ -315,9 +315,13 @@
             <label for="academic_year_id" class="form-label">Academic Year</label>
             <select name="academic_year_id" id="academic_year_id" class="form-select" required>
               <option value="" disabled selected>Select academic year</option>
-              @foreach($academicYears ?? [] as $year)
-                <option value="{{ $year->id }}">{{ $year->year }}</option>
-              @endforeach
+              @if(isset($academicYears) && $academicYears->isNotEmpty())
+                @foreach($academicYears as $year)
+                  <option value="{{ $year->id }}">{{ $year->year }}</option>
+                @endforeach
+              @else
+                <option value="" disabled>No academic years available</option>
+              @endif
             </select>
           </div>
           <div class="mb-3">

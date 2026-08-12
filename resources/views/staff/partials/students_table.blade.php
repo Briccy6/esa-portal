@@ -288,7 +288,7 @@
                                 </button>
 
                                 {{-- Send Email --}}
-                                <a href="{{ route('students.transcript.send', $student->id) }}"
+                                <a href="{{ route('staff.students.transcript.send', $student->id) }}"
                                    class="btn btn-sm btn-success action-btn-icon"
                                    title="Email Transcript to Student">
                                     <i class="fas fa-envelope"></i>
@@ -1578,7 +1578,7 @@ document.addEventListener('DOMContentLoaded', function () {
         modal.addEventListener('show.bs.modal', function () {
             const studentId = this.id.replace('transcriptModal', '');
             const body = this.querySelector('.transcript-modal-body');
-            fetch(`/students/${studentId}/transcript/ajax`)
+            fetch(`/staff/students/${studentId}/transcript/ajax`)
                 .then(r => r.text())
                 .then(html => { body.innerHTML = html; })
                 .catch(() => { body.innerHTML = '<div class="alert alert-danger">Failed to load transcript</div>'; });

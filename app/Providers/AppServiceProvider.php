@@ -37,7 +37,13 @@ class AppServiceProvider extends ServiceProvider
         View::composer('staff.partials.sidebar_sec', function ($view) {
             $view->with('branches', \App\Models\Branch::orderBy('name')->get(['id', 'name']));
             $view->with('courses', \App\Models\Course::orderBy('course_name')->get(['id', 'course_name']));
-            $view->with('academicYears', \App\Models\AcademicYear::active()->orderByDesc('starting_date')->get(['id', 'year']));
+
+            $academicYears = \App\Models\AcademicYear::active()->orderByDesc('starting_date')->get(['id', 'year']);
+            if ($academicYears->isEmpty()) {
+                $academicYears = \App\Models\AcademicYear::orderByDesc('starting_date')->get(['id', 'year']);
+            }
+
+            $view->with('academicYears', $academicYears);
         });
 
         // View::composer('teacher.layout', function ($view) {

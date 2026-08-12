@@ -1057,6 +1057,35 @@ function setupFormSubmission() {
             }
 
             if (!response.ok) {
+                if (response.status === 422 && data?.errors) {
+                    // Show per-field validation errors returned from server
+                    Object.keys(data.errors).forEach(fieldName => {
+                        const field = form.querySelector(`[name="${fieldName}"]`);
+                        const messages = data.errors[fieldName];
+                        const message = Array.isArray(messages) ? messages.join(' ') : messages;
+                        if (field) {
+                            field.classList.remove('is-valid');
+                            field.classList.add('is-invalid');
+                            const existing = field.parentNode.querySelector('.invalid-feedback');
+                            if (existing) existing.remove();
+                            const errorDiv = document.createElement('div');
+                            errorDiv.className = 'invalid-feedback';
+                            errorDiv.textContent = message;
+                            field.parentNode.appendChild(errorDiv);
+                        }
+                    });
+
+                    const firstErrorField = form.querySelector('.is-invalid');
+                    if (firstErrorField) {
+                        firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        firstErrorField.focus();
+                    }
+
+                    const combined = Object.values(data.errors).flat().join(' ');
+                    showPaymentErrorBanner(combined);
+                    throw new Error(combined);
+                }
+
                 const message = data?.message || 'Payment initialization failed. Please try again.';
                 showPaymentErrorBanner(message);
                 throw new Error(message);
@@ -1133,7 +1162,11 @@ function restoreFormData() {
         
         Object.keys(data).forEach(key => {
             const input = form.querySelector(`[name="${key}"]`);
-            if (input && !input.value) {
+            if (!input || input.type === 'file' || input.type === 'password') {
+                return;
+            }
+
+            if (!input.value) {
                 input.value = data[key];
                 
                 // Trigger change events for dependent fields

@@ -149,6 +149,16 @@ class FlutterwaveController extends Controller
                 'message' => 'Failed to initialize payment. Please try again.',
             ], 400);
 
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::warning('Payment initialization validation failed', [
+                'errors' => $e->errors(),
+            ]);
+
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Validation failed',
+                'errors'  => $e->errors(),
+            ], 422);
         } catch (\Exception $e) {
             Log::error('Payment initialization error: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
