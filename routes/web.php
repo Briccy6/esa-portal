@@ -1643,6 +1643,7 @@ Route::middleware(['auth:staff'])->prefix('dos')->name('dos.')->group(function (
     // Timetable Management
     Route::get('/timetable', [\App\Http\Controllers\DosTimetableController::class, 'index'])->name('timetable.index');
     Route::get('/timetable/create', [\App\Http\Controllers\DosTimetableController::class, 'create'])->name('timetable.create');
+    Route::get('/timetable/branch-courses', [\App\Http\Controllers\DosTimetableController::class, 'branchCourses'])->name('timetable.branch-courses');
     Route::post('/timetable', [\App\Http\Controllers\DosTimetableController::class, 'store'])->name('timetable.store');
     Route::get('/timetable/{timetable}/edit', [\App\Http\Controllers\DosTimetableController::class, 'edit'])->name('timetable.edit');
     Route::put('/timetable/{timetable}', [\App\Http\Controllers\DosTimetableController::class, 'update'])->name('timetable.update');

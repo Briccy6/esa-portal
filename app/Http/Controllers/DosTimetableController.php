@@ -33,7 +33,33 @@ class DosTimetableController extends Controller
     protected function getAllowedBranchIds(): array
     {
         $user = Auth::guard('staff')->user();
-        return $user ? $user->branches->pluck('id')->toArray() : [];
+        if (! $user) {
+            return [];
+        }
+
+        $branchIds = $user->branches->pluck('id')->toArray();
+
+        // If the DOS user has no branches assigned, allow all branches (fallback).
+        if (empty($branchIds)) {
+            return Branch::orderBy('name')->pluck('id')->toArray();
+        }
+
+        return $branchIds;
+    }
+
+    public function branchCourses(Request $request)
+    {
+        $this->authorizeDos();
+
+        $branchId = (int) $request->get('branch_id');
+        if (! $branchId) {
+            return response()->json([], 200);
+        }
+
+        $courseIds = LessonBranchCourse::where('branch_id', $branchId)->pluck('course_id')->unique()->toArray();
+        $courses = Course::whereIn('id', $courseIds)->orderBy('course_name')->get(['id', 'course_name']);
+
+        return response()->json($courses);
     }
 
     protected function getLessonAssignments(int $branchId)

@@ -120,7 +120,7 @@
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label">Course(s)</label>
-                                <select name="sessions[{{ $index }}][course_ids][]" class="form-select" multiple>
+                                <select name="sessions[{{ $index }}][course_ids][]" class="form-select course-select" multiple data-placeholder="Select course(s)">
                                     @foreach($courses as $course)
                                         <option value="{{ $course->id }}" @selected(in_array($course->id, old("sessions.{$index}.course_ids", $sessionData['course_ids'] ?? [])))>{{ $course->course_name }}</option>
                                     @endforeach
@@ -184,7 +184,7 @@
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Course(s)</label>
-                    <select name="sessions[__INDEX__][course_ids][]" class="form-select" multiple>
+                    <select name="sessions[__INDEX__][course_ids][]" class="form-select course-select" multiple data-placeholder="Select course(s)">
                         @foreach($courses as $course)
                             <option value="{{ $course->id }}">{{ $course->course_name }}</option>
                         @endforeach
@@ -248,6 +248,51 @@
 
         addButton.addEventListener('click', addSessionRow);
         bindRemoveButtons();
+    });
+</script>
+<script>
+    // Dynamically load courses when branch changes and update all course multi-selects
+    document.addEventListener('DOMContentLoaded', function () {
+        const branchSelect = document.getElementById('branch_id');
+
+        async function loadCoursesForBranch(branchId) {
+            try {
+                const url = new URL('{{ route('dos.timetable.branch-courses') }}', window.location.origin);
+                url.searchParams.set('branch_id', branchId);
+                const res = await fetch(url.toString(), { credentials: 'same-origin' });
+                if (!res.ok) return [];
+                return await res.json();
+            } catch (err) {
+                console.error('Failed to load branch courses', err);
+                return [];
+            }
+        }
+
+        async function refreshCourseSelects(branchId) {
+            const courses = await loadCoursesForBranch(branchId);
+            const selects = document.querySelectorAll('.course-select');
+            selects.forEach(sel => {
+                // remember selected values that still apply
+                const prev = Array.from(sel.options).filter(o => o.selected).map(o => o.value);
+                sel.innerHTML = '';
+                courses.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.id;
+                    opt.textContent = c.course_name;
+                    if (prev.includes(String(c.id))) opt.selected = true;
+                    sel.appendChild(opt);
+                });
+            });
+        }
+
+        if (branchSelect) {
+            branchSelect.addEventListener('change', function () {
+                refreshCourseSelects(this.value);
+            });
+
+            // initial load to ensure selects match initial branch
+            refreshCourseSelects(branchSelect.value);
+        }
     });
 </script>
 @endsection
