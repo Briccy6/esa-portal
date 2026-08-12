@@ -12,6 +12,7 @@ class Timetable extends Model
 
     protected $fillable = [
         'title',
+        'image',
         'branch_id',
         'academic_year_id',
         'term_id',

@@ -296,6 +296,7 @@ class DosTimetableController extends Controller
 
         $timetable = Timetable::create([
             'title' => $request->title,
+            'image' => $request->get('image', ''),
             'branch_id' => $request->branch_id,
             'academic_year_id' => $request->academic_year_id,
             'term_id' => $termId,
@@ -496,6 +497,7 @@ class DosTimetableController extends Controller
 
         $timetable->update([
             'title' => $request->title,
+            'image' => $request->get('image', ''),
             'branch_id' => $request->branch_id,
             'academic_year_id' => $request->academic_year_id,
             'term_id' => $termId,
