@@ -181,9 +181,21 @@ class DosTimetableController extends Controller
             $branchId = $branches->first()->id;
         }
 
-        $academicYears = AcademicYear::whereHas('branches', function ($query) use ($branches) {
-            $query->whereIn('branches.id', $branches->pluck('id'));
-        })->orderBy('year', 'desc')->get();
+        try {
+            $academicYears = AcademicYear::whereHas('branches', function ($query) use ($branches) {
+                $query->whereIn('branches.id', $branches->pluck('id'));
+            })->orderBy('year', 'desc')->get();
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::warning('AcademicYear->branches query failed: ' . $e->getMessage());
+            $academicYears = collect();
+        }
+
+        // If filtering by branch yields no results (missing pivot rows or migration not run),
+        // fall back to showing all academic years so the DOS can continue working.
+        if ($academicYears->isEmpty()) {
+            $academicYears = AcademicYear::orderBy('year', 'desc')->get();
+            session()->flash('warning', 'Academic years could not be filtered by branch. Showing all academic years. Please run migrations to restore pivot tables.');
+        }
 
         $selectedAcademicYearId = session()->getOldInput('academic_year_id') ?: ($academicYears->first()->id ?? null);
         $selectedAcademicYearId = $selectedAcademicYearId ?: ($academicYears->first()->id ?? null);
@@ -313,9 +325,19 @@ class DosTimetableController extends Controller
 
         $branches = $dos->branches;
         $branchId = $timetable->branch_id;
-        $academicYears = AcademicYear::whereHas('branches', function ($query) use ($branches) {
-            $query->whereIn('branches.id', $branches->pluck('id'));
-        })->orderBy('year', 'desc')->get();
+        try {
+            $academicYears = AcademicYear::whereHas('branches', function ($query) use ($branches) {
+                $query->whereIn('branches.id', $branches->pluck('id'));
+            })->orderBy('year', 'desc')->get();
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::warning('AcademicYear->branches query failed: ' . $e->getMessage());
+            $academicYears = collect();
+        }
+
+        if ($academicYears->isEmpty()) {
+            $academicYears = AcademicYear::orderBy('year', 'desc')->get();
+            session()->flash('warning', 'Academic years could not be filtered by branch. Showing all academic years. Please run migrations to restore pivot tables.');
+        }
 
         $lessonAssignments = $this->getLessonAssignments($branchId);
         $courseIds = $lessonAssignments->pluck('course_id')->unique();
