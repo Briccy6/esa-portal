@@ -229,6 +229,7 @@
             const rowMarkup = template.replace(/__INDEX__/g, nextIndex);
             container.insertAdjacentHTML('beforeend', rowMarkup);
             bindRemoveButtons();
+            initCourseSelects();
         }
 
         function bindRemoveButtons() {
@@ -248,7 +249,29 @@
 
         addButton.addEventListener('click', addSessionRow);
         bindRemoveButtons();
+        initCourseSelects();
     });
+</script>
+<!-- Select2 assets -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+<script>
+    function initCourseSelects() {
+        if (!window.jQuery || !jQuery().select2) return;
+        jQuery('.course-select').each(function () {
+            const $el = jQuery(this);
+            // destroy if already initialized
+            if ($el.hasClass('select2-hidden-accessible')) {
+                $el.select2('destroy');
+            }
+            $el.select2({
+                placeholder: $el.data('placeholder') || 'Select course(s)',
+                width: '100%',
+                allowClear: true
+            });
+        });
+    }
 </script>
 <script>
     // Dynamically load courses when branch changes and update all course multi-selects

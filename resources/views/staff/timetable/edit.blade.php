@@ -122,7 +122,7 @@
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label">Course(s)</label>
-                                <select name="sessions[{{ $index }}][course_ids][]" class="form-select" multiple>
+                                <select name="sessions[{{ $index }}][course_ids][]" class="form-select course-select" multiple data-placeholder="Select course(s)">
                                     @foreach($courses as $course)
                                         <option value="{{ $course->id }}" @selected(in_array($course->id, old("sessions.{$index}.course_ids", $sessionData['course_ids'] ?? [])))>{{ $course->course_name }}</option>
                                     @endforeach
@@ -188,7 +188,7 @@
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Course(s)</label>
-                    <select name="sessions[__INDEX__][course_ids][]" class="form-select" multiple>
+                    <select name="sessions[__INDEX__][course_ids][]" class="form-select course-select" multiple data-placeholder="Select course(s)">
                         @foreach($courses as $course)
                             <option value="{{ $course->id }}">{{ $course->course_name }}</option>
                         @endforeach
@@ -252,6 +252,70 @@
 
         addButton.addEventListener('click', addSessionRow);
         bindRemoveButtons();
+    });
+</script>
+<!-- Select2 assets -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+<script>
+    function initCourseSelects() {
+        if (!window.jQuery || !jQuery().select2) return;
+        jQuery('.course-select').each(function () {
+            const $el = jQuery(this);
+            if ($el.hasClass('select2-hidden-accessible')) {
+                $el.select2('destroy');
+            }
+            $el.select2({
+                placeholder: $el.data('placeholder') || 'Select course(s)',
+                width: '100%',
+                allowClear: true
+            });
+        });
+    }
+
+    // dynamic branch -> courses behavior (reuse same endpoint)
+    document.addEventListener('DOMContentLoaded', function () {
+        const branchSelect = document.getElementById('branch_id');
+        async function loadCoursesForBranch(branchId) {
+            try {
+                const url = new URL('{{ route('dos.timetable.branch-courses') }}', window.location.origin);
+                url.searchParams.set('branch_id', branchId);
+                const res = await fetch(url.toString(), { credentials: 'same-origin' });
+                if (!res.ok) return [];
+                return await res.json();
+            } catch (err) {
+                console.error('Failed to load branch courses', err);
+                return [];
+            }
+        }
+
+        async function refreshCourseSelects(branchId) {
+            const courses = await loadCoursesForBranch(branchId);
+            const selects = document.querySelectorAll('.course-select');
+            selects.forEach(sel => {
+                const prev = Array.from(sel.options).filter(o => o.selected).map(o => o.value);
+                // rebuild options
+                sel.innerHTML = '';
+                courses.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.id;
+                    opt.textContent = c.course_name;
+                    if (prev.includes(String(c.id))) opt.selected = true;
+                    sel.appendChild(opt);
+                });
+            });
+            initCourseSelects();
+        }
+
+        if (branchSelect) {
+            branchSelect.addEventListener('change', function () {
+                refreshCourseSelects(this.value);
+            });
+            refreshCourseSelects(branchSelect.value);
+        }
+
+        initCourseSelects();
     });
 </script>
 @endsection
