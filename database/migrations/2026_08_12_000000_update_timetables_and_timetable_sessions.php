@@ -19,8 +19,11 @@ return new class extends Migration
                 if (!Schema::hasColumn('timetables', 'academic_year_id')) {
                     $table->foreignId('academic_year_id')->nullable()->constrained('academic_years')->onDelete('cascade')->after('branch_id');
                 }
+                if (!Schema::hasColumn('timetables', 'term_id')) {
+                    $table->foreignId('term_id')->nullable()->constrained()->onDelete('cascade')->after('academic_year_id');
+                }
                 if (!Schema::hasColumn('timetables', 'status')) {
-                    $table->enum('status', ['draft', 'published'])->default('draft')->after('academic_year_id');
+                    $table->enum('status', ['draft', 'published'])->default('draft')->after('term_id');
                 }
             });
         }
@@ -65,6 +68,10 @@ return new class extends Migration
             Schema::table('timetables', function (Blueprint $table) {
                 if (Schema::hasColumn('timetables', 'status')) {
                     $table->dropColumn('status');
+                }
+                if (Schema::hasColumn('timetables', 'term_id')) {
+                    $table->dropForeign(['term_id']);
+                    $table->dropColumn('term_id');
                 }
                 if (Schema::hasColumn('timetables', 'academic_year_id')) {
                     $table->dropForeign(['academic_year_id']);

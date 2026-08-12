@@ -18,6 +18,7 @@
                     <th>Title</th>
                     <th>Branch</th>
                     <th>Academic Year</th>
+                    <th>Term</th>
                     <th>Valid From</th>
                     <th>Valid Until</th>
                     <th>Status</th>
@@ -30,6 +31,7 @@
                         <td>{{ $timetable->title }}</td>
                         <td>{{ $timetable->branch->name ?? 'N/A' }}</td>
                         <td>{{ $timetable->academicYear->year ?? 'N/A' }}</td>
+                        <td>{{ $timetable->term->name ?? 'N/A' }}</td>
                         <td>{{ $timetable->valid_from ? \Carbon\Carbon::parse($timetable->valid_from)->format('M d, Y') : 'N/A' }}</td>
                         <td>{{ $timetable->valid_until ? \Carbon\Carbon::parse($timetable->valid_until)->format('M d, Y') : 'N/A' }}</td>
                         <td>

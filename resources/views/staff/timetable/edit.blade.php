@@ -39,9 +39,23 @@
                 <label for="academic_year_id" class="form-label">Academic Year</label>
                 <select name="academic_year_id" id="academic_year_id" class="form-select" required>
                     @foreach($academicYears as $year)
-                        <option value="{{ $year->id }}" @selected(old('academic_year_id', $timetable->academic_year_id) == $year->id)>{{ $year->year }}</option>
+                        <option value="{{ $year->id }}" @selected(old('academic_year_id', $selectedAcademicYearId) == $year->id)>{{ $year->year }}</option>
                     @endforeach
                 </select>
+            </div>
+            <div class="col-md-6">
+                <label for="term_id" class="form-label">Term</label>
+                <select name="term_id" id="term_id" class="form-select" @if(!$activeTerm) required @endif>
+                    <option value="" @selected(old('term_id', $timetable->term_id) === null)>-- Select term --</option>
+                    @foreach($terms as $term)
+                        <option value="{{ $term->id }}" @selected(old('term_id', $timetable->term_id ?: $activeTerm?->id) == $term->id)>{{ $term->name }} ({{ $term->start_date->format('M j') }} - {{ $term->end_date->format('M j') }})</option>
+                    @endforeach
+                </select>
+                @if($activeTerm)
+                    <small class="text-muted">Using active term: {{ $activeTerm->name }} ({{ $activeTerm->start_date->format('M j') }} - {{ $activeTerm->end_date->format('M j') }}).</small>
+                @else
+                    <small class="text-muted">No active term found for the selected academic year. Please choose a term manually.</small>
+                @endif
             </div>
             <div class="col-md-3">
                 <label for="valid_from" class="form-label">Valid From</label>

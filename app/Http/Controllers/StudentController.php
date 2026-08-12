@@ -1782,10 +1782,17 @@ class StudentController extends Controller
         $subscriptions = \App\Models\Subscription::active()->orderBy('price')->get();
         $activeSubscription = $student->activeSubscription;
 
-        // Get the active published timetable for the student's branch and academic year
+        // Get the active published timetable for the student's branch, academic year, and course
         $activeTimetable = Timetable::active()
             ->where('branch_id', $student->branch_id)
             ->where('academic_year_id', $student->academic_year_id)
+            ->whereHas('sessions', function ($query) use ($student) {
+                $query->whereHas('courses', function ($courseQuery) use ($student) {
+                    $courseQuery->where('courses.id', $student->course_id);
+                })->orWhereHas('lesson', function ($lessonQuery) use ($student) {
+                    $lessonQuery->where('course_id', $student->course_id);
+                });
+            })
             ->with(['branch', 'academicYear', 'sessions.lesson.teacher', 'sessions.courses'])
             ->first();
 

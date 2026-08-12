@@ -11,6 +11,7 @@ use App\Models\Branch;
 use App\Models\AcademicYear;
 use App\Models\LessonBranchCourse;
 use App\Models\Student;
+use App\Models\Term;
 use App\Mail\TimetableChangedMail;
 use App\Mail\TimetableCreatedMail;
 use Illuminate\Support\Facades\Mail;
@@ -69,6 +70,18 @@ class DosTimetableController extends Controller
     {
         $pivotCourses = $session->courses()->pluck('courses.id')->map(fn($id) => (int) $id)->toArray();
         return $pivotCourses ?: [$session->lesson->course_id];
+    }
+
+    protected function getActiveTermForAcademicYear($academicYearId): ?Term
+    {
+        if (!$academicYearId) {
+            return null;
+        }
+
+        return Term::where('academic_year_id', $academicYearId)
+            ->where('start_date', '<=', now())
+            ->where('end_date', '>=', now())
+            ->first();
     }
 
     protected function queueTimetableChangeEmails(Timetable $timetable, array $courseIds, string $summary, array $details = [])
@@ -164,6 +177,15 @@ class DosTimetableController extends Controller
             $query->whereIn('branches.id', $branches->pluck('id'));
         })->orderBy('year', 'desc')->get();
 
+        $selectedAcademicYearId = session()->getOldInput('academic_year_id') ?: ($academicYears->first()->id ?? null);
+        $selectedAcademicYearId = $selectedAcademicYearId ?: ($academicYears->first()->id ?? null);
+
+        $terms = Term::where('academic_year_id', $selectedAcademicYearId)
+            ->orderBy('start_date')
+            ->get();
+
+        $activeTerm = $this->getActiveTermForAcademicYear($selectedAcademicYearId);
+
         $lessonAssignments = $this->getLessonAssignments($branchId);
         $courseIds = $lessonAssignments->pluck('course_id')->unique();
         $teacherIds = $lessonAssignments->pluck('teacher_id')->unique();
@@ -175,6 +197,9 @@ class DosTimetableController extends Controller
             'branches',
             'branchId',
             'academicYears',
+            'selectedAcademicYearId',
+            'activeTerm',
+            'terms',
             'lessonAssignments',
             'courses',
             'teachers'
@@ -187,10 +212,14 @@ class DosTimetableController extends Controller
 
         $allowedBranchIds = $this->getAllowedBranchIds();
 
+        $activeTerm = $this->getActiveTermForAcademicYear($request->academic_year_id);
+        $termRules = $activeTerm ? ['nullable', 'exists:terms,id'] : ['required', 'exists:terms,id'];
+
         $request->validate([
             'title' => 'required|string|max:255',
             'branch_id' => ['required', Rule::in($allowedBranchIds)],
             'academic_year_id' => 'required|exists:academic_years,id',
+            'term_id' => $termRules,
             'valid_from' => 'required|date',
             'valid_until' => 'required|date|after_or_equal:valid_from',
             'sessions' => 'required|array|min:1',
@@ -205,6 +234,12 @@ class DosTimetableController extends Controller
             'sessions.*.mark_as_test' => 'nullable|boolean',
         ]);
 
+        $termId = $activeTerm ? $activeTerm->id : $request->term_id;
+
+        if (!$termId) {
+            return redirect()->back()->withErrors(['term_id' => 'Please select a term for the selected academic year.'])->withInput();
+        }
+
         foreach ($request->sessions as $index => $sessionData) {
             $start = Carbon::createFromFormat('H:i', $sessionData['start_time']);
             $end = Carbon::createFromFormat('H:i', $sessionData['end_time']);
@@ -217,6 +252,7 @@ class DosTimetableController extends Controller
             'title' => $request->title,
             'branch_id' => $request->branch_id,
             'academic_year_id' => $request->academic_year_id,
+            'term_id' => $termId,
             'status' => 'draft',
             'valid_from' => $request->valid_from,
             'valid_until' => $request->valid_until,
@@ -254,7 +290,7 @@ class DosTimetableController extends Controller
         $dos = $this->authorizeDos();
         $branchIds = $dos->branches->pluck('id')->toArray();
 
-        $timetables = Timetable::with(['branch', 'academicYear'])
+        $timetables = Timetable::with(['branch', 'academicYear', 'term'])
             ->whereIn('branch_id', $branchIds)
             ->orderByDesc('created_at')
             ->get();
@@ -280,13 +316,25 @@ class DosTimetableController extends Controller
         $courses = Course::whereIn('id', $courseIds)->get();
         $teachers = \App\Models\Teacher::whereIn('id', $teacherIds)->get();
 
-        $timetable->load(['sessions.lesson.teacher', 'sessions.courses']);
+        $selectedAcademicYearId = session()->getOldInput('academic_year_id') ?: $timetable->academic_year_id;
+        $selectedAcademicYearId = $selectedAcademicYearId ?: $timetable->academic_year_id;
+
+        $terms = Term::where('academic_year_id', $selectedAcademicYearId)
+            ->orderBy('start_date')
+            ->get();
+
+        $activeTerm = $this->getActiveTermForAcademicYear($selectedAcademicYearId);
+
+        $timetable->load(['sessions.lesson.teacher', 'sessions.courses', 'term']);
 
         return view('staff.timetable.edit', compact(
             'timetable',
             'branches',
             'branchId',
             'academicYears',
+            'selectedAcademicYearId',
+            'activeTerm',
+            'terms',
             'lessonAssignments',
             'courses',
             'teachers'
@@ -343,10 +391,14 @@ class DosTimetableController extends Controller
         $dos = $this->authorizeDos();
         abort_unless(in_array($timetable->branch_id, $this->getAllowedBranchIds()), 403);
 
+        $activeTerm = $this->getActiveTermForAcademicYear($request->academic_year_id);
+        $termRules = $activeTerm ? ['nullable', 'exists:terms,id'] : ['required', 'exists:terms,id'];
+
         $request->validate([
             'title' => 'required|string|max:255',
             'branch_id' => ['required', Rule::in($this->getAllowedBranchIds())],
             'academic_year_id' => 'required|exists:academic_years,id',
+            'term_id' => $termRules,
             'valid_from' => 'required|date',
             'valid_until' => 'required|date|after_or_equal:valid_from',
             'sessions' => 'required|array|min:1',
@@ -362,6 +414,12 @@ class DosTimetableController extends Controller
             'sessions.*.session_id' => 'nullable|integer|exists:timetable_sessions,id',
         ]);
 
+        $termId = $activeTerm ? $activeTerm->id : $request->term_id;
+
+        if (!$termId) {
+            return redirect()->back()->withErrors(['term_id' => 'Please select a term for the selected academic year.'])->withInput();
+        }
+
         foreach ($request->sessions as $index => $sessionData) {
             $start = Carbon::createFromFormat('H:i', $sessionData['start_time']);
             $end = Carbon::createFromFormat('H:i', $sessionData['end_time']);
@@ -374,10 +432,17 @@ class DosTimetableController extends Controller
         $existingSessions = $timetable->sessions()->with(['courses', 'lesson'])->get()->keyBy('id');
         $processedIds = [];
 
+        $termId = $activeTerm ? $activeTerm->id : $request->term_id;
+
+        if (!$termId) {
+            return redirect()->back()->withErrors(['term_id' => 'Please select a term for the selected academic year.'])->withInput();
+        }
+
         $timetable->update([
             'title' => $request->title,
             'branch_id' => $request->branch_id,
             'academic_year_id' => $request->academic_year_id,
+            'term_id' => $termId,
             'valid_from' => $request->valid_from,
             'valid_until' => $request->valid_until,
         ]);

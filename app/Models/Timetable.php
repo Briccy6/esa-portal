@@ -14,6 +14,7 @@ class Timetable extends Model
         'title',
         'branch_id',
         'academic_year_id',
+        'term_id',
         'status',
         'valid_from',
         'valid_until',
@@ -32,6 +33,11 @@ class Timetable extends Model
     public function academicYear()
     {
         return $this->belongsTo(AcademicYear::class);
+    }
+
+    public function term()
+    {
+        return $this->belongsTo(Term::class);
     }
 
     public function sessions()
