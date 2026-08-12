@@ -193,9 +193,18 @@ class StudentPaymentTranscript
     {
         return (float) StudentTransaction::query()
             ->where('student_id', $studentId)
-            ->where('type', $type)
+            ->whereIn('type', self::transactionTypesForFeeType($type))
             ->whereIn('status', ['successful', 'paid', 'completed'])
             ->sum('amount');
+    }
+
+    private static function transactionTypesForFeeType(string $feeType): array
+    {
+        if ($feeType === 'registration') {
+            return ['registration', 'registration_fee'];
+        }
+
+        return [$feeType];
     }
 
     public static function totalPaidRecorded(int $studentId): float
@@ -258,8 +267,28 @@ class StudentPaymentTranscript
 
         $discountPct = (float) ($student->discount ?? 0);
         $course      = $student->course;
-        $discountable = $course
-            ? (float) $course->tuition_fee + (float) $course->practical_fee + (float) $course->trip_fee
+        $term = null;
+        $termFees = null;
+
+        if ($course) {
+            $term = $course->getActiveTermForAcademicYear($student->academic_year_id);
+            if (!$term) {
+                $term = Term::where('academic_year_id', $student->academic_year_id)
+                            ->orderBy('start_date', 'asc')
+                            ->first();
+            }
+
+            if ($term) {
+                $termFees = $course->getFeesForTermAndBranch($term->id, $student->branch_id);
+            }
+
+            if (!$termFees) {
+                $termFees = $course->getLegacyFees();
+            }
+        }
+
+        $discountable = $termFees
+            ? (float) $termFees->tuition_fee + (float) $termFees->practical_fee + (float) $termFees->trip_fee
             : 0.0;
         $discountAmount = ($discountPct > 0 && $discountable > 0)
             ? round($discountable * ($discountPct / 100), 2)

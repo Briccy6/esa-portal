@@ -175,11 +175,14 @@
                         $course = \App\Models\Course::find($student->course_id);
                         $discount = $student->discount ?? 0;
 
-                        // Calculate fees
-                        $registrationFee = $course ? floatval($course->registration_fee) : 0;
-                        $tuitionFee = $course ? floatval($course->tuition_fee) : 0;
-                        $practicalFee = $course ? floatval($course->practical_fee) : 0;
-                        $tripFee = $course ? floatval($course->trip_fee) : 0;
+                        // Calculate fees using the branch-specific pivot data when available.
+                        $feeSnapshot = $course
+                            ? $course->getFeeSnapshotForBranchAndAcademicYear($student->branch_id, $student->academic_year_id)
+                            : (object) ['registration_fee' => 0, 'tuition_fee' => 0, 'practical_fee' => 0, 'trip_fee' => 0, 'student_card_fee' => 2000];
+                        $registrationFee = (float) ($feeSnapshot->registration_fee ?? 0);
+                        $tuitionFee = (float) ($feeSnapshot->tuition_fee ?? 0);
+                        $practicalFee = (float) ($feeSnapshot->practical_fee ?? 0);
+                        $tripFee = (float) ($feeSnapshot->trip_fee ?? 0);
 
                         // Calculate discountable fees (exclude registration fee from discount)
                         $discountableFees = $tuitionFee + $practicalFee + $tripFee;
