@@ -276,6 +276,73 @@
 <script>
     let termFeeRowIndex = {{ $existingTermIds->count() ?? $course->courseTermFees->where('is_active', true)->count() }};
     const usedTerms = new Set();
+    const courseBranches = [
+        @foreach($course->branches as $branch)
+            { id: '{{ $branch->id }}', name: '{{ addslashes($branch->name) }}' },
+        @endforeach
+    ];
+
+    function buildBranchFeesRow(index) {
+        const row = document.createElement('tr');
+        row.className = 'branch-fees-row';
+        row.style.display = 'none';
+
+        const branchInputs = courseBranches.map(branch => {
+            return `
+                <div class="col-md-6">
+                    <div class="card p-3 mb-3">
+                        <div class="mb-2"><strong>${branch.name}</strong></div>
+                        <div class="mb-2">
+                            <label class="form-label small">Registration</label>
+                            <input type="number" name="term_fees[${index}][branch_fees][${branch.id}][registration_fee]" class="form-control" min="0" step="0.01" placeholder="Registration fee">
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label small">Tuition</label>
+                            <input type="number" name="term_fees[${index}][branch_fees][${branch.id}][tuition_fee]" class="form-control" min="0" step="0.01" placeholder="Tuition fee">
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label small">Practical</label>
+                            <input type="number" name="term_fees[${index}][branch_fees][${branch.id}][practical_fee]" class="form-control" min="0" step="0.01" placeholder="Practical fee">
+                        </div>
+                        <div>
+                            <label class="form-label small">Trip</label>
+                            <input type="number" name="term_fees[${index}][branch_fees][${branch.id}][trip_fee]" class="form-control" min="0" step="0.01" placeholder="Trip fee">
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        row.innerHTML = `
+            <td colspan="6">
+                <div class="p-3 border rounded bg-light branch-fees-panel">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div>
+                            <h6 class="mb-1">Branch-specific fees</h6>
+                            <p class="mb-0 text-muted small">Override fees for each branch below. Leave blank to use the general term fees.</p>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-secondary toggle-branch-fees">Show branch fees</button>
+                    </div>
+                    <div class="branch-fees-container row g-3" style="display: none;">
+                        ${branchInputs}
+                    </div>
+                </div>
+            </td>
+        `;
+
+        const toggleButton = row.querySelector('.toggle-branch-fees');
+        const container = row.querySelector('.branch-fees-container');
+
+        toggleButton.addEventListener('click', function () {
+            const visible = container.style.display === 'none';
+            container.style.display = visible ? 'flex' : 'none';
+            toggleButton.textContent = visible ? 'Hide branch fees' : 'Show branch fees';
+            toggleButton.classList.toggle('btn-secondary', visible);
+            toggleButton.classList.toggle('btn-outline-secondary', !visible);
+        });
+
+        return row;
+    }
 
     function addTermFeeRow() {
         const tbody = document.querySelector('#term-fees-table tbody');
@@ -315,11 +382,16 @@
                 usedTerms.delete(termId);
                 updateTermSelectOptions();
             }
+            const next = newRow.nextElementSibling;
+            if (next && next.classList.contains('branch-fees-row')) {
+                next.remove();
+            }
             newRow.remove();
             calculateTotalYearFees();
         });
-        
+
         tbody.appendChild(newRow);
+        tbody.appendChild(buildBranchFeesRow(index));
         updateTermSelectOptions();
     }
 
