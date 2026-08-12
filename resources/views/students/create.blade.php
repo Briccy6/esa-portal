@@ -785,15 +785,28 @@ document.addEventListener('DOMContentLoaded', function() {
     const totalFeeInput = document.getElementById('total_fee');
 
     document.getElementById('course_id').addEventListener('change', function () {
+        const courseId = this.value;
+        const branchId = document.getElementById('branch_id')?.value || '';
         const fee = this.options[this.selectedIndex]?.getAttribute('data-fee');
         const feeBox = document.getElementById('registration_fee_box');
         const feeAmount = document.getElementById('registration_fee_amount');
         
-        if (fee && fee !== '0') {
-            feeAmount.textContent = parseInt(fee).toLocaleString();
-            paymentAmountInput.value = fee;
-            totalFeeInput.value = fee;
-            feeBox.classList.add('show');
+        // Fetch branch/term specific fee from server for accuracy
+        if (courseId) {
+            fetch(`/course/fee?course_id=${courseId}&branch_id=${branchId}`)
+                .then(res => res.ok ? res.json() : Promise.reject('Failed to fetch fee'))
+                .then(data => {
+                    const reg = data.registration_fee || 0;
+                    feeAmount.textContent = parseFloat(reg).toLocaleString();
+                    paymentAmountInput.value = reg;
+                    totalFeeInput.value = reg;
+                    feeBox.classList.add('show');
+                }).catch(err => {
+                    feeAmount.textContent = fee && fee !== '0' ? parseInt(fee).toLocaleString() : '0';
+                    paymentAmountInput.value = fee || 0;
+                    totalFeeInput.value = fee || 0;
+                    if (!fee || fee === '0') feeBox.classList.remove('show');
+                });
         } else {
             feeAmount.textContent = '0';
             paymentAmountInput.value = 0;

@@ -13,9 +13,56 @@ class CourseController extends Controller
 {
     public function getCourseFee(Request $request)
 {
-    $course = \App\Models\Course::find($request->course_id);
+    $course = \App\Models\Course::with(['courseTermFees','courseTermBranchFees'])->find($request->course_id);
+
+    if (!$course) {
+        return response()->json(['error' => 'Course not found'], 404);
+    }
+
+    $branchId = $request->query('branch_id');
+    $termId   = $request->query('term_id');
+
+    // Prefer branch-specific term fee if branch_id and term_id provided
+    if ($branchId && $termId) {
+        $bf = \App\Models\CourseTermBranchFee::where('course_id', $course->id)
+            ->where('term_id', $termId)
+            ->where('branch_id', $branchId)
+            ->where('is_active', true)
+            ->first();
+
+        if ($bf) {
+            return response()->json([
+                'registration_fee' => $bf->registration_fee,
+                'tuition_fee' => $bf->tuition_fee,
+                'practical_fee' => $bf->practical_fee,
+                'trip_fee' => $bf->trip_fee,
+            ]);
+        }
+    }
+
+    // Next prefer general term fee for the term
+    if ($termId) {
+        $tf = \App\Models\CourseTermFee::where('course_id', $course->id)
+            ->where('term_id', $termId)
+            ->where('is_active', true)
+            ->first();
+
+        if ($tf) {
+            return response()->json([
+                'registration_fee' => $tf->registration_fee,
+                'tuition_fee' => $tf->tuition_fee,
+                'practical_fee' => $tf->practical_fee,
+                'trip_fee' => $tf->trip_fee,
+            ]);
+        }
+    }
+
+    // Fallback to legacy course-level fees
     return response()->json([
-        'registration_fee' => $course ? $course->registration_fee : null,
+        'registration_fee' => $course->registration_fee,
+        'tuition_fee' => $course->tuition_fee,
+        'practical_fee' => $course->practical_fee,
+        'trip_fee' => $course->trip_fee,
     ]);
 }
     public function index()
@@ -395,30 +442,67 @@ public function storeFees(Request $request, $courseId)
         'term_fees.*.tuition_fee' => 'required|numeric|min:0',
         'term_fees.*.practical_fee' => 'required|numeric|min:0',
         'term_fees.*.trip_fee' => 'required|numeric|min:0',
+        // Optional branch-specific fees per term: term_fees.*.branch_fees.{branchId} => array with fees
+        'term_fees.*.branch_fees' => 'nullable|array',
+        'term_fees.*.branch_fees.*.registration_fee' => 'nullable|numeric|min:0',
+        'term_fees.*.branch_fees.*.tuition_fee' => 'nullable|numeric|min:0',
+        'term_fees.*.branch_fees.*.practical_fee' => 'nullable|numeric|min:0',
+        'term_fees.*.branch_fees.*.trip_fee' => 'nullable|numeric|min:0',
     ]);
 
     DB::beginTransaction();
 
     try {
-        // Deactivate existing fees for this course
+        // Deactivate existing general term fees for this course
         \App\Models\CourseTermFee::where('course_id', $courseId)->update(['is_active' => false]);
-        
-        // Create or update term fees
+        // Deactivate existing branch-specific term fees
+        \App\Models\CourseTermBranchFee::where('course_id', $courseId)->update(['is_active' => false]);
+
+        // Create or update term fees (general or branch-specific)
         foreach ($validated['term_fees'] as $termFeeData) {
-            \App\Models\CourseTermFee::updateOrCreate(
-                [
-                    'course_id' => $courseId,
-                    'term_id' => $termFeeData['term_id']
-                ],
-                [
-                    'registration_fee' => $termFeeData['registration_fee'],
-                    'tuition_fee' => $termFeeData['tuition_fee'],
-                    'practical_fee' => $termFeeData['practical_fee'],
-                    'trip_fee' => $termFeeData['trip_fee'],
-                    'student_card_fee' => 2000,
-                    'is_active' => true,
-                ]
-            );
+            $termId = $termFeeData['term_id'];
+
+            // If branch_fees provided for this term, create branch-specific entries
+            if (!empty($termFeeData['branch_fees']) && is_array($termFeeData['branch_fees'])) {
+                foreach ($termFeeData['branch_fees'] as $branchId => $bf) {
+                    $registration = $bf['registration_fee'] ?? ($termFeeData['registration_fee'] ?? 0);
+                    $tuition      = $bf['tuition_fee'] ?? ($termFeeData['tuition_fee'] ?? 0);
+                    $practical    = $bf['practical_fee'] ?? ($termFeeData['practical_fee'] ?? 0);
+                    $trip         = $bf['trip_fee'] ?? ($termFeeData['trip_fee'] ?? 0);
+
+                    \App\Models\CourseTermBranchFee::updateOrCreate(
+                        [
+                            'course_id' => $courseId,
+                            'term_id'   => $termId,
+                            'branch_id' => $branchId,
+                        ],
+                        [
+                            'registration_fee' => $registration,
+                            'tuition_fee' => $tuition,
+                            'practical_fee' => $practical,
+                            'trip_fee' => $trip,
+                            'student_card_fee' => 2000,
+                            'is_active' => true,
+                        ]
+                    );
+                }
+            } else {
+                // No branch-specific fees -> create general term fee
+                \App\Models\CourseTermFee::updateOrCreate(
+                    [
+                        'course_id' => $courseId,
+                        'term_id' => $termId
+                    ],
+                    [
+                        'registration_fee' => $termFeeData['registration_fee'],
+                        'tuition_fee' => $termFeeData['tuition_fee'],
+                        'practical_fee' => $termFeeData['practical_fee'],
+                        'trip_fee' => $termFeeData['trip_fee'],
+                        'student_card_fee' => 2000,
+                        'is_active' => true,
+                    ]
+                );
+            }
         }
 
         DB::commit();
@@ -448,30 +532,64 @@ public function updateFees(Request $request, $courseId)
         'term_fees.*.tuition_fee' => 'required|numeric|min:0',
         'term_fees.*.practical_fee' => 'required|numeric|min:0',
         'term_fees.*.trip_fee' => 'required|numeric|min:0',
+        'term_fees.*.branch_fees' => 'nullable|array',
+        'term_fees.*.branch_fees.*.registration_fee' => 'nullable|numeric|min:0',
+        'term_fees.*.branch_fees.*.tuition_fee' => 'nullable|numeric|min:0',
+        'term_fees.*.branch_fees.*.practical_fee' => 'nullable|numeric|min:0',
+        'term_fees.*.branch_fees.*.trip_fee' => 'nullable|numeric|min:0',
     ]);
 
     DB::beginTransaction();
 
     try {
-        // Deactivate existing fees for this course
+        // Deactivate existing general term fees for this course
         \App\Models\CourseTermFee::where('course_id', $courseId)->update(['is_active' => false]);
-        
-        // Create or update term fees
+        // Deactivate existing branch-specific term fees
+        \App\Models\CourseTermBranchFee::where('course_id', $courseId)->update(['is_active' => false]);
+
+        // Create or update term fees (general or branch-specific)
         foreach ($validated['term_fees'] as $termFeeData) {
-            \App\Models\CourseTermFee::updateOrCreate(
-                [
-                    'course_id' => $courseId,
-                    'term_id' => $termFeeData['term_id']
-                ],
-                [
-                    'registration_fee' => $termFeeData['registration_fee'],
-                    'tuition_fee' => $termFeeData['tuition_fee'],
-                    'practical_fee' => $termFeeData['practical_fee'],
-                    'trip_fee' => $termFeeData['trip_fee'],
-                    'student_card_fee' => 2000,
-                    'is_active' => true,
-                ]
-            );
+            $termId = $termFeeData['term_id'];
+
+            if (!empty($termFeeData['branch_fees']) && is_array($termFeeData['branch_fees'])) {
+                foreach ($termFeeData['branch_fees'] as $branchId => $bf) {
+                    $registration = $bf['registration_fee'] ?? ($termFeeData['registration_fee'] ?? 0);
+                    $tuition      = $bf['tuition_fee'] ?? ($termFeeData['tuition_fee'] ?? 0);
+                    $practical    = $bf['practical_fee'] ?? ($termFeeData['practical_fee'] ?? 0);
+                    $trip         = $bf['trip_fee'] ?? ($termFeeData['trip_fee'] ?? 0);
+
+                    \App\Models\CourseTermBranchFee::updateOrCreate(
+                        [
+                            'course_id' => $courseId,
+                            'term_id'   => $termId,
+                            'branch_id' => $branchId,
+                        ],
+                        [
+                            'registration_fee' => $registration,
+                            'tuition_fee' => $tuition,
+                            'practical_fee' => $practical,
+                            'trip_fee' => $trip,
+                            'student_card_fee' => 2000,
+                            'is_active' => true,
+                        ]
+                    );
+                }
+            } else {
+                \App\Models\CourseTermFee::updateOrCreate(
+                    [
+                        'course_id' => $courseId,
+                        'term_id' => $termId
+                    ],
+                    [
+                        'registration_fee' => $termFeeData['registration_fee'],
+                        'tuition_fee' => $termFeeData['tuition_fee'],
+                        'practical_fee' => $termFeeData['practical_fee'],
+                        'trip_fee' => $termFeeData['trip_fee'],
+                        'student_card_fee' => 2000,
+                        'is_active' => true,
+                    ]
+                );
+            }
         }
 
         DB::commit();

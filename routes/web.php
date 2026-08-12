@@ -341,6 +341,8 @@ Route::middleware(['auth:admin', 'admin.academic_year'])->prefix('admin')->name(
     Route::get('/course/{id}/assign-fees', [CourseController::class, 'assignFees'])->name('course.assign-fees');
     Route::get('/course/{id}/test-assign-fees', [CourseController::class, 'testAssignFees'])->name('course.test-assign-fees');
     Route::post('/course/{id}/store-fees', [CourseController::class, 'storeFees'])->name('course.store-fees');
+        // Get course fee (optionally for branch and term)
+        Route::get('/course/fee', [CourseController::class, 'getCourseFee'])->name('course.get-fee');
     Route::get('/course/{id}/edit-fees', [CourseController::class, 'editFees'])->name('course.edit-fees');
     Route::put('/course/{id}/update-fees', [CourseController::class, 'updateFees'])->name('course.update-fees');
 

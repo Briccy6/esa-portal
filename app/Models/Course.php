@@ -95,6 +95,11 @@ class Course extends Model
         return $this->hasMany(CourseTermFee::class);
     }
 
+    public function courseTermBranchFees()
+    {
+        return $this->hasMany(\App\Models\CourseTermBranchFee::class);
+    }
+
     public function activeTermFees()
     {
         return $this->hasMany(CourseTermFee::class)->where('is_active', true);

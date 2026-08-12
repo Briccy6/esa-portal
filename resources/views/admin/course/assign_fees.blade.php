@@ -152,6 +152,13 @@
         @endforeach
     ];
 
+    // Course branches available for this course
+    const courseBranches = [
+        @foreach($course->branches as $branch)
+        { id: '{{ $branch->id }}', name: '{{ addslashes($branch->name) }}' },
+        @endforeach
+    ];
+
     let termFeeRowIndex = 0;
     const usedTerms = new Set();
 
@@ -182,11 +189,28 @@
             <td><input type="number" name="term_fees[${index}][practical_fee]" class="form-control" min="0" step="0.01" value="0"></td>
             <td><input type="number" name="term_fees[${index}][trip_fee]" class="form-control" min="0" step="0.01" value="0"></td>
             <td>
-                <button type="button" class="btn btn-sm btn-danger remove-term-fee">
-                    <i class="fas fa-trash"></i>
-                </button>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary branch-fees-btn" title="Set branch-specific fees">
+                        <i class="fas fa-code-branch"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-danger remove-term-fee">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
             </td>
         `;
+
+        // Branch-specific fees container
+        const branchFeesDiv = document.createElement('tr');
+        branchFeesDiv.className = 'branch-fees-row';
+        branchFeesDiv.innerHTML = `<td colspan="6" style="display:none;" class="branch-fees-cell">
+            <div class="p-3 border rounded bg-light">
+                <h6 class="mb-2">Branch-specific fees</h6>
+                <div class="row branch-fees-container">
+                    ${buildBranchFeesInputs(index)}
+                </div>
+            </div>
+        </td>`;
 
         const termSelect = tr.querySelector('.term-select');
         const feeInputs  = tr.querySelectorAll('input[type="number"]');
@@ -201,12 +225,44 @@
         });
 
         tr.querySelector('.remove-term-fee').addEventListener('click', function () {
+            // also remove the following branch-fees-row if present
+            const next = tr.nextElementSibling;
+            if (next && next.classList.contains('branch-fees-row')) next.remove();
             tr.remove();
             updateUsedTerms();
             calculateTotalYearFees();
         });
 
+        tr.querySelector('.branch-fees-btn').addEventListener('click', function () {
+            const next = tr.nextElementSibling;
+            if (next && next.classList.contains('branch-fees-row')) {
+                const cell = next.querySelector('.branch-fees-cell');
+                const visible = cell.style.display !== 'none';
+                cell.style.display = visible ? 'none' : 'block';
+            }
+        });
+
         tbody.appendChild(tr);
+        // append branch fees row after the term row
+        tbody.appendChild(branchFeesDiv);
+    }
+
+    function buildBranchFeesInputs(rowIndex) {
+        // Use course branches passed from server
+        const branches = courseBranches;
+        let html = '';
+        branches.forEach(branch => {
+            html += `<div class="col-md-6 mb-2">
+                <label class="form-label">${branch.name}</label>
+                <div class="input-group">
+                    <input type="number" name="term_fees[${rowIndex}][branch_fees][${branch.id}][registration_fee]" class="form-control" min="0" step="0.01" placeholder="Registration" value="0">
+                    <input type="number" name="term_fees[${rowIndex}][branch_fees][${branch.id}][tuition_fee]" class="form-control" min="0" step="0.01" placeholder="Tuition" value="0">
+                    <input type="number" name="term_fees[${rowIndex}][branch_fees][${branch.id}][practical_fee]" class="form-control" min="0" step="0.01" placeholder="Practical" value="0">
+                    <input type="number" name="term_fees[${rowIndex}][branch_fees][${branch.id}][trip_fee]" class="form-control" min="0" step="0.01" placeholder="Trip" value="0">
+                </div>
+            </div>`;
+        });
+        return html;
     }
 
     function updateUsedTerms() {
