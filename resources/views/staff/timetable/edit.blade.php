@@ -145,7 +145,10 @@
         </div>
 
         <button type="submit" class="btn btn-primary">Update Timetable</button>
-        <a href="{{ route('dos.timetable.publish', $timetable) }}" class="btn btn-success ms-2">Publish Timetable</a>
+        <form action="{{ route('dos.timetable.publish', $timetable) }}" method="POST" class="d-inline ms-2">
+            @csrf
+            <button type="submit" class="btn btn-success" onclick="return confirm('Are you sure you want to publish this timetable?')">Publish Timetable</button>
+        </form>
     </form>
 </div>
 

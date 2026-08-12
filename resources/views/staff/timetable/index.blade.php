@@ -46,7 +46,10 @@
                         <td>
                             <a href="{{ route('dos.timetable.edit', $timetable) }}" class="btn btn-warning btn-sm">Edit</a>
                             @if($timetable->status === 'draft')
-                                <a href="{{ route('dos.timetable.publish', $timetable) }}" class="btn btn-success btn-sm ms-1">Publish</a>
+                                <form action="{{ route('dos.timetable.publish', $timetable) }}" method="POST" class="d-inline">
+                                    @csrf
+                                    <button type="submit" class="btn btn-success btn-sm ms-1" onclick="return confirm('Are you sure you want to publish this timetable?')">Publish</button>
+                                </form>
                             @endif
                         </td>
                     </tr>
