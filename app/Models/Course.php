@@ -111,6 +111,23 @@ class Course extends Model
         return $this->courseTermFees()->where('term_id', $termId)->where('is_active', true)->first();
     }
 
+    public function getFeesForTermAndBranch($termId, $branchId = null)
+    {
+        if ($branchId && $termId) {
+            $branchFee = $this->courseTermBranchFees()
+                ->where('branch_id', $branchId)
+                ->where('term_id', $termId)
+                ->where('is_active', true)
+                ->first();
+
+            if ($branchFee) {
+                return $branchFee;
+            }
+        }
+
+        return $this->getFeesForTerm($termId);
+    }
+
     public function getCurrentTermFees()
     {
         $currentTerm = Term::where('start_date', '<=', now())

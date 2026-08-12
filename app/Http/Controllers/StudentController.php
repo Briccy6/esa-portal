@@ -2120,7 +2120,7 @@ class StudentController extends Controller
             $termFees = null;
             
             if ($termId) {
-                $termFees = $course->getFeesForTerm($termId);
+                $termFees = $course->getFeesForTermAndBranch($termId, $student->branch_id);
             }
             
             if (!$termFees) {
@@ -4301,7 +4301,7 @@ class StudentController extends Controller
             }
 
             $termId = $request->term_id;
-            $termFees = $course->getFeesForTerm($termId);
+            $termFees = $course->getFeesForTermAndBranch($termId, $student->branch_id);
 
             if (!$termFees) {
                 // Fallback to legacy fees
