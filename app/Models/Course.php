@@ -128,6 +128,65 @@ class Course extends Model
         return $this->getFeesForTerm($termId);
     }
 
+    public function getFeeSnapshotForBranchAndAcademicYear($branchId = null, $academicYearId = null, $termId = null)
+    {
+        $term = null;
+
+        if ($termId) {
+            $term = Term::find($termId);
+        } elseif ($academicYearId) {
+            $term = Term::where('academic_year_id', $academicYearId)
+                ->orderBy('start_date')
+                ->first();
+        }
+
+        if ($branchId && $term) {
+            $branchFee = $this->courseTermBranchFees()
+                ->where('branch_id', $branchId)
+                ->where('term_id', $term->id)
+                ->where('is_active', true)
+                ->first();
+
+            if ($branchFee) {
+                return (object) [
+                    'registration_fee' => (float) ($branchFee->registration_fee ?? 0),
+                    'tuition_fee' => (float) ($branchFee->tuition_fee ?? 0),
+                    'practical_fee' => (float) ($branchFee->practical_fee ?? 0),
+                    'trip_fee' => (float) ($branchFee->trip_fee ?? 0),
+                    'student_card_fee' => (float) ($branchFee->student_card_fee ?? 2000),
+                    'source' => 'branch_pivot',
+                ];
+            }
+        }
+
+        if ($term) {
+            $generalTermFee = $this->courseTermFees()
+                ->where('term_id', $term->id)
+                ->where('is_active', true)
+                ->first();
+
+            if ($generalTermFee) {
+                return (object) [
+                    'registration_fee' => (float) ($generalTermFee->registration_fee ?? 0),
+                    'tuition_fee' => (float) ($generalTermFee->tuition_fee ?? 0),
+                    'practical_fee' => (float) ($generalTermFee->practical_fee ?? 0),
+                    'trip_fee' => (float) ($generalTermFee->trip_fee ?? 0),
+                    'student_card_fee' => (float) ($generalTermFee->student_card_fee ?? 2000),
+                    'source' => 'term_pivot',
+                ];
+            }
+        }
+
+        return (object) [
+            'registration_fee' => (float) ($this->registration_fee ?? 0),
+            'tuition_fee' => (float) ($this->tuition_fee ?? 0),
+            'practical_fee' => (float) ($this->practical_fee ?? 0),
+            'trip_fee' => (float) ($this->trip_fee ?? 0),
+            'student_card_fee' => 2000,
+            'source' => 'course_default',
+        ];
+    }
+
     public function getCurrentTermFees()
     {
         $currentTerm = Term::where('start_date', '<=', now())

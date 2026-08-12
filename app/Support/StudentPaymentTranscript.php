@@ -26,7 +26,7 @@ class StudentPaymentTranscript
         
         $termFees = null;
         if ($currentTerm) {
-            $termFees = $course->getFeesForTerm($currentTerm->id);
+            $termFees = $course->getFeesForTermAndBranch($currentTerm->id, $student->branch_id);
         }
         
         if (!$termFees) {
@@ -140,7 +140,7 @@ class StudentPaymentTranscript
         
         $termFees = null;
         if ($currentTerm) {
-            $termFees = $course->getFeesForTerm($currentTerm->id);
+            $termFees = $course->getFeesForTermAndBranch($currentTerm->id, $student->branch_id);
         }
         
         if (!$termFees) {

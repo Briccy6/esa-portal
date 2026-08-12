@@ -1558,8 +1558,8 @@ class StudentController extends Controller
                     continue;
                 }
 
-                // Get fees for this term
-                $termFees = $course->getFeesForTerm($term->id);
+                // Get branch-term fees for this term, falling back to general term fees
+                $termFees = $course->getFeesForTermAndBranch($term->id, $student->branch_id);
                 if (!$termFees) {
                     $termFees = $course->getLegacyFees();
                 }
@@ -1854,7 +1854,11 @@ class StudentController extends Controller
             ->orderBy('start_date', 'asc')
             ->first();
 
-        $termFees = $term ? $course->getFeesForTerm($term->id) : null;
+        $termFees = null;
+        if ($term) {
+            $termFees = $course->getFeesForTermAndBranch($term->id, $student->branch_id);
+        }
+
         if (!$termFees) {
             $termFees = $course->getLegacyFees();
         }
