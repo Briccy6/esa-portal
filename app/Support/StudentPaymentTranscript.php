@@ -19,17 +19,27 @@ class StudentPaymentTranscript
         $student->loadMissing(['course', 'branch', 'academicYear', 'studentCard']);
         $course = $student->course;
 
-        // Get term-specific fees or fallback to legacy fees
-        $currentTerm = Term::where('start_date', '<=', now())
-                           ->where('end_date', '>=', now())
-                           ->first();
-        
-        $termFees = null;
-        if ($currentTerm) {
-            $termFees = $course->getFeesForTermAndBranch($currentTerm->id, $student->branch_id);
+        // Use the active/first term for the student's academic year
+        $term = null;
+        if ($course && $student->academic_year_id) {
+            $term = $course->getActiveTermForAcademicYear($student->academic_year_id);
+            if (!$term) {
+                $term = Term::where('academic_year_id', $student->academic_year_id)
+                            ->orderBy('start_date', 'asc')
+                            ->first();
+            }
         }
-        
-        if (!$termFees) {
+
+        $termFees = null;
+        if ($course) {
+            $termFees = $course->getFeeSnapshotForBranchAndAcademicYear(
+                $student->branch_id,
+                $student->academic_year_id,
+                $term?->id
+            );
+        }
+
+        if (!$termFees && $course) {
             // Fallback to legacy fee structure
             $termFees = $course->getLegacyFees();
         }
@@ -63,7 +73,7 @@ class StudentPaymentTranscript
         foreach ($feeTypes as $feeType) {
             $transactions = StudentTransaction::query()
                 ->where('student_id', $student->id)
-                ->where('type', $feeType['type'])
+                ->whereIn('type', self::transactionTypesForFeeType($feeType['type']))
                 ->with('term')
                 ->whereIn('status', ['successful', 'paid', 'completed'])
                 ->orderBy('paid_at')
@@ -133,17 +143,27 @@ class StudentPaymentTranscript
         $student->loadMissing(['course', 'branch', 'academicYear', 'studentCard']);
         $course = $student->course;
 
-        // Get term-specific fees or fallback to legacy fees
-        $currentTerm = Term::where('start_date', '<=', now())
-                           ->where('end_date', '>=', now())
-                           ->first();
-        
+        // Use the active/first term for the student's academic year
+        $term = null;
+        if ($course && $student->academic_year_id) {
+            $term = $course->getActiveTermForAcademicYear($student->academic_year_id);
+            if (!$term) {
+                $term = Term::where('academic_year_id', $student->academic_year_id)
+                            ->orderBy('start_date', 'asc')
+                            ->first();
+            }
+        }
+
         $termFees = null;
-        if ($currentTerm) {
-            $termFees = $course->getFeesForTermAndBranch($currentTerm->id, $student->branch_id);
+        if ($course) {
+            $termFees = $course->getFeeSnapshotForBranchAndAcademicYear(
+                $student->branch_id,
+                $student->academic_year_id,
+                $term?->id
+            );
         }
         
-        if (!$termFees) {
+        if (!$termFees && $course) {
             // Fallback to legacy fee structure
             $termFees = $course->getLegacyFees();
         }
@@ -274,13 +294,15 @@ class StudentPaymentTranscript
             $term = $course->getActiveTermForAcademicYear($student->academic_year_id);
             if (!$term) {
                 $term = Term::where('academic_year_id', $student->academic_year_id)
-                            ->orderBy('start_date', 'asc')
-                            ->first();
+                    ->orderBy('start_date', 'asc')
+                    ->first();
             }
 
-            if ($term) {
-                $termFees = $course->getFeesForTermAndBranch($term->id, $student->branch_id);
-            }
+            $termFees = $course->getFeeSnapshotForBranchAndAcademicYear(
+                $student->branch_id,
+                $student->academic_year_id,
+                $term?->id
+            );
 
             if (!$termFees) {
                 $termFees = $course->getLegacyFees();

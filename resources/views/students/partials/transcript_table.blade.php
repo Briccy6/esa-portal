@@ -5,24 +5,41 @@
     $course = \App\Models\Course::find($student->course_id);
     $discount = $student->discount ?? 0;
 
-    // Get the current/latest term from payments
-    $latestPayment = $payments->sortByDesc('created_at')->first();
-    $currentTerm = $latestPayment ? $latestPayment->term : null;
-    $academicYear = $currentTerm ? $currentTerm->academicYear : null;
+    // Determine the academic year term and branch-specific fees
+    $term = null;
+    if ($course && $student->academic_year_id) {
+        $term = $course->getActiveTermForAcademicYear($student->academic_year_id);
+        if (!$term) {
+            $term = \App\Models\Term::where('academic_year_id', $student->academic_year_id)
+                        ->orderBy('start_date', 'asc')
+                        ->first();
+        }
+    }
 
-    $registrationFee = $course ? floatval($course->registration_fee) : 0;
-    $tuitionFee = $course ? floatval($course->tuition_fee) : 0;
-    $practicalFee = $course ? floatval($course->practical_fee) : 0;
-    $tripFee = $course ? floatval($course->trip_fee) : 0;
-    $studentCardFee = 2000;
+    $termFees = null;
+    if ($course && $term) {
+        $termFees = $course->getFeesForTermAndBranch($term->id, $student->branch_id);
+    }
+    if (!$termFees && $course) {
+        $termFees = $course->getLegacyFees();
+    }
+
+    $currentTerm = $term;
+    $registrationFee = $termFees ? floatval($termFees->registration_fee) : 0;
+    $tuitionFee = $termFees ? floatval($termFees->tuition_fee) : 0;
+    $practicalFee = $termFees ? floatval($termFees->practical_fee) : 0;
+    $tripFee = $termFees ? floatval($termFees->trip_fee) : 0;
+    $studentCardFee = $termFees ? floatval($termFees->student_card_fee ?? 2000) : 2000;
+
+    // Get academic year from selected term or student's academic year
+    $academicYear = $currentTerm ? $currentTerm->academicYear : null;
 
     // Check if registration fee was paid in the same academic year
     $registrationPaidInYear = false;
-    // Student card fee should be paid once per academic year (not per term)
     $studentCardPaidInYear = false;
     if ($academicYear) {
         $registrationPaidInYear = \App\Models\StudentTransaction::where('student_id', $student->id)
-            ->where('type', 'registration')
+            ->whereIn('type', ['registration', 'registration_fee'])
             ->whereIn('status', ['successful', 'paid'])
             ->whereHas('term', function ($query) use ($academicYear) {
                 $query->where('academic_year_id', $academicYear->id);
