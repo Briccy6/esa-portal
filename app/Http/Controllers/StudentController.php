@@ -251,8 +251,9 @@ class StudentController extends Controller
         $branches = Branch::all();
         $courses = Course::all();
         $academicYears = AcademicYear::active()->orderByDesc('starting_date')->get();
+        $currentAcademicYear = $academicYears->first();
 
-        return view('students.create', compact('branches', 'courses', 'academicYears'));
+        return view('students.create', compact('branches', 'courses', 'academicYears', 'currentAcademicYear'));
     }
 
     public function store(Request $request)

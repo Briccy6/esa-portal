@@ -26,9 +26,9 @@ class CourseController extends Controller
 
     public function create()
     {
-        // You will probably want to pass branches here for selection in the form
         $branches = \App\Models\Branch::all();
-        return view('admin.course.create', compact('branches'));
+        $academicYears = \App\Models\AcademicYear::all();
+        return view('admin.course.create', compact('branches', 'academicYears'));
     }
 
     public function search(Request $request)
@@ -48,6 +48,7 @@ class CourseController extends Controller
         'course_name' => 'required|string|max:255',
         'abbreviation' => 'required|string|max:10',
         'course_type' => 'required|string|max:50',
+        'academic_year_id' => 'required|exists:academic_years,id',
         'branches' => 'nullable|array',
         'branches.*' => 'string',
     ];
@@ -79,13 +80,6 @@ class CourseController extends Controller
         }
     }
 
-    // Resolve the academic year for the current date
-    $ongoingAcademicYear = AcademicYearContext::current();
-
-    if (!$ongoingAcademicYear) {
-        return redirect()->back()->withErrors(['academic_year' => 'No academic year is available for the current date.']);
-    }
-
     DB::beginTransaction();
 
     try {
@@ -93,7 +87,7 @@ class CourseController extends Controller
             'course_name'      => $validated['course_name'],
             'abbreviation'     => $validated['abbreviation'],
             'course_type'      => $validated['course_type'],
-            'academic_year_id' => $ongoingAcademicYear->id,
+            'academic_year_id' => $validated['academic_year_id'],
             // Keep legacy fees for backward compatibility
             'registration_fee' => $request->input('registration_fee', 0),
             'tuition_fee'      => $request->input('tuition_fee', 0),
@@ -125,11 +119,11 @@ class CourseController extends Controller
         }
 
         if (!empty($validated['branches'])) {
-            if (in_array('all', $validated['branches'])) {
+            if (in_array('all', $validated['branches'], true)) {
                 $allBranchIds = \App\Models\Branch::pluck('id')->toArray();
                 $course->branches()->sync($allBranchIds);
             } else {
-                $branchIds = array_filter($validated['branches'], fn($b) => is_numeric($b));
+                $branchIds = array_unique(array_filter($validated['branches'], fn($b) => is_numeric($b)));
                 $course->branches()->sync($branchIds);
             }
         }
@@ -196,11 +190,11 @@ public function update(Request $request, $id)
 
     // Sync branches
     if (!empty($validated['branches'])) {
-        if (in_array('all', $validated['branches'])) {
+        if (in_array('all', $validated['branches'], true)) {
             $allBranchIds = \App\Models\Branch::pluck('id')->toArray();
             $course->branches()->sync($allBranchIds);
         } else {
-            $branchIds = array_filter($validated['branches'], fn($b) => is_numeric($b));
+            $branchIds = array_unique(array_filter($validated['branches'], fn($b) => is_numeric($b)));
             $course->branches()->sync($branchIds);
         }
     } else {

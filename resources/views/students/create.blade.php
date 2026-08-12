@@ -458,7 +458,7 @@
                                         <select id="academic_year_id" name="academic_year_id" class="form-select" required>
                                             <option value="">Select Academic Year</option>
                                             @foreach ($academicYears as $year)
-                                                <option value="{{ $year->id }}">{{ $year->year }}</option>
+                                                <option value="{{ $year->id }}" {{ old('academic_year_id', $currentAcademicYear->id ?? null) == $year->id ? 'selected' : '' }}>{{ $year->year }}</option>
                                             @endforeach
                                         </select>
                                     </div>
@@ -721,6 +721,12 @@ document.addEventListener('DOMContentLoaded', function() {
                         branchSelect.innerHTML += `<option value="${branch.id}">${branch.name}</option>`;
                     });
                     branchSelect.disabled = false;
+
+                    const selectedBranch = branchSelect.getAttribute('data-selected-branch');
+                    if (selectedBranch) {
+                        branchSelect.value = selectedBranch;
+                        branchSelect.dispatchEvent(new Event('change'));
+                    }
                 })
                 .catch(error => {
                     hideLoading(branchSelect);
@@ -754,6 +760,12 @@ document.addEventListener('DOMContentLoaded', function() {
                         courseSelect.innerHTML += `<option value="${course.id}" data-fee="${course.registration_fee}">${course.course_name}</option>`;
                     });
                     courseSelect.disabled = false;
+
+                    const selectedCourse = courseSelect.getAttribute('data-selected-course');
+                    if (selectedCourse) {
+                        courseSelect.value = selectedCourse;
+                        courseSelect.dispatchEvent(new Event('change'));
+                    }
                 })
                 .catch(error => {
                     hideLoading(courseSelect);
@@ -830,6 +842,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Auto-save functionality
     setupAutoSave();
+
+    // Load branches/courses immediately for the selected academic year.
+    const yearSelect = document.getElementById('academic_year_id');
+    if (yearSelect && yearSelect.value) {
+        yearSelect.dispatchEvent(new Event('change'));
+    }
 });
 
 // File input setup

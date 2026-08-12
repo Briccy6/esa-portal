@@ -67,6 +67,16 @@
 
 
         <div class="mb-3">
+            <label for="academic_year_id" class="form-label">Academic Year <span class="text-danger">*</span></label>
+            <select name="academic_year_id" id="academic_year_id" class="form-select" required>
+                <option value="" disabled {{ old('academic_year_id') ? '' : 'selected' }}>Select Academic Year</option>
+                @foreach($academicYears as $year)
+                    <option value="{{ $year->id }}" {{ old('academic_year_id') == $year->id ? 'selected' : '' }}>{{ $year->year }}</option>
+                @endforeach
+            </select>
+        </div>
+
+        <div class="mb-3">
             <label for="course_type" class="form-label">Course Type <span class="text-danger">*</span></label>
             <select name="course_type" id="course_type" class="form-select" required>
                 <option value="" disabled {{ old('course_type') ? '' : 'selected' }}>Select Course Type</option>
