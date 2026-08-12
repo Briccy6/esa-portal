@@ -783,36 +783,57 @@ document.addEventListener('DOMContentLoaded', function() {
     // Course change handler for fee display
     const paymentAmountInput = document.getElementById('payment_amount');
     const totalFeeInput = document.getElementById('total_fee');
+    const submitBtn = document.querySelector('button[form="registrationForm"]');
 
     document.getElementById('course_id').addEventListener('change', function () {
         const courseId = this.value;
         const branchId = document.getElementById('branch_id')?.value || '';
+        const yearId = document.getElementById('academic_year_id')?.value || '';
         const fee = this.options[this.selectedIndex]?.getAttribute('data-fee');
         const feeBox = document.getElementById('registration_fee_box');
         const feeAmount = document.getElementById('registration_fee_amount');
         
+        function updateButton(amount) {
+            if (!submitBtn) return;
+            const formatted = parseFloat(amount).toLocaleString();
+            submitBtn.innerHTML = amount > 0
+                ? `<i class="fas fa-credit-card me-2"></i>Pay ${formatted} RWF`
+                : `<i class="fas fa-user-plus me-2"></i>Proceed to Registration`;
+        }
+
         // Fetch branch/term specific fee from server for accuracy
-        if (courseId) {
-            fetch(`{{ route('students.getCourseFee') }}?course_id=${courseId}&branch_id=${branchId}`)
+        if (courseId && yearId) {
+            fetch(`{{ route('courses.registration_fee') }}?course_id=${courseId}&branch_id=${branchId}&academic_year_id=${yearId}`)
                 .then(res => res.ok ? res.json() : Promise.reject('Failed to fetch fee'))
                 .then(data => {
-                    const reg = data.registration_fee || 0;
-                    feeAmount.textContent = parseFloat(reg).toLocaleString();
+                    const reg = parseFloat(data.registration_fee) || 0;
+                    feeAmount.textContent = reg.toLocaleString();
                     paymentAmountInput.value = reg;
                     totalFeeInput.value = reg;
+                    if (this.selectedIndex >= 0) {
+                        this.options[this.selectedIndex].setAttribute('data-fee', reg);
+                    }
                     feeBox.classList.add('show');
+                    updateButton(reg);
                 }).catch(err => {
                     console.error('Fee fetch error:', err);
-                    feeAmount.textContent = fee && fee !== '0' ? parseInt(fee).toLocaleString() : '0';
-                    paymentAmountInput.value = fee || 0;
-                    totalFeeInput.value = fee || 0;
-                    if (!fee || fee === '0') feeBox.classList.remove('show');
+                    const fallback = fee && fee !== '0' ? parseInt(fee) : 0;
+                    feeAmount.textContent = fallback.toLocaleString();
+                    paymentAmountInput.value = fallback;
+                    totalFeeInput.value = fallback;
+                    if (!fallback) {
+                        feeBox.classList.remove('show');
+                    } else {
+                        feeBox.classList.add('show');
+                    }
+                    updateButton(fallback);
                 });
         } else {
             feeAmount.textContent = '0';
             paymentAmountInput.value = 0;
             totalFeeInput.value = 0;
             feeBox.classList.remove('show');
+            updateButton(0);
         }
     });
 

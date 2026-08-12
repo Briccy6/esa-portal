@@ -458,6 +458,23 @@ class StudentController extends Controller
         return response()->json($courses);
     }
 
+    public function getRegistrationFee(Request $request)
+    {
+        $request->validate([
+            'course_id' => 'required|exists:courses,id',
+            'academic_year_id' => 'required|exists:academic_years,id',
+            'branch_id' => 'nullable|exists:branches,id',
+        ]);
+
+        $course = Course::findOrFail($request->course_id);
+        $amount = $course->getRegistrationFeeForAcademicYear($request->academic_year_id);
+
+        return response()->json([
+            'registration_fee' => $amount,
+            'formatted_fee' => number_format($amount, 0, '.', ','),
+        ]);
+    }
+
     public function showStudentFees(Request $request, $studentId)
     {
         $academicYears = AcademicYear::all();
