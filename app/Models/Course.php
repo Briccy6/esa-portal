@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\AcademicYear;
 use App\Models\Lesson;
+use App\Models\Term;
 
 class Course extends Model
 {
@@ -141,6 +142,47 @@ class Course extends Model
         $courseTermFee = $feeQuery->first();
 
         return $courseTermFee ? floatval($courseTermFee->registration_fee) : 0;
+    }
+
+    public function getActiveTermForAcademicYear($academicYearId)
+    {
+        if (!$academicYearId) {
+            return null;
+        }
+
+        $term = Term::where('academic_year_id', $academicYearId)
+            ->where('start_date', '<=', now())
+            ->where('end_date', '>=', now())
+            ->first();
+
+        if ($term) {
+            return $term;
+        }
+
+        return Term::where('academic_year_id', $academicYearId)
+            ->orderBy('start_date')
+            ->first();
+    }
+
+    public function getRegistrationFeeForBranchAndAcademicYear($branchId = null, $academicYearId = null)
+    {
+        if ($branchId && $academicYearId) {
+            $term = $this->getActiveTermForAcademicYear($academicYearId);
+
+            if ($term) {
+                $branchFee = $this->courseTermBranchFees()
+                    ->where('branch_id', $branchId)
+                    ->where('term_id', $term->id)
+                    ->where('is_active', true)
+                    ->first();
+
+                if ($branchFee) {
+                    return floatval($branchFee->registration_fee);
+                }
+            }
+        }
+
+        return $this->getRegistrationFeeForAcademicYear($academicYearId);
     }
 
     public function getLegacyFees()

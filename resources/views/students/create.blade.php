@@ -674,6 +674,9 @@
                                         <p class="mb-0"><strong id="registration_fee_amount">0</strong> RWF</p>
                                     </div>
                                 </div>
+                                <p id="registration_fee_warning" class="mb-0 text-danger small d-none" style="display: none;">
+                                    No registration fee is available for the selected course. Please choose another course or contact support.
+                                </p>
                             </div>
                         </form>
                     </div>
@@ -784,6 +787,29 @@ document.addEventListener('DOMContentLoaded', function() {
     const paymentAmountInput = document.getElementById('payment_amount');
     const totalFeeInput = document.getElementById('total_fee');
     const submitBtn = document.querySelector('button[form="registrationForm"]');
+    const feeWarning = document.getElementById('registration_fee_warning');
+
+    function setFeeWarning(message) {
+        if (!feeWarning) return;
+        if (message) {
+            feeWarning.textContent = message;
+            feeWarning.classList.remove('d-none');
+            feeWarning.style.display = 'block';
+        } else {
+            feeWarning.textContent = '';
+            feeWarning.classList.add('d-none');
+            feeWarning.style.display = 'none';
+        }
+    }
+
+    function updateButton(amount) {
+        if (!submitBtn) return;
+        const formatted = isNaN(amount) ? '0' : parseFloat(amount).toLocaleString();
+        submitBtn.innerHTML = amount > 0
+            ? `<i class="fas fa-credit-card me-2"></i>Pay ${formatted} RWF`
+            : `<i class="fas fa-user-plus me-2"></i>Proceed to Registration`;
+        submitBtn.disabled = amount <= 0;
+    }
 
     document.getElementById('course_id').addEventListener('change', function () {
         const courseId = this.value;
@@ -793,14 +819,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const feeBox = document.getElementById('registration_fee_box');
         const feeAmount = document.getElementById('registration_fee_amount');
         
-        function updateButton(amount) {
-            if (!submitBtn) return;
-            const formatted = parseFloat(amount).toLocaleString();
-            submitBtn.innerHTML = amount > 0
-                ? `<i class="fas fa-credit-card me-2"></i>Pay ${formatted} RWF`
-                : `<i class="fas fa-user-plus me-2"></i>Proceed to Registration`;
-        }
-
         // Fetch branch/term specific fee from server for accuracy
         if (courseId && yearId) {
             fetch(`{{ route('courses.registration_fee') }}?course_id=${courseId}&branch_id=${branchId}&academic_year_id=${yearId}`)
@@ -814,6 +832,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         this.options[this.selectedIndex].setAttribute('data-fee', reg);
                     }
                     feeBox.classList.add('show');
+                    if (reg > 0) {
+                        setFeeWarning('');
+                    } else {
+                        setFeeWarning('No registration fee is available for the selected course. Please choose another course or contact support.');
+                    }
                     updateButton(reg);
                 }).catch(err => {
                     console.error('Fee fetch error:', err);
@@ -823,8 +846,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     totalFeeInput.value = fallback;
                     if (!fallback) {
                         feeBox.classList.remove('show');
+                        setFeeWarning('Unable to determine the course fee. Please try another course or contact support.');
                     } else {
                         feeBox.classList.add('show');
+                        setFeeWarning('');
                     }
                     updateButton(fallback);
                 });
@@ -833,6 +858,7 @@ document.addEventListener('DOMContentLoaded', function() {
             paymentAmountInput.value = 0;
             totalFeeInput.value = 0;
             feeBox.classList.remove('show');
+            setFeeWarning('');
             updateButton(0);
         }
     });
@@ -1056,9 +1082,15 @@ function setupFormSubmission() {
         }
 
         const courseSelect = document.getElementById('course_id');
-        const selectedFee = courseSelect.options[courseSelect.selectedIndex]?.getAttribute('data-fee');
-        if (!selectedFee || selectedFee === '0') {
-            showNotification('Please select a course with a registration fee before proceeding.', 'danger');
+        const selectedFee = parseFloat(paymentAmountInput.value) || 0;
+        if (selectedFee <= 0) {
+            showNotification('Please select a course with a valid registration fee before proceeding.', 'danger');
+            const feeWarning = document.getElementById('registration_fee_warning');
+            if (feeWarning) {
+                feeWarning.textContent = 'Please select a course that has a registration fee before continuing.';
+                feeWarning.classList.remove('d-none');
+                feeWarning.style.display = 'block';
+            }
             courseSelect.focus();
             return;
         }

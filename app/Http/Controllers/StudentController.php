@@ -452,7 +452,7 @@ class StudentController extends Controller
             ->get(['id', 'course_name', 'registration_fee']);
 
         foreach ($courses as $course) {
-            $course->registration_fee = $course->getRegistrationFeeForAcademicYear($academicYearId);
+            $course->registration_fee = $course->getRegistrationFeeForBranchAndAcademicYear($branchId, $academicYearId);
         }
 
         return response()->json($courses);
@@ -467,7 +467,7 @@ class StudentController extends Controller
         ]);
 
         $course = Course::findOrFail($request->course_id);
-        $amount = $course->getRegistrationFeeForAcademicYear($request->academic_year_id);
+        $amount = $course->getRegistrationFeeForBranchAndAcademicYear($request->branch_id, $request->academic_year_id);
 
         return response()->json([
             'registration_fee' => $amount,
