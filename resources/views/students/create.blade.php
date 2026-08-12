@@ -1052,6 +1052,7 @@ function setupFormSubmission() {
     const form = document.getElementById('registrationForm');
     if (!form) return;
 
+    const paymentAmountInput = document.getElementById('payment_amount');
     const submitBtn = document.querySelector('button[form="registrationForm"]') || form.querySelector('button[type="submit"]');
     if (!submitBtn) {
         console.error('Registration submit button not found.');
@@ -1082,7 +1083,7 @@ function setupFormSubmission() {
         }
 
         const courseSelect = document.getElementById('course_id');
-        const selectedFee = parseFloat(paymentAmountInput.value) || 0;
+        const selectedFee = parseFloat(paymentAmountInput?.value) || 0;
         if (selectedFee <= 0) {
             showNotification('Please select a course with a valid registration fee before proceeding.', 'danger');
             const feeWarning = document.getElementById('registration_fee_warning');
