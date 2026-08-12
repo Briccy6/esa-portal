@@ -390,14 +390,25 @@ class DosTimetableController extends Controller
     public function index()
     {
         $dos = $this->authorizeDos();
-        $branchIds = $dos->branches->pluck('id')->toArray();
+        $allowedBranchIds = $this->getAllowedBranchIds();
 
         $timetables = Timetable::with(['branch', 'academicYear', 'term'])
-            ->whereIn('branch_id', $branchIds)
+            ->whereIn('branch_id', $allowedBranchIds)
             ->orderByDesc('created_at')
             ->get();
 
         return view('staff.timetable.index', compact('timetables'));
+    }
+
+    public function destroy(Timetable $timetable)
+    {
+        $this->authorizeDos();
+        abort_unless(in_array($timetable->branch_id, $this->getAllowedBranchIds()), 403);
+
+        $timetable->delete();
+
+        return redirect()->route('dos.timetable.index')
+            ->with('success', 'Timetable deleted successfully.');
     }
 
     public function edit(Timetable $timetable)

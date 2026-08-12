@@ -149,6 +149,11 @@
             @csrf
             <button type="submit" class="btn btn-success" onclick="return confirm('Are you sure you want to publish this timetable?')">Publish Timetable</button>
         </form>
+        <form action="{{ route('dos.timetable.destroy', $timetable) }}" method="POST" class="d-inline ms-2">
+            @csrf
+            @method('DELETE')
+            <button type="submit" class="btn btn-danger" onclick="return confirm('Delete this timetable? This action cannot be undone.')">Delete Timetable</button>
+        </form>
     </form>
 </div>
 

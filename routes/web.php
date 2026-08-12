@@ -1648,6 +1648,7 @@ Route::middleware(['auth:staff'])->prefix('dos')->name('dos.')->group(function (
     Route::get('/timetable/{timetable}/edit', [\App\Http\Controllers\DosTimetableController::class, 'edit'])->name('timetable.edit');
     Route::put('/timetable/{timetable}', [\App\Http\Controllers\DosTimetableController::class, 'update'])->name('timetable.update');
     Route::post('/timetable/{timetable}/publish', [\App\Http\Controllers\DosTimetableController::class, 'publish'])->name('timetable.publish');
+    Route::delete('/timetable/{timetable}', [\App\Http\Controllers\DosTimetableController::class, 'destroy'])->name('timetable.destroy');
     Route::get('/timetable/{timetable}/validate', [\App\Http\Controllers\DosTimetableController::class, 'validateTimetable'])->name('timetable.validate');
     
     // Student Management Routes

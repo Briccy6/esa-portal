@@ -51,6 +51,11 @@
                                     <button type="submit" class="btn btn-success btn-sm ms-1" onclick="return confirm('Are you sure you want to publish this timetable?')">Publish</button>
                                 </form>
                             @endif
+                            <form action="{{ route('dos.timetable.destroy', $timetable) }}" method="POST" class="d-inline ms-1">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Delete this timetable? This action cannot be undone.')">Delete</button>
+                            </form>
                         </td>
                     </tr>
                 @endforeach
