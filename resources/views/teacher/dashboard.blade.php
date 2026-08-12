@@ -72,6 +72,17 @@
                 </div>
             </div>
         </div>
+        <!-- Timetables Card -->
+        <div class="col-md-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-calendar2-week fs-1 text-info"></i>
+                    <h5 class="card-title mt-2">My Timetables</h5>
+                    <p class="card-text">View your weekly timetable and assigned sessions.</p>
+                    <a href="{{ route('teacher.timetables.index') }}" class="btn btn-outline-info btn-sm">View Timetables</a>
+                </div>
+            </div>
+        </div>
         <!-- Salary Card -->
         <div class="col-md-3">
             <div class="card shadow-sm h-100">

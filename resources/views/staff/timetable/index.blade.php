@@ -2,16 +2,22 @@
 
 @section('content')
 <div class="container mt-4">
-    <h2>All Uploaded Timetables</h2>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Timetable Library</h2>
+        <a href="{{ route('dos.timetable.create') }}" class="btn btn-primary">Create New Timetable</a>
+    </div>
+
     @if(session('success'))
         <div class="alert alert-success">{{ session('success') }}</div>
     @endif
+
     @if($timetables->count() > 0)
-        <table class="table table-bordered">
+        <table class="table table-bordered align-middle">
             <thead>
                 <tr>
                     <th>Title</th>
-                    <th>Image</th>
+                    <th>Branch</th>
+                    <th>Academic Year</th>
                     <th>Valid From</th>
                     <th>Valid Until</th>
                     <th>Status</th>
@@ -20,52 +26,38 @@
             </thead>
             <tbody>
                 @foreach($timetables as $timetable)
-                <tr>
-                    <td>{{ $timetable->title }}</td>
-                    <td>
-                        @if($timetable->image)
-                            <img src="data:image/jpeg;base64,{{ $timetable->image }}" alt="Timetable" width="100">
-                        @endif
-                    </td>
-                    <td>{{ $timetable->valid_from ? \Carbon\Carbon::parse($timetable->valid_from)->format('M d, Y') : 'N/A' }}</td>
-                    <td>{{ $timetable->valid_until ? \Carbon\Carbon::parse($timetable->valid_until)->format('M d, Y') : 'N/A' }}</td>
-                    <td>
-                        @if($timetable->valid_from && $timetable->valid_until)
-                            @php
-                                $nowKigali = \Carbon\Carbon::now('Africa/Kigali');
-                                $validFrom = \Carbon\Carbon::parse($timetable->valid_from);
-                                $validUntil = \Carbon\Carbon::parse($timetable->valid_until);
-                            @endphp
-                            @if($nowKigali->between($validFrom, $validUntil))
-                                <span class="badge bg-success">Valid</span>
-                                <small class="text-muted d-block">Valid until {{ $validUntil->diffForHumans($nowKigali) }}</small>
+                    <tr>
+                        <td>{{ $timetable->title }}</td>
+                        <td>{{ $timetable->branch->name ?? 'N/A' }}</td>
+                        <td>{{ $timetable->academicYear->year ?? 'N/A' }}</td>
+                        <td>{{ $timetable->valid_from ? \Carbon\Carbon::parse($timetable->valid_from)->format('M d, Y') : 'N/A' }}</td>
+                        <td>{{ $timetable->valid_until ? \Carbon\Carbon::parse($timetable->valid_until)->format('M d, Y') : 'N/A' }}</td>
+                        <td>
+                            @if($timetable->status === 'published')
+                                <span class="badge bg-success">Published</span>
+                            @elseif($timetable->status === 'draft')
+                                <span class="badge bg-secondary">Draft</span>
                             @else
-                                @if($nowKigali->lt($validFrom))
-                                    <span class="badge bg-warning">Not Yet Active</span>
-                                    <small class="text-muted d-block">Starts in {{ $validFrom->diffForHumans($nowKigali) }}</small>
-                                @else
-                                    <span class="badge bg-danger">Expired</span>
-                                    <small class="text-muted d-block">Expired {{ $validUntil->diffForHumans($nowKigali) }}</small>
-                                @endif
+                                <span class="badge bg-warning">{{ ucfirst($timetable->status) }}</span>
                             @endif
-                        @else
-                            <span class="badge bg-secondary">No Dates Set</span>
-                        @endif
-                    </td>
-                    <td>
-                        <a href="{{ route('dos.timetable.edit', $timetable->id) }}" class="btn btn-warning btn-sm">Edit</a>
-                    </td>
-                </tr>
+                        </td>
+                        <td>
+                            <a href="{{ route('dos.timetable.edit', $timetable) }}" class="btn btn-warning btn-sm">Edit</a>
+                            @if($timetable->status === 'draft')
+                                <a href="{{ route('dos.timetable.publish', $timetable) }}" class="btn btn-success btn-sm ms-1">Publish</a>
+                            @endif
+                        </td>
+                    </tr>
                 @endforeach
             </tbody>
         </table>
     @else
         <div class="alert alert-info text-center">
             <h4><i class="bi bi-calendar-x"></i> No Timetables Found</h4>
-            <p class="mb-3">There are currently no timetables uploaded in the system.</p>
-            <p class="text-muted mb-4">Timetables help students and staff understand class schedules and timing.</p>
+            <p class="mb-3">There are currently no timetables created in the system.</p>
+            <p class="text-muted mb-4">Use the weekly editor to build a branch timetable that students can view by course.</p>
             <a href="{{ route('dos.timetable.create') }}" class="btn btn-primary">
-                <i class="bi bi-plus-circle"></i> Upload Your First Timetable
+                <i class="bi bi-plus-circle"></i> Create Your First Timetable
             </a>
         </div>
     @endif

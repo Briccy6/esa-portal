@@ -5,6 +5,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon;
 
 class TimetableSession extends Model
 {
@@ -17,12 +18,12 @@ class TimetableSession extends Model
         'start_time',
         'end_time',
         'classroom',
-        'notes'
+        'notes',
+        'mark_as_test',
     ];
 
     protected $casts = [
-        'start_time' => 'datetime:H:i',
-        'end_time' => 'datetime:H:i'
+        'mark_as_test' => 'boolean',
     ];
 
     public function timetable()
@@ -35,25 +36,57 @@ class TimetableSession extends Model
         return $this->belongsTo(Lesson::class);
     }
 
-    // Get duration in hours
-    public function getDurationHours()
+    public function courses()
     {
-        $start = \Carbon\Carbon::createFromFormat('H:i', $this->start_time);
-        $end = \Carbon\Carbon::createFromFormat('H:i', $this->end_time);
-        return $end->diffInHours($start);
+        return $this->belongsToMany(Course::class, 'timetable_session_course')
+            ->withTimestamps();
     }
 
-    // Check if session conflicts with another
+    protected function parseTime($value)
+    {
+        if ($value instanceof Carbon) {
+            return $value;
+        }
+
+        if (is_string($value)) {
+            $formats = ['H:i', 'H:i:s'];
+            foreach ($formats as $format) {
+                try {
+                    $parsed = Carbon::createFromFormat($format, $value);
+                    if ($parsed && $parsed->format($format) === substr($value, 0, strlen($format))) {
+                        return $parsed;
+                    }
+                } catch (\Exception $e) {
+                    // continue
+                }
+            }
+            try {
+                return Carbon::parse($value);
+            } catch (\Exception $e) {
+                return Carbon::createFromFormat('H:i', '00:00');
+            }
+        }
+
+        return Carbon::parse($value);
+    }
+
+    public function getDurationHours()
+    {
+        $start = $this->parseTime($this->start_time);
+        $end = $this->parseTime($this->end_time);
+        return max(0, $end->floatDiffInHours($start));
+    }
+
     public function conflictsWith(TimetableSession $other)
     {
         if ($this->day_of_week !== $other->day_of_week) {
             return false;
         }
 
-        $thisStart = \Carbon\Carbon::createFromFormat('H:i', $this->start_time);
-        $thisEnd = \Carbon\Carbon::createFromFormat('H:i', $this->end_time);
-        $otherStart = \Carbon\Carbon::createFromFormat('H:i', $other->start_time);
-        $otherEnd = \Carbon\Carbon::createFromFormat('H:i', $other->end_time);
+        $thisStart = $this->parseTime($this->start_time);
+        $thisEnd = $this->parseTime($this->end_time);
+        $otherStart = $this->parseTime($other->start_time);
+        $otherEnd = $this->parseTime($other->end_time);
 
         return $thisStart->lt($otherEnd) && $thisEnd->gt($otherStart);
     }

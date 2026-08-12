@@ -1782,28 +1782,22 @@ class StudentController extends Controller
         $subscriptions = \App\Models\Subscription::active()->orderBy('price')->get();
         $activeSubscription = $student->activeSubscription;
 
-        // Get timetables
-        $timetables = \App\Models\Timetable::where(function($query) {
-            $query->where(function($activeQuery) {
-                $activeQuery->whereNull('valid_from')
-                          ->orWhere('valid_from', '<=', now());
-            })
-            ->where(function($activeUntilQuery) {
-                $activeUntilQuery->whereNull('valid_until')
-                               ->orWhere('valid_until', '>=', now());
-            });
-        })
-        ->orWhere(function($query) {
-            $query->whereNotNull('valid_from')
-                  ->where('valid_from', '>', now())
-                  ->where(function($upcomingUntilQuery) {
-                      $upcomingUntilQuery->whereNull('valid_until')
-                                        ->orWhere('valid_until', '>', now());
-                  });
-        })
-        ->orderBy('valid_from', 'asc')
-        ->orderBy('created_at', 'desc')
-        ->get();
+        // Get the active published timetable for the student's branch and academic year
+        $activeTimetable = Timetable::active()
+            ->where('branch_id', $student->branch_id)
+            ->where('academic_year_id', $student->academic_year_id)
+            ->with(['branch', 'academicYear', 'sessions.lesson.teacher', 'sessions.courses'])
+            ->first();
+
+        $activeSessions = collect();
+        if ($activeTimetable) {
+            $activeSessions = $activeTimetable->sessions->filter(function ($session) use ($student) {
+                if ($session->courses->isNotEmpty()) {
+                    return $session->courses->pluck('id')->contains($student->course_id);
+                }
+                return $session->lesson && $session->lesson->course_id === $student->course_id;
+            })->values();
+        }
 
         return view('students.dashboard', compact(
             'student',
@@ -1833,7 +1827,8 @@ class StudentController extends Controller
             'exams',
             'subscriptions',
             'activeSubscription',
-            'timetables'
+            'activeTimetable',
+            'activeSessions'
         ));
     }
 

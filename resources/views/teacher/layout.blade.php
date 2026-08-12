@@ -555,6 +555,12 @@
                 </a>
             </li>
             <li class="nav-item">
+                <a href="{{ route('teacher.timetables.index') }}" class="nav-link text-info {{ request()->routeIs('teacher.timetables.*') ? 'active' : '' }}">
+                    <i class="bi bi-calendar2-week"></i>
+                    <span>My Timetables</span>
+                </a>
+            </li>
+            <li class="nav-item">
                 <a href="{{ route('teacher.dailies.index') }}" class="nav-link text-primary">
                     <i class="bi bi-calendar-check"></i>
                     <span>My Dailies</span>
@@ -613,6 +619,12 @@
                     <a href="{{ route('teacher.resources.create') }}" class="nav-link text-secondary">
                         <i class="bi bi-upload"></i>
                         <span>Upload Resources</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ route('teacher.timetables.index') }}" class="nav-link text-info {{ request()->routeIs('teacher.timetables.*') ? 'active' : '' }}">
+                        <i class="bi bi-calendar2-week"></i>
+                        <span>My Timetables</span>
                     </a>
                 </li>
                 <li class="nav-item">

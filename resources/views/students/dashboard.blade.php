@@ -850,54 +850,31 @@
         <div class="col-12">
             <div class="info-card">
                 <div class="info-card-header">
-                    <h4><i class="bi bi-calendar2-week me-2"></i>Timetables</h4>
-                    <span class="badge bg-info">{{ $timetables->count() }} Total</span>
+                    <h4><i class="bi bi-calendar2-week me-2"></i>Current Timetable</h4>
                 </div>
                 <div class="info-card-body">
-                    @php
-                        $nowKigali = \Carbon\Carbon::now('Africa/Kigali');
-                        $activeTimetables = $timetables->filter(function($t) use ($nowKigali) {
-                            if ($t->valid_from && $t->valid_until) {
-                                return $nowKigali->between(\Carbon\Carbon::parse($t->valid_from), \Carbon\Carbon::parse($t->valid_until));
-                            }
-                            return true; // Always valid if no dates set
-                        });
-                        
-                        $upcomingTimetables = $timetables->filter(function($t) use ($nowKigali) {
-                            if ($t->valid_from) {
-                                return $nowKigali->lt(\Carbon\Carbon::parse($t->valid_from));
-                            }
-                            return false;
-                        });
-                    @endphp
-                    
-                    @if($activeTimetables->count() > 0)
+                    @if(isset($activeTimetable) && $activeTimetable)
                         <div class="mb-4">
-                            <h5 class="text-success mb-3">
-                                <i class="bi bi-check-circle me-2"></i>Currently Active ({{ $activeTimetables->count() }})
-                            </h5>
-                            @foreach($activeTimetables as $timetable)
-                                @include('partials.timetable-card', ['timetable' => $timetable, 'showStatus' => false])
-                            @endforeach
+                            <h5 class="mb-3">{{ $activeTimetable->title ?? 'Weekly Timetable' }}</h5>
+                            <p class="text-muted mb-3">
+                                Branch: {{ $activeTimetable->branch->name ?? 'N/A' }} |
+                                Academic Year: {{ $activeTimetable->academicYear->year ?? 'N/A' }} |
+                                Valid: {{ optional($activeTimetable->valid_from)->format('M d, Y') ?? 'N/A' }}
+                                to {{ optional($activeTimetable->valid_until)->format('M d, Y') ?? 'N/A' }}
+                            </p>
                         </div>
-                    @endif
-                    
-                    @if($upcomingTimetables->count() > 0)
-                        <div class="mb-4">
-                            <h5 class="text-warning mb-3">
-                                <i class="bi bi-clock me-2"></i>Upcoming ({{ $upcomingTimetables->count() }})
-                            </h5>
-                            @foreach($upcomingTimetables as $timetable)
-                                @include('partials.timetable-card', ['timetable' => $timetable, 'showStatus' => true])
-                            @endforeach
-                        </div>
-                    @endif
-                    
-                    @if($timetables->count() === 0)
+                        @if($activeSessions->isNotEmpty())
+                            @include('partials.timetable-weekly-grid', ['sessions' => $activeSessions, 'timetable' => $activeTimetable])
+                        @else
+                            <div class="alert alert-info">
+                                No sessions are currently scheduled for your course in the active timetable.
+                            </div>
+                        @endif
+                    @else
                         <div class="text-center py-5">
                             <i class="bi bi-calendar-x text-muted" style="font-size: 3rem;"></i>
-                            <h5 class="text-muted mt-3">No Timetables Available</h5>
-                            <p class="text-muted">There are currently no timetables available. Please check back later.</p>
+                            <h5 class="text-muted mt-3">No active published timetable</h5>
+                            <p class="text-muted">There is no active timetable published for your branch and course at this time.</p>
                         </div>
                     @endif
                 </div>

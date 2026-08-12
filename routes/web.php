@@ -619,12 +619,6 @@ Route::post('/admin/teachers/{teacher}/reset-password', [\App\Http\Controllers\T
 Route::get('/teachers/by-lesson', [\App\Http\Controllers\TeacherController::class, 'getByLesson'])->name('teachers.byLesson');
 Route::get('/lessons/by-courses', [\App\Http\Controllers\LessonController::class, 'getByCourses'])->name('lessons.byCourses');
 
-Route::get('/dos/timetable', [\App\Http\Controllers\DosTimetableController::class, 'index'])->name('dos.timetable.index');
-Route::get('/dos/timetable/{id}/edit', [\App\Http\Controllers\DosTimetableController::class, 'edit'])->name('dos.timetable.edit');
-Route::post('/dos/timetable/{id}/update', [\App\Http\Controllers\DosTimetableController::class, 'update'])->name('dos.timetable.update');
-Route::get('/dos/timetable/create', [\App\Http\Controllers\DosTimetableController::class, 'create'])->name('dos.timetable.create');
-Route::post('/dos/timetable/store', [\App\Http\Controllers\DosTimetableController::class, 'store'])->name('dos.timetable.store');
-
 Route::post('/admin/staff/{staff}/reset-password', [StaffController::class, 'resetPassword'])->name('admin.staff.reset_password');
 Route::get('/teacher/resources', [ResourceController::class, 'index'])->name('teacher.resources.index');
 
@@ -829,6 +823,8 @@ Route::prefix('teacher')->name('teacher.')->group(function () {
         ->name('password.reset.code');
     Route::middleware('auth:teacher')->group(function () {
         Route::get('dashboard', [\App\Http\Controllers\TeacherAuthController::class, 'dashboard'])->name('dashboard');
+        Route::get('timetables', [\App\Http\Controllers\TeacherTimetableController::class, 'index'])->name('timetables.index');
+        Route::get('timetables/{timetable}', [\App\Http\Controllers\TeacherTimetableController::class, 'show'])->name('timetables.show');
     });
 });
 
@@ -1643,6 +1639,15 @@ Route::middleware(['auth:staff'])->prefix('dos')->name('dos.')->group(function (
     Route::post('/lessons/assign', [LessonController::class, 'assignToBranches'])->name('lessons.assign');
     Route::get('/lessons/{lesson}/assignments', [LessonController::class, 'getAssignments'])->name('lessons.assignments');
     Route::delete('/lessons/{assignmentId}/delete-assignment', [LessonController::class, 'deleteAssignment'])->name('lessons.delete-assignment');
+
+    // Timetable Management
+    Route::get('/timetable', [\App\Http\Controllers\DosTimetableController::class, 'index'])->name('timetable.index');
+    Route::get('/timetable/create', [\App\Http\Controllers\DosTimetableController::class, 'create'])->name('timetable.create');
+    Route::post('/timetable', [\App\Http\Controllers\DosTimetableController::class, 'store'])->name('timetable.store');
+    Route::get('/timetable/{timetable}/edit', [\App\Http\Controllers\DosTimetableController::class, 'edit'])->name('timetable.edit');
+    Route::put('/timetable/{timetable}', [\App\Http\Controllers\DosTimetableController::class, 'update'])->name('timetable.update');
+    Route::post('/timetable/{timetable}/publish', [\App\Http\Controllers\DosTimetableController::class, 'publish'])->name('timetable.publish');
+    Route::get('/timetable/{timetable}/validate', [\App\Http\Controllers\DosTimetableController::class, 'validateTimetable'])->name('timetable.validate');
     
     // Student Management Routes
     Route::get('/students', [\App\Http\Controllers\DOS\StudentController::class, 'index'])->name('students.index');
