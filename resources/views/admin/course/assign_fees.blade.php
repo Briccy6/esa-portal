@@ -184,18 +184,21 @@
                     ${buildSelectOptions('')}
                 </select>
             </td>
-            <td><input type="number" name="term_fees[${index}][registration_fee]" class="form-control" min="0" step="0.01" value="0"></td>
-            <td><input type="number" name="term_fees[${index}][tuition_fee]" class="form-control" min="0" step="0.01" value="0"></td>
-            <td><input type="number" name="term_fees[${index}][practical_fee]" class="form-control" min="0" step="0.01" value="0"></td>
-            <td><input type="number" name="term_fees[${index}][trip_fee]" class="form-control" min="0" step="0.01" value="0"></td>
+            <td><input type="number" name="term_fees[${index}][registration_fee]" class="form-control" min="0" step="0.01" value="0" placeholder="Registration fee"></td>
+            <td><input type="number" name="term_fees[${index}][tuition_fee]" class="form-control" min="0" step="0.01" value="0" placeholder="Tuition fee"></td>
+            <td><input type="number" name="term_fees[${index}][practical_fee]" class="form-control" min="0" step="0.01" value="0" placeholder="Practical fee"></td>
+            <td><input type="number" name="term_fees[${index}][trip_fee]" class="form-control" min="0" step="0.01" value="0" placeholder="Trip fee"></td>
             <td>
-                <div class="d-flex gap-2">
-                    <button type="button" class="btn btn-sm btn-outline-secondary branch-fees-btn" title="Set branch-specific fees">
-                        <i class="fas fa-code-branch"></i>
-                    </button>
-                    <button type="button" class="btn btn-sm btn-danger remove-term-fee">
-                        <i class="fas fa-trash"></i>
-                    </button>
+                <div class="d-flex flex-column gap-2">
+                    <div class="d-flex gap-2 align-items-center">
+                        <button type="button" class="btn btn-sm btn-outline-secondary branch-fees-btn" title="Set branch-specific fees">
+                            <i class="fas fa-code-branch"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-danger remove-term-fee">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    <div class="text-muted small">Optional: override fees per branch if needed.</div>
                 </div>
             </td>
         `;
@@ -204,9 +207,15 @@
         const branchFeesDiv = document.createElement('tr');
         branchFeesDiv.className = 'branch-fees-row';
         branchFeesDiv.innerHTML = `<td colspan="6" style="display:none;" class="branch-fees-cell">
-            <div class="p-3 border rounded bg-light">
-                <h6 class="mb-2">Branch-specific fees</h6>
-                <div class="row branch-fees-container">
+            <div class="p-3 border rounded bg-light branch-fees-panel">
+                <div class="d-flex align-items-start justify-content-between mb-3 flex-wrap gap-3">
+                    <div>
+                        <h6 class="mb-1">Branch-specific fees</h6>
+                        <p class="mb-0 text-muted small">If fees differ by branch, enter the amounts below for each branch. Leave blank if the branch uses the same term fees above.</p>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary toggle-branch-fees">Show branch fees</button>
+                </div>
+                <div class="branch-fees-container">
                     ${buildBranchFeesInputs(index)}
                 </div>
             </div>
@@ -215,9 +224,24 @@
         const termSelect = tr.querySelector('.term-select');
         const feeInputs  = tr.querySelectorAll('input[type="number"]');
 
+        function openBranchPanel() {
+            const visible = branchPanel.style.display !== 'none';
+            if (!visible) {
+                prefillBranchFees(branchFeesDiv, tr);
+                branchPanel.style.display = 'block';
+                toggleButton.textContent = 'Hide branch fees';
+                toggleButton.classList.remove('btn-outline-secondary');
+                toggleButton.classList.add('btn-secondary');
+                toggleButton.title = 'Hide branch-specific fees';
+            }
+        }
+
         termSelect.addEventListener('change', function () {
             updateUsedTerms();
             calculateTotalYearFees();
+            if (termSelect.value) {
+                openBranchPanel();
+            }
         });
 
         feeInputs.forEach(input => {
@@ -233,12 +257,38 @@
             calculateTotalYearFees();
         });
 
-        tr.querySelector('.branch-fees-btn').addEventListener('click', function () {
-            const next = tr.nextElementSibling;
-            if (next && next.classList.contains('branch-fees-row')) {
-                const cell = next.querySelector('.branch-fees-cell');
-                const visible = cell.style.display !== 'none';
-                cell.style.display = visible ? 'none' : 'block';
+        const branchBtn = tr.querySelector('.branch-fees-btn');
+        const branchLabel = branchBtn.querySelector('i');
+        const branchPanel = branchFeesDiv.querySelector('.branch-fees-cell');
+
+        const toggleButton = branchFeesDiv.querySelector('.toggle-branch-fees');
+        toggleButton.addEventListener('click', function () {
+            const visible = branchPanel.style.display !== 'none';
+            if (!visible) {
+                prefillBranchFees(branchFeesDiv, tr);
+            }
+            branchPanel.style.display = visible ? 'none' : 'block';
+            toggleButton.textContent = visible ? 'Show branch fees' : 'Hide branch fees';
+            toggleButton.classList.toggle('btn-outline-secondary', visible);
+            toggleButton.classList.toggle('btn-secondary', !visible);
+            toggleButton.title = visible ? 'Show branch-specific fees' : 'Hide branch-specific fees';
+        });
+
+        branchBtn.addEventListener('click', function () {
+            const visible = branchPanel.style.display !== 'none';
+            if (!visible) {
+                prefillBranchFees(branchFeesDiv, tr);
+                branchPanel.style.display = 'block';
+                toggleButton.textContent = 'Hide branch fees';
+                toggleButton.classList.remove('btn-outline-secondary');
+                toggleButton.classList.add('btn-secondary');
+                toggleButton.title = 'Hide branch-specific fees';
+            } else {
+                branchPanel.style.display = 'none';
+                toggleButton.textContent = 'Show branch fees';
+                toggleButton.classList.add('btn-outline-secondary');
+                toggleButton.classList.remove('btn-secondary');
+                toggleButton.title = 'Show branch-specific fees';
             }
         });
 
@@ -248,17 +298,34 @@
     }
 
     function buildBranchFeesInputs(rowIndex) {
-        // Use course branches passed from server
         const branches = courseBranches;
         let html = '';
         branches.forEach(branch => {
-            html += `<div class="col-md-6 mb-2">
-                <label class="form-label">${branch.name}</label>
-                <div class="input-group">
-                    <input type="number" name="term_fees[${rowIndex}][branch_fees][${branch.id}][registration_fee]" class="form-control" min="0" step="0.01" placeholder="Registration" value="0">
-                    <input type="number" name="term_fees[${rowIndex}][branch_fees][${branch.id}][tuition_fee]" class="form-control" min="0" step="0.01" placeholder="Tuition" value="0">
-                    <input type="number" name="term_fees[${rowIndex}][branch_fees][${branch.id}][practical_fee]" class="form-control" min="0" step="0.01" placeholder="Practical" value="0">
-                    <input type="number" name="term_fees[${rowIndex}][branch_fees][${branch.id}][trip_fee]" class="form-control" min="0" step="0.01" placeholder="Trip" value="0">
+            html += `<div class="branch-fee-card mb-3">
+                <div class="d-flex align-items-center justify-content-between mb-2 branch-fee-header">
+                    <div>
+                        <strong>${branch.name}</strong>
+                        <div class="text-muted small">Branch ID: ${branch.id}</div>
+                    </div>
+                    <span class="badge bg-secondary">Branch-specific fees</span>
+                </div>
+                <div class="branch-fee-row flex-wrap gap-2">
+                    <div class="branch-fee-field">
+                        <label class="form-label small mb-1">Registration</label>
+                        <input type="number" name="term_fees[${rowIndex}][branch_fees][${branch.id}][registration_fee]" class="form-control" min="0" step="0.01" placeholder="Registration fee" value="">
+                    </div>
+                    <div class="branch-fee-field">
+                        <label class="form-label small mb-1">Tuition</label>
+                        <input type="number" name="term_fees[${rowIndex}][branch_fees][${branch.id}][tuition_fee]" class="form-control" min="0" step="0.01" placeholder="Tuition fee" value="">
+                    </div>
+                    <div class="branch-fee-field">
+                        <label class="form-label small mb-1">Practical</label>
+                        <input type="number" name="term_fees[${rowIndex}][branch_fees][${branch.id}][practical_fee]" class="form-control" min="0" step="0.01" placeholder="Practical fee" value="">
+                    </div>
+                    <div class="branch-fee-field">
+                        <label class="form-label small mb-1">Trip</label>
+                        <input type="number" name="term_fees[${rowIndex}][branch_fees][${branch.id}][trip_fee]" class="form-control" min="0" step="0.01" placeholder="Trip fee" value="">
+                    </div>
                 </div>
             </div>`;
         });
@@ -274,6 +341,26 @@
         document.querySelectorAll('.term-select').forEach(sel => {
             const current = sel.value;
             sel.innerHTML = buildSelectOptions(current);
+        });
+    }
+
+    function prefillBranchFees(branchFeesDiv, termRow) {
+        const registration = parseFloat(termRow.querySelector('input[name$="[registration_fee]"]').value) || 0;
+        const tuition      = parseFloat(termRow.querySelector('input[name$="[tuition_fee]"]').value)      || 0;
+        const practical    = parseFloat(termRow.querySelector('input[name$="[practical_fee]"]').value)    || 0;
+        const trip         = parseFloat(termRow.querySelector('input[name$="[trip_fee]"]').value)         || 0;
+
+        branchFeesDiv.querySelectorAll('input[name$="[registration_fee]"]').forEach(input => {
+            if (input.value.trim() === '') input.value = registration;
+        });
+        branchFeesDiv.querySelectorAll('input[name$="[tuition_fee]"]').forEach(input => {
+            if (input.value.trim() === '') input.value = tuition;
+        });
+        branchFeesDiv.querySelectorAll('input[name$="[practical_fee]"]').forEach(input => {
+            if (input.value.trim() === '') input.value = practical;
+        });
+        branchFeesDiv.querySelectorAll('input[name$="[trip_fee]"]').forEach(input => {
+            if (input.value.trim() === '') input.value = trip;
         });
     }
 
@@ -384,6 +471,45 @@
     .table {
         border-radius: 12px;
         overflow: hidden;
+    }
+
+    .branch-fees-panel {
+        background: #fafbff;
+        border-color: #d8e2ff;
+    }
+
+    .branch-fee-card {
+        background: #ffffff;
+        border: 1px solid #e9ecef;
+        border-radius: 10px;
+        padding: 15px;
+    }
+
+    .branch-fee-header {
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .branch-fee-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .branch-fee-field {
+        display: flex;
+        flex-direction: column;
+        min-width: 180px;
+        flex: 1 1 180px;
+    }
+
+    .branch-fee-field input {
+        min-width: 120px;
+    }
+
+    .branch-fees-panel {
+        background: #f6f8ff;
+        border-color: #d8e2ff;
     }
     
     .table th {
