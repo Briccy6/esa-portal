@@ -565,7 +565,11 @@ public function storeFees(Request $request, $courseId)
 
 public function editFees($courseId)
 {
-    $course = Course::with(['branches', 'courseTermFees.term', 'courseTermFees.term.academicYear'])->findOrFail($courseId);
+    $course = Course::with([
+        'branches',
+        'courseTermFees.term.academicYear',
+        'courseTermBranchFees.term.academicYear'
+    ])->findOrFail($courseId);
     $terms = \App\Models\Term::with('academicYear')->orderBy('start_date', 'desc')->get();
     
     return view('admin.course.edit_fees', compact('course', 'terms'));

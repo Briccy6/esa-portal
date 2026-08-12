@@ -116,14 +116,25 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- Load existing fees -->
-                            @foreach($course->courseTermFees->where('is_active', true) as $index => $termFee)
-                                <tr>
+                            @php
+                                $branchFeesByTerm = $course->courseTermBranchFees->where('is_active', true)->groupBy('term_id');
+                                $existingTermIds = $course->courseTermFees->where('is_active', true)->pluck('term_id')
+                                    ->merge($branchFeesByTerm->keys())
+                                    ->unique()
+                                    ->values();
+                            @endphp
+
+                            @foreach($existingTermIds as $index => $termId)
+                                @php
+                                    $termFee = $course->courseTermFees->where('term_id', $termId)->where('is_active', true)->first();
+                                    $branchFees = $branchFeesByTerm->get($termId, collect())->keyBy('branch_id');
+                                @endphp
+                                <tr class="term-fee-row">
                                     <td>
                                         <select name="term_fees[{{ $index }}][term_id]" class="form-select term-select" required>
                                             <option value="">Select Term</option>
                                             @foreach($terms as $term)
-                                                <option value="{{ $term->id }}" {{ $termFee->term_id == $term->id ? 'selected' : '' }}>
+                                                <option value="{{ $term->id }}" {{ $termId == $term->id ? 'selected' : '' }}>
                                                     {{ $term->name }} - {{ $term->academicYear->year ?? '' }}
                                                 </option>
                                             @endforeach
@@ -131,24 +142,66 @@
                                     </td>
                                     <td>
                                         <input type="number" name="term_fees[{{ $index }}][registration_fee]" 
-                                               class="form-control" min="0" step="0.01" value="{{ $termFee->registration_fee }}">
+                                               class="form-control" min="0" step="0.01" value="{{ optional($termFee)->registration_fee }}">
                                     </td>
                                     <td>
                                         <input type="number" name="term_fees[{{ $index }}][tuition_fee]" 
-                                               class="form-control" min="0" step="0.01" value="{{ $termFee->tuition_fee }}">
+                                               class="form-control" min="0" step="0.01" value="{{ optional($termFee)->tuition_fee }}">
                                     </td>
                                     <td>
                                         <input type="number" name="term_fees[{{ $index }}][practical_fee]" 
-                                               class="form-control" min="0" step="0.01" value="{{ $termFee->practical_fee }}">
+                                               class="form-control" min="0" step="0.01" value="{{ optional($termFee)->practical_fee }}">
                                     </td>
                                     <td>
                                         <input type="number" name="term_fees[{{ $index }}][trip_fee]" 
-                                               class="form-control" min="0" step="0.01" value="{{ $termFee->trip_fee }}">
+                                               class="form-control" min="0" step="0.01" value="{{ optional($termFee)->trip_fee }}">
                                     </td>
                                     <td>
                                         <button type="button" class="btn btn-sm btn-danger remove-term-fee">
                                             <i class="fas fa-trash"></i>
                                         </button>
+                                    </td>
+                                </tr>
+                                <tr class="branch-fees-row" style="{{ $branchFees->isNotEmpty() ? '' : 'display:none;' }}">
+                                    <td colspan="6">
+                                        <div class="p-3 border rounded bg-light branch-fees-panel">
+                                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                                <div>
+                                                    <h6 class="mb-1">Branch-specific fees for this term</h6>
+                                                    <p class="mb-0 text-muted small">Existing branch fee overrides are shown below. Change any value to update that branch&apos;s fees.</p>
+                                                </div>
+                                                <span class="badge bg-secondary">Branch-specific</span>
+                                            </div>
+
+                                            <div class="row g-3">
+                                                @foreach($course->branches as $branch)
+                                                    @php $branchFee = $branchFees->get($branch->id); @endphp
+                                                    <div class="col-md-6">
+                                                        <div class="card p-3">
+                                                            <div class="mb-2">
+                                                                <strong>{{ $branch->name }}</strong>
+                                                            </div>
+                                                            <div class="mb-2">
+                                                                <label class="form-label small">Registration</label>
+                                                                <input type="number" name="term_fees[{{ $index }}][branch_fees][{{ $branch->id }}][registration_fee]" class="form-control" min="0" step="0.01" value="{{ optional($branchFee)->registration_fee }}">
+                                                            </div>
+                                                            <div class="mb-2">
+                                                                <label class="form-label small">Tuition</label>
+                                                                <input type="number" name="term_fees[{{ $index }}][branch_fees][{{ $branch->id }}][tuition_fee]" class="form-control" min="0" step="0.01" value="{{ optional($branchFee)->tuition_fee }}">
+                                                            </div>
+                                                            <div class="mb-2">
+                                                                <label class="form-label small">Practical</label>
+                                                                <input type="number" name="term_fees[{{ $index }}][branch_fees][{{ $branch->id }}][practical_fee]" class="form-control" min="0" step="0.01" value="{{ optional($branchFee)->practical_fee }}">
+                                                            </div>
+                                                            <div>
+                                                                <label class="form-label small">Trip</label>
+                                                                <input type="number" name="term_fees[{{ $index }}][branch_fees][{{ $branch->id }}][trip_fee]" class="form-control" min="0" step="0.01" value="{{ optional($branchFee)->trip_fee }}">
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        </div>
                                     </td>
                                 </tr>
                             @endforeach
@@ -221,7 +274,7 @@
 </div>
 
 <script>
-    let termFeeRowIndex = {{ $course->courseTermFees->where('is_active', true)->count() }};
+    let termFeeRowIndex = {{ $existingTermIds->count() ?? $course->courseTermFees->where('is_active', true)->count() }};
     const usedTerms = new Set();
 
     function addTermFeeRow() {
@@ -365,6 +418,10 @@
                     if (termId) {
                         usedTerms.delete(termId);
                         updateTermSelectOptions();
+                    }
+                    const next = row.nextElementSibling;
+                    if (next && next.classList.contains('branch-fees-row')) {
+                        next.remove();
                     }
                     row.remove();
                     calculateTotalYearFees();
