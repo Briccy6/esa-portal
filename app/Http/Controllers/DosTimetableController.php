@@ -189,7 +189,11 @@ class DosTimetableController extends Controller
     public function create(Request $request)
     {
         $dos = $this->authorizeDos();
-        $branches = $dos->branches;
+        $branches = $dos->branches ?? collect();
+
+        if (! $branches instanceof \Illuminate\Support\Collection) {
+            $branches = collect($branches);
+        }
 
         if ($branches->isEmpty()) {
             $branches = Branch::orderBy('name')->get();
@@ -236,7 +240,22 @@ class DosTimetableController extends Controller
         $courseIds = $lessonAssignments->pluck('course_id')->unique();
         $teacherIds = $lessonAssignments->pluck('teacher_id')->unique();
 
-        $courses = Course::whereIn('id', $courseIds)->get();
+        // Fallback: if no lesson assignments exist for the branch, try branch_course pivot
+        if ($courseIds->isEmpty()) {
+            try {
+                if (\Schema::hasTable('branch_course')) {
+                    $fromPivot = \Illuminate\Support\Facades\DB::table('branch_course')
+                        ->where('branch_id', $branchId)
+                        ->pluck('course_id')
+                        ->unique();
+                    $courseIds = $fromPivot->values();
+                }
+            } catch (\Throwable $e) {
+                // ignore DB pivot errors
+            }
+        }
+
+        $courses = $courseIds->isNotEmpty() ? Course::whereIn('id', $courseIds)->orderBy('course_name')->get() : Course::orderBy('course_name')->limit(200)->get();
         $teachers = \App\Models\Teacher::whereIn('id', $teacherIds)->get();
 
         return view('staff.timetable.create', compact(
@@ -350,7 +369,14 @@ class DosTimetableController extends Controller
         $dos = $this->authorizeDos();
         abort_unless(in_array($timetable->branch_id, $this->getAllowedBranchIds()), 403);
 
-        $branches = $dos->branches;
+        $branches = $dos->branches ?? collect();
+        if (! $branches instanceof \Illuminate\Support\Collection) {
+            $branches = collect($branches);
+        }
+        if ($branches->isEmpty()) {
+            $branches = Branch::orderBy('name')->get();
+        }
+
         $branchId = $timetable->branch_id;
         try {
             $academicYears = AcademicYear::whereHas('branches', function ($query) use ($branches) {
@@ -358,7 +384,7 @@ class DosTimetableController extends Controller
             })->orderBy('year', 'desc')->get();
         } catch (\Illuminate\Database\QueryException $e) {
             Log::warning('AcademicYear->branches query failed: ' . $e->getMessage());
-            $academicYears = collect();
+            $academicYears = AcademicYear::orderBy('year', 'desc')->get();
         }
 
         if ($academicYears->isEmpty()) {
@@ -370,7 +396,21 @@ class DosTimetableController extends Controller
         $courseIds = $lessonAssignments->pluck('course_id')->unique();
         $teacherIds = $lessonAssignments->pluck('teacher_id')->unique();
 
-        $courses = Course::whereIn('id', $courseIds)->get();
+        if ($courseIds->isEmpty()) {
+            try {
+                if (\Schema::hasTable('branch_course')) {
+                    $fromPivot = \Illuminate\Support\Facades\DB::table('branch_course')
+                        ->where('branch_id', $branchId)
+                        ->pluck('course_id')
+                        ->unique();
+                    $courseIds = $fromPivot->values();
+                }
+            } catch (\Throwable $e) {
+                // ignore
+            }
+        }
+
+        $courses = $courseIds->isNotEmpty() ? Course::whereIn('id', $courseIds)->orderBy('course_name')->get() : Course::orderBy('course_name')->limit(200)->get();
         $teachers = \App\Models\Teacher::whereIn('id', $teacherIds)->get();
 
         $selectedAcademicYearId = session()->getOldInput('academic_year_id') ?: $timetable->academic_year_id;
