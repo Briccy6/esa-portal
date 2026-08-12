@@ -6,6 +6,7 @@ use App\Models\Course;
 use Illuminate\Http\Request;
 use App\Services\AcademicYearContext;
 use App\Models\Branch; // Add this line
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 
 
@@ -432,16 +433,19 @@ public function storeFees(Request $request, $courseId)
         return !empty($termFee['term_id']);
     })->toArray();
     
+    // Normalize empty numeric inputs to null so branch-only fees can pass validation
+    $termFees = $this->normalizeTermFees($termFees);
+    
     // Update request with filtered data
     $request->merge(['term_fees' => $termFees]);
     
-    $validated = $request->validate([
+    $validator = Validator::make($request->all(), [
         'term_fees' => 'required|array|min:1',
         'term_fees.*.term_id' => 'required|exists:terms,id',
-        'term_fees.*.registration_fee' => 'required|numeric|min:0',
-        'term_fees.*.tuition_fee' => 'required|numeric|min:0',
-        'term_fees.*.practical_fee' => 'required|numeric|min:0',
-        'term_fees.*.trip_fee' => 'required|numeric|min:0',
+        'term_fees.*.registration_fee' => 'nullable|numeric|min:0',
+        'term_fees.*.tuition_fee' => 'nullable|numeric|min:0',
+        'term_fees.*.practical_fee' => 'nullable|numeric|min:0',
+        'term_fees.*.trip_fee' => 'nullable|numeric|min:0',
         // Optional branch-specific fees per term: term_fees.*.branch_fees.{branchId} => array with fees
         'term_fees.*.branch_fees' => 'nullable|array',
         'term_fees.*.branch_fees.*.registration_fee' => 'nullable|numeric|min:0',
@@ -449,6 +453,29 @@ public function storeFees(Request $request, $courseId)
         'term_fees.*.branch_fees.*.practical_fee' => 'nullable|numeric|min:0',
         'term_fees.*.branch_fees.*.trip_fee' => 'nullable|numeric|min:0',
     ]);
+
+    $validator->after(function ($validator) use ($request) {
+        $termFees = collect($request->input('term_fees', []));
+
+        $termFees->each(function ($termFee, $index) use ($validator) {
+            $branchFees = collect($termFee['branch_fees'] ?? []);
+            $hasBranchValues = $branchFees->contains(function ($bf) {
+                return collect(['registration_fee', 'tuition_fee', 'practical_fee', 'trip_fee'])->contains(function ($field) use ($bf) {
+                    return isset($bf[$field]) && trim((string)$bf[$field]) !== '';
+                });
+            });
+
+            if (!$hasBranchValues) {
+                foreach (['registration_fee', 'tuition_fee', 'practical_fee', 'trip_fee'] as $field) {
+                    if (!isset($termFee[$field]) || trim((string)$termFee[$field]) === '') {
+                        $validator->errors()->add("term_fees.$index.$field", "The term_fees.$index.$field field is required when branch-specific fees are not provided.");
+                    }
+                }
+            }
+        });
+    });
+
+    $validated = $validator->validate();
 
     DB::beginTransaction();
 
@@ -513,6 +540,29 @@ public function storeFees(Request $request, $courseId)
     }
 }
 
+    private function normalizeTermFees(array $termFees): array
+    {
+        return collect($termFees)->map(function ($termFee) {
+            foreach (['registration_fee', 'tuition_fee', 'practical_fee', 'trip_fee'] as $field) {
+                $termFee[$field] = isset($termFee[$field]) && trim((string) $termFee[$field]) !== ''
+                    ? $termFee[$field]
+                    : null;
+            }
+
+            if (!empty($termFee['branch_fees']) && is_array($termFee['branch_fees'])) {
+                foreach ($termFee['branch_fees'] as $branchId => $bf) {
+                    foreach (['registration_fee', 'tuition_fee', 'practical_fee', 'trip_fee'] as $field) {
+                        $termFee['branch_fees'][$branchId][$field] = isset($bf[$field]) && trim((string) $bf[$field]) !== ''
+                            ? $bf[$field]
+                            : null;
+                    }
+                }
+            }
+
+            return $termFee;
+        })->toArray();
+    }
+
 public function editFees($courseId)
 {
     $course = Course::with(['branches', 'courseTermFees.term', 'courseTermFees.term.academicYear'])->findOrFail($courseId);
@@ -525,19 +575,49 @@ public function updateFees(Request $request, $courseId)
 {
     $course = Course::findOrFail($courseId);
     
-    $validated = $request->validate([
+    $termFees = collect($request->input('term_fees', []))->filter(function($termFee) {
+        return !empty($termFee['term_id']);
+    })->toArray();
+
+    $termFees = $this->normalizeTermFees($termFees);
+    $request->merge(['term_fees' => $termFees]);
+    
+    $validator = Validator::make($request->all(), [
         'term_fees' => 'required|array|min:1',
         'term_fees.*.term_id' => 'required|exists:terms,id',
-        'term_fees.*.registration_fee' => 'required|numeric|min:0',
-        'term_fees.*.tuition_fee' => 'required|numeric|min:0',
-        'term_fees.*.practical_fee' => 'required|numeric|min:0',
-        'term_fees.*.trip_fee' => 'required|numeric|min:0',
+        'term_fees.*.registration_fee' => 'nullable|numeric|min:0',
+        'term_fees.*.tuition_fee' => 'nullable|numeric|min:0',
+        'term_fees.*.practical_fee' => 'nullable|numeric|min:0',
+        'term_fees.*.trip_fee' => 'nullable|numeric|min:0',
         'term_fees.*.branch_fees' => 'nullable|array',
         'term_fees.*.branch_fees.*.registration_fee' => 'nullable|numeric|min:0',
         'term_fees.*.branch_fees.*.tuition_fee' => 'nullable|numeric|min:0',
         'term_fees.*.branch_fees.*.practical_fee' => 'nullable|numeric|min:0',
         'term_fees.*.branch_fees.*.trip_fee' => 'nullable|numeric|min:0',
     ]);
+
+    $validator->after(function ($validator) use ($request) {
+        $termFees = collect($request->input('term_fees', []));
+
+        $termFees->each(function ($termFee, $index) use ($validator) {
+            $branchFees = collect($termFee['branch_fees'] ?? []);
+            $hasBranchValues = $branchFees->contains(function ($bf) {
+                return collect(['registration_fee', 'tuition_fee', 'practical_fee', 'trip_fee'])->contains(function ($field) use ($bf) {
+                    return isset($bf[$field]) && trim((string)$bf[$field]) !== '';
+                });
+            });
+
+            if (!$hasBranchValues) {
+                foreach (['registration_fee', 'tuition_fee', 'practical_fee', 'trip_fee'] as $field) {
+                    if (!isset($termFee[$field]) || trim((string)$termFee[$field]) === '') {
+                        $validator->errors()->add("term_fees.$index.$field", "The term_fees.$index.$field field is required when branch-specific fees are not provided.");
+                    }
+                }
+            }
+        });
+    });
+
+    $validated = $validator->validate();
 
     DB::beginTransaction();
 

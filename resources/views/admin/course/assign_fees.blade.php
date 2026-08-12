@@ -61,6 +61,9 @@
                 <i class="fas fa-info-circle me-2"></i>
                 Set up fees for each term this course will be active. You can configure different fees for different terms.
             </div>
+            <div class="alert alert-secondary small mb-3">
+                Leave the general term fee cells blank if you are using only branch-specific fees for a term.
+            </div>
             
             <div id="term-fees-container">
                 <div class="table-responsive">
@@ -184,10 +187,10 @@
                     ${buildSelectOptions('')}
                 </select>
             </td>
-            <td><input type="number" name="term_fees[${index}][registration_fee]" class="form-control" min="0" step="0.01" value="0" placeholder="Registration fee"></td>
-            <td><input type="number" name="term_fees[${index}][tuition_fee]" class="form-control" min="0" step="0.01" value="0" placeholder="Tuition fee"></td>
-            <td><input type="number" name="term_fees[${index}][practical_fee]" class="form-control" min="0" step="0.01" value="0" placeholder="Practical fee"></td>
-            <td><input type="number" name="term_fees[${index}][trip_fee]" class="form-control" min="0" step="0.01" value="0" placeholder="Trip fee"></td>
+            <td><input type="number" name="term_fees[${index}][registration_fee]" class="form-control" min="0" step="0.01" value="" placeholder="Registration fee"></td>
+            <td><input type="number" name="term_fees[${index}][tuition_fee]" class="form-control" min="0" step="0.01" value="" placeholder="Tuition fee"></td>
+            <td><input type="number" name="term_fees[${index}][practical_fee]" class="form-control" min="0" step="0.01" value="" placeholder="Practical fee"></td>
+            <td><input type="number" name="term_fees[${index}][trip_fee]" class="form-control" min="0" step="0.01" value="" placeholder="Trip fee"></td>
             <td>
                 <div class="d-flex flex-column gap-2">
                     <div class="d-flex gap-2 align-items-center">
@@ -212,6 +215,9 @@
                     <div>
                         <h6 class="mb-1">Branch-specific fees</h6>
                         <p class="mb-0 text-muted small">If fees differ by branch, enter the amounts below for each branch. Leave blank if the branch uses the same term fees above.</p>
+                        <div class="alert alert-info py-1 mt-2 mb-0 small branch-only-note d-none">
+                            Branch-only override enabled: general term fees are optional for this term.
+                        </div>
                     </div>
                     <button type="button" class="btn btn-sm btn-outline-secondary toggle-branch-fees">Show branch fees</button>
                 </div>
@@ -261,11 +267,13 @@
         const branchLabel = branchBtn.querySelector('i');
         const branchPanel = branchFeesDiv.querySelector('.branch-fees-cell');
 
+        const branchNote = branchFeesDiv.querySelector('.branch-only-note');
         const toggleButton = branchFeesDiv.querySelector('.toggle-branch-fees');
         toggleButton.addEventListener('click', function () {
             const visible = branchPanel.style.display !== 'none';
             if (!visible) {
                 prefillBranchFees(branchFeesDiv, tr);
+                updateBranchOnlyNote(branchFeesDiv, tr);
             }
             branchPanel.style.display = visible ? 'none' : 'block';
             toggleButton.textContent = visible ? 'Show branch fees' : 'Hide branch fees';
@@ -278,6 +286,7 @@
             const visible = branchPanel.style.display !== 'none';
             if (!visible) {
                 prefillBranchFees(branchFeesDiv, tr);
+                updateBranchOnlyNote(branchFeesDiv, tr);
                 branchPanel.style.display = 'block';
                 toggleButton.textContent = 'Hide branch fees';
                 toggleButton.classList.remove('btn-outline-secondary');
@@ -362,6 +371,27 @@
         branchFeesDiv.querySelectorAll('input[name$="[trip_fee]"]').forEach(input => {
             if (input.value.trim() === '') input.value = trip;
         });
+    }
+
+    function updateBranchOnlyNote(branchFeesDiv, termRow) {
+        const generalValues = ['registration_fee', 'tuition_fee', 'practical_fee', 'trip_fee'].map(field => {
+            const input = termRow.querySelector(`input[name$="[${field}]"]`);
+            return input ? input.value.trim() : '';
+        });
+
+        const branchInputs = Array.from(branchFeesDiv.querySelectorAll('input')).filter(input => {
+            return ['registration_fee', 'tuition_fee', 'practical_fee', 'trip_fee'].some(field => input.name.endsWith(`[${field}]`));
+        });
+
+        const branchHasAny = branchInputs.some(input => input.value.trim() !== '');
+        const generalAllBlank = generalValues.every(value => value === '');
+        const branchNote = branchFeesDiv.querySelector('.branch-only-note');
+
+        if (branchHasAny && generalAllBlank) {
+            branchNote.classList.remove('d-none');
+        } else {
+            branchNote.classList.add('d-none');
+        }
     }
 
     function calculateTotalYearFees() {
