@@ -405,6 +405,11 @@ class DosTimetableController extends Controller
         $this->authorizeDos();
         abort_unless(in_array($timetable->branch_id, $this->getAllowedBranchIds()), 403);
 
+        if ($timetable->status !== 'draft') {
+            return redirect()->route('dos.timetable.index')
+                ->with('error', 'Only draft timetables can be deleted.');
+        }
+
         $timetable->delete();
 
         return redirect()->route('dos.timetable.index')
