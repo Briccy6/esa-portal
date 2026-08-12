@@ -25,7 +25,8 @@ class DosTimetableController extends Controller
     protected function authorizeDos()
     {
         $user = Auth::guard('staff')->user();
-        abort_unless($user && $user->role === 'DOS', 403, 'Unauthorized');
+        $role = $user?->role ? strtoupper(trim($user->role)) : null;
+        abort_unless($user && $role === 'DOS', 403, 'Unauthorized');
         return $user;
     }
 
@@ -165,10 +166,17 @@ class DosTimetableController extends Controller
         $branches = $dos->branches;
 
         if ($branches->isEmpty()) {
-            abort(403, 'You are not assigned to any branches.');
+            $branches = Branch::orderBy('name')->get();
         }
 
-        $branchId = $request->get('branch_id', $branches->first()->id);
+        $branchId = $request->get('branch_id', $branches->first()?->id);
+        if (!$branchId && $branches->isNotEmpty()) {
+            $branchId = $branches->first()->id;
+        }
+
+        if (!$branchId) {
+            abort(403, 'No branches are available to create a timetable.');
+        }
         if (!$branches->pluck('id')->contains($branchId)) {
             $branchId = $branches->first()->id;
         }
