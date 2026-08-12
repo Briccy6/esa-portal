@@ -793,7 +793,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Fetch branch/term specific fee from server for accuracy
         if (courseId) {
-            fetch(`/course/fee?course_id=${courseId}&branch_id=${branchId}`)
+            fetch(`{{ route('students.getCourseFee') }}?course_id=${courseId}&branch_id=${branchId}`)
                 .then(res => res.ok ? res.json() : Promise.reject('Failed to fetch fee'))
                 .then(data => {
                     const reg = data.registration_fee || 0;
@@ -802,6 +802,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     totalFeeInput.value = reg;
                     feeBox.classList.add('show');
                 }).catch(err => {
+                    console.error('Fee fetch error:', err);
                     feeAmount.textContent = fee && fee !== '0' ? parseInt(fee).toLocaleString() : '0';
                     paymentAmountInput.value = fee || 0;
                     totalFeeInput.value = fee || 0;
