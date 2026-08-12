@@ -50,7 +50,7 @@ class FlutterwaveController extends Controller
                 'senior6_document'          => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
                 'senior3_document'          => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
                 'other_supporting_document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
-                'id_photo'                  => 'required|file|mimes:jpg,jpeg,png|max:2048',
+                'id_photo'                  => 'nullable|file|mimes:jpg,jpeg,png|max:2048',
                 'passport_photo'            => 'required|file|mimes:jpg,jpeg,png|max:2048',
             ]);
 
@@ -92,7 +92,8 @@ class FlutterwaveController extends Controller
                 'amount'          => $request->amount,
                 'currency'        => 'RWF',
                 'redirect_url'    => route('students.registration.callback'),
-                'payment_options' => 'card,banktransfer,ussd,mobilemoneyruanda',
+                // Use card/bank transfer only to avoid mobile money OTP screens for non-MOMO numbers
+                'payment_options' => 'card,banktransfer',
                 'meta'            => [
                     'course_id' => $course->id,
                 ],

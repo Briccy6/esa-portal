@@ -33,6 +33,7 @@ use App\Models\StudentTransaction;
 use App\Models\Exam;
 use App\Models\Timetable;
 use App\Models\CourseMaterial;
+use App\Models\CourseTermFee;
 use App\Models\StudentCard;
 use App\Models\Attendance;
 use App\Support\StudentPaymentTranscript;
@@ -444,6 +445,10 @@ class StudentController extends Controller
                 $q->where('branch_id', $branchId);
             })
             ->get(['id', 'course_name', 'registration_fee']);
+
+        foreach ($courses as $course) {
+            $course->registration_fee = $course->getRegistrationFeeForAcademicYear($academicYearId);
+        }
 
         return response()->json($courses);
     }
@@ -1192,7 +1197,7 @@ class StudentController extends Controller
         session(['student_registration' => $registrationData]);
 
         $course = Course::findOrFail($request->course_id);
-        $amount = $course->registration_fee;
+        $amount = $course->getRegistrationFeeForAcademicYear($request->academic_year_id);
         $tx_ref = 'TX-' . time() . '-' . uniqid();
 
         $flutterwavePayload = [
@@ -2273,7 +2278,7 @@ class StudentController extends Controller
                 return response()->json([
                     'success'   => true,
                     'message'   => $successMessage,
-                    'balance'   => $balance,
+                    'balance'   => $outstandingBalance,
                     'remaining' => $newRemaining,
                 ], 200);
             }

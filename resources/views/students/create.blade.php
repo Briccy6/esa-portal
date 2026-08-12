@@ -444,6 +444,11 @@
                             <input type="hidden" name="amount" id="payment_amount" value="0">
                             <input type="hidden" name="total_fee" id="total_fee" value="0">
 
+                            <div id="paymentErrorBanner" class="alert alert-danger d-none" role="alert" style="display: none;">
+                                <strong>Payment gateway unavailable.</strong>
+                                <span id="paymentErrorBannerText">Please try again or contact support if the issue persists.</span>
+                            </div>
+
                             <!-- Academic Information -->
                             <div class="mb-5">
                                 <h3 class="section-title">
@@ -1023,6 +1028,7 @@ function setupFormSubmission() {
             return;
         }
 
+        const originalBtnHtml = submitBtn.innerHTML;
         submitBtn.classList.add('loading');
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<i class="fas fa-hourglass-split me-2"></i>Redirecting to payment...';
@@ -1039,21 +1045,39 @@ function setupFormSubmission() {
                 'Accept': 'application/json'
             }
         })
-        .then(response => response.json())
-        .then(data => {
+        .then(async response => {
+            const contentType = response.headers.get('content-type') || '';
+            let data = null;
+
+            if (contentType.includes('application/json')) {
+                data = await response.json();
+            } else {
+                const text = await response.text();
+                throw new Error(text || 'Payment gateway initialization returned an unexpected response.');
+            }
+
+            if (!response.ok) {
+                const message = data?.message || 'Payment initialization failed. Please try again.';
+                showPaymentErrorBanner(message);
+                throw new Error(message);
+            }
+
             if (data.status === 'success' && data.data?.payment_link) {
+                hidePaymentErrorBanner();
                 window.location.href = data.data.payment_link;
                 return;
             }
 
-            throw new Error(data.message || 'Unable to initialize payment.');
+            const message = data.message || 'Unable to initialize payment.';
+            showPaymentErrorBanner(message);
+            throw new Error(message);
         })
         .catch(error => {
             console.error('Payment init error:', error);
             showNotification(error.message || 'Payment initialization failed. Please try again.', 'danger');
             submitBtn.classList.remove('loading');
             submitBtn.disabled = false;
-            submitBtn.innerHTML = '<i class="fas fa-user-plus me-2"></i>Proceed to Registration';
+            submitBtn.innerHTML = originalBtnHtml;
         });
     });
 }
@@ -1206,6 +1230,22 @@ function showNotification(message, type = 'info') {
             notification.remove();
         }
     }, 5000);
+}
+
+function showPaymentErrorBanner(message) {
+    const banner = document.getElementById('paymentErrorBanner');
+    const bannerText = document.getElementById('paymentErrorBannerText');
+    if (!banner || !bannerText) return;
+    bannerText.textContent = message || 'Please try again or contact support if the issue persists.';
+    banner.classList.remove('d-none');
+    banner.style.display = 'block';
+}
+
+function hidePaymentErrorBanner() {
+    const banner = document.getElementById('paymentErrorBanner');
+    if (!banner) return;
+    banner.classList.add('d-none');
+    banner.style.display = 'none';
 }
 
 // Keyboard shortcuts

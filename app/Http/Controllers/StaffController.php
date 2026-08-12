@@ -50,8 +50,8 @@ class StaffController extends Controller
 
         $generatedPassword = Str::random(8);
 
-        // Store photo as base64 string
-        $photoBase64 = null;
+        // Store photo as base64 string or use empty string if none uploaded
+        $photoBase64 = '';
         if ($request->hasFile('photo')) {
             $photoBase64 = base64_encode(file_get_contents($request->file('photo')->getRealPath()));
         }

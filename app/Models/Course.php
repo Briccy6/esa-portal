@@ -119,6 +119,25 @@ class Course extends Model
         return $this->getLegacyFees();
     }
 
+    public function getRegistrationFeeForAcademicYear($academicYearId = null)
+    {
+        if (floatval($this->registration_fee) > 0) {
+            return floatval($this->registration_fee);
+        }
+
+        $feeQuery = $this->courseTermFees()->where('is_active', true);
+
+        if ($academicYearId) {
+            $feeQuery->whereHas('term', function ($q) use ($academicYearId) {
+                $q->where('academic_year_id', $academicYearId);
+            });
+        }
+
+        $courseTermFee = $feeQuery->first();
+
+        return $courseTermFee ? floatval($courseTermFee->registration_fee) : 0;
+    }
+
     public function getLegacyFees()
     {
         return (object) [
