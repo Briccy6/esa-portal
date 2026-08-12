@@ -10,6 +10,7 @@ class Kernel extends ConsoleKernel
     protected $commands = [
         \App\Console\Commands\SendExamPassword::class,
        \App\Console\Commands\FixStorageLink::class,
+       \App\Console\Commands\RolloverAcademicYear::class,
 
     ];
 

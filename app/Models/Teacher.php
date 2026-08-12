@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use App\Models\AcademicYear;
 use App\Models\Course;
 use App\Models\Lesson;
 use App\Models\Branch; // Import Branch model
@@ -98,6 +99,12 @@ public function branches()
     // Assuming your pivot table is 'branch_teacher' with 'teacher_id' and 'branch_id'
     return $this->belongsToMany(Branch::class, 'branch_teacher', 'teacher_id', 'branch_id');
 }
+
+public function academicYears()
+{
+    return $this->belongsToMany(AcademicYear::class, 'academic_year_teacher', 'teacher_id', 'academic_year_id');
+}
+
 public function lessons()
 {
     return $this->hasMany(\App\Models\Lesson::class, 'teacher_id');

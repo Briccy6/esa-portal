@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\AcademicYear;
 use App\Models\Lesson;
 
 class Course extends Model
@@ -30,11 +31,18 @@ class Course extends Model
     {
         return $this->belongsToMany(\App\Models\Branch::class, 'branch_course');
     }
-public function academicYear()
-{
-    return $this->belongsTo(AcademicYear::class);
-}
- public function students()
+
+    public function academicYear()
+    {
+        return $this->belongsTo(AcademicYear::class);
+    }
+
+    public function academicYears()
+    {
+        return $this->belongsToMany(AcademicYear::class, 'academic_year_course', 'course_id', 'academic_year_id');
+    }
+
+    public function students()
     {
         return $this->hasMany(Student::class);
     }

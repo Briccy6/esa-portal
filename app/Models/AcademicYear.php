@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use App\Models\Branch;
+use App\Models\Resource;
+use App\Models\Teacher;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -39,6 +42,26 @@ class AcademicYear extends Model
     public function courses()
     {
         return $this->hasMany(Course::class);
+    }
+
+    public function teachers()
+    {
+        return $this->belongsToMany(Teacher::class, 'academic_year_teacher', 'academic_year_id', 'teacher_id');
+    }
+
+    public function branches()
+    {
+        return $this->belongsToMany(Branch::class, 'academic_year_branch', 'academic_year_id', 'branch_id');
+    }
+
+    public function resources()
+    {
+        return $this->belongsToMany(Resource::class, 'academic_year_resource', 'academic_year_id', 'resource_id');
+    }
+
+    public function scopeActive($query, $date = null)
+    {
+        return $query->ongoing($date);
     }
 
     public function resolveStatus($date = null): string

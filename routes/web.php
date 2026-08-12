@@ -207,7 +207,7 @@ Route::get('/register', function () {
 
 // Student registration
 Route::get('/students/create', [StudentController::class, 'create'])->name('students.create');
-Route::post('/students', [StudentController::class, 'store'])->name('students.store');
+Route::middleware(['auth:admin,staff,teacher'])->post('/students', [StudentController::class, 'store'])->name('students.store');
 Route::get('/students/get-course-fee', [StudentController::class, 'getCourseFee'])->name('students.getCourseFee');
 
 // Legacy endpoints
@@ -236,9 +236,9 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-// Shared academic year switcher for admin, staff, and teacher portals
+// Shared academic year switcher for admin and staff portals only
 Route::post('/academic-year/switch', [\App\Http\Controllers\Admin\AcademicYearController::class, 'switch'])
-    ->middleware('auth:admin,staff,teacher')
+    ->middleware('auth:admin,staff')
     ->name('academic_year.switch');
 
 // Admin auth routes
@@ -1259,11 +1259,10 @@ Route::get('/students/{student}/payments/download', [StudentController::class, '
 Route::get('/students/{student}/payments/ajax', [StudentController::class, 'ajaxPayments'])->name('students.payments.ajax');
 
 Route::get('/students/create', [\App\Http\Controllers\StudentController::class, 'create'])->name('students.create');
-Route::post('/students', [\App\Http\Controllers\StudentController::class, 'store'])->name('students.store');
 
 Route::get('/courses/registration-fee', [StudentController::class, 'getRegistrationFee'])->name('courses.registration_fee');
 Route::post('/students/flutterwave/initialize', [\App\Http\Controllers\FlutterwaveController::class, 'initializePayment'])->name('students.flutterwave.initialize');
-Route::get('/payment/callback', [StudentController::class, 'paymentCallback'])->name('students.payment.callback');
+Route::get('/payment/callback', [StudentController::class, 'paymentCallback'])->name('students.registration.callback');
 
 Route::post('/admin/students/{student}/send-reset-link', [\App\Http\Controllers\StudentController::class, 'sendResetLink'])->name('admin.students.sendResetLink');
 Route::get('/admin/force-logout', [\App\Http\Controllers\AdminLoginController::class, 'forceLogout'])->name('admin.forceLogout');

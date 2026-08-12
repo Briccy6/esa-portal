@@ -36,6 +36,11 @@ class Branch extends Model
     {
         return $this->belongsToMany(Course::class, 'branch_course');
     }
+
+    public function academicYears()
+    {
+        return $this->belongsToMany(AcademicYear::class, 'academic_year_branch', 'branch_id', 'academic_year_id');
+    }
     
     public function marks()
     {

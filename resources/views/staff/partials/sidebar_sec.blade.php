@@ -306,7 +306,7 @@
             <label for="branch_id" class="form-label">Branch</label>
             <select name="branch_id" id="branch_id" class="form-select" required>
               <option value="" disabled selected>Select branch</option>
-              @foreach(\App\Models\Branch::all() as $branch)
+              @foreach($branches ?? [] as $branch)
                 <option value="{{ $branch->id }}">{{ $branch->name }}</option>
               @endforeach
             </select>
@@ -315,7 +315,7 @@
             <label for="academic_year_id" class="form-label">Academic Year</label>
             <select name="academic_year_id" id="academic_year_id" class="form-select" required>
               <option value="" disabled selected>Select academic year</option>
-              @foreach(\App\Models\AcademicYear::orderBy('year', 'desc')->get() as $year)
+              @foreach($academicYears ?? [] as $year)
                 <option value="{{ $year->id }}">{{ $year->year }}</option>
               @endforeach
             </select>
@@ -324,7 +324,7 @@
             <label for="course_id" class="form-label">Course</label>
             <select name="course_id" id="course_id" class="form-select" required>
               <option value="" disabled selected>Select course</option>
-              @foreach(\App\Models\Course::all() as $course)
+              @foreach($courses ?? [] as $course)
                 <option value="{{ $course->id }}">{{ $course->course_name }}</option>
               @endforeach
             </select>

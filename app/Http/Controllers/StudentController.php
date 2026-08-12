@@ -250,16 +250,20 @@ class StudentController extends Controller
     {
         $branches = Branch::all();
         $courses = Course::all();
-        $academicYears = AcademicYear::all();
+        $academicYears = AcademicYear::active()->orderByDesc('starting_date')->get();
 
         return view('students.create', compact('branches', 'courses', 'academicYears'));
     }
 
-    /**
-     * Store a newly created student in storage (staff/accountant registration with optional cash payment)
-     */
     public function store(Request $request)
     {
+        if (! auth('admin')->check() && ! auth('staff')->check() && ! auth('teacher')->check()) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized access to manual student registration.'], 403);
+            }
+            abort(403, 'Unauthorized access to manual student registration.');
+        }
+
         try {
             // Validate input
             $validated = $request->validate([
@@ -328,6 +332,17 @@ class StudentController extends Controller
 
             // Record cash payment if provided
             if (!empty($validated['fee_type']) && !empty($validated['amount_paid']) && $validated['amount_paid'] > 0) {
+                $authenticatedStaff = auth('admin')->check() || auth('staff')->check() || auth('teacher')->check();
+
+                if (! $authenticatedStaff) {
+                    DB::rollBack();
+                    $message = 'Cash payment recording is restricted to authenticated staff.';
+                    if ($request->ajax()) {
+                        return response()->json(['success' => false, 'message' => $message], 403);
+                    }
+                    return back()->with('error', $message)->withInput();
+                }
+
                 StudentTransaction::create([
                     'student_id' => $student->id,
                     'tx_ref'     => 'CASH-' . $student->id . '-' . time() . '-' . uniqid(),
@@ -392,7 +407,7 @@ class StudentController extends Controller
 
     public function getAcademicYears()
     {
-        return AcademicYear::orderByDesc('starting_date')->get();
+        return AcademicYear::active()->orderByDesc('starting_date')->get(['id', 'year']);
     }
 
     public function getBranchesByAcademicYear(Request $request)
@@ -409,7 +424,7 @@ class StudentController extends Controller
             ->pluck('branch_course.branch_id')
             ->unique();
 
-        $branches = Branch::whereIn('id', $branchIds)->get();
+        $branches = Branch::whereIn('id', $branchIds)->get(['id', 'name']);
 
         return response()->json($branches);
     }
@@ -427,7 +442,7 @@ class StudentController extends Controller
             ->whereHas('branches', function ($q) use ($branchId) {
                 $q->where('branch_id', $branchId);
             })
-            ->get();
+            ->get(['id', 'course_name', 'registration_fee']);
 
         return response()->json($courses);
     }
@@ -1183,7 +1198,7 @@ class StudentController extends Controller
             'tx_ref'       => $tx_ref,
             'amount'       => $amount,
             'currency'     => 'RWF',
-            'redirect_url' => route('students.payment.callback'),
+            'redirect_url' => route('students.registration.callback'),
             'customer'     => [
                 'email'       => $request->email,
                 'phonenumber' => $request->phone,
@@ -1794,6 +1809,47 @@ class StudentController extends Controller
         ));
     }
 
+    public function showPaymentPage(Request $request)
+    {
+        $student = auth('student')->user();
+
+        if (!$student) {
+            return redirect()->route('login')->with('error', 'Please log in to view the payment page.');
+        }
+
+        $course = $student->course;
+        if (!$course) {
+            return redirect()->route('student.dashboard')->with('error', 'No course is assigned to your account.');
+        }
+
+        $term = Term::where('academic_year_id', $student->academic_year_id)
+            ->orderBy('start_date', 'asc')
+            ->first();
+
+        $termFees = $term ? $course->getFeesForTerm($term->id) : null;
+        if (!$termFees) {
+            $termFees = $course->getLegacyFees();
+        }
+
+        $registrationFee = floatval($termFees->registration_fee ?? 0);
+        $tuitionFee      = floatval($termFees->tuition_fee ?? 0);
+        $tripFee         = floatval($termFees->trip_fee ?? 0);
+        $practicalFee    = floatval($termFees->practical_fee ?? 0);
+        $studentCardFee  = floatval($termFees->student_card_fee ?? 2000);
+        $discount        = floatval($student->discount ?? 0);
+
+        return view('students.payment', compact(
+            'student',
+            'registrationFee',
+            'tuitionFee',
+            'tripFee',
+            'practicalFee',
+            'studentCardFee',
+            'discount',
+            'term'
+        ));
+    }
+
     // =========================================================================
     // SHOW PAYMENT FORM (Accountant/Finance - Record Cash Payment)
     // Route: GET /students/{student}/pay-cash
@@ -1837,12 +1893,15 @@ class StudentController extends Controller
             $validated = \Validator::make($request->all(), [
                 'fee_type' => 'required|string|in:registration_fee,school_fee,trip_fee,practical_fee,student_card',
                 'pay_amount' => 'required|numeric|min:1',
+                'term_id' => 'nullable|integer|exists:terms,id',
             ], [
                 'fee_type.required' => 'Fee type is required.',
                 'fee_type.in' => 'Invalid fee type.',
                 'pay_amount.required' => 'Payment amount is required.',
                 'pay_amount.numeric' => 'Payment amount must be a number.',
                 'pay_amount.min' => 'Payment amount must be at least 1 RWF.',
+                'term_id.integer' => 'Selected term is invalid.',
+                'term_id.exists' => 'Selected term does not exist.',
             ]);
 
             if ($validated->fails()) {
@@ -1904,8 +1963,10 @@ class StudentController extends Controller
                 'fee_type' => $feeType,
                 'amount' => $amount,
                 'total_fee' => $amount,
-                'term' => $student->academicYear->year ?? null,
+                'term' => $request->input('term_id'),
             ]);
+            $paymentRequest->headers->set('Accept', 'application/json');
+            $paymentRequest->headers->set('X-Requested-With', 'XMLHttpRequest');
 
             // Call the addPayment method which handles all Flutterwave integration
             $response = $flutterwaveController->addPayment($paymentRequest);

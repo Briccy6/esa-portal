@@ -28,9 +28,12 @@ class AcademicYearController extends Controller
             'expiry_date' => 'required|date|after_or_equal:starting_date',
         ]);
 
+        $this->validateAcademicYearRange($validated['starting_date'], $validated['expiry_date']);
+
         $year = AcademicYear::create($validated);
 
         if ($year->resolveStatus() === 'active') {
+            AcademicYear::ensureSingleOngoing($year->id);
             AcademicYearContext::setSelected($year->id);
         }
 
@@ -50,13 +53,36 @@ class AcademicYearController extends Controller
             'expiry_date' => 'required|date|after_or_equal:starting_date',
         ]);
 
+        $this->validateAcademicYearRange($validated['starting_date'], $validated['expiry_date'], $academicYear->id);
+
         $academicYear->update($validated);
 
         if ($academicYear->resolveStatus() === 'active') {
+            AcademicYear::ensureSingleOngoing($academicYear->id);
             AcademicYearContext::setSelected($academicYear->id);
         }
 
         return redirect()->route('admin.academic_year.index')->with('success', 'Academic year updated successfully.');
+    }
+
+    protected function validateAcademicYearRange(string $startingDate, string $expiryDate, int $ignoreId = null): void
+    {
+        $query = AcademicYear::where(function ($query) use ($startingDate, $expiryDate) {
+            $query->whereBetween('starting_date', [$startingDate, $expiryDate])
+                  ->orWhereBetween('expiry_date', [$startingDate, $expiryDate])
+                  ->orWhere(function ($query) use ($startingDate, $expiryDate) {
+                      $query->where('starting_date', '<=', $startingDate)
+                            ->where('expiry_date', '>=', $expiryDate);
+                  });
+        });
+
+        if ($ignoreId) {
+            $query->where('id', '!=', $ignoreId);
+        }
+
+        if ($query->exists()) {
+            abort(422, 'The academic year date range overlaps with an existing academic year.');
+        }
     }
 
     public function destroy(AcademicYear $academicYear)

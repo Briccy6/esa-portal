@@ -30,11 +30,11 @@
         <tbody>
             @php
                 $fees = [
-                    ['type' => 'registration', 'label' => 'Registration Fee', 'amount' => $registrationFee],
-                    ['type' => 'tuition', 'label' => 'Tuition Fee', 'amount' => $tuitionFee],
-                    ['type' => 'trip', 'label' => 'Trip Fee', 'amount' => $tripFee],
-                   ['type' => 'practical','label'=>'Pratical Fee', 'amount' => $practicalFee],
-
+                    ['type' => 'registration_fee', 'label' => 'Registration Fee', 'amount' => $registrationFee],
+                    ['type' => 'school_fee', 'label' => 'Tuition Fee', 'amount' => $tuitionFee],
+                    ['type' => 'trip_fee', 'label' => 'Trip Fee', 'amount' => $tripFee],
+                    ['type' => 'practical_fee', 'label' => 'Practical Fee', 'amount' => $practicalFee],
+                    ['type' => 'student_card', 'label' => 'Student Card Fee', 'amount' => $studentCardFee],
                 ];
             @endphp
             @foreach($fees as $fee)
@@ -62,6 +62,7 @@
                             <form action="{{ route('student.pay.fee') }}" method="POST" class="d-inline-flex gap-2 flex-column">
                                 @csrf
                                 <input type="hidden" name="fee_type" value="{{ $fee['type'] }}">
+                            <input type="hidden" name="term_id" value="{{ $term->id ?? '' }}">
                                 <div style="display: flex; gap: 5px; flex-wrap: wrap;">
                                     <input type="number" name="pay_amount" class="form-control form-control-sm" placeholder="Amount" value="{{ $remaining }}" min="1" max="{{ $remaining }}" required style="width: 100px;">
                                     <input type="number" name="pay_number" class="form-control form-control-sm" placeholder="Phone" required style="width: 120px;">

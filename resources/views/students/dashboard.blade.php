@@ -472,13 +472,27 @@
     function selectTermAndFee(termId, feeType, remaining) {
         // Populate payment modal with fee details
         const feeTypeInput = document.getElementById('feeTypeInput');
+        const termIdInput = document.getElementById('termIdInput');
+        const selectedFeeLabel = document.getElementById('selectedFeeLabel');
+        const selectedTermLabel = document.getElementById('selectedTermLabel');
         const payAmountInput = document.getElementById('payAmountInput');
         
         if (feeTypeInput) {
             feeTypeInput.value = feeType;
         }
+        if (termIdInput) {
+            termIdInput.value = termId;
+        }
         if (payAmountInput) {
             payAmountInput.value = remaining;
+        }
+
+        if (selectedFeeLabel) {
+            selectedFeeLabel.textContent = 'Fee: ' + formatFeeType(feeType);
+        }
+
+        if (selectedTermLabel) {
+            selectedTermLabel.textContent = 'Term: ' + (getTermName(termId) || 'Selected term');
         }
         
         // Open the payment modal
@@ -504,6 +518,22 @@
             console.error('Payment modal not found');
             alert('Payment modal not found. Please refresh the page.');
         }
+    }
+
+    function formatFeeType(feeType) {
+        switch (feeType) {
+            case 'registration_fee': return 'Registration Fee';
+            case 'school_fee': return 'Tuition Fee';
+            case 'practical_fee': return 'Practical Fee';
+            case 'trip_fee': return 'Trip Fee';
+            case 'student_card': return 'Student Card Fee';
+            default: return feeType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        }
+    }
+
+    function getTermName(termId) {
+        const termElement = document.querySelector('[data-term-id="' + termId + '"]');
+        return termElement ? termElement.textContent.trim() : null;
     }
     </script>
 
@@ -1127,6 +1157,7 @@
                 <form id="payFeeForm" action="{{ route('student.fees.pay.process') }}" method="POST">
                     @csrf
                     <input type="hidden" name="fee_type" id="feeTypeInput">
+                    <input type="hidden" name="term_id" id="termIdInput">
                     <div class="modal-header">
                         <h5 class="modal-title" id="payFeeModalLabel">
                             <i class="bi bi-credit-card me-2"></i>Pay Fee
@@ -1134,6 +1165,10 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
+                        <div class="mb-2 text-muted small" id="payFeeModalMeta">
+                            <span id="selectedFeeLabel">Fee: </span>
+                            <span id="selectedTermLabel">Term: </span>
+                        </div>
                         <div class="payment-form">
                             <div class="mb-3">
                                 <label for="payAmountInput" class="form-label">
@@ -1556,7 +1591,8 @@ document.addEventListener('DOMContentLoaded', function () {
             body: JSON.stringify({
                 student_id: {{ auth('student')->user()->id }},
                 fee_type:   document.getElementById('feeTypeInput').value,
-                pay_amount: document.getElementById('payAmountInput').value
+                pay_amount: document.getElementById('payAmountInput').value,
+                term_id:    document.getElementById('termIdInput').value || null
             })
         })
         .then(r => r.json())

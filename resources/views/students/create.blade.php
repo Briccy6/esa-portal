@@ -438,8 +438,11 @@
                             </div>
                         @endif
 
-                        <form method="POST" action="{{ route('students.store') }}" enctype="multipart/form-data" id="registrationForm">
+                        <form method="POST" action="{{ route('students.flutterwave.initialize') }}" enctype="multipart/form-data" id="registrationForm">
                             @csrf
+                            <input type="hidden" name="fee_type" value="registration_fee">
+                            <input type="hidden" name="amount" id="payment_amount" value="0">
+                            <input type="hidden" name="total_fee" id="total_fee" value="0">
 
                             <!-- Academic Information -->
                             <div class="mb-5">
@@ -497,6 +500,13 @@
                                             Email Address <span class="required">*</span>
                                         </label>
                                         <input type="email" id="email" name="email" class="form-control" required>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="password" class="form-label">
+                                            Password <span class="required">*</span>
+                                        </label>
+                                        <input type="password" id="password" name="password" class="form-control" required minlength="6" placeholder="Choose a password">
                                     </div>
 
                                     <div class="form-group">
@@ -754,6 +764,9 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Course change handler for fee display
+    const paymentAmountInput = document.getElementById('payment_amount');
+    const totalFeeInput = document.getElementById('total_fee');
+
     document.getElementById('course_id').addEventListener('change', function () {
         const fee = this.options[this.selectedIndex]?.getAttribute('data-fee');
         const feeBox = document.getElementById('registration_fee_box');
@@ -761,8 +774,13 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (fee && fee !== '0') {
             feeAmount.textContent = parseInt(fee).toLocaleString();
+            paymentAmountInput.value = fee;
+            totalFeeInput.value = fee;
             feeBox.classList.add('show');
         } else {
+            feeAmount.textContent = '0';
+            paymentAmountInput.value = 0;
+            totalFeeInput.value = 0;
             feeBox.classList.remove('show');
         }
     });
@@ -971,7 +989,6 @@ function setupFormSubmission() {
         
         if (!isFormValid) {
             showNotification('Please fix all errors before submitting', 'danger');
-            // Scroll to first error
             const firstError = form.querySelector('.is-invalid');
             if (firstError) {
                 firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -979,18 +996,47 @@ function setupFormSubmission() {
             }
             return;
         }
-        
-        // Show loading state
+
+        const courseSelect = document.getElementById('course_id');
+        const selectedFee = courseSelect.options[courseSelect.selectedIndex]?.getAttribute('data-fee');
+        if (!selectedFee || selectedFee === '0') {
+            showNotification('Please select a course with a registration fee before proceeding.', 'danger');
+            courseSelect.focus();
+            return;
+        }
+
         submitBtn.classList.add('loading');
         submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fas fa-hourglass-split me-2"></i>Processing Registration...';
-        
-        showNotification('Processing your registration...', 'info');
-        
-        // Submit form
-        setTimeout(() => {
-            form.submit();
-        }, 1500);
+        submitBtn.innerHTML = '<i class="fas fa-hourglass-split me-2"></i>Redirecting to payment...';
+
+        showNotification('Redirecting to payment gateway...', 'info');
+
+        const formData = new FormData(form);
+
+        fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success' && data.data?.payment_link) {
+                window.location.href = data.data.payment_link;
+                return;
+            }
+
+            throw new Error(data.message || 'Unable to initialize payment.');
+        })
+        .catch(error => {
+            console.error('Payment init error:', error);
+            showNotification(error.message || 'Payment initialization failed. Please try again.', 'danger');
+            submitBtn.classList.remove('loading');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-user-plus me-2"></i>Proceed to Registration';
+        });
     });
 }
 

@@ -1,0 +1,54 @@
+  GET|HEAD        admin/accounting/payment-transcript/{student} admin.accountGǪ
+  GET|HEAD        admin/payments admin.payments.index GǦ PaymentTypeControllerGǪ
+  POST            admin/payments admin.payments.store GǦ PaymentTypeControllerGǪ
+  GET|HEAD        admin/payments/create admin.payments.create GǦ PaymentTypeCoGǪ
+  GET|HEAD        admin/payments/{payment} admin.payments.show GǦ PaymentTypeCGǪ
+  PUT|PATCH       admin/payments/{payment} admin.payments.update GǦ PaymentTypGǪ
+  DELETE          admin/payments/{payment} admin.payments.destroy GǦ PaymentTyGǪ
+  GET|HEAD        admin/payments/{payment}/edit admin.payments.edit GǦ PaymentGǪ
+  GET|HEAD        admin/students/{student}/payment-transcript admin.students.GǪ
+  GET|HEAD        api/transcripts/course/{courseId}/payment-stats api.transcrGǪ
+  GET|HEAD        exam/{exam}/payment ........................... exam.payment
+  POST            exam/{exam}/payment ................... exam.payment.process
+  GET|HEAD        fees/payments/create/{studentId}/{segmentId} payments.creatGǪ
+  POST            fees/payments/store payments.store GǦ FeePaymentController@sGǪ
+  GET|HEAD        flutterwave/payment/callback flutterwave.payment.callback  GǪ
+  POST            flutterwave/payment/initialize-reportcard-fees flutterwave.GǪ
+  POST            flutterwave/payment/initialize-subscription flutterwave.payGǪ
+  POST            flutterwave/payment/initialize-tokens flutterwave.payment.iGǪ
+  GET|HEAD        live-classes/{liveClass}/payment live-classes.payment GǦ LivGǪ
+  POST            live-classes/{liveClass}/payment live-classes.payment.proceGǪ
+  GET|HEAD        live-classes/{liveClass}/payment/callback live-classes.paymGǪ
+  GET|HEAD        live-classes/{liveClass}/payment/verification live-classes.GǪ
+  GET|HEAD        payment/callback students.registration.callback GǦ StudentCoGǪ
+  GET|HEAD        payments ........................... PaymentController@index
+  POST            payments ........................... PaymentController@store
+  GET|HEAD        payments/{id} ....................... PaymentController@show
+  GET|HEAD        public-subscriptions/payment/callback public.subscriptions.GǪ
+  GET|HEAD        public/exams/{exam}/payment public.exams.payment GǦ PublicExGǪ
+  POST            public/exams/{exam}/payment public.exams.payment.process GǦ GǪ
+  GET|HEAD        public/exams/{exam}/payment/success public.exams.payment.suGǪ
+  GET|HEAD        resources/{resource}/payment public.resources.payment GǦ PubGǪ
+  POST            resources/{resource}/payment public.resources.payment.proceGǪ
+  GET|HEAD        resources/{resource}/payment/callback public.resources.paymGǪ
+  GET|HEAD        resources/{resource}/payment/success public.resources.paymeGǪ
+  GET|HEAD        staff/payment-schedule staff.accountant.payment-schedule.inGǪ
+  GET|HEAD        staff/payment-schedule/course/{course} staff.accountant.payGǪ
+  GET|HEAD        staff/payment-schedule/student/{student} staff.accountant.pGǪ
+  GET|HEAD        staff/students/{student}/payments/ajax staff.students.paymeGǪ
+  GET|HEAD        student/payment student.payment GǦ StudentController@showPayGǪ
+  GET|HEAD        student/payment-schedule student.payment-schedule GǦ StudentGǪ
+  GET|HEAD        student/payment-transcript student.payment-transcript GǦ StuGǪ
+  GET|HEAD        student/payment/callback student.payment.callback GǦ FlutterGǪ
+  GET|HEAD        student/payment/failed student.payment.failed GǦ FlutterwaveGǪ
+  POST            student/payment/process student.payment.process GǦ FlutterwaGǪ
+  GET|HEAD        student/payment/success student.payment.success GǦ FlutterwaGǪ
+  GET|HEAD        student/payments/create student.payments.create GǦ StudentCoGǪ
+  GET|HEAD        student/resources/{resource}/payment student.resources.paymGǪ
+  GET|HEAD        students/total-paid .. PaymentController@totalPaidByStudents
+  GET|HEAD        students/{student}/payments students.payments GǦ StudentContGǪ
+  GET|HEAD        students/{student}/payments/ajax students.payments.ajax GǦ SGǪ
+  GET|HEAD        students/{student}/payments/download students.payments.downGǪ
+  POST            subscriptions/payment/complete/{studentSubscription} subscrGǪ
+  GET|HEAD        subscriptions/payment/{studentSubscription} subscriptions.pGǪ
+  GET|HEAD        tokens/payment/callback/{gateway} tokens.payment.callback  GǪ

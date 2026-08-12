@@ -91,7 +91,7 @@ class FlutterwaveController extends Controller
                 'tx_ref'          => $txRef,
                 'amount'          => $request->amount,
                 'currency'        => 'RWF',
-                'redirect_url'    => route('flutterwave.callback'),
+                'redirect_url'    => route('students.registration.callback'),
                 'payment_options' => 'card,banktransfer,ussd,mobilemoneyruanda',
                 'meta'            => [
                     'course_id' => $course->id,
@@ -122,15 +122,19 @@ class FlutterwaveController extends Controller
                 $responseData = $response->json();
 
                 if (($responseData['status'] ?? '') === 'success') {
-                    return response()->json([
-                        'status'  => 'success',
-                        'message' => 'Payment initialized successfully',
-                        'data'    => [
-                            'payment_link'          => $responseData['data']['link'],
-                            'transaction_reference' => $txRef,
-                            'expires_at'            => now()->addHour()->toISOString(),
-                        ],
-                    ]);
+                    if ($request->expectsJson() || $request->ajax()) {
+                        return response()->json([
+                            'status'  => 'success',
+                            'message' => 'Payment initialized successfully',
+                            'data'    => [
+                                'payment_link'          => $responseData['data']['link'],
+                                'transaction_reference' => $txRef,
+                                'expires_at'            => now()->addHour()->toISOString(),
+                            ],
+                        ]);
+                    }
+
+                    return redirect($responseData['data']['link']);
                 }
             }
 

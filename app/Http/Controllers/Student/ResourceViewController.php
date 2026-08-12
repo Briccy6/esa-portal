@@ -36,31 +36,13 @@ class ResourceViewController extends Controller
             abort(403, 'You must be logged in as a student.');
         }
 
-        // Ensure course relation is loaded to avoid null
         $student->loadMissing('course');
 
-        // Defensive check in case course is null
         if (!$student->course || $student->course->id != $resource->course_id) {
             abort(403, 'Unauthorized to view this resource.');
         }
 
-        // Decide which file to serve (video preferred)
-        if ($resource->video_blob) {
-            $content = $resource->video_blob;
-            $mime = $resource->video_mime ?: 'video/mp4';
-            $filename = $resource->video_name ?: 'video.mp4';
-        } elseif ($resource->document_blob) {
-            $content = $resource->document_blob;
-            $mime = $resource->document_mime ?: 'application/pdf';
-            $filename = $resource->document_name ?: 'document.pdf';
-        } else {
-            abort(404, 'Resource file not found.');
-        }
-
-        // Serve file inline (e.g., video or PDF in browser)
-        return response($content)
-            ->header('Content-Type', $mime)
-            ->header('Content-Disposition', 'inline; filename="' . $filename . '"');
+        return view('students.resources.show', compact('resource', 'student'));
     }
 
     public function download(Resource $resource, Request $request)

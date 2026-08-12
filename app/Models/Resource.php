@@ -76,8 +76,12 @@ class Resource extends Model
         return $this->belongsTo(\App\Models\Branch::class);
     }
     public function lesson()
-{
-    return $this->belongsTo(\App\Models\Lesson::class);
-}
+    {
+        return $this->belongsTo(\App\Models\Lesson::class);
+    }
 
+    public function academicYears()
+    {
+        return $this->belongsToMany(AcademicYear::class, 'academic_year_resource', 'resource_id', 'academic_year_id');
+    }
 }
