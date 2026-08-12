@@ -271,9 +271,45 @@ class DosTimetableController extends Controller
         ));
     }
 
+    /**
+     * Normalize session time inputs to 24-hour H:i format to satisfy validation rules.
+     */
+    protected function normalizeSessionTimes(Request $request): void
+    {
+        $data = $request->all();
+        if (! empty($data['sessions']) && is_array($data['sessions'])) {
+            foreach ($data['sessions'] as $i => $session) {
+                foreach (['start_time', 'end_time'] as $field) {
+                    if (! empty($session[$field])) {
+                        $value = trim($session[$field]);
+                        // If value already matches H:i, skip
+                        if (preg_match('/^\d{1,2}:\d{2}$/', $value)) {
+                            // ensure leading zero on hour
+                            $parts = explode(':', $value);
+                            $hour = str_pad($parts[0], 2, '0', STR_PAD_LEFT);
+                            $data['sessions'][$i][$field] = $hour . ':' . $parts[1];
+                            continue;
+                        }
+
+                        try {
+                            $dt = \Carbon\Carbon::parse($value);
+                            $data['sessions'][$i][$field] = $dt->format('H:i');
+                        } catch (\Exception $e) {
+                            // leave original value; validation will catch it
+                        }
+                    }
+                }
+            }
+            $request->merge($data);
+        }
+    }
+
     public function store(Request $request)
     {
         $dos = $this->authorizeDos();
+
+        // Normalize session times (accept AM/PM or other formats from the UI)
+        $this->normalizeSessionTimes($request);
 
         $allowedBranchIds = $this->getAllowedBranchIds();
 
@@ -487,6 +523,9 @@ class DosTimetableController extends Controller
     {
         $dos = $this->authorizeDos();
         abort_unless(in_array($timetable->branch_id, $this->getAllowedBranchIds()), 403);
+
+        // Normalize session times submitted from the UI
+        $this->normalizeSessionTimes($request);
 
         $activeTerm = $this->getActiveTermForAcademicYear($request->academic_year_id);
         $termRules = $activeTerm ? ['nullable', 'exists:terms,id'] : ['required', 'exists:terms,id'];
