@@ -51,6 +51,104 @@
         </div>
     @endif
 
+    <!-- Existing Fees Display -->
+    @if($existingTermFees->isNotEmpty() || $existingBranchFees->isNotEmpty())
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-list me-2"></i>Existing Fee Structure</h5>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                Below are the currently active fees for this course. You can add new fees or update existing ones using the form below.
+                <strong>Important Notes:</strong>
+                <ul class="mb-0 mt-2">
+                    <li><strong>Registration Fee:</strong> Paid once per academic year (taken from first term's fee)</li>
+                    <li><strong>Student Card Fee:</strong> Paid once per academic year (taken from first term's fee)</li>
+                    <li><strong>Tuition, Practical, Trip Fees:</strong> Paid per term as configured</li>
+                </ul>
+            </div>
+
+            @if($existingTermFees->isNotEmpty())
+            <h6 class="mb-3">General Term Fees</h6>
+            <div class="table-responsive mb-4">
+                <table class="table table-bordered table-striped">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Academic Year</th>
+                            <th>Term</th>
+                            <th>Registration Fee</th>
+                            <th>Tuition Fee</th>
+                            <th>Practical Fee</th>
+                            <th>Trip Fee</th>
+                            <th>Student Card Fee</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($existingTermFees as $termId => $fee)
+                        <tr>
+                            <td>{{ $fee->term->academicYear->year ?? 'N/A' }}</td>
+                            <td>{{ $fee->term->name ?? 'N/A' }}</td>
+                            <td>{{ number_format($fee->registration_fee, 0) }} RWF</td>
+                            <td>{{ number_format($fee->tuition_fee, 0) }} RWF</td>
+                            <td>{{ number_format($fee->practical_fee, 0) }} RWF</td>
+                            <td>{{ number_format($fee->trip_fee, 0) }} RWF</td>
+                            <td>{{ number_format($fee->student_card_fee, 0) }} RWF</td>
+                            <td><strong>{{ number_format($fee->total_fees, 0) }} RWF</strong></td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            @endif
+
+            @if($existingBranchFees->isNotEmpty())
+            <h6 class="mb-3">Branch-Specific Term Fees</h6>
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Academic Year</th>
+                            <th>Term</th>
+                            <th>Branch</th>
+                            <th>Registration Fee</th>
+                            <th>Tuition Fee</th>
+                            <th>Practical Fee</th>
+                            <th>Trip Fee</th>
+                            <th>Student Card Fee</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($existingBranchFees as $termId => $branchFees)
+                            @foreach($branchFees as $branchFee)
+                            <tr>
+                                <td>{{ $branchFee->term->academicYear->year ?? 'N/A' }}</td>
+                                <td>{{ $branchFee->term->name ?? 'N/A' }}</td>
+                                <td>{{ $branchFee->branch->name ?? 'N/A' }}</td>
+                                <td>{{ number_format($branchFee->registration_fee, 0) }} RWF</td>
+                                <td>{{ number_format($branchFee->tuition_fee, 0) }} RWF</td>
+                                <td>{{ number_format($branchFee->practical_fee, 0) }} RWF</td>
+                                <td>{{ number_format($branchFee->trip_fee, 0) }} RWF</td>
+                                <td>{{ number_format($branchFee->student_card_fee, 0) }} RWF</td>
+                                <td><strong>{{ number_format($branchFee->total_fees, 0) }} RWF</strong></td>
+                            </tr>
+                            @endforeach
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            @endif
+        </div>
+    </div>
+    @else
+    <div class="alert alert-warning mb-4">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        No fees have been set for this course yet. Use the form below to add fees.
+    </div>
+    @endif
+
     <!-- Fee Assignment Form -->
     <form action="{{ route('admin.course.store-fees', $course->id) }}" method="POST" class="bg-white p-4 rounded shadow-sm">
         @csrf
@@ -127,9 +225,9 @@
                             <input type="text" id="total_year_fees" class="form-control" readonly>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Student Card Fee (per term):</label>
+                            <label class="form-label">Student Card Fee (per academic year):</label>
                             <input type="number" name="student_card_fee" class="form-control" value="2000" readonly>
-                            <small class="text-muted">Fixed fee per term</small>
+                            <small class="text-muted">Fixed fee paid once per academic year</small>
                         </div>
                     </div>
                 </div>
@@ -164,6 +262,89 @@
 
     let termFeeRowIndex = 0;
     const usedTerms = new Set();
+
+    // Pre-populate form with existing fees
+    @php
+    $existingFeesData = [];
+    if(isset($existingTermFees)) {
+        foreach($existingTermFees as $termId => $fee) {
+            $existingFeesData[] = [
+                'term_id' => $termId,
+                'registration_fee' => $fee->registration_fee,
+                'tuition_fee' => $fee->tuition_fee,
+                'practical_fee' => $fee->practical_fee,
+                'trip_fee' => $fee->trip_fee,
+                'is_branch_specific' => false
+            ];
+        }
+    }
+    if(isset($existingBranchFees)) {
+        foreach($existingBranchFees as $termId => $branchFees) {
+            foreach($branchFees as $branchFee) {
+                $existingFeesData[] = [
+                    'term_id' => $termId,
+                    'branch_id' => $branchFee->branch_id,
+                    'registration_fee' => $branchFee->registration_fee,
+                    'tuition_fee' => $branchFee->tuition_fee,
+                    'practical_fee' => $branchFee->practical_fee,
+                    'trip_fee' => $branchFee->trip_fee,
+                    'is_branch_specific' => true
+                ];
+            }
+        }
+    }
+    @endphp
+
+    const existingFees = @json(isset($existingFeesData) ? $existingFeesData : []);
+
+    // Load existing fees into the form on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        if (existingFees && existingFees.length > 0) {
+            existingFees.forEach(fee => {
+                addTermFeeRow();
+                const lastRow = document.querySelector('#term-fees-table tbody tr:last-of-type');
+                if (lastRow) {
+                    const termSelect = lastRow.querySelector('.term-select');
+                    termSelect.value = fee.term_id;
+                    
+                    // Set fee values
+                    lastRow.querySelector('input[name$="[registration_fee]"]').value = fee.registration_fee || '';
+                    lastRow.querySelector('input[name$="[tuition_fee]"]').value = fee.tuition_fee || '';
+                    lastRow.querySelector('input[name$="[practical_fee]"]').value = fee.practical_fee || '';
+                    lastRow.querySelector('input[name$="[trip_fee]"]').value = fee.trip_fee || '';
+
+                    // If branch-specific, populate branch fees
+                    if (fee.is_branch_specific && fee.branch_id) {
+                        const branchBtn = lastRow.querySelector('.branch-fees-btn');
+                        if (branchBtn) {
+                            branchBtn.click();
+                            setTimeout(() => {
+                                const branchRow = lastRow.nextElementSibling;
+                                if (branchRow && branchRow.classList.contains('branch-fees-row')) {
+                                    const branchInput = branchRow.querySelector(`input[name*="[${fee.branch_id}][registration_fee]"]`);
+                                    if (branchInput) {
+                                        const branchInputs = branchRow.querySelectorAll(`input[name*="[${fee.branch_id}]"]`);
+                                        branchInputs.forEach(input => {
+                                            const fieldName = input.name.match(/\[(\w+)\]$/);
+                                            if (fieldName) {
+                                                const feeType = fieldName[1];
+                                                if (fee[feeType] !== undefined) {
+                                                    input.value = fee[feeType];
+                                                }
+                                            }
+                                        });
+                                    }
+                                }
+                            }, 100);
+                        }
+                    }
+                    
+                    updateUsedTerms();
+                }
+            });
+            calculateTotalYearFees();
+        }
+    });
 
     function buildSelectOptions(currentValue) {
         let html = '<option value="">Select Term *</option>';

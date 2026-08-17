@@ -413,7 +413,21 @@ public function assignFees($courseId)
     $course = Course::with(['branches', 'courseTermFees.term', 'courseTermFees.term.academicYear'])->findOrFail($courseId);
     $terms = \App\Models\Term::with('academicYear')->orderBy('start_date', 'desc')->get();
     
-    return view('admin.course.assign_fees', compact('course', 'terms'));
+    // Load existing general term fees
+    $existingTermFees = \App\Models\CourseTermFee::where('course_id', $courseId)
+        ->where('is_active', true)
+        ->with('term', 'term.academicYear')
+        ->get()
+        ->keyBy('term_id');
+    
+    // Load existing branch-specific term fees
+    $existingBranchFees = \App\Models\CourseTermBranchFee::where('course_id', $courseId)
+        ->where('is_active', true)
+        ->with('term', 'term.academicYear', 'branch')
+        ->get()
+        ->groupBy('term_id');
+    
+    return view('admin.course.assign_fees', compact('course', 'terms', 'existingTermFees', 'existingBranchFees'));
 }
 
 public function testAssignFees($courseId)
@@ -515,6 +529,8 @@ public function storeFees(Request $request, $courseId)
                 }
             } else {
                 // No branch-specific fees -> create general term fee
+                // Note: Registration fee and student_card_fee are once-per-year fees
+                // They should only be set in the first term of the academic year
                 \App\Models\CourseTermFee::updateOrCreate(
                     [
                         'course_id' => $courseId,
@@ -525,7 +541,7 @@ public function storeFees(Request $request, $courseId)
                         'tuition_fee' => $termFeeData['tuition_fee'],
                         'practical_fee' => $termFeeData['practical_fee'],
                         'trip_fee' => $termFeeData['trip_fee'],
-                        'student_card_fee' => 2000,
+                        'student_card_fee' => 2000, // Fixed once-per-year fee
                         'is_active' => true,
                     ]
                 );

@@ -27,4 +27,9 @@ class CourseTermBranchFee extends Model
     {
         return $this->belongsTo(Branch::class);
     }
+
+    public function getTotalFeesAttribute()
+    {
+        return $this->registration_fee + $this->tuition_fee + $this->practical_fee + $this->trip_fee + $this->student_card_fee;
+    }
 }
