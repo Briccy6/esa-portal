@@ -198,6 +198,12 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('staff.timetables.*') ? 'active' : '' }}" href="{{ route('staff.timetables.index') }}">
+                            <span class="nav-icon"><i class="fas fa-calendar-alt"></i></span>
+                            <span class="nav-text">Timetables</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('to-whom.*') ? 'active' : '' }}" href="{{ route('to-whom.index') }}">
                             <span class="nav-icon"><i class="fas fa-file-alt"></i></span>
                             <span class="nav-text">Professional Letters</span>

@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Admin;
 
 class StaffController extends Controller
 {
@@ -23,10 +24,14 @@ class StaffController extends Controller
     {
         $staff = Auth::guard('staff')->user();
 
+        // Get staff's branches (many-to-many or single branch)
+        $branchIds = $staff->branches->pluck('id')->toArray();
+        if (empty($branchIds) && $staff->branch) {
+            $branchIds = [$staff->branch->id];
+        }
+
         $timetables = \App\Models\Timetable::published()
-            ->whereHas('branches', function ($query) use ($staff) {
-                $query->whereIn('branches.id', $staff->branches->pluck('id'));
-            })
+            ->whereIn('branch_id', $branchIds)
             ->whereDate('valid_from', '<=', now())
             ->whereDate('valid_until', '>=', now())
             ->with(['branch', 'academicYear', 'term', 'sessions.lesson.teacher', 'sessions.courses'])
@@ -39,13 +44,36 @@ class StaffController extends Controller
     {
         $staff = Auth::guard('staff')->user();
 
-        if (!$timetable->branches->contains('id', $staff->branches->pluck('id')->toArray())) {
+        // Get staff's branches (many-to-many or single branch)
+        $branchIds = $staff->branches->pluck('id')->toArray();
+        if (empty($branchIds) && $staff->branch) {
+            $branchIds = [$staff->branch->id];
+        }
+
+        if (!in_array($timetable->branch_id, $branchIds)) {
             abort(403, 'You are not authorized to view this timetable.');
         }
 
         $timetable->load(['branch', 'academicYear', 'term', 'sessions.lesson.teacher', 'sessions.courses']);
 
         return view('staff.timetables.show', compact('timetable'));
+    }
+
+    // Admin timetable methods
+    public function adminTimetables()
+    {
+        $timetables = \App\Models\Timetable::with(['branch', 'academicYear', 'term'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return view('admin.timetables.index', compact('timetables'));
+    }
+
+    public function adminShowTimetable(\App\Models\Timetable $timetable)
+    {
+        $timetable->load(['branch', 'academicYear', 'term', 'sessions.lesson.teacher', 'sessions.courses']);
+
+        return view('admin.timetables.show', compact('timetable'));
     }
 
     public function index()

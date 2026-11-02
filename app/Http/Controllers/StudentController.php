@@ -50,7 +50,14 @@ class StudentController extends Controller
             ->whereDate('valid_from', '<=', now())
             ->whereDate('valid_until', '>=', now())
             ->with(['branch', 'academicYear', 'term', 'sessions.lesson.teacher', 'sessions.courses'])
-            ->get();
+            ->get()
+            ->filter(function ($timetable) use ($student) {
+                // Filter to only show timetables that have sessions for the student's course
+                return $timetable->sessions->contains(function ($session) use ($student) {
+                    return $session->courses->contains('id', $student->course_id);
+                });
+            })
+            ->values();
 
         return view('students.timetables.index', compact('timetables'));
     }
@@ -65,7 +72,12 @@ class StudentController extends Controller
 
         $timetable->load(['branch', 'academicYear', 'term', 'sessions.lesson.teacher', 'sessions.courses']);
 
-        return view('students.timetables.show', compact('timetable'));
+        // Filter sessions to only show those for the student's course
+        $studentSessions = $timetable->sessions->filter(function ($session) use ($student) {
+            return $session->courses->contains('id', $student->course_id);
+        })->values();
+
+        return view('students.timetables.show', compact('timetable', 'studentSessions'));
     }
 
     public function studentExams()

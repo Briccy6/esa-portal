@@ -16,8 +16,8 @@
         </div>
     </div>
 
-    @if($timetable->sessions->isEmpty())
-        <div class="alert alert-info">No sessions found for this timetable.</div>
+    @if($studentSessions->isEmpty())
+        <div class="alert alert-info">No sessions found for your course in this timetable.</div>
     @else
         <div class="card">
             <div class="card-header bg-primary text-white">
@@ -37,7 +37,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($timetable->sessions as $session)
+                            @foreach($studentSessions as $session)
                             @php
                                 $dayName = \Carbon\Carbon::now()->setISOFormat(1)->startOfWeek()->addDays($session->day_of_week - 1)->format('l');
                             @endphp
@@ -54,8 +54,9 @@
                     </table>
                 </div>
                 <div class="mt-3">
-                    <a href="{{ route('student.timetables.index') }}" class="btn btn-success">Download Timetable</a>
-                    <a href="{{ route('student.timetables.index') }}" class="btn btn-info">Timetable Report</a>
+                    <button onclick="window.print()" class="btn btn-success">
+                        <i class="fas fa-print"></i> Print Timetable
+                    </button>
                 </div>
             </div>
         </div>

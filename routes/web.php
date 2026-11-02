@@ -1181,6 +1181,12 @@ Route::middleware(['auth:staff'])->prefix('staff/timetables')->name('staff.timet
     Route::get('/{timetable}', [\App\Http\Controllers\StaffController::class, 'showTimetable'])->name('show');
 });
 
+// Admin Timetable Routes
+Route::middleware(['auth:admin'])->prefix('admin/timetables')->name('admin.timetables.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\StaffController::class, 'adminTimetables'])->name('index');
+    Route::get('/{timetable}', [\App\Http\Controllers\StaffController::class, 'adminShowTimetable'])->name('show');
+});
+
 Route::middleware(['auth:staff'])->prefix('dos/report-cards')->name('dos.report-cards.')->group(function () {
     Route::get('/', [App\Http\Controllers\DOS\ReportCardReviewController::class, 'index'])->name('index');
     Route::post('/{reportCard}/approve', [App\Http\Controllers\DOS\ReportCardReviewController::class, 'approve'])->name('approve');

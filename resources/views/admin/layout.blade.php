@@ -1341,7 +1341,14 @@
                             <span class="nav-text">Live Classes</span>
                         </a>
                     </div>
-                    
+
+                    <div class="nav-item">
+                        <a href="{{ route('admin.timetables.index') }}" class="nav-link {{ request()->routeIs('admin.timetables.*') ? 'active' : '' }}">
+                            <i class="fas fa-calendar-alt"></i>
+                            <span class="nav-text">Timetables</span>
+                        </a>
+                    </div>
+
                     <div class="nav-item">
                         <a href="{{ route('admin.academic_year.create') }}" class="nav-link {{ request()->routeIs('admin.academic_year.create') ? 'active' : '' }}">
                             <i class="fas fa-calendar-plus"></i>
