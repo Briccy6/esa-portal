@@ -87,10 +87,12 @@
                             <input type="hidden" name="sessions[{{ $index }}][session_id]" value="{{ $sessionData['id'] ?? '' }}">
                             <div class="col-md-4">
                                 <label class="form-label">Lesson</label>
-                                <select name="sessions[{{ $index }}][lesson_id]" class="form-select" required>
+                                <select name="sessions[{{ $index }}][lesson_id]" class="form-select lesson-select" required>
                                     <option value="">Select lesson</option>
                                     @foreach($lessonAssignments as $assignment)
-                                        <option value="{{ $assignment->lesson_id }}" @selected(old("sessions.{$index}.lesson_id", $sessionData['lesson_id'] ?? '') == $assignment->lesson_id)>
+                                        <option value="{{ $assignment->lesson_id }}"
+                                                data-course-id="{{ $assignment->course_id }}"
+                                                @selected(old("sessions.{$index}.lesson_id", $sessionData['lesson_id'] ?? '') == $assignment->lesson_id)>
                                             {{ $assignment->lesson->title ?? 'Untitled lesson' }}
                                             ({{ $assignment->course->course_name ?? 'Course' }})
                                         </option>
@@ -170,10 +172,13 @@
                 <input type="hidden" name="sessions[__INDEX__][session_id]" value="">
                 <div class="col-md-4">
                     <label class="form-label">Lesson</label>
-                    <select name="sessions[__INDEX__][lesson_id]" class="form-select" required>
+                    <select name="sessions[__INDEX__][lesson_id]" class="form-select lesson-select" required>
                         <option value="">Select lesson</option>
                         @foreach($lessonAssignments as $assignment)
-                            <option value="{{ $assignment->lesson_id }}">{{ $assignment->lesson->title ?? 'Untitled lesson' }} ({{ $assignment->course->course_name ?? 'Course' }})</option>
+                            <option value="{{ $assignment->lesson_id }}"
+                                    data-course-id="{{ $assignment->course_id }}">
+                                {{ $assignment->lesson->title ?? 'Untitled lesson' }} ({{ $assignment->course->course_name ?? 'Course' }})
+                            </option>
                         @endforeach
                     </select>
                 </div>
@@ -247,6 +252,8 @@
             const rowMarkup = template.replace(/__INDEX__/g, nextIndex);
             container.insertAdjacentHTML('beforeend', rowMarkup);
             bindRemoveButtons();
+            initCourseSelects();
+            bindLessonChangeHandlers();
         }
 
         function bindRemoveButtons() {
@@ -264,8 +271,39 @@
             }
         }
 
+        function bindLessonChangeHandlers() {
+            container.querySelectorAll('.lesson-select').forEach(select => {
+                select.removeEventListener('change', handleLessonChange);
+                select.addEventListener('change', handleLessonChange);
+            });
+        }
+
+        function handleLessonChange(event) {
+            const lessonSelect = event.target;
+            const selectedOption = lessonSelect.options[lessonSelect.selectedIndex];
+            const courseId = selectedOption.getAttribute('data-course-id');
+            const row = lessonSelect.closest('.session-row');
+            const courseSelect = row.querySelector('.course-select');
+
+            if (courseId && courseSelect) {
+                // Clear current selections
+                Array.from(courseSelect.options).forEach(opt => opt.selected = false);
+                // Select the course matching the lesson
+                const matchingOption = Array.from(courseSelect.options).find(opt => opt.value === courseId);
+                if (matchingOption) {
+                    matchingOption.selected = true;
+                }
+                // Trigger Select2 update if available
+                if (window.jQuery && jQuery().select2) {
+                    jQuery(courseSelect).trigger('change');
+                }
+            }
+        }
+
         addButton.addEventListener('click', addSessionRow);
         bindRemoveButtons();
+        initCourseSelects();
+        bindLessonChangeHandlers();
     });
 </script>
 <!-- Select2 assets -->
