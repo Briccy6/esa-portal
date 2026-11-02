@@ -126,12 +126,20 @@ class TeacherDailyController extends Controller
         }
         
         // Get lessons assigned to this teacher for this course
+        // Check both direct teacher_id and pivot table assignments
         $lessons = \App\Models\Lesson::where('course_id', $courseId)
-            ->where('teacher_id', $teacher->id)
+            ->where(function($query) use ($teacher) {
+                $query->where('teacher_id', $teacher->id)
+                      ->orWhereHas('teachers', function($q) use ($teacher) {
+                          $q->where('teachers.id', $teacher->id);
+                      });
+            })
             ->get(['id', 'title']);
             
         if ($lessons->isEmpty()) {
             \Log::warning("No lessons found for teacher {$teacher->id} in course {$courseId}");
+        } else {
+            \Log::info("Found {$lessons->count()} lessons for teacher {$teacher->id} in course {$courseId}");
         }
         return response()->json($lessons);
     }
