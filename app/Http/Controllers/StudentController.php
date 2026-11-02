@@ -4244,69 +4244,101 @@ class StudentController extends Controller
     public function paymentSchedule(Request $request)
     {
         $student = auth('student')->user();
-        
+
         if (!$student) {
             return redirect()->route('login')->with('error', 'Please login to view payment schedule.');
         }
 
         $course = $student->course;
-        
+
         if (!$course) {
             return back()->with('error', 'No course assigned to your account.');
         }
 
-        // Get all term fees for the student's course
-        $termFees = $course->activeTermFees()->with('term')->get();
-        
+        // Get all terms with branch-specific fees for the student's course and branch
+        $terms = \App\Models\Term::with('academicYear')
+            ->whereHas('academicYear', function($query) use ($student) {
+                $query->where('id', $student->academic_year_id);
+            })
+            ->orderBy('start_date')
+            ->get();
+
         $paymentSchedule = [];
-        
-        foreach ($termFees as $termFee) {
+
+        foreach ($terms as $term) {
+            // Get branch-specific fees for this term
+            $branchFee = \App\Models\CourseTermBranchFee::where('course_id', $course->id)
+                ->where('term_id', $term->id)
+                ->where('branch_id', $student->branch_id)
+                ->where('is_active', true)
+                ->first();
+
+            // If no branch-specific fee, fall back to term-level fee
+            if (!$branchFee) {
+                $branchFee = \App\Models\CourseTermFee::where('course_id', $course->id)
+                    ->where('term_id', $term->id)
+                    ->where('is_active', true)
+                    ->first();
+            }
+
+            if (!$branchFee) {
+                continue; // Skip terms with no fee configuration
+            }
+
             $transactions = $student->transactions()
-                ->where('term_id', $termFee->term_id)
+                ->where('term_id', $term->id)
                 ->orderBy('paid_at', 'desc')
                 ->get();
-            
+
             $totalPaid = $transactions->where('status', 'successful')->sum('amount');
-            
+
+            // Calculate total required fees
+            $totalRequired = ($branchFee->registration_fee ?? 0) +
+                           ($branchFee->tuition_fee ?? 0) +
+                           ($branchFee->practical_fee ?? 0) +
+                           ($branchFee->trip_fee ?? 0) +
+                           ($branchFee->student_card_fee ?? 0);
+
             $paymentSchedule[] = [
-                'term' => $termFee->term,
-                'term_fee' => $termFee,
+                'term' => $term,
+                'term_fee' => $branchFee,
                 'transactions' => $transactions,
                 'total_paid' => $totalPaid,
-                'total_required' => $termFee->total_fees,
-                'remaining' => $termFee->total_fees - $totalPaid,
-                'status' => $totalPaid >= $termFee->total_fees ? 'paid' : 
+                'total_required' => $totalRequired,
+                'remaining' => $totalRequired - $totalPaid,
+                'status' => $totalPaid >= $totalRequired ? 'paid' :
                           ($totalPaid > 0 ? 'partial' : 'unpaid'),
                 'fee_breakdown' => [
                     'registration' => [
-                        'required' => $termFee->registration_fee,
-                        'paid' => $transactions->where('type', 'registration')->where('status', 'successful')->sum('amount'),
+                        'required' => $branchFee->registration_fee ?? 0,
+                        'paid' => $transactions->where('type', 'registration')->where('status', 'successful')->sum('amount') +
+                                  $transactions->where('type', 'registration_fee')->where('status', 'successful')->sum('amount'),
                     ],
                     'tuition' => [
-                        'required' => $termFee->tuition_fee,
+                        'required' => $branchFee->tuition_fee ?? 0,
                         'paid' => $transactions->where('type', 'school_fee')->where('status', 'successful')->sum('amount'),
                     ],
                     'practical' => [
-                        'required' => $termFee->practical_fee,
+                        'required' => $branchFee->practical_fee ?? 0,
                         'paid' => $transactions->where('type', 'practical_fee')->where('status', 'successful')->sum('amount'),
                     ],
                     'trip' => [
-                        'required' => $termFee->trip_fee,
+                        'required' => $branchFee->trip_fee ?? 0,
                         'paid' => $transactions->where('type', 'trip_fee')->where('status', 'successful')->sum('amount'),
                     ],
                     'student_card' => [
-                        'required' => $termFee->student_card_fee,
+                        'required' => $branchFee->student_card_fee ?? 0,
                         'paid' => $transactions->where('type', 'student_card')->where('status', 'successful')->sum('amount'),
                     ],
                 ],
             ];
         }
-        
+
         // Sort by term start date
         usort($paymentSchedule, function($a, $b) {
             return $a['term']->start_date <=> $b['term']->start_date;
         });
-        
+
         return view('students.payment-schedule', compact(
             'student',
             'course',

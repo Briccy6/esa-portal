@@ -34,8 +34,8 @@
                     {{ $course->course_name }} ({{ $course->abbreviation }})
                 </div>
                 <div class="col-md-3">
-                    <strong>Course Code:</strong><br>
-                    {{ $course->course_code }}
+                    <strong>Branch:</strong><br>
+                    {{ $student->branch->name ?? 'N/A' }}
                 </div>
             </div>
         </div>
