@@ -52,8 +52,8 @@
                                     <span class="badge bg-warning">Draft</span>
                                 @endif
                             </td>
-                            <td>{{ optional($timetable->valid_from)->format('M d, Y') }}</td>
-                            <td>{{ optional($timetable->valid_until)->format('M d, Y') }}</td>
+                            <td>{{ $timetable->valid_from ? $timetable->valid_from->format('M d, Y') : '' }}</td>
+                            <td>{{ $timetable->valid_until ? $timetable->valid_until->format('M d, Y') : '' }}</td>
                             <td>
                                 <a href="{{ route('admin.timetables.show', $timetable) }}" class="btn btn-sm btn-info">
                                     <i class="fas fa-eye"></i> View

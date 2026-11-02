@@ -124,7 +124,7 @@
                                                 @endforeach
                                             </td>
                                             <td>{{ $session->lesson->title ?? 'N/A' }}</td>
-                                            <td>{{ optional($session->classroom) }}</td>
+                                            <td>{{ $session->classroom ?? '' }}</td>
                                             <td>{{ $session->lesson->teacher->teacher_name ?? 'TBA' }}</td>
                                         </tr>
                                         @endforeach

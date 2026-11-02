@@ -42,11 +42,11 @@
         <div class="row mt-3">
             <div class="col-md-6">
                 <strong>Valid From:</strong><br>
-                {{ optional($timetable->valid_from)->format('M d, Y H:i') }}
+                {{ $timetable->valid_from ? $timetable->valid_from->format('M d, Y H:i') : '' }}
             </div>
             <div class="col-md-6">
                 <strong>Valid Until:</strong><br>
-                {{ optional($timetable->valid_until)->format('M d, Y H:i') }}
+                {{ $timetable->valid_until ? $timetable->valid_until->format('M d, Y H:i') : '' }}
             </div>
         </div>
     </div>
@@ -68,29 +68,46 @@
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-bordered table-striped">
-                    <thead class="table-dark">
+                    <thead>
                         <tr>
-                            <th>Date</th>
-                            <th>Day</th>
-                            <th>Room(s)</th>
                             <th>Time</th>
-                            <th>Module Code</th>
-                            <th>Lecturer</th>
+                            <th>Day</th>
+                            <th>Course</th>
+                            <th>Lesson</th>
+                            <th>Room</th>
+                            <th>Teacher</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach($timetable->sessions as $session)
                         @php
-                            $dayName = \Carbon\Carbon::now()->setISOFormat(1)->startOfWeek()->addDays($session->day_of_week - 1)->format('l');
+                            $days = [1 => 'Monday', 2 => 'Tuesday', 3 => 'Wednesday', 4 => 'Thursday', 5 => 'Friday', 6 => 'Saturday', 0 => 'Sunday'];
                         @endphp
-                        <tr>
-                            <td>{{ optional($session->classroom) }}</td>
-                            <td>{{ $dayName }}</td>
-                            <td>{{ optional($session->classroom) }}</td>
-                            <td>{{ optional($session->start_time) }} - {{ optional($session->end_time) }}</td>
-                            <td>{{ $session->lesson->title ?? 'N/A' }}</td>
-                            <td>{{ $session->lesson->teacher->teacher_name ?? 'N/A' }}</td>
-                        </tr>
+                        @foreach($days as $dayNum => $dayName)
+                            @php
+                                $daySessions = $timetable->sessions->where('day_of_week', $dayNum)->sortBy('start_time');
+                            @endphp
+                            @if($daySessions->isEmpty())
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted">
+                                        <em>No sessions on {{ $dayName }}</em>
+                                    </td>
+                                </tr>
+                            @else
+                                @foreach($daySessions as $session)
+                                <tr>
+                                    <td>{{ $session->start_time ?? '' }} - {{ $session->end_time ?? '' }}</td>
+                                    <td>{{ $dayName }}</td>
+                                    <td>
+                                        @foreach($session->courses as $course)
+                                            {{ $course->course_name }}{{ !$loop->last ? ', ' : '' }}
+                                        @endforeach
+                                    </td>
+                                    <td>{{ $session->lesson->title ?? 'N/A' }}</td>
+                                    <td>{{ $session->classroom ?? '' }}</td>
+                                    <td>{{ $session->lesson->teacher->teacher_name ?? 'TBA' }}</td>
+                                </tr>
+                                @endforeach
+                            @endif
                         @endforeach
                     </tbody>
                 </table>
