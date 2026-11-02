@@ -57,7 +57,28 @@ class DosTimetableController extends Controller
         }
 
         $courseIds = LessonBranchCourse::where('branch_id', $branchId)->pluck('course_id')->unique()->toArray();
-        $courses = Course::whereIn('id', $courseIds)->orderBy('course_name')->get(['id', 'course_name']);
+
+        // Fallback: if no lesson assignments, try branch_course pivot
+        if (empty($courseIds)) {
+            try {
+                if (\Schema::hasTable('branch_course')) {
+                    $courseIds = \Illuminate\Support\Facades\DB::table('branch_course')
+                        ->where('branch_id', $branchId)
+                        ->pluck('course_id')
+                        ->unique()
+                        ->toArray();
+                }
+            } catch (\Throwable $e) {
+                // ignore DB pivot errors
+            }
+        }
+
+        // If still no courses, return all courses as fallback
+        if (empty($courseIds)) {
+            $courses = Course::orderBy('course_name')->get(['id', 'course_name']);
+        } else {
+            $courses = Course::whereIn('id', $courseIds)->orderBy('course_name')->get(['id', 'course_name']);
+        }
 
         return response()->json($courses);
     }
@@ -255,7 +276,30 @@ class DosTimetableController extends Controller
             }
         }
 
-        $courses = $courseIds->isNotEmpty() ? Course::whereIn('id', $courseIds)->orderBy('course_name')->get() : Course::orderBy('course_name')->limit(200)->get();
+        // If still no courses, get all courses as fallback
+        if ($courseIds->isEmpty()) {
+            $courses = Course::orderBy('course_name')->get();
+        } else {
+            $courses = Course::whereIn('id', $courseIds)->orderBy('course_name')->get();
+        }
+
+        // If no lesson assignments, get all lessons as fallback for the dropdown
+        if ($lessonAssignments->isEmpty()) {
+            $lessonAssignments = \App\Models\Lesson::with(['course', 'teacher'])
+                ->where('academic_year_id', $selectedAcademicYearId)
+                ->get()
+                ->map(function($lesson) {
+                    return (object)[
+                        'lesson_id' => $lesson->id,
+                        'lesson' => $lesson,
+                        'course_id' => $lesson->course_id,
+                        'course' => $lesson->course,
+                        'teacher_id' => $lesson->teacher_id,
+                        'teacher' => $lesson->teacher,
+                    ];
+                });
+        }
+
         $teachers = \App\Models\Teacher::whereIn('id', $teacherIds)->get();
 
         return view('staff.timetable.create', compact(
