@@ -334,15 +334,15 @@
                 <div class="card-header bg-gradient-success text-white py-3">
                     <h5 class="mb-0 fw-semibold">
                         <i class="fas fa-check-double me-2"></i>
-                        Attendance Management
+                        Daily Report Approval
                     </h5>
                 </div>
                 <div class="card-body text-center py-4">
-                    <p class="text-muted mb-4 fs-5">Review attendance records and approve when ready.</p>
+                    <p class="text-muted mb-4 fs-5">Review this daily report and approve when ready.</p>
                     <form method="POST" action="{{ route('dos.dailies.approve', $daily->id) }}" id="approvalForm">
                         @csrf
                         <button type="submit" class="btn btn-success btn-lg px-5" id="approveBtn">
-                            <i class="fas fa-check-circle me-2"></i>Approve Attendance
+                            <i class="fas fa-check-circle me-2"></i>Approve Daily Report
                         </button>
                     </form>
                 </div>

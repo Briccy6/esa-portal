@@ -1599,7 +1599,19 @@ Route::middleware(['auth:staff'])->prefix('dos')->name('dos.')->group(function (
     Route::put('/courses/{course}', [\App\Http\Controllers\DosCourseController::class, 'update'])->name('courses.update');
     Route::delete('/courses/{course}', [\App\Http\Controllers\DosCourseController::class, 'destroy'])->name('courses.destroy');
     Route::post('/courses/assign-lesson', [\App\Http\Controllers\DosCourseController::class, 'assignLesson'])->name('courses.assignLesson');
-    
+
+    // Lessons Management
+    Route::get('/lessons', [LessonController::class, 'index'])->name('lessons.index');
+    Route::get('/lessons/create', [LessonController::class, 'create'])->name('lessons.create');
+    Route::post('/lessons', [LessonController::class, 'store'])->name('lessons.store');
+    Route::get('/lessons/{lesson}', [LessonController::class, 'show'])->name('lessons.show');
+    Route::get('/lessons/{lesson}/edit', [LessonController::class, 'edit'])->name('lessons.edit');
+    Route::put('/lessons/{lesson}', [LessonController::class, 'update'])->name('lessons.update');
+    Route::delete('/lessons/{lesson}', [LessonController::class, 'destroy'])->name('lessons.destroy');
+    Route::post('/lessons/assign', [LessonController::class, 'assignToBranches'])->name('lessons.assign');
+    Route::get('/lessons/{lesson}/assignments', [LessonController::class, 'getAssignments'])->name('lessons.assignments');
+    Route::delete('/lessons/{assignmentId}/delete-assignment', [LessonController::class, 'deleteAssignment'])->name('lessons.delete-assignment');
+
     // Live Classes Management
     Route::get('/live-classes', [\App\Http\Controllers\DOS\LiveClassController::class, 'index'])->name('live-classes.index');
     Route::get('/live-classes/create', [\App\Http\Controllers\DOS\LiveClassController::class, 'create'])->name('live-classes.create');
@@ -1632,13 +1644,6 @@ Route::middleware(['auth:staff'])->prefix('dos')->name('dos.')->group(function (
     Route::get('/assignments/{assignment}/edit', [\App\Http\Controllers\Admin\ResourceController::class, 'assignmentsEdit'])->name('assignments.edit');
     Route::put('/assignments/{assignment}', [\App\Http\Controllers\Admin\ResourceController::class, 'assignmentsUpdate'])->name('assignments.update');
     Route::delete('/assignments/{assignment}', [\App\Http\Controllers\Admin\ResourceController::class, 'assignmentsDestroy'])->name('assignments.destroy');
-    
-    // Lessons Management
-    Route::get('/lessons', [LessonController::class, 'index'])->name('lessons.index');
-    Route::get('/lessons/create', [LessonController::class, 'create'])->name('lessons.create');
-    Route::post('/lessons/assign', [LessonController::class, 'assignToBranches'])->name('lessons.assign');
-    Route::get('/lessons/{lesson}/assignments', [LessonController::class, 'getAssignments'])->name('lessons.assignments');
-    Route::delete('/lessons/{assignmentId}/delete-assignment', [LessonController::class, 'deleteAssignment'])->name('lessons.delete-assignment');
 
     // Timetable Management
     Route::get('/timetable', [\App\Http\Controllers\DosTimetableController::class, 'index'])->name('timetable.index');

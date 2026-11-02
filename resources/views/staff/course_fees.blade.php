@@ -39,12 +39,7 @@
                     <tr>
                         <th>Course</th>
                         <th>Term</th>
-                        <th>Branch</th>
-                        <th>Registration Fee</th>
-                        <th>Tuition Fee</th>
-                        <th>Practical Fee</th>
-                        <th>Trip Fee</th>
-                        <th>Student Card Fee</th>
+                        <th>Branch Fees</th>
                         <th>Total Fees</th>
                         <th>Status</th>
                     </tr>
@@ -52,41 +47,73 @@
                 <tbody>
                     @forelse($courses as $course)
                         @if($course->courseTermBranchFees->count() > 0)
-                            @foreach($course->courseTermBranchFees as $fee)
+                            @php
+                                // Group fees by term
+                                $feesByTerm = $course->courseTermBranchFees->groupBy('term_id');
+                            @endphp
+                            @foreach($feesByTerm as $termId => $termFees)
+                                @php
+                                    $term = $termFees->first()->term;
+                                    $allActive = $termFees->every('is_active');
+                                @endphp
                                 <tr>
                                     <td><strong>{{ $course->course_name }}</strong></td>
                                     <td>
                                         <span class="badge bg-info">
-                                            {{ $fee->term->name ?? 'N/A' }}
-                                            <small>({{ $fee->term->academicYear->year ?? '' }})</small>
+                                            {{ $term->name ?? 'N/A' }}
+                                            <small>({{ $term->academicYear->year ?? '' }})</small>
                                         </span>
                                     </td>
-                                    <td>{{ $fee->branch->name ?? 'N/A' }}</td>
-                                    <td>{{ number_format($fee->registration_fee, 2) }} RWF</td>
-                                    <td>{{ number_format($fee->tuition_fee, 2) }} RWF</td>
-                                    <td>{{ number_format($fee->practical_fee, 2) }} RWF</td>
-                                    <td>{{ number_format($fee->trip_fee, 2) }} RWF</td>
-                                    <td>{{ number_format($fee->student_card_fee, 2) }} RWF</td>
-                                    <td><strong>{{ number_format($fee->getTotalFeesAttribute(), 2) }} RWF</strong></td>
                                     <td>
-                                        @if($fee->is_active)
+                                        <table class="table table-sm table-bordered mb-0">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Branch</th>
+                                                    <th>Registration</th>
+                                                    <th>Tuition</th>
+                                                    <th>Practical</th>
+                                                    <th>Trip</th>
+                                                    <th>Card</th>
+                                                    <th>Total</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach($termFees as $fee)
+                                                    <tr>
+                                                        <td>{{ $fee->branch->name ?? 'N/A' }}</td>
+                                                        <td>{{ number_format($fee->registration_fee, 2) }}</td>
+                                                        <td>{{ number_format($fee->tuition_fee, 2) }}</td>
+                                                        <td>{{ number_format($fee->practical_fee, 2) }}</td>
+                                                        <td>{{ number_format($fee->trip_fee, 2) }}</td>
+                                                        <td>{{ number_format($fee->student_card_fee, 2) }}</td>
+                                                        <td><strong>{{ number_format($fee->getTotalFeesAttribute(), 2) }}</strong></td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </td>
+                                    <td>
+                                        <strong>{{ number_format($termFees->sum(function($f) { return $f->getTotalFeesAttribute(); }), 2) }} RWF</strong>
+                                    </td>
+                                    <td>
+                                        @if($allActive)
                                             <span class="badge bg-success">Active</span>
                                         @else
-                                            <span class="badge bg-secondary">Inactive</span>
+                                            <span class="badge bg-warning text-dark">Mixed</span>
                                         @endif
                                     </td>
                                 </tr>
                             @endforeach
                         @else
                             <tr>
-                                <td colspan="10" class="text-center text-muted">
+                                <td colspan="5" class="text-center text-muted">
                                     <em>No fees configured for this course. Please add fees in the Admin panel.</em>
                                 </td>
                             </tr>
                         @endif
                     @empty
                         <tr>
-                            <td colspan="10" class="text-center text-muted">No courses found.</td>
+                            <td colspan="5" class="text-center text-muted">No courses found.</td>
                         </tr>
                     @endforelse
                 </tbody>

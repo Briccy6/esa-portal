@@ -182,7 +182,7 @@
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h4 class="mb-0">All Lessons</h4>
                     <div>
-                        <a href="{{ route('staff.lessons.create') }}" class="btn btn-primary me-2">
+                        <a href="{{ route('dos.lessons.create') }}" class="btn btn-primary me-2">
                             <i class="fas fa-plus-circle me-2"></i>Create New Lesson
                         </a>
                         <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#assignLessonModal">
@@ -276,10 +276,10 @@
                                         </td>
                                         <td>
                                             <div class="btn-group" role="group">
-                                                <a href="{{ route('staff.lessons.show', $lesson->id) }}" class="btn btn-action btn-view" title="View">
+                                                <a href="{{ route('dos.lessons.show', $lesson->id) }}" class="btn btn-action btn-view" title="View">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
-                                                <a href="{{ route('staff.lessons.edit', $lesson->id) }}" class="btn btn-action btn-edit" title="Edit">
+                                                <a href="{{ route('dos.lessons.edit', $lesson->id) }}" class="btn btn-action btn-edit" title="Edit">
                                                     <i class="fas fa-edit"></i>
                                                 </a>
                                                 <button type="button" class="btn btn-action btn-assign" 
@@ -287,7 +287,7 @@
                                                         title="Assign to Branches">
                                                     <i class="fas fa-network-wired"></i>
                                                 </button>
-                                                <form action="{{ route('staff.lessons.destroy', $lesson->id) }}" method="POST" style="display: inline-block;" onsubmit="return confirm('Are you sure you want to delete this lesson? This will permanently delete the lesson and ALL related data including units, marks, attendance, and exam associations. This action cannot be undone.');">
+                                                <form action="{{ route('dos.lessons.destroy', $lesson->id) }}" method="POST" style="display: inline-block;" onsubmit="return confirm('Are you sure you want to delete this lesson? This will permanently delete the lesson and ALL related data including units, marks, attendance, and exam associations. This action cannot be undone.');">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="btn btn-action btn-delete" title="Delete" style="background: #dc3545; color: white;">
@@ -319,7 +319,7 @@
                         <i class="fas fa-book"></i>
                         <h4>No Lessons Found</h4>
                         <p class="text-muted">Start by creating your first lesson using the button above.</p>
-                        <a href="{{ route('staff.lessons.create') }}" class="btn btn-primary mt-3">
+                        <a href="{{ route('dos.lessons.create') }}" class="btn btn-primary mt-3">
                             <i class="fas fa-plus-circle me-2"></i>Create Your First Lesson
                         </a>
                     </div>
@@ -339,7 +339,7 @@
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form id="assignLessonForm" method="POST" action="{{ route('lessons.assign') }}">
+            <form id="assignLessonForm" method="POST" action="{{ route('dos.lessons.assign') }}">
                 @csrf
                 <input type="hidden" name="lesson_id" id="lessonIdInput">
                 <div class="modal-body">
@@ -418,7 +418,7 @@ function openAssignModal(lessonId, lessonTitle) {
     document.getElementById('selectedLessonName').textContent = lessonTitle;
     
     // Load current assignments
-    fetch(`/lessons/${lessonId}/assignments`)
+    fetch(`/dos/lessons/${lessonId}/assignments`)
         .then(response => response.json())
         .then(data => {
             let currentAssignmentsDiv = document.getElementById('currentAssignments');
@@ -622,7 +622,7 @@ document.addEventListener('change', function(e) {
 function removeCurrentAssignment(assignmentId) {
     if (confirm('Are you sure you want to remove this assignment?')) {
         // Delete via AJAX
-        fetch(`/lessons/${assignmentId}/delete-assignment`, {
+        fetch(`/dos/lessons/${assignmentId}/delete-assignment`, {
             method: 'DELETE',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
@@ -664,7 +664,7 @@ function deleteLessonConfirm(lessonId, lessonTitle) {
         // Create and submit a hidden form for deletion
         const form = document.createElement('form');
         form.method = 'POST';
-        form.action = `{{ route('staff.lessons.destroy', ':id') }}`.replace(':id', lessonId);
+        form.action = `{{ route('dos.lessons.destroy', ':id') }}`.replace(':id', lessonId);
         
         // Add CSRF token - get from meta tag or form
         let csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') 
@@ -704,7 +704,7 @@ function performLessonAjaxSearch(searchTerm = '') {
         ajax: 1
     });
     
-    fetch(`{{ route('lessons.index') }}?${params}`, {
+    fetch(`{{ route('dos.lessons.index') }}?${params}`, {
         method: 'GET',
         headers: {
             'X-Requested-With': 'XMLHttpRequest',
@@ -752,7 +752,7 @@ function attachLessonPaginationHandlers() {
                 ajax: 1
             });
             
-            fetch(`{{ route('lessons.index') }}?${params}`, {
+            fetch(`{{ route('dos.lessons.index') }}?${params}`, {
                 method: 'GET',
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest'
