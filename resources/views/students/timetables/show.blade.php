@@ -88,18 +88,18 @@
         <div class="card">
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table timetable-table mb-0" id="timetable-detail">
+                    <table class="table table-bordered table-hover" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; overflow: hidden;">
                         <thead>
-                            <tr>
-                                <th>Time</th>
-                                <th>Day</th>
-                                <th>Course</th>
-                                <th>Lesson</th>
-                                <th>Room</th>
-                                <th>Teacher</th>
+                            <tr style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                                <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Time</th>
+                                <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Day</th>
+                                <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Course</th>
+                                <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Lesson</th>
+                                <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Room</th>
+                                <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Teacher</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody style="background: white;">
                             @php
                                 $days = [1 => 'Monday', 2 => 'Tuesday', 3 => 'Wednesday', 4 => 'Thursday', 5 => 'Friday', 6 => 'Saturday', 0 => 'Sunday'];
                             @endphp
@@ -107,25 +107,25 @@
                                 @php
                                     $daySessions = $studentSessions->where('day_of_week', $dayNum)->sortBy('start_time');
                                 @endphp
-                                @if($daySessions->isEmpty())
-                                    <tr>
-                                        <td colspan="6" class="text-center text-muted">
-                                            <em>No sessions on {{ $dayName }}</em>
-                                        </td>
-                                    </tr>
-                                @else
+                                @if(!$daySessions->isEmpty())
                                     @foreach($daySessions as $session)
-                                    <tr>
-                                        <td>{{ $session->start_time ?? '' }} - {{ $session->end_time ?? '' }}</td>
-                                        <td>{{ $dayName }}</td>
+                                    <tr style="transition: all 0.3s ease;">
+                                        <td style="font-weight: 500;">{{ $session->start_time ?? '' }} - {{ $session->end_time ?? '' }}</td>
+                                        <td style="font-weight: 500;">{{ $dayName }}</td>
                                         <td>
                                             @foreach($session->courses as $course)
-                                                    {{ $course->course_name }}{{ !$loop->last ? ', ' : '' }}
+                                                    <span class="badge bg-info text-white">{{ $course->course_name }}</span>{{ !$loop->last ? ' ' : '' }}
                                                 @endforeach
                                         </td>
                                         <td>{{ $session->lesson->title ?? 'N/A' }}</td>
                                         <td>{{ $session->classroom ?? '' }}</td>
-                                        <td>{{ $session->lesson->teacher->teacher_name ?? 'TBA' }}</td>
+                                        <td>
+                                            @if($session->lesson->teacher)
+                                                <span class="badge bg-success text-white">{{ $session->lesson->teacher->teacher_name }}</span>
+                                            @else
+                                                <span class="badge bg-warning text-dark">TBA</span>
+                                            @endif
+                                        </td>
                                     </tr>
                                     @endforeach
                                 @endif
