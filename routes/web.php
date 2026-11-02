@@ -110,6 +110,14 @@ Route::get('/student/exams', [\App\Http\Controllers\StudentController::class, 's
     ->middleware('auth:student')
     ->name('student.exams');
 
+Route::get('/student/timetables', [\App\Http\Controllers\StudentController::class, 'timetables'])
+    ->middleware('auth:student')
+    ->name('student.timetables.index');
+
+Route::get('/student/timetables/{timetable}', [\App\Http\Controllers\StudentController::class, 'showTimetable'])
+    ->middleware('auth:student')
+    ->name('student.timetables.show');
+
 Route::get('/timetables/create', [TimetableController::class, 'create'])->name('timetables.create');
 Route::post('/timetables', [TimetableController::class, 'store'])->name('timetable.store');
 
@@ -1165,6 +1173,12 @@ Route::middleware(['auth:staff'])->prefix('dos/marks')->name('dos.marks.')->grou
     Route::post('/bulk-delete', [App\Http\Controllers\DOS\MarksController::class, 'bulkDelete'])->name('bulk-delete');
     Route::match(['get', 'post'], '/student-report', [App\Http\Controllers\DOS\MarksController::class, 'studentReport'])->name('student-report');
     Route::post('/class-report', [App\Http\Controllers\DOS\MarksController::class, 'classReport'])->name('class-report');
+});
+
+// Staff Timetable Routes
+Route::middleware(['auth:staff'])->prefix('staff/timetables')->name('staff.timetables.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\StaffController::class, 'timetables'])->name('index');
+    Route::get('/{timetable}', [\App\Http\Controllers\StaffController::class, 'showTimetable'])->name('show');
 });
 
 Route::middleware(['auth:staff'])->prefix('dos/report-cards')->name('dos.report-cards.')->group(function () {

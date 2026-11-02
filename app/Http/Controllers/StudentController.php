@@ -40,6 +40,34 @@ use App\Support\StudentPaymentTranscript;
 
 class StudentController extends Controller
 {
+    public function timetables()
+    {
+        $student = auth('student')->user();
+
+        $timetables = \App\Models\Timetable::published()
+            ->where('branch_id', $student->branch_id)
+            ->where('academic_year_id', $student->academic_year_id)
+            ->whereDate('valid_from', '<=', now())
+            ->whereDate('valid_until', '>=', now())
+            ->with(['branch', 'academicYear', 'term', 'sessions.lesson.teacher', 'sessions.courses'])
+            ->get();
+
+        return view('students.timetables.index', compact('timetables'));
+    }
+
+    public function showTimetable(\App\Models\Timetable $timetable)
+    {
+        $student = auth('student')->user();
+
+        if ($timetable->branch_id !== $student->branch_id) {
+            abort(403, 'You are not authorized to view this timetable.');
+        }
+
+        $timetable->load(['branch', 'academicYear', 'term', 'sessions.lesson.teacher', 'sessions.courses']);
+
+        return view('students.timetables.show', compact('timetable'));
+    }
+
     public function studentExams()
     {
         $student = auth('student')->user();

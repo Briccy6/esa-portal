@@ -5,18 +5,49 @@ namespace App\Http\Controllers;
 use App\Models\Staff;
 use App\Models\Course;
 use App\Models\Student;
+use App\Models\Timetable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Str;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 class StaffController extends Controller
 {
+    public function timetables()
+    {
+        $staff = Auth::guard('staff')->user();
+
+        $timetables = \App\Models\Timetable::published()
+            ->whereHas('branches', function ($query) use ($staff) {
+                $query->whereIn('branches.id', $staff->branches->pluck('id'));
+            })
+            ->whereDate('valid_from', '<=', now())
+            ->whereDate('valid_until', '>=', now())
+            ->with(['branch', 'academicYear', 'term', 'sessions.lesson.teacher', 'sessions.courses'])
+            ->get();
+
+        return view('staff.timetables.index', compact('timetables'));
+    }
+
+    public function showTimetable(\App\Models\Timetable $timetable)
+    {
+        $staff = Auth::guard('staff')->user();
+
+        if (!$timetable->branches->contains('id', $staff->branches->pluck('id')->toArray())) {
+            abort(403, 'You are not authorized to view this timetable.');
+        }
+
+        $timetable->load(['branch', 'academicYear', 'term', 'sessions.lesson.teacher', 'sessions.courses']);
+
+        return view('staff.timetables.show', compact('timetable'));
+    }
+
     public function index()
     {
         $staffs = Staff::all();
