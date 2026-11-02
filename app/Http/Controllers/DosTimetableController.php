@@ -488,6 +488,9 @@ class DosTimetableController extends Controller
             session()->flash('warning', 'Academic years could not be filtered by branch. Showing all academic years. Please run migrations to restore pivot tables.');
         }
 
+        $selectedAcademicYearId = session()->getOldInput('academic_year_id') ?: $timetable->academic_year_id;
+        $selectedAcademicYearId = $selectedAcademicYearId ?: $timetable->academic_year_id;
+
         $lessonAssignments = $this->getLessonAssignments($branchId);
         $courseIds = $lessonAssignments->pluck('course_id')->unique();
         $teacherIds = $lessonAssignments->pluck('teacher_id')->unique();
@@ -531,9 +534,6 @@ class DosTimetableController extends Controller
         }
 
         $teachers = \App\Models\Teacher::whereIn('id', $teacherIds)->get();
-
-        $selectedAcademicYearId = session()->getOldInput('academic_year_id') ?: $timetable->academic_year_id;
-        $selectedAcademicYearId = $selectedAcademicYearId ?: $timetable->academic_year_id;
 
         $terms = Term::where('academic_year_id', $selectedAcademicYearId)
             ->orderBy('start_date')

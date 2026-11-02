@@ -116,7 +116,7 @@
                                     @else
                                         @foreach($daySessions as $session)
                                         <tr>
-                                            <td>{{ optional($session->start_time) }} - {{ optional($session->end_time) }}</td>
+                                            <td>{{ $session->start_time ?? '' }} - {{ $session->end_time ?? '' }}</td>
                                             <td>{{ $dayName }}</td>
                                             <td>
                                                 @foreach($session->courses as $course)

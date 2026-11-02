@@ -3072,7 +3072,7 @@ class StudentController extends Controller
 
         $payments = StudentTransaction::where('student_id', $student->id)
             ->with('term')
-            ->whereIn('status', ['successful', 'paid', 'completed'])
+            ->whereIn('status', ['successful', 'paid', 'completed', 'approved', 'confirmed'])
             ->orderBy('created_at', 'desc')
             ->get();
 
