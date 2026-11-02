@@ -30,6 +30,12 @@
         font-weight: 600;
         border: none;
         white-space: nowrap;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white !important;
+    }
+
+    .timetable-table thead {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     }
 
     .timetable-table tbody td {
