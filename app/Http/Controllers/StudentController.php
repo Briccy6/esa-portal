@@ -1640,7 +1640,27 @@ class StudentController extends Controller
                 }
                 
                 $totalTermFees = $registrationFeeForTerm + $tuitionFee + $practicalFee + $tripFeeAmount + $studentCardFeeForTerm;
-                $totalTermPaid = $paidRegistration + $paidSchoolFee + $paidPractical + $paidTrip + $paidStudentCard;
+
+                // Calculate total paid - use academic year totals for registration and student card
+                $totalRegistrationPaid = $registrationFeePaidInAcademicYear ?
+                    StudentTransaction::where('student_id', $student->id)
+                        ->whereIn('type', ['registration', 'registration_fee'])
+                        ->whereIn('status', ['successful', 'paid'])
+                        ->whereHas('term', function ($query) use ($academicYearId) {
+                            $query->where('academic_year_id', $academicYearId);
+                        })
+                        ->sum('amount') : 0;
+
+                $totalStudentCardPaid = $studentCardFeePaidInAcademicYear ?
+                    StudentTransaction::where('student_id', $student->id)
+                        ->where('type', 'student_card')
+                        ->whereIn('status', ['successful', 'paid'])
+                        ->whereHas('term', function ($query) use ($academicYearId) {
+                            $query->where('academic_year_id', $academicYearId);
+                        })
+                        ->sum('amount') : 0;
+
+                $totalTermPaid = $totalRegistrationPaid + $paidSchoolFee + $paidPractical + $paidTrip + $totalStudentCardPaid;
                 $remainingTermFees = $totalTermFees - $totalTermPaid;
 
                 // Build fees array for this term
@@ -1648,13 +1668,22 @@ class StudentController extends Controller
 
                 // Only show registration fee if NOT already paid for academic year AND not already shown
                 if ($registrationFeeForTerm > 0) {
-                    $remainingReg = $registrationFeeForTerm - $paidRegistration;
+                    // Calculate registration paid across entire academic year
+                    $paidRegistrationInYear = StudentTransaction::where('student_id', $student->id)
+                        ->whereIn('type', ['registration', 'registration_fee'])
+                        ->whereIn('status', ['successful', 'paid'])
+                        ->whereHas('term', function ($query) use ($academicYearId) {
+                            $query->where('academic_year_id', $academicYearId);
+                        })
+                        ->sum('amount');
+
+                    $remainingReg = $registrationFeeForTerm - $paidRegistrationInYear;
                     if ($remainingReg > 0) {
                         $termFeesList[] = [
                             'type' => 'registration_fee',
                             'name' => 'Registration Fee',
                             'total' => $registrationFeeForTerm,
-                            'paid' => $paidRegistration,
+                            'paid' => $paidRegistrationInYear,
                             'remaining' => $remainingReg,
                         ];
                     }
@@ -1701,7 +1730,16 @@ class StudentController extends Controller
 
                 // Only show student card fee if NOT already paid for academic year AND not already shown
                 if ($studentCardFeeForTerm > 0) {
-                    $remainingStudentCard = $studentCardFeeForTerm - $paidStudentCard;
+                    // Calculate student card paid across entire academic year
+                    $paidStudentCardInYear = StudentTransaction::where('student_id', $student->id)
+                        ->where('type', 'student_card')
+                        ->whereIn('status', ['successful', 'paid'])
+                        ->whereHas('term', function ($query) use ($academicYearId) {
+                            $query->where('academic_year_id', $academicYearId);
+                        })
+                        ->sum('amount');
+
+                    $remainingStudentCard = $studentCardFeeForTerm - $paidStudentCardInYear;
                     if ($remainingStudentCard > 0) {
                         $termFeesList[] = [
                             'type' => 'student_card',
