@@ -22,10 +22,22 @@ class LessonController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Lesson::with(['course', 'teacher', 'units', 'branches', 'terms', 'branchCourses' => function($q) {
-            $q->with(['branch', 'course', 'teacher']);
-        }]);
-        
+        // Optimize: Only load necessary relationships with specific columns
+        $query = Lesson::with([
+            'course:id,course_name,course_code',
+            'teacher:id,teacher_name',
+            'units:id,lesson_id,title',
+            'branches:id,name',
+            'terms:id,name,start_date,end_date,academic_year_id',
+            'branchCourses' => function($q) {
+                $q->with([
+                    'branch:id,name',
+                    'course:id,course_name',
+                    'teacher:id,teacher_name'
+                ]);
+            }
+        ]);
+
         // Search across multiple fields
         if ($request->filled('search')) {
             $search = $request->search;
@@ -42,7 +54,7 @@ class LessonController extends Controller
                   });
             });
         }
-        
+
         $lessonDetails = $query->paginate(15);
 
         // Check if user is DOS and return DOS view
@@ -66,31 +78,36 @@ class LessonController extends Controller
 
     public function create(Request $request)
     {
-        $courses = Course::with('branches')->get();
-        $branches = \App\Models\Branch::all();
-        $terms = Term::all();
+        // Optimize: Only select needed columns
+        $courses = Course::select('id', 'course_name', 'course_code')->get();
+        $branches = \App\Models\Branch::select('id', 'name')->get();
+        $terms = Term::select('id', 'name', 'start_date', 'end_date', 'academic_year_id')->get();
         $teachers = collect();
 
         // For DOS dashboard, we need multi-branch, multi-course support
         if (auth('staff')->check() && auth('staff')->user()->role === 'DOS') {
             $ongoingAcademicYear = AcademicYearContext::current();
-            
-            // Build a mapping of courses to their teachers for JavaScript
-            $courseTeachersData = [];
-            foreach ($courses as $course) {
-                $courseTeachersData[$course->id] = DB::table('teacher_course')
-                    ->join('teachers', 'teacher_course.teacher_id', '=', 'teachers.id')
-                    ->where('teacher_course.course_id', $course->id)
-                    ->select('teachers.id', 'teachers.teacher_name')
-                    ->get()
-                    ->toArray();
-            }
-            
+
+            // Optimize: Single query to get all course-teacher relationships
+            $courseTeachersData = DB::table('teacher_course')
+                ->join('teachers', 'teacher_course.teacher_id', '=', 'teachers.id')
+                ->select('teacher_course.course_id', 'teachers.id', 'teachers.teacher_name')
+                ->get()
+                ->groupBy('course_id')
+                ->map(function ($items) {
+                    return $items->map(function ($item) {
+                        return [
+                            'id' => $item->id,
+                            'teacher_name' => $item->teacher_name
+                        ];
+                    })->toArray();
+                })->toArray();
+
             return view('dos.lessons.create', compact(
-                'courses', 
-                'branches', 
-                'teachers', 
-                'ongoingAcademicYear', 
+                'courses',
+                'branches',
+                'teachers',
+                'ongoingAcademicYear',
                 'terms',
                 'courseTeachersData'
             ));
@@ -235,14 +252,19 @@ public function createDetails(Request $request, $lessonId)
 
     public function show($lessonId)
     {
+        // Optimize: Only load necessary relationships and select specific columns
         $lesson = Lesson::with([
-            'terms',
-            'units',
-            'course',
-            'teacher',
-            'branchCourses.branch',
-            'branchCourses.course',
-            'branchCourses.teacher'
+            'terms:id,name,start_date,end_date,academic_year_id',
+            'units:id,lesson_id,title,description',
+            'course:id,course_name,course_code',
+            'teacher:id,teacher_name',
+            'branchCourses' => function($q) {
+                $q->with([
+                    'branch:id,name',
+                    'course:id,course_name',
+                    'teacher:id,teacher_name'
+                ]);
+            }
         ])->findOrFail($lessonId);
 
         return view('staff.lessons.show', compact('lesson'));
@@ -253,36 +275,49 @@ public function createDetails(Request $request, $lessonId)
      */
     public function edit($lessonId)
     {
+        // Optimize: Only load necessary relationships with specific columns
         $lesson = Lesson::with([
-            'terms',
-            'course',
-            'teacher',
-            'branchCourses.branch',
-            'branchCourses.course',
-            'branchCourses.teacher'
+            'terms:id,name,start_date,end_date,academic_year_id',
+            'course:id,course_name,course_code',
+            'teacher:id,teacher_name',
+            'branchCourses' => function($q) {
+                $q->with([
+                    'branch:id,name',
+                    'course:id,course_name',
+                    'teacher:id,teacher_name'
+                ]);
+            }
         ])->findOrFail($lessonId);
-        
-        // Get all available data for the form
-        $branches = Branch::all();
-        $courses = Course::with('branches')->get();
-        $terms = Term::with('academicYear')->get();
-        $academicYears = \App\Models\AcademicYear::all();
-        
-        // Prepare course-teachers map for JavaScript
-        $courseTeachersData = [];
-        foreach ($courses as $course) {
-            $courseTeachersData[$course->id] = DB::table('teacher_course')
-                ->join('teachers', 'teacher_course.teacher_id', '=', 'teachers.id')
-                ->where('teacher_course.course_id', $course->id)
-                ->select('teachers.id', 'teachers.teacher_name')
-                ->get()
-                ->toArray();
-        }
-        
-        // Prepare course-branches map for JavaScript
-        $courseBranchesMap = [];
-        foreach ($courses as $course) {
-            $courseBranchesMap[$course->id] = $course->branches->pluck('id')->toArray();
+
+        // Optimize: Only select needed columns
+        $branches = Branch::select('id', 'name')->get();
+        $courses = Course::select('id', 'course_name', 'course_code')->get();
+        $terms = Term::select('id', 'name', 'start_date', 'end_date', 'academic_year_id')->get();
+        $academicYears = \App\Models\AcademicYear::select('id', 'year')->get();
+
+        // Optimize: Single query to get all course-teacher relationships
+        $courseTeachersData = DB::table('teacher_course')
+            ->join('teachers', 'teacher_course.teacher_id', '=', 'teachers.id')
+            ->select('teacher_course.course_id', 'teachers.id', 'teachers.teacher_name')
+            ->get()
+            ->groupBy('course_id')
+            ->map(function ($items) {
+                return $items->map(function ($item) {
+                    return [
+                        'id' => $item->id,
+                        'teacher_name' => $item->teacher_name
+                    ];
+                })->toArray();
+            })->toArray();
+
+        // Optimize: Single query to get all course-branch relationships
+        $courseBranchesMap = DB::table('branch_course')
+            ->select('course_id', 'branch_id')
+            ->get()
+            ->groupBy('course_id')
+            ->map(function ($items) {
+                return $items->pluck('branch_id')->toArray();
+            })->toArray();
         }
 
         return view('staff.lessons.edit', compact('lesson', 'courses', 'branches', 'terms', 'academicYears', 'courseTeachersData', 'courseBranchesMap'));
