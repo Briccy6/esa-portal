@@ -146,8 +146,31 @@ class TeacherDailyController extends Controller
 
     public function getUnits($lessonId)
     {
+        $teacher = Auth::guard('teacher')->user();
         $lesson = \App\Models\Lesson::findOrFail($lessonId);
+        
+        // Verify teacher is assigned to this lesson
+        $isAssigned = $lesson->where('id', $lessonId)
+            ->where(function($query) use ($teacher) {
+                $query->where('teacher_id', $teacher->id)
+                      ->orWhereHas('teachers', function($q) use ($teacher) {
+                          $q->where('teachers.id', $teacher->id);
+                      });
+            })->exists();
+            
+        if (!$isAssigned) {
+            \Log::warning("Teacher {$teacher->id} not assigned to lesson {$lessonId}");
+            return response()->json([], 403);
+        }
+        
         $units = $lesson->units()->get(['id', 'unit_name']);
+        
+        if ($units->isEmpty()) {
+            \Log::warning("No units found for lesson {$lessonId}");
+        } else {
+            \Log::info("Found {$units->count()} units for lesson {$lessonId}");
+        }
+        
         return response()->json($units);
     }
 

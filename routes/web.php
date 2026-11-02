@@ -837,7 +837,7 @@ Route::prefix('teacher')->name('teacher.')->group(function () {
 });
 
 // Daily attendance
-Route::prefix('teacher')->group(function () {
+Route::middleware('auth:teacher')->prefix('teacher')->group(function () {
     Route::post('/daily', [TeacherDailyController::class, 'store'])->name('teacher.daily.store');
 });
 
