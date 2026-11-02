@@ -12,25 +12,27 @@
         margin-bottom: 2rem;
     }
 
+    .timetable-card {
+        border-radius: 1rem;
+        overflow: hidden;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+
     .timetable-table {
         background: white;
         border-radius: 0.5rem;
         overflow: hidden;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
 
-    .timetable-table thead {
-        background: #667eea;
-        color: white;
-    }
-
-    .timetable-table th {
+    .timetable-table thead th {
         padding: 1rem;
         font-weight: 600;
         border: none;
+        white-space: nowrap;
     }
 
-    .timetable-table td {
+    .timetable-table tbody td {
         padding: 1rem;
         vertical-align: middle;
         border-bottom: 1px solid #e2e8f0;
@@ -54,13 +56,51 @@
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
     }
+
+    @media (max-width: 768px) {
+        .timetable-header {
+            padding: 1.5rem;
+        }
+
+        .timetable-table thead th,
+        .timetable-table tbody td {
+            padding: 0.75rem 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .timetable-table {
+            font-size: 0.875rem;
+        }
+
+        .badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .timetable-table thead th,
+        .timetable-table tbody td {
+            padding: 0.5rem 0.25rem;
+            font-size: 0.8rem;
+        }
+
+        .timetable-header h2 {
+            font-size: 1.5rem;
+        }
+
+        .download-btn {
+            padding: 0.4rem 1rem;
+            font-size: 0.875rem;
+        }
+    }
 </style>
 
 <div class="container py-4">
     <!-- Header -->
     <div class="timetable-header">
         <h2 class="mb-1"><i class="fas fa-calendar-alt me-2"></i>My Timetables</h2>
-        <p class="mb-0 opacity-75">View your teaching schedule for the current academic year</p>
+        <p class="mb-0 opacity-75">View your class schedule for the current academic year</p>
     </div>
 
     @if($timetables->isEmpty())
@@ -70,9 +110,9 @@
         </div>
     @else
         @foreach($timetables as $timetable)
-            <div class="card mb-4">
-                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                    <div>
+            <div class="card timetable-card">
+                <div class="card-header bg-primary text-white d-flex flex-wrap justify-content-between align-items-center">
+                    <div class="mb-2 mb-md-0">
                         <h5 class="mb-1">{{ $timetable->title }}</h5>
                         <small class="opacity-75">
                             Branch: {{ $timetable->branch->name ?? 'N/A' }} | 
@@ -141,7 +181,7 @@
 
 <script>
 function downloadTimetable(timetableId) {
-    const table = document.getElementById('timetable-' + timetableId);
+    const table = document.querySelector('.card .table');
     if (!table) return;
 
     const tableClone = table.cloneNode(true);

@@ -82,6 +82,35 @@
             ->exists();
     @endphp
 
+    <!-- Timetable Quick Access -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h3 class="section-title">
+                <i class="bi bi-calendar3 me-2"></i>Your Timetable
+            </h3>
+        </div>
+        <div class="col-12">
+            <div class="info-card">
+                <div class="info-card-header">
+                    <h4><i class="bi bi-calendar-week me-2"></i>Class Schedule</h4>
+                    <a href="{{ route('student.timetables.index') }}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-eye"></i> View Full Timetable
+                    </a>
+                </div>
+                <div class="info-card-body">
+                    <div class="text-center py-4">
+                        <i class="bi bi-calendar-check display-4 text-primary mb-3"></i>
+                        <h5>View Your Class Schedule</h5>
+                        <p class="text-muted mb-3">Access your weekly timetable, see class times, rooms, and teacher assignments.</p>
+                        <a href="{{ route('student.timetables.index') }}" class="btn btn-primary btn-lg">
+                            <i class="bi bi-calendar3 me-2"></i>Go to Timetables
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Attendance Overview -->
     <div class="row mb-4">
         <div class="col-12">
@@ -620,46 +649,6 @@
                             <p class="mt-2 text-muted">Loading live classes...</p>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Timetables Section -->
-    <div class="row mb-4" id="timetables">
-        <div class="col-12">
-            <h3 class="section-title"><i class="bi bi-calendar2-week me-2"></i>Timetables</h3>
-        </div>
-        <div class="col-12">
-            <div class="info-card">
-                <div class="info-card-header">
-                    <h4><i class="bi bi-calendar2-week me-2"></i>Current Timetable</h4>
-                </div>
-                <div class="info-card-body">
-                    @if(isset($activeTimetable) && $activeTimetable)
-                        <div class="mb-4">
-                            <h5 class="mb-3">{{ $activeTimetable->title ?? 'Weekly Timetable' }}</h5>
-                            <p class="text-muted mb-3">
-                                Branch: {{ $activeTimetable->branch->name ?? 'N/A' }} |
-                                Academic Year: {{ $activeTimetable->academicYear->year ?? 'N/A' }} |
-                                Valid: {{ optional($activeTimetable->valid_from)->format('M d, Y') ?? 'N/A' }}
-                                to {{ optional($activeTimetable->valid_until)->format('M d, Y') ?? 'N/A' }}
-                            </p>
-                        </div>
-                        @if($activeSessions->isNotEmpty())
-                            @include('partials.timetable-weekly-grid', ['sessions' => $activeSessions, 'timetable' => $activeTimetable])
-                        @else
-                            <div class="alert alert-info">
-                                No sessions are currently scheduled for your course in the active timetable.
-                            </div>
-                        @endif
-                    @else
-                        <div class="text-center py-5">
-                            <i class="bi bi-calendar-x text-muted" style="font-size: 3rem;"></i>
-                            <h5 class="text-muted mt-3">No active published timetable</h5>
-                            <p class="text-muted">There is no active timetable published for your branch and course at this time.</p>
-                        </div>
-                    @endif
                 </div>
             </div>
         </div>
