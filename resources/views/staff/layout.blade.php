@@ -49,6 +49,7 @@
             align-items: center;
             position: relative;
             overflow: hidden;
+            min-height: 44px;
         }
 
         .sidebar .nav-link::before {
@@ -169,6 +170,10 @@
         }
 
         @media (max-width: 768px) {
+            .navbar-brand {
+                font-size: 1rem;
+            }
+
             .btn, .nav-link, button {
                 min-height: 44px;
             }
@@ -176,6 +181,124 @@
             .form-control, input, select, textarea {
                 font-size: 16px;
                 min-height: 44px;
+            }
+
+            /* Mobile tables */
+            .table-responsive {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                margin: 0 -1rem 1rem -1rem;
+                padding: 0 1rem;
+            }
+
+            .table {
+                font-size: 0.875rem;
+                min-width: 800px;
+            }
+
+            .table th,
+            .table td {
+                padding: 0.5rem;
+                white-space: nowrap;
+            }
+
+            /* Mobile cards */
+            .card {
+                margin-bottom: 1rem;
+                border-radius: 0.5rem;
+            }
+
+            .card-body {
+                padding: 1rem;
+            }
+
+            .card-header {
+                padding: 1rem;
+            }
+
+            /* Mobile sidebar */
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: -280px;
+                width: 280px;
+                height: 100vh;
+                z-index: 1000;
+                transition: left 0.3s ease;
+            }
+
+            .sidebar.show {
+                left: 0;
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+
+            /* Mobile navbar */
+            .navbar {
+                padding: 0.5rem 1rem;
+            }
+
+            .navbar-nav {
+                flex-direction: row;
+                flex-wrap: wrap;
+            }
+
+            .dropdown-menu {
+                min-width: 200px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .navbar-brand {
+                font-size: 0.875rem;
+            }
+
+            .navbar-brand i {
+                display: none;
+            }
+
+            .main-content {
+                padding: 0.75rem;
+            }
+
+            /* Extra small tables */
+            .table {
+                font-size: 0.8125rem;
+            }
+
+            .table th,
+            .table td {
+                padding: 0.375rem;
+            }
+
+            /* Extra small cards */
+            .card-body {
+                padding: 0.75rem;
+            }
+
+            .card-header {
+                padding: 0.75rem;
+                font-size: 0.875rem;
+            }
+
+            /* Action buttons */
+            .btn {
+                padding: 0.5rem 1rem;
+                font-size: 0.875rem;
+            }
+
+            .btn-sm {
+                padding: 0.375rem 0.75rem;
+                font-size: 0.8125rem;
+            }
+
+            /* Badges */
+            .badge {
+                font-size: 0.75rem;
+                padding: 0.25rem 0.5rem;
             }
         }
     </style>

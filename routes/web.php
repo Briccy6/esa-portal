@@ -1883,13 +1883,13 @@ Route::prefix('live-signaling')->name('live-signaling.')->group(function () {
 // Public Resources Routes
 Route::prefix('resources')->name('public.resources.')->group(function () {
     Route::get('/', [App\Http\Controllers\PublicResourceController::class, 'index'])->name('index');
-    Route::get('/{resource}', [App\Http\Controllers\PublicResourceController::class, 'show'])->name('show');
-    Route::get('/{resource}/download', [App\Http\Controllers\PublicResourceController::class, 'downloadDocument'])->name('download');
-    Route::get('/{resource}/preview', [App\Http\Controllers\PublicResourceController::class, 'previewDocument'])->name('preview');
-    Route::get('/{resource}/payment', [App\Http\Controllers\PublicResourceController::class, 'showPayment'])->name('payment');
-    Route::post('/{resource}/payment', [App\Http\Controllers\PublicResourceController::class, 'processPayment'])->name('payment.process');
-    Route::get('/{resource}/payment/callback', [App\Http\Controllers\PublicResourceController::class, 'handlePaymentCallback'])->name('payment.callback');
-    Route::get('/{resource}/payment/success', [App\Http\Controllers\PublicResourceController::class, 'paymentSuccess'])->name('payment.success');
+    Route::get('/{id}', [App\Http\Controllers\PublicResourceController::class, 'show'])->name('show');
+    Route::get('/{id}/download', [App\Http\Controllers\PublicResourceController::class, 'downloadDocument'])->name('download');
+    Route::get('/{id}/preview', [App\Http\Controllers\PublicResourceController::class, 'previewDocument'])->name('preview');
+    Route::get('/{id}/payment', [App\Http\Controllers\PublicResourceController::class, 'showPayment'])->name('payment');
+    Route::post('/{id}/payment', [App\Http\Controllers\PublicResourceController::class, 'processPayment'])->name('payment.process');
+    Route::get('/{id}/payment/callback', [App\Http\Controllers\PublicResourceController::class, 'handlePaymentCallback'])->name('payment.callback');
+    Route::get('/{id}/payment/success', [App\Http\Controllers\PublicResourceController::class, 'paymentSuccess'])->name('payment.success');
 });
 
 // Development: Populate lesson_branch_course table with sample data

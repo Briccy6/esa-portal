@@ -55,6 +55,38 @@
             overflow-x: hidden;
         }
 
+        /* Ensure main content uses full width on mobile */
+        .main-content {
+            background: #f4f7fa;
+        }
+
+        /* Prevent text overflow in cards */
+        .card-body {
+            overflow: hidden;
+            word-wrap: break-word;
+        }
+
+        .card-body .h5,
+        .card-body h5 {
+            word-break: break-word;
+            overflow-wrap: break-word;
+            hyphens: auto;
+        }
+
+        .card-body .text-xs {
+            word-break: break-word;
+            overflow-wrap: break-word;
+        }
+
+        /* Fix Bootstrap card layout */
+        .card-body .row {
+            width: 100%;
+        }
+
+        .card-body .col {
+            min-width: 0;
+        }
+
         /* Top Navbar */
         .top-navbar {
             position: fixed;
@@ -133,6 +165,7 @@
             border-radius: 25px;
             cursor: pointer;
             transition: all 0.3s;
+            min-height: 44px;
         }
 
         .profile-btn:hover {
@@ -236,6 +269,7 @@
             padding: 1rem 0;
             height: calc(100vh - 140px);
             overflow-y: auto;
+            overflow-x: hidden;
         }
 
         .sidebar-menu::-webkit-scrollbar {
@@ -272,6 +306,7 @@
             user-select: none;
             border-radius: 8px;
             margin: 0.25rem 0.8rem;
+            min-height: 44px;
         }
 
         .nav-header:hover {
@@ -357,6 +392,7 @@
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
+            min-height: 44px;
         }
 
         .nav-link::before {
@@ -394,6 +430,7 @@
             white-space: nowrap;
             opacity: 1;
             transition: opacity 0.3s;
+            flex: 1;
         }
 
         .sidebar.collapsed .nav-text {
@@ -441,9 +478,8 @@
             padding: 2rem;
             min-height: calc(100vh - 70px);
             transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         /* Center page content and prevent it from sliding under the sidebar */
@@ -467,6 +503,7 @@
         @media (max-width: 768px) {
             .sidebar {
                 transform: translateX(-100%);
+                width: 280px !important;
             }
 
             .sidebar.show {
@@ -475,11 +512,14 @@
 
             .top-navbar {
                 padding-left: 1rem;
+                padding-right: 1rem;
             }
 
             .main-content {
-                margin-left: 0;
-                padding: 1rem;
+                margin-left: 0 !important;
+                padding: 0.75rem !important;
+                width: 100% !important;
+                max-width: 100% !important;
             }
 
             .main-content-inner {
@@ -494,21 +534,141 @@
             }
 
             .navbar-right {
-                gap: 1rem;
+                gap: 0.5rem;
             }
 
             .current-time {
                 display: none;
             }
+
+            /* Mobile tables */
+            .table-responsive {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                margin: 0 -1rem 1rem -1rem;
+                padding: 0 1rem;
+            }
+
+            .table {
+                font-size: 0.875rem;
+                min-width: 800px;
+            }
+
+            .table th,
+            .table td {
+                padding: 0.5rem;
+                white-space: nowrap;
+            }
+
+            /* Mobile cards */
+            .card {
+                margin-bottom: 1rem;
+                border-radius: 0.5rem;
+            }
+
+            .card-body {
+                padding: 1rem;
+            }
+
+            /* Mobile stats cards */
+            .stats-card {
+                padding: 1.5rem;
+            }
+
+            .stats-number {
+                font-size: 2rem;
+            }
+
+            /* Mobile forms */
+            .form-control,
+            .form-select {
+                font-size: 16px;
+                min-height: 44px;
+            }
+
+            .btn {
+                min-height: 44px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            /* Mobile page header */
+            .page-header {
+                padding: 1.5rem;
+                margin: -1rem -1rem 1rem -1rem;
+            }
+
+            .page-title {
+                font-size: 1.5rem;
+            }
+
+            .header-actions {
+                flex-direction: column;
+                gap: 0.5rem;
+                width: 100%;
+            }
+
+            .header-actions .btn {
+                width: 100%;
+            }
         }
 
         @media (max-width: 576px) {
             .top-navbar {
-                padding: 0 1rem;
+                padding: 0.5rem 0.75rem;
+                height: 60px;
             }
 
             .navbar-left h5 {
                 display: none;
+            }
+
+            .navbar-brand {
+                font-size: 0.875rem;
+            }
+
+            .main-content {
+                padding: 0.75rem;
+            }
+
+            /* Extra small tables */
+            .table {
+                font-size: 0.8125rem;
+            }
+
+            .table th,
+            .table td {
+                padding: 0.375rem;
+            }
+
+            /* Extra small cards */
+            .card-body {
+                padding: 0.75rem;
+            }
+
+            .stats-card {
+                padding: 1rem;
+            }
+
+            .stats-number {
+                font-size: 1.75rem;
+            }
+
+            .stats-icon {
+                font-size: 2rem;
+            }
+
+            /* Extra small forms */
+            .form-control,
+            .form-select {
+                padding: 0.5rem;
+            }
+
+            /* Action buttons on mobile */
+            .btn-sm {
+                padding: 0.375rem 0.75rem;
+                font-size: 0.8125rem;
             }
         }
 
@@ -626,9 +786,57 @@
             
             .main-content {
                 margin-left: 0 !important;
-                padding: 1rem !important;
+                margin-right: 0 !important;
+                padding: 0.75rem !important;
+                width: 100vw !important;
+                max-width: 100vw !important;
+                left: 0 !important;
             }
-            
+
+            .container-fluid {
+                padding: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+
+            .row {
+                margin: 0 -0.5rem !important;
+                width: 100% !important;
+            }
+
+            .col-xl-3,
+            .col-md-6,
+            .col-lg-4,
+            .col-lg-6 {
+                padding: 0.5rem !important;
+                flex: 0 0 100% !important;
+                max-width: 100% !important;
+                width: 100% !important;
+            }
+
+            .card {
+                margin-bottom: 0.75rem !important;
+                border-radius: 0.5rem !important;
+                overflow: hidden;
+                width: 100% !important;
+            }
+
+            .card-body {
+                padding: 0.875rem !important;
+                overflow: hidden;
+                width: 100% !important;
+            }
+
+            .card .row {
+                margin: 0 !important;
+                width: 100% !important;
+            }
+
+            .card .col {
+                padding: 0.25rem !important;
+                min-width: 0 !important;
+            }
+
             .top-navbar {
                 padding: 0.75rem 1rem !important;
             }
@@ -679,16 +887,27 @@
             .sidebar-item {
                 padding: 0.75rem 1rem !important;
             }
-            
+
             .sidebar-text {
                 display: none !important;
             }
-            
+
             .sidebar.mobile-open .sidebar-text {
                 display: block !important;
             }
-            
+
             .sidebar.mobile-open .sidebar-item {
+                padding: 1rem 1.5rem !important;
+            }
+
+            /* Mobile nav links */
+            .nav-link {
+                min-height: 48px !important;
+                padding: 1rem 1.5rem !important;
+            }
+
+            .nav-header {
+                min-height: 48px !important;
                 padding: 1rem 1.5rem !important;
             }
             
@@ -700,35 +919,49 @@
             
             /* Mobile cards */
             .card {
-                margin: 0 0 1rem 0 !important;
+                margin: 0 0 0.75rem 0 !important;
                 border-radius: 0.5rem !important;
+                overflow: hidden;
             }
-            
+
             .card-body {
-                padding: 1rem !important;
+                padding: 0.875rem !important;
+                overflow: hidden;
             }
-            
+
+            .card .row {
+                margin: 0 !important;
+            }
+
+            .card .col {
+                padding: 0.25rem !important;
+            }
+
             /* Mobile tables */
             .table-responsive {
-                margin: 0 -1rem 1rem -1rem !important;
-                padding: 0 1rem !important;
+                margin: 0 -0.75rem 0.75rem -0.75rem !important;
+                padding: 0 0.75rem !important;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
             }
-            
+
             .table {
-                font-size: 0.875rem !important;
+                font-size: 0.8125rem !important;
+                min-width: 600px;
             }
-            
+
             .table th,
             .table td {
-                padding: 0.5rem !important;
+                padding: 0.375rem !important;
+                white-space: nowrap;
             }
-            
+
             /* Mobile forms */
             .form-control {
                 font-size: 16px !important; /* Prevents zoom on iOS */
                 min-height: 44px !important;
             }
-            
+
             .btn {
                 min-height: 44px !important;
                 display: flex;
@@ -741,11 +974,65 @@
             .sidebar.mobile-open {
                 width: 100% !important;
             }
-            
+
             .main-content {
+                padding: 0.5rem !important;
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+                width: 100vw !important;
+                max-width: 100vw !important;
+                left: 0 !important;
+            }
+
+            .container-fluid {
+                padding: 0 !important;
+                width: 100% !important;
+            }
+
+            .row {
+                margin: 0 -0.25rem !important;
+                width: 100% !important;
+            }
+
+            .col-xl-3,
+            .col-md-6,
+            .col-lg-4,
+            .col-lg-6 {
+                padding: 0.25rem !important;
+            }
+
+            .card {
+                margin: 0 0 0.5rem 0 !important;
+            }
+
+            .card-body {
                 padding: 0.75rem !important;
             }
-            
+
+            /* Fix card layout on small screens */
+            .card-body .col-auto {
+                flex: 0 0 40px !important;
+                max-width: 40px !important;
+            }
+
+            .card-body .col.mr-2 {
+                margin-right: 0.5rem !important;
+                flex: 1 !important;
+                min-width: 0 !important;
+            }
+
+            .card-body .h5 {
+                font-size: 0.875rem !important;
+                line-height: 1.2 !important;
+                word-break: break-word !important;
+                overflow-wrap: break-word !important;
+            }
+
+            .card-body .text-xs {
+                font-size: 0.65rem !important;
+                line-height: 1.1 !important;
+            }
+
             .top-navbar {
                 padding: 0.5rem 0.75rem !important;
             }
@@ -823,6 +1110,39 @@
             .breadcrumb {
                 padding: 0.375rem 0.75rem;
                 font-size: 0.875rem;
+            }
+        }
+
+        /* Extra small screens */
+        @media (max-width: 375px) {
+            .main-content {
+                padding: 0.5rem !important;
+            }
+
+            .card-body {
+                padding: 0.625rem !important;
+            }
+
+            .card-body .col-auto {
+                flex: 0 0 35px !important;
+                max-width: 35px !important;
+            }
+
+            .card-body .h5 {
+                font-size: 0.8125rem !important;
+            }
+
+            .card-body .text-xs {
+                font-size: 0.6rem !important;
+            }
+
+            .table {
+                font-size: 0.75rem !important;
+            }
+
+            .badge {
+                font-size: 0.6rem !important;
+                padding: 0.2rem 0.35rem !important;
             }
         }
     </style>
@@ -1285,20 +1605,22 @@
             const mobileMenuToggle = document.getElementById('mobileMenuToggle');
             const sidebar = document.querySelector('.sidebar');
             const mobileOverlay = document.getElementById('mobileOverlay');
-            
+
             if (mobileMenuToggle && sidebar && mobileOverlay) {
                 // Toggle mobile menu
                 mobileMenuToggle.addEventListener('click', function() {
                     sidebar.classList.toggle('mobile-open');
+                    sidebar.classList.toggle('show');
                     mobileOverlay.classList.toggle('active');
                 });
-                
+
                 // Close mobile menu when clicking overlay
                 mobileOverlay.addEventListener('click', function() {
                     sidebar.classList.remove('mobile-open');
+                    sidebar.classList.remove('show');
                     mobileOverlay.classList.remove('active');
                 });
-                
+
                 // Close mobile menu on window resize if above tablet size
                 window.addEventListener('resize', function() {
                     if (window.innerWidth > 768) {

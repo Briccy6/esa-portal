@@ -216,7 +216,13 @@
                             </thead>
                             <tbody id="lessonTableBody">
                                 @foreach($lessonDetails as $lesson)
-                                    <tr class="lesson-row">
+                                    @php
+                                        $searchText = strtolower($lesson->title . ' ' . 
+                                            ($lesson->course->course_name ?? '') . ' ' . 
+                                            ($lesson->teacher->teacher_name ?? '') . ' ' . 
+                                            $lesson->terms->pluck('name')->implode(' '));
+                                    @endphp
+                                    <tr class="lesson-row" data-search-text="{{ $searchText }}">
                                         <td>
                                             <strong>{{ $lesson->title }}</strong>
                                             @if($lesson->academicYear)
@@ -333,7 +339,7 @@
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form id="assignLessonForm" method="POST" action="{{ route('dos.lessons.assign') }}">
+            <form id="assignLessonForm" method="POST" action="{{ route('lessons.assign') }}">
                 @csrf
                 <input type="hidden" name="lesson_id" id="lessonIdInput">
                 <div class="modal-body">
@@ -412,7 +418,7 @@ function openAssignModal(lessonId, lessonTitle) {
     document.getElementById('selectedLessonName').textContent = lessonTitle;
     
     // Load current assignments
-    fetch(`/dos/lessons/${lessonId}/assignments`)
+    fetch(`/lessons/${lessonId}/assignments`)
         .then(response => response.json())
         .then(data => {
             let currentAssignmentsDiv = document.getElementById('currentAssignments');
@@ -616,7 +622,7 @@ document.addEventListener('change', function(e) {
 function removeCurrentAssignment(assignmentId) {
     if (confirm('Are you sure you want to remove this assignment?')) {
         // Delete via AJAX
-        fetch(`/dos/lessons/${assignmentId}/delete-assignment`, {
+        fetch(`/lessons/${assignmentId}/delete-assignment`, {
             method: 'DELETE',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
@@ -698,7 +704,7 @@ function performLessonAjaxSearch(searchTerm = '') {
         ajax: 1
     });
     
-    fetch(`{{ route('dos.lessons.index') }}?${params}`, {
+    fetch(`{{ route('lessons.index') }}?${params}`, {
         method: 'GET',
         headers: {
             'X-Requested-With': 'XMLHttpRequest',
@@ -732,7 +738,7 @@ function performLessonAjaxSearch(searchTerm = '') {
 }
 
 function attachLessonPaginationHandlers() {
-    document.querySelectorAll('#paginationContainer a[href*="page="]').forEach(link => {
+    document.querySelectorAll('#paginationContainer a').forEach(link => {
         link.addEventListener('click', function(e) {
             e.preventDefault();
             
@@ -746,7 +752,7 @@ function attachLessonPaginationHandlers() {
                 ajax: 1
             });
             
-            fetch(`{{ route('dos.lessons.index') }}?${params}`, {
+            fetch(`{{ route('lessons.index') }}?${params}`, {
                 method: 'GET',
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest'

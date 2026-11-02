@@ -220,6 +220,34 @@
             margin-top: 0;
             padding-top: 0;
         }
+
+        /* Resource-specific styles */
+        .search-container {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+        }
+
+        .resource-card {
+            transition: all 0.3s ease;
+            border: 1px solid var(--border-color);
+        }
+
+        .resource-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--secondary-color);
+        }
+
+        .badge-free {
+            background-color: #10b981;
+        }
+
+        .badge-paid {
+            background-color: #f59e0b;
+        }
+
+        .resource-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+        }
     </style>
 
     @stack('styles')

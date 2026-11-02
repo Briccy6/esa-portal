@@ -67,7 +67,7 @@
         line-height: 1.1;
         letter-spacing: -.02em;
         margin: 0 0 16px;
-        color: var(--white);
+        color: #ffffff !important;
     }
 
     .blog-header__desc {

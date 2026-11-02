@@ -315,14 +315,57 @@
             .sidebar {
                 display: none;
             }
-            
+
             .main-content {
                 margin-left: 0;
                 padding: 1rem;
             }
-            
+
             .offcanvas {
                 width: 280px !important;
+            }
+
+            /* Mobile tables */
+            .table-responsive {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                margin: 0 -1rem 1rem -1rem;
+                padding: 0 1rem;
+            }
+
+            .table {
+                font-size: 0.875rem;
+                min-width: 800px;
+            }
+
+            .table th,
+            .table td {
+                padding: 0.5rem;
+                white-space: nowrap;
+            }
+
+            /* Mobile cards */
+            .card {
+                margin-bottom: 1rem;
+                border-radius: 0.5rem;
+            }
+
+            .card-body {
+                padding: 1rem;
+            }
+
+            /* Mobile forms */
+            .form-control,
+            .form-select {
+                font-size: 16px;
+                min-height: 44px;
+            }
+
+            .btn {
+                min-height: 44px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
         }
 
@@ -330,9 +373,36 @@
             .navbar {
                 padding: 0.75rem 0;
             }
-            
+
             .main-content {
                 padding: 1rem 0.5rem;
+            }
+
+            /* Extra small tables */
+            .table {
+                font-size: 0.8125rem;
+            }
+
+            .table th,
+            .table td {
+                padding: 0.375rem;
+            }
+
+            /* Extra small cards */
+            .card-body {
+                padding: 0.75rem;
+            }
+
+            /* Action buttons */
+            .btn-sm {
+                padding: 0.375rem 0.75rem;
+                font-size: 0.8125rem;
+            }
+
+            /* Badges */
+            .badge {
+                font-size: 0.75rem;
+                padding: 0.25rem 0.5rem;
             }
         }
 

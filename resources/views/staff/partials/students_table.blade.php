@@ -1070,6 +1070,53 @@ function closePayModal(studentId) {
     }
 }
 
+// ─── Load Transcript ──────────────────────────────────────────────────────────
+function loadTranscript(studentId) {
+    const modalBody = document.querySelector(`#transcriptModal${studentId} .transcript-modal-body`);
+    if (!modalBody) {
+        console.error('Transcript modal body not found for student:', studentId);
+        return;
+    }
+    
+    modalBody.innerHTML = '<div class="text-center py-4"><span class="spinner-border text-primary"></span><p class="mt-2 text-muted">Loading transcript…</p></div>';
+    
+    fetch(`/students/${studentId}/transcript/ajax`, {
+        method: 'GET',
+        headers: {
+            'Accept': 'text/html',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to load transcript');
+        }
+        return response.text();
+    })
+    .then(html => {
+        modalBody.innerHTML = html;
+    })
+    .catch(error => {
+        console.error('Error loading transcript:', error);
+        modalBody.innerHTML = '<div class="alert alert-danger">Failed to load transcript. Please try again.</div>';
+    });
+}
+
+// ─── Initialize Transcript Modal Listeners ─────────────────────────────────────
+function initializeTranscriptModals() {
+    // Add event listeners for transcript modals
+    document.querySelectorAll('[id^="transcriptModal"]').forEach(modal => {
+        modal.removeEventListener('show.bs.modal', handleTranscriptModalShow);
+        modal.addEventListener('show.bs.modal', handleTranscriptModalShow);
+    });
+}
+
+function handleTranscriptModalShow(event) {
+    const modalId = event.target.id;
+    const studentId = modalId.replace('transcriptModal', '');
+    loadTranscript(studentId);
+}
+
 // ─── Fee info updater ────────────────────────────────────────────────────────
 
 function updateFeeInfo(selectEl, studentId) {
@@ -1573,17 +1620,8 @@ function downloadNesaDocument(studentId) {
 // ─── Transcript lazy-load ────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', function () {
-    // Transcript modals — lazy-load content on open
-    document.querySelectorAll('[id^="transcriptModal"]').forEach(modal => {
-        modal.addEventListener('show.bs.modal', function () {
-            const studentId = this.id.replace('transcriptModal', '');
-            const body = this.querySelector('.transcript-modal-body');
-            fetch(`/staff/students/${studentId}/transcript/ajax`)
-                .then(r => r.text())
-                .then(html => { body.innerHTML = html; })
-                .catch(() => { body.innerHTML = '<div class="alert alert-danger">Failed to load transcript</div>'; });
-        });
-    });
+    // Initialize transcript modals
+    initializeTranscriptModals();
 
     // Bootstrap tooltips — title attribute only, no data-bs-toggle conflict
     document.querySelectorAll('[title]').forEach(el => {

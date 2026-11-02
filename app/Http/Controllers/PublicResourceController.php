@@ -76,91 +76,111 @@ class PublicResourceController extends Controller
 
     public function show($id)
     {
-        $resource = Resource::with(['teacher', 'course', 'branch', 'lesson'])
-            ->where('is_public', true)
-            ->findOrFail($id);
+        try {
+            $resource = Resource::with(['teacher', 'course', 'branch', 'lesson'])
+                ->where('is_public', true)
+                ->findOrFail($id);
 
-        return view('public.resources.show', compact('resource'));
+            return view('public.resources.show', compact('resource'));
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return redirect()->route('public.resources.index')
+                ->with('error', 'This resource is not available for public access or does not exist.');
+        }
     }
 
     public function downloadDocument($id)
     {
-        $resource = Resource::where('is_public', true)->findOrFail($id);
+        try {
+            $resource = Resource::where('is_public', true)->findOrFail($id);
 
-        if (!$resource->document_blob) {
-            return back()->with('error', 'Document not available for download');
+            if (!$resource->document_blob) {
+                return back()->with('error', 'Document not available for download');
+            }
+
+            if (!$resource->is_free && $resource->price > 0) {
+                return redirect()->route('public.resources.payment', $resource)
+                    ->with('error', 'This is a paid resource. Please complete the payment to download.');
+            }
+
+            return response($resource->document_blob)
+                ->header('Content-Type', $resource->document_mime)
+                ->header('Content-Disposition', 'attachment; filename="'.$resource->document_name.'"');
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return redirect()->route('public.resources.index')
+                ->with('error', 'This resource is not available for public access or does not exist.');
         }
-
-        if (!$resource->is_free && $resource->price > 0) {
-            return redirect()->route('public.resources.payment', $resource)
-                ->with('error', 'This is a paid resource. Please complete the payment to download.');
-        }
-
-        return response($resource->document_blob)
-            ->header('Content-Type', $resource->document_mime)
-            ->header('Content-Disposition', 'attachment; filename="'.$resource->document_name.'"');
     }
 
     public function previewDocument($id)
     {
-        $resource = Resource::where('is_public', true)->findOrFail($id);
+        try {
+            $resource = Resource::where('is_public', true)->findOrFail($id);
 
-        if (!$resource->document_blob) {
-            return back()->with('error', 'Document not available for preview');
+            if (!$resource->document_blob) {
+                return back()->with('error', 'Document not available for preview');
+            }
+
+            if (!$resource->is_free && $resource->price > 0) {
+                return redirect()->route('public.resources.payment', $resource)
+                    ->with('error', 'This is a paid resource. Please complete the payment to preview.');
+            }
+
+            return response($resource->document_blob)
+                ->header('Content-Type', $resource->document_mime)
+                ->header('Content-Disposition', 'inline; filename="'.$resource->document_name.'"');
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return redirect()->route('public.resources.index')
+                ->with('error', 'This resource is not available for public access or does not exist.');
         }
-
-        if (!$resource->is_free && $resource->price > 0) {
-            return redirect()->route('public.resources.payment', $resource)
-                ->with('error', 'This is a paid resource. Please complete the payment to preview.');
-        }
-
-        return response($resource->document_blob)
-            ->header('Content-Type', $resource->document_mime)
-            ->header('Content-Disposition', 'inline; filename="'.$resource->document_name.'"');
     }
 
     /**
      * Show payment page for resource access
      */
-    public function showPayment(Resource $resource)
+    public function showPayment($id)
     {
-        if ($resource->is_free || $resource->price <= 0) {
-            return redirect()->route('public.resources.show', $resource)
-                ->with('error', 'This resource is free to access');
+        try {
+            $resource = Resource::where('is_public', true)->findOrFail($id);
+
+            if ($resource->is_free || $resource->price <= 0) {
+                return redirect()->route('public.resources.show', $resource)
+                    ->with('error', 'This resource is free to access');
+            }
+
+            $flutterwavePublicKey = $this->flutterwavePublicKey;
+            $resourceName         = $resource->document_name ?? $resource->video_name ?? $resource->title ?? 'Resource';
+            $systemName           = config('app.name', 'ESA E-Learning');
+
+            return view('public.resources.payment', compact('resource', 'flutterwavePublicKey', 'resourceName', 'systemName'));
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return redirect()->route('public.resources.index')
+                ->with('error', 'This resource is not available for public access or does not exist.');
         }
-
-        if (!$resource->is_public) {
-            abort(404, 'Resource not available for public access');
-        }
-
-        $flutterwavePublicKey = $this->flutterwavePublicKey;
-        $resourceName         = $resource->document_name ?? $resource->video_name ?? $resource->title ?? 'Resource';
-        $systemName           = config('app.name', 'ESA E-Learning');
-
-        return view('public.resources.payment', compact('resource', 'flutterwavePublicKey', 'resourceName', 'systemName'));
     }
 
     /**
      * Process payment for resource access using Flutterwave
      */
-    public function processPayment(Request $request, Resource $resource)
+    public function processPayment(Request $request, $id)
     {
-        $request->validate([
-            'email'          => 'required|email',
-            'phone_number'   => 'required|string',
-            'payment_method' => 'required|in:card,mobile_money,bank_transfer',
-            'name'           => 'required|string|max:255',
-            'tx_ref'         => 'required|string',
-        ]);
-
-        if ($resource->is_free || $resource->price <= 0) {
-            return response()->json([
-                'status' => false,
-                'message' => 'This resource is free to access'
-            ]);
-        }
-
         try {
+            $resource = Resource::where('is_public', true)->findOrFail($id);
+
+            $request->validate([
+                'email'          => 'required|email',
+                'phone_number'   => 'required|string',
+                'payment_method' => 'required|in:card,mobile_money,bank_transfer',
+                'name'           => 'required|string|max:255',
+                'tx_ref'         => 'required|string',
+            ]);
+
+            if ($resource->is_free || $resource->price <= 0) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'This resource is free to access'
+                ]);
+            }
+
             // Store payment session data for callback handling
             session([
                 'resource_payment' => [
@@ -222,6 +242,11 @@ class PublicResourceController extends Controller
                 'tx_ref'       => $request->tx_ref,
             ]);
 
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'This resource is not available for public access or does not exist.',
+            ]);
         } catch (\Exception $e) {
             Log::error('Resource payment initialization failed: ' . $e->getMessage());
             return response()->json([
@@ -234,41 +259,54 @@ class PublicResourceController extends Controller
     /**
      * Handle Flutterwave payment callback for resources
      */
-    public function handlePaymentCallback(Request $request, Resource $resource)
+    public function handlePaymentCallback(Request $request, $id)
     {
-        $txRef         = $request->query('tx_ref');
-        $transactionId = $request->query('transaction_id');
-        $status        = $request->query('status');
+        try {
+            $resource = Resource::where('is_public', true)->findOrFail($id);
 
-        if ($status === 'successful' || $status === 'completed') {
-            $verification = $this->verifyFlutterwaveTransaction($transactionId);
+            $txRef         = $request->query('tx_ref');
+            $transactionId = $request->query('transaction_id');
+            $status        = $request->query('status');
 
-            if ($verification['status'] === 'successful') {
-                session([
-                    'resource_payment' => array_merge(session('resource_payment', []), [
-                        'payment_status'             => 'paid',
-                        'flutterwave_transaction_id' => $transactionId,
-                        'paid_at'                    => now(),
-                    ]),
-                ]);
+            if ($status === 'successful' || $status === 'completed') {
+                $verification = $this->verifyFlutterwaveTransaction($transactionId);
 
-                return redirect()->route('public.resources.payment.success', [$resource, 'reference' => $txRef])
-                    ->with('success', 'Payment successful! You can now access this resource.');
+                if ($verification['status'] === 'successful') {
+                    session([
+                        'resource_payment' => array_merge(session('resource_payment', []), [
+                            'payment_status'             => 'paid',
+                            'flutterwave_transaction_id' => $transactionId,
+                            'paid_at'                    => now(),
+                        ]),
+                    ]);
+
+                    return redirect()->route('public.resources.payment.success', [$resource, 'reference' => $txRef])
+                        ->with('success', 'Payment successful! You can now access this resource.');
+                }
             }
-        }
 
-        return redirect()->route('public.resources.show', $resource)
-            ->with('error', 'Payment failed or was cancelled. Please try again.');
+            return redirect()->route('public.resources.show', $resource)
+                ->with('error', 'Payment failed or was cancelled. Please try again.');
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return redirect()->route('public.resources.index')
+                ->with('error', 'This resource is not available for public access or does not exist.');
+        }
     }
 
     /**
      * Show payment success page for resources
      */
-    public function paymentSuccess(Resource $resource, Request $request)
+    public function paymentSuccess($id, Request $request)
     {
-        $reference = $request->query('reference');
+        try {
+            $resource = Resource::where('is_public', true)->findOrFail($id);
+            $reference = $request->query('reference');
 
-        return view('public.resources.payment-success', compact('resource', 'reference'));
+            return view('public.resources.payment-success', compact('resource', 'reference'));
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return redirect()->route('public.resources.index')
+                ->with('error', 'This resource is not available for public access or does not exist.');
+        }
     }
 
     /**

@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartCampus School Management System - Proposal</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+        
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --light-bg: #f8f9fa;
+            --dark-bg: #1a1a2e;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: 100px 0 80px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="rgba(255,255,255,0.1)" d="M0,160L48,176C96,192,192,224,288,224C384,224,480,192,576,160C672,128,768,96,864,96C960,96,1056,128,1152,160C1248,192,1344,224,1392,240L1440,256L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>');
+            background-size: cover;
+            background-position: bottom;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            line-height: 1.2;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            opacity: 0.9;
+            margin-bottom: 2rem;
+        }
+
+        .hero-badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 0.5rem 1.5rem;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Section Styling */
+        .section {
+            padding: 80px 0;
+        }
+
+        .section-light {
+            background: var(--light-bg);
+        }
+
+        .section-dark {
+            background: var(--dark-bg);
+            color: white;
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .section-title h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .section-dark .section-title h2 {
+            color: white;
+        }
+
+        .section-title p {
+            font-size: 1.1rem;
+            color: #666;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .section-dark .section-title p {
+            color: rgba(255,255,255,0.8);
+        }
+
+        /* Feature Cards */
+        .feature-card {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            height: 100%;
+            border: 1px solid #eee;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+        }
+
+        .feature-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--secondary-color), var(--accent-color));
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .feature-icon i {
+            font-size: 2rem;
+            color: white;
+        }
+
+        .feature-card h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+
+        .feature-card p {
+            color: #666;
+            margin-bottom: 0;
+        }
+
+        /* Benefits Section */
+        .benefit-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 2rem;
+        }
+
+        .benefit-number {
+            width: 50px;
+            height: 50px;
+            background: var(--secondary-color);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.25rem;
+            margin-right: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .benefit-content h4 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--primary-color);
+        }
+
+        .benefit-content p {
+            color: #666;
+            margin-bottom: 0;
+        }
+
+        /* Pricing Section */
+        .pricing-card {
+            background: white;
+            border-radius: 20px;
+            padding: 3rem 2rem;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            text-align: center;
+            border: 2px solid var(--secondary-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pricing-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, var(--secondary-color), var(--accent-color));
+        }
+
+        .pricing-card h3 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+
+        .pricing-card .price {
+            font-size: 3rem;
+            font-weight: 800;
+            color: var(--secondary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .pricing-card .price-period {
+            font-size: 1rem;
+            color: #999;
+            margin-bottom: 2rem;
+        }
+
+        .pricing-card ul {
+            list-style: none;
+            padding: 0;
+            margin-bottom: 2rem;
+            text-align: left;
+        }
+
+        .pricing-card ul li {
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #eee;
+            color: #666;
+        }
+
+        .pricing-card ul li:last-child {
+            border-bottom: none;
+        }
+
+        .pricing-card ul li i {
+            color: var(--success-color);
+            margin-right: 0.75rem;
+        }
+
+        .pricing-card .btn {
+            background: linear-gradient(135deg, var(--secondary-color), var(--accent-color));
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+        }
+
+        .pricing-card .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(52, 152, 219, 0.4);
+        }
+
+        /* Contact Section */
+        .contact-card {
+            background: white;
+            border-radius: 20px;
+            padding: 2.5rem;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .contact-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .contact-icon {
+            width: 60px;
+            height: 60px;
+            background: var(--light-bg);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1.5rem;
+        }
+
+        .contact-icon i {
+            font-size: 1.5rem;
+            color: var(--secondary-color);
+        }
+
+        .contact-item h4 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+            color: var(--primary-color);
+        }
+
+        .contact-item p {
+            color: #666;
+            margin-bottom: 0;
+            font-size: 1.1rem;
+        }
+
+        .contact-item a {
+            color: var(--secondary-color);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .contact-item a:hover {
+            color: var(--accent-color);
+        }
+
+        /* Footer */
+        footer {
+            background: var(--dark-bg);
+            color: white;
+            padding: 3rem 0;
+        }
+
+        footer h4 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+        }
+
+        footer p {
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 0;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero {
+                padding: 60px 0 40px;
+            }
+
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero p {
+                font-size: 1rem;
+            }
+
+            .section {
+                padding: 50px 0;
+            }
+
+            .section-title h2 {
+                font-size: 2rem;
+            }
+
+            .feature-card {
+                padding: 1.5rem;
+            }
+
+            .pricing-card {
+                padding: 2rem 1.5rem;
+            }
+
+            .pricing-card .price {
+                font-size: 2.5rem;
+            }
+
+            .contact-card {
+                padding: 1.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .section-title h2 {
+                font-size: 1.75rem;
+            }
+
+            .feature-icon {
+                width: 60px;
+                height: 60px;
+            }
+
+            .feature-icon i {
+                font-size: 1.5rem;
+            }
+
+            .benefit-number {
+                width: 40px;
+                height: 40px;
+                font-size: 1rem;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in {
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        .animate-delay-1 {
+            animation-delay: 0.1s;
+        }
+
+        .animate-delay-2 {
+            animation-delay: 0.2s;
+        }
+
+        .animate-delay-3 {
+            animation-delay: 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-12 text-center">
+                    <span class="hero-badge animate-fade-in">
+                        <i class="fas fa-graduation-cap me-2"></i>
+                        For Nursery, Primary, Secondary & TVET Schools
+                    </span>
+                    <h1 class="animate-fade-in animate-delay-1">SmartCampus School Management System</h1>
+                    <p class="animate-fade-in animate-delay-2">
+                        Transform Your Educational Institution with Our Complete Digital Solution. 
+                        Affordable, Powerful, and Designed for Rwandan Schools.
+                    </p>
+                    <a href="#contact" class="btn btn-light btn-lg animate-fade-in animate-delay-3">
+                        <i class="fas fa-phone me-2"></i>
+                        Get Started Today
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section class="section">
+        <div class="container">
+            <div class="section-title">
+                <h2>What is SmartCampus School Management System?</h2>
+                <p>A comprehensive digital platform designed for nursery, primary, secondary, and TVET schools in Rwanda to streamline operations and enhance educational quality.</p>
+            </div>
+            <div class="row align-items-center">
+                <div class="col-lg-6 mb-4 mb-lg-0">
+                    <h3 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--primary-color);">
+                        Simplify School Administration
+                    </h3>
+                    <p style="color: #666; margin-bottom: 1.5rem; font-size: 1.1rem;">
+                        SmartCampus School Management System is an all-in-one digital solution that helps educational institutions of all levels manage students, teachers, finances, exams, and communication efficiently. Our system is built with Rwandan schools in mind, addressing the unique challenges faced by educational institutions in our country.
+                    </p>
+                    <p style="color: #666; margin-bottom: 0; font-size: 1.1rem;">
+                        From student enrollment to report card generation, from fee management to parent communication, SmartCampus handles everything in one easy-to-use platform. No more paperwork, no more manual processes – just efficient, digital school management.
+                    </p>
+                </div>
+                <div class="col-lg-6">
+                    <div style="background: linear-gradient(135deg, var(--light-bg), white); border-radius: 20px; padding: 3rem; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
+                        <div style="text-align: center; margin-bottom: 2rem;">
+                            <i class="fas fa-laptop-code" style="font-size: 4rem; color: var(--secondary-color);"></i>
+                        </div>
+                        <h4 style="text-align: center; font-weight: 600; margin-bottom: 1rem; color: var(--primary-color);">
+                            Cloud-Based & Accessible
+                        </h4>
+                        <p style="text-align: center; color: #666; margin-bottom: 0;">
+                            Access your school data from anywhere, anytime. Works on desktop, tablet, and mobile devices.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="section section-light">
+        <div class="container">
+            <div class="section-title">
+                <h2>Powerful Features for Your School</h2>
+                <p>Everything you need to run your primary school efficiently, all in one platform.</p>
+            </div>
+            <div class="row">
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="feature-card animate-fade-in">
+                        <div class="feature-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <h3>Student Management</h3>
+                        <p>Complete student enrollment, tracking, and academic records management with easy-to-use profiles.</p>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="feature-card animate-fade-in animate-delay-1">
+                        <div class="feature-icon">
+                            <i class="fas fa-chalkboard-teacher"></i>
+                        </div>
+                        <h3>Teacher Portal</h3>
+                        <p>Dedicated portal for teachers to manage classes, lessons, assignments, and student performance.</p>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="feature-card animate-fade-in animate-delay-2">
+                        <div class="feature-icon">
+                            <i class="fas fa-money-bill-wave"></i>
+                        </div>
+                        <h3>Fee Management</h3>
+                        <p>Track payments, manage fees, generate invoices, and monitor financial health effortlessly.</p>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="feature-card animate-fade-in">
+                        <div class="feature-icon">
+                            <i class="fas fa-graduation-cap"></i>
+                        </div>
+                        <h3>Exam & Report Cards</h3>
+                        <p>Create exams, manage questions, grade automatically, and generate professional report cards.</p>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="feature-card animate-fade-in animate-delay-1">
+                        <div class="feature-icon">
+                            <i class="fas fa-video"></i>
+                        </div>
+                        <h3>Live Classes</h3>
+                        <p>Conduct online classes, record sessions, and provide flexible learning options for students.</p>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="feature-card animate-fade-in animate-delay-2">
+                        <div class="feature-icon">
+                            <i class="fas fa-comments"></i>
+                        </div>
+                        <h3>Parent Communication</h3>
+                        <p>Keep parents informed with announcements, progress reports, and direct messaging.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Problems Solved Section -->
+    <section class="section section-dark">
+        <div class="container">
+            <div class="section-title">
+                <h2>Problems We Solve</h2>
+                <p>Addressing the real challenges faced by educational institutions in Rwanda.</p>
+            </div>
+            <div class="row">
+                <div class="col-lg-6 mb-4">
+                    <div class="benefit-item">
+                        <div class="benefit-number">1</div>
+                        <div class="benefit-content">
+                            <h4>Paperwork Overload</h4>
+                            <p>Eliminate manual record-keeping, reduce administrative burden, and save countless hours on paperwork.</p>
+                        </div>
+                    </div>
+                    <div class="benefit-item">
+                        <div class="benefit-number">2</div>
+                        <div class="benefit-content">
+                            <h4>Communication Gaps</h4>
+                            <p>Bridge the gap between school, teachers, students, and parents with real-time updates and messaging.</p>
+                        </div>
+                    </div>
+                    <div class="benefit-item">
+                        <div class="benefit-number">3</div>
+                        <div class="benefit-content">
+                            <h4>Financial Tracking</h4>
+                            <p>Track school finances, fee payments, and expenses with complete transparency and accuracy.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6 mb-4">
+                    <div class="benefit-item">
+                        <div class="benefit-number">4</div>
+                        <div class="benefit-content">
+                            <h4>Report Card Challenges</h4>
+                            <p>Generate professional report cards quickly and accurately, reducing errors and saving time.</p>
+                        </div>
+                    </div>
+                    <div class="benefit-item">
+                        <div class="benefit-number">5</div>
+                        <div class="benefit-content">
+                            <h4>Student Performance Tracking</h4>
+                            <p>Monitor student progress continuously with detailed analytics and performance insights.</p>
+                        </div>
+                    </div>
+                    <div class="benefit-item">
+                        <div class="benefit-number">6</div>
+                        <div class="benefit-content">
+                            <h4>Resource Management</h4>
+                            <p>Share learning materials, track resources, and ensure educational content is accessible to all.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Benefits Section -->
+    <section class="section">
+        <div class="container">
+            <div class="section-title">
+                <h2>How Schools Benefit from SmartCampus</h2>
+                <p>Transform your school operations and improve educational outcomes.</p>
+            </div>
+            <div class="row">
+                <div class="col-lg-4 mb-4">
+                    <div style="background: var(--light-bg); border-radius: 15px; padding: 2rem; text-align: center; height: 100%;">
+                        <i class="fas fa-clock" style="font-size: 3rem; color: var(--secondary-color); margin-bottom: 1.5rem;"></i>
+                        <h4 style="font-weight: 700; margin-bottom: 1rem; color: var(--primary-color);">Save Time</h4>
+                        <p style="color: #666; margin-bottom: 0;">Reduce administrative tasks by up to 70%, allowing staff to focus on education.</p>
+                    </div>
+                </div>
+                <div class="col-lg-4 mb-4">
+                    <div style="background: var(--light-bg); border-radius: 15px; padding: 2rem; text-align: center; height: 100%;">
+                        <i class="fas fa-chart-line" style="font-size: 3rem; color: var(--success-color); margin-bottom: 1.5rem;"></i>
+                        <h4 style="font-weight: 700; margin-bottom: 1rem; color: var(--primary-color);">Improve Efficiency</h4>
+                        <p style="color: #666; margin-bottom: 0;">Streamline processes, reduce errors, and improve overall school efficiency.</p>
+                    </div>
+                </div>
+                <div class="col-lg-4 mb-4">
+                    <div style="background: var(--light-bg); border-radius: 15px; padding: 2rem; text-align: center; height: 100%;">
+                        <i class="fas fa-hand-holding-usd" style="font-size: 3rem; color: var(--warning-color); margin-bottom: 1.5rem;"></i>
+                        <h4 style="font-weight: 700; margin-bottom: 1rem; color: var(--primary-color);">Reduce Costs</h4>
+                        <p style="color: #666; margin-bottom: 0;">Save money on paper, printing, and manual administrative processes.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="row mt-4">
+                <div class="col-lg-4 mb-4">
+                    <div style="background: var(--light-bg); border-radius: 15px; padding: 2rem; text-align: center; height: 100%;">
+                        <i class="fas fa-shield-alt" style="font-size: 3rem; color: var(--accent-color); margin-bottom: 1.5rem;"></i>
+                        <h4 style="font-weight: 700; margin-bottom: 1rem; color: var(--primary-color);">Data Security</h4>
+                        <p style="color: #666; margin-bottom: 0;">Keep student and school data secure with cloud storage and backup systems.</p>
+                    </div>
+                </div>
+                <div class="col-lg-4 mb-4">
+                    <div style="background: var(--light-bg); border-radius: 15px; padding: 2rem; text-align: center; height: 100%;">
+                        <i class="fas fa-mobile-alt" style="font-size: 3rem; color: var(--primary-color); margin-bottom: 1.5rem;"></i>
+                        <h4 style="font-weight: 700; margin-bottom: 1rem; color: var(--primary-color);">Remote Access</h4>
+                        <p style="color: #666; margin-bottom: 0;">Access school data from anywhere, enabling flexible work arrangements.</p>
+                    </div>
+                </div>
+                <div class="col-lg-4 mb-4">
+                    <div style="background: var(--light-bg); border-radius: 15px; padding: 2rem; text-align: center; height: 100%;">
+                        <i class="fas fa-users-cog" style="font-size: 3rem; color: var(--secondary-color); margin-bottom: 1.5rem;"></i>
+                        <h4 style="font-weight: 700; margin-bottom: 1rem; color: var(--primary-color);">Parent Engagement</h4>
+                        <p style="color: #666; margin-bottom: 0;">Increase parent involvement with real-time updates and communication tools.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="section section-light">
+        <div class="container">
+            <div class="section-title">
+                <h2>Affordable & Negotiable Pricing</h2>
+                <p>Quality school management system at a price that fits your budget.</p>
+            </div>
+            <div class="row justify-content-center">
+                <div class="col-lg-6 col-md-8">
+                    <div class="pricing-card">
+                        <h3>Complete School Management System</h3>
+                        <div class="price">Affordable</div>
+                        <div class="price-period">One-time Setup + Monthly Subscription</div>
+                        <ul>
+                            <li><i class="fas fa-check-circle"></i> Complete Student Management</li>
+                            <li><i class="fas fa-check-circle"></i> Teacher & Staff Portals</li>
+                            <li><i class="fas fa-check-circle"></i> Fee & Financial Management</li>
+                            <li><i class="fas fa-check-circle"></i> Exam & Report Card Generation</li>
+                            <li><i class="fas fa-check-circle"></i> Live Classes & Resource Sharing</li>
+                            <li><i class="fas fa-check-circle"></i> Parent Communication Portal</li>
+                            <li><i class="fas fa-check-circle"></i> Babyeyi Document Management</li>
+                            <li><i class="fas fa-check-circle"></i> Attendance Tracking</li>
+                            <li><i class="fas fa-check-circle"></i> Cloud Storage & Backups</li>
+                            <li><i class="fas fa-check-circle"></i> Technical Support Included</li>
+                        </ul>
+                        <a href="#contact" class="btn">
+                            <i class="fas fa-phone me-2"></i>
+                            Contact for Pricing
+                        </a>
+                        <p style="margin-top: 1.5rem; color: #666; font-size: 0.9rem;">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Pricing is negotiable based on school size and requirements
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section class="section" id="contact">
+        <div class="container">
+            <div class="section-title">
+                <h2>Get in Touch</h2>
+                <p>Ready to transform your school? Contact us today for a demonstration and pricing discussion.</p>
+            </div>
+            <div class="row justify-content-center">
+                <div class="col-lg-6 col-md-8">
+                    <div class="contact-card">
+                        <h3 style="text-align: center; margin-bottom: 2rem; color: var(--primary-color); font-weight: 700;">
+                            Contact Information
+                        </h3>
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div>
+                                <h4>Designed By</h4>
+                                <p>Alain Brian</p>
+                            </div>
+                        </div>
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <i class="fas fa-phone"></i>
+                            </div>
+                            <div>
+                                <h4>Call Us</h4>
+                                <p><a href="tel:0794900225">0794900225</a></p>
+                            </div>
+                        </div>
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <i class="fab fa-whatsapp"></i>
+                            </div>
+                            <div>
+                                <h4>WhatsApp</h4>
+                                <p><a href="https://wa.me/250784571544" target="_blank">0784571544</a></p>
+                            </div>
+                        </div>
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <i class="fas fa-envelope"></i>
+                            </div>
+                            <div>
+                                <h4>Email</h4>
+                                <p><a href="mailto:excellentservantacademy@gmail.com">excellentservantacademy@gmail.com</a></p>
+                            </div>
+                        </div>
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div>
+                                <h4>Location</h4>
+                                <p>Kigali & Musanze, Rwanda</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-12 text-center">
+                    <h4>SmartCampus School Management System</h4>
+                    <p style="margin-top: 1rem;">Empowering Educational Institutions Across Rwanda with Digital Solutions</p>
+                    <p style="margin-top: 0.5rem; font-size: 0.9rem;">&copy; 2026 SmartCampus. All rights reserved.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

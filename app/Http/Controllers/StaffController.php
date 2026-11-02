@@ -429,8 +429,10 @@ class StaffController extends Controller
 
     public function courseFees()
     {
-        $courses = \App\Models\Course::with(['branches', 'teachers', 'students'])->get();
-        return view('staff.course_fees', compact('courses'));
+        $courses = \App\Models\Course::with(['branches', 'teachers', 'students', 'courseTermBranchFees.term', 'courseTermBranchFees.branch'])->get();
+        $terms = \App\Models\Term::with('academicYear')->orderBy('start_date', 'desc')->get();
+        $branches = \App\Models\Branch::all();
+        return view('staff.course_fees', compact('courses', 'terms', 'branches'));
     }
 
     // Staff login methods

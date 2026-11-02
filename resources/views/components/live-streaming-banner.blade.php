@@ -10,14 +10,14 @@
                         <div class="absolute inset-0 w-3 h-3 bg-white rounded-full animate-ping"></div>
                     </div>
                     <div>
-                        <h3 class="text-lg font-bold">Live Classes</h3>
-                        <p class="text-sm opacity-90" x-show="loading">Loading...</p>
-                        <p class="text-sm opacity-90" x-show="!loading">
+                        <h3 class="text-lg font-bold text-white">Live Classes</h3>
+                        <p class="text-sm text-white opacity-90" x-show="loading">Loading...</p>
+                        <p class="text-sm text-white opacity-90" x-show="!loading">
                             <span x-text="liveClasses.length"></span> class<span x-bind:plural="liveClasses.length !== 1">es</span> available now
                         </p>
                     </div>
                 </div>
-                <button @click="showModal = true" 
+                <button @click="showModal = true"
                         x-show="!loading && liveClasses.length > 0"
                         class="bg-white text-red-600 px-4 py-2 rounded-lg font-semibold hover:bg-red-50 transition-colors">
                     Join Live Class

@@ -1021,6 +1021,103 @@
 
         .stats-card {
             margin-bottom: 1rem;
+            padding: 1.5rem;
+        }
+
+        .stats-number {
+            font-size: 2rem;
+        }
+
+        .stats-icon {
+            font-size: 2rem;
+        }
+
+        /* Table improvements */
+        .table-card {
+            border-radius: 0.5rem;
+            margin: 0 -1rem 1rem -1rem;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin: 0;
+            padding: 0 1rem;
+        }
+
+        .table {
+            font-size: 0.875rem;
+            min-width: 800px;
+        }
+
+        .table th,
+        .table td {
+            padding: 0.5rem;
+            white-space: nowrap;
+        }
+
+        /* Filters card */
+        .filters-card {
+            padding: 1rem;
+            border-radius: 0.5rem;
+        }
+
+        .search-input {
+            padding: 0.5rem 1rem;
+            font-size: 16px;
+            min-height: 44px;
+        }
+
+        /* Header actions */
+        .header-actions {
+            flex-direction: column;
+            gap: 0.5rem;
+            width: 100%;
+        }
+
+        .header-actions .btn {
+            width: 100%;
+            min-height: 44px;
+        }
+
+        .page-header {
+            padding: 1.5rem;
+            margin: -1rem -1rem 1rem -1rem;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .page-title {
+            font-size: 1.5rem;
+        }
+
+        .stats-card {
+            padding: 1rem;
+        }
+
+        .stats-number {
+            font-size: 1.75rem;
+        }
+
+        .stats-icon {
+            font-size: 1.75rem;
+        }
+
+        .table {
+            font-size: 0.8125rem;
+        }
+
+        .table th,
+        .table td {
+            padding: 0.375rem;
+        }
+
+        .filters-card {
+            padding: 0.75rem;
+        }
+
+        .page-header {
+            padding: 1rem;
         }
     }
 </style>

@@ -715,15 +715,69 @@
         .btn {
             font-size: 0.8rem;
             padding: 0.4rem 0.8rem;
+            min-height: 44px;
         }
 
         .table {
-            font-size: 0.9rem;
+            font-size: 0.8125rem;
+            min-width: 800px;
         }
 
         .table thead th,
         .table tbody td {
-            padding: 0.8rem 1rem;
+            padding: 0.375rem;
+            white-space: nowrap;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin: 0 -1rem 1rem -1rem;
+            padding: 0 1rem;
+        }
+
+        .controls-card {
+            border-radius: 0.5rem;
+        }
+
+        .controls-body {
+            padding: 1rem;
+        }
+
+        .search-controls {
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .search-group {
+            width: 100%;
+        }
+
+        .action-group {
+            width: 100%;
+            flex-direction: column;
+        }
+
+        .action-group .btn {
+            width: 100%;
+        }
+
+        .page-header {
+            padding: 1rem;
+            margin: -1rem -1rem 1rem -1rem;
+        }
+
+        .header-content {
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .header-actions {
+            width: 100%;
+        }
+
+        .header-actions .btn {
+            width: 100%;
         }
     }
 

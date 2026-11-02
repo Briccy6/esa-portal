@@ -28,90 +28,292 @@
     box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
 }
 
+/* Dashboard Stats Grid - Responsive Layout */
+.dashboard-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+    gap: 1rem;
+    width: 100%;
+    margin-bottom: 1rem;
+}
+
+.dashboard-stat-card {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+/* Fix text overflow in cards */
+.card-body {
+    overflow: hidden;
+    word-wrap: break-word;
+}
+
+.h5 {
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+
 /* Mobile Responsive Dashboard */
 @media (max-width: 768px) {
+    .dashboard-stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+        gap: 0.75rem;
+    }
+
     .container-fluid {
-        padding: 0 1rem !important;
+        padding: 0 0.75rem !important;
     }
-    
+
     .row {
-        margin: 0 !important;
+        margin: 0 -0.5rem !important;
     }
-    
+
     .col-xl-3,
     .col-md-6 {
         padding: 0.5rem !important;
         flex: 0 0 100% !important;
         max-width: 100% !important;
     }
-    
+
     .card {
-        margin-bottom: 1rem !important;
+        margin-bottom: 0.75rem !important;
         border-radius: 0.5rem !important;
+        overflow: hidden;
     }
-    
+
     .card-body {
-        padding: 1rem !important;
+        padding: 0.875rem !important;
     }
-    
+
     .h5 {
-        font-size: 1.125rem !important;
+        font-size: 1rem !important;
+        line-height: 1.3 !important;
+        word-break: break-word !important;
+        overflow-wrap: break-word !important;
     }
-    
+
     .text-xs {
-        font-size: 0.75rem !important;
+        font-size: 0.7rem !important;
+        line-height: 1.2 !important;
     }
-    
+
     .fa-2x {
         font-size: 1.5rem !important;
     }
-    
+
+    /* Fix card layout on mobile */
+    .card-body .row {
+        margin: 0 !important;
+    }
+
+    .card-body .col {
+        padding: 0.25rem !important;
+    }
+
+    .card-body .col-auto {
+        flex: 0 0 auto !important;
+        max-width: 100% !important;
+    }
+
+    .card-body .col.mr-2 {
+        flex: 1 !important;
+        min-width: 0 !important;
+    }
+
     /* Mobile charts */
     .chart-container {
-        margin: 1rem 0 !important;
-        padding: 1rem !important;
+        margin: 0.75rem 0 !important;
+        padding: 0.75rem !important;
     }
-    
+
     .chart-container canvas {
-        max-height: 300px !important;
+        max-height: 250px !important;
     }
-    
+
     /* Mobile tables */
     .table-responsive {
-        font-size: 0.875rem !important;
+        font-size: 0.8125rem !important;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin: 0 -0.75rem 0.75rem -0.75rem;
+        padding: 0 0.75rem;
     }
-    
+
     .table th,
     .table td {
-        padding: 0.5rem !important;
+        padding: 0.375rem !important;
+        white-space: nowrap;
     }
-    
+
     /* Mobile stats grid */
     .stats-grid {
         grid-template-columns: 1fr !important;
-        gap: 0.75rem !important;
+        gap: 0.5rem !important;
     }
 }
 
 @media (max-width: 640px) {
+    .dashboard-stats-grid {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+
+    .container-fluid {
+        padding: 0 0.5rem !important;
+    }
+
+    .row {
+        margin: 0 -0.25rem !important;
+    }
+
+    .col-xl-3,
+    .col-md-6 {
+        padding: 0.25rem !important;
+    }
+
     .card-body {
         padding: 0.75rem !important;
     }
-    
+
     .h5 {
-        font-size: 1rem !important;
+        font-size: 0.9375rem !important;
+        line-height: 1.2 !important;
     }
-    
+
+    .text-xs {
+        font-size: 0.65rem !important;
+    }
+
     .fa-2x {
         font-size: 1.25rem !important;
     }
-    
+
     .chart-container canvas {
-        max-height: 250px !important;
+        max-height: 200px !important;
     }
-    
+
     .table-responsive {
-        font-size: 0.8125rem !important;
+        font-size: 0.75rem !important;
+        margin: 0 -0.5rem 0.5rem -0.5rem;
+        padding: 0 0.5rem;
+    }
+
+    .table {
+        min-width: 600px;
+    }
+
+    .table th,
+    .table td {
+        padding: 0.25rem !important;
+    }
+
+    /* Stats cards on mobile */
+    .stats-grid {
+        grid-template-columns: 1fr !important;
+        gap: 0.375rem !important;
+    }
+
+    .stats-card {
+        padding: 0.75rem !important;
+    }
+
+    .stats-number {
+        font-size: 1.25rem !important;
+        word-break: break-word !important;
+    }
+
+    .stats-icon {
+        font-size: 1.25rem !important;
+    }
+
+    /* Recent clients table on mobile */
+    .table-sm {
+        font-size: 0.7rem !important;
+    }
+
+    .badge {
+        font-size: 0.65rem !important;
+        padding: 0.2rem 0.4rem !important;
+    }
+
+    /* Fix card icon column on small screens */
+    .card-body .col-auto {
+        flex: 0 0 40px !important;
+        max-width: 40px !important;
+    }
+
+    .card-body .col.mr-2 {
+        margin-right: 0.5rem !important;
+    }
+}
+
+/* Extra small screens */
+@media (max-width: 375px) {
+    .dashboard-stats-grid {
+        grid-template-columns: 1fr;
+        gap: 0.375rem;
+    }
+
+    .h5 {
+        font-size: 0.875rem !important;
+    }
+
+    .text-xs {
+        font-size: 0.6rem !important;
+    }
+
+    .fa-2x {
+        font-size: 1.125rem !important;
+    }
+
+    .card-body {
+        padding: 0.5rem !important;
+    }
+
+    .card-body .col-auto {
+        flex: 0 0 35px !important;
+        max-width: 35px !important;
+    }
+
+    /* Report cards section on mobile */
+    .card-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 0.5rem !important;
+    }
+
+    .card-header .btn {
+        width: 100% !important;
+    }
+
+    .card-body .col-md-3 {
+        margin-bottom: 1rem !important;
+    }
+
+    .card-body .col-md-6 {
+        margin-bottom: 0.5rem !important;
+    }
+}
+
+/* Mobile responsive for report cards */
+@media (max-width: 768px) {
+    .card-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 0.75rem !important;
+    }
+
+    .card-header .btn {
+        width: 100% !important;
+    }
+
+    .card-body .col-md-3 {
+        margin-bottom: 1rem !important;
+    }
+
+    .card-body .col-md-6 {
+        margin-bottom: 0.75rem !important;
     }
 }
 
@@ -120,7 +322,7 @@
     .card {
         cursor: pointer;
     }
-    
+
     .btn {
         min-height: 44px;
         display: flex;
@@ -139,8 +341,8 @@
     @endif
 
     <!-- Summary Cards -->
-    <div class="row mb-4">
-        <div class="col-xl-3 col-md-6 mb-4">
+    <div class="dashboard-stats-grid">
+        <div class="dashboard-stat-card">
             <a href="{{ route('admin.report') }}" class="text-decoration-none">
                 <div class="card border-left-primary shadow h-100 py-2 card-hover">
                     <div class="card-body">
@@ -158,7 +360,7 @@
             </a>
         </div>
 
-        <div class="col-xl-3 col-md-6 mb-4">
+        <div class="dashboard-stat-card">
             <a href="{{ route('admin.expenses.export') }}" class="text-decoration-none">
                 <div class="card border-left-danger shadow h-100 py-2 card-hover">
                     <div class="card-body">
@@ -176,7 +378,7 @@
             </a>
         </div>
 
-        <div class="col-xl-3 col-md-6 mb-4">
+        <div class="dashboard-stat-card">
             <a href="{{ route('admin.report') }}" class="text-decoration-none">
                 <div class="card border-left-success shadow h-100 py-2 card-hover">
                     <div class="card-body">
@@ -194,7 +396,7 @@
             </a>
         </div>
 
-        <div class="col-xl-3 col-md-6 mb-4">
+        <div class="dashboard-stat-card">
             <a href="{{ route('admin.report') }}" class="text-decoration-none">
                 <div class="card border-left-info shadow h-100 py-2 card-hover">
                     <div class="card-body">
@@ -214,8 +416,8 @@
     </div>
 
     <!-- Revenue Source Cards -->
-    <div class="row mb-4">
-        <div class="col-xl-3 col-md-6 mb-4">
+    <div class="dashboard-stats-grid">
+        <div class="dashboard-stat-card">
             <a href="{{ route('admin.report') }}" class="text-decoration-none">
                 <div class="card border-left-warning shadow h-100 py-2 card-hover">
                     <div class="card-body">
@@ -234,7 +436,7 @@
             </a>
         </div>
 
-        <div class="col-xl-3 col-md-6 mb-4">
+        <div class="dashboard-stat-card">
             <a href="{{ route('admin.report') }}" class="text-decoration-none">
                 <div class="card border-left-purple shadow h-100 py-2 card-hover">
                     <div class="card-body">
@@ -253,7 +455,7 @@
             </a>
         </div>
 
-        <div class="col-xl-3 col-md-6 mb-4">
+        <div class="dashboard-stat-card">
             <a href="{{ route('admin.report') }}" class="text-decoration-none">
                 <div class="card border-left-teal shadow h-100 py-2 card-hover">
                     <div class="card-body">
@@ -272,7 +474,7 @@
             </a>
         </div>
 
-        <div class="col-xl-3 col-md-6 mb-4">
+        <div class="dashboard-stat-card">
             <a href="{{ route('admin.report') }}" class="text-decoration-none">
                 <div class="card border-left-info shadow h-100 py-2 card-hover">
                     <div class="card-body">
@@ -293,8 +495,8 @@
     </div>
 
     <!-- Additional Revenue Cards -->
-    <div class="row mb-4">
-        <div class="col-xl-3 col-md-6 mb-4">
+    <div class="dashboard-stats-grid">
+        <div class="dashboard-stat-card">
             <a href="{{ route('admin.report') }}" class="text-decoration-none">
                 <div class="card border-left-success shadow h-100 py-2 card-hover">
                     <div class="card-body">
@@ -313,7 +515,7 @@
             </a>
         </div>
 
-        <div class="col-xl-3 col-md-6 mb-4">
+        <div class="dashboard-stat-card">
             <a href="{{ route('admin.report') }}" class="text-decoration-none">
                 <div class="card border-left-primary shadow h-100 py-2 card-hover">
                     <div class="card-body">
@@ -332,7 +534,7 @@
             </a>
         </div>
 
-        <div class="col-xl-3 col-md-6 mb-4">
+        <div class="dashboard-stat-card">
             <a href="{{ route('admin.clients.index') }}" class="text-decoration-none">
                 <div class="card border-left-warning shadow h-100 py-2 card-hover">
                     <div class="card-body">
@@ -351,7 +553,7 @@
             </a>
         </div>
 
-        <div class="col-xl-3 col-md-6 mb-4">
+        <div class="dashboard-stat-card">
             <a href="{{ route('admin.expenses.export') }}" class="text-decoration-none">
                 <div class="card border-left-danger shadow h-100 py-2 card-hover">
                     <div class="card-body">
@@ -372,8 +574,8 @@
     </div>
 
     <!-- Client Statistics Cards -->
-    <div class="row mb-4">
-        <div class="col-xl-3 col-md-6 mb-4">
+    <div class="dashboard-stats-grid">
+        <div class="dashboard-stat-card">
             <a href="{{ route('admin.clients.index') }}" class="text-decoration-none">
                 <div class="card border-left-warning shadow h-100 py-2 card-hover">
                     <div class="card-body">
@@ -392,7 +594,7 @@
             </a>
         </div>
 
-        <div class="col-xl-3 col-md-6 mb-4">
+        <div class="dashboard-stat-card">
             <a href="{{ route('admin.clients.index') }}" class="text-decoration-none">
                 <div class="card border-left-success shadow h-100 py-2 card-hover">
                     <div class="card-body">
@@ -411,7 +613,7 @@
             </a>
         </div>
 
-        <div class="col-xl-3 col-md-6 mb-4">
+        <div class="dashboard-stat-card">
             <a href="{{ route('admin.clients.index') }}" class="text-decoration-none">
                 <div class="card border-left-primary shadow h-100 py-2 card-hover">
                     <div class="card-body">
@@ -430,7 +632,7 @@
             </a>
         </div>
 
-        <div class="col-xl-3 col-md-6 mb-4">
+        <div class="dashboard-stat-card">
             <a href="{{ route('admin.clients.index') }}" class="text-decoration-none">
                 <div class="card border-left-info shadow h-100 py-2 card-hover">
                     <div class="card-body">
@@ -454,33 +656,33 @@
     <div class="row mb-4">
         <div class="col-12">
             <div class="card border-left-primary shadow h-100 py-3">
-                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                <div class="card-header py-3 d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
                     <h6 class="m-0 font-weight-bold text-primary">Report Cards Management</h6>
-                    <a href="{{ route('admin.report-cards.index') }}" class="btn btn-primary btn-sm">
+                    <a href="{{ route('admin.report-cards.index') }}" class="btn btn-primary btn-sm btn-block btn-md-auto">
                         <i class="fas fa-arrow-right"></i> View All Report Cards
                     </a>
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-md-3">
+                        <div class="col-md-3 col-6 mb-3 mb-md-0">
                             <div class="text-center">
                                 <h4 class="text-primary">{{ App\Models\ReportCard::count() }}</h4>
                                 <p class="text-muted">Total Report Cards</p>
                             </div>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-3 col-6 mb-3 mb-md-0">
                             <div class="text-center">
                                 <h4 class="text-success">{{ App\Models\ReportCard::where('status', 'approved')->count() }}</h4>
                                 <p class="text-muted">Approved</p>
                             </div>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-3 col-6 mb-3 mb-md-0">
                             <div class="text-center">
                                 <h4 class="text-warning">{{ App\Models\ReportCard::where('status', 'pending')->count() }}</h4>
                                 <p class="text-muted">Pending</p>
                             </div>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-3 col-6">
                             <div class="text-center">
                                 <h4 class="text-info">{{ App\Models\SchoolInformation::count() }}</h4>
                                 <p class="text-muted">School Configured</p>
@@ -489,12 +691,12 @@
                     </div>
                     <div class="mt-3">
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-6 col-12 mb-2 mb-md-0">
                                 <a href="{{ route('admin.report-cards.create') }}" class="btn btn-success btn-block">
                                     <i class="fas fa-plus"></i> Generate New Report Card
                                 </a>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-6 col-12">
                                 <a href="{{ route('admin.school-information.edit') }}" class="btn btn-info btn-block">
                                     <i class="fas fa-cog"></i> Configure School Info
                                 </a>

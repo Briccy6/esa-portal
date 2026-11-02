@@ -10,23 +10,23 @@
             <div>
                 <p class="inline-flex items-center space-x-2 rounded-full bg-white/10 px-4 py-1 mb-4 backdrop-blur-sm border border-white/10 text-xs font-semibold tracking-wide uppercase">
                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                    <span>Public practice tests</span>
+                    <span class="text-white">Public practice tests</span>
                 </p>
-                <h1 class="text-3xl md:text-4xl lg:text-5xl font-extrabold leading-tight mb-3">
+                <h1 class="text-3xl md:text-4xl lg:text-5xl font-extrabold leading-tight mb-3 text-white">
                     Test your exam<br class="hidden md:block">
                     readiness with ESA.
                 </h1>
-                <p class="text-base md:text-lg text-slate-200 max-w-xl mb-6">
+                <p class="text-base md:text-lg text-white max-w-xl mb-6">
                     Timed, auto‑marked practice exams built by ESA teachers to help you
                     identify gaps, build confidence, and improve before the real exam day.
                 </p>
                 @if($exams->count() > 0)
-                    <div class="flex flex-wrap items-center gap-4 text-sm text-slate-300">
+                    <div class="flex flex-wrap items-center gap-4 text-sm text-white">
                         <span>{{ $exams->count() }} practice tests available</span>
                         @if($exams->first()->courses->count() > 0)
                             <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10">
                                 <i class="fas fa-graduation-cap text-xs"></i>
-                                <span>Sample course: {{ $exams->first()->courses->first()->name }}</span>
+                                <span class="text-white">Sample course: {{ $exams->first()->courses->first()->name }}</span>
                             </span>
                         @endif
                     </div>
@@ -35,12 +35,12 @@
 
             <!-- Compact summary card on the right -->
             <div class="bg-white/5 border border-white/10 rounded-2xl p-5 md:p-6 shadow-2xl backdrop-blur-sm">
-                <h2 class="text-lg font-semibold mb-1">How public exams work</h2>
-                <p class="text-sm text-slate-200 mb-4">
+                <h2 class="text-lg font-semibold mb-1 text-white">How public exams work</h2>
+                <p class="text-sm text-white mb-4">
                     Choose a practice test, review the details, then start when you&apos;re ready.
                     You&apos;ll see your score as soon as you submit.
                 </p>
-                <ul class="space-y-3 text-sm text-slate-100">
+                <ul class="space-y-3 text-sm text-white">
                     <li class="flex items-start gap-2">
                         <span class="mt-1 w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                         <span>Multiple‑choice questions, marked automatically.</span>

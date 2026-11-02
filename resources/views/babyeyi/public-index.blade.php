@@ -30,7 +30,7 @@
                         <!-- Course Info -->
                         <div class="mb-4 pb-4 border-b border-gray-200">
                             <p class="text-gray-600 text-sm font-semibold uppercase mb-1">Course</p>
-                            <p class="text-gray-900 font-semibold">
+                            <p class="text-gray-800 font-bold">
                                 @if ($babyeyi->course)
                                     {{ $babyeyi->course->name }}
                                 @elseif ($babyeyi->course_type)
@@ -44,7 +44,7 @@
                         <!-- Reference Number -->
                         <div class="mb-4 pb-4 border-b border-gray-200">
                             <p class="text-gray-600 text-sm font-semibold uppercase mb-1">Reference</p>
-                            <code class="bg-gray-100 text-gray-900 text-sm px-2 py-1 rounded">{{ $babyeyi->reference_number }}</code>
+                            <code class="bg-gray-100 text-gray-800 text-sm px-2 py-1 rounded font-medium">{{ $babyeyi->reference_number }}</code>
                         </div>
 
                         <!-- Term Duration -->
@@ -53,8 +53,8 @@
                             <p class="text-gray-600 text-sm font-semibold uppercase mb-1">
                                 <i class="fas fa-calendar mr-1"></i>Term Duration
                             </p>
-                            <p class="text-gray-900">
-                                {{ $babyeyi->term->start_date->format('M d, Y') }} - 
+                            <p class="text-gray-800 font-medium">
+                                {{ $babyeyi->term->start_date->format('M d, Y') }} -
                                 {{ $babyeyi->term->end_date->format('M d, Y') }}
                             </p>
                         </div>
@@ -66,9 +66,9 @@
                             <p class="text-gray-600 text-sm font-semibold uppercase mb-1">
                                 <i class="fas fa-bus mr-1"></i>Trip
                             </p>
-                            <p class="text-gray-900 mb-1">Destination: <strong>{{ $babyeyi->trip_place }}</strong></p>
+                            <p class="text-gray-800 mb-1">Destination: <strong>{{ $babyeyi->trip_place }}</strong></p>
                             @if ($babyeyi->trip_fees)
-                                <p class="text-gray-900">Fee: <strong>RWF {{ number_format($babyeyi->trip_fees, 2) }}</strong></p>
+                                <p class="text-gray-800">Fee: <strong>RWF {{ number_format($babyeyi->trip_fees, 2) }}</strong></p>
                             @endif
                         </div>
                         @endif

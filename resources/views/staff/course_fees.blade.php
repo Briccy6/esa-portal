@@ -26,6 +26,76 @@
         </button>
     </div>
 </div>
+
+<!-- School Fees Table -->
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0"><i class="fas fa-table me-2"></i>School Fees by Course, Term & Branch</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Course</th>
+                        <th>Term</th>
+                        <th>Branch</th>
+                        <th>Registration Fee</th>
+                        <th>Tuition Fee</th>
+                        <th>Practical Fee</th>
+                        <th>Trip Fee</th>
+                        <th>Student Card Fee</th>
+                        <th>Total Fees</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($courses as $course)
+                        @if($course->courseTermBranchFees->count() > 0)
+                            @foreach($course->courseTermBranchFees as $fee)
+                                <tr>
+                                    <td><strong>{{ $course->course_name }}</strong></td>
+                                    <td>
+                                        <span class="badge bg-info">
+                                            {{ $fee->term->name ?? 'N/A' }}
+                                            <small>({{ $fee->term->academicYear->year ?? '' }})</small>
+                                        </span>
+                                    </td>
+                                    <td>{{ $fee->branch->name ?? 'N/A' }}</td>
+                                    <td>{{ number_format($fee->registration_fee, 2) }} RWF</td>
+                                    <td>{{ number_format($fee->tuition_fee, 2) }} RWF</td>
+                                    <td>{{ number_format($fee->practical_fee, 2) }} RWF</td>
+                                    <td>{{ number_format($fee->trip_fee, 2) }} RWF</td>
+                                    <td>{{ number_format($fee->student_card_fee, 2) }} RWF</td>
+                                    <td><strong>{{ number_format($fee->getTotalFeesAttribute(), 2) }} RWF</strong></td>
+                                    <td>
+                                        @if($fee->is_active)
+                                            <span class="badge bg-success">Active</span>
+                                        @else
+                                            <span class="badge bg-secondary">Inactive</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+                        @else
+                            <tr>
+                                <td colspan="10" class="text-center text-muted">
+                                    <em>No fees configured for this course. Please add fees in the Admin panel.</em>
+                                </td>
+                            </tr>
+                        @endif
+                    @empty
+                        <tr>
+                            <td colspan="10" class="text-center text-muted">No courses found.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Course Cards Section -->
 <div class="row g-4">
     @php
         $systemLogo = \Illuminate\Support\Facades\Cache::get('esa_system_logo');
