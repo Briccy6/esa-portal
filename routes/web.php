@@ -660,14 +660,6 @@ Route::prefix('staff')->name('staff.')->group(function () {
         ->name('password.reset.form');
     Route::post('reset-password/code', [\App\Http\Controllers\StaffPasswordResetController::class, 'resetWithCode'])
         ->name('password.reset.code');
-         // ===== PAYMENT ROUTES - ADD THESE HERE =====
-        Route::get('/students/{student}/pay-cash', [StudentController::class, 'showPaymentForm'])->name('students.pay-cash.form');
-        Route::post('/students/{student}/pay-cash', [StudentController::class, 'payCash'])->name('students.pay-cash');
-        Route::get('/students/{student}/term-fees', [StudentController::class, 'getTermFees'])->name('students.term-fees');
-        Route::get('/students/{student}/payments/ajax', [StudentController::class, 'ajaxPayments'])->name('students.payments.ajax');
-        Route::get('/students/{student}/transcript/ajax', [StudentController::class, 'transcriptAjax'])->name('students.transcript.ajax');
-        Route::get('/students/{student}/transcript/send', [StudentController::class, 'sendTranscript'])->name('students.transcript.send');
-        // ============================================
 
 
     Route::middleware('auth:staff')->group(function () {
@@ -687,6 +679,14 @@ Route::prefix('staff')->name('staff.')->group(function () {
         Route::post('/students/{student}/update-nesa-status', [StudentController::class, 'updateNesaStatus'])->name('students.update-nesa-status');
         Route::post('/students/{student}/send-nesa-email', [StudentController::class, 'sendNesaStatusEmail'])->name('students.send-nesa-email');
         Route::get('/students/{student}/download-nesa-document', [StudentController::class, 'downloadNesaDocument'])->name('students.download-nesa-document');
+         // ===== PAYMENT ROUTES - ADD THESE HERE =====
+        Route::get('/students/{student}/pay-cash', [StudentController::class, 'showPaymentForm'])->name('students.pay-cash.form');
+        Route::post('/students/{student}/pay-cash', [StudentController::class, 'payCash'])->name('students.pay-cash');
+        Route::get('/students/{student}/term-fees', [StudentController::class, 'getTermFees'])->name('students.term-fees');
+        Route::get('/students/{student}/payments/ajax', [StudentController::class, 'ajaxPayments'])->name('students.payments.ajax');
+        Route::get('/students/{student}/transcript/ajax', [StudentController::class, 'transcriptAjax'])->name('students.transcript.ajax');
+        Route::get('/students/{student}/transcript/send', [StudentController::class, 'sendTranscript'])->name('students.transcript.send');
+        // ============================================
         Route::get('/students/download-all-nesa-documents', [StudentController::class, 'downloadAllNesaDocuments'])->name('students.download-all-nesa-documents');
         Route::get('/students/export-nesa-report', [StudentController::class, 'exportNesaReport'])->name('students.export-nesa-report');
         Route::post('/students/{student}/complete-registration', [StudentController::class, 'completeRegistration'])->name('students.complete_registration');
