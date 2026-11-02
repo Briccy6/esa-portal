@@ -52,6 +52,16 @@ class StudentController extends Controller
             ->with(['branch', 'academicYear', 'term', 'sessions.lesson.teacher', 'sessions.courses'])
             ->get();
 
+        // Debug: Log student and timetable info
+        \Log::info('Student timetable query', [
+            'student_id' => $student->id,
+            'student_branch_id' => $student->branch_id,
+            'student_academic_year_id' => $student->academic_year_id,
+            'student_course_id' => $student->course_id,
+            'timetables_count' => $timetables->count(),
+            'current_date' => now()->toDateTimeString(),
+        ]);
+
         // Don't filter by course - show all timetables for the student's branch and academic year
         // The student will see all sessions, and the show view will filter by course
 
