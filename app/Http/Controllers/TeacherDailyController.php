@@ -124,9 +124,14 @@ class TeacherDailyController extends Controller
             \Log::error("Teacher {$teacher->id} not assigned to course {$courseId}");
             return response()->json([], 404);
         }
-        $lessons = $course->lessons()->get(['id', 'title']);
+        
+        // Get lessons assigned to this teacher for this course
+        $lessons = \App\Models\Lesson::where('course_id', $courseId)
+            ->where('teacher_id', $teacher->id)
+            ->get(['id', 'title']);
+            
         if ($lessons->isEmpty()) {
-            \Log::warning("No lessons found for course {$courseId}");
+            \Log::warning("No lessons found for teacher {$teacher->id} in course {$courseId}");
         }
         return response()->json($lessons);
     }
