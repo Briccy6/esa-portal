@@ -1080,7 +1080,7 @@ function loadTranscript(studentId) {
     
     modalBody.innerHTML = '<div class="text-center py-4"><span class="spinner-border text-primary"></span><p class="mt-2 text-muted">Loading transcript…</p></div>';
     
-    fetch(`/students/${studentId}/transcript/ajax`, {
+    fetch(`/staff/students/${studentId}/transcript/ajax`, {
         method: 'GET',
         headers: {
             'Accept': 'text/html',
