@@ -26,7 +26,7 @@ class LessonController extends Controller
         $query = Lesson::with([
             'course:id,course_name,course_code',
             'teacher:id,teacher_name',
-            'units:id,lesson_id,title',
+            'units:id,lesson_id,unit_name',
             'branches:id,name',
             'terms:id,name,start_date,end_date,academic_year_id',
             'branchCourses' => function($q) {
