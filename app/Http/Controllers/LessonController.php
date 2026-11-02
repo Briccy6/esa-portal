@@ -318,7 +318,6 @@ public function createDetails(Request $request, $lessonId)
             ->map(function ($items) {
                 return $items->pluck('branch_id')->toArray();
             })->toArray();
-        }
 
         return view('staff.lessons.edit', compact('lesson', 'courses', 'branches', 'terms', 'academicYears', 'courseTeachersData', 'courseBranchesMap'));
     }
