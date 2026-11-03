@@ -1338,18 +1338,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 </script>
-@endsection        <div class="col-xl-6 mb-4">
-            <div class="card shadow h-100">
-                <div class="card-header py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="m-0 font-weight-bold text-success">Revenue vs Expenses</h6>
-                    <i class="fas fa-balance-scale"></i>
-                </div>
-                <div class="card-body">
-                    <canvas id="revenueExpenseChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- Row 7: Students by Branch & Students by Course in Branch -->
     <div class="row mb-4">
