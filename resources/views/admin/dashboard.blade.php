@@ -2395,11 +2395,7 @@ function openNesaModal(studentId, studentName, regNumber) {
             });
         }
     });
-}
-
-function viewNesaDetails(studentId) {
-    window.open(`/admin/nesa/${studentId}/edit`, '_blank');
-}
+});
 </script>
 
 @endsection
