@@ -429,7 +429,7 @@
         </div>
     @endif
 
-    <form action="{{ route('staff.lessons.store') }}" method="POST" id="multiBranchForm">
+    <form action="{{ route('dos.lessons.store') }}" method="POST" id="multiBranchForm">
         @csrf
         <input type="hidden" name="is_multi_branch" value="1">
         
