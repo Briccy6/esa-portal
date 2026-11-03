@@ -272,7 +272,6 @@ class AdminAuthController extends Controller
                 Student::select('branches.name as branch_name', 'courses.course_name as course_name', DB::raw('count(*) as total'))
                     ->join('branches', 'students.branch_id', '=', 'branches.id')
                     ->join('courses', 'students.course_id', '=', 'courses.id')
-                    ->where('students.academic_year_id', $academicYearId)
             )->groupBy('branches.id', 'branches.name', 'courses.id', 'courses.course_name')
                 ->orderBy('branches.name')
                 ->orderBy('total', 'desc')
