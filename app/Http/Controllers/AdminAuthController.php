@@ -259,6 +259,24 @@ class AdminAuthController extends Controller
                 $studentsByCourseGender = collect();
             }
 
+            // Students by branch
+            $studentsByBranch = AcademicYearContext::filterStudents(
+                Student::select('branches.name as branch_name', DB::raw('count(*) as total'))
+                    ->join('branches', 'students.branch_id', '=', 'branches.id')
+            )->groupBy('branches.id', 'branches.name')
+                ->orderBy('total', 'desc')
+                ->get();
+
+            // Students by course in each branch
+            $studentsByCourseInBranch = AcademicYearContext::filterStudents(
+                Student::select('branches.name as branch_name', 'courses.course_name as course_name', DB::raw('count(*) as total'))
+                    ->join('branches', 'students.branch_id', '=', 'branches.id')
+                    ->join('courses', 'students.course_id', '=', 'courses.id')
+            )->groupBy('branches.id', 'branches.name', 'courses.id', 'courses.course_name')
+                ->orderBy('branches.name')
+                ->orderBy('total', 'desc')
+                ->get();
+
             // Cache the results for 1 hour
             $dashboardData = compact(
                 'selectedAcademicYear',
@@ -282,6 +300,8 @@ class AdminAuthController extends Controller
                 'recentExpenses',
                 'studentsByGender',
                 'studentsByCourseGender',
+                'studentsByBranch',
+                'studentsByCourseInBranch',
                 'registrationPaidPercent',
                 'tuitionPaidPercent',
                 'feePaymentData',

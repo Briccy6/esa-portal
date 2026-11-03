@@ -1082,6 +1082,33 @@
         </div>
     </div>
 
+    <!-- Row 7: Students by Branch & Students by Course in Branch -->
+    <div class="row mb-4">
+        <div class="col-xl-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">Total Students by Branch</h6>
+                    <i class="fas fa-building"></i>
+                </div>
+                <div class="card-body">
+                    <canvas id="studentsByBranchChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-info">Students by Course in Branch</h6>
+                    <i class="fas fa-book"></i>
+                </div>
+                <div class="card-body">
+                    <canvas id="studentsByCourseInBranchChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Row 7: NESA Registration & Student Approval Status -->
     <div class="row mb-4">
         <div class="col-xl-6 mb-4">
@@ -1793,105 +1820,169 @@ const genderCounts = genderData.map(g => g.total);
             chartData.maleData.push(courseGroups[courseName].male);
             chartData.femaleData.push(courseGroups[courseName].female);
         });
-        
-        console.log('Processed chart data:', chartData);
     }
     
-    // Create chart
-    if (chartData.labels.length === 0) {
-        // No data chart
-        new Chart(courseGenderCtx, {
-            type: 'bar',
-            data: {
-                labels: ['No Data Available'],
-                datasets: [{
-                    label: 'No Students Found',
-                    data: [1],
-                    backgroundColor: '#e9ecef',
+    new Chart(courseGenderCtx, {
+        type: 'bar',
+        data: {
+            labels: chartData.labels.length > 0 ? chartData.labels : ['No Data'],
+            datasets: [
+                {
+                    label: 'Male',
+                    data: chartData.maleData.length > 0 ? chartData.maleData : [0],
+                    backgroundColor: createGradient(courseGenderCtx, '#4e73df', '#2e59d9'),
                     borderWidth: 0,
                     borderRadius: 8
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: { enabled: false }
                 },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        max: 1,
-                        grid: { color: 'rgba(0, 0, 0, 0.05)' }
-                    },
-                    x: { grid: { display: false } }
+                {
+                    label: 'Female',
+                    data: chartData.femaleData.length > 0 ? chartData.femaleData : [0],
+                    backgroundColor: createGradient(courseGenderCtx, '#e74a3b', '#be2617'),
+                    borderWidth: 0,
+                    borderRadius: 8
                 }
-            }
-        });
-    } else {
-        // Real data chart
-        new Chart(courseGenderCtx, {
-            type: 'bar',
-            data: {
-                labels: chartData.labels,
-                datasets: [
-                    {
-                        label: 'Male Students',
-                        data: chartData.maleData,
-                        backgroundColor: 'rgba(78, 115, 223, 0.8)',
-                        borderColor: 'rgba(78, 115, 223, 1)',
-                        borderWidth: 2,
-                        borderRadius: 8
-                    },
-                    {
-                        label: 'Female Students',
-                        data: chartData.femaleData,
-                        backgroundColor: 'rgba(231, 74, 59, 0.8)',
-                        borderColor: 'rgba(231, 74, 59, 1)',
-                        borderWidth: 2,
-                        borderRadius: 8
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                        labels: { 
-                            padding: 20, 
-                            font: { size: 12 },
-                            usePointStyle: true
-                        }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return context.dataset.label + ': ' + context.parsed.y.toLocaleString();
-                            }
-                        }
-                    }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: { padding: 15, font: { size: 12 } }
                 },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: { color: 'rgba(0, 0, 0, 0.05)' },
-                        ticks: {
-                            stepSize: 1
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': ' + context.parsed.y + ' students';
                         }
-                    },
-                    x: { 
-                        grid: { display: false }
                     }
                 }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                },
+                x: { grid: { display: false } }
             }
+        }
+    });
+
+    // 10. Students by Branch Chart
+    const studentsByBranchCtx = document.getElementById('studentsByBranchChart').getContext('2d');
+    const studentsByBranchData = {!! json_encode($studentsByBranch) !!};
+    
+    new Chart(studentsByBranchCtx, {
+        type: 'bar',
+        data: {
+            labels: studentsByBranchData.length > 0 ? studentsByBranchData.map(item => item.branch_name) : ['No Data'],
+            datasets: [{
+                label: 'Total Students',
+                data: studentsByBranchData.length > 0 ? studentsByBranchData.map(item => item.total) : [0],
+                backgroundColor: createGradient(studentsByBranchCtx, '#667eea', '#764ba2'),
+                borderWidth: 0,
+                borderRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return 'Students: ' + context.parsed.y;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+
+    // 11. Students by Course in Branch Chart
+    const studentsByCourseInBranchCtx = document.getElementById('studentsByCourseInBranchChart').getContext('2d');
+    const studentsByCourseInBranchData = {!! json_encode($studentsByCourseInBranch) !!};
+    
+    // Group data by branch
+    const branchGroups = {};
+    const allCourses = new Set();
+    
+    if (studentsByCourseInBranchData && studentsByCourseInBranchData.length > 0) {
+        studentsByCourseInBranchData.forEach(item => {
+            const branchName = item.branch_name;
+            const courseName = item.course_name;
+            
+            if (!branchGroups[branchName]) {
+                branchGroups[branchName] = {};
+            }
+            branchGroups[branchName][courseName] = item.total;
+            allCourses.add(courseName);
         });
     }
-});
+    
+    const courseLabels = Array.from(allCourses);
+    const branchNames = Object.keys(branchGroups);
+    const colors = ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#858796', '#5a5c69'];
+    
+    const datasets = branchNames.map((branchName, index) => {
+        const data = courseLabels.map(courseName => branchGroups[branchName][courseName] || 0);
+        return {
+            label: branchName,
+            data: data,
+            backgroundColor: colors[index % colors.length],
+            borderWidth: 0,
+            borderRadius: 8
+        };
+    });
+    
+    new Chart(studentsByCourseInBranchCtx, {
+        type: 'bar',
+        data: {
+            labels: courseLabels.length > 0 ? courseLabels : ['No Data'],
+            datasets: datasets.length > 0 ? datasets : [{
+                label: 'No Data',
+                data: [0],
+                backgroundColor: '#e9ecef'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: { padding: 15, font: { size: 12 } }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': ' + context.parsed.y + ' students';
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                },
+                x: { grid: { display: false } }
+            }
+        }
+    });
 
-// 7. NESA Registration Status Chart
+    // 12. NESA Registration Status Chart
 const nesaCtx = document.getElementById('nesaRegistrationChart').getContext('2d');
 new Chart(nesaCtx, {
     type: 'doughnut',
