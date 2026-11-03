@@ -255,7 +255,8 @@ public function createDetails(Request $request, $lessonId)
         // Optimize: Only load necessary relationships and select specific columns
         $lesson = Lesson::with([
             'terms:id,name,start_date,end_date,academic_year_id',
-            'units:id,lesson_id,unit_name',
+            'units:id,lesson_id,unit_name,hours,course_level',
+            'units.term:id,name',
             'course:id,course_name,course_code',
             'teacher:id,teacher_name',
             'branchCourses' => function($q) {

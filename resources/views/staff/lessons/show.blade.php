@@ -267,7 +267,7 @@
                                 <div class="unit-hours">{{ $unit->hours }} hours</div>
                             </div>
                             <div class="text-muted small">
-                                Term: {{ $unit->term->name }} | Level: {{ ucfirst($unit->course_level) }}
+                                Term: {{ $unit->term->name ?? 'N/A' }} | Level: {{ ucfirst($unit->course_level ?? 'N/A') }}
                             </div>
                         </div>
                     @endforeach

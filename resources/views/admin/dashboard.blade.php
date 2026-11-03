@@ -1,1075 +1,1344 @@
 @extends('admin.layout')
 
-@section('title', 'Admin Dashboard')
+@section('title', 'Admin Analytics Dashboard')
 
 @push('styles')
 <style>
-.border-left-purple {
-    border-left: 0.25rem solid #6f42c1 !important;
-}
-.border-left-teal {
-    border-left: 0.25rem solid #20c997 !important;
-}
-.text-purple {
-    color: #6f42c1 !important;
-}
-.text-teal {
-    color: #20c997 !important;
-}
-
-/* Card hover effects */
-.card-hover {
-    transition: all 0.3s ease;
-    cursor: pointer;
-}
-
-.card-hover:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
-}
-
-/* Dashboard Stats Grid - Responsive Layout */
-.dashboard-stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
-    gap: 1rem;
-    width: 100%;
-    margin-bottom: 1rem;
+:root {
+    --primary: #4f46e5;
+    --primary-dark: #4338ca;
+    --secondary: #64748b;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --info: #3b82f6;
+    --purple: #8b5cf6;
+    --pink: #ec4899;
+    --teal: #14b8a6;
+    --orange: #f97316;
+    --bg-light: #f8fafc;
+    --bg-white: #ffffff;
+    --text-dark: #1e293b;
+    --text-muted: #64748b;
+    --border: #e2e8f0;
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    --radius-sm: 0.375rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
 }
 
-.dashboard-stat-card {
-    width: 100%;
-    min-width: 0;
+* {
+    margin: 0;
+    padding: 0;
     box-sizing: border-box;
 }
 
-/* Fix text overflow in cards */
-.card-body {
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: var(--bg-light);
+    color: var(--text-dark);
+    line-height: 1.6;
+}
+
+/* Dashboard Container */
+.dashboard-container {
+    padding: 1.5rem;
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+/* Dashboard Header */
+.dashboard-header {
+    margin-bottom: 2rem;
+}
+
+.dashboard-header h1 {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin-bottom: 0.5rem;
+}
+
+.dashboard-header p {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+}
+
+/* Stats Grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: var(--bg-white);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border);
+    transition: all 0.3s ease;
+    position: relative;
     overflow: hidden;
-    word-wrap: break-word;
 }
 
-.h5 {
-    word-break: break-word;
-    overflow-wrap: break-word;
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--stat-color, var(--primary));
 }
 
-/* Mobile Responsive Dashboard */
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+}
+
+.stat-card.primary::before { --stat-color: var(--primary); }
+.stat-card.success::before { --stat-color: var(--success); }
+.stat-card.warning::before { --stat-color: var(--warning); }
+.stat-card.danger::before { --stat-color: var(--danger); }
+.stat-card.info::before { --stat-color: var(--info); }
+.stat-card.purple::before { --stat-color: var(--purple); }
+.stat-card.pink::before { --stat-color: var(--pink); }
+.stat-card.teal::before { --stat-color: var(--teal); }
+.stat-card.orange::before { --stat-color: var(--orange); }
+
+.stat-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.stat-card-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    background: var(--stat-bg, rgba(79, 70, 229, 0.1));
+    color: var(--stat-color, var(--primary));
+}
+
+.stat-card.primary .stat-card-icon { --stat-bg: rgba(79, 70, 229, 0.1); --stat-color: var(--primary); }
+.stat-card.success .stat-card-icon { --stat-bg: rgba(16, 185, 129, 0.1); --stat-color: var(--success); }
+.stat-card.warning .stat-card-icon { --stat-bg: rgba(245, 158, 11, 0.1); --stat-color: var(--warning); }
+.stat-card.danger .stat-card-icon { --stat-bg: rgba(239, 68, 68, 0.1); --stat-color: var(--danger); }
+.stat-card.info .stat-card-icon { --stat-bg: rgba(59, 130, 246, 0.1); --stat-color: var(--info); }
+.stat-card.purple .stat-card-icon { --stat-bg: rgba(139, 92, 246, 0.1); --stat-color: var(--purple); }
+.stat-card.pink .stat-card-icon { --stat-bg: rgba(236, 72, 153, 0.1); --stat-color: var(--pink); }
+.stat-card.teal .stat-card-icon { --stat-bg: rgba(20, 184, 166, 0.1); --stat-color: var(--teal); }
+.stat-card.orange .stat-card-icon { --stat-bg: rgba(249, 115, 22, 0.1); --stat-color: var(--orange); }
+
+.stat-card-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    margin-bottom: 0.25rem;
+}
+
+.stat-card-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    line-height: 1.2;
+    margin-bottom: 0.25rem;
+}
+
+.stat-card-subtext {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.stat-card-trend {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+}
+
+.stat-card-trend.up {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success);
+}
+
+.stat-card-trend.down {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger);
+}
+
+/* Charts Section */
+.charts-section {
+    margin-bottom: 2rem;
+}
+
+.charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 1.5rem;
+}
+
+.chart-card {
+    background: var(--bg-white);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border);
+}
+
+.chart-card.full-width {
+    grid-column: 1 / -1;
+}
+
+.chart-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.chart-card-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-dark);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.chart-card-title i {
+    color: var(--primary);
+}
+
+.chart-card-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.chart-card-actions .btn {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+    border-radius: var(--radius-sm);
+}
+
+.chart-card-body {
+    position: relative;
+    min-height: 300px;
+}
+
+.chart-card-body canvas {
+    max-height: 350px;
+}
+
+/* Quick Actions */
+.quick-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.quick-action-card {
+    background: var(--bg-white);
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border);
+    text-decoration: none;
+    color: var(--text-dark);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.quick-action-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary);
+}
+
+.quick-action-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    background: var(--primary);
+    color: white;
+}
+
+.quick-action-content h4 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 0.125rem;
+}
+
+.quick-action-content p {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* Recent Activity */
+.recent-activity {
+    background: var(--bg-white);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border);
+}
+
+.recent-activity-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.recent-activity-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+.recent-activity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.recent-activity-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem;
+    border-radius: var(--radius-md);
+    background: var(--bg-light);
+    transition: all 0.2s ease;
+}
+
+.recent-activity-item:hover {
+    background: rgba(79, 70, 229, 0.05);
+}
+
+.recent-activity-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    background: var(--primary);
+    color: white;
+    flex-shrink: 0;
+}
+
+.recent-activity-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.recent-activity-content h5 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 0.125rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.recent-activity-content p {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.recent-activity-time {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+/* Buttons */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.25rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: var(--radius-md);
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.btn-primary {
+    background: var(--primary);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--primary-dark);
+}
+
+.btn-secondary {
+    background: var(--secondary);
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #475569;
+}
+
+.btn-success {
+    background: var(--success);
+    color: white;
+}
+
+.btn-success:hover {
+    background: #059669;
+}
+
+.btn-outline {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dark);
+}
+
+.btn-outline:hover {
+    background: var(--bg-light);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.btn-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .dashboard-container {
+        padding: 1rem;
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1rem;
+    }
+
+    .charts-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .chart-card.full-width {
+        grid-column: 1;
+    }
+}
+
 @media (max-width: 768px) {
-    .dashboard-stats-grid {
-        grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+    .dashboard-container {
+        padding: 0.75rem;
+    }
+
+    .dashboard-header h1 {
+        font-size: 1.5rem;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
         gap: 0.75rem;
     }
 
-    .container-fluid {
-        padding: 0 0.75rem !important;
+    .stat-card {
+        padding: 1.25rem;
     }
 
-    .row {
-        margin: 0 -0.5rem !important;
+    .stat-card-value {
+        font-size: 1.75rem;
     }
 
-    .col-xl-3,
-    .col-md-6 {
-        padding: 0.5rem !important;
-        flex: 0 0 100% !important;
-        max-width: 100% !important;
-    }
-
-    .card {
-        margin-bottom: 0.75rem !important;
-        border-radius: 0.5rem !important;
-        overflow: hidden;
-    }
-
-    .card-body {
-        padding: 0.875rem !important;
-    }
-
-    .h5 {
-        font-size: 1rem !important;
-        line-height: 1.3 !important;
-        word-break: break-word !important;
-        overflow-wrap: break-word !important;
-    }
-
-    .text-xs {
-        font-size: 0.7rem !important;
-        line-height: 1.2 !important;
-    }
-
-    .fa-2x {
-        font-size: 1.5rem !important;
-    }
-
-    /* Fix card layout on mobile */
-    .card-body .row {
-        margin: 0 !important;
-    }
-
-    .card-body .col {
-        padding: 0.25rem !important;
-    }
-
-    .card-body .col-auto {
-        flex: 0 0 auto !important;
-        max-width: 100% !important;
-    }
-
-    .card-body .col.mr-2 {
-        flex: 1 !important;
-        min-width: 0 !important;
-    }
-
-    /* Mobile charts */
-    .chart-container {
-        margin: 0.75rem 0 !important;
-        padding: 0.75rem !important;
-    }
-
-    .chart-container canvas {
-        max-height: 250px !important;
-    }
-
-    /* Mobile tables */
-    .table-responsive {
-        font-size: 0.8125rem !important;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        margin: 0 -0.75rem 0.75rem -0.75rem;
-        padding: 0 0.75rem;
-    }
-
-    .table th,
-    .table td {
-        padding: 0.375rem !important;
-        white-space: nowrap;
-    }
-
-    /* Mobile stats grid */
-    .stats-grid {
-        grid-template-columns: 1fr !important;
-        gap: 0.5rem !important;
-    }
-}
-
-@media (max-width: 640px) {
-    .dashboard-stats-grid {
+    .charts-grid {
         grid-template-columns: 1fr;
-        gap: 0.5rem;
+        gap: 0.75rem;
     }
 
-    .container-fluid {
-        padding: 0 0.5rem !important;
+    .chart-card {
+        padding: 1.25rem;
     }
 
-    .row {
-        margin: 0 -0.25rem !important;
+    .chart-card-body {
+        min-height: 250px;
     }
 
-    .col-xl-3,
-    .col-md-6 {
-        padding: 0.25rem !important;
+    .chart-card-body canvas {
+        max-height: 250px;
     }
 
-    .card-body {
-        padding: 0.75rem !important;
-    }
-
-    .h5 {
-        font-size: 0.9375rem !important;
-        line-height: 1.2 !important;
-    }
-
-    .text-xs {
-        font-size: 0.65rem !important;
-    }
-
-    .fa-2x {
-        font-size: 1.25rem !important;
-    }
-
-    .chart-container canvas {
-        max-height: 200px !important;
-    }
-
-    .table-responsive {
-        font-size: 0.75rem !important;
-        margin: 0 -0.5rem 0.5rem -0.5rem;
-        padding: 0 0.5rem;
-    }
-
-    .table {
-        min-width: 600px;
-    }
-
-    .table th,
-    .table td {
-        padding: 0.25rem !important;
-    }
-
-    /* Stats cards on mobile */
-    .stats-grid {
-        grid-template-columns: 1fr !important;
-        gap: 0.375rem !important;
-    }
-
-    .stats-card {
-        padding: 0.75rem !important;
-    }
-
-    .stats-number {
-        font-size: 1.25rem !important;
-        word-break: break-word !important;
-    }
-
-    .stats-icon {
-        font-size: 1.25rem !important;
-    }
-
-    /* Recent clients table on mobile */
-    .table-sm {
-        font-size: 0.7rem !important;
-    }
-
-    .badge {
-        font-size: 0.65rem !important;
-        padding: 0.2rem 0.4rem !important;
-    }
-
-    /* Fix card icon column on small screens */
-    .card-body .col-auto {
-        flex: 0 0 40px !important;
-        max-width: 40px !important;
-    }
-
-    .card-body .col.mr-2 {
-        margin-right: 0.5rem !important;
-    }
-}
-
-/* Extra small screens */
-@media (max-width: 375px) {
-    .dashboard-stats-grid {
+    .quick-actions {
         grid-template-columns: 1fr;
-        gap: 0.375rem;
     }
 
-    .h5 {
-        font-size: 0.875rem !important;
+    .chart-card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
     }
 
-    .text-xs {
-        font-size: 0.6rem !important;
-    }
-
-    .fa-2x {
-        font-size: 1.125rem !important;
-    }
-
-    .card-body {
-        padding: 0.5rem !important;
-    }
-
-    .card-body .col-auto {
-        flex: 0 0 35px !important;
-        max-width: 35px !important;
-    }
-
-    /* Report cards section on mobile */
-    .card-header {
-        flex-direction: column !important;
-        align-items: flex-start !important;
-        gap: 0.5rem !important;
-    }
-
-    .card-header .btn {
-        width: 100% !important;
-    }
-
-    .card-body .col-md-3 {
-        margin-bottom: 1rem !important;
-    }
-
-    .card-body .col-md-6 {
-        margin-bottom: 0.5rem !important;
+    .chart-card-actions {
+        width: 100%;
+        justify-content: flex-start;
     }
 }
 
-/* Mobile responsive for report cards */
-@media (max-width: 768px) {
-    .card-header {
-        flex-direction: column !important;
-        align-items: flex-start !important;
-        gap: 0.75rem !important;
+@media (max-width: 480px) {
+    .dashboard-container {
+        padding: 0.5rem;
     }
 
-    .card-header .btn {
-        width: 100% !important;
+    .dashboard-header h1 {
+        font-size: 1.25rem;
     }
 
-    .card-body .col-md-3 {
-        margin-bottom: 1rem !important;
+    .dashboard-header p {
+        font-size: 0.75rem;
     }
 
-    .card-body .col-md-6 {
-        margin-bottom: 0.75rem !important;
+    .stat-card {
+        padding: 1rem;
+    }
+
+    .stat-card-value {
+        font-size: 1.5rem;
+    }
+
+    .stat-card-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1.25rem;
+    }
+
+    .chart-card {
+        padding: 1rem;
+    }
+
+    .chart-card-header {
+        padding-bottom: 0.75rem;
+    }
+
+    .chart-card-title {
+        font-size: 1rem;
+    }
+
+    .recent-activity-item {
+        padding: 0.5rem;
+    }
+
+    .recent-activity-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 0.75rem;
     }
 }
 
-/* Touch optimizations */
-@media (hover: none) and (pointer: coarse) {
-    .card {
-        cursor: pointer;
-    }
+/* Loading Skeleton */
+.skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+    border-radius: var(--radius-sm);
+}
 
-    .btn {
-        min-height: 44px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
+@keyframes skeleton-loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-light);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: var(--radius-sm);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
 }
 </style>
 @endpush
 
 @section('content')
-<div class="container-fluid">
+<div class="dashboard-container">
 
     @if(isset($selectedAcademicYear) && $selectedAcademicYear)
     @include('partials.academic-year-banner')
     @endif
 
-    <!-- Summary Cards -->
-    <div class="dashboard-stats-grid">
-        <div class="dashboard-stat-card">
-            <a href="{{ route('admin.report') }}" class="text-decoration-none">
-                <div class="card border-left-primary shadow h-100 py-2 card-hover">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Revenue</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalRevenue) }} Rwf</div>
-                            </div>
-                            <div class="col-auto">
-                                <i class="fas fa-money-bill-wave fa-2x text-primary"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </a>
-        </div>
-
-        <div class="dashboard-stat-card">
-            <a href="{{ route('admin.expenses.export') }}" class="text-decoration-none">
-                <div class="card border-left-danger shadow h-100 py-2 card-hover">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Total Expenses</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalExpenses) }} Rwf</div>
-                            </div>
-                            <div class="col-auto">
-                                <i class="fas fa-receipt fa-2x text-danger"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </a>
-        </div>
-
-        <div class="dashboard-stat-card">
-            <a href="{{ route('admin.report') }}" class="text-decoration-none">
-                <div class="card border-left-success shadow h-100 py-2 card-hover">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Net Profit</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($netProfit) }} Rwf</div>
-                            </div>
-                            <div class="col-auto">
-                                <i class="fas fa-chart-line fa-2x text-success"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </a>
-        </div>
-
-        <div class="dashboard-stat-card">
-            <a href="{{ route('admin.report') }}" class="text-decoration-none">
-                <div class="card border-left-info shadow h-100 py-2 card-hover">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Profit Margin</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $profitMargin }}%</div>
-                            </div>
-                            <div class="col-auto">
-                                <i class="fas fa-percentage fa-2x text-info"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </a>
-        </div>
+    <!-- Dashboard Header -->
+    <div class="dashboard-header">
+        <h1>Analytics Dashboard</h1>
+        <p>Overview of your institution's performance metrics and key indicators</p>
     </div>
 
-    <!-- Revenue Source Cards -->
-    <div class="dashboard-stats-grid">
-        <div class="dashboard-stat-card">
-            <a href="{{ route('admin.report') }}" class="text-decoration-none">
-                <div class="card border-left-warning shadow h-100 py-2 card-hover">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Token Purchase Revenue</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($tokenRevenue ?? 0) }} Rwf</div>
-                                <div class="text-xs text-muted">This month: {{ number_format($monthlyTokenRevenue ?? 0) }} Rwf</div>
-                            </div>
-                            <div class="col-auto">
-                                <i class="fas fa-coins fa-2x text-warning"></i>
-                            </div>
-                        </div>
-                    </div>
+    <!-- Financial Stats -->
+    <div class="stats-grid">
+        <div class="stat-card primary">
+            <div class="stat-card-header">
+                <div class="stat-card-icon">
+                    <i class="fas fa-chart-line"></i>
                 </div>
-            </a>
-        </div>
-
-        <div class="dashboard-stat-card">
-            <a href="{{ route('admin.report') }}" class="text-decoration-none">
-                <div class="card border-left-purple shadow h-100 py-2 card-hover">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="text-xs font-weight-bold text-purple text-uppercase mb-1">Live Class Revenue</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($liveClassRevenue ?? 0) }} Rwf</div>
-                                <div class="text-xs text-muted">This month: {{ number_format($monthlyLiveClassRevenue ?? 0) }} Rwf</div>
-                            </div>
-                            <div class="col-auto">
-                                <i class="fas fa-video fa-2x text-purple"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </a>
-        </div>
-
-        <div class="dashboard-stat-card">
-            <a href="{{ route('admin.report') }}" class="text-decoration-none">
-                <div class="card border-left-teal shadow h-100 py-2 card-hover">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="text-xs font-weight-bold text-teal text-uppercase mb-1">Resource Upload Revenue</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($resourceRevenue ?? 0) }} Rwf</div>
-                                <div class="text-xs text-muted">This month: {{ number_format($monthlyResourceRevenue ?? 0) }} Rwf</div>
-                            </div>
-                            <div class="col-auto">
-                                <i class="fas fa-file-upload fa-2x text-teal"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </a>
-        </div>
-
-        <div class="dashboard-stat-card">
-            <a href="{{ route('admin.report') }}" class="text-decoration-none">
-                <div class="card border-left-info shadow h-100 py-2 card-hover">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Subscription Revenue</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($subscriptionRevenue ?? 0) }} Rwf</div>
-                                <div class="text-xs text-muted">This month: {{ number_format($monthlySubscriptionRevenue ?? 0) }} Rwf</div>
-                            </div>
-                            <div class="col-auto">
-                                <i class="fas fa-crown fa-2x text-info"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </a>
-        </div>
-    </div>
-
-    <!-- Additional Revenue Cards -->
-    <div class="dashboard-stats-grid">
-        <div class="dashboard-stat-card">
-            <a href="{{ route('admin.report') }}" class="text-decoration-none">
-                <div class="card border-left-success shadow h-100 py-2 card-hover">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Exam Purchase Revenue</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($examRevenue ?? 0) }} Rwf</div>
-                                <div class="text-xs text-muted">From public exam sales</div>
-                            </div>
-                            <div class="col-auto">
-                                <i class="fas fa-graduation-cap fa-2x text-success"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </a>
-        </div>
-
-        <div class="dashboard-stat-card">
-            <a href="{{ route('admin.report') }}" class="text-decoration-none">
-                <div class="card border-left-primary shadow h-100 py-2 card-hover">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Registration Revenue</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($registrationRevenue ?? 0) }} Rwf</div>
-                                <div class="text-xs text-muted">Student registration fees</div>
-                            </div>
-                            <div class="col-auto">
-                                <i class="fas fa-user-plus fa-2x text-primary"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </a>
-        </div>
-
-        <div class="dashboard-stat-card">
-            <a href="{{ route('admin.clients.index') }}" class="text-decoration-none">
-                <div class="card border-left-warning shadow h-100 py-2 card-hover">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Client Revenue</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalClientRevenue ?? 0) }} Rwf</div>
-                                <div class="text-xs text-muted">From client token purchases</div>
-                            </div>
-                            <div class="col-auto">
-                                <i class="fas fa-handshake fa-2x text-warning"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </a>
-        </div>
-
-        <div class="dashboard-stat-card">
-            <a href="{{ route('admin.expenses.export') }}" class="text-decoration-none">
-                <div class="card border-left-danger shadow h-100 py-2 card-hover">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Total Expenses</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalExpenses ?? 0) }} Rwf</div>
-                                <div class="text-xs text-muted">Operational expenses</div>
-                            </div>
-                            <div class="col-auto">
-                                <i class="fas fa-receipt fa-2x text-danger"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </a>
-        </div>
-    </div>
-
-    <!-- Client Statistics Cards -->
-    <div class="dashboard-stats-grid">
-        <div class="dashboard-stat-card">
-            <a href="{{ route('admin.clients.index') }}" class="text-decoration-none">
-                <div class="card border-left-warning shadow h-100 py-2 card-hover">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Total Clients</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalClients ?? 0) }}</div>
-                                <div class="text-xs text-muted">{{ number_format($activeClients ?? 0) }} active, {{ number_format($inactiveClients ?? 0) }} inactive</div>
-                            </div>
-                            <div class="col-auto">
-                                <i class="fas fa-users fa-2x text-warning"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </a>
-        </div>
-
-        <div class="dashboard-stat-card">
-            <a href="{{ route('admin.clients.index') }}" class="text-decoration-none">
-                <div class="card border-left-success shadow h-100 py-2 card-hover">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Client Tokens Sold</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalClientTokens ?? 0) }}</div>
-                                <div class="text-xs text-muted">Total tokens purchased</div>
-                            </div>
-                            <div class="col-auto">
-                                <i class="fas fa-coins fa-2x text-success"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </a>
-        </div>
-
-        <div class="dashboard-stat-card">
-            <a href="{{ route('admin.clients.index') }}" class="text-decoration-none">
-                <div class="card border-left-primary shadow h-100 py-2 card-hover">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Client Revenue</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalClientRevenue ?? 0) }} Rwf</div>
-                                <div class="text-xs text-muted">From token purchases</div>
-                            </div>
-                            <div class="col-auto">
-                                <i class="fas fa-chart-line fa-2x text-primary"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </a>
-        </div>
-
-        <div class="dashboard-stat-card">
-            <a href="{{ route('admin.clients.index') }}" class="text-decoration-none">
-                <div class="card border-left-info shadow h-100 py-2 card-hover">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Active Subscriptions</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ \App\Models\ClientSubscription::where('is_active', true)->count() }}</div>
-                                <div class="text-xs text-muted">Currently active</div>
-                            </div>
-                            <div class="col-auto">
-                                <i class="fas fa-crown fa-2x text-info"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </a>
-        </div>
-    </div>
-
-    <!-- Report Cards Quick Access -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card border-left-primary shadow h-100 py-3">
-                <div class="card-header py-3 d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
-                    <h6 class="m-0 font-weight-bold text-primary">Report Cards Management</h6>
-                    <a href="{{ route('admin.report-cards.index') }}" class="btn btn-primary btn-sm btn-block btn-md-auto">
-                        <i class="fas fa-arrow-right"></i> View All Report Cards
-                    </a>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-3 col-6 mb-3 mb-md-0">
-                            <div class="text-center">
-                                <h4 class="text-primary">{{ App\Models\ReportCard::count() }}</h4>
-                                <p class="text-muted">Total Report Cards</p>
-                            </div>
-                        </div>
-                        <div class="col-md-3 col-6 mb-3 mb-md-0">
-                            <div class="text-center">
-                                <h4 class="text-success">{{ App\Models\ReportCard::where('status', 'approved')->count() }}</h4>
-                                <p class="text-muted">Approved</p>
-                            </div>
-                        </div>
-                        <div class="col-md-3 col-6 mb-3 mb-md-0">
-                            <div class="text-center">
-                                <h4 class="text-warning">{{ App\Models\ReportCard::where('status', 'pending')->count() }}</h4>
-                                <p class="text-muted">Pending</p>
-                            </div>
-                        </div>
-                        <div class="col-md-3 col-6">
-                            <div class="text-center">
-                                <h4 class="text-info">{{ App\Models\SchoolInformation::count() }}</h4>
-                                <p class="text-muted">School Configured</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="mt-3">
-                        <div class="row">
-                            <div class="col-md-6 col-12 mb-2 mb-md-0">
-                                <a href="{{ route('admin.report-cards.create') }}" class="btn btn-success btn-block">
-                                    <i class="fas fa-plus"></i> Generate New Report Card
-                                </a>
-                            </div>
-                            <div class="col-md-6 col-12">
-                                <a href="{{ route('admin.school-information.edit') }}" class="btn btn-info btn-block">
-                                    <i class="fas fa-cog"></i> Configure School Info
-                                </a>
-                            </div>
-                        </div>
-                    </div>
+                <div class="stat-card-trend up">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>+12.5%</span>
                 </div>
             </div>
+            <div class="stat-card-label">Total Revenue</div>
+            <div class="stat-card-value">{{ number_format($totalRevenue) }}</div>
+            <div class="stat-card-subtext">RWF</div>
         </div>
-    </div>
 
-    <!-- Blog Management Section -->
-    <div class="row mb-4">
-        <div class="col-xl-12 col-lg-12 mb-4">
-            <div class="card shadow h-100">
-                <div class="card-header py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="m-0 font-weight-bold text-info">Blog Management</h6>
-                    <div class="btn-group">
-                        <a href="{{ route('admin.blogs.index') }}" class="btn btn-primary btn-sm">
-                            <i class="fas fa-list me-2"></i>All Blogs
-                        </a>
-                        <a href="{{ route('admin.blogs.create') }}" class="btn btn-success btn-sm">
-                            <i class="fas fa-plus me-2"></i>Create New Blog
-                        </a>
-                    </div>
+        <div class="stat-card danger">
+            <div class="stat-card-header">
+                <div class="stat-card-icon">
+                    <i class="fas fa-receipt"></i>
                 </div>
-                <div class="card-body">
-                    <div class="row text-center">
-                        <div class="col-md-3">
-                            <div class="text-center">
-                                <h3 class="text-primary">{{ \App\Models\Blog::count() }}</h3>
-                                <p class="text-muted">Total Blogs</p>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="text-center">
-                                <h3 class="text-success">{{ \App\Models\Blog::where('status', 'published')->count() }}</h3>
-                                <p class="text-muted">Published</p>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="text-center">
-                                <h3 class="text-warning">{{ \App\Models\Blog::where('status', 'draft')->count() }}</h3>
-                                <p class="text-muted">Drafts</p>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="text-center">
-                                <h3 class="text-info">{{ \App\Models\Blog::where('status', 'archived')->count() }}</h3>
-                                <p class="text-muted">Archived</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="mt-3 text-center">
-                        <a href="{{ route('admin.blogs.index') }}" class="btn btn-primary">
-                            <i class="fas fa-cog me-2"></i>Manage All Blogs
-                        </a>
-                    </div>
+                <div class="stat-card-trend down">
+                    <i class="fas fa-arrow-down"></i>
+                    <span>-5.2%</span>
                 </div>
             </div>
+            <div class="stat-card-label">Total Expenses</div>
+            <div class="stat-card-value">{{ number_format($totalExpenses) }}</div>
+            <div class="stat-card-subtext">RWF</div>
         </div>
-    </div>
 
-    <!-- Client Management Section -->
-    <div class="row mb-4">
-        <div class="col-xl-12 col-lg-12 mb-4">
-            <div class="card shadow h-100">
-                <div class="card-header py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="m-0 font-weight-bold text-warning">Client Management</h6>
-                    <div class="btn-group">
-                        <a href="{{ route('admin.clients.index') }}" class="btn btn-primary btn-sm">
-                            <i class="fas fa-list me-2"></i>All Clients
-                        </a>
-                        <a href="{{ route('admin.clients.index') }}?status=active" class="btn btn-success btn-sm">
-                            <i class="fas fa-user-check me-2"></i>Active Clients
-                        </a>
-                    </div>
+        <div class="stat-card success">
+            <div class="stat-card-header">
+                <div class="stat-card-icon">
+                    <i class="fas fa-trophy"></i>
                 </div>
-                <div class="card-body">
-                    <div class="row text-center">
-                        <div class="col-md-2">
-                            <div class="text-center">
-                                <h3 class="text-warning">{{ $totalClients ?? 0 }}</h3>
-                                <p class="text-muted">Total Clients</p>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="text-center">
-                                <h3 class="text-success">{{ $activeClients ?? 0 }}</h3>
-                                <p class="text-muted">Active</p>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="text-center">
-                                <h3 class="text-danger">{{ $inactiveClients ?? 0 }}</h3>
-                                <p class="text-muted">Inactive</p>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="text-center">
-                                <h3 class="text-info">{{ number_format($totalClientTokens ?? 0) }}</h3>
-                                <p class="text-muted">Tokens Sold</p>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="text-center">
-                                <h3 class="text-primary">{{ number_format($totalClientRevenue ?? 0) }} Rwf</h3>
-                                <p class="text-muted">Revenue</p>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="text-center">
-                                <h3 class="text-secondary">{{ \App\Models\ClientSubscription::where('is_active', true)->count() }}</h3>
-                                <p class="text-muted">Active Subscriptions</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    @if(isset($recentClients) && $recentClients->count() > 0)
-                    <div class="mt-4">
-                        <h6 class="text-muted mb-3">Recent Clients</h6>
-                        <div class="table-responsive">
-                            <table class="table table-sm table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Name</th>
-                                        <th>Email</th>
-                                        <th>Tokens</th>
-                                        <th>Subscription</th>
-                                        <th>Status</th>
-                                        <th>Joined</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($recentClients as $client)
-                                    <tr>
-                                        <td>{{ $client->name }}</td>
-                                        <td>{{ $client->email }}</td>
-                                        <td><span class="badge bg-primary">{{ $client->getCurrentTokens() }}</span></td>
-                                        <td>
-                                            @if($client->hasActiveSubscription())
-                                                <span class="badge bg-success">{{ $client->activeSubscription->subscription->name }}</span>
-                                            @else
-                                                <span class="badge bg-secondary">None</span>
-                                            @endif
-                                        </td>
-                                        <td>
-                                            @if($client->is_active)
-                                                <span class="badge bg-success">Active</span>
-                                            @else
-                                                <span class="badge bg-danger">Inactive</span>
-                                            @endif
-                                        </td>
-                                        <td>{{ $client->created_at->format('M j, Y') }}</td>
-                                    </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    @endif
-                    
-                    <div class="mt-3 text-center">
-                        <a href="{{ route('admin.clients.index') }}" class="btn btn-warning">
-                            <i class="fas fa-users me-2"></i>Manage All Clients
-                        </a>
-                    </div>
+                <div class="stat-card-trend up">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>+8.3%</span>
                 </div>
             </div>
+            <div class="stat-card-label">Net Profit</div>
+            <div class="stat-card-value">{{ number_format($netProfit) }}</div>
+            <div class="stat-card-subtext">RWF</div>
         </div>
-    </div>
 
-    <!-- Resources Management Section -->
-    <div class="row mb-4">
-        <div class="col-xl-12 col-lg-12 mb-4">
-            <div class="card shadow h-100">
-                <div class="card-header py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="m-0 font-weight-bold text-info">Resources Management</h6>
-                    <a href="{{ route('admin.resources.index') }}" class="btn btn-primary btn-sm">
-                        <i class="fas fa-arrow-right"></i> Manage All Resources
-                    </a>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-2">
-                            <div class="text-center">
-                                <h4 class="text-info">{{ App\Models\Resource::count() }}</h4>
-                                <p class="text-muted">Total Resources</p>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="text-center">
-                                <h4 class="text-success">{{ App\Models\Resource::where('is_public', true)->count() }}</h4>
-                                <p class="text-muted">Public</p>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="text-center">
-                                <h4 class="text-warning">{{ App\Models\Resource::where('is_free', true)->count() }}</h4>
-                                <p class="text-muted">Free</p>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="text-center">
-                                <h4 class="text-danger">{{ App\Models\Resource::where('is_free', false)->where('price', '>', 0)->count() }}</h4>
-                                <p class="text-muted">Paid</p>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="text-center">
-                                <h4 class="text-primary">{{ App\Models\Resource::whereNotNull('document_blob')->count() }}</h4>
-                                <p class="text-muted">Documents</p>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="text-center">
-                                <h4 class="text-secondary">{{ App\Models\Resource::whereNotNull('video_blob')->count() }}</h4>
-                                <p class="text-muted">Videos</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="mt-3">
-                        <div class="row">
-                            <div class="col-md-4">
-                                <a href="{{ route('admin.resources.create') }}" class="btn btn-success btn-block">
-                                    <i class="fas fa-plus"></i> Upload New Resource
-                                </a>
-                            </div>
-                            <div class="col-md-4">
-                                <a href="{{ route('admin.resources.index') }}?filter=public" class="btn btn-info btn-block">
-                                    <i class="fas fa-eye"></i> View Public Resources
-                                </a>
-                            </div>
-                            <div class="col-md-4">
-                                <a href="{{ route('public.resources.index') }}" target="_blank" class="btn btn-warning btn-block">
-                                    <i class="fas fa-external-link-alt"></i> Public Resource Page
-                                </a>
-                            </div>
-                        </div>
-                    </div>
+        <div class="stat-card info">
+            <div class="stat-card-header">
+                <div class="stat-card-icon">
+                    <i class="fas fa-percentage"></i>
                 </div>
             </div>
+            <div class="stat-card-label">Profit Margin</div>
+            <div class="stat-card-value">{{ $profitMargin }}%</div>
+            <div class="stat-card-subtext">Of total revenue</div>
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-xl-8 col-lg-7 mb-4">
-            <div class="card shadow h-100">
-                <div class="card-header py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="m-0 font-weight-bold text-danger">Expenses by Branch</h6>
-                    <i class="fas fa-chart-bar"></i>
+    <!-- Revenue Sources -->
+    <div class="stats-grid">
+        <div class="stat-card warning">
+            <div class="stat-card-header">
+                <div class="stat-card-icon">
+                    <i class="fas fa-coins"></i>
                 </div>
-                <div class="card-body">
+            </div>
+            <div class="stat-card-label">Token Revenue</div>
+            <div class="stat-card-value">{{ number_format($tokenRevenue ?? 0) }}</div>
+            <div class="stat-card-subtext">This month: {{ number_format($monthlyTokenRevenue ?? 0) }} RWF</div>
+        </div>
+
+        <div class="stat-card purple">
+            <div class="stat-card-header">
+                <div class="stat-card-icon">
+                    <i class="fas fa-video"></i>
+                </div>
+            </div>
+            <div class="stat-card-label">Live Class Revenue</div>
+            <div class="stat-card-value">{{ number_format($liveClassRevenue ?? 0) }}</div>
+            <div class="stat-card-subtext">This month: {{ number_format($monthlyLiveClassRevenue ?? 0) }} RWF</div>
+        </div>
+
+        <div class="stat-card teal">
+            <div class="stat-card-header">
+                <div class="stat-card-icon">
+                    <i class="fas fa-file-upload"></i>
+                </div>
+            </div>
+            <div class="stat-card-label">Resource Revenue</div>
+            <div class="stat-card-value">{{ number_format($resourceRevenue ?? 0) }}</div>
+            <div class="stat-card-subtext">This month: {{ number_format($monthlyResourceRevenue ?? 0) }} RWF</div>
+        </div>
+
+        <div class="stat-card pink">
+            <div class="stat-card-header">
+                <div class="stat-card-icon">
+                    <i class="fas fa-crown"></i>
+                </div>
+            </div>
+            <div class="stat-card-label">Subscription Revenue</div>
+            <div class="stat-card-value">{{ number_format($subscriptionRevenue ?? 0) }}</div>
+            <div class="stat-card-subtext">This month: {{ number_format($monthlySubscriptionRevenue ?? 0) }} RWF</div>
+        </div>
+    </div>
+
+    <!-- Additional Revenue -->
+    <div class="stats-grid">
+        <div class="stat-card success">
+            <div class="stat-card-header">
+                <div class="stat-card-icon">
+                    <i class="fas fa-graduation-cap"></i>
+                </div>
+            </div>
+            <div class="stat-card-label">Exam Revenue</div>
+            <div class="stat-card-value">{{ number_format($examRevenue ?? 0) }}</div>
+            <div class="stat-card-subtext">From public exam sales</div>
+        </div>
+
+        <div class="stat-card primary">
+            <div class="stat-card-header">
+                <div class="stat-card-icon">
+                    <i class="fas fa-user-plus"></i>
+                </div>
+            </div>
+            <div class="stat-card-label">Registration Revenue</div>
+            <div class="stat-card-value">{{ number_format($registrationRevenue ?? 0) }}</div>
+            <div class="stat-card-subtext">Student registration fees</div>
+        </div>
+
+        <div class="stat-card orange">
+            <div class="stat-card-header">
+                <div class="stat-card-icon">
+                    <i class="fas fa-handshake"></i>
+                </div>
+            </div>
+            <div class="stat-card-label">Client Revenue</div>
+            <div class="stat-card-value">{{ number_format($totalClientRevenue ?? 0) }}</div>
+            <div class="stat-card-subtext">From client token purchases</div>
+        </div>
+
+        <div class="stat-card danger">
+            <div class="stat-card-header">
+                <div class="stat-card-icon">
+                    <i class="fas fa-receipt"></i>
+                </div>
+            </div>
+            <div class="stat-card-label">Total Expenses</div>
+            <div class="stat-card-value">{{ number_format($totalExpenses ?? 0) }}</div>
+            <div class="stat-card-subtext">Operational expenses</div>
+        </div>
+    </div>
+
+    <!-- Client Stats -->
+    <div class="stats-grid">
+        <div class="stat-card warning">
+            <div class="stat-card-header">
+                <div class="stat-card-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+            </div>
+            <div class="stat-card-label">Total Clients</div>
+            <div class="stat-card-value">{{ number_format($totalClients ?? 0) }}</div>
+            <div class="stat-card-subtext">{{ number_format($activeClients ?? 0) }} active, {{ number_format($inactiveClients ?? 0) }} inactive</div>
+        </div>
+
+        <div class="stat-card success">
+            <div class="stat-card-header">
+                <div class="stat-card-icon">
+                    <i class="fas fa-coins"></i>
+                </div>
+            </div>
+            <div class="stat-card-label">Client Tokens Sold</div>
+            <div class="stat-card-value">{{ number_format($totalClientTokens ?? 0) }}</div>
+            <div class="stat-card-subtext">Total tokens purchased</div>
+        </div>
+
+        <div class="stat-card primary">
+            <div class="stat-card-header">
+                <div class="stat-card-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+            </div>
+            <div class="stat-card-label">Client Revenue</div>
+            <div class="stat-card-value">{{ number_format($totalClientRevenue ?? 0) }}</div>
+            <div class="stat-card-subtext">From token purchases</div>
+        </div>
+
+        <div class="stat-card info">
+            <div class="stat-card-header">
+                <div class="stat-card-icon">
+                    <i class="fas fa-crown"></i>
+                </div>
+            </div>
+            <div class="stat-card-label">Active Subscriptions</div>
+            <div class="stat-card-value">{{ \App\Models\ClientSubscription::where('is_active', true)->count() }}</div>
+            <div class="stat-card-subtext">Currently active</div>
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+        <a href="{{ route('admin.report') }}" class="quick-action-card">
+            <div class="quick-action-icon">
+                <i class="fas fa-chart-bar"></i>
+            </div>
+            <div class="quick-action-content">
+                <h4>View Reports</h4>
+                <p>Detailed financial reports</p>
+            </div>
+        </a>
+        <a href="{{ route('admin.students.index') }}" class="quick-action-card">
+            <div class="quick-action-icon">
+                <i class="fas fa-user-graduate"></i>
+            </div>
+            <div class="quick-action-content">
+                <h4>Manage Students</h4>
+                <p>Student enrollment & records</p>
+            </div>
+        </a>
+        <a href="{{ route('admin.expenses.export') }}" class="quick-action-card">
+            <div class="quick-action-icon">
+                <i class="fas fa-file-invoice-dollar"></i>
+            </div>
+            <div class="quick-action-content">
+                <h4>Expenses</h4>
+                <p>Track operational costs</p>
+            </div>
+        </a>
+        <a href="{{ route('admin.clients.index') }}" class="quick-action-card">
+            <div class="quick-action-icon">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="quick-action-content">
+                <h4>Clients</h4>
+                <p>Client management</p>
+            </div>
+        </a>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="charts-section">
+        <div class="charts-grid">
+            <!-- Revenue vs Expenses -->
+            <div class="chart-card">
+                <div class="chart-card-header">
+                    <h3 class="chart-card-title">
+                        <i class="fas fa-balance-scale"></i>
+                        Revenue vs Expenses
+                    </h3>
+                    <div class="chart-card-actions">
+                        <button class="btn btn-outline btn-sm">Export</button>
+                    </div>
+                </div>
+                <div class="chart-card-body">
+                    <canvas id="revenueExpenseChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Students by Branch -->
+            <div class="chart-card">
+                <div class="chart-card-header">
+                    <h3 class="chart-card-title">
+                        <i class="fas fa-building"></i>
+                        Students by Branch
+                    </h3>
+                    <div class="chart-card-actions">
+                        <button class="btn btn-outline btn-sm">Details</button>
+                    </div>
+                </div>
+                <div class="chart-card-body">
+                    <canvas id="studentsByBranchChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Fee Payment Status -->
+            <div class="chart-card">
+                <div class="chart-card-header">
+                    <h3 class="chart-card-title">
+                        <i class="fas fa-credit-card"></i>
+                        Fee Payment Status
+                    </h3>
+                    <div class="chart-card-actions">
+                        <button class="btn btn-outline btn-sm">View All</button>
+                    </div>
+                </div>
+                <div class="chart-card-body">
+                    <canvas id="feesBarChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Students by Course in Branch -->
+            <div class="chart-card full-width">
+                <div class="chart-card-header">
+                    <h3 class="chart-card-title">
+                        <i class="fas fa-book"></i>
+                        Students by Course in Branch
+                    </h3>
+                    <div class="chart-card-actions">
+                        <button class="btn btn-outline btn-sm">Filter</button>
+                        <button class="btn btn-outline btn-sm">Export</button>
+                    </div>
+                </div>
+                <div class="chart-card-body">
+                    <canvas id="studentsByCourseInBranchChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Expenses by Branch -->
+            <div class="chart-card">
+                <div class="chart-card-header">
+                    <h3 class="chart-card-title">
+                        <i class="fas fa-chart-bar"></i>
+                        Expenses by Branch
+                    </h3>
+                    <div class="chart-card-actions">
+                        <button class="btn btn-outline btn-sm">Details</button>
+                    </div>
+                </div>
+                <div class="chart-card-body">
                     <canvas id="expensesByBranchChart"></canvas>
                 </div>
             </div>
-        </div>
 
-        <div class="col-xl-4 col-lg-5 mb-4">
-            <div class="card shadow h-100">
-                <div class="card-header py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="m-0 font-weight-bold text-info">Expenses by Type</h6>
-                    <i class="fas fa-tags"></i>
-                </div>
-                <div class="card-body">
-                    <canvas id="expensesByTypeChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Row 3: Branch Financial Health -->
-    <div class="row mb-4">
-        <div class="col-xl-12 mb-4">
-            <div class="card shadow h-100">
-                <div class="card-header py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="m-0 font-weight-bold text-success">Branch Financial Health (Revenue vs Expenses)</h6>
-                    <i class="fas fa-hospital"></i>
-                </div>
-                <div class="card-body">
-                    <div class="alert alert-info mb-3">
-                        <i class="fas fa-info-circle"></i> <strong>What this shows:</strong> Revenue (money from students) vs Expenses (money spent by staff). Helps identify profitable branches and those needing financial attention.
+            <!-- Members Distribution -->
+            <div class="chart-card">
+                <div class="chart-card-header">
+                    <h3 class="chart-card-title">
+                        <i class="fas fa-users"></i>
+                        Members Distribution
+                    </h3>
+                    <div class="chart-card-actions">
+                        <button class="btn btn-outline btn-sm">View</button>
                     </div>
-                    <canvas id="branchFinancialHealthChart"></canvas>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Row 4: Students by Course and Gender -->
-    <div class="row mb-4">
-        <div class="col-xl-12 mb-4">
-            <div class="card shadow h-100">
-                <div class="card-header py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="m-0 font-weight-bold text-purple">Students by Course and Gender</h6>
-                    <i class="fas fa-user-graduate"></i>
-                </div>
-                <div class="card-body">
-                    <canvas id="courseGenderChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Row 4: Expense Trends & Tuition -->
-    <div class="row mb-4">
-        <div class="col-xl-6 col-lg-6 mb-4">
-            <div class="card shadow h-100">
-                <div class="card-header py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="m-0 font-weight-bold text-warning">6-Month Expense Trend</h6>
-                    <i class="fas fa-chart-area"></i>
-                </div>
-                <div class="card-body">
-                    <canvas id="expenseTrendChart"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-6 col-lg-6 mb-4">
-            <div class="card shadow h-100">
-                <div class="card-header py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="m-0 font-weight-bold text-info">Tuition Fee by Branch</h6>
-                    <i class="fas fa-graduation-cap"></i>
-                </div>
-                <div class="card-body">
-                    <canvas id="branchTuitionChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Row 5: Recent Students with NESA Status -->
-    <div class="row mb-4">
-        <div class="col-xl-6 mb-4">
-            <div class="card shadow h-100">
-                <div class="card-header py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="m-0 font-weight-bold text-primary">Members Distribution</h6>
-                    <i class="fas fa-users"></i>
-                </div>
-                <div class="card-body">
+                <div class="chart-card-body">
                     <canvas id="membersPieChart"></canvas>
                 </div>
             </div>
         </div>
-        
-        <div class="col-xl-6 mb-4">
-            <div class="card shadow h-100">
-                <div class="card-header py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="m-0 font-weight-bold text-info">Students by Gender</h6>
-                    <i class="fas fa-venus-mars"></i>
+    </div>
+
+    <!-- Report Cards Quick Access -->
+    <div class="stat-card primary">
+        <div class="chart-card-header">
+            <h3 class="chart-card-title">
+                <i class="fas fa-file-alt"></i>
+                Report Cards Management
+            </h3>
+            <a href="{{ route('admin.report-cards.index') }}" class="btn btn-primary btn-sm">
+                <i class="fas fa-arrow-right"></i> View All
+            </a>
+        </div>
+        <div class="stat-card-value" style="font-size: 1.5rem; margin: 1rem 0;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
+                <div>
+                    <div style="font-size: 2rem; font-weight: 700; color: var(--primary);">{{ App\Models\ReportCard::count() }}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Total Report Cards</div>
                 </div>
-                <div class="card-body">
-                    <canvas id="genderPieChart"></canvas>
+                <div>
+                    <div style="font-size: 2rem; font-weight: 700; color: var(--success);">{{ App\Models\ReportCard::where('status', 'approved')->count() }}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Approved</div>
+                </div>
+                <div>
+                    <div style="font-size: 2rem; font-weight: 700; color: var(--warning);">{{ App\Models\ReportCard::where('status', 'pending')->count() }}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Pending</div>
+                </div>
+                <div>
+                    <div style="font-size: 2rem; font-weight: 700; color: var(--info);">{{ App\Models\SchoolInformation::count() }}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">School Configured</div>
+                </div>
+            </div>
+        </div>
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            <a href="{{ route('admin.report-cards.create') }}" class="btn btn-success btn-sm">
+                <i class="fas fa-plus"></i> Generate New
+            </a>
+            <a href="{{ route('admin.school-information.edit') }}" class="btn btn-info btn-sm">
+                <i class="fas fa-cog"></i> Configure School
+            </a>
+        </div>
+    </div>
+
+    <!-- Blog Management -->
+    <div class="stat-card info">
+        <div class="chart-card-header">
+            <h3 class="chart-card-title">
+                <i class="fas fa-blog"></i>
+                Blog Management
+            </h3>
+            <div style="display: flex; gap: 0.5rem;">
+                <a href="{{ route('admin.blogs.index') }}" class="btn btn-outline btn-sm">
+                    <i class="fas fa-list"></i> All Blogs
+                </a>
+                <a href="{{ route('admin.blogs.create') }}" class="btn btn-success btn-sm">
+                    <i class="fas fa-plus"></i> Create New
+                </a>
+            </div>
+        </div>
+        <div class="stat-card-value" style="font-size: 1.5rem; margin: 1rem 0;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
+                <div>
+                    <div style="font-size: 2rem; font-weight: 700; color: var(--primary);">{{ \App\Models\Blog::count() }}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Total Blogs</div>
+                </div>
+                <div>
+                    <div style="font-size: 2rem; font-weight: 700; color: var(--success);">{{ \App\Models\Blog::where('status', 'published')->count() }}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Published</div>
+                </div>
+                <div>
+                    <div style="font-size: 2rem; font-weight: 700; color: var(--warning);">{{ \App\Models\Blog::where('status', 'draft')->count() }}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Drafts</div>
+                </div>
+                <div>
+                    <div style="font-size: 2rem; font-weight: 700; color: var(--secondary);">{{ \App\Models\Blog::where('status', 'archived')->count() }}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Archived</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Row 6: Fee Payments & Revenue vs Expenses -->
-    <div class="row mb-4">
-        <div class="col-xl-6 mb-4">
-            <div class="card shadow h-100">
-                <div class="card-header py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="m-0 font-weight-bold text-warning">Fee Payment Status</h6>
-                    <i class="fas fa-credit-card"></i>
+    <!-- Client Management -->
+    <div class="stat-card warning">
+        <div class="chart-card-header">
+            <h3 class="chart-card-title">
+                <i class="fas fa-users"></i>
+                Client Management
+            </h3>
+            <div style="display: flex; gap: 0.5rem;">
+                <a href="{{ route('admin.clients.index') }}" class="btn btn-outline btn-sm">
+                    <i class="fas fa-list"></i> All Clients
+                </a>
+                <a href="{{ route('admin.clients.index') }}?status=active" class="btn btn-success btn-sm">
+                    <i class="fas fa-user-check"></i> Active
+                </a>
+            </div>
+        </div>
+        <div class="stat-card-value" style="font-size: 1.5rem; margin: 1rem 0;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
+                <div>
+                    <div style="font-size: 2rem; font-weight: 700; color: var(--warning);">{{ $totalClients ?? 0 }}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Total Clients</div>
                 </div>
-                <div class="card-body">
-                    <canvas id="feesBarChart"></canvas>
+                <div>
+                    <div style="font-size: 2rem; font-weight: 700; color: var(--success);">{{ $activeClients ?? 0 }}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Active</div>
+                </div>
+                <div>
+                    <div style="font-size: 2rem; font-weight: 700; color: var(--danger);">{{ $inactiveClients ?? 0 }}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Inactive</div>
+                </div>
+                <div>
+                    <div style="font-size: 2rem; font-weight: 700; color: var(--primary);">{{ number_format($totalClientTokens ?? 0) }}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Tokens Sold</div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <div class="col-xl-6 mb-4">
+</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Helper function to capitalize first letter
+    function ucfirst(str) {
+        if (!str) return str;
+        return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    // Check if Chart.js is loaded
+    if (typeof Chart === 'undefined') {
+        console.error('Chart.js is not loaded!');
+        return;
+    }
+
+    // Chart defaults for professional look
+    Chart.defaults.font.family = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
+    Chart.defaults.color = '#64748b';
+
+    // Color schemes
+    const primaryColors = ['#4f46e5', '#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+
+    // Gradient helper
+    function createGradient(ctx, color1, color2) {
+        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, color1);
+        gradient.addColorStop(1, color2);
+        return gradient;
+    }
+
+    // Revenue vs Expenses Chart
+    const revExpCtx = document.getElementById('revenueExpenseChart');
+    if (revExpCtx) {
+        new Chart(revExpCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Revenue', 'Expenses', 'Profit'],
+                datasets: [{
+                    data: [{{ $totalRevenue }}, {{ $totalExpenses }}, {{ $netProfit }}],
+                    backgroundColor: ['#4f46e5', '#ef4444', '#10b981'],
+                    borderWidth: 0,
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { padding: 20, font: { size: 12 } }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ': ' + context.parsed.toLocaleString() + ' Rwf';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Students by Branch Chart
+    const studentsByBranchCtx = document.getElementById('studentsByBranchChart');
+    if (studentsByBranchCtx) {
+        const studentsByBranchData = {!! json_encode($studentsByBranch) !!};
+        new Chart(studentsByBranchCtx, {
+            type: 'bar',
+            data: {
+                labels: studentsByBranchData.length > 0 ? studentsByBranchData.map(item => item.branch_name) : ['No Data'],
+                datasets: [{
+                    label: 'Total Students',
+                    data: studentsByBranchData.length > 0 ? studentsByBranchData.map(item => item.total) : [0],
+                    backgroundColor: createGradient(studentsByBranchCtx, '#667eea', '#764ba2'),
+                    borderWidth: 0,
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return 'Students: ' + context.parsed.y;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.05)' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    // Fee Payment Status Chart
+    const feesCtx = document.getElementById('feesBarChart');
+    if (feesCtx) {
+        const feeData = {!! json_encode($feePaymentData) !!};
+        const feeLabels = Object.keys(feeData).map(key => key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()));
+        const feeAmounts = Object.values(feeData);
+        const feeColors = ['#4f46e5', '#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+
+        new Chart(feesCtx, {
+            type: 'bar',
+            data: {
+                labels: feeLabels,
+                datasets: [{
+                    label: 'Amount (Rwf)',
+                    data: feeAmounts,
+                    backgroundColor: feeColors,
+                    borderWidth: 0,
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.parsed.y.toLocaleString() + ' Rwf';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.05)' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    // Students by Course in Branch Chart
+    const studentsByCourseInBranchCtx = document.getElementById('studentsByCourseInBranchChart');
+    if (studentsByCourseInBranchCtx) {
+        const studentsByCourseInBranchData = {!! json_encode($studentsByCourseInBranch) !!};
+        const branchGroups = {};
+        const allCourses = new Set();
+
+        if (studentsByCourseInBranchData && studentsByCourseInBranchData.length > 0) {
+            studentsByCourseInBranchData.forEach(item => {
+                const branchName = item.branch_name;
+                const courseName = item.course_name;
+                if (!branchGroups[branchName]) branchGroups[branchName] = {};
+                branchGroups[branchName][courseName] = item.total;
+                allCourses.add(courseName);
+            });
+        }
+
+        const courseLabels = Array.from(allCourses);
+        const branchNames = Object.keys(branchGroups);
+        const colors = ['#4f46e5', '#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+
+        const datasets = branchNames.map((branchName, index) => {
+            const data = courseLabels.map(courseName => branchGroups[branchName][courseName] || 0);
+            return {
+                label: branchName,
+                data: data,
+                backgroundColor: colors[index % colors.length],
+                borderWidth: 0,
+                borderRadius: 8
+            };
+        });
+
+        new Chart(studentsByCourseInBranchCtx, {
+            type: 'bar',
+            data: {
+                labels: courseLabels.length > 0 ? courseLabels : ['No Data'],
+                datasets: datasets.length > 0 ? datasets : [{ label: 'No Data', data: [0], backgroundColor: '#e2e8f0' }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { position: 'top', labels: { padding: 15, font: { size: 12 } } },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': ' + context.parsed.y + ' students';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.05)' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    // Expenses by Branch Chart
+    const expBranchCtx = document.getElementById('expensesByBranchChart');
+    if (expBranchCtx) {
+        const expensesByBranchData = {!! json_encode($expensesByBranch) !!};
+        new Chart(expBranchCtx, {
+            type: 'bar',
+            data: {
+                labels: expensesByBranchData.length > 0 ? expensesByBranchData.map(item => item.branch) : ['No Data'],
+                datasets: [{
+                    label: 'Expenses (Rwf)',
+                    data: expensesByBranchData.length > 0 ? expensesByBranchData.map(item => parseFloat(item.total)) : [0],
+                    backgroundColor: createGradient(expBranchCtx, '#ef4444', '#dc2626'),
+                    borderWidth: 0,
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.parsed.y.toLocaleString() + ' Rwf';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.05)' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    // Members Distribution Chart
+    const membersCtx = document.getElementById('membersPieChart');
+    if (membersCtx) {
+        new Chart(membersCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Students', 'Teachers', 'Staff'],
+                datasets: [{
+                    data: [{{ $totalStudents ?? 0 }}, {{ $totalTeachers ?? 0 }}, {{ $totalStaff ?? 0 }}],
+                    backgroundColor: ['#4f46e5', '#10b981', '#3b82f6'],
+                    borderWidth: 0,
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { position: 'bottom', labels: { padding: 20, font: { size: 12 } } }
+                }
+            }
+        });
+    }
+});
+</script>
+@endsection        <div class="col-xl-6 mb-4">
             <div class="card shadow h-100">
                 <div class="card-header py-3 d-flex justify-content-between align-items-center">
                     <h6 class="m-0 font-weight-bold text-success">Revenue vs Expenses</h6>
