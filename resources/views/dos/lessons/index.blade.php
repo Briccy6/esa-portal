@@ -67,7 +67,85 @@
         margin: 2px;
         font-weight: 500;
     }
-    
+
+    /* Assignment Item */
+    .assignment-item {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 4px;
+    }
+
+    .course-badge {
+        display: inline-block;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .teacher-badge {
+        display: inline-block;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .teacher-badge.tba {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    }
+
+    /* Action Buttons */
+    .action-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+
+    .action-btn {
+        padding: 6px 12px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        border-radius: 6px;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+    }
+
+    .action-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Responsive Styles */
+    @media (max-width: 768px) {
+        .assignment-item {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .action-btn {
+            width: 100%;
+            margin-bottom: 4px;
+        }
+
+        .lessons-table thead th,
+        .lessons-table tbody td {
+            padding: 10px 8px;
+            font-size: 0.85rem;
+        }
+    }
+
     /* Action Buttons */
     .btn-action {
         padding: 8px 10px;
@@ -130,20 +208,20 @@
         color: #ddd;
         margin-bottom: 20px;
     }
-    
+
     /* Modal Styles */
     .modal-header {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
     }
-    .assignment-item {
+    .modal-assignment-item {
         background: #f8f9fa;
         border-radius: 8px;
         padding: 15px;
         margin-bottom: 10px;
         border: 1px solid #e9ecef;
     }
-    .assignment-item:hover {
+    .modal-assignment-item:hover {
         background: #e9ecef;
     }
     .current-assignment {
@@ -206,11 +284,7 @@
                             <thead>
                                 <tr>
                                     <th>Lesson Title</th>
-                                    <th>Weight</th>
-                                    <th>Test Marks</th>
-                                    <th>Exam Marks</th>
-                                    <th>Terms</th>
-                                    <th>Branch Assignments</th>
+                                    <th>Assigned Course & Teacher</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -225,73 +299,54 @@
                                     <tr class="lesson-row" data-search-text="{{ $searchText }}">
                                         <td>
                                             <strong>{{ $lesson->title }}</strong>
-                                            @if($lesson->academicYear)
-                                                <br><small class="text-muted">Year: {{ $lesson->academicYear->year }}</small>
-                                            @endif
-                                        </td>
-                                        <td>
-                                            <span class="badge bg-primary">{{ $lesson->lesson_weight ?? 100 }}%</span>
-                                        </td>
-                                        <td>
-                                            <span class="badge bg-success">{{ $lesson->max_test_marks ?? 100 }}</span>
-                                        </td>
-                                        <td>
-                                            <span class="badge bg-warning">{{ $lesson->max_exam_marks ?? 100 }}</span>
-                                        </td>
-                                        <td>
-                                            @if($lesson->terms->count() > 0)
-                                                @foreach($lesson->terms as $term)
-                                                    <span class="badge bg-info">{{ $term->name }}</span>
-                                                @endforeach
-                                            @else
-                                                <span class="text-muted">No terms</span>
-                                            @endif
                                         </td>
                                         <td>
                                             @if($lesson->branchCourses->count() > 0)
                                                 @foreach($lesson->branchCourses as $branchCourse)
                                                     @if($branchCourse->branch && $branchCourse->course)
-                                                        <span class="assignment-badge">
-                                                            {{ $branchCourse->branch->name }}
-                                                            - {{ $branchCourse->course->course_name }}
+                                                        <div class="assignment-item">
+                                                            <span class="course-badge">{{ $branchCourse->course->course_code ?? $branchCourse->course->course_name }}</span>
                                                             @if($branchCourse->teacher)
-                                                                ({{ $branchCourse->teacher->teacher_name }})
+                                                                <span class="teacher-badge">{{ $branchCourse->teacher->teacher_name }}</span>
+                                                            @else
+                                                                <span class="teacher-badge tba">TBA</span>
                                                             @endif
-                                                        </span>
+                                                        </div>
                                                     @endif
                                                 @endforeach
                                             @else
                                                 {{-- Show single course assignment for backward compatibility --}}
                                                 @if($lesson->course)
-                                                    <span class="assignment-badge">
-                                                        {{ $lesson->course->course_name }}
+                                                    <div class="assignment-item">
+                                                        <span class="course-badge">{{ $lesson->course->course_code ?? $lesson->course->course_name }}</span>
                                                         @if($lesson->teacher)
-                                                            ({{ $lesson->teacher->teacher_name }})
+                                                            <span class="teacher-badge">{{ $lesson->teacher->teacher_name }}</span>
+                                                        @else
+                                                            <span class="teacher-badge tba">TBA</span>
                                                         @endif
-                                                    </span>
+                                                    </div>
                                                 @else
                                                     <span class="text-muted">Not assigned</span>
                                                 @endif
                                             @endif
                                         </td>
                                         <td>
-                                            <div class="btn-group" role="group">
-                                                <a href="{{ route('dos.lessons.show', $lesson->id) }}" class="btn btn-action btn-view" title="View">
-                                                    <i class="fas fa-eye"></i>
+                                            <div class="action-buttons">
+                                                <a href="{{ route('dos.lessons.show', $lesson->id) }}" class="btn btn-sm btn-info action-btn">
+                                                    <i class="fas fa-eye me-1"></i>View
                                                 </a>
-                                                <a href="{{ route('dos.lessons.edit', $lesson->id) }}" class="btn btn-action btn-edit" title="Edit">
-                                                    <i class="fas fa-edit"></i>
+                                                <a href="{{ route('dos.lessons.edit', $lesson->id) }}" class="btn btn-sm btn-warning action-btn">
+                                                    <i class="fas fa-edit me-1"></i>Edit
                                                 </a>
-                                                <button type="button" class="btn btn-action btn-assign" 
-                                                        onclick="openAssignModal({{ $lesson->id }}, '{{ $lesson->title }}')" 
-                                                        title="Assign to Branches">
-                                                    <i class="fas fa-network-wired"></i>
+                                                <button type="button" class="btn btn-sm btn-primary action-btn" 
+                                                        onclick="openAssignModal({{ $lesson->id }}, '{{ $lesson->title }}')">
+                                                    <i class="fas fa-network-wired me-1"></i>Assign
                                                 </button>
                                                 <form action="{{ route('dos.lessons.destroy', $lesson->id) }}" method="POST" style="display: inline-block;" onsubmit="return confirm('Are you sure you want to delete this lesson? This will permanently delete the lesson and ALL related data including units, marks, attendance, and exam associations. This action cannot be undone.');">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="btn btn-action btn-delete" title="Delete" style="background: #dc3545; color: white;">
-                                                        <i class="fas fa-trash"></i>
+                                                    <button type="submit" class="btn btn-sm btn-danger action-btn">
+                                                        <i class="fas fa-trash me-1"></i>Delete
                                                     </button>
                                                 </form>
                                             </div>
@@ -361,7 +416,7 @@
                     <div class="mb-3">
                         <label for="newAssignments" class="form-label fw-bold">Add New Assignments:</label>
                         <div id="newAssignments">
-                            <div class="assignment-item">
+                            <div class="modal-assignment-item">
                                 <div class="row">
                                     <div class="col-md-4">
                                         <label class="form-label">Branch:</label>
@@ -441,7 +496,7 @@ function openAssignModal(lessonId, lessonTitle) {
                     }
                     
                     formHtml += `
-                        <div class="assignment-item current-assignment" data-assignment-id="${assignment.id}">
+                        <div class="modal-assignment-item current-assignment" data-assignment-id="${assignment.id}">
                             <div class="row">
                                 <div class="col-md-4">
                                     <label class="form-label">Branch:</label>
@@ -492,7 +547,7 @@ function openAssignModal(lessonId, lessonTitle) {
     });
     
     document.getElementById('newAssignments').innerHTML = `
-        <div class="assignment-item">
+        <div class="modal-assignment-item">
             <div class="row">
                 <div class="col-md-4">
                     <label class="form-label">Branch:</label>
@@ -524,7 +579,7 @@ function openAssignModal(lessonId, lessonTitle) {
 function addAssignmentRow() {
     const container = document.getElementById('newAssignments');
     const newRow = document.createElement('div');
-    newRow.className = 'assignment-item';
+    newRow.className = 'modal-assignment-item';
     
     // Build branch options
     let branchOptions = '<option value="">Select Branch</option>';
@@ -551,7 +606,7 @@ function addAssignmentRow() {
                 <select name="assignments[${assignmentRowCount}][teacher_id]" class="form-select teacher-select">
                     <option value="">Select Teacher (Optional)</option>
                 </select>
-                <button type="button" class="btn btn-outline-danger btn-sm mt-2" onclick="this.closest('.assignment-item').remove()">
+                <button type="button" class="btn btn-outline-danger btn-sm mt-2" onclick="this.closest('.modal-assignment-item').remove()">
                     <i class="fas fa-trash"></i>
                 </button>
             </div>
@@ -565,8 +620,9 @@ function addAssignmentRow() {
 document.addEventListener('click', function(e) {
     if (e.target.classList.contains('branch-select') || e.target.classList.contains('branch-select-current')) {
         const branchSelect = e.target;
-        const courseSelect = branchSelect.closest('.assignment-item').querySelector('.course-select, .course-select-current');
-        const teacherSelect = branchSelect.closest('.assignment-item').querySelector('.teacher-select, .teacher-select-current');
+        const assignmentItem = branchSelect.closest('.assignment-item, .modal-assignment-item');
+        const courseSelect = assignmentItem.querySelector('.course-select, .course-select-current');
+        const teacherSelect = assignmentItem.querySelector('.teacher-select, .teacher-select-current');
         
         if (branchSelect.value) {
             // Load courses for this branch
@@ -596,8 +652,9 @@ document.addEventListener('click', function(e) {
 document.addEventListener('change', function(e) {
     if (e.target.classList.contains('course-select') || e.target.classList.contains('course-select-current')) {
         const courseSelect = e.target;
-        const branchSelect = courseSelect.closest('.assignment-item').querySelector('.branch-select, .branch-select-current');
-        const teacherSelect = courseSelect.closest('.assignment-item').querySelector('.teacher-select, .teacher-select-current');
+        const assignmentItem = courseSelect.closest('.assignment-item, .modal-assignment-item');
+        const branchSelect = assignmentItem.querySelector('.branch-select, .branch-select-current');
+        const teacherSelect = assignmentItem.querySelector('.teacher-select, .teacher-select-current');
         
         if (courseSelect.value && branchSelect.value) {
             // Load teachers for this branch-course combination
