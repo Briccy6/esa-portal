@@ -276,10 +276,10 @@
                                         </td>
                                         <td>
                                             <div class="btn-group" role="group">
-                                                <a href="{{ route('lessons.show', $lesson->id) }}" class="btn btn-action btn-view" title="View">
+                                                <a href="{{ route('dos.lessons.show', $lesson->id) }}" class="btn btn-action btn-view" title="View">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
-                                                <a href="{{ route('lessons.edit', $lesson->id) }}" class="btn btn-action btn-edit" title="Edit">
+                                                <a href="{{ route('dos.lessons.edit', $lesson->id) }}" class="btn btn-action btn-edit" title="Edit">
                                                     <i class="fas fa-edit"></i>
                                                 </a>
                                                 <button type="button" class="btn btn-action btn-assign" 
@@ -287,7 +287,7 @@
                                                         title="Assign to Branches">
                                                     <i class="fas fa-network-wired"></i>
                                                 </button>
-                                                <form action="{{ route('lessons.destroy', $lesson->id) }}" method="POST" style="display: inline-block;" onsubmit="return confirm('Are you sure you want to delete this lesson? This will permanently delete the lesson and ALL related data including units, marks, attendance, and exam associations. This action cannot be undone.');">
+                                                <form action="{{ route('dos.lessons.destroy', $lesson->id) }}" method="POST" style="display: inline-block;" onsubmit="return confirm('Are you sure you want to delete this lesson? This will permanently delete the lesson and ALL related data including units, marks, attendance, and exam associations. This action cannot be undone.');">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="btn btn-action btn-delete" title="Delete" style="background: #dc3545; color: white;">

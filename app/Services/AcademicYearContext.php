@@ -57,7 +57,7 @@ class AcademicYearContext
     {
         $id = self::selectedId();
 
-        return $id ? $query->where('academic_year_id', $id) : $query;
+        return $id ? $query->where('students.academic_year_id', $id) : $query;
     }
 
     public static function filterTransactions(Builder $query): Builder
