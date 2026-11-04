@@ -2730,12 +2730,7 @@ class StudentController extends Controller
     {
         $staff = auth('staff')->user();
         if (!$staff) {
-            abort(403, 'Unauthorized. Only the accountant can edit transactions.');
-        }
-
-        // Only allow accountant with @excellentservantacademy.com email to edit payments
-        if (!str_ends_with($staff->email, '@excellentservantacademy.com')) {
-            abort(403, 'Only the designated accountant can edit payments.');
+            abort(403, 'Unauthorized. Only staff can edit transactions.');
         }
 
         if ($request->isMethod('get')) {
@@ -2775,15 +2770,7 @@ class StudentController extends Controller
         if (!$staff) {
             return response()->json([
                 'success' => false,
-                'message' => 'Unauthorized. Only the accountant can edit transactions.',
-            ], 403);
-        }
-
-        // Only allow accountant with @excellentservantacademy.com email to edit payments
-        if (!str_ends_with($staff->email, '@excellentservantacademy.com')) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Only the designated accountant can edit payments.',
+                'message' => 'Unauthorized. Only staff can edit transactions.',
             ], 403);
         }
 
@@ -2815,12 +2802,12 @@ class StudentController extends Controller
             $transaction->amount = $request->input('amount');
             $transaction->type   = $request->input('type');
             $transaction->meta   = $meta;
-            
+
             // Update term_id if provided
             if ($request->filled('term_id')) {
                 $transaction->term_id = $request->input('term_id');
             }
-            
+
             $transaction->save();
 
             Log::info('Transaction updated by staff', [
@@ -2862,15 +2849,7 @@ class StudentController extends Controller
         if (!$staff) {
             return response()->json([
                 'success' => false,
-                'message' => 'Unauthorized. Only the accountant can delete transactions.',
-            ], 403);
-        }
-
-        // Only allow accountant with @excellentservantacademy.com email to delete payments
-        if (!str_ends_with($staff->email, '@excellentservantacademy.com')) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Only the designated accountant can delete payments.',
+                'message' => 'Unauthorized. Only staff can delete transactions.',
             ], 403);
         }
 
