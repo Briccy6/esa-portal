@@ -17,17 +17,35 @@
                 <label class="form-label">Fee Type <span class="text-danger">*</span></label>
                 <select name="type" class="form-select form-select-lg" required>
                     <option value="">-- Select Fee Type --</option>
-                    <option value="registration_fee" {{ $transaction->type === 'registration_fee' ? 'selected' : '' }}>Registration Fee</option>
-                    <option value="school_fee" {{ $transaction->type === 'school_fee' ? 'selected' : '' }}>School Fee</option>
-                    <option value="practical_fee" {{ $transaction->type === 'practical_fee' ? 'selected' : '' }}>Practical Fee</option>
-                    <option value="trip_fee" {{ $transaction->type === 'trip_fee' ? 'selected' : '' }}>Trip Fee</option>
-                    <option value="student_card" {{ $transaction->type === 'student_card' ? 'selected' : '' }}>Student Card</option>
+                    <option value="registration_fee" {{ $transaction->type === 'registration_fee' || $transaction->type === 'registration' ? 'selected' : '' }}>Registration Fee</option>
+                    <option value="school_fee" {{ $transaction->type === 'school_fee' || $transaction->type === 'tuition_fee' || $transaction->type === 'tuition' ? 'selected' : '' }}>School Fee</option>
+                    <option value="practical_fee" {{ $transaction->type === 'practical_fee' || $transaction->type === 'practical' ? 'selected' : '' }}>Practical Fee</option>
+                    <option value="trip_fee" {{ $transaction->type === 'trip_fee' || $transaction->type === 'trip' ? 'selected' : '' }}>Trip Fee</option>
+                    <option value="student_card" {{ $transaction->type === 'student_card' || $transaction->type === 'studentcard' ? 'selected' : '' }}>Student Card</option>
                     <option value="other" {{ $transaction->type === 'other' ? 'selected' : '' }}>Other</option>
                 </select>
                 @error('type')
                     <div class="text-danger small mt-1">{{ $message }}</div>
                 @enderror
             </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Term (Optional)</label>
+            <select name="term_id" class="form-select">
+                <option value="">-- No Term --</option>
+                @php
+                    $terms = \App\Models\Term::orderBy('start_date', 'desc')->get();
+                @endphp
+                @foreach($terms as $term)
+                    <option value="{{ $term->id }}" {{ $transaction->term_id == $term->id ? 'selected' : '' }}>
+                        {{ $term->name }} ({{ $term->academicYear->year ?? '' }})
+                    </option>
+                @endforeach
+            </select>
+            @error('term_id')
+                <div class="text-danger small mt-1">{{ $message }}</div>
+            @enderror
         </div>
 
         <div class="mb-3">

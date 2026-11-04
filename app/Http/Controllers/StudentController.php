@@ -2778,7 +2778,7 @@ class StudentController extends Controller
 
             $validated = \Validator::make($request->all(), [
                 'amount' => 'required|numeric|min:1',
-                'type'   => 'required|in:registration_fee,school_fee,practical_fee,trip_fee,student_card',
+                'type'   => 'required|in:registration_fee,school_fee,practical_fee,trip_fee,student_card,other,registration,school_fee,tuition_fee,tuition,practical,trip,studentcard',
                 'term_id' => 'nullable|exists:terms,id',
                 'notes'  => 'nullable|string|max:500',
             ]);
