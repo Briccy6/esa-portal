@@ -4557,7 +4557,6 @@ class StudentController extends Controller
                     'remaining' => $remaining,
                 ];
             }
-            }
 
             // Calculate totals for the term
             $totalTermFees = $registrationFee + $schoolFee + $practicalFee + $tripFee + $studentCardFee;
