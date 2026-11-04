@@ -27,7 +27,7 @@
                                 <div class="mb-3">
                                     <label class="form-label fw-bold">Profile Photo</label>
                                     <input type="file" class="form-control" name="photo" accept="image/jpeg,image/png,image/jpg,image/gif">
-                                    <small class="text-muted">Max size: 100KB</small>
+                                    <small class="text-muted">Max size: 2MB (JPEG, PNG, JPG, GIF)</small>
                                 </div>
                             </div>
 
@@ -48,7 +48,10 @@
 
                                 <div class="mb-3">
                                     <label class="form-label fw-bold">Phone</label>
-                                    <input type="text" class="form-control" value="{{ $teacher->phone ?? 'N/A' }}" disabled>
+                                    <input type="text" class="form-control" name="telephone" value="{{ old('telephone', $teacher->telephone) }}" placeholder="Enter phone number">
+                                    @error('telephone')
+                                        <div class="text-danger small mt-1">{{ $message }}</div>
+                                    @enderror
                                 </div>
 
                                 <div class="mb-3">

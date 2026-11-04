@@ -26,7 +26,8 @@ class TeacherProfileController extends Controller
 
         $data = $request->validate([
             'teacher_name' => 'required|string|max:255',
-            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:100',
+            'telephone' => 'nullable|string|max:20',
+            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'password' => [
                 'nullable',
                 'string',
