@@ -84,7 +84,20 @@ class DosCourseController extends Controller
 
     public function show(Course $course)
     {
-        $course->load(['lessons', 'teachers']);
+        // Load lessons from lesson_branch_course pivot table
+        $lessonIds = \App\Models\LessonBranchCourse::where('course_id', $course->id)
+            ->pluck('lesson_id')
+            ->unique();
+
+        $lessons = Lesson::whereIn('id', $lessonIds)
+            ->with(['teacher', 'terms', 'branchCourses' => function($q) use ($course) {
+                $q->where('course_id', $course->id);
+            }])
+            ->get();
+
+        $course->setRelation('lessons', $lessons);
+        $course->load(['teachers']);
+
         return view('staff.courses.show', compact('course'));
     }
 
