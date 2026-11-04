@@ -13,11 +13,11 @@ class TeacherProfileController extends Controller
         $teacher = Auth::guard('teacher')->user();
         $systemName = config('app.name', 'School System');
         $courses = $teacher->courses()->with('lessons.units')->get();
-        
+
         // Get announcements for teacher layout
         $announcements = \App\Models\Announcement::latest()->take(5)->get();
-        
-        return view('teacher.profile.edit', compact('teacher', 'systemName', 'courses', 'announcements'));
+
+        return view('profile.edit', compact('teacher', 'systemName', 'courses', 'announcements'));
     }
 
     public function update(Request $request)
