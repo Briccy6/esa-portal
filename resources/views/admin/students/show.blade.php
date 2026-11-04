@@ -282,11 +282,11 @@
                                 ->get();
                             
                             $paid = [
-                                'registration' => $studentTransactions->where('type', 'registration')->sum('amount'),
-                                'tuition'      => $studentTransactions->where('type', 'school_fee')->sum('amount'),
-                                'practical'    => $studentTransactions->where('type', 'practical')->sum('amount'),
-                                'trip'         => $studentTransactions->where('type', 'trip')->sum('amount'),
-                                'school card'  =>$studentTransactions->where('type', 'student_card')->sum('amount'),
+                                'registration' => $studentTransactions->whereIn('type', ['registration', 'registration_fee'])->sum('amount'),
+                                'tuition'      => $studentTransactions->whereIn('type', ['school_fee', 'tuition_fee', 'tuition'])->sum('amount'),
+                                'practical'    => $studentTransactions->whereIn('type', ['practical_fee', 'practical'])->sum('amount'),
+                                'trip'         => $studentTransactions->whereIn('type', ['trip_fee', 'trip'])->sum('amount'),
+                                'school card'  =>$studentTransactions->whereIn('type', ['student_card', 'studentcard'])->sum('amount'),
                             ];
                             
                             $totalPaid = $studentTransactions->sum('amount');
