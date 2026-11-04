@@ -191,8 +191,11 @@
                                             <td>{{ $session->lesson->title ?? 'N/A' }}</td>
                                             <td>{{ $session->classroom ?? '' }}</td>
                                             <td>
-                                                @if($session->lesson->teacher)
-                                                    <span class="badge bg-success text-white">{{ $session->lesson->teacher->teacher_name }}</span>
+                                                @php
+                                                    $displayTeacher = $session->lesson->branch_teacher ?? ($session->lesson->teacher ?? null);
+                                                @endphp
+                                                @if($displayTeacher)
+                                                    <span class="badge bg-success text-white">{{ $displayTeacher->teacher_name }}</span>
                                                 @else
                                                     <span class="badge bg-warning text-dark">TBA</span>
                                                 @endif

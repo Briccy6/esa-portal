@@ -52,18 +52,25 @@ class StudentController extends Controller
             ->with(['branch', 'academicYear', 'term', 'sessions.lesson.teacher', 'sessions.courses'])
             ->get();
 
-        // Debug: Log student and timetable info
-        \Log::info('Student timetable query', [
-            'student_id' => $student->id,
-            'student_branch_id' => $student->branch_id,
-            'student_academic_year_id' => $student->academic_year_id,
-            'student_course_id' => $student->course_id,
-            'timetables_count' => $timetables->count(),
-            'current_date' => now()->toDateTimeString(),
-        ]);
+        // For each session, get the branch-specific teacher if available
+        foreach ($timetables as $timetable) {
+            foreach ($timetable->sessions as $session) {
+                if ($session->lesson) {
+                    $branchAssignment = \DB::table('lesson_branch_course')
+                        ->where('lesson_id', $session->lesson->id)
+                        ->where('branch_id', $student->branch_id)
+                        ->where('course_id', $student->course_id)
+                        ->first();
 
-        // Don't filter by course - show all timetables for the student's branch and academic year
-        // The student will see all sessions, and the show view will filter by course
+                    if ($branchAssignment && $branchAssignment->teacher_id) {
+                        $branchTeacher = \App\Models\Teacher::find($branchAssignment->teacher_id);
+                        if ($branchTeacher) {
+                            $session->lesson->branch_teacher = $branchTeacher;
+                        }
+                    }
+                }
+            }
+        }
 
         return view('students.timetables.index', compact('timetables'));
     }
@@ -147,6 +154,22 @@ class StudentController extends Controller
 
             // Merge and deduplicate lessons
             $course->lessons = $directLessons->merge($pivotLessons)->unique('id');
+
+            // For each lesson, get the branch-specific teacher if available
+            foreach ($course->lessons as $lesson) {
+                $branchAssignment = \DB::table('lesson_branch_course')
+                    ->where('lesson_id', $lesson->id)
+                    ->where('branch_id', $student->branch_id)
+                    ->where('course_id', $course->id)
+                    ->first();
+
+                if ($branchAssignment && $branchAssignment->teacher_id) {
+                    $branchTeacher = \App\Models\Teacher::find($branchAssignment->teacher_id);
+                    if ($branchTeacher) {
+                        $lesson->branch_teacher = $branchTeacher;
+                    }
+                }
+            }
         }
 
         return view('students.courses', compact('courses'));

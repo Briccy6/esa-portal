@@ -24,7 +24,16 @@
                             @forelse($course->lessons as $lesson)
                                 <tr>
                                     <td>{{ $lesson->title }}</td>
-                                    <td>{{ $lesson->teacher->teacher_name ?? '-' }}</td>
+                                    <td>
+                                        @php
+                                            $displayTeacher = $lesson->branch_teacher ?? $lesson->teacher;
+                                        @endphp
+                                        @if($displayTeacher)
+                                            <span class="badge bg-success text-white">{{ $displayTeacher->teacher_name }}</span>
+                                        @else
+                                            <span class="badge bg-warning text-dark">TBA</span>
+                                        @endif
+                                    </td>
                                     <td>
                                         @foreach($lesson->terms as $term)
                                             <span class="badge bg-info text-dark">{{ $term->term ?? $term->title ?? '-' }}</span>
