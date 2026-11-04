@@ -4458,7 +4458,7 @@ class StudentController extends Controller
             $practicalFee = floatval($termFees->practical_fee ?? 0);
             $studentCardFee = floatval($termFees->student_card_fee ?? 2000);
 
-            // Build fees array
+            // Build fees array - show all fees with their payment status
             $fees = [];
 
             // Check if registration fee has been paid in ANY term of the same academic year
@@ -4481,86 +4481,77 @@ class StudentController extends Controller
                 ->exists();
 
             if ($registrationFee > 0) {
-                // Only show registration fee if not already paid in this academic year
-                if (!$registrationPaidInYear) {
-                    // Calculate registration paid across entire academic year
-                    $paidRegistrationInYear = StudentTransaction::where('student_id', $student->id)
-                        ->where('type', 'registration')
-                        ->whereIn('status', ['successful', 'paid'])
-                        ->whereHas('term', function ($query) use ($academicYearId) {
-                            $query->where('academic_year_id', $academicYearId);
-                        })
-                        ->sum('amount');
+                // Calculate registration paid across entire academic year
+                $paidRegistrationInYear = StudentTransaction::where('student_id', $student->id)
+                    ->where('type', 'registration')
+                    ->whereIn('status', ['successful', 'paid'])
+                    ->whereHas('term', function ($query) use ($academicYearId) {
+                        $query->where('academic_year_id', $academicYearId);
+                    })
+                    ->sum('amount');
 
-                    $remaining = $registrationFee - $paidRegistrationInYear;
-                    if ($remaining > 0) {
-                        $fees[] = [
-                            'type' => 'registration_fee',
-                            'name' => 'Registration Fee',
-                            'total' => $registrationFee,
-                            'paid' => $paidRegistrationInYear,
-                            'remaining' => $remaining,
-                        ];
-                    }
-                }
+                $remaining = $registrationFee - $paidRegistrationInYear;
+                // Always show registration fee so users can see payment status
+                $fees[] = [
+                    'type' => 'registration_fee',
+                    'name' => 'Registration Fee',
+                    'total' => $registrationFee,
+                    'paid' => $paidRegistrationInYear,
+                    'remaining' => $remaining,
+                ];
             }
 
             if ($schoolFee > 0) {
                 $remaining = $schoolFee - $paidSchoolFee;
-                if ($remaining > 0) {
-                    $fees[] = [
-                        'type' => 'school_fee',
-                        'name' => 'School / Tuition Fee',
-                        'total' => $schoolFee,
-                        'paid' => $paidSchoolFee,
-                        'remaining' => $remaining,
-                    ];
-                }
+                // Always show school fee so users can see payment status
+                $fees[] = [
+                    'type' => 'school_fee',
+                    'name' => 'School / Tuition Fee',
+                    'total' => $schoolFee,
+                    'paid' => $paidSchoolFee,
+                    'remaining' => $remaining,
+                ];
             }
 
             if ($practicalFee > 0) {
                 $remaining = $practicalFee - $paidPractical;
-                if ($remaining > 0) {
-                    $fees[] = [
-                        'type' => 'practical_fee',
-                        'name' => 'Practical Fee',
-                        'total' => $practicalFee,
-                        'paid' => $paidPractical,
-                        'remaining' => $remaining,
-                    ];
-                }
+                // Always show practical fee so users can see payment status
+                $fees[] = [
+                    'type' => 'practical_fee',
+                    'name' => 'Practical Fee',
+                    'total' => $practicalFee,
+                    'paid' => $paidPractical,
+                    'remaining' => $remaining,
+                ];
             }
 
             if ($tripFee > 0) {
                 $remaining = $tripFee - $paidTrip;
-                if ($remaining > 0) {
-                    $fees[] = [
-                        'type' => 'trip_fee',
-                        'name' => 'Trip Fee',
-                        'total' => $tripFee,
-                        'paid' => $paidTrip,
-                        'remaining' => $remaining,
-                    ];
-                }
+                // Always show trip fee so users can see payment status
+                $fees[] = [
+                    'type' => 'trip_fee',
+                    'name' => 'Trip Fee',
+                    'total' => $tripFee,
+                    'paid' => $paidTrip,
+                    'remaining' => $remaining,
+                ];
             }
 
             if ($studentCardFee > 0) {
-                // Only show student card fee if not already paid in this academic year
-                if (!$studentCardPaidInYear) {
-                    // Calculate student card paid across entire academic year
-                    $paidStudentCardInYear = StudentTransaction::where('student_id', $student->id)
-                        ->where('type', 'student_card')
-                        ->whereIn('status', ['successful', 'paid'])
-                        ->whereHas('term', function ($query) use ($academicYearId) {
-                            $query->where('academic_year_id', $academicYearId);
-                        })
-                        ->sum('amount');
+                // Calculate student card paid across entire academic year
+                $paidStudentCardInYear = StudentTransaction::where('student_id', $student->id)
+                    ->where('type', 'student_card')
+                    ->whereIn('status', ['successful', 'paid'])
+                    ->whereHas('term', function ($query) use ($academicYearId) {
+                        $query->where('academic_year_id', $academicYearId);
+                    })
+                    ->sum('amount');
 
-                    $remaining = $studentCardFee - $paidStudentCardInYear;
-                    if ($remaining > 0) {
-                        $fees[] = [
-                            'type' => 'student_card',
-                            'name' => 'Student Card',
+                $remaining = $studentCardFee - $paidStudentCardInYear;
+                // Always show student card fee so users can see payment status
+                $fees[] = [
+                    'type' => 'student_card',
+                    'name' => 'Student Card',
                             'total' => $studentCardFee,
                             'paid' => $paidStudentCardInYear,
                             'remaining' => $remaining,
