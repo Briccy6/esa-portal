@@ -3060,6 +3060,11 @@ class StudentController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
+        // Check if staff is authenticated and use simpler view
+        if (auth('staff')->check()) {
+            return view('admin.students.partials.transcript_table', compact('payments'))->render();
+        }
+
         return view('students.partials.transcript_table', compact('student', 'payments'))->render();
     }
 
