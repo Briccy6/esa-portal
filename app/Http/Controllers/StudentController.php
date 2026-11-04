@@ -130,10 +130,23 @@ class StudentController extends Controller
         $courses = \App\Models\Course::where('id', $student->course_id)->get();
 
         foreach ($courses as $course) {
-            $course->lessons = \App\Models\Lesson::with(['teacher', 'terms'])
+            // Get lessons directly assigned to the course
+            $directLessons = \App\Models\Lesson::with(['teacher', 'terms'])
                 ->where('course_id', $course->id)
                 ->whereHas('terms', fn ($q) => $q->where('academic_year_id', $student->academic_year_id))
                 ->get();
+
+            // Get lessons assigned through lesson_branch_course pivot table
+            $pivotLessons = \App\Models\Lesson::with(['teacher', 'terms'])
+                ->whereHas('branchCourses', function ($query) use ($student, $course) {
+                    $query->where('branch_id', $student->branch_id)
+                          ->where('course_id', $course->id);
+                })
+                ->whereHas('terms', fn ($q) => $q->where('academic_year_id', $student->academic_year_id))
+                ->get();
+
+            // Merge and deduplicate lessons
+            $course->lessons = $directLessons->merge($pivotLessons)->unique('id');
         }
 
         return view('students.courses', compact('courses'));
