@@ -489,11 +489,12 @@ function openAssignModal(lessonId, lessonTitle) {
                         branchOptions += `<option value="${branch.id}" ${selected}>${branch.name}</option>`;
                     });
                     
-                    // Build teacher options
+                    // Build teacher options - load all teachers for this branch-course combination
                     let teacherOptions = '<option value="">Select Teacher (Optional)</option>';
-                    if (assignment.teacher_id) {
-                        teacherOptions += `<option value="${assignment.teacher_id}" selected>${assignment.teacher_name || 'No Teacher'}</option>`;
-                    }
+                    teachersData.forEach(teacher => {
+                        const selected = assignment.teacher_id == teacher.id ? 'selected' : '';
+                        teacherOptions += `<option value="${teacher.id}" ${selected}>${teacher.teacher_name}</option>`;
+                    });
                     
                     formHtml += `
                         <div class="modal-assignment-item current-assignment" data-assignment-id="${assignment.id}">
@@ -616,8 +617,8 @@ function addAssignmentRow() {
     assignmentRowCount++;
 }
 
-// Handle branch selection to load courses
-document.addEventListener('click', function(e) {
+// Handle branch selection to load courses and refresh teacher dropdown
+document.addEventListener('change', function(e) {
     if (e.target.classList.contains('branch-select') || e.target.classList.contains('branch-select-current')) {
         const branchSelect = e.target;
         const assignmentItem = branchSelect.closest('.assignment-item, .modal-assignment-item');
@@ -634,8 +635,11 @@ document.addEventListener('click', function(e) {
                         courseSelect.innerHTML += `<option value="${course.id}">${course.course_name}</option>`;
                     });
                     
-                    // Clear teacher selection
+                    // Refresh teacher dropdown with all teachers (will be filtered when course is selected)
                     teacherSelect.innerHTML = '<option value="">Select Teacher (Optional)</option>';
+                    teachersData.forEach(teacher => {
+                        teacherSelect.innerHTML += `<option value="${teacher.id}">${teacher.teacher_name}</option>`;
+                    });
                 })
                 .catch(error => {
                     console.error('Error loading courses:', error);
@@ -661,14 +665,31 @@ document.addEventListener('change', function(e) {
             fetch(`/api/branches/${branchSelect.value}/courses/${courseSelect.value}/teachers`)
                 .then(response => response.json())
                 .then(teachers => {
+                    // Save current selection
+                    const currentSelection = teacherSelect.value;
                     teacherSelect.innerHTML = '<option value="">Select Teacher (Optional)</option>';
-                    teachers.forEach(teacher => {
-                        teacherSelect.innerHTML += `<option value="${teacher.id}">${teacher.teacher_name}</option>`;
-                    });
+                    if (teachers.length > 0) {
+                        teachers.forEach(teacher => {
+                            const selected = teacher.id == currentSelection ? 'selected' : '';
+                            teacherSelect.innerHTML += `<option value="${teacher.id}" ${selected}>${teacher.teacher_name}</option>`;
+                        });
+                    } else {
+                        // If no teachers are assigned to this branch-course, show all teachers as fallback
+                        teachersData.forEach(teacher => {
+                            const selected = teacher.id == currentSelection ? 'selected' : '';
+                            teacherSelect.innerHTML += `<option value="${teacher.id}" ${selected}>${teacher.teacher_name}</option>`;
+                        });
+                    }
                 })
                 .catch(error => {
                     console.error('Error loading teachers:', error);
-                    teacherSelect.innerHTML = '<option value="">Error loading teachers</option>';
+                    // Fallback to all teachers on error
+                    const currentSelection = teacherSelect.value;
+                    teacherSelect.innerHTML = '<option value="">Select Teacher (Optional)</option>';
+                    teachersData.forEach(teacher => {
+                        const selected = teacher.id == currentSelection ? 'selected' : '';
+                        teacherSelect.innerHTML += `<option value="${teacher.id}" ${selected}>${teacher.teacher_name}</option>`;
+                    });
                 });
         } else {
             teacherSelect.innerHTML = '<option value="">Select Teacher (Optional)</option>';
