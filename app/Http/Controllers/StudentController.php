@@ -4552,12 +4552,11 @@ class StudentController extends Controller
                 $fees[] = [
                     'type' => 'student_card',
                     'name' => 'Student Card',
-                            'total' => $studentCardFee,
-                            'paid' => $paidStudentCardInYear,
-                            'remaining' => $remaining,
-                        ];
-                    }
-                }
+                    'total' => $studentCardFee,
+                    'paid' => $paidStudentCardInYear,
+                    'remaining' => $remaining,
+                ];
+            }
             }
 
             // Calculate totals for the term
