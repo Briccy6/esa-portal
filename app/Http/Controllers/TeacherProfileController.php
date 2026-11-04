@@ -17,7 +17,7 @@ class TeacherProfileController extends Controller
         // Get announcements for teacher layout
         $announcements = \App\Models\Announcement::latest()->take(5)->get();
 
-        return view('profile.edit', compact('teacher', 'systemName', 'courses', 'announcements'));
+        return view('teacher.profile.edit', compact('teacher', 'systemName', 'courses', 'announcements'));
     }
 
     public function update(Request $request)
