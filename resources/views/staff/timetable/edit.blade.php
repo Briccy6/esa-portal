@@ -102,6 +102,7 @@
                             <div class="col-md-2">
                                 <label class="form-label">Day</label>
                                 <select name="sessions[{{ $index }}][day_of_week]" class="form-select" required>
+                                    <option value="">-- Select Day --</option>
                                     @foreach([1 => 'Monday', 2 => 'Tuesday', 3 => 'Wednesday', 4 => 'Thursday', 5 => 'Friday', 6 => 'Saturday', 0 => 'Sunday'] as $value => $label)
                                         <option value="{{ $value }}" @selected(old("sessions.{$index}.day_of_week", $sessionData['day_of_week'] ?? '') == (string) $value)>{{ $label }}</option>
                                     @endforeach

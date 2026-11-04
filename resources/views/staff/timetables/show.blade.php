@@ -95,6 +95,7 @@
                                 <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Lesson</th>
                                 <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Room</th>
                                 <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Teacher</th>
+                                <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Notes</th>
                             </tr>
                         </thead>
                         <tbody style="background: white;">
@@ -122,6 +123,13 @@
                                                 <span class="badge bg-success text-white">{{ $session->lesson->teacher->teacher_name }}</span>
                                             @else
                                                 <span class="badge bg-warning text-dark">TBA</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if($session->notes)
+                                                <small class="text-muted">{{ $session->notes }}</small>
+                                            @else
+                                                <span class="text-muted">-</span>
                                             @endif
                                         </td>
                                     </tr>

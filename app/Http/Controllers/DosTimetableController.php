@@ -763,7 +763,7 @@ class DosTimetableController extends Controller
 
         $issues = $this->getPublishedOverlapIssues($timetable);
         if (!empty($issues)) {
-            return redirect()->back()->withErrors(['publish' => 'The timetable cannot be published until validation issues are resolved.'])->with('validation_errors', $issues);
+            return redirect()->back()->withErrors(['publish' => 'The timetable cannot be published until validation issues are resolved: ' . implode(' ', $issues)])->with('validation_errors', $issues);
         }
 
         $timetable->update(['status' => 'published']);

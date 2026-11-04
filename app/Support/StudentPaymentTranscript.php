@@ -224,6 +224,22 @@ class StudentPaymentTranscript
             return ['registration', 'registration_fee'];
         }
 
+        if ($feeType === 'school_fee') {
+            return ['school_fee', 'tuition_fee', 'tuition'];
+        }
+
+        if ($feeType === 'practical_fee') {
+            return ['practical_fee', 'practical'];
+        }
+
+        if ($feeType === 'trip_fee') {
+            return ['trip_fee', 'trip'];
+        }
+
+        if ($feeType === 'student_card') {
+            return ['student_card', 'studentcard'];
+        }
+
         return [$feeType];
     }
 
