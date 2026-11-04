@@ -124,18 +124,19 @@ class TeacherDailyController extends Controller
             \Log::error("Teacher {$teacher->id} not assigned to course {$courseId}");
             return response()->json([], 404);
         }
-        
+
         // Get lessons assigned to this teacher for this course
-        // Check both direct teacher_id and pivot table assignments
+        // Check both direct teacher_id and pivot table assignments with course_id
         $lessons = \App\Models\Lesson::where('course_id', $courseId)
-            ->where(function($query) use ($teacher) {
+            ->where(function($query) use ($teacher, $courseId) {
                 $query->where('teacher_id', $teacher->id)
-                      ->orWhereHas('teachers', function($q) use ($teacher) {
-                          $q->where('teachers.id', $teacher->id);
+                      ->orWhereHas('branchCourses', function($q) use ($teacher, $courseId) {
+                          $q->where('teacher_id', $teacher->id)
+                            ->where('course_id', $courseId);
                       });
             })
             ->get(['id', 'title']);
-            
+
         if ($lessons->isEmpty()) {
             \Log::warning("No lessons found for teacher {$teacher->id} in course {$courseId}");
         } else {
