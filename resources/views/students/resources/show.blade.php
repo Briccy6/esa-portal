@@ -72,7 +72,7 @@
                         </a>
                     </div>
 
-                    @if($resource->video_blob && $resource->is_free)
+                    @if($resource->video_blob)
                         <div class="ratio ratio-16x9 mb-4">
                             <video controls class="w-100 h-100">
                                 <source src="{{ route('student.resources.download', $resource->id) }}" type="{{ $resource->video_mime ?: 'video/mp4' }}">
@@ -81,10 +81,19 @@
                         </div>
                     @endif
 
-                    @if($resource->document_blob && $resource->is_free)
+                    @if($resource->document_blob)
                         <div class="mb-4">
                             <h6 class="text-uppercase text-secondary">Preview</h6>
-                            <iframe src="{{ route('student.resources.download', $resource->id) }}" class="w-100" style="min-height:500px;border:1px solid #dee2e6;"></iframe>
+                            <div class="border rounded overflow-hidden" style="min-height:500px;">
+                                <iframe src="{{ route('student.resources.download', $resource->id) }}#toolbar=0&navpanes=0&scrollbar=0" 
+                                        class="w-100" 
+                                        style="min-height:500px;border:none;"
+                                        onerror="this.parentElement.innerHTML='<div class=\'alert alert-warning m-3\'><i class=\'bi bi-exclamation-triangle me-2\'></i>Preview not available. Please download the file to view it.</div>'">
+                                </iframe>
+                            </div>
+                            <div class="text-center mt-2">
+                                <small class="text-muted">If the preview doesn't load, please download the file using the button above.</small>
+                            </div>
                         </div>
                     @endif
                 </div>
