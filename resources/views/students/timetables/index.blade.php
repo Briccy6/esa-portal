@@ -49,6 +49,10 @@
         background: #ffffff;
     }
 
+    .timetable-table tbody tr:nth-child(even) {
+        background: #f8fafc;
+    }
+
     .timetable-table tbody tr:hover {
         background: #f0f9ff;
     }
@@ -159,19 +163,19 @@
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-bordered table-hover" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; overflow: hidden;">
+                        <table class="table table-bordered table-hover timetable-table">
                             <thead>
-                                <tr style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-                                    <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Time</th>
-                                    <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Day</th>
-                                    <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Course</th>
-                                    <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Lesson</th>
-                                    <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Room</th>
-                                    <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Teacher</th>
-                                    <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Notes</th>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Day</th>
+                                    <th>Course</th>
+                                    <th>Lesson/Subject</th>
+                                    <th>Room/Location</th>
+                                    <th>Teacher</th>
+                                    <th>Notes</th>
                                 </tr>
                             </thead>
-                            <tbody style="background: white;">
+                            <tbody>
                                 @php
                                     $days = [1 => 'Monday', 2 => 'Tuesday', 3 => 'Wednesday', 4 => 'Thursday', 5 => 'Friday', 6 => 'Saturday', 0 => 'Sunday'];
                                 @endphp
@@ -181,22 +185,28 @@
                                     @endphp
                                     @if(!$daySessions->isEmpty())
                                         @foreach($daySessions as $session)
-                                        <tr style="transition: all 0.3s ease;">
-                                            <td style="font-weight: 500;">{{ $session->start_time ?? '' }} - {{ $session->end_time ?? '' }}</td>
-                                            <td style="font-weight: 500;">{{ $dayName }}</td>
+                                        <tr>
+                                            <td style="font-weight: 600;">
+                                                @if($session->start_time && $session->end_time)
+                                                    {{ \Carbon\Carbon::parse($session->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($session->end_time)->format('H:i') }}
+                                                @else
+                                                    N/A
+                                                @endif
+                                            </td>
+                                            <td style="font-weight: 600;">{{ $dayName }}</td>
                                             <td>
                                                 @foreach($session->courses as $course)
-                                                    <span class="badge bg-info text-white">{{ $course->course_name }}</span>{{ !$loop->last ? ' ' : '' }}
+                                                    <span class="badge bg-primary">{{ $course->course_name }}</span>{{ !$loop->last ? ' ' : '' }}
                                                 @endforeach
                                             </td>
-                                            <td>{{ $session->lesson->title ?? 'N/A' }}</td>
-                                            <td>{{ $session->classroom ?? '' }}</td>
+                                            <td style="font-weight: 500;">{{ $session->lesson->title ?? 'N/A' }}</td>
+                                            <td>{{ $session->classroom ?? 'N/A' }}</td>
                                             <td>
                                                 @php
                                                     $displayTeacher = $session->lesson->branch_teacher ?? ($session->lesson->teacher ?? null);
                                                 @endphp
                                                 @if($displayTeacher)
-                                                    <span class="badge bg-success text-white">{{ $displayTeacher->teacher_name }}</span>
+                                                    <span class="badge bg-success">{{ $displayTeacher->teacher_name }}</span>
                                                 @else
                                                     <span class="badge bg-warning text-dark">TBA</span>
                                                 @endif
@@ -296,7 +306,7 @@ function downloadTimetable(timetableId) {
                     font-weight: 600;
                     margin-right: 4px;
                 }
-                .badge-info { background: #e0f2fe; color: #0369a1; }
+                .badge-primary { background: #dbeafe; color: #1e40af; }
                 .badge-success { background: #dcfce7; color: #166534; }
                 .badge-warning { background: #fef3c7; color: #92400e; }
             </style>

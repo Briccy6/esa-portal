@@ -62,6 +62,7 @@ class StudentController extends Controller
         foreach ($timetables as $timetable) {
             foreach ($timetable->sessions as $session) {
                 if ($session->lesson) {
+                    // First try to get branch-specific teacher from lesson_branch_course pivot
                     $branchAssignment = \DB::table('lesson_branch_course')
                         ->where('lesson_id', $session->lesson->id)
                         ->where('branch_id', $student->branch_id)
@@ -72,6 +73,11 @@ class StudentController extends Controller
                         $branchTeacher = \App\Models\Teacher::find($branchAssignment->teacher_id);
                         if ($branchTeacher) {
                             $session->lesson->branch_teacher = $branchTeacher;
+                        }
+                    } else {
+                        // Fallback to direct lesson teacher if no branch-specific assignment
+                        if ($session->lesson->teacher) {
+                            $session->lesson->branch_teacher = $session->lesson->teacher;
                         }
                     }
                 }
