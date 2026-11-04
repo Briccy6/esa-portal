@@ -373,8 +373,8 @@ class FlutterwaveController extends Controller
             $validated = $request->validate([
                 'student_id' => 'required|exists:students,id',
                 'fee_type'   => 'required|string|in:registration_fee,school_fee,trip_fee,practical_fee,student_card',
-                'amount'     => 'required|numeric|min:1',
-                'total_fee'  => 'required|numeric|min:1',
+                'amount'     => 'required|numeric|min:500', // Flutterwave minimum amount requirement
+                'total_fee'  => 'required|numeric|min:500',
                 'term'       => 'nullable|integer|exists:terms,id',
             ]);
 
@@ -385,6 +385,21 @@ class FlutterwaveController extends Controller
                 return response()->json([
                     'status'  => 'error',
                     'message' => 'Student is not assigned to any course. Please contact the administrator.',
+                ], 422);
+            }
+
+            // Validate student has required contact information for payment
+            if (empty($student->email)) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Student email is required for payment. Please update student information.',
+                ], 422);
+            }
+
+            if (empty($student->phone)) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Student phone number is required for payment. Please update student information.',
                 ], 422);
             }
 
