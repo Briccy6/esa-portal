@@ -118,7 +118,7 @@
                                             <td>{{ $session->lesson->title ?? 'N/A' }}</td>
                                             <td>{{ $session->classroom ?? '' }}</td>
                                             <td>
-                                                @if($session->lesson->teacher)
+                                                @if($session->lesson && $session->lesson->teacher)
                                                     <span class="badge bg-success text-white">{{ $session->lesson->teacher->teacher_name }}</span>
                                                 @else
                                                     <span class="badge bg-warning text-dark">TBA</span>
