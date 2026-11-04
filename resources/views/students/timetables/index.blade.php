@@ -26,36 +26,42 @@
     }
 
     .timetable-table thead th {
-        padding: 1rem;
-        font-weight: 600;
+        padding: 1.25rem 1rem;
+        font-weight: 700;
+        font-size: 0.95rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
         border: none;
         white-space: nowrap;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
         color: white !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
 
     .timetable-table thead {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
     }
 
     .timetable-table tbody td {
         padding: 1rem;
         vertical-align: middle;
         border-bottom: 1px solid #e2e8f0;
+        background: #ffffff;
     }
 
     .timetable-table tbody tr:hover {
-        background: #f8fafc;
+        background: #f0f9ff;
     }
 
     .download-btn {
         background: linear-gradient(135deg, #10b981 0%, #059669 100%);
         border: none;
         color: white;
-        padding: 0.5rem 1.5rem;
+        padding: 0.75rem 2rem;
         border-radius: 0.5rem;
         font-weight: 600;
         transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
     }
 
     .download-btn:hover {
@@ -98,6 +104,25 @@
         .download-btn {
             padding: 0.4rem 1rem;
             font-size: 0.875rem;
+        }
+    }
+
+    @media print {
+        .timetable-header,
+        .download-btn,
+        .navbar,
+        .sidebar,
+        footer {
+            display: none !important;
+        }
+
+        .timetable-card {
+            box-shadow: none;
+            border: 1px solid #ddd;
+        }
+
+        .timetable-table {
+            box-shadow: none;
         }
     }
 </style>
@@ -191,22 +216,85 @@ function downloadTimetable(timetableId) {
     if (!table) return;
 
     const tableClone = table.cloneNode(true);
-    
+    const cardHeader = document.querySelector('.card-header');
+    const timetableTitle = cardHeader ? cardHeader.querySelector('h5')?.textContent : 'Timetable';
+    const branchInfo = cardHeader ? cardHeader.querySelector('small')?.textContent : '';
+
     // Create a clean HTML for the timetable
     const html = `
         <html>
         <head>
-            <title>Timetable</title>
+            <title>${timetableTitle}</title>
             <style>
-                body { font-family: Arial, sans-serif; padding: 20px; }
-                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-                th { background-color: #667eea; color: white; }
-                tr:nth-child(even) { background-color: #f9f9f9; }
+                body { 
+                    font-family: Arial, sans-serif; 
+                    padding: 30px; 
+                    margin: 0;
+                    background: #f8f9fa;
+                }
+                .header {
+                    text-align: center;
+                    margin-bottom: 30px;
+                    padding: 20px;
+                    background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+                    color: white;
+                    border-radius: 10px;
+                }
+                .header h1 {
+                    margin: 0 0 10px 0;
+                    font-size: 28px;
+                }
+                .header p {
+                    margin: 0;
+                    font-size: 14px;
+                    opacity: 0.9;
+                }
+                table { 
+                    width: 100%; 
+                    border-collapse: collapse; 
+                    margin-top: 20px; 
+                    background: white;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                    border-radius: 8px;
+                    overflow: hidden;
+                }
+                th { 
+                    background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+                    color: white; 
+                    padding: 15px 12px;
+                    text-align: left;
+                    font-weight: 700;
+                    font-size: 14px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    border: none;
+                }
+                td { 
+                    border-bottom: 1px solid #e2e8f0;
+                    padding: 12px;
+                    text-align: left;
+                    background: white;
+                }
+                tr:nth-child(even) { background-color: #f8fafc; }
+                tr:hover { background-color: #f0f9ff; }
+                .badge {
+                    display: inline-block;
+                    padding: 4px 8px;
+                    border-radius: 4px;
+                    font-size: 12px;
+                    font-weight: 600;
+                    margin-right: 4px;
+                }
+                .badge-info { background: #e0f2fe; color: #0369a1; }
+                .badge-success { background: #dcfce7; color: #166534; }
+                .badge-warning { background: #fef3c7; color: #92400e; }
             </style>
         </head>
         <body>
-            <h2>Teaching Timetable</h2>
+            <div class="header">
+                <h1>${timetableTitle}</h1>
+                <p>${branchInfo}</p>
+            </div>
             ${tableClone.outerHTML}
         </body>
         </html>
