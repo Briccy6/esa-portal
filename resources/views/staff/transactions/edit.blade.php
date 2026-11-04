@@ -4,35 +4,36 @@
         @csrf
         @method('PUT')
 
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <label class="form-label">Amount <span class="text-danger">*</span></label>
-                <input type="number" step="0.01" name="amount" class="form-control form-control-lg" value="{{ old('amount', $transaction->amount) }}" required>
-                @error('amount')
-                    <div class="text-danger small mt-1">{{ $message }}</div>
-                @enderror
+        <div class="mb-4">
+            <label class="form-label fw-bold">Amount (RWF) <span class="text-danger">*</span></label>
+            <div class="input-group input-group-lg">
+                <span class="input-group-text">RWF</span>
+                <input type="number" step="0.01" name="amount" class="form-control" value="{{ old('amount', $transaction->amount) }}" required min="1">
             </div>
-
-            <div class="col-md-6 mb-3">
-                <label class="form-label">Fee Type <span class="text-danger">*</span></label>
-                <select name="type" class="form-select form-select-lg" required>
-                    <option value="">-- Select Fee Type --</option>
-                    <option value="registration_fee" {{ $transaction->type === 'registration_fee' || $transaction->type === 'registration' ? 'selected' : '' }}>Registration Fee</option>
-                    <option value="school_fee" {{ $transaction->type === 'school_fee' || $transaction->type === 'tuition_fee' || $transaction->type === 'tuition' ? 'selected' : '' }}>School Fee</option>
-                    <option value="practical_fee" {{ $transaction->type === 'practical_fee' || $transaction->type === 'practical' ? 'selected' : '' }}>Practical Fee</option>
-                    <option value="trip_fee" {{ $transaction->type === 'trip_fee' || $transaction->type === 'trip' ? 'selected' : '' }}>Trip Fee</option>
-                    <option value="student_card" {{ $transaction->type === 'student_card' || $transaction->type === 'studentcard' ? 'selected' : '' }}>Student Card</option>
-                    <option value="other" {{ $transaction->type === 'other' ? 'selected' : '' }}>Other</option>
-                </select>
-                @error('type')
-                    <div class="text-danger small mt-1">{{ $message }}</div>
-                @enderror
-            </div>
+            @error('amount')
+                <div class="text-danger small mt-1">{{ $message }}</div>
+            @enderror
         </div>
 
-        <div class="mb-3">
-            <label class="form-label">Term (Optional)</label>
-            <select name="term_id" class="form-select">
+        <div class="mb-4">
+            <label class="form-label fw-bold">Fee Type <span class="text-danger">*</span></label>
+            <select name="type" class="form-select form-select-lg" required>
+                <option value="">-- Select Fee Type --</option>
+                <option value="registration_fee" {{ $transaction->type === 'registration_fee' || $transaction->type === 'registration' ? 'selected' : '' }}>Registration Fee</option>
+                <option value="school_fee" {{ $transaction->type === 'school_fee' || $transaction->type === 'tuition_fee' || $transaction->type === 'tuition' ? 'selected' : '' }}>School Fee</option>
+                <option value="practical_fee" {{ $transaction->type === 'practical_fee' || $transaction->type === 'practical' ? 'selected' : '' }}>Practical Fee</option>
+                <option value="trip_fee" {{ $transaction->type === 'trip_fee' || $transaction->type === 'trip' ? 'selected' : '' }}>Trip Fee</option>
+                <option value="student_card" {{ $transaction->type === 'student_card' || $transaction->type === 'studentcard' ? 'selected' : '' }}>Student Card</option>
+                <option value="other" {{ $transaction->type === 'other' ? 'selected' : '' }}>Other</option>
+            </select>
+            @error('type')
+                <div class="text-danger small mt-1">{{ $message }}</div>
+            @enderror
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label fw-bold">Term (Optional)</label>
+            <select name="term_id" class="form-select form-select-lg">
                 <option value="">-- No Term --</option>
                 @php
                     $terms = \App\Models\Term::orderBy('start_date', 'desc')->get();
@@ -48,19 +49,23 @@
             @enderror
         </div>
 
-        <div class="mb-3">
-            <label class="form-label">Notes (Optional)</label>
+        <div class="mb-4">
+            <label class="form-label fw-bold">Notes (Optional)</label>
             <textarea name="notes" class="form-control" rows="3" placeholder="Add any notes about this transaction">{{ (is_array($transaction->meta) ? $transaction->meta : json_decode($transaction->meta, true) ?? [])['notes'] ?? '' }}</textarea>
             @error('notes')
                 <div class="text-danger small mt-1">{{ $message }}</div>
             @enderror
         </div>
 
+        <div class="alert alert-info mb-4">
+            <small><i class="fas fa-info-circle me-1"></i> Changes will be logged for audit purposes.</small>
+        </div>
+
         <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-primary flex-grow-1">
+            <button type="submit" class="btn btn-primary btn-lg flex-grow-1">
                 <i class="fas fa-save me-2"></i>Save Changes
             </button>
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <button type="button" class="btn btn-secondary btn-lg" data-bs-dismiss="modal">
                 <i class="fas fa-times me-2"></i>Cancel
             </button>
         </div>
