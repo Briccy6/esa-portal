@@ -47,8 +47,14 @@ class StudentController extends Controller
         $timetables = \App\Models\Timetable::published()
             ->where('branch_id', $student->branch_id)
             ->where('academic_year_id', $student->academic_year_id)
-            ->whereDate('valid_from', '<=', now())
-            ->whereDate('valid_until', '>=', now())
+            ->where(function($query) {
+                $query->whereNull('valid_from')
+                      ->orWhereNull('valid_until')
+                      ->orWhere(function($q) {
+                          $q->whereDate('valid_from', '<=', now())
+                            ->whereDate('valid_until', '>=', now());
+                      });
+            })
             ->with(['branch', 'academicYear', 'term', 'sessions.lesson.teacher', 'sessions.courses'])
             ->get();
 
