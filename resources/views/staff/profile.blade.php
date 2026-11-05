@@ -131,14 +131,15 @@
 <script>
 document.getElementById('profileUpdateForm').addEventListener('submit', function(e) {
     e.preventDefault();
-    
+
     const formData = new FormData(this);
+    formData.append('_method', 'PUT');
     const submitBtn = this.querySelector('button[type="submit"]');
     const originalText = submitBtn.innerHTML;
-    
+
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Updating...';
-    
+
     fetch('{{ route("profile.update") }}', {
         method: 'POST',
         body: formData,
@@ -198,10 +199,10 @@ document.getElementById('profileUpdateForm').addEventListener('submit', function
 
 document.getElementById('passwordUpdateForm').addEventListener('submit', function(e) {
     e.preventDefault();
-    
+
     const newPassword = document.getElementById('new_password').value;
     const confirmPassword = document.getElementById('confirm_password').value;
-    
+
     if (newPassword !== confirmPassword) {
         const alert = document.createElement('div');
         alert.className = 'alert alert-danger alert-dismissible fade show position-fixed';
@@ -213,14 +214,15 @@ document.getElementById('passwordUpdateForm').addEventListener('submit', functio
         document.body.appendChild(alert);
         return;
     }
-    
+
     const formData = new FormData(this);
+    formData.append('_method', 'PUT');
     const submitBtn = this.querySelector('button[type="submit"]');
     const originalText = submitBtn.innerHTML;
-    
+
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Updating...';
-    
+
     fetch('{{ route("profile.update") }}', {
         method: 'POST',
         body: formData,
