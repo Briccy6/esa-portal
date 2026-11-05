@@ -708,7 +708,7 @@ Route::prefix('staff')->name('staff.')->group(function () {
             $staff = auth()->guard('staff')->user();
             return view('staff.profile', compact('staff'));
         })->name('profile');
-        Route::put('profile/update', [\App\Http\Controllers\StaffProfileController::class, 'update'])->name('profile.update');
+        Route::put('profile/update', [\App\Http\Controllers\StaffProfileController::class, 'update'])->name('staff.profile.update');
 
         // Subscription Management Routes
         Route::get('/subscriptions', [SubscriptionController::class, 'staffIndex'])->name('subscriptions.index');

@@ -37,7 +37,7 @@
                             <h5 class="mb-0"><i class="fas fa-user-edit me-2"></i>Profile Information</h5>
                         </div>
                         <div class="card-body">
-                            <form id="profileUpdateForm" method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data">
+                            <form id="profileUpdateForm" method="POST" action="{{ route('staff.profile.update') }}" enctype="multipart/form-data">
                                 @csrf
                                 @method('PUT')
                                 
@@ -140,7 +140,7 @@ document.getElementById('profileUpdateForm').addEventListener('submit', function
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Updating...';
 
-    fetch('{{ route("profile.update") }}', {
+    fetch('{{ route("staff.profile.update") }}', {
         method: 'POST',
         body: formData,
         headers: {
@@ -223,7 +223,7 @@ document.getElementById('passwordUpdateForm').addEventListener('submit', functio
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Updating...';
 
-    fetch('{{ route("profile.update") }}', {
+    fetch('{{ route("staff.profile.update") }}', {
         method: 'POST',
         body: formData,
         headers: {
