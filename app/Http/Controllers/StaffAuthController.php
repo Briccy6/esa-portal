@@ -38,6 +38,8 @@ class StaffAuthController extends Controller
                 return redirect()->route('staff.dashboard.dos')->with('success', 'Welcome, DOS!');
             } elseif ($role === 'Accountant') {
                 return redirect()->route('staff.dashboard.accountant')->with('success', 'Welcome, Accountant!');
+            } elseif ($role === 'SEC' || $role === 'Secretary') {
+                return redirect()->route('secretary.dashboard')->with('success', 'Welcome, Secretary!');
             } else {
                 Auth::guard('staff')->logout();
                 return back()->withErrors(['email' => 'Unauthorized role: ' . $role]);
@@ -153,6 +155,11 @@ class StaffAuthController extends Controller
             }
 
             return view('staff.dashboard_accountant', compact('branchStats', 'selectedAcademicYear'));
+        }
+
+        if ($role === 'SEC' || $role === 'Secretary') {
+            // Redirect to secretary dashboard route
+            return redirect()->route('secretary.dashboard');
         }
 
         abort(403, 'Unauthorized action. Role: ' . $role);
