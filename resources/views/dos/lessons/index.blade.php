@@ -394,7 +394,7 @@
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form id="assignLessonForm" method="POST" action="{{ route('lessons.assign') }}">
+            <form id="assignLessonForm" method="POST" action="{{ route('dos.lessons.assign') }}">
                 @csrf
                 <input type="hidden" name="lesson_id" id="lessonIdInput">
                 <div class="modal-body">
