@@ -1,4 +1,4 @@
-@extends('staff.partials.sidebar_sec')
+@extends('staff.layout')
 
 @section('content')
 <div class="container-fluid">
@@ -17,7 +17,7 @@
                         <div class="card-body text-center">
                             <div class="mb-3">
                                 @if($staff->photo)
-                                    <img src="{{ Storage::url($staff->photo) }}" alt="Profile" class="rounded-circle" style="width: 120px; height: 120px; object-fit: cover; border: 3px solid #3b82f6;">
+                                    <img src="{{ asset('storage/' . $staff->photo) }}" alt="Profile" class="rounded-circle" style="width: 120px; height: 120px; object-fit: cover; border: 3px solid #3b82f6;" onerror="this.src='https://via.placeholder.com/120?text=No+Image'">
                                 @else
                                     <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 120px; height: 120px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); margin: 0 auto;">
                                         <i class="fas fa-user text-white" style="font-size: 48px;"></i>
@@ -32,12 +32,12 @@
                 </div>
 
                 <div class="col-md-8">
-                    <div class="card shadow-sm">
+                    <div class="card shadow-sm mb-3">
                         <div class="card-header bg-primary text-white">
                             <h5 class="mb-0"><i class="fas fa-user-edit me-2"></i>Profile Information</h5>
                         </div>
                         <div class="card-body">
-                            <form id="profileUpdateForm" method="POST" action="{{ route('staff.profile.update') }}" enctype="multipart/form-data">
+                            <form id="profileUpdateForm" method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data">
                                 @csrf
                                 @method('PUT')
                                 
@@ -87,6 +87,40 @@
                             </form>
                         </div>
                     </div>
+
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-warning text-dark">
+                            <h5 class="mb-0"><i class="fas fa-lock me-2"></i>Change Password</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="passwordUpdateForm" method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data">
+                                @csrf
+                                @method('PUT')
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Current Password</label>
+                                    <input type="password" class="form-control" name="current_password" required>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">New Password</label>
+                                        <input type="password" class="form-control" name="password" id="new_password" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Confirm New Password</label>
+                                        <input type="password" class="form-control" name="password_confirmation" id="confirm_password" required>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex justify-content-between">
+                                    <button type="submit" class="btn btn-warning">
+                                        <i class="fas fa-key me-1"></i>Update Password
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -102,16 +136,10 @@ document.getElementById('profileUpdateForm').addEventListener('submit', function
     const submitBtn = this.querySelector('button[type="submit"]');
     const originalText = submitBtn.innerHTML;
     
-    // Debug logging
-    console.log('Form data being submitted:');
-    for (let [key, value] of formData.entries()) {
-        console.log(key, value);
-    }
-    
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Updating...';
     
-    fetch('{{ route("staff.profile.update") }}', {
+    fetch('{{ route("profile.update") }}', {
         method: 'POST',
         body: formData,
         headers: {
@@ -119,15 +147,9 @@ document.getElementById('profileUpdateForm').addEventListener('submit', function
             'Accept': 'application/json',
         }
     })
-    .then(response => {
-        console.log('Response status:', response.status);
-        console.log('Response headers:', response.headers);
-        return response.json();
-    })
+    .then(response => response.json())
     .then(data => {
-        console.log('Response data:', data);
         if (data.success) {
-            // Show success message
             const alert = document.createElement('div');
             alert.className = 'alert alert-success alert-dismissible fade show position-fixed';
             alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
@@ -137,19 +159,16 @@ document.getElementById('profileUpdateForm').addEventListener('submit', function
             `;
             document.body.appendChild(alert);
             
-            // Remove alert after 3 seconds
             setTimeout(() => {
                 if (alert.parentNode) {
                     alert.parentNode.removeChild(alert);
                 }
             }, 3000);
             
-            // Reload page after success
             setTimeout(() => {
                 window.location.reload();
             }, 1500);
         } else {
-            // Show error message
             const alert = document.createElement('div');
             alert.className = 'alert alert-danger alert-dismissible fade show position-fixed';
             alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
@@ -167,6 +186,86 @@ document.getElementById('profileUpdateForm').addEventListener('submit', function
         alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
         alert.innerHTML = `
             <i class="fas fa-exclamation-triangle me-2"></i>Error updating profile. Please try again.
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(alert);
+    })
+    .finally(() => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+    });
+});
+
+document.getElementById('passwordUpdateForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const newPassword = document.getElementById('new_password').value;
+    const confirmPassword = document.getElementById('confirm_password').value;
+    
+    if (newPassword !== confirmPassword) {
+        const alert = document.createElement('div');
+        alert.className = 'alert alert-danger alert-dismissible fade show position-fixed';
+        alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        alert.innerHTML = `
+            <i class="fas fa-exclamation-triangle me-2"></i>Passwords do not match.
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(alert);
+        return;
+    }
+    
+    const formData = new FormData(this);
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Updating...';
+    
+    fetch('{{ route("profile.update") }}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Accept': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-success alert-dismissible fade show position-fixed';
+            alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            alert.innerHTML = `
+                <i class="fas fa-check-circle me-2"></i>${data.message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(alert);
+            
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.parentNode.removeChild(alert);
+                }
+            }, 3000);
+            
+            this.reset();
+        } else {
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-danger alert-dismissible fade show position-fixed';
+            alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            alert.innerHTML = `
+                <i class="fas fa-exclamation-triangle me-2"></i>${data.message || 'Error updating password'}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(alert);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        const alert = document.createElement('div');
+        alert.className = 'alert alert-danger alert-dismissible fade show position-fixed';
+        alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        alert.innerHTML = `
+            <i class="fas fa-exclamation-triangle me-2"></i>Error updating password. Please try again.
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         `;
         document.body.appendChild(alert);

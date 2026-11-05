@@ -10,7 +10,7 @@ class Staff extends Authenticatable
     use Notifiable;
 
     protected $fillable = [
-        'name', 'role', 'photo', 'qr_code', 'staff_card', 'email', 'phone', 'password'
+        'name', 'role', 'photo', 'qr_code', 'staff_card', 'email', 'phone', 'password', 'address'
     ];
 
     protected $hidden = [

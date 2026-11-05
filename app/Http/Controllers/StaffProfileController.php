@@ -24,6 +24,8 @@ public function update(Request $request)
     $request->validate([
         'name' => 'nullable|string|max:255',
         'email' => 'nullable|email|max:255',
+        'phone' => 'nullable|string|max:20',
+        'address' => 'nullable|string|max:500',
         'profile_photo' => 'nullable|image|max:2048',
         'current_password' => 'required_with:password',
         'password' => 'nullable|string|min:8|confirmed',
@@ -41,6 +43,21 @@ public function update(Request $request)
         $updatedFields[] = 'Email';
     }
 
+    if ($request->filled('phone') && $request->phone !== $staff->phone) {
+        $staff->phone = $request->phone;
+        $updatedFields[] = 'Phone';
+    }
+
+    if ($request->filled('address') && $request->address !== $staff->address) {
+        $staff->address = $request->address;
+        $updatedFields[] = 'Address';
+    }
+
+    if ($request->filled('role') && $request->role !== $staff->role) {
+        $staff->role = $request->role;
+        $updatedFields[] = 'Role';
+    }
+
     if ($request->hasFile('profile_photo')) {
         // Handle file upload
         $file = $request->file('profile_photo');
@@ -54,7 +71,7 @@ public function update(Request $request)
         
         $filename = time() . '_' . $file->getClientOriginalName();
         $path = $file->storeAs('profile_photos', $filename, 'public');
-        $staff->photo = $path;
+        $staff->photo = 'profile_photos/' . $filename;
         $updatedFields[] = 'Profile Photo';
         
         \Log::info('Profile photo stored', ['path' => $path]);
