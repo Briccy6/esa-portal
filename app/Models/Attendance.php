@@ -16,6 +16,16 @@ class Attendance extends Model
         'marked_by',
         'marked_at',
         'approved',
+        'approved_by',
+        'approved_at',
+        'rejection_reason',
+    ];
+
+    protected $casts = [
+        'approved' => 'boolean',
+        'approved_at' => 'datetime',
+        'marked_at' => 'datetime',
+        'date' => 'date',
     ];
 
     public function student()
@@ -27,12 +37,25 @@ class Attendance extends Model
     {
         return $this->belongsTo(Timetable::class);
     }
-   
-    
+
     public function lesson()
     {
         return $this->belongsTo(Lesson::class);
     }
-    
-    // ...existing code...
+
+    public function course()
+    {
+        return $this->belongsTo(Course::class);
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
+    public function approvedBy()
+    {
+        return $this->belongsTo(\App\Models\Staff::class, 'approved_by');
+    }
+}
 }

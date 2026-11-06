@@ -64,4 +64,14 @@ class TeacherDaily extends Model
     {
         return $this->belongsTo(Branch::class);
     }
+
+    public function approvedBy()
+    {
+        return $this->belongsTo(\App\Models\Staff::class, 'approved_by');
+    }
+
+    public function rejectedBy()
+    {
+        return $this->belongsTo(\App\Models\Staff::class, 'rejected_by');
+    }
 }
