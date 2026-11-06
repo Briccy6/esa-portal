@@ -571,6 +571,36 @@
             });
         }
 
+        // Bind lesson change event to auto-select courses
+        function bindLessonChangeHandlers() {
+            container.querySelectorAll('.lesson-select').forEach(select => {
+                select.removeEventListener('change', handleLessonChange);
+                select.addEventListener('change', handleLessonChange);
+            });
+        }
+
+        function handleLessonChange(event) {
+            const lessonSelect = event.target;
+            const selectedOption = lessonSelect.options[lessonSelect.selectedIndex];
+            const courseIds = selectedOption.getAttribute('data-course-ids');
+            const row = lessonSelect.closest('.session-row');
+            const courseSelect = row.querySelector('.course-select');
+
+            if (courseIds && courseSelect) {
+                const courseIdArray = courseIds.split(',');
+                // Clear current selections
+                Array.from(courseSelect.options).forEach(opt => opt.selected = false);
+                // Select the courses matching the lesson
+                Array.from(courseSelect.options).forEach(opt => {
+                    if (courseIdArray.includes(opt.value)) opt.selected = true;
+                });
+                // Trigger change event for Select2 if available
+                if (window.jQuery && jQuery().select2) {
+                    jQuery(courseSelect).trigger('change');
+                }
+            }
+        }
+
         const container = document.getElementById('sessions-container');
         const template = document.getElementById('session-row-template').innerHTML;
         const addButton = document.getElementById('add-session-row');
@@ -633,12 +663,18 @@
             container.insertAdjacentHTML('beforeend', rowMarkup);
             bindRemoveButtons();
             initCourseSelects();
+            bindLessonChangeHandlers();
             // Reload lessons for the new row based on current branch
             const currentBranchId = branchSelect ? branchSelect.value : null;
             if (currentBranchId) {
                 refreshLessonSelects(currentBranchId);
             }
         }
+
+        // Initial bindings
+        bindRemoveButtons();
+        initCourseSelects();
+        bindLessonChangeHandlers();
             bindLessonChangeHandlers();
             updateIndexes();
         }
