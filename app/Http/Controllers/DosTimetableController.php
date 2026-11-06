@@ -99,6 +99,14 @@ class DosTimetableController extends Controller
             $first = $assignments->first();
             $courseNames = $assignments->pluck('course.course_name')->unique()->implode(', ');
             $courseAbbreviations = $assignments->pluck('course.abbreviation')->unique()->implode(', ');
+            
+            // Get teacher names for each course
+            $courseTeacherMap = [];
+            foreach ($assignments as $assignment) {
+                $teacherName = $assignment->teacher ? $assignment->teacher->teacher_name : 'Unassigned';
+                $courseTeacherMap[$assignment->course_id] = $teacherName;
+            }
+            
             return [
                 'lesson_id' => $first->lesson_id,
                 'lesson_title' => $first->lesson->title ?? 'Untitled lesson',
@@ -108,6 +116,7 @@ class DosTimetableController extends Controller
                 'all_course_ids' => $assignments->pluck('course_id')->unique()->toArray(),
                 'course_names' => $courseNames,
                 'course_abbreviations' => $courseAbbreviations,
+                'course_teacher_map' => $courseTeacherMap,
             ];
         })->values();
 
@@ -302,9 +311,17 @@ class DosTimetableController extends Controller
         $teacherIds = $lessonAssignments->pluck('teacher_id')->unique();
 
         // Group lesson assignments by lesson_id to avoid duplicates in dropdown
-        $groupedLessons = $lessonAssignments->groupBy('lesson_id')->map(function ($assignments) {
+        $groupedLessons = $lessonAssignments->groupBy('lesson_id')->map(function ($assignments) use ($branchId) {
             $first = $assignments->first();
             $courseNames = $assignments->pluck('course.course_name')->unique()->implode(', ');
+            
+            // Get teacher names for each course in this lesson
+            $courseTeacherMap = [];
+            foreach ($assignments as $assignment) {
+                $teacherName = $assignment->teacher ? $assignment->teacher->teacher_name : 'Unassigned';
+                $courseTeacherMap[$assignment->course_id] = $teacherName;
+            }
+            
             return (object)[
                 'lesson_id' => $first->lesson_id,
                 'lesson' => $first->lesson,
@@ -314,6 +331,7 @@ class DosTimetableController extends Controller
                 'teacher' => $first->teacher,
                 'all_course_ids' => $assignments->pluck('course_id')->unique()->toArray(),
                 'course_names' => $courseNames,
+                'course_teacher_map' => $courseTeacherMap,
             ];
         })->values();
 
@@ -577,9 +595,17 @@ class DosTimetableController extends Controller
         $teacherIds = $lessonAssignments->pluck('teacher_id')->unique();
 
         // Group lesson assignments by lesson_id to avoid duplicates in dropdown
-        $groupedLessons = $lessonAssignments->groupBy('lesson_id')->map(function ($assignments) {
+        $groupedLessons = $lessonAssignments->groupBy('lesson_id')->map(function ($assignments) use ($branchId) {
             $first = $assignments->first();
             $courseNames = $assignments->pluck('course.course_name')->unique()->implode(', ');
+            
+            // Get teacher names for each course in this lesson
+            $courseTeacherMap = [];
+            foreach ($assignments as $assignment) {
+                $teacherName = $assignment->teacher ? $assignment->teacher->teacher_name : 'Unassigned';
+                $courseTeacherMap[$assignment->course_id] = $teacherName;
+            }
+            
             return (object)[
                 'lesson_id' => $first->lesson_id,
                 'lesson' => $first->lesson,
@@ -589,6 +615,7 @@ class DosTimetableController extends Controller
                 'teacher' => $first->teacher,
                 'all_course_ids' => $assignments->pluck('course_id')->unique()->toArray(),
                 'course_names' => $courseNames,
+                'course_teacher_map' => $courseTeacherMap,
             ];
         })->values();
 

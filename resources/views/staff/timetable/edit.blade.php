@@ -298,18 +298,26 @@
             const courseSelect = row.querySelector('.course-select');
 
             if (courseIds && courseSelect) {
-                const courseIdArray = courseIds.split(',');
+                const courseIdArray = courseIds.split(',').map(id => id.trim()).filter(id => id);
                 // Clear current options
                 courseSelect.innerHTML = '<option value="">Select course</option>';
                 // Add only courses associated with this lesson
                 courseIdArray.forEach(courseId => {
-                    const courseOption = Array.from(courseSelect.parentElement.parentElement.parentElement.querySelectorAll('.course-select option'))
-                        .find(opt => opt.value === courseId);
-                    if (courseOption) {
-                        const newOpt = document.createElement('option');
-                        newOpt.value = courseOption.value;
-                        newOpt.textContent = courseOption.textContent;
-                        courseSelect.appendChild(newOpt);
+                    // Try to find in any course select on the page
+                    const allCourseSelects = document.querySelectorAll('.course-select');
+                    for (const select of allCourseSelects) {
+                        const opt = Array.from(select.options).find(o => o.value === courseId);
+                        if (opt) {
+                            const newOpt = document.createElement('option');
+                            newOpt.value = opt.value;
+                            newOpt.textContent = opt.textContent;
+                            const teacherName = opt.getAttribute('data-teacher-name');
+                            if (teacherName) {
+                                newOpt.setAttribute('data-teacher-name', teacherName);
+                            }
+                            courseSelect.appendChild(newOpt);
+                            break;
+                        }
                     }
                 });
                 // If only one course, auto-select it
