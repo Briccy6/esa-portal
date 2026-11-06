@@ -18,6 +18,11 @@ class TeacherDailyController extends Controller
     public function store(Request $request)
     {
         try {
+            \Log::info('TeacherDaily store attempt', [
+                'request_data' => $request->all(),
+                'teacher_id' => Auth::guard('teacher')->user()?->id,
+            ]);
+
             $request->validate([
                 'activities' => 'required|array',
                 'courses' => 'required|array', // Changed from single course to multiple courses
@@ -33,6 +38,13 @@ class TeacherDailyController extends Controller
             $teacher = Auth::guard('teacher')->user();
             $branchId = $request->branch_id;
 
+            \Log::info('Validation passed', [
+                'teacher_id' => $teacher->id,
+                'branch_id' => $branchId,
+                'courses' => $request->courses,
+                'lesson' => $request->lesson,
+            ]);
+
             // Verify teacher is assigned to this branch
             if (!$teacher->branches->contains('id', $branchId)) {
                 return back()->with('error', 'You are not assigned to this branch. Please select a branch you belong to.');
@@ -44,18 +56,40 @@ class TeacherDailyController extends Controller
                 return back()->with('error', 'Selected lesson not found. Please try again.');
             }
 
-            // Validate that all courses have the same lesson
+            // Validate that the lesson is associated with all selected courses via lesson_branch_course pivot table
+            $lessonCourseIds = $lesson->courses()->pluck('courses.id')->toArray();
+
+            \Log::info('Lesson course associations', [
+                'lesson_id' => $lesson->id,
+                'lesson_course_ids' => $lessonCourseIds,
+                'selected_courses' => $request->courses,
+            ]);
+
             foreach ($request->courses as $courseId) {
                 $course = Course::find($courseId);
                 if (!$course) {
+                    \Log::error('Course not found', ['course_id' => $courseId]);
                     return back()->with('error', 'One of the selected courses not found. Please try again.');
                 }
-                
-                // Verify the lesson belongs to this course
-                if ($lesson->course_id && $lesson->course_id != $courseId) {
+
+                // Verify the lesson is associated with this course via the pivot table
+                if (!in_array($courseId, $lessonCourseIds)) {
+                    \Log::error('Lesson not associated with course', [
+                        'lesson_id' => $lesson->id,
+                        'course_id' => $courseId,
+                        'lesson_course_ids' => $lessonCourseIds,
+                    ]);
                     return back()->with('error', 'Lesson does not belong to one of the selected courses. All courses must have the same lesson.');
                 }
             }
+
+            \Log::info('Creating TeacherDaily record', [
+                'teacher_id' => $teacher->id,
+                'course_id' => $request->courses[0],
+                'lesson_id' => $request->lesson,
+                'unit_id' => $request->unit,
+                'branch_id' => $branchId,
+            ]);
 
             // Create a single TeacherDaily record for the session
             $daily = TeacherDaily::create([
@@ -75,6 +109,8 @@ class TeacherDailyController extends Controller
                 'comment'       => $request->comment,
                 'date'          => $request->date ?? now()->toDateString(),
             ]);
+
+            \Log::info('TeacherDaily created successfully', ['daily_id' => $daily->id]);
 
             // Get all students for the selected courses AND branch
             $students = Student::whereIn('course_id', $request->courses)

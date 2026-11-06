@@ -1081,15 +1081,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 })
                 .then(data => {
                     let options = '<option value="">Select lesson</option>';
-                    data.forEach(lesson => {
-                        options += `<option value="${lesson.id}">${lesson.title}</option>`;
-                    });
+                    if (data && data.length > 0) {
+                        data.forEach(lesson => {
+                            options += `<option value="${lesson.id}">${lesson.title}</option>`;
+                        });
+                    } else {
+                        options += '<option value="">No lessons available</option>';
+                    }
                     lessonSelect.innerHTML = options;
                     setLoading(lessonSelect, false);
                 })
                 .catch(err => {
                     console.error('Error fetching lessons:', err);
-                    lessonSelect.innerHTML = '<option value="">Error loading lessons</option>';
+                    lessonSelect.innerHTML = '<option value="">Error loading lessons. Please check your connection.</option>';
                     setLoading(lessonSelect, false);
                 });
 
@@ -1109,13 +1113,15 @@ document.addEventListener('DOMContentLoaded', function() {
                         })
                         .then(students => {
                             // Add unique students
-                            students.forEach(student => {
-                                if (!allStudents.find(s => s.id === student.id)) {
-                                    allStudents.push(student);
-                                }
-                            });
+                            if (students && Array.isArray(students)) {
+                                students.forEach(student => {
+                                    if (!allStudents.find(s => s.id === student.id)) {
+                                        allStudents.push(student);
+                                    }
+                                });
+                            }
                             completedRequests++;
-                            
+
                             // Show attendance when all courses loaded
                             if (completedRequests === selectedCourses.length) {
                                 showAttendanceList(allStudents);
@@ -1195,18 +1201,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (lessonId) {
             fetch(`/teacher/lesson/${lessonId}/units`)
-                .then(res => res.json())
+                .then(res => {
+                    if (!res.ok) {
+                        throw new Error('Failed to load units');
+                    }
+                    return res.json();
+                })
                 .then(data => {
                     let options = '<option value="">Select unit</option>';
-                    data.forEach(unit => {
-                        options += `<option value="${unit.id}">${unit.unit_name}</option>`;
-                    });
+                    if (data && data.length > 0) {
+                        data.forEach(unit => {
+                            options += `<option value="${unit.id}">${unit.unit_name}</option>`;
+                        });
+                    } else {
+                        options += '<option value="">No units available</option>';
+                    }
                     unitSelect.innerHTML = options;
                     setLoading(unitSelect, false);
                 })
                 .catch(err => {
                     console.error('Error fetching units:', err);
-                    unitSelect.innerHTML = '<option value="">Error loading units</option>';
+                    unitSelect.innerHTML = '<option value="">Error loading units. Please check your connection.</option>';
                     setLoading(unitSelect, false);
                 });
         } else {
@@ -1384,8 +1399,13 @@ document.addEventListener('keydown', function(e) {
 // Add smooth scrolling to all internal links
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function (e) {
+        const href = this.getAttribute('href');
+        // Skip if href is just "#" or empty
+        if (!href || href === '#') {
+            return;
+        }
         e.preventDefault();
-        const target = document.querySelector(this.getAttribute('href'));
+        const target = document.querySelector(href);
         if (target) {
             target.scrollIntoView({
                 behavior: 'smooth',
