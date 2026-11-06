@@ -75,12 +75,43 @@ class DosTimetableController extends Controller
 
         // If still no courses, return all courses as fallback
         if (empty($courseIds)) {
-            $courses = Course::orderBy('course_name')->get(['id', 'course_name']);
+            $courses = Course::orderBy('course_name')->get(['id', 'course_name', 'abbreviation']);
         } else {
-            $courses = Course::whereIn('id', $courseIds)->orderBy('course_name')->get(['id', 'course_name']);
+            $courses = Course::whereIn('id', $courseIds)->orderBy('course_name')->get(['id', 'course_name', 'abbreviation']);
         }
 
         return response()->json($courses);
+    }
+
+    public function branchLessons(Request $request)
+    {
+        $this->authorizeDos();
+
+        $branchId = (int) $request->get('branch_id');
+        if (! $branchId) {
+            return response()->json([], 200);
+        }
+
+        $lessonAssignments = $this->getLessonAssignments($branchId);
+
+        // Group lessons by lesson_id to avoid duplicates
+        $groupedLessons = $lessonAssignments->groupBy('lesson_id')->map(function ($assignments) {
+            $first = $assignments->first();
+            $courseNames = $assignments->pluck('course.course_name')->unique()->implode(', ');
+            $courseAbbreviations = $assignments->pluck('course.abbreviation')->unique()->implode(', ');
+            return [
+                'lesson_id' => $first->lesson_id,
+                'lesson_title' => $first->lesson->title ?? 'Untitled lesson',
+                'course_id' => $first->course_id,
+                'course_name' => $first->course->course_name ?? 'Course',
+                'course_abbreviation' => $first->course->abbreviation ?? $first->course->course_name ?? 'Course',
+                'all_course_ids' => $assignments->pluck('course_id')->unique()->toArray(),
+                'course_names' => $courseNames,
+                'course_abbreviations' => $courseAbbreviations,
+            ];
+        })->values();
+
+        return response()->json($groupedLessons);
     }
 
     protected function getLessonAssignments(int $branchId)

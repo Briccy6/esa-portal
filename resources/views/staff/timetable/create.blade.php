@@ -448,10 +448,15 @@
                     </label>
                     <select name="sessions[__INDEX__][lesson_id]" class="form-select lesson-select" required>
                         <option value="">Select lesson</option>
-                        @foreach($lessonAssignments as $assignment)
-                            <option value="{{ $assignment->lesson_id }}" 
-                                    data-course-id="{{ $assignment->course_id }}">
-                                {{ $assignment->lesson->title ?? 'Untitled lesson' }} ({{ $assignment->course->course_name ?? 'Course' }})
+                        @foreach($groupedLessons as $lesson)
+                            <option value="{{ $lesson->lesson_id }}"
+                                    data-course-ids="{{ implode(',', $lesson->all_course_ids) }}">
+                                {{ $lesson->lesson->title ?? 'Untitled lesson' }}
+                                @if(count($lesson->all_course_ids) > 1)
+                                    ({{ $lesson->course_names }})
+                                @else
+                                    ({{ $lesson->course->abbreviation ?? $lesson->course->course_name ?? 'Course' }})
+                                @endif
                             </option>
                         @endforeach
                     </select>
@@ -490,7 +495,7 @@
                     </label>
                     <select name="sessions[__INDEX__][course_ids][]" class="form-select course-select" multiple data-placeholder="Select course(s)">
                         @foreach($courses as $course)
-                            <option value="{{ $course->id }}">{{ $course->course_name }}</option>
+                            <option value="{{ $course->id }}">{{ $course->abbreviation ?? $course->course_name }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -515,6 +520,55 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        const container = document.getElementById('sessions-container');
+        const template = document.getElementById('session-row-template').innerHTML;
+        const addButton = document.getElementById('add-session-row');
+        const branchSelect = document.getElementById('branch_id');
+
+        // Load lessons for selected branch
+        async function loadLessonsForBranch(branchId) {
+            if (!branchId) return [];
+            try {
+                const url = new URL('{{ route('timetable.branch-lessons') }}', window.location.origin);
+                url.searchParams.set('branch_id', branchId);
+                const res = await fetch(url.toString(), { credentials: 'same-origin' });
+                if (!res.ok) return [];
+                return await res.json();
+            } catch (err) {
+                console.error('Failed to load branch lessons', err);
+                return [];
+            }
+        }
+
+        // Refresh lesson selects when branch changes
+        async function refreshLessonSelects(branchId) {
+            const lessons = await loadLessonsForBranch(branchId);
+            const selects = document.querySelectorAll('.lesson-select');
+            selects.forEach(sel => {
+                const prevValue = sel.value;
+                sel.innerHTML = '<option value="">Select lesson</option>';
+                lessons.forEach(lesson => {
+                    const opt = document.createElement('option');
+                    opt.value = lesson.lesson_id;
+                    opt.setAttribute('data-course-ids', lesson.all_course_ids.join(','));
+                    if (lesson.all_course_ids.length > 1) {
+                        opt.textContent = `${lesson.lesson_title} (${lesson.course_abbreviations})`;
+                    } else {
+                        opt.textContent = `${lesson.lesson_title} (${lesson.course_abbreviation})`;
+                    }
+                    if (prevValue === String(lesson.lesson_id)) opt.selected = true;
+                    sel.appendChild(opt);
+                });
+            });
+        }
+
+        // Bind branch change event
+        if (branchSelect) {
+            branchSelect.addEventListener('change', function () {
+                refreshLessonSelects(this.value);
+            });
+        }
+
         const container = document.getElementById('sessions-container');
         const template = document.getElementById('session-row-template').innerHTML;
         const addButton = document.getElementById('add-session-row');
@@ -577,6 +631,12 @@
             container.insertAdjacentHTML('beforeend', rowMarkup);
             bindRemoveButtons();
             initCourseSelects();
+            // Reload lessons for the new row based on current branch
+            const currentBranchId = branchSelect ? branchSelect.value : null;
+            if (currentBranchId) {
+                refreshLessonSelects(currentBranchId);
+            }
+        }
             bindLessonChangeHandlers();
             updateIndexes();
         }
