@@ -79,6 +79,27 @@ class DosTimetableController extends Controller
         } else {
             $courses = Course::whereIn('id', $courseIds)->orderBy('course_name')->get(['id', 'course_name', 'abbreviation']);
         }
+        
+        // Add teacher information to courses
+        $courses = $courses->map(function($course) use ($branchId) {
+            $teacherIds = \DB::table('lesson_branch_course')
+                ->where('branch_id', $branchId)
+                ->where('course_id', $course->id)
+                ->distinct()
+                ->pluck('teacher_id');
+            
+            $teachers = \App\Models\Teacher::whereIn('id', $teacherIds)
+                ->pluck('teacher_name')
+                ->unique()
+                ->implode(', ');
+            
+            return (object)[
+                'id' => $course->id,
+                'course_name' => $course->course_name,
+                'abbreviation' => $course->abbreviation,
+                'teacher_name' => $teachers,
+            ];
+        });
 
         return response()->json($courses);
     }

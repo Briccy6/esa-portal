@@ -77,7 +77,12 @@
         <div id="sessions-container">
             @php
                 $oldSessions = old('sessions', []);
-                $sessionRows = count($oldSessions) > 0 ? $oldSessions : $timetable->sessions->toArray();
+                $sessionRows = count($oldSessions) > 0 ? $oldSessions : $timetable->sessions->map(function($session) {
+                    $data = $session->toArray();
+                    // Add course_ids from the relationship
+                    $data['course_ids'] = $session->courses->pluck('id')->toArray();
+                    return $data;
+                })->toArray();
             @endphp
 
             @foreach($sessionRows as $index => $sessionData)
@@ -382,6 +387,10 @@
                     const opt = document.createElement('option');
                     opt.value = c.id;
                     opt.textContent = c.abbreviation || c.course_name;
+                    if (c.teacher_name) {
+                        opt.textContent += ' (' + c.teacher_name + ')';
+                        opt.setAttribute('data-teacher-name', c.teacher_name);
+                    }
                     if (prev.includes(String(c.id))) opt.selected = true;
                     sel.appendChild(opt);
                 });
@@ -394,6 +403,13 @@
                     }
                 });
                 initCourseSelects();
+                // Restore selections after Select2 initialization
+                selects.forEach(sel => {
+                    const prev = Array.from(sel.options).filter(o => o.selected).map(o => o.value);
+                    if (prev.length > 0) {
+                        jQuery(sel).val(prev).trigger('change');
+                    }
+                });
             }
         }
 
@@ -405,6 +421,18 @@
         }
 
         initCourseSelects();
+        
+        // Initialize course selections for existing sessions
+        document.querySelectorAll('.lesson-select').forEach(lessonSelect => {
+            const row = lessonSelect.closest('.session-row');
+            const courseSelect = row.querySelector('.course-select');
+            if (courseSelect && courseSelect.selectedOptions.length > 0) {
+                const selectedIds = Array.from(courseSelect.selectedOptions).map(opt => opt.value);
+                if (window.jQuery && jQuery().select2) {
+                    jQuery(courseSelect).val(selectedIds).trigger('change');
+                }
+            }
+        });
     });
 </script>
 @endsection

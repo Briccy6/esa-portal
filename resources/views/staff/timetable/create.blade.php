@@ -796,7 +796,11 @@
                 courses.forEach(c => {
                     const opt = document.createElement('option');
                     opt.value = c.id;
-                    opt.textContent = c.course_name;
+                    opt.textContent = c.abbreviation || c.course_name;
+                    if (c.teacher_name) {
+                        opt.textContent += ' (' + c.teacher_name + ')';
+                        opt.setAttribute('data-teacher-name', c.teacher_name);
+                    }
                     if (prev.includes(String(c.id))) opt.selected = true;
                     sel.appendChild(opt);
                 });
@@ -809,6 +813,13 @@
                     }
                 });
                 initCourseSelects();
+                // Restore selections after Select2 initialization
+                selects.forEach(sel => {
+                    const prev = Array.from(sel.options).filter(o => o.selected).map(o => o.value);
+                    if (prev.length > 0) {
+                        jQuery(sel).val(prev).trigger('change');
+                    }
+                });
             }
         }
 
