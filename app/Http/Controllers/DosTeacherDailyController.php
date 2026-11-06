@@ -80,21 +80,25 @@ class DosTeacherDailyController extends Controller
         try {
             $daily = TeacherDaily::findOrFail($id);
 
-            \Log::info('Approving TeacherDaily', [
+            \Log::info('Approving TeacherDaily - START', [
                 'daily_id' => $id,
                 'current_approved_status' => $daily->approved,
                 'staff_id' => Auth::guard('staff')->user()->id,
+                'daily_data' => $daily->toArray(),
             ]);
 
             $daily->approved = true;
             $daily->approved_by = Auth::guard('staff')->user()->id;
             $daily->approved_at = now();
-            $daily->save();
+            
+            $saved = $daily->save();
 
-            \Log::info('TeacherDaily approved successfully', [
+            \Log::info('TeacherDaily save result', [
                 'daily_id' => $id,
+                'saved' => $saved,
                 'new_approved_status' => $daily->approved,
                 'approved_at' => $daily->approved_at,
+                'approved_by' => $daily->approved_by,
             ]);
 
             // Also approve related attendance records
@@ -124,6 +128,7 @@ class DosTeacherDailyController extends Controller
             \Log::error('Failed to approve TeacherDaily', [
                 'daily_id' => $id,
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             if (request()->expectsJson()) {
