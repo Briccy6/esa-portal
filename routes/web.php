@@ -1632,6 +1632,9 @@ Route::middleware(['auth:staff'])->prefix('dos')->name('dos.')->group(function (
     Route::get('/lessons/{lesson}/assignments', [LessonController::class, 'getAssignments'])->name('lessons.assignments');
     Route::delete('/lessons/{assignmentId}/delete-assignment', [LessonController::class, 'deleteAssignment'])->name('lessons.delete-assignment');
 
+    // Teachers Management
+    Route::get('/teachers', [\App\Http\Controllers\DosTeacherController::class, 'index'])->name('teachers.index');
+
     // Live Classes Management
     Route::get('/live-classes', [\App\Http\Controllers\DOS\LiveClassController::class, 'index'])->name('live-classes.index');
     Route::get('/live-classes/create', [\App\Http\Controllers\DOS\LiveClassController::class, 'create'])->name('live-classes.create');

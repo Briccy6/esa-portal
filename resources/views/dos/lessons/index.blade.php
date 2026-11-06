@@ -263,6 +263,9 @@
                         <a href="{{ route('dos.lessons.create') }}" class="btn btn-primary me-2">
                             <i class="fas fa-plus-circle me-2"></i>Create New Lesson
                         </a>
+                        <a href="{{ route('dos.teachers.index') }}" class="btn btn-success me-2">
+                            <i class="fas fa-chalkboard-teacher me-2"></i>View Teachers
+                        </a>
                         <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#assignLessonModal">
                             <i class="fas fa-network-wired me-2"></i>Assign to Branches
                         </button>
@@ -273,7 +276,7 @@
                 <div class="search-container mb-3" style="margin-bottom: 20px;">
                     <div class="input-group">
                         <span class="input-group-text"><i class="fas fa-search"></i></span>
-                        <input type="text" class="form-control" id="lessonSearch" placeholder="Search lessons by title, course, teacher, terms... (searches ALL data)">
+                        <input type="text" class="form-control" id="lessonSearch" placeholder="Search lessons by title, course, teacher, branch, terms... (searches ALL data)">
                         <span class="input-group-text text-muted small"><span id="lessonCount">{{ $lessonDetails->total() ?? 0 }}</span> results</span>
                     </div>
                 </div>
@@ -291,10 +294,14 @@
                             <tbody id="lessonTableBody">
                                 @foreach($lessonDetails as $lesson)
                                     @php
+                                        // Collect all branch names from branch courses
+                                        $branchNames = $lesson->branchCourses->pluck('branch.name')->filter()->implode(' ');
+                                        
                                         $searchText = strtolower($lesson->title . ' ' . 
                                             ($lesson->course->course_name ?? '') . ' ' . 
                                             ($lesson->teacher->teacher_name ?? '') . ' ' . 
-                                            $lesson->terms->pluck('name')->implode(' '));
+                                            $lesson->terms->pluck('name')->implode(' ') . ' ' .
+                                            $branchNames);
                                     @endphp
                                     <tr class="lesson-row" data-search-text="{{ $searchText }}">
                                         <td>
