@@ -134,15 +134,24 @@ class DosTimetableController extends Controller
 
     protected function getSessionCourseIdsFromInput(array $sessionData, int $branchId, Lesson $lesson): array
     {
-        $courseIds = array_filter(array_map('intval', $sessionData['course_ids'] ?? []));
+        $courseId = isset($sessionData['course_id']) ? (int)$sessionData['course_id'] : null;
         $available = $this->getCourseIdsForLesson($branchId, $lesson->id);
-        $selected = array_values(array_intersect($courseIds, $available));
-        if (empty($selected)) {
-            if ($lesson->course_id) {
-                $selected = [$lesson->course_id];
-            }
+        
+        if ($courseId && in_array($courseId, $available)) {
+            return [$courseId];
         }
-        return array_unique($selected);
+        
+        // Fallback to lesson's primary course if no course selected
+        if ($lesson->course_id) {
+            return [$lesson->course_id];
+        }
+        
+        // Fallback to first available course
+        if (!empty($available)) {
+            return [$available[0]];
+        }
+        
+        return [];
     }
 
     protected function collectCourseIdsFromSession(TimetableSession $session): array
@@ -422,8 +431,7 @@ class DosTimetableController extends Controller
             'sessions.*.end_time' => 'required|date_format:H:i',
             'sessions.*.classroom' => 'nullable|string|max:100',
             'sessions.*.notes' => 'nullable|string|max:500',
-            'sessions.*.course_ids' => 'nullable|array',
-            'sessions.*.course_ids.*' => 'nullable|exists:courses,id',
+            'sessions.*.course_id' => 'nullable|exists:courses,id',
             'sessions.*.mark_as_test' => 'nullable|boolean',
         ]);
 
@@ -469,9 +477,9 @@ class DosTimetableController extends Controller
                 'mark_as_test' => !empty($sessionData['mark_as_test']),
             ]);
 
-            $courseIds = $this->getSessionCourseIdsFromInput($sessionData, $request->branch_id, $lesson);
-            if (!empty($courseIds)) {
-                $session->courses()->sync($courseIds);
+            $courseId = $sessionData['course_id'] ?? null;
+            if ($courseId) {
+                $session->courses()->sync([$courseId]);
             }
         }
 

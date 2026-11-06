@@ -372,11 +372,12 @@
                                     </div>
                                     <div class="col-md-4">
                                         <label class="form-label">
-                                            <i class="fas fa-graduation-cap me-1"></i>Course(s)
+                                            <i class="fas fa-graduation-cap me-1"></i>Course
                                         </label>
-                                        <select name="sessions[{{ $index }}][course_ids][]" class="form-select course-select" multiple data-placeholder="Select course(s)">
+                                        <select name="sessions[{{ $index }}][course_id]" class="form-select course-select" data-placeholder="Select course">
+                                            <option value="">Select lesson first</option>
                                             @foreach($courses as $course)
-                                                <option value="{{ $course->id }}" @selected(in_array($course->id, old("sessions.{$index}.course_ids", $sessionData['course_ids'] ?? [])))>{{ $course->abbreviation ?? $course->course_name }}</option>
+                                                <option value="{{ $course->id }}" @selected(old("sessions.{$index}.course_id", $sessionData['course_id'] ?? '') == $course->id)>{{ $course->abbreviation ?? $course->course_name }}</option>
                                             @endforeach
                                         </select>
                                     </div>
@@ -481,9 +482,10 @@
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">
-                        <i class="fas fa-graduation-cap me-1"></i>Course(s)
+                        <i class="fas fa-graduation-cap me-1"></i>Course
                     </label>
-                    <select name="sessions[__INDEX__][course_ids][]" class="form-select course-select" multiple data-placeholder="Select course(s)">
+                    <select name="sessions[__INDEX__][course_id]" class="form-select course-select" data-placeholder="Select course">
+                        <option value="">Select lesson first</option>
                         @foreach($courses as $course)
                             <option value="{{ $course->id }}">{{ $course->abbreviation ?? $course->course_name }}</option>
                         @endforeach
@@ -574,15 +576,22 @@
 
             if (courseIds && courseSelect) {
                 const courseIdArray = courseIds.split(',');
-                // Clear current selections
-                Array.from(courseSelect.options).forEach(opt => opt.selected = false);
-                // Select the courses matching the lesson
-                Array.from(courseSelect.options).forEach(opt => {
-                    if (courseIdArray.includes(opt.value)) opt.selected = true;
+                // Clear current options
+                courseSelect.innerHTML = '<option value="">Select course</option>';
+                // Add only courses associated with this lesson
+                courseIdArray.forEach(courseId => {
+                    const courseOption = Array.from(courseSelect.parentElement.parentElement.parentElement.querySelectorAll('.course-select option'))
+                        .find(opt => opt.value === courseId);
+                    if (courseOption) {
+                        const newOpt = document.createElement('option');
+                        newOpt.value = courseOption.value;
+                        newOpt.textContent = courseOption.textContent;
+                        courseSelect.appendChild(newOpt);
+                    }
                 });
-                // Trigger change event for Select2 if available
-                if (window.jQuery && jQuery().select2) {
-                    jQuery(courseSelect).trigger('change');
+                // If only one course, auto-select it
+                if (courseIdArray.length === 1) {
+                    courseSelect.value = courseIdArray[0];
                 }
             }
         }
@@ -648,7 +657,6 @@
             const rowMarkup = template.replace(/__INDEX__/g, nextIndex);
             container.insertAdjacentHTML('beforeend', rowMarkup);
             bindRemoveButtons();
-            initCourseSelects();
             bindLessonChangeHandlers();
             // Reload lessons for the new row based on current branch
             const currentBranchId = branchSelect ? branchSelect.value : null;
@@ -659,7 +667,6 @@
 
         // Initial bindings
         bindRemoveButtons();
-        initCourseSelects();
         bindLessonChangeHandlers();
             bindLessonChangeHandlers();
             updateIndexes();
