@@ -122,11 +122,15 @@
                                             <td>{{ $session->lesson->title ?? 'N/A' }}</td>
                                             <td>{{ $session->classroom ?? '' }}</td>
                                             <td>
-                                                @if($session->lesson->teacher)
-                                                    <span class="badge bg-success text-white">{{ $session->lesson->teacher->teacher_name }}</span>
-                                                @else
-                                                    <span class="badge bg-warning text-dark">TBA</span>
-                                                @endif
+                                                @php
+                                                    $teacherName = 'TBA';
+                                                    if ($session->lesson->teacher) {
+                                                        $teacherName = $session->lesson->teacher->teacher_name;
+                                                    } elseif ($session->lesson->teachers->isNotEmpty()) {
+                                                        $teacherName = $session->lesson->teachers->first()->teacher_name;
+                                                    }
+                                                @endphp
+                                                <span class="badge @if($teacherName !== 'TBA') bg-success text-white @else bg-warning text-dark @endif">{{ $teacherName }}</span>
                                             </td>
                                         </tr>
                                         @endforeach

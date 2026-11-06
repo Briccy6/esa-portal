@@ -21,7 +21,7 @@ class TeacherTimetableController extends Controller
         $timetables = Timetable::published()
             ->whereDate('valid_from', '<=', now())
             ->whereDate('valid_until', '>=', now())
-            ->with(['branch', 'academicYear', 'term', 'sessions.lesson.teacher', 'sessions.courses'])
+            ->with(['branch', 'academicYear', 'term', 'sessions.lesson.teacher', 'sessions.lesson.teachers', 'sessions.courses'])
             ->get();
 
         // Filter timetables to only show those where teacher is assigned to at least one session
@@ -66,7 +66,7 @@ class TeacherTimetableController extends Controller
     {
         $teacher = Auth::guard('teacher')->user();
 
-        $timetable->load(['branch', 'academicYear', 'term', 'sessions.lesson.teacher', 'sessions.courses']);
+        $timetable->load(['branch', 'academicYear', 'term', 'sessions.lesson.teacher', 'sessions.lesson.teachers', 'sessions.courses']);
 
         // Filter sessions to only show those where teacher is assigned
         $teacherSessions = $timetable->sessions->filter(function ($session) use ($teacher) {
