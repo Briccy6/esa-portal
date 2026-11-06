@@ -258,6 +258,24 @@ class TeacherDailyController extends Controller
     {
         $teacher = Auth::guard('teacher')->user();
         
+        // Log the teacher info
+        \Log::info('getCoursesByBranch - Teacher Info', [
+            'teacher_id' => $teacher->id,
+            'teacher_name' => $teacher->teacher_name,
+            'branch_id' => $branchId,
+        ]);
+        
+        // Check what's in lesson_branch_course for this teacher and branch
+        $assignments = \DB::table('lesson_branch_course')
+            ->where('teacher_id', $teacher->id)
+            ->where('branch_id', $branchId)
+            ->get();
+        
+        \Log::info('getCoursesByBranch - Lesson Branch Course Assignments', [
+            'count' => $assignments->count(),
+            'assignments' => $assignments->toArray(),
+        ]);
+        
         // Get courses assigned to this teacher in this branch via lesson_branch_course
         $courseIds = \DB::table('lesson_branch_course')
             ->where('teacher_id', $teacher->id)
@@ -265,10 +283,7 @@ class TeacherDailyController extends Controller
             ->distinct()
             ->pluck('course_id');
         
-        // Log for debugging
-        \Log::info('getCoursesByBranch', [
-            'teacher_id' => $teacher->id,
-            'branch_id' => $branchId,
+        \Log::info('getCoursesByBranch - Course IDs', [
             'course_ids' => $courseIds->toArray(),
         ]);
         
@@ -280,6 +295,15 @@ class TeacherDailyController extends Controller
             \Log::warning('No courses found via lesson_branch_course, trying teacher_course', [
                 'teacher_id' => $teacher->id,
                 'branch_id' => $branchId,
+            ]);
+            
+            $teacherCourseAssignments = \DB::table('teacher_course')
+                ->where('teacher_id', $teacher->id)
+                ->get();
+            
+            \Log::info('getCoursesByBranch - Teacher Course Assignments', [
+                'count' => $teacherCourseAssignments->count(),
+                'assignments' => $teacherCourseAssignments->toArray(),
             ]);
             
             $courseIds = \DB::table('teacher_course')
@@ -297,10 +321,24 @@ class TeacherDailyController extends Controller
                 'branch_id' => $branchId,
             ]);
             
+            $branchCourses = \DB::table('branch_course')
+                ->where('branch_id', $branchId)
+                ->get();
+            
+            \Log::info('getCoursesByBranch - Branch Course Assignments', [
+                'count' => $branchCourses->count(),
+                'assignments' => $branchCourses->toArray(),
+            ]);
+            
             $courses = Course::whereHas('branches', function($query) use ($branchId) {
                 $query->where('branches.id', $branchId);
             })->get(['id', 'course_name']);
         }
+        
+        \Log::info('getCoursesByBranch - Final Result', [
+            'courses_count' => $courses->count(),
+            'courses' => $courses->toArray(),
+        ]);
         
         return response()->json($courses);
     }
