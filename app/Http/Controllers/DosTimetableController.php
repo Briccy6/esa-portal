@@ -261,6 +261,22 @@ class DosTimetableController extends Controller
         $courseIds = $lessonAssignments->pluck('course_id')->unique();
         $teacherIds = $lessonAssignments->pluck('teacher_id')->unique();
 
+        // Group lesson assignments by lesson_id to avoid duplicates in dropdown
+        $groupedLessons = $lessonAssignments->groupBy('lesson_id')->map(function ($assignments) {
+            $first = $assignments->first();
+            $courseNames = $assignments->pluck('course.course_name')->unique()->implode(', ');
+            return (object)[
+                'lesson_id' => $first->lesson_id,
+                'lesson' => $first->lesson,
+                'course_id' => $first->course_id,
+                'course' => $first->course,
+                'teacher_id' => $first->teacher_id,
+                'teacher' => $first->teacher,
+                'all_course_ids' => $assignments->pluck('course_id')->unique()->toArray(),
+                'course_names' => $courseNames,
+            ];
+        })->values();
+
         // Fallback: if no lesson assignments exist for the branch, try branch_course pivot
         if ($courseIds->isEmpty()) {
             try {
@@ -310,6 +326,7 @@ class DosTimetableController extends Controller
             'activeTerm',
             'terms',
             'lessonAssignments',
+            'groupedLessons',
             'courses',
             'teachers'
         ));
@@ -495,6 +512,22 @@ class DosTimetableController extends Controller
         $courseIds = $lessonAssignments->pluck('course_id')->unique();
         $teacherIds = $lessonAssignments->pluck('teacher_id')->unique();
 
+        // Group lesson assignments by lesson_id to avoid duplicates in dropdown
+        $groupedLessons = $lessonAssignments->groupBy('lesson_id')->map(function ($assignments) {
+            $first = $assignments->first();
+            $courseNames = $assignments->pluck('course.course_name')->unique()->implode(', ');
+            return (object)[
+                'lesson_id' => $first->lesson_id,
+                'lesson' => $first->lesson,
+                'course_id' => $first->course_id,
+                'course' => $first->course,
+                'teacher_id' => $first->teacher_id,
+                'teacher' => $first->teacher,
+                'all_course_ids' => $assignments->pluck('course_id')->unique()->toArray(),
+                'course_names' => $courseNames,
+            ];
+        })->values();
+
         if ($courseIds->isEmpty()) {
             try {
                 if (\Schema::hasTable('branch_course')) {
@@ -552,6 +585,7 @@ class DosTimetableController extends Controller
             'activeTerm',
             'terms',
             'lessonAssignments',
+            'groupedLessons',
             'courses',
             'teachers'
         ));
