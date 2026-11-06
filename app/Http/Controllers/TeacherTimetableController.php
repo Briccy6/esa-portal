@@ -12,19 +12,38 @@ class TeacherTimetableController extends Controller
     {
         $teacher = Auth::guard('teacher')->user();
 
-        // Get teacher's branch ID
-        $teacherBranchId = $teacher->branch_id;
+        // Get teacher's branch IDs (from direct branch_id or pivot table)
+        $teacherBranchIds = [];
+        
+        if ($teacher->branch_id) {
+            $teacherBranchIds[] = $teacher->branch_id;
+        }
+        
+        // Also get branches from branch_teacher pivot table
+        $pivotBranchIds = \DB::table('branch_teacher')
+            ->where('teacher_id', $teacher->id)
+            ->pluck('branch_id')
+            ->toArray();
+        
+        $teacherBranchIds = array_unique(array_merge($teacherBranchIds, $pivotBranchIds));
+
+        // If still no branches, get all branches as fallback
+        if (empty($teacherBranchIds)) {
+            $teacherBranchIds = \App\Models\Branch::pluck('id')->toArray();
+            \Log::warning('Teacher has no branch assigned, showing all branches', ['teacher_id' => $teacher->id]);
+        }
 
         // Debug: Log teacher info
         \Log::info('Teacher timetable query', [
             'teacher_id' => $teacher->id,
             'teacher_name' => $teacher->teacher_name,
-            'teacher_branch_id' => $teacherBranchId,
+            'teacher_branch_id' => $teacher->branch_id,
+            'teacher_branch_ids' => $teacherBranchIds,
         ]);
 
-        // Get lesson IDs assigned to this teacher in their branch
+        // Get lesson IDs assigned to this teacher in their branches
         $assignedLessonIds = \DB::table('lesson_branch_course')
-            ->where('branch_id', $teacherBranchId)
+            ->whereIn('branch_id', $teacherBranchIds)
             ->where('teacher_id', $teacher->id)
             ->pluck('lesson_id')
             ->unique()
@@ -56,7 +75,7 @@ class TeacherTimetableController extends Controller
         $timetables = Timetable::published()
             ->whereDate('valid_from', '<=', now())
             ->whereDate('valid_until', '>=', now())
-            ->where('branch_id', $teacherBranchId)
+            ->whereIn('branch_id', $teacherBranchIds)
             ->whereHas('sessions', function($query) use ($allLessonIds) {
                 $query->whereIn('lesson_id', $allLessonIds);
             })
@@ -87,11 +106,30 @@ class TeacherTimetableController extends Controller
     public function show(Timetable $timetable)
     {
         $teacher = Auth::guard('teacher')->user();
-        $teacherBranchId = $teacher->branch_id;
 
-        // Get lesson IDs assigned to this teacher in their branch
+        // Get teacher's branch IDs (from direct branch_id or pivot table)
+        $teacherBranchIds = [];
+        
+        if ($teacher->branch_id) {
+            $teacherBranchIds[] = $teacher->branch_id;
+        }
+        
+        // Also get branches from branch_teacher pivot table
+        $pivotBranchIds = \DB::table('branch_teacher')
+            ->where('teacher_id', $teacher->id)
+            ->pluck('branch_id')
+            ->toArray();
+        
+        $teacherBranchIds = array_unique(array_merge($teacherBranchIds, $pivotBranchIds));
+
+        // If still no branches, get all branches as fallback
+        if (empty($teacherBranchIds)) {
+            $teacherBranchIds = \App\Models\Branch::pluck('id')->toArray();
+        }
+
+        // Get lesson IDs assigned to this teacher in their branches
         $assignedLessonIds = \DB::table('lesson_branch_course')
-            ->where('branch_id', $teacherBranchId)
+            ->whereIn('branch_id', $teacherBranchIds)
             ->where('teacher_id', $teacher->id)
             ->pluck('lesson_id')
             ->unique()
