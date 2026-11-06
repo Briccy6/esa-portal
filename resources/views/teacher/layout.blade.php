@@ -1024,7 +1024,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // When courses change, load lessons
+    // When courses change, load lessons and show all students
     coursesSelect.addEventListener('change', function() {
         const selectedCourses = Array.from(this.selectedOptions).map(option => option.value);
         setLoading(lessonSelect, true);
@@ -1051,9 +1051,95 @@ document.addEventListener('DOMContentLoaded', function() {
                     lessonSelect.innerHTML = '<option value="">Error loading lessons</option>';
                     setLoading(lessonSelect, false);
                 });
+
+            // Load and show all students from all selected courses
+            const branchId = branchSelect.value;
+            if (branchId) {
+                let allStudents = [];
+                let completedRequests = 0;
+                
+                selectedCourses.forEach(courseId => {
+                    fetch(`/teacher/course/${courseId}/students?branch_id=${branchId}`)
+                        .then(res => res.json())
+                        .then(students => {
+                            // Add unique students
+                            students.forEach(student => {
+                                if (!allStudents.find(s => s.id === student.id)) {
+                                    allStudents.push(student);
+                                }
+                            });
+                            completedRequests++;
+                            
+                            // Show attendance when all courses loaded
+                            if (completedRequests === selectedCourses.length) {
+                                showAttendanceList(allStudents);
+                            }
+                        })
+                        .catch(err => {
+                            console.error('Error fetching students:', err);
+                            completedRequests++;
+                        });
+                });
+            }
         } else {
             lessonSelect.innerHTML = '<option value="">Select lesson</option>';
             setLoading(lessonSelect, false);
+        }
+    });
+
+    function showAttendanceList(students) {
+        courseStudentCount = students.length;
+        
+        // Always show attendance table with all students
+        let html = `<div id="attendanceSection" class="border rounded p-3 mt-3 bg-light">
+            <h6 class="text-primary mb-3">
+                <i class="bi bi-people me-2"></i>Attendance List (${students.length} students)
+            </h6>
+            <p class="small text-muted mb-3">
+                Mark attendance for each student:
+            </p>
+            <div class="table-responsive">
+                <table class="table table-bordered table-sm align-middle">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>P</th>
+                            <th>A</th>
+                            <th>AR</th>
+                            <th>L</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+        students.forEach(student => {
+            html += `<tr>
+                <td>${student.name}</td>
+                <td><input type="radio" name="attendance[${student.id}]" value="P" checked></td>
+                <td><input type="radio" name="attendance[${student.id}]" value="A"></td>
+                <td><input type="radio" name="attendance[${student.id}]" value="AR"></td>
+                <td><input type="radio" name="attendance[${student.id}]" value="L"></td>
+            </tr>`;
+        });
+        html += `</tbody></table></div></div>`;
+        
+        const oldSection = document.getElementById('attendanceSection');
+        if (oldSection) oldSection.remove();
+        
+        // Insert after the total_students field's parent div
+        const totalStudentsDiv = document.getElementById('total_students').closest('.col-md-6').parentNode;
+        totalStudentsDiv.insertAdjacentHTML('afterend', html);
+        
+        // Auto-fill total students count
+        document.getElementById('total_students').value = students.length;
+    }
+
+    // Student attendance validation - just validates the count
+    document.getElementById('total_students').addEventListener('blur', function() {
+        const entered = parseInt(this.value, 10);
+        
+        if (entered > courseStudentCount) {
+            alert('Number of present students cannot exceed total assigned students!');
+            this.value = courseStudentCount;
+            this.focus();
         }
     });
 
@@ -1083,69 +1169,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Student attendance - show all students when courses and branch are selected
+    // Student attendance validation - just validates the count
     document.getElementById('total_students').addEventListener('blur', function() {
         const entered = parseInt(this.value, 10);
-        const branchId = branchSelect.value;
-        const selectedCourses = Array.from(coursesSelect.selectedOptions).map(option => option.value);
         
-        if (selectedCourses.length === 0 || !branchId) {
-            alert('Please select branch and courses first.');
-            this.value = 0;
-            return;
+        if (entered > courseStudentCount) {
+            alert('Number of present students cannot exceed total assigned students!');
+            this.value = courseStudentCount;
+            this.focus();
         }
-
-        // Fetch all students for selected courses and branch
-        const courseIds = selectedCourses.join(',');
-        fetch(`/teacher/course/${selectedCourses[0]}/students?branch_id=${branchId}`)
-            .then(res => res.json())
-            .then(students => {
-                courseStudentCount = students.length;
-                
-                // Always show attendance table with all students
-                let html = `<div id="attendanceSection" class="border rounded p-3 mt-3 bg-light">
-                    <h6 class="text-primary mb-3">
-                        <i class="bi bi-people me-2"></i>Attendance List (${students.length} students)
-                    </h6>
-                    <p class="small text-muted mb-3">
-                        Mark attendance for each student:
-                    </p>
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-sm align-middle">
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>P</th>
-                                    <th>A</th>
-                                    <th>AR</th>
-                                    <th>L</th>
-                                </tr>
-                            </thead>
-                            <tbody>`;
-                students.forEach(student => {
-                    html += `<tr>
-                        <td>${student.name}</td>
-                        <td><input type="radio" name="attendance[${student.id}]" value="P" checked></td>
-                        <td><input type="radio" name="attendance[${student.id}]" value="A"></td>
-                        <td><input type="radio" name="attendance[${student.id}]" value="AR"></td>
-                        <td><input type="radio" name="attendance[${student.id}]" value="L"></td>
-                    </tr>`;
-                });
-                html += `</tbody></table></div></div>`;
-                const oldSection = document.getElementById('attendanceSection');
-                if (oldSection) oldSection.remove();
-                this.parentNode.parentNode.insertAdjacentHTML('afterend', html);
-                
-                // Alert if entered > assigned
-                if (entered > courseStudentCount) {
-                    alert('Number of present students cannot exceed total assigned students!');
-                    this.value = courseStudentCount;
-                    this.focus();
-                }
-            })
-            .catch(() => {
-                alert('Could not load students for attendance.');
-            });
     });
 
     // Dynamic Activities Management
