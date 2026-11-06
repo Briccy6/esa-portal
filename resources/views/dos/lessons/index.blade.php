@@ -263,7 +263,7 @@
                         <a href="{{ route('dos.lessons.create') }}" class="btn btn-primary me-2">
                             <i class="fas fa-plus-circle me-2"></i>Create New Lesson
                         </a>
-                        <a href="{{ route('dos.teachers.index') }}" class="btn btn-success me-2">
+                        <a href="/dos/teachers" class="btn btn-success me-2">
                             <i class="fas fa-chalkboard-teacher me-2"></i>View Teachers
                         </a>
                         <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#assignLessonModal">
