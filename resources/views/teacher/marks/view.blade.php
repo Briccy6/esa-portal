@@ -187,6 +187,10 @@
                 <!-- Lesson Filter -->
                 <div class="row mb-4">
                     <div class="col-md-3">
+                        <label for="student-search" class="form-label fw-bold">Search Student</label>
+                        <input type="text" id="student-search" class="form-control" placeholder="Type student name to search...">
+                    </div>
+                    <div class="col-md-3">
                         <label for="course-filter" class="form-label fw-bold">Select Course</label>
                         <select id="course-filter" class="form-select">
                             <option value="">All Courses</option>
@@ -316,12 +320,14 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const studentSearch = document.getElementById('student-search');
     const courseFilter = document.getElementById('course-filter');
     const lessonFilter = document.getElementById('lesson-filter');
     const termFilter = document.getElementById('term-filter');
     const lessonSections = document.querySelectorAll('.lesson-section');
 
     function filterLessons() {
+        const searchTerm = studentSearch.value.toLowerCase().trim();
         const selectedCourse = courseFilter.value;
         const selectedLesson = lessonFilter.value;
         const selectedTerm = termFilter.value;
@@ -333,16 +339,22 @@ document.addEventListener('DOMContentLoaded', function() {
             const termMatch = selectedTerm === '' || sectionTermId === selectedTerm;
             const lessonMatch = selectedLesson === '' || sectionLessonId === selectedLesson;
 
-            // Filter rows by course first
+            // Filter rows by course and search term
             const rows = section.querySelectorAll('tbody tr');
             let hasVisibleRows = false;
             
             rows.forEach(row => {
+                const nameCell = row.querySelector('td:nth-child(1)');
                 const courseCell = row.querySelector('td:nth-child(2)');
-                if (courseCell) {
+                
+                if (nameCell && courseCell) {
+                    const studentName = nameCell.textContent.trim().toLowerCase();
                     const courseName = courseCell.textContent.trim();
+                    
                     const courseMatch = selectedCourse === '' || courseName === selectedCourse;
-                    if (courseMatch) {
+                    const searchMatch = searchTerm === '' || studentName.includes(searchTerm);
+                    
+                    if (courseMatch && searchMatch) {
                         row.style.display = '';
                         hasVisibleRows = true;
                     } else {
@@ -360,6 +372,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    studentSearch.addEventListener('input', filterLessons);
     courseFilter.addEventListener('change', filterLessons);
     lessonFilter.addEventListener('change', filterLessons);
     termFilter.addEventListener('change', filterLessons);
