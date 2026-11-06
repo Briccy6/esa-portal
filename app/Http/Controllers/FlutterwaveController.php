@@ -483,6 +483,12 @@ class FlutterwaveController extends Controller
                 ])
                 ->post($this->baseUrl . '/payments', $flutterwaveData);
 
+            Log::info('addPayment: Flutterwave API request', [
+                'request_data' => $flutterwaveData,
+                'status_code' => $response->status(),
+                'response_body' => $response->body(),
+            ]);
+
             // ── 7. Handle API response ─────────────────────────────────────────
             if ($response->successful()) {
                 $responseData = $response->json();

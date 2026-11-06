@@ -58,8 +58,15 @@ class StudentController extends Controller
             ->with(['branch', 'academicYear', 'term', 'sessions.lesson.teacher', 'sessions.courses'])
             ->get();
 
-        // For each session, get the branch-specific teacher if available
+        // Filter sessions to only show those for the student's course
         foreach ($timetables as $timetable) {
+            $filteredSessions = $timetable->sessions->filter(function($session) use ($student) {
+                // Check if any of the session's courses match the student's course
+                return $session->courses->contains('id', $student->course_id);
+            });
+            $timetable->sessions = $filteredSessions;
+            
+            // For each session, get the branch-specific teacher if available
             foreach ($timetable->sessions as $session) {
                 if ($session->lesson) {
                     // First try to get branch-specific teacher from lesson_branch_course pivot

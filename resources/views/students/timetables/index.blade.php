@@ -196,7 +196,7 @@
                                             <td style="font-weight: 600;">{{ $dayName }}</td>
                                             <td>
                                                 @foreach($session->courses as $course)
-                                                    <span class="badge bg-primary">{{ $course->course_name }}</span>{{ !$loop->last ? ' ' : '' }}
+                                                    <span class="badge bg-primary">{{ $course->abbreviation ?? $course->course_name }}</span>{{ !$loop->last ? ' ' : '' }}
                                                 @endforeach
                                             </td>
                                             <td style="font-weight: 500;">{{ $session->lesson->title ?? 'N/A' }}</td>
