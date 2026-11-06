@@ -122,6 +122,9 @@
                                                 <i class="bi bi-check-circle"></i> Approve
                                             </button>
                                         @endif
+                                        <button type="button" class="btn btn-sm btn-danger" onclick="deleteDaily({{ $daily->id }})">
+                                            <i class="bi bi-trash"></i> Delete
+                                        </button>
                                     </td>
                                 </tr>
                             @empty
@@ -168,6 +171,31 @@ function approveDaily(id) {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
             }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Error: ' + error.message);
+        });
+    }
+}
+
+function deleteDaily(id) {
+    if (confirm('Are you sure you want to delete this daily activity? This will also delete all related attendance records. This action cannot be undone.')) {
+        fetch('{{ route('dos.teacher-dailies.destroy', ':id') }}'.replace(':id', id), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: '_method=DELETE'
         })
         .then(response => response.json())
         .then(data => {

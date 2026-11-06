@@ -1653,6 +1653,7 @@ Route::middleware(['auth:staff'])->prefix('dos/teacher-dailies')->name('dos.teac
     Route::post('/{id}/approve', [\App\Http\Controllers\DosTeacherDailyController::class, 'approve'])->name('approve');
     Route::post('/{id}/reject', [\App\Http\Controllers\DosTeacherDailyController::class, 'reject'])->name('reject');
     Route::post('/bulk-approve', [\App\Http\Controllers\DosTeacherDailyController::class, 'bulkApprove'])->name('bulk-approve');
+    Route::delete('/{id}', [\App\Http\Controllers\DosTeacherDailyController::class, 'destroy'])->name('destroy');
 });
 
 // DOS Academic Routes

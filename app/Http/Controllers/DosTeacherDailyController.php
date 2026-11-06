@@ -79,13 +79,26 @@ class DosTeacherDailyController extends Controller
     {
         try {
             $daily = TeacherDaily::findOrFail($id);
+
+            \Log::info('Approving TeacherDaily', [
+                'daily_id' => $id,
+                'current_approved_status' => $daily->approved,
+                'staff_id' => Auth::guard('staff')->user()->id,
+            ]);
+
             $daily->approved = true;
             $daily->approved_by = Auth::guard('staff')->user()->id;
             $daily->approved_at = now();
             $daily->save();
 
+            \Log::info('TeacherDaily approved successfully', [
+                'daily_id' => $id,
+                'new_approved_status' => $daily->approved,
+                'approved_at' => $daily->approved_at,
+            ]);
+
             // Also approve related attendance records
-            Attendance::where('date', $daily->date)
+            $attendanceUpdated = Attendance::where('date', $daily->date)
                 ->where('course_id', $daily->course_id)
                 ->where('lesson_id', $daily->lesson_id)
                 ->where('branch_id', $daily->branch_id)
@@ -94,6 +107,10 @@ class DosTeacherDailyController extends Controller
                     'approved_by' => Auth::guard('staff')->user()->id,
                     'approved_at' => now(),
                 ]);
+
+            \Log::info('Attendance records updated', [
+                'attendance_count' => $attendanceUpdated,
+            ]);
 
             if (request()->expectsJson()) {
                 return response()->json([
@@ -104,6 +121,11 @@ class DosTeacherDailyController extends Controller
 
             return back()->with('success', 'Daily activity and attendance approved successfully!');
         } catch (\Exception $e) {
+            \Log::error('Failed to approve TeacherDaily', [
+                'daily_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+
             if (request()->expectsJson()) {
                 return response()->json([
                     'success' => false,
@@ -150,7 +172,7 @@ class DosTeacherDailyController extends Controller
     {
         try {
             $ids = $request->input('ids', []);
-            
+
             if (empty($ids)) {
                 return back()->with('error', 'No items selected for approval.');
             }
@@ -183,6 +205,43 @@ class DosTeacherDailyController extends Controller
             return back()->with('success', count($ids) . ' daily activities approved successfully!');
         } catch (\Exception $e) {
             return back()->with('error', 'Failed to bulk approve: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Delete a teacher daily activity
+     */
+    public function destroy($id)
+    {
+        try {
+            $daily = TeacherDaily::findOrFail($id);
+
+            // Delete related attendance records
+            Attendance::where('date', $daily->date)
+                ->where('course_id', $daily->course_id)
+                ->where('lesson_id', $daily->lesson_id)
+                ->where('branch_id', $daily->branch_id)
+                ->delete();
+
+            // Delete the daily record
+            $daily->delete();
+
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Daily activity and related attendance deleted successfully!'
+                ]);
+            }
+
+            return back()->with('success', 'Daily activity and related attendance deleted successfully!');
+        } catch (\Exception $e) {
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to delete daily activity: ' . $e->getMessage()
+                ], 500);
+            }
+            return back()->with('error', 'Failed to delete daily activity: ' . $e->getMessage());
         }
     }
 }
