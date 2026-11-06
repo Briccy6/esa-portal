@@ -55,6 +55,15 @@
                                 </div>
 
                                 <div class="mb-3">
+                                    <label class="form-label fw-bold">Current Password</label>
+                                    <input type="password" class="form-control" name="current_password" placeholder="Enter current password to change password">
+                                    @error('current_password')
+                                        <div class="text-danger small mt-1">{{ $message }}</div>
+                                    @enderror
+                                    <small class="text-muted">Required only when changing password</small>
+                                </div>
+
+                                <div class="mb-3">
                                     <label class="form-label fw-bold">New Password (Optional)</label>
                                     <input type="password" class="form-control" name="password" placeholder="Leave blank to keep current password">
                                     @error('password')

@@ -28,6 +28,7 @@ class TeacherProfileController extends Controller
             'teacher_name' => 'required|string|max:255',
             'telephone' => 'nullable|string|max:20',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'current_password' => 'nullable|required_with:password',
             'password' => [
                 'nullable',
                 'string',
@@ -47,17 +48,23 @@ class TeacherProfileController extends Controller
             ],
         ]);
 
+        // Verify current password if changing password
+        if (!empty($data['password'])) {
+            if (!\Hash::check($data['current_password'], $teacher->password)) {
+                return back()->with('error', 'Current password is incorrect.');
+            }
+            $data['password'] = bcrypt($data['password']);
+        } else {
+            unset($data['password']);
+        }
+
+        unset($data['current_password']);
+
         if ($request->hasFile('photo')) {
             $photo = $request->file('photo');
             $photoName = time() . '_' . $teacher->id . '.' . $photo->getClientOriginalExtension();
             $photo->storeAs('teachers', $photoName, 'public');
             $data['photo'] = $photoName;
-        }
-
-        if (!empty($data['password'])) {
-            $data['password'] = bcrypt($data['password']);
-        } else {
-            unset($data['password']);
         }
 
         $teacher->update($data);
