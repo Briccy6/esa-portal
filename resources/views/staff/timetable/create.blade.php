@@ -172,6 +172,13 @@
         font-size: 0.875rem;
         color: #64748b;
     }
+
+    /* Fix table header text color */
+    .table thead th {
+        color: #1e293b !important;
+        background-color: #f1f5f9 !important;
+        font-weight: 600;
+    }
 </style>
 
 <div class="container py-4">

@@ -82,22 +82,30 @@ class DosTimetableController extends Controller
         
         // Add teacher information to courses
         $courses = $courses->map(function($course) use ($branchId) {
+            // Get teachers specifically assigned to this course in this branch
             $teacherIds = \DB::table('lesson_branch_course')
                 ->where('branch_id', $branchId)
                 ->where('course_id', $course->id)
+                ->whereNotNull('teacher_id')
                 ->distinct()
                 ->pluck('teacher_id');
-            
-            $teachers = \App\Models\Teacher::whereIn('id', $teacherIds)
-                ->pluck('teacher_name')
-                ->unique()
-                ->implode(', ');
-            
+
+            $teacherNames = [];
+            if (!empty($teacherIds)) {
+                $teachers = \App\Models\Teacher::whereIn('id', $teacherIds)
+                    ->whereNotNull('teacher_name')
+                    ->pluck('teacher_name')
+                    ->unique();
+                $teacherNames = $teachers->toArray();
+            }
+
+            $teacherString = !empty($teacherNames) ? implode(', ', $teacherNames) : 'No teacher assigned';
+
             return (object)[
                 'id' => $course->id,
                 'course_name' => $course->course_name,
                 'abbreviation' => $course->abbreviation,
-                'teacher_name' => $teachers,
+                'teacher_name' => $teacherString,
             ];
         });
 
