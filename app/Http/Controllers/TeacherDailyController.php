@@ -86,6 +86,7 @@ class TeacherDailyController extends Controller
             \Log::info('Creating TeacherDaily record', [
                 'teacher_id' => $teacher->id,
                 'course_id' => $request->courses[0],
+                'course_ids' => $request->courses,
                 'lesson_id' => $request->lesson,
                 'unit_id' => $request->unit,
                 'branch_id' => $branchId,
@@ -95,10 +96,11 @@ class TeacherDailyController extends Controller
             $daily = TeacherDaily::create([
                 'teacher_id'    => $teacher->id,
                 'course_id'     => $request->courses[0], // Store primary course
+                'course_ids'    => $request->courses, // Store all course IDs as JSON
                 'lesson_id'     => $request->lesson,
                 'unit_id'       => $request->unit,
                 'branch_id'     => $branchId, // Store branch
-                'activity'      => json_encode($request->activities),
+                'activity'      => $request->activities, // Store as array
                 'hours_studied' => $request->hours_studied,
                 'total_students'=> $request->total_students,
                 'absences'      => isset($request->attendance) ? count(array_filter($request->attendance, fn($v) => $v !== 'P')) : 0,
@@ -217,8 +219,6 @@ class TeacherDailyController extends Controller
         }
 
         \Log::info("Found {$lessons->count()} lessons for teacher {$teacher->id} in course {$courseId}");
-        return response()->json($lessons);
-    }
         return response()->json($lessons);
     }
 

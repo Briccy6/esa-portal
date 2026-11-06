@@ -12,6 +12,7 @@ class TeacherDaily extends Model
     protected $fillable = [
         'teacher_id',
         'course_id',
+        'course_ids',
         'lesson_id',
         'unit_id',
         'branch_id',
@@ -38,6 +39,8 @@ class TeacherDaily extends Model
         'approved_at' => 'datetime',
         'rejected_at' => 'datetime',
         'date' => 'date',
+        'course_ids' => 'array',
+        'activity' => 'array',
     ];
 
     public function teacher()
