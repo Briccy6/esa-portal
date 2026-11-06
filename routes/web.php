@@ -846,6 +846,7 @@ Route::middleware('auth:teacher')->prefix('teacher')->group(function () {
     Route::get('course/{course}/lessons', [\App\Http\Controllers\TeacherDailyController::class, 'getLessons'])->name('teacher.course.lessons');
     Route::get('lesson/{lesson}/units', [\App\Http\Controllers\TeacherDailyController::class, 'getUnits'])->name('teacher.lesson.units');
     Route::get('course/{course}/student-count', [\App\Http\Controllers\TeacherDailyController::class, 'getStudentCount'])->name('teacher.course.studentCount');
+    Route::get('branch/{branch}/courses', [\App\Http\Controllers\TeacherDailyController::class, 'getCoursesByBranch'])->name('teacher.branch.courses');
 });
 
 Route::middleware('auth:teacher')->prefix('teacher')->name('teacher.')->group(function () {

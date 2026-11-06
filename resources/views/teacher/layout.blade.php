@@ -809,10 +809,8 @@
                     <label for="courses" class="form-label">
                         <i class="bi bi-book me-1"></i>Courses Taught
                     </label>
-                    <select class="form-select" id="courses" name="courses[]" multiple required>
-                        @foreach($courses as $course)
-                            <option value="{{ $course->id }}">{{ $course->course_name }}</option>
-                        @endforeach
+                    <select class="form-select" id="courses" name="courses[]" multiple required disabled>
+                        <option value="">Select branch first</option>
                     </select>
                     <small class="text-muted">Hold Ctrl/Cmd to select multiple courses (all must have the same lesson)</small>
                 </div>
@@ -991,11 +989,50 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
+    // When branch changes, load courses for that branch
+    branchSelect.addEventListener('change', function() {
+        const branchId = this.value;
+        setLoading(coursesSelect, true);
+        lessonSelect.innerHTML = '<option value="">Select lesson</option>';
+        unitSelect.innerHTML = '<option value="">Select unit</option>';
+        
+        // Remove attendance section if present
+        const attendanceDiv = document.getElementById('attendanceSection');
+        if (attendanceDiv) attendanceDiv.remove();
+        
+        if (branchId) {
+            // Fetch courses for this teacher in this branch
+            fetch(`/teacher/branch/${branchId}/courses`)
+                .then(res => res.json())
+                .then(data => {
+                    let options = '<option value="">Select courses</option>';
+                    data.forEach(course => {
+                        options += `<option value="${course.id}">${course.course_name}</option>`;
+                    });
+                    coursesSelect.innerHTML = options;
+                    setLoading(coursesSelect, false);
+                })
+                .catch(err => {
+                    console.error('Error fetching courses:', err);
+                    coursesSelect.innerHTML = '<option value="">Error loading courses</option>';
+                    setLoading(coursesSelect, false);
+                });
+        } else {
+            coursesSelect.innerHTML = '<option value="">Select branch first</option>';
+            coursesSelect.disabled = true;
+            setLoading(coursesSelect, false);
+        }
+    });
+
     // When courses change, load lessons
     coursesSelect.addEventListener('change', function() {
         const selectedCourses = Array.from(this.selectedOptions).map(option => option.value);
         setLoading(lessonSelect, true);
         unitSelect.innerHTML = '<option value="">Select unit</option>';
+        
+        // Remove attendance section if present
+        const attendanceDiv = document.getElementById('attendanceSection');
+        if (attendanceDiv) attendanceDiv.remove();
         
         if (selectedCourses.length > 0) {
             // Fetch lessons for the first selected course
@@ -1046,7 +1083,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Student attendance validation
+    // Student attendance - show all students when courses and branch are selected
     document.getElementById('total_students').addEventListener('blur', function() {
         const entered = parseInt(this.value, 10);
         const branchId = branchSelect.value;
@@ -1058,52 +1095,46 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Fetch student count for selected courses and branch
+        // Fetch all students for selected courses and branch
         const courseIds = selectedCourses.join(',');
         fetch(`/teacher/course/${selectedCourses[0]}/students?branch_id=${branchId}`)
             .then(res => res.json())
             .then(students => {
                 courseStudentCount = students.length;
                 
-                if (entered < courseStudentCount) {
-                    // Show attendance table for manual marking
-                    let html = `<div id="attendanceSection" class="border rounded p-3 mt-3 bg-warning bg-opacity-10">
-                        <h6 class="text-warning mb-3">
-                            <i class="bi bi-exclamation-triangle me-2"></i>Attendance List
-                        </h6>
-                        <p class="small text-muted mb-3">
-                            Mark attendance for each student:
-                        </p>
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-sm align-middle">
-                                <thead>
-                                    <tr>
-                                        <th>Name</th>
-                                        <th>P</th>
-                                        <th>A</th>
-                                        <th>AR</th>
-                                        <th>L</th>
-                                    </tr>
-                                </thead>
-                                <tbody>`;
-                    students.forEach(student => {
-                        html += `<tr>
-                            <td>${student.name}</td>
-                            <td><input type="radio" name="attendance[${student.id}]" value="P" checked></td>
-                            <td><input type="radio" name="attendance[${student.id}]" value="A"></td>
-                            <td><input type="radio" name="attendance[${student.id}]" value="AR"></td>
-                            <td><input type="radio" name="attendance[${student.id}]" value="L"></td>
-                        </tr>`;
-                    });
-                    html += `</tbody></table></div></div>`;
-                    const oldSection = document.getElementById('attendanceSection');
-                    if (oldSection) oldSection.remove();
-                    this.parentNode.parentNode.insertAdjacentHTML('afterend', html);
-                } else {
-                    // Remove attendance section if present
-                    const attendanceDiv = document.getElementById('attendanceSection');
-                    if (attendanceDiv) attendanceDiv.remove();
-                }
+                // Always show attendance table with all students
+                let html = `<div id="attendanceSection" class="border rounded p-3 mt-3 bg-light">
+                    <h6 class="text-primary mb-3">
+                        <i class="bi bi-people me-2"></i>Attendance List (${students.length} students)
+                    </h6>
+                    <p class="small text-muted mb-3">
+                        Mark attendance for each student:
+                    </p>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>P</th>
+                                    <th>A</th>
+                                    <th>AR</th>
+                                    <th>L</th>
+                                </tr>
+                            </thead>
+                            <tbody>`;
+                students.forEach(student => {
+                    html += `<tr>
+                        <td>${student.name}</td>
+                        <td><input type="radio" name="attendance[${student.id}]" value="P" checked></td>
+                        <td><input type="radio" name="attendance[${student.id}]" value="A"></td>
+                        <td><input type="radio" name="attendance[${student.id}]" value="AR"></td>
+                        <td><input type="radio" name="attendance[${student.id}]" value="L"></td>
+                    </tr>`;
+                });
+                html += `</tbody></table></div></div>`;
+                const oldSection = document.getElementById('attendanceSection');
+                if (oldSection) oldSection.remove();
+                this.parentNode.parentNode.insertAdjacentHTML('afterend', html);
                 
                 // Alert if entered > assigned
                 if (entered > courseStudentCount) {

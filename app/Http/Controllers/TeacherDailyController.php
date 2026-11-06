@@ -214,6 +214,28 @@ class TeacherDailyController extends Controller
             
         return response()->json($students);
     }
+
+    /**
+     * Get courses for a teacher in a specific branch
+     */
+    public function getCoursesByBranch($branchId)
+    {
+        $teacher = Auth::guard('teacher')->user();
+        
+        // Get courses assigned to this teacher in this branch
+        $courses = Course::whereHas('teachers', function($query) use ($teacher) {
+            $query->where('teachers.id', $teacher->id);
+        })
+        ->orWhereHas('lessons', function($query) use ($teacher, $branchId) {
+            $query->whereHas('branchCourses', function($q) use ($teacher, $branchId) {
+                $q->where('teacher_id', $teacher->id)
+                  ->where('branch_id', $branchId);
+            });
+        })
+        ->get(['id', 'course_name']);
+        
+        return response()->json($courses);
+    }
     public function index()
     {
         $teacher = Auth::guard('teacher')->user();
