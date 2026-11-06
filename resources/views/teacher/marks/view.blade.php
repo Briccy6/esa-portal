@@ -183,153 +183,109 @@
     <!-- Main Content -->
     <div class="container">
         <div class="marks-card">
-            <div class="card-body p-0">
-                @if(count($groupedMarks) > 0 && count($students) > 0)
-                    @foreach($groupedMarks as $termId => $termData)
-                        <!-- Term Section -->
-                        <div class="mb-4">
-                            <h4 class="text-primary mb-3">
-                                <i class="bi bi-calendar3 me-2"></i>{{ $termData['name'] }}
-                            </h4>
-                            
-                            <div class="table-responsive">
-                                <table class="table table-bordered table-hover marks-table">
-                                    <thead class="table-dark">
-                                        <tr>
-                                            <th rowspan="2" class="align-middle">Student Name</th>
-                                            <th rowspan="2" class="align-middle">Course</th>
-                                            <th rowspan="2" class="align-middle">Branch</th>
-                                            @foreach($termData['lessons'] as $lessonId => $lessonData)
-                                                <th colspan="{{ count($lessonData['dates']) }}" class="text-center">
-                                                    {{ $lessonData['title'] }}
-                                                </th>
-                                            @endforeach
-                                        </tr>
-                                        <tr>
-                                            @foreach($termData['lessons'] as $lessonId => $lessonData)
-                                                @foreach($lessonData['dates'] as $date => $dateMarks)
-                                                    <th class="text-center" style="min-width: 120px;">
-                                                        @if($date === 'no-date')
-                                                            <small>No Date</small>
-                                                        @else
-                                                            <small>{{ \Carbon\Carbon::parse($date)->format('M d, Y') }}</small>
-                                                        @endif
-                                                    </th>
-                                                @endforeach
-                                            @endforeach
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach($students as $studentId => $studentInfo)
-                                            <tr>
-                                                <td class="align-middle">
-                                                    <strong>{{ $studentInfo['name'] ?? $studentInfo['reg_number'] ?? $studentId }}</strong>
-                                                </td>
-                                                <td class="align-middle">{{ $studentInfo['course'] }}</td>
-                                                <td class="align-middle">{{ $studentInfo['branch'] }}</td>
-                                                
-                                                @foreach($termData['lessons'] as $lessonId => $lessonData)
-                                                    @foreach($lessonData['dates'] as $date => $dateMarks)
-                                                        <td class="text-center align-middle">
-                                                            @if(isset($lessonData['students'][$studentId][$date]))
-                                                                @php
-                                                                    $mark = $lessonData['students'][$studentId][$date];
-                                                                    $originalMark = $mark->value . '/' . ($mark->assessment_type === 'test' ? ($mark->marks_out_of ?? 100) : 100);
-                                                                    $percentage = $mark->normalized_percentage;
-                                                                    $status = $mark->status;
-                                                                @endphp
-                                                            
-                                                                <div class="mark-display">
-                                                                    {{ $originalMark }}
-                                                                </div>
-                                                            @else
-                                                                <span class="text-muted">-</span>
-                                                            @endif
-                                                        </td>
-                                                    @endforeach
-                                                @endforeach
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                        
-                        @if(!$loop->last)<hr class="my-4">@endif
-                    @endforeach
-                    
-                    <!-- Summary Statistics -->
-                    <div class="p-4">
-                        <h5 class="mb-4"><i class="bi bi-graph-up"></i> Summary Statistics</h5>
-                        <div class="row">
-                            <div class="col-md-3 col-sm-6 mb-3">
-                                <div class="stats-card">
-                                    <div class="text-center">
-                                        <div class="stats-number primary">{{ count($students) }}</div>
-                                        <div class="stats-label">Total Students</div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-3 col-sm-6 mb-3">
-                                <div class="stats-card">
-                                    <div class="text-center">
-                                        <div class="stats-number info">
-                                            @php
-                                                $totalLessons = 0;
-                                                foreach($groupedMarks as $termData) {
-                                                    $totalLessons += count($termData['lessons']);
-                                                }
-                                            @endphp
-                                            {{ $totalLessons }}
-                                        </div>
-                                        <div class="stats-label">Total Lessons</div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-3 col-sm-6 mb-3">
-                                <div class="stats-card">
-                                    <div class="text-center">
-                                        <div class="stats-number success">
-                                            @php
-                                                $totalDates = 0;
-                                                foreach($groupedMarks as $termData) {
-                                                    foreach($termData['lessons'] as $lessonData) {
-                                                        $totalDates += count($lessonData['dates']);
-                                                    }
-                                                }
-                                            @endphp
-                                            {{ $totalDates }}
-                                        </div>
-                                        <div class="stats-label">Total Test Dates</div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-3 col-sm-6 mb-3">
-                                <div class="stats-card">
-                                    <div class="text-center">
-                                        <div class="stats-number warning">
-                                            @php
-                                                $totalMarks = 0;
-                                                foreach($students as $studentId => $studentInfo) {
-                                                    foreach($groupedMarks as $termData) {
-                                                        foreach($termData['lessons'] as $lessonData) {
-                                                            foreach($lessonData['dates'] as $date => $dateMarks) {
-                                                                if(isset($lessonData['students'][$studentId][$date])) {
-                                                                    $totalMarks++;
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            @endphp
-                                            {{ $totalMarks }}
-                                        </div>
-                                        <div class="stats-label">Total Marks Recorded</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+            <div class="card-body p-4">
+                <!-- Lesson Filter -->
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <label for="lesson-filter" class="form-label fw-bold">Select Lesson</label>
+                        <select id="lesson-filter" class="form-select">
+                            <option value="">All Lessons</option>
+                            @foreach($groupedMarks as $termId => $termData)
+                                @foreach($termData['lessons'] as $lessonId => $lessonData)
+                                    <option value="{{ $lessonId }}">{{ $lessonData['title'] }}</option>
+                                @endforeach
+                            @endforeach
+                        </select>
                     </div>
+                    <div class="col-md-4">
+                        <label for="term-filter" class="form-label fw-bold">Select Term</label>
+                        <select id="term-filter" class="form-select">
+                            <option value="">All Terms</option>
+                            @foreach($groupedMarks as $termId => $termData)
+                                <option value="{{ $termId }}">{{ $termData['name'] }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Filtered Lesson Table -->
+                <div id="lesson-marks-container">
+                    @if(count($groupedMarks) > 0 && count($students) > 0)
+                        @foreach($groupedMarks as $termId => $termData)
+                            @foreach($termData['lessons'] as $lessonId => $lessonData)
+                                <!-- Lesson Section -->
+                                <div class="lesson-section mb-4" data-term-id="{{ $termId }}" data-lesson-id="{{ $lessonId }}">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <h4 class="text-primary mb-0">
+                                            <i class="bi bi-journal-text me-2"></i>{{ $lessonData['title'] }}
+                                        </h4>
+                                        <span class="badge bg-info text-white">{{ $termData['name'] }}</span>
+                                    </div>
+                            
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-hover marks-table">
+                                            <thead class="table-dark">
+                                                <tr>
+                                                    <th rowspan="2" class="align-middle">Student Name</th>
+                                                    <th rowspan="2" class="align-middle">Course</th>
+                                                    <th rowspan="2" class="align-middle">Branch</th>
+                                                    @foreach($lessonData['dates'] as $date => $dateMarks)
+                                                        <th colspan="1" class="text-center">
+                                                            @if($date === 'no-date')
+                                                                <small>No Date</small>
+                                                            @else
+                                                                <small>{{ \Carbon\Carbon::parse($date)->format('M d, Y') }}</small>
+                                                            @endif
+                                                        </th>
+                                                    @endforeach
+                                                </tr>
+                                                <tr>
+                                                    @foreach($lessonData['dates'] as $date => $dateMarks)
+                                                        <th class="text-center" style="min-width: 120px;">
+                                                            @if($date === 'no-date')
+                                                                <small>No Date</small>
+                                                            @else
+                                                                <small>{{ \Carbon\Carbon::parse($date)->format('M d, Y') }}</small>
+                                                            @endif
+                                                        </th>
+                                                    @endforeach
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach($students as $studentId => $studentInfo)
+                                                    <tr>
+                                                        <td class="align-middle">
+                                                            <strong>{{ $studentInfo['name'] ?? $studentInfo['reg_number'] ?? $studentId }}</strong>
+                                                        </td>
+                                                        <td class="align-middle">{{ $studentInfo['course'] }}</td>
+                                                        <td class="align-middle">{{ $studentInfo['branch'] }}</td>
+                                                        
+                                                        @foreach($lessonData['dates'] as $date => $dateMarks)
+                                                            <td class="text-center align-middle">
+                                                                @if(isset($lessonData['students'][$studentId][$date]))
+                                                                    @php
+                                                                        $mark = $lessonData['students'][$studentId][$date];
+                                                                        $originalMark = $mark->value . '/' . ($mark->assessment_type === 'test' ? ($mark->marks_out_of ?? 100) : 100);
+                                                                        $percentage = $mark->normalized_percentage;
+                                                                        $status = $mark->status;
+                                                                    @endphp
+                                                                
+                                                                    <div class="mark-display">
+                                                                        {{ $originalMark }}
+                                                                    </div>
+                                                                @else
+                                                                    <span class="text-muted">-</span>
+                                                                @endif
+                                                            </td>
+                                                        @endforeach
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            @endforeach
+                        @endforeach
                 @else
                     <div class="empty-state m-4">
                         <i class="bi bi-journal-text display-1"></i>
@@ -344,4 +300,34 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const lessonFilter = document.getElementById('lesson-filter');
+    const termFilter = document.getElementById('term-filter');
+    const lessonSections = document.querySelectorAll('.lesson-section');
+
+    function filterLessons() {
+        const selectedLesson = lessonFilter.value;
+        const selectedTerm = termFilter.value;
+
+        lessonSections.forEach(section => {
+            const sectionTermId = section.getAttribute('data-term-id');
+            const sectionLessonId = section.getAttribute('data-lesson-id');
+
+            const termMatch = selectedTerm === '' || sectionTermId === selectedTerm;
+            const lessonMatch = selectedLesson === '' || sectionLessonId === selectedLesson;
+
+            if (termMatch && lessonMatch) {
+                section.style.display = 'block';
+            } else {
+                section.style.display = 'none';
+            }
+        });
+    }
+
+    lessonFilter.addEventListener('change', filterLessons);
+    termFilter.addEventListener('change', filterLessons);
+});
+</script>
 @endsection
