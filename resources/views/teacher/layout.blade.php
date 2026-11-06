@@ -2,7 +2,23 @@
     $systemName = \Illuminate\Support\Facades\Cache::get('esa_system_name', 'ESA-Parnel');
     $systemLogo = \App\Helpers\LogoHelper::getSystemLogo();
 
-        $courses = $courses ?? (Auth::guard('teacher')->check() ? Auth::guard('teacher')->user()->courses()->with('lessons.units')->get() : collect());
+    $courses = $courses ?? (Auth::guard('teacher')->check() ? Auth::guard('teacher')->user()->courses()->with('lessons.units')->get() : collect());
+    
+    // Get teacher's course assignments with branch information
+    if (Auth::guard('teacher')->check()) {
+        $teacher = Auth::guard('teacher')->user();
+        $branchCourses = \DB::table('lesson_branch_course')
+            ->where('teacher_id', $teacher->id)
+            ->distinct()
+            ->get(['course_id', 'branch_id']);
+        
+        // Add branch_id to courses
+        $courses = $courses->map(function($course) use ($branchCourses) {
+            $branchAssignment = $branchCourses->firstWhere('course_id', $course->id);
+            $course->branch_id = $branchAssignment ? $branchAssignment->branch_id : null;
+            return $course;
+        });
+    }
         
         // Ensure announcements is always available
         $announcements = $announcements ?? \App\Models\Announcement::latest()->take(5)->get();
