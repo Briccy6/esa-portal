@@ -24,8 +24,27 @@ class ExamController extends Controller
     {
         if (auth('teacher')->check()) {
             $teacher = auth('teacher')->user();
-            $courseIds = $teacher->courses()->pluck('courses.id')->toArray();
-            $lessonIds = $teacher->lessons()->pluck('lessons.id')->toArray();
+            
+            // Get course IDs from lesson_branch_course where teacher is assigned
+            $courseIds = \DB::table('lesson_branch_course')
+                ->where('teacher_id', $teacher->id)
+                ->distinct()
+                ->pluck('course_id')
+                ->toArray();
+            
+            // Get lesson IDs from lesson_branch_course where teacher is assigned
+            $lessonIds = \DB::table('lesson_branch_course')
+                ->where('teacher_id', $teacher->id)
+                ->distinct()
+                ->pluck('lesson_id')
+                ->toArray();
+            
+            // Log for debugging
+            \Log::info('Teacher exam filtering', [
+                'teacher_id' => $teacher->id,
+                'course_ids' => $courseIds,
+                'lesson_ids' => $lessonIds,
+            ]);
 
             $examQuery = Exam::where(function($q) use ($courseIds, $lessonIds) {
                     $q->whereHas('courses', function($q2) use ($courseIds) {
@@ -42,7 +61,7 @@ class ExamController extends Controller
             $exams    = $examQuery->paginate(10);
             $allExams = $examQuery->get(); // full collection for JS live search
 
-            $courses = $teacher->courses ?? collect();
+            $courses = Course::whereIn('id', $courseIds)->get() ?? collect();
             
             // Get announcements for teacher layout
             $announcements = \App\Models\Announcement::latest()->take(5)->get();
