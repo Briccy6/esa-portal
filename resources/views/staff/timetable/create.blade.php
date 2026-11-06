@@ -614,10 +614,6 @@
             }
         }
 
-        const container = document.getElementById('sessions-container');
-        const template = document.getElementById('session-row-template').innerHTML;
-        const addButton = document.getElementById('add-session-row');
-
         function updateIndexes() {
             container.querySelectorAll('.session-row').forEach((row, index) => {
                 row.dataset.index = index;
