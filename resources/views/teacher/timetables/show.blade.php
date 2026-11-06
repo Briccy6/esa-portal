@@ -20,12 +20,14 @@
     .timetable-table thead {
         background: #667eea;
         color: white;
+        display: table-header-group;
     }
 
     .timetable-table th {
         padding: 1rem;
         font-weight: 600;
         border: none;
+        color: white !important;
     }
 
     .timetable-table td {
