@@ -381,7 +381,7 @@
                                         </label>
                                         <select name="sessions[{{ $index }}][course_ids][]" class="form-select course-select" multiple data-placeholder="Select course(s)">
                                             @foreach($courses as $course)
-                                                <option value="{{ $course->id }}" @selected(in_array($course->id, old("sessions.{$index}.course_ids", $sessionData['course_ids'] ?? [])))>{{ $course->course_name }}</option>
+                                                <option value="{{ $course->id }}" @selected(in_array($course->id, old("sessions.{$index}.course_ids", $sessionData['course_ids'] ?? [])))>{{ $course->abbreviation ?? $course->course_name }}</option>
                                             @endforeach
                                         </select>
                                     </div>

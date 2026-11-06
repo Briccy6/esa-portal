@@ -131,7 +131,7 @@
                                 <label class="form-label">Course(s)</label>
                                 <select name="sessions[{{ $index }}][course_ids][]" class="form-select course-select" multiple data-placeholder="Select course(s)">
                                     @foreach($courses as $course)
-                                        <option value="{{ $course->id }}" @selected(in_array($course->id, old("sessions.{$index}.course_ids", $sessionData['course_ids'] ?? [])))>{{ $course->course_name }}</option>
+                                        <option value="{{ $course->id }}" @selected(in_array($course->id, old("sessions.{$index}.course_ids", $sessionData['course_ids'] ?? [])))>{{ $course->abbreviation ?? $course->course_name }}</option>
                                     @endforeach
                                 </select>
                             </div>
@@ -219,7 +219,7 @@
                     <label class="form-label">Course(s)</label>
                     <select name="sessions[__INDEX__][course_ids][]" class="form-select course-select" multiple data-placeholder="Select course(s)">
                         @foreach($courses as $course)
-                            <option value="{{ $course->id }}">{{ $course->course_name }}</option>
+                            <option value="{{ $course->id }}">{{ $course->abbreviation ?? $course->course_name }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -291,18 +291,18 @@
         function handleLessonChange(event) {
             const lessonSelect = event.target;
             const selectedOption = lessonSelect.options[lessonSelect.selectedIndex];
-            const courseId = selectedOption.getAttribute('data-course-id');
+            const courseIds = selectedOption.getAttribute('data-course-ids');
             const row = lessonSelect.closest('.session-row');
             const courseSelect = row.querySelector('.course-select');
 
-            if (courseId && courseSelect) {
+            if (courseIds && courseSelect) {
+                const courseIdArray = courseIds.split(',');
                 // Clear current selections
                 Array.from(courseSelect.options).forEach(opt => opt.selected = false);
-                // Select the course matching the lesson
-                const matchingOption = Array.from(courseSelect.options).find(opt => opt.value === courseId);
-                if (matchingOption) {
-                    matchingOption.selected = true;
-                }
+                // Select the courses matching the lesson
+                Array.from(courseSelect.options).forEach(opt => {
+                    if (courseIdArray.includes(opt.value)) opt.selected = true;
+                });
                 // Trigger Select2 update if available
                 if (window.jQuery && jQuery().select2) {
                     jQuery(courseSelect).trigger('change');
@@ -362,7 +362,7 @@
                 courses.forEach(c => {
                     const opt = document.createElement('option');
                     opt.value = c.id;
-                    opt.textContent = c.course_name;
+                    opt.textContent = c.abbreviation || c.course_name;
                     if (prev.includes(String(c.id))) opt.selected = true;
                     sel.appendChild(opt);
                 });
