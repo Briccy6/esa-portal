@@ -20,7 +20,8 @@
     .timetable-table thead {
         background: #667eea;
         color: white;
-        display: table-header-group;
+        display: table-header-group !important;
+        visibility: visible !important;
     }
 
     .timetable-table th {
@@ -28,6 +29,7 @@
         font-weight: 600;
         border: none;
         color: white !important;
+        visibility: visible !important;
     }
 
     .timetable-table td {
