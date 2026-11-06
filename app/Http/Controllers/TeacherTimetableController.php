@@ -22,40 +22,54 @@ class TeacherTimetableController extends Controller
             'teacher_branch_id' => $teacherBranchId,
         ]);
 
+        // Get lesson IDs assigned to this teacher in their branch
+        $assignedLessonIds = \DB::table('lesson_branch_course')
+            ->where('branch_id', $teacherBranchId)
+            ->where('teacher_id', $teacher->id)
+            ->pluck('lesson_id')
+            ->unique()
+            ->toArray();
+
+        // Also check direct teacher_id on lessons
+        $directLessonIds = \App\Models\Lesson::where('teacher_id', $teacher->id)
+            ->pluck('id')
+            ->toArray();
+
+        // Merge both sources
+        $allLessonIds = array_unique(array_merge($assignedLessonIds, $directLessonIds));
+
+        \Log::info('Teacher assigned lessons', [
+            'assigned_lesson_ids' => $assignedLessonIds,
+            'direct_lesson_ids' => $directLessonIds,
+            'all_lesson_ids' => $allLessonIds,
+        ]);
+
+        if (empty($allLessonIds)) {
+            \Log::warning('No lessons assigned to teacher', ['teacher_id' => $teacher->id]);
+            return view('teacher.timetables.index', compact('timetables'))->with('timetables', collect());
+        }
+
+        // Get timetables that have sessions with the teacher's assigned lessons
         $timetables = Timetable::published()
             ->whereDate('valid_from', '<=', now())
             ->whereDate('valid_until', '>=', now())
-            ->where('branch_id', $teacherBranchId) // Filter by teacher's branch
+            ->where('branch_id', $teacherBranchId)
+            ->whereHas('sessions', function($query) use ($allLessonIds) {
+                $query->whereIn('lesson_id', $allLessonIds);
+            })
             ->with(['branch', 'academicYear', 'term', 'sessions.lesson.teacher', 'sessions.lesson.teachers', 'sessions.courses'])
             ->get();
 
-        // Filter timetables to only show those where teacher is assigned to at least one session
-        $filteredTimetables = $timetables->filter(function ($timetable) use ($teacher, $teacherBranchId) {
-            $hasAssignedSession = false;
-            
-            foreach ($timetable->sessions as $session) {
-                // Check if teacher is assigned to this lesson (either directly or through pivot)
-                if ($session->lesson) {
-                    // Check direct teacher assignment
-                    if ($session->lesson->teacher_id === $teacher->id) {
-                        $hasAssignedSession = true;
-                        break;
-                    }
-                    
-                    // Check through lesson_branch_course pivot table
-                    $isPivotAssigned = $session->lesson->teachers()
-                        ->where('teachers.id', $teacher->id)
-                        ->where('lesson_branch_course.branch_id', $teacherBranchId)
-                        ->exists();
-                    
-                    if ($isPivotAssigned) {
-                        $hasAssignedSession = true;
-                        break;
-                    }
-                }
-            }
-            
-            return $hasAssignedSession;
+        // Filter sessions to only show those with the teacher's assigned lessons
+        foreach ($timetables as $timetable) {
+            $timetable->sessions = $timetable->sessions->filter(function($session) use ($allLessonIds) {
+                return in_array($session->lesson_id, $allLessonIds);
+            });
+        }
+
+        // Remove timetables with no matching sessions
+        $filteredTimetables = $timetables->filter(function($timetable) {
+            return $timetable->sessions->isNotEmpty();
         })->values();
 
         // Debug: Log timetable count
@@ -70,27 +84,29 @@ class TeacherTimetableController extends Controller
     public function show(Timetable $timetable)
     {
         $teacher = Auth::guard('teacher')->user();
+        $teacherBranchId = $teacher->branch_id;
+
+        // Get lesson IDs assigned to this teacher in their branch
+        $assignedLessonIds = \DB::table('lesson_branch_course')
+            ->where('branch_id', $teacherBranchId)
+            ->where('teacher_id', $teacher->id)
+            ->pluck('lesson_id')
+            ->unique()
+            ->toArray();
+
+        // Also check direct teacher_id on lessons
+        $directLessonIds = \App\Models\Lesson::where('teacher_id', $teacher->id)
+            ->pluck('id')
+            ->toArray();
+
+        // Merge both sources
+        $allLessonIds = array_unique(array_merge($assignedLessonIds, $directLessonIds));
 
         $timetable->load(['branch', 'academicYear', 'term', 'sessions.lesson.teacher', 'sessions.lesson.teachers', 'sessions.courses']);
 
-        // Filter sessions to only show those where teacher is assigned
-        $teacherSessions = $timetable->sessions->filter(function ($session) use ($teacher) {
-            if (!$session->lesson) {
-                return false;
-            }
-            
-            // Check direct teacher assignment
-            if ($session->lesson->teacher_id === $teacher->id) {
-                return true;
-            }
-            
-            // Check through lesson_branch_course pivot table
-            $isPivotAssigned = $session->lesson->teachers()
-                ->where('teachers.id', $teacher->id)
-                ->where('lesson_branch_course.branch_id', $timetable->branch_id)
-                ->exists();
-            
-            return $isPivotAssigned;
+        // Filter sessions to only show those with the teacher's assigned lessons
+        $teacherSessions = $timetable->sessions->filter(function ($session) use ($allLessonIds) {
+            return in_array($session->lesson_id, $allLessonIds);
         })->values();
 
         if ($teacherSessions->isEmpty()) {
