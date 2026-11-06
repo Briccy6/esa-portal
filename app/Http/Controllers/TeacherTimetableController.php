@@ -44,9 +44,12 @@ class TeacherTimetableController extends Controller
             'all_lesson_ids' => $allLessonIds,
         ]);
 
+        // Initialize timetables as empty collection
+        $timetables = collect();
+
         if (empty($allLessonIds)) {
             \Log::warning('No lessons assigned to teacher', ['teacher_id' => $teacher->id]);
-            return view('teacher.timetables.index', compact('timetables'))->with('timetables', collect());
+            return view('teacher.timetables.index', compact('timetables'));
         }
 
         // Get timetables that have sessions with the teacher's assigned lessons
