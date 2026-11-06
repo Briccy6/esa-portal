@@ -12,9 +12,9 @@
             <a href="{{ route('dos.exams.index') }}" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left me-1"></i> Back to Exams
             </a>
-            <a href="{{ route('dos.exams.print', $exam->id) }}" class="btn btn-success" target="_blank">
+            <button onclick="window.open('/dos/exams/{{ $exam->id }}/print', '_blank')" class="btn btn-success">
                 <i class="bi bi-printer me-1"></i> Print Exam
-            </a>
+            </button>
             <a href="{{ route('dos.exams.edit', $exam->id) }}" class="btn btn-warning">
                 <i class="bi bi-pencil me-1"></i> Edit Exam
             </a>
