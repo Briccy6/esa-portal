@@ -373,8 +373,8 @@ class FlutterwaveController extends Controller
             $validated = $request->validate([
                 'student_id' => 'required|exists:students,id',
                 'fee_type'   => 'required|string|in:registration_fee,school_fee,trip_fee,practical_fee,student_card',
-                'amount'     => 'required|numeric|min:500', // Flutterwave minimum amount requirement
-                'total_fee'  => 'required|numeric|min:500',
+                'amount'     => 'required|numeric|min:100', // Lowered minimum to 100 RWF
+                'total_fee'  => 'required|numeric|min:100',
                 'term'       => 'nullable|integer|exists:terms,id',
             ]);
 
@@ -401,6 +401,20 @@ class FlutterwaveController extends Controller
                     'status'  => 'error',
                     'message' => 'Student phone number is required for payment. Please update student information.',
                 ], 422);
+            }
+
+            // Format phone number to include country code if missing
+            $phoneNumber = $student->phone;
+            // Remove any spaces, dashes, or parentheses
+            $phoneNumber = preg_replace('/[\s\-\(\)]/', '', $phoneNumber);
+            // If doesn't start with +, add Rwanda country code (+250)
+            if (!preg_match('/^\+/', $phoneNumber)) {
+                // If starts with 0, replace with +250
+                if (preg_match('/^0/', $phoneNumber)) {
+                    $phoneNumber = '+250' . substr($phoneNumber, 1);
+                } else {
+                    $phoneNumber = '+250' . $phoneNumber;
+                }
             }
 
             // Course model uses 'course_name' column, not 'name'
@@ -463,7 +477,7 @@ class FlutterwaveController extends Controller
                 ],
                 'customer' => [
                     'email'       => $student->email,
-                    'phonenumber' => $student->phone ?? '',
+                    'phonenumber' => $phoneNumber,
                     'name'        => $student->full_name,
                 ],
                 'customizations' => [
