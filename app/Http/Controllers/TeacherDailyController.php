@@ -181,29 +181,44 @@ class TeacherDailyController extends Controller
     public function getLessons($courseId)
     {
         $teacher = Auth::guard('teacher')->user();
-        $course = $teacher->courses()->where('courses.id', $courseId)->first();
-        if (!$course) {
-            \Log::error("Teacher {$teacher->id} not assigned to course {$courseId}");
-            return response()->json([], 404);
-        }
+        
+        \Log::info('getLessons called', [
+            'teacher_id' => $teacher->id,
+            'course_id' => $courseId,
+        ]);
 
-        // Get lessons assigned to this teacher for this course
-        // Check both direct teacher_id and pivot table assignments with course_id
-        $lessons = \App\Models\Lesson::where('course_id', $courseId)
-            ->where(function($query) use ($teacher, $courseId) {
-                $query->where('teacher_id', $teacher->id)
-                      ->orWhereHas('branchCourses', function($q) use ($teacher, $courseId) {
-                          $q->where('teacher_id', $teacher->id)
-                            ->where('course_id', $courseId);
-                      });
-            })
-            ->get(['id', 'title']);
+        // Get lesson IDs assigned to this teacher for this course via lesson_branch_course
+        $lessonIds = \DB::table('lesson_branch_course')
+            ->where('teacher_id', $teacher->id)
+            ->where('course_id', $courseId)
+            ->distinct()
+            ->pluck('lesson_id')
+            ->toArray();
+        
+        \Log::info('Lesson IDs from lesson_branch_course', [
+            'lesson_ids' => $lessonIds,
+        ]);
 
-        if ($lessons->isEmpty()) {
-            \Log::warning("No lessons found for teacher {$teacher->id} in course {$courseId}");
+        if (empty($lessonIds)) {
+            \Log::warning("No lessons found via lesson_branch_course for teacher {$teacher->id} in course {$courseId}");
+            
+            // Fallback: try lessons where teacher_id matches directly
+            $lessons = \App\Models\Lesson::where('course_id', $courseId)
+                ->where('teacher_id', $teacher->id)
+                ->get(['id', 'title']);
+            
+            if ($lessons->isEmpty()) {
+                \Log::warning("No lessons found via direct teacher_id for teacher {$teacher->id} in course {$courseId}");
+                return response()->json([]);
+            }
         } else {
-            \Log::info("Found {$lessons->count()} lessons for teacher {$teacher->id} in course {$courseId}");
+            $lessons = \App\Models\Lesson::whereIn('id', $lessonIds)
+                ->get(['id', 'title']);
         }
+
+        \Log::info("Found {$lessons->count()} lessons for teacher {$teacher->id} in course {$courseId}");
+        return response()->json($lessons);
+    }
         return response()->json($lessons);
     }
 
