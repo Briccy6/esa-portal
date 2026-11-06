@@ -94,11 +94,6 @@
                                                 data-course-ids="{{ implode(',', $lesson->all_course_ids) }}"
                                                 @selected(old("sessions.{$index}.lesson_id", $sessionData['lesson_id'] ?? '') == $lesson->lesson_id)>
                                             {{ $lesson->lesson->title ?? 'Untitled lesson' }}
-                                            @if(count($lesson->all_course_ids) > 1)
-                                                ({{ $lesson->course_names }})
-                                            @else
-                                                ({{ $lesson->course->course_name ?? 'Course' }})
-                                            @endif
                                         </option>
                                     @endforeach
                                 </select>
@@ -183,11 +178,6 @@
                             <option value="{{ $lesson->lesson_id }}"
                                     data-course-ids="{{ implode(',', $lesson->all_course_ids) }}">
                                 {{ $lesson->lesson->title ?? 'Untitled lesson' }}
-                                @if(count($lesson->all_course_ids) > 1)
-                                    ({{ $lesson->course_names }})
-                                @else
-                                    ({{ $lesson->course->course_name ?? 'Course' }})
-                                @endif
                             </option>
                         @endforeach
                     </select>
