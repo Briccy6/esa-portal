@@ -1628,7 +1628,6 @@ Route::middleware(['auth:staff'])->prefix('dos/exams')->name('dos.exams.')->grou
     Route::get('/{exam}/edit', [ExamController::class, 'edit'])->name('edit');
     Route::put('/{exam}', [ExamController::class, 'update'])->name('update');
     Route::delete('/{exam}', [ExamController::class, 'destroy'])->name('destroy');
-    Route::get('/{exam}/print', [ExamController::class, 'printExam'])->name('print');
     
     // Staff Question Management Routes
     Route::get('{exam}/questions', [\App\Http\Controllers\Staff\StaffQuestionController::class, 'index'])->name('questions');
@@ -1636,6 +1635,9 @@ Route::middleware(['auth:staff'])->prefix('dos/exams')->name('dos.exams.')->grou
     Route::post('{exam}/questions', [\App\Http\Controllers\Staff\StaffQuestionController::class, 'store'])->name('questions.store');
     Route::post('{exam}/questions/import', [\App\Http\Controllers\Staff\StaffQuestionController::class, 'import'])->name('questions.import');
 });
+
+// DOS Exam Print Route - Defined separately to avoid route caching issues
+Route::middleware(['auth:staff'])->get('/dos/exams/{exam}/print', [ExamController::class, 'printExam'])->name('dos.exams.print');
 
 // DOS Teachers Route - Defined separately to avoid route caching issues
 Route::middleware(['auth:staff'])->get('/dos/teachers', [\App\Http\Controllers\DosTeacherController::class, 'index'])->name('dos.teachers.index');
