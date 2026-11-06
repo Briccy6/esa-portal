@@ -1310,7 +1310,8 @@ Route::get('/courses/registration-fee', [StudentController::class, 'getRegistrat
 Route::post('/students/flutterwave/initialize', [\App\Http\Controllers\FlutterwaveController::class, 'initializePayment'])->name('students.flutterwave.initialize');
 Route::get('/payment/callback', [StudentController::class, 'paymentCallback'])->name('students.registration.callback');
 
-Route::post('/admin/students/{student}/send-reset-link', [\App\Http\Controllers\StudentController::class, 'sendResetLink'])->name('admin.students.sendResetLink');
+// Reset link
+Route::post('/admin/students/{student}/send-reset-link', [StudentController::class, 'sendResetLink'])->name('admin.students.sendResetLink');
 Route::get('/admin/force-logout', [\App\Http\Controllers\AdminLoginController::class, 'forceLogout'])->name('admin.forceLogout');
 Route::get('/teacher/force-logout', [\App\Http\Controllers\TeacherAuthController::class, 'showForceLogout'])->name('teacher.force-logout');
 Route::get('/admin/force-logout', [\App\Http\Controllers\AdminAuthController::class, 'showForceLogout'])->name('admin.force-logout');

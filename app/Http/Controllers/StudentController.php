@@ -661,6 +661,51 @@ class StudentController extends Controller
         return view('admin.students.edit', compact('student', 'branches', 'courses', 'academicYears'));
     }
 
+    /**
+     * Send password reset link to student
+     */
+    public function sendResetLink(Request $request, $studentId)
+    {
+        $student = Student::findOrFail($studentId);
+        
+        try {
+            // Generate a new random password
+            $newPassword = Str::random(10);
+            
+            // Update student password
+            $student->password = Hash::make($newPassword);
+            $student->password_plain = $newPassword; // Store plain text for display purposes
+            $student->save();
+            
+            // Send email with new password
+            $emailData = [
+                'student_name' => $student->full_name,
+                'new_password' => $newPassword,
+                'email' => $student->email
+            ];
+            
+            // Send email
+            try {
+                Mail::to($student->email)->send(new StudentWelcomeMail($emailData));
+            } catch (\Exception $e) {
+                // Log email error but continue
+                Log::error('Failed to send password email: ' . $e->getMessage());
+            }
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Password reset successfully! New password sent to ' . $student->email,
+                'new_password' => $newPassword
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error resetting password: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function update(Request $request, Student $student)
     {
         $request->validate([
