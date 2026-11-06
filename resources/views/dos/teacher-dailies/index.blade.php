@@ -98,19 +98,34 @@
                                         <input type="checkbox" name="ids[]" value="{{ $daily->id }}" class="daily-checkbox">
                                     </td>
                                     <td>{{ $daily->date }}</td>
-                                    <td>{{ $daily->teacher->teacher_name ?? '-' }}</td>
-                                    <td>{{ $daily->branch->name ?? '-' }}</td>
-                                    <td>{{ $daily->course->course_name ?? '-' }}</td>
-                                    <td>{{ $daily->lesson->title ?? '-' }}</td>
-                                    <td>{{ $daily->unit->unit_name ?? '-' }}</td>
+                                    <td>{{ $daily->teacher->teacher_name ?? 'N/A' }}</td>
+                                    <td>{{ $daily->branch->name ?? 'N/A' }}</td>
+                                    <td>
+                                        @if($daily->course_ids && is_array($daily->course_ids) && count($daily->course_ids) > 1)
+                                            @php
+                                                $courses = \App\Models\Course::whereIn('id', $daily->course_ids)->get();
+                                            @endphp
+                                            @foreach($courses as $course)
+                                                <span class="badge bg-primary">{{ $course->course_name }}</span>
+                                                @if(!$loop->last) <br>@endif
+                                            @endforeach
+                                        @else
+                                            {{ $daily->course->course_name ?? 'N/A' }}
+                                        @endif
+                                    </td>
+                                    <td>{{ $daily->lesson->title ?? 'N/A' }}</td>
+                                    <td>{{ $daily->unit->unit_name ?? 'N/A' }}</td>
                                     <td>{{ $daily->total_students }}</td>
                                     <td>{{ $daily->absences }}</td>
                                     <td>{{ $daily->hours_studied }}</td>
                                     <td>
                                         @if($daily->approved)
                                             <span class="badge bg-success">Approved</span>
+                                            @if($daily->approved_at)
+                                                <small class="text-muted d-block">{{ $daily->approved_at->diffForHumans() }}</small>
+                                            @endif
                                         @else
-                                            <span class="badge bg-warning text-dark">Pending</span>
+                                            <span class="badge bg-warning text-dark">Pending Approval</span>
                                         @endif
                                     </td>
                                     <td>

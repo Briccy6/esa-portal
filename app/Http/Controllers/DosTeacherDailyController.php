@@ -48,7 +48,7 @@ class DosTeacherDailyController extends Controller
 
         $branches = Branch::all();
         $courses = Course::all();
-        $teachers = Teacher::all();
+        $teachers = Teacher::orderBy('teacher_name')->get();
 
         return view('dos.teacher-dailies.index', compact('dailies', 'branches', 'courses', 'teachers'));
     }
