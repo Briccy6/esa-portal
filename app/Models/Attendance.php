@@ -10,7 +10,7 @@ class Attendance extends Model
         'student_id',
         'course_id',
         'lesson_id',
-  
+        'branch_id',
         'date',
         'status',
         'marked_by',

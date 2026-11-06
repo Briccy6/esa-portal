@@ -1643,6 +1643,15 @@ Route::middleware(['auth:staff'])->get('/dos/exams/{exam}/print', [ExamControlle
 // DOS Teachers Route - Defined separately to avoid route caching issues
 Route::middleware(['auth:staff'])->get('/dos/teachers', [\App\Http\Controllers\DosTeacherController::class, 'index'])->name('dos.teachers.index');
 
+// DOS Teacher Daily Activities Routes - Defined separately to avoid route caching issues
+Route::middleware(['auth:staff'])->prefix('dos/teacher-dailies')->name('dos.teacher-dailies.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\DosTeacherDailyController::class, 'index'])->name('index');
+    Route::get('/{id}', [\App\Http\Controllers\DosTeacherDailyController::class, 'show'])->name('show');
+    Route::post('/{id}/approve', [\App\Http\Controllers\DosTeacherDailyController::class, 'approve'])->name('approve');
+    Route::post('/{id}/reject', [\App\Http\Controllers\DosTeacherDailyController::class, 'reject'])->name('reject');
+    Route::post('/bulk-approve', [\App\Http\Controllers\DosTeacherDailyController::class, 'bulkApprove'])->name('bulk-approve');
+});
+
 // DOS Academic Routes
 Route::middleware(['auth:staff'])->prefix('dos')->name('dos.')->group(function () {
     // Courses Management

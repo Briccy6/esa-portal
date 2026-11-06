@@ -660,6 +660,11 @@
                     <i class="fas fa-file-alt"></i> Study Resources
                 </a>
             </li>
+            <li>
+                <a class="dropdown-item {{ request()->routeIs('dos.teacher-dailies.*') ? 'active' : '' }}" href="{{ route('dos.teacher-dailies.index') }}">
+                    <i class="fas fa-calendar-check"></i> Teacher Daily Activities
+                </a>
+            </li>
         </ul>
         </li>
 

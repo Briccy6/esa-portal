@@ -25,6 +25,19 @@ class TeacherDaily extends Model
         'challenges',
         'comment',
         'date',
+        'approved',
+        'approved_by',
+        'approved_at',
+        'rejection_reason',
+        'rejected_by',
+        'rejected_at',
+    ];
+
+    protected $casts = [
+        'approved' => 'boolean',
+        'approved_at' => 'datetime',
+        'rejected_at' => 'datetime',
+        'date' => 'date',
     ];
 
     public function teacher()

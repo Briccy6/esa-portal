@@ -7,6 +7,7 @@
         <thead>
             <tr>
                 <th>Date</th>
+                <th>Branch</th>
                 <th>Course</th>
                 <th>Lesson</th>
                 <th>Unit</th>
@@ -15,13 +16,14 @@
                 <th>Total Students</th>
                 <th>Absences</th>
                 <th>Comment</th>
-                <th>Status</th> <!-- Add this column -->
+                <th>Status</th>
             </tr>
         </thead>
         <tbody>
             @forelse($dailies as $daily)
                 <tr>
                     <td>{{ $daily->date }}</td>
+                    <td>{{ $daily->branch->name ?? '-' }}</td>
                     <td>{{ $daily->course->course_name ?? '-' }}</td>
                     <td>{{ $daily->lesson->title ?? '-' }}</td>
                     <td>{{ $daily->unit->unit_name ?? '-' }}</td>
@@ -46,14 +48,17 @@
                     <td>
                         @if($daily->approved)
                             <span class="badge bg-success">Approved</span>
+                            @if($daily->approved_at)
+                                <small class="text-muted d-block">{{ $daily->approved_at->format('M d, Y') }}</small>
+                            @endif
                         @else
-                            <span class="badge bg-warning text-dark">Pending</span>
+                            <span class="badge bg-warning text-dark">Pending Approval</span>
                         @endif
                     </td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="10" class="text-center text-muted">No dailies found.</td>
+                    <td colspan="11" class="text-center text-muted">No dailies found.</td>
                 </tr>
             @endforelse
         </tbody>
