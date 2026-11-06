@@ -1006,10 +1006,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // When branch changes, load courses for that branch
     branchSelect.addEventListener('change', function() {
         const branchId = this.value;
-        coursesSelect.empty().append('<option value="">Select courses</option>').trigger('change');
-        coursesSelect.prop('disabled', true);
-        lessonSelect.empty().append('<option value="">Select lesson</option>');
-        unitSelect.empty().append('<option value="">Select unit</option>');
+        $('#courses').empty().append('<option value="">Select courses</option>').trigger('change');
+        $('#courses').prop('disabled', true);
+        lessonSelect.innerHTML = '<option value="">Select lesson</option>';
+        unitSelect.innerHTML = '<option value="">Select unit</option>';
         
         // Remove attendance section if present
         const attendanceDiv = document.getElementById('attendanceSection');
