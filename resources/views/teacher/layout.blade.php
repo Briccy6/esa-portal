@@ -1017,7 +1017,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (branchId) {
             // Fetch courses for this teacher in this branch
-            fetch(`/teacher/branch-courses/${branchId}`)
+            fetch(`/api/teacher/branch/${branchId}/courses`)
                 .then(res => {
                     if (!res.ok) {
                         throw new Error('Failed to load courses');

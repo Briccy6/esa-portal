@@ -846,7 +846,6 @@ Route::middleware('auth:teacher')->prefix('teacher')->group(function () {
     Route::get('course/{course}/lessons', [\App\Http\Controllers\TeacherDailyController::class, 'getLessons'])->name('teacher.course.lessons');
     Route::get('lesson/{lesson}/units', [\App\Http\Controllers\TeacherDailyController::class, 'getUnits'])->name('teacher.lesson.units');
     Route::get('course/{course}/student-count', [\App\Http\Controllers\TeacherDailyController::class, 'getStudentCount'])->name('teacher.course.studentCount');
-    Route::get('branch-courses/{branch}', [\App\Http\Controllers\TeacherDailyController::class, 'getCoursesByBranch'])->name('teacher.branch.courses');
 });
 
 Route::middleware('auth:teacher')->prefix('teacher')->name('teacher.')->group(function () {
@@ -1333,6 +1332,9 @@ Route::get('/api/branches/search', [SearchController::class, 'branches'])->name(
 Route::get('/api/courses/search', [SearchController::class, 'courses'])->name('api.courses.search');
 Route::get('/api/lessons/search', [SearchController::class, 'lessons'])->name('api.lessons.search');
 Route::get('/api/teachers/search', [SearchController::class, 'teachers'])->name('api.teachers.search');
+
+// API Route to get teacher's courses in a branch
+Route::middleware(['auth:teacher'])->get('/api/teacher/branch/{branch}/courses', [\App\Http\Controllers\TeacherDailyController::class, 'getCoursesByBranch'])->name('api.teacher.branch.courses');
 
 // API Routes for branch-courses relationship
 Route::get('/api/branches/{branch}/courses', function($branchId) {
