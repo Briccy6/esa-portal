@@ -947,12 +947,26 @@ class DosTimetableController extends Controller
             return redirect()->back()->withErrors(['publish' => 'The timetable cannot be published until validation issues are resolved: ' . implode(' ', $issues)])->with('validation_errors', $issues);
         }
 
-        $updated = $timetable->update(['status' => 'published']);
+        // Force direct database update
+        $affected = \DB::table('timetables')
+            ->where('id', $timetable->id)
+            ->update(['status' => 'published']);
         
-        \Log::info('Timetable status updated', [
+        \Log::info('Direct database update result', [
             'timetable_id' => $timetable->id,
-            'updated' => $updated,
-            'new_status' => $timetable->fresh()->status,
+            'affected_rows' => $affected,
+        ]);
+        
+        // Clear cache to ensure status change is reflected
+        \Cache::forget("timetable_{$timetable->id}");
+        \Cache::flush();
+        
+        // Refresh the model from database
+        $timetable->refresh();
+        
+        \Log::info('Timetable status after publish', [
+            'timetable_id' => $timetable->id,
+            'status' => $timetable->status,
         ]);
 
         $courseIds = $timetable->sessions()->with('lesson')->get()->flatMap(function ($session) {
