@@ -216,15 +216,29 @@ class DosTeacherDailyController extends Controller
         try {
             $daily = TeacherDaily::findOrFail($id);
 
+            \Log::info('Deleting TeacherDaily', [
+                'daily_id' => $id,
+                'teacher_id' => $daily->teacher_id,
+                'date' => $daily->date,
+            ]);
+
             // Delete related attendance records
-            Attendance::where('date', $daily->date)
+            $attendanceDeleted = Attendance::where('date', $daily->date)
                 ->where('course_id', $daily->course_id)
                 ->where('lesson_id', $daily->lesson_id)
                 ->where('branch_id', $daily->branch_id)
                 ->delete();
 
+            \Log::info('Attendance records deleted', [
+                'attendance_count' => $attendanceDeleted,
+            ]);
+
             // Delete the daily record
             $daily->delete();
+
+            \Log::info('TeacherDaily deleted successfully', [
+                'daily_id' => $id,
+            ]);
 
             if (request()->expectsJson()) {
                 return response()->json([
@@ -235,6 +249,11 @@ class DosTeacherDailyController extends Controller
 
             return back()->with('success', 'Daily activity and related attendance deleted successfully!');
         } catch (\Exception $e) {
+            \Log::error('Failed to delete TeacherDaily', [
+                'daily_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+
             if (request()->expectsJson()) {
                 return response()->json([
                     'success' => false,

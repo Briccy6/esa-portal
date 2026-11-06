@@ -192,10 +192,9 @@ function deleteDaily(id) {
         fetch('{{ route('dos.teacher-dailies.destroy', ':id') }}'.replace(':id', id), {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
+                'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-            },
-            body: '_method=DELETE'
+            }
         })
         .then(response => response.json())
         .then(data => {
