@@ -814,6 +814,9 @@
                     </label>
                     <select class="form-select select2" id="courses" name="courses[]" multiple required disabled>
                         <option value="">Select branch first</option>
+                        @foreach($courses as $course)
+                            <option value="{{ $course->id }}" data-branch-id="{{ $course->branch_id ?? '' }}">{{ $course->course_name }}</option>
+                        @endforeach
                     </select>
                     <small class="text-muted">Search courses by name and select multiple (all must have the same lesson)</small>
                 </div>
@@ -1003,42 +1006,42 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    // When branch changes, load courses for that branch
+    // When branch changes, filter courses by branch (client-side)
     branchSelect.addEventListener('change', function() {
         const branchId = this.value;
-        $('#courses').empty().append('<option value="">Select courses</option>').trigger('change');
-        $('#courses').prop('disabled', true);
+        const coursesSelect = document.getElementById('courses');
+        
+        // Disable courses until branch is selected
+        if (!branchId) {
+            coursesSelect.disabled = true;
+            $('#courses').empty().append('<option value="">Select branch first</option>');
+            lessonSelect.innerHTML = '<option value="">Select lesson</option>';
+            unitSelect.innerHTML = '<option value="">Select unit</option>';
+            
+            // Remove attendance section if present
+            const attendanceDiv = document.getElementById('attendanceSection');
+            if (attendanceDiv) attendanceDiv.remove();
+            return;
+        }
+        
+        // Filter courses by branch ID
+        const allOptions = coursesSelect.querySelectorAll('option[data-branch-id]');
+        $('#courses').empty().append('<option value="">Select courses</option>');
+        
+        allOptions.forEach(option => {
+            const courseBranchId = option.getAttribute('data-branch-id');
+            if (courseBranchId == branchId) {
+                $('#courses').append(new Option(option.text, option.value, false, false));
+            }
+        });
+        
+        coursesSelect.disabled = false;
         lessonSelect.innerHTML = '<option value="">Select lesson</option>';
         unitSelect.innerHTML = '<option value="">Select unit</option>';
         
         // Remove attendance section if present
         const attendanceDiv = document.getElementById('attendanceSection');
         if (attendanceDiv) attendanceDiv.remove();
-        
-        if (branchId) {
-            // Fetch courses for this teacher in this branch
-            fetch(`/api/teacher/branch/${branchId}/courses`)
-                .then(res => {
-                    if (!res.ok) {
-                        throw new Error('Failed to load courses');
-                    }
-                    return res.json();
-                })
-                .then(data => {
-                    // Use jQuery to update Select2
-                    $('#courses').empty().append('<option value="">Select courses</option>');
-                    data.forEach(course => {
-                        $('#courses').append(new Option(course.course_name, course.id, false, false));
-                    });
-                    $('#courses').prop('disabled', false).trigger('change');
-                })
-                .catch(err => {
-                    console.error('Error fetching courses:', err);
-                    $('#courses').empty().append('<option value="">Error loading courses</option>');
-                });
-        } else {
-            $('#courses').empty().append('<option value="">Select branch first</option>').prop('disabled', true);
-        }
     });
 
     // When courses change, load lessons and show all students
