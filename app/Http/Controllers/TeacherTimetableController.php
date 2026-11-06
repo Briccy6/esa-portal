@@ -63,11 +63,25 @@ class TeacherTimetableController extends Controller
             'all_lesson_ids' => $allLessonIds,
         ]);
 
+        // Check if teacher has lesson_branch_course assignments
+        $lbcAssignments = \DB::table('lesson_branch_course')
+            ->where('teacher_id', $teacher->id)
+            ->get();
+        
+        \Log::info('Teacher lesson_branch_course assignments', [
+            'count' => $lbcAssignments->count(),
+            'assignments' => $lbcAssignments->toArray(),
+        ]);
+
         // Initialize timetables as empty collection
         $timetables = collect();
 
         if (empty($allLessonIds)) {
-            \Log::warning('No lessons assigned to teacher', ['teacher_id' => $teacher->id]);
+            \Log::warning('No lessons assigned to teacher', [
+                'teacher_id' => $teacher->id,
+                'teacher_name' => $teacher->teacher_name,
+                'lbc_assignments_count' => $lbcAssignments->count(),
+            ]);
             return view('teacher.timetables.index', compact('timetables'));
         }
 
