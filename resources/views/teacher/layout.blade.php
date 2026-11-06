@@ -612,6 +612,13 @@
             </li>
             
             <li class="nav-item">
+                <a href="{{ route('teacher.question-banks.index') }}" class="nav-link text-success">
+                    <i class="bi bi-database"></i>
+                    <span>Question Banks</span>
+                </a>
+            </li>
+            
+            <li class="nav-item">
                 <a href="{{ route('teacher.marks.index') }}" class="nav-link text-success">
                     <i class="bi bi-clipboard-check"></i>
                     <span>Marks</span>
@@ -675,6 +682,13 @@
                     <a href="{{ route('teacher.exams.index') }}" class="nav-link text-primary">
                         <i class="bi bi-clipboard-data"></i>
                         <span>Exams</span>
+                    </a>
+                </li>
+                
+                <li class="nav-item">
+                    <a href="{{ route('teacher.question-banks.index') }}" class="nav-link text-success">
+                        <i class="bi bi-database"></i>
+                        <span>Question Banks</span>
                     </a>
                 </li>
                 
