@@ -850,7 +850,7 @@ Route::middleware('auth:teacher')->prefix('teacher')->group(function () {
 
 Route::middleware('auth:teacher')->prefix('teacher')->name('teacher.')->group(function () {
     Route::get('profile/edit', [\App\Http\Controllers\TeacherProfileController::class, 'edit'])->name('profile.edit');
-    Route::post('profile/update', [\App\Http\Controllers\TeacherProfileController::class, 'update'])->name('profile.update');
+    Route::patch('profile/update', [\App\Http\Controllers\TeacherProfileController::class, 'update'])->name('profile.update');
 });
 
 Route::middleware('auth:teacher')->prefix('teacher')->name('teacher.')->group(function () {
