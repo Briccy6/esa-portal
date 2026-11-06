@@ -14,6 +14,7 @@ class TeacherDaily extends Model
         'course_id',
         'lesson_id',
         'unit_id',
+        'branch_id',
         'activity',
         'hours_studied',
         'total_students',
@@ -44,5 +45,10 @@ class TeacherDaily extends Model
     public function unit()
     {
         return $this->belongsTo(LessonUnit::class);
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
     }
 }

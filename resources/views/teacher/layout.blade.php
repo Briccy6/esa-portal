@@ -790,17 +790,31 @@
                     </button>
                 </div>
 
-                <!-- Course Selection -->
+                <!-- Branch Selection -->
                 <div class="mb-3">
-                    <label for="course" class="form-label">
-                        <i class="bi bi-book me-1"></i>Course Taught
+                    <label for="branch" class="form-label">
+                        <i class="bi bi-building me-1"></i>Branch
                     </label>
-                    <select class="form-select" id="course" name="course" required>
-                        <option value="">Select course</option>
+                    <select class="form-select" id="branch" name="branch_id" required>
+                        <option value="">Select branch</option>
+                        @foreach(auth('teacher')->user()->branches as $branch)
+                            <option value="{{ $branch->id }}">{{ $branch->name }}</option>
+                        @endforeach
+                    </select>
+                    <small class="text-muted">Select the branch where this class was held</small>
+                </div>
+
+                <!-- Course Selection (Multiple) -->
+                <div class="mb-3">
+                    <label for="courses" class="form-label">
+                        <i class="bi bi-book me-1"></i>Courses Taught
+                    </label>
+                    <select class="form-select" id="courses" name="courses[]" multiple required>
                         @foreach($courses as $course)
                             <option value="{{ $course->id }}">{{ $course->course_name }}</option>
                         @endforeach
                     </select>
+                    <small class="text-muted">Hold Ctrl/Cmd to select multiple courses (all must have the same lesson)</small>
                 </div>
 
                 <!-- Lesson Selection -->
@@ -962,7 +976,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Comment section is now always visible, no toggle needed
 
     // Dynamic selects with loading states
-    const courseSelect = document.getElementById('course');
+    const branchSelect = document.getElementById('branch');
+    const coursesSelect = document.getElementById('courses');
     const lessonSelect = document.getElementById('lesson');
     const unitSelect = document.getElementById('unit');
     let courseStudentCount = 0;
@@ -976,28 +991,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    courseSelect.addEventListener('change', function() {
-        const courseId = this.value;
+    // When courses change, load lessons
+    coursesSelect.addEventListener('change', function() {
+        const selectedCourses = Array.from(this.selectedOptions).map(option => option.value);
         setLoading(lessonSelect, true);
         unitSelect.innerHTML = '<option value="">Select unit</option>';
         
-        if (this.value) {
-            // Fetch student count
-            fetch(`/teacher/course/${this.value}/student-count`)
-                .then(res => res.json())
-                .then(data => {
-                    courseStudentCount = data.count;
-                })
-                .catch(err => {
-                    console.error('Error fetching student count:', err);
-                    courseStudentCount = 0;
-                });
-        } else {
-            courseStudentCount = 0;
-        }
-        
-        if (courseId) {
-            fetch(`/teacher/course/${courseId}/lessons`)
+        if (selectedCourses.length > 0) {
+            // Fetch lessons for the first selected course
+            fetch(`/teacher/course/${selectedCourses[0]}/lessons`)
                 .then(res => res.json())
                 .then(data => {
                     let options = '<option value="">Select lesson</option>';
@@ -1047,12 +1049,24 @@ document.addEventListener('DOMContentLoaded', function() {
     // Student attendance validation
     document.getElementById('total_students').addEventListener('blur', function() {
         const entered = parseInt(this.value, 10);
-        if (courseStudentCount > 0 && entered < courseStudentCount) {
-            // Show attendance table for manual marking
-            const courseId = courseSelect.value;
-            fetch(`/teacher/course/${courseId}/students`)
-                .then(res => res.json())
-                .then(students => {
+        const branchId = branchSelect.value;
+        const selectedCourses = Array.from(coursesSelect.selectedOptions).map(option => option.value);
+        
+        if (selectedCourses.length === 0 || !branchId) {
+            alert('Please select branch and courses first.');
+            this.value = 0;
+            return;
+        }
+
+        // Fetch student count for selected courses and branch
+        const courseIds = selectedCourses.join(',');
+        fetch(`/teacher/course/${selectedCourses[0]}/students?branch_id=${branchId}`)
+            .then(res => res.json())
+            .then(students => {
+                courseStudentCount = students.length;
+                
+                if (entered < courseStudentCount) {
+                    // Show attendance table for manual marking
                     let html = `<div id="attendanceSection" class="border rounded p-3 mt-3 bg-warning bg-opacity-10">
                         <h6 class="text-warning mb-3">
                             <i class="bi bi-exclamation-triangle me-2"></i>Attendance List
@@ -1085,21 +1099,22 @@ document.addEventListener('DOMContentLoaded', function() {
                     const oldSection = document.getElementById('attendanceSection');
                     if (oldSection) oldSection.remove();
                     this.parentNode.parentNode.insertAdjacentHTML('afterend', html);
-                })
-                .catch(() => {
-                    alert('Could not load students for attendance.');
-                });
-        } else {
-            // Remove attendance section if present
-            const attendanceDiv = document.getElementById('attendanceSection');
-            if (attendanceDiv) attendanceDiv.remove();
-        }
-        // Alert if entered > assigned
-        if (courseStudentCount > 0 && entered > courseStudentCount) {
-            alert('Number of present students cannot exceed total assigned students!');
-            this.value = courseStudentCount;
-            this.focus();
-        }
+                } else {
+                    // Remove attendance section if present
+                    const attendanceDiv = document.getElementById('attendanceSection');
+                    if (attendanceDiv) attendanceDiv.remove();
+                }
+                
+                // Alert if entered > assigned
+                if (entered > courseStudentCount) {
+                    alert('Number of present students cannot exceed total assigned students!');
+                    this.value = courseStudentCount;
+                    this.focus();
+                }
+            })
+            .catch(() => {
+                alert('Could not load students for attendance.');
+            });
     });
 
     // Dynamic Activities Management

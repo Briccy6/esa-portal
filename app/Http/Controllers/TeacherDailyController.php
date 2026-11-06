@@ -20,23 +20,50 @@ class TeacherDailyController extends Controller
         try {
             $request->validate([
                 'activities' => 'required|array',
-                'course' => 'required|integer',
+                'courses' => 'required|array', // Changed from single course to multiple courses
                 'lesson' => 'required|integer',
                 'unit' => 'required|integer',
+                'branch_id' => 'required|integer', // Added branch selection
                 'comment' => 'required|string',
                 'hours_studied' => 'required|numeric',
                 'total_students' => 'required|integer',
                 'date' => 'nullable|date',
-                // Add other fields as needed
             ]);
 
             $teacher = Auth::guard('teacher')->user();
+            $branchId = $request->branch_id;
 
+            // Verify teacher is assigned to this branch
+            if (!$teacher->branches->contains('id', $branchId)) {
+                return back()->with('error', 'You are not assigned to this branch. Please select a branch you belong to.');
+            }
+
+            $lesson = Lesson::find($request->lesson);
+            
+            if (!$lesson) {
+                return back()->with('error', 'Selected lesson not found. Please try again.');
+            }
+
+            // Validate that all courses have the same lesson
+            foreach ($request->courses as $courseId) {
+                $course = Course::find($courseId);
+                if (!$course) {
+                    return back()->with('error', 'One of the selected courses not found. Please try again.');
+                }
+                
+                // Verify the lesson belongs to this course
+                if ($lesson->course_id && $lesson->course_id != $courseId) {
+                    return back()->with('error', 'Lesson does not belong to one of the selected courses. All courses must have the same lesson.');
+                }
+            }
+
+            // Create a single TeacherDaily record for the session
             $daily = TeacherDaily::create([
                 'teacher_id'    => $teacher->id,
-                'course_id'     => $request->course,
+                'course_id'     => $request->courses[0], // Store primary course
                 'lesson_id'     => $request->lesson,
                 'unit_id'       => $request->unit,
+                'branch_id'     => $branchId, // Store branch
                 'activity'      => json_encode($request->activities),
                 'hours_studied' => $request->hours_studied,
                 'total_students'=> $request->total_students,
@@ -49,23 +76,13 @@ class TeacherDailyController extends Controller
                 'date'          => $request->date ?? now()->toDateString(),
             ]);
 
-            // Validate course and lesson exist
-            $course = Course::find($request->course);
-            $lesson = Lesson::find($request->lesson);
-            
-            if (!$course) {
-                return back()->with('error', 'Selected course not found. Please try again.');
-            }
-            
-            if (!$lesson) {
-                return back()->with('error', 'Selected lesson not found. Please try again.');
-            }
-
-            // Get all students for the course
-            $students = $course->students()->get();
+            // Get all students for the selected courses AND branch
+            $students = Student::whereIn('course_id', $request->courses)
+                ->where('branch_id', $branchId)
+                ->get();
             
             if ($students->isEmpty()) {
-                \Log::warning("No students found for course {$request->course}");
+                \Log::warning("No students found for courses " . implode(',', $request->courses) . " in branch {$branchId}");
                 // Continue without attendance if no students
             } else {
                 // If attendance array is present, use it (manual marking)
@@ -74,8 +91,9 @@ class TeacherDailyController extends Controller
                         try {
                             \App\Models\Attendance::create([
                                 'student_id'   => $studentId,
-                                'course_id'    => $request->course,
+                                'course_id'    => $request->courses[0], // Store primary course
                                 'lesson_id'    => $request->lesson,
+                                'branch_id'    => $branchId,
                                 'date'         => $daily->date,
                                 'status'       => $status, // 'P', 'A', etc.
                                 'marked_by'    => $teacher->id,
@@ -93,8 +111,9 @@ class TeacherDailyController extends Controller
                         try {
                             \App\Models\Attendance::create([
                                 'student_id'   => $student->id,
-                                'course_id'    => $request->course,
+                                'course_id'    => $request->courses[0], // Store primary course
                                 'lesson_id'    => $request->lesson,
+                                'branch_id'    => $branchId,
                                 'date'         => $daily->date,
                                 'status'       => 'P',
                                 'marked_by'    => $teacher->id,
@@ -109,7 +128,7 @@ class TeacherDailyController extends Controller
                 }
             }
 
-            return back()->with('success', 'Daily activity and attendance submitted successfully!');
+            return back()->with('success', 'Daily activity and attendance submitted successfully for ' . count($request->courses) . ' course(s)!');
         } catch (\Exception $e) {
             \Log::error('TeacherDaily creation failed: ' . $e->getMessage());
             return back()->with('error', 'Failed to submit daily activity and attendance. Please try again.');
@@ -181,10 +200,18 @@ class TeacherDailyController extends Controller
         $count = $course->students()->count();
         return response()->json(['count' => $count]);
     }
-    public function getStudents($courseId)
+    public function getStudents($courseId, Request $request)
     {
-        $course = Course::findOrFail($courseId);
-        $students = $course->students()->get(['id', 'full_name as name']);
+        $branchId = $request->query('branch_id');
+        
+        if (!$branchId) {
+            return response()->json(['error' => 'Branch ID is required'], 400);
+        }
+        
+        $students = Student::where('course_id', $courseId)
+            ->where('branch_id', $branchId)
+            ->get(['id', 'full_name as name']);
+            
         return response()->json($students);
     }
     public function index()
