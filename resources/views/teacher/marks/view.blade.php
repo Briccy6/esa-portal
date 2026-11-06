@@ -196,7 +196,7 @@
                                 <table class="table table-bordered table-hover marks-table">
                                     <thead class="table-dark">
                                         <tr>
-                                            <th rowspan="2" class="align-middle">Student Reg No</th>
+                                            <th rowspan="2" class="align-middle">Student Name</th>
                                             <th rowspan="2" class="align-middle">Course</th>
                                             <th rowspan="2" class="align-middle">Branch</th>
                                             @foreach($termData['lessons'] as $lessonId => $lessonData)
@@ -223,7 +223,7 @@
                                         @foreach($students as $studentId => $studentInfo)
                                             <tr>
                                                 <td class="align-middle">
-                                                    <strong>{{ $studentInfo['reg_number'] ?? $studentId }}</strong>
+                                                    <strong>{{ $studentInfo['name'] ?? $studentInfo['reg_number'] ?? $studentId }}</strong>
                                                 </td>
                                                 <td class="align-middle">{{ $studentInfo['course'] }}</td>
                                                 <td class="align-middle">{{ $studentInfo['branch'] }}</td>
