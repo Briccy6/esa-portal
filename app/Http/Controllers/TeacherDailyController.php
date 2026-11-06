@@ -165,9 +165,16 @@ class TeacherDailyController extends Controller
             }
 
             return back()->with('success', 'Daily activity and attendance submitted successfully for ' . count($request->courses) . ' course(s)!');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('TeacherDaily validation failed', [
+                'errors' => $e->errors(),
+            ]);
+            return back()->withErrors($e->errors())->with('error', 'Validation failed. Please check all required fields.');
         } catch (\Exception $e) {
-            \Log::error('TeacherDaily creation failed: ' . $e->getMessage());
-            return back()->with('error', 'Failed to submit daily activity and attendance. Please try again.');
+            \Log::error('TeacherDaily creation failed: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return back()->with('error', 'Failed to submit daily activity: ' . $e->getMessage() . '. Please check the logs for details.');
         }
     }
 
