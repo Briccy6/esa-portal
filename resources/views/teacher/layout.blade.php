@@ -21,6 +21,9 @@
     <!-- Bootstrap & Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Select2 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -804,15 +807,15 @@
                     <small class="text-muted">Select the branch where this class was held</small>
                 </div>
 
-                <!-- Course Selection (Multiple) -->
+                <!-- Course Selection (Multiple with Search) -->
                 <div class="mb-3">
                     <label for="courses" class="form-label">
                         <i class="bi bi-book me-1"></i>Courses Taught
                     </label>
-                    <select class="form-select" id="courses" name="courses[]" multiple required disabled>
+                    <select class="form-select select2" id="courses" name="courses[]" multiple required disabled>
                         <option value="">Select branch first</option>
                     </select>
-                    <small class="text-muted">Hold Ctrl/Cmd to select multiple courses (all must have the same lesson)</small>
+                    <small class="text-muted">Search courses by name and select multiple (all must have the same lesson)</small>
                 </div>
 
                 <!-- Lesson Selection -->
@@ -942,9 +945,21 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <!-- Enhanced JavaScript -->
 <script>
+$(document).ready(function() {
+    // Initialize Select2
+    $('.select2').select2({
+        theme: 'bootstrap-5',
+        width: '100%',
+        placeholder: 'Select courses',
+        allowClear: true
+    });
+});
+
 document.addEventListener('DOMContentLoaded', function() {
     // Modal section toggles with smooth animations
     const toggleSection = (buttonId, sectionId, required = false) => {
@@ -975,7 +990,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Dynamic selects with loading states
     const branchSelect = document.getElementById('branch');
-    const coursesSelect = document.getElementById('courses');
     const lessonSelect = document.getElementById('lesson');
     const unitSelect = document.getElementById('unit');
     let courseStudentCount = 0;
@@ -992,9 +1006,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // When branch changes, load courses for that branch
     branchSelect.addEventListener('change', function() {
         const branchId = this.value;
-        setLoading(coursesSelect, true);
-        lessonSelect.innerHTML = '<option value="">Select lesson</option>';
-        unitSelect.innerHTML = '<option value="">Select unit</option>';
+        coursesSelect.empty().append('<option value="">Select courses</option>').trigger('change');
+        coursesSelect.prop('disabled', true);
+        lessonSelect.empty().append('<option value="">Select lesson</option>');
+        unitSelect.empty().append('<option value="">Select unit</option>');
         
         // Remove attendance section if present
         const attendanceDiv = document.getElementById('attendanceSection');
@@ -1003,30 +1018,32 @@ document.addEventListener('DOMContentLoaded', function() {
         if (branchId) {
             // Fetch courses for this teacher in this branch
             fetch(`/teacher/branch/${branchId}/courses`)
-                .then(res => res.json())
+                .then(res => {
+                    if (!res.ok) {
+                        throw new Error('Failed to load courses');
+                    }
+                    return res.json();
+                })
                 .then(data => {
-                    let options = '<option value="">Select courses</option>';
+                    // Use jQuery to update Select2
+                    $('#courses').empty().append('<option value="">Select courses</option>');
                     data.forEach(course => {
-                        options += `<option value="${course.id}">${course.course_name}</option>`;
+                        $('#courses').append(new Option(course.course_name, course.id, false, false));
                     });
-                    coursesSelect.innerHTML = options;
-                    setLoading(coursesSelect, false);
+                    $('#courses').prop('disabled', false).trigger('change');
                 })
                 .catch(err => {
                     console.error('Error fetching courses:', err);
-                    coursesSelect.innerHTML = '<option value="">Error loading courses</option>';
-                    setLoading(coursesSelect, false);
+                    $('#courses').empty().append('<option value="">Error loading courses</option>');
                 });
         } else {
-            coursesSelect.innerHTML = '<option value="">Select branch first</option>';
-            coursesSelect.disabled = true;
-            setLoading(coursesSelect, false);
+            $('#courses').empty().append('<option value="">Select branch first</option>').prop('disabled', true);
         }
     });
 
     // When courses change, load lessons and show all students
-    coursesSelect.addEventListener('change', function() {
-        const selectedCourses = Array.from(this.selectedOptions).map(option => option.value);
+    $('#courses').on('change', function() {
+        const selectedCourses = $(this).val();
         setLoading(lessonSelect, true);
         unitSelect.innerHTML = '<option value="">Select unit</option>';
         
@@ -1034,10 +1051,15 @@ document.addEventListener('DOMContentLoaded', function() {
         const attendanceDiv = document.getElementById('attendanceSection');
         if (attendanceDiv) attendanceDiv.remove();
         
-        if (selectedCourses.length > 0) {
+        if (selectedCourses && selectedCourses.length > 0) {
             // Fetch lessons for the first selected course
             fetch(`/teacher/course/${selectedCourses[0]}/lessons`)
-                .then(res => res.json())
+                .then(res => {
+                    if (!res.ok) {
+                        throw new Error('Failed to load lessons');
+                    }
+                    return res.json();
+                })
                 .then(data => {
                     let options = '<option value="">Select lesson</option>';
                     data.forEach(lesson => {
@@ -1060,7 +1082,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 selectedCourses.forEach(courseId => {
                     fetch(`/teacher/course/${courseId}/students?branch_id=${branchId}`)
-                        .then(res => res.json())
+                        .then(res => {
+                            if (!res.ok) {
+                                throw new Error('Failed to load students');
+                            }
+                            return res.json();
+                        })
                         .then(students => {
                             // Add unique students
                             students.forEach(student => {

@@ -846,8 +846,10 @@ Route::middleware('auth:teacher')->prefix('teacher')->group(function () {
     Route::get('course/{course}/lessons', [\App\Http\Controllers\TeacherDailyController::class, 'getLessons'])->name('teacher.course.lessons');
     Route::get('lesson/{lesson}/units', [\App\Http\Controllers\TeacherDailyController::class, 'getUnits'])->name('teacher.lesson.units');
     Route::get('course/{course}/student-count', [\App\Http\Controllers\TeacherDailyController::class, 'getStudentCount'])->name('teacher.course.studentCount');
-    Route::get('branch/{branch}/courses', [\App\Http\Controllers\TeacherDailyController::class, 'getCoursesByBranch'])->name('teacher.branch.courses');
 });
+
+// Teacher branch courses route - defined separately to avoid route caching issues
+Route::middleware(['auth:teacher'])->get('/teacher/branch/{branch}/courses', [\App\Http\Controllers\TeacherDailyController::class, 'getCoursesByBranch'])->name('teacher.branch.courses');
 
 Route::middleware('auth:teacher')->prefix('teacher')->name('teacher.')->group(function () {
     Route::get('profile/edit', [\App\Http\Controllers\TeacherProfileController::class, 'edit'])->name('profile.edit');
