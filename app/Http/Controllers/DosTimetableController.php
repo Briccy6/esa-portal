@@ -317,14 +317,22 @@ class DosTimetableController extends Controller
             ];
         })->values();
 
-        // Get courses with teacher information
+        // Get courses with teacher information using lesson_branch_course
         $coursesWithTeachers = Course::whereIn('id', $courseIds)
-            ->with(['teacherManyToMany' => function($query) use ($branchId) {
-                $query->where('branch_id', $branchId);
-            }])
             ->get()
-            ->map(function($course) {
-                $teachers = $course->teacherManyToMany->pluck('teacher_name')->unique()->implode(', ');
+            ->map(function($course) use ($branchId) {
+                // Get teachers for this course in this branch via lesson_branch_course
+                $teacherIds = \DB::table('lesson_branch_course')
+                    ->where('branch_id', $branchId)
+                    ->where('course_id', $course->id)
+                    ->distinct()
+                    ->pluck('teacher_id');
+                
+                $teachers = \App\Models\Teacher::whereIn('id', $teacherIds)
+                    ->pluck('teacher_name')
+                    ->unique()
+                    ->implode(', ');
+                
                 return (object)[
                     'id' => $course->id,
                     'course_name' => $course->course_name,
@@ -584,14 +592,22 @@ class DosTimetableController extends Controller
             ];
         })->values();
 
-        // Get courses with teacher information
+        // Get courses with teacher information using lesson_branch_course
         $coursesWithTeachers = Course::whereIn('id', $courseIds)
-            ->with(['teacherManyToMany' => function($query) use ($branchId) {
-                $query->where('branch_id', $branchId);
-            }])
             ->get()
-            ->map(function($course) {
-                $teachers = $course->teacherManyToMany->pluck('teacher_name')->unique()->implode(', ');
+            ->map(function($course) use ($branchId) {
+                // Get teachers for this course in this branch via lesson_branch_course
+                $teacherIds = \DB::table('lesson_branch_course')
+                    ->where('branch_id', $branchId)
+                    ->where('course_id', $course->id)
+                    ->distinct()
+                    ->pluck('teacher_id');
+                
+                $teachers = \App\Models\Teacher::whereIn('id', $teacherIds)
+                    ->pluck('teacher_name')
+                    ->unique()
+                    ->implode(', ');
+                
                 return (object)[
                     'id' => $course->id,
                     'course_name' => $course->course_name,
