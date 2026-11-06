@@ -1637,6 +1637,9 @@ Route::middleware(['auth:staff'])->prefix('dos/exams')->name('dos.exams.')->grou
     Route::post('{exam}/questions/import', [\App\Http\Controllers\Staff\StaffQuestionController::class, 'import'])->name('questions.import');
 });
 
+// DOS Teachers Route - Defined separately to avoid route caching issues
+Route::middleware(['auth:staff'])->get('/dos/teachers', [\App\Http\Controllers\DosTeacherController::class, 'index'])->name('dos.teachers.index');
+
 // DOS Academic Routes
 Route::middleware(['auth:staff'])->prefix('dos')->name('dos.')->group(function () {
     // Courses Management
@@ -1660,9 +1663,6 @@ Route::middleware(['auth:staff'])->prefix('dos')->name('dos.')->group(function (
     Route::post('/lessons/assign', [LessonController::class, 'assignToBranches'])->name('lessons.assign');
     Route::get('/lessons/{lesson}/assignments', [LessonController::class, 'getAssignments'])->name('lessons.assignments');
     Route::delete('/lessons/{assignmentId}/delete-assignment', [LessonController::class, 'deleteAssignment'])->name('lessons.delete-assignment');
-
-    // Teachers Management
-    Route::get('/teachers', [\App\Http\Controllers\DosTeacherController::class, 'index'])->name('teachers.index');
 
     // Live Classes Management
     Route::get('/live-classes', [\App\Http\Controllers\DOS\LiveClassController::class, 'index'])->name('live-classes.index');
