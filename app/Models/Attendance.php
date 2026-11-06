@@ -58,4 +58,3 @@ class Attendance extends Model
         return $this->belongsTo(\App\Models\Staff::class, 'approved_by');
     }
 }
-}
