@@ -830,9 +830,6 @@
                     </label>
                     <select class="form-select select2" id="courses" name="courses[]" multiple required disabled>
                         <option value="">Select branch first</option>
-                        @foreach($courses as $course)
-                            <option value="{{ $course->id }}" data-branch-id="{{ $course->branch_id ?? '' }}">{{ $course->course_name }}</option>
-                        @endforeach
                     </select>
                     <small class="text-muted">Search courses by name and select multiple (all must have the same lesson)</small>
                 </div>
@@ -1022,7 +1019,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    // When branch changes, filter courses by branch (client-side)
+    // When branch changes, load courses for that branch
     branchSelect.addEventListener('change', function() {
         const branchId = this.value;
         const coursesSelect = document.getElementById('courses');
@@ -1040,18 +1037,36 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Filter courses by branch ID
-        const allOptions = coursesSelect.querySelectorAll('option[data-branch-id]');
-        $('#courses').empty().append('<option value="">Select courses</option>');
+        // Load courses for the selected branch
+        setLoading(coursesSelect, true);
+        $('#courses').empty().append('<option value="">Loading courses...</option>');
         
-        allOptions.forEach(option => {
-            const courseBranchId = option.getAttribute('data-branch-id');
-            if (courseBranchId == branchId) {
-                $('#courses').append(new Option(option.text, option.value, false, false));
-            }
-        });
+        fetch(`/api/teacher/branch/${branchId}/courses`)
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error('Failed to load courses');
+                }
+                return res.json();
+            })
+            .then(data => {
+                $('#courses').empty().append('<option value="">Select courses</option>');
+                if (data && data.length > 0) {
+                    data.forEach(course => {
+                        $('#courses').append(new Option(course.course_name, course.id, false, false));
+                    });
+                } else {
+                    $('#courses').append('<option value="">No courses available for this branch</option>');
+                }
+                coursesSelect.disabled = false;
+                setLoading(coursesSelect, false);
+            })
+            .catch(err => {
+                console.error('Error fetching courses:', err);
+                $('#courses').empty().append('<option value="">Error loading courses. Please check your connection.</option>');
+                coursesSelect.disabled = false;
+                setLoading(coursesSelect, false);
+            });
         
-        coursesSelect.disabled = false;
         lessonSelect.innerHTML = '<option value="">Select lesson</option>';
         unitSelect.innerHTML = '<option value="">Select unit</option>';
         
