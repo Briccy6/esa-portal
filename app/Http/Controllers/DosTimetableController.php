@@ -317,6 +317,22 @@ class DosTimetableController extends Controller
             ];
         })->values();
 
+        // Get courses with teacher information
+        $coursesWithTeachers = Course::whereIn('id', $courseIds)
+            ->with(['teacherManyToMany' => function($query) use ($branchId) {
+                $query->where('branch_id', $branchId);
+            }])
+            ->get()
+            ->map(function($course) {
+                $teachers = $course->teacherManyToMany->pluck('teacher_name')->unique()->implode(', ');
+                return (object)[
+                    'id' => $course->id,
+                    'course_name' => $course->course_name,
+                    'abbreviation' => $course->abbreviation,
+                    'teacher_name' => $teachers,
+                ];
+            });
+
         // Fallback: if no lesson assignments exist for the branch, try branch_course pivot
         if ($courseIds->isEmpty()) {
             try {
@@ -368,6 +384,7 @@ class DosTimetableController extends Controller
             'lessonAssignments',
             'groupedLessons',
             'courses',
+            'coursesWithTeachers',
             'teachers'
         ));
     }
@@ -567,6 +584,22 @@ class DosTimetableController extends Controller
             ];
         })->values();
 
+        // Get courses with teacher information
+        $coursesWithTeachers = Course::whereIn('id', $courseIds)
+            ->with(['teacherManyToMany' => function($query) use ($branchId) {
+                $query->where('branch_id', $branchId);
+            }])
+            ->get()
+            ->map(function($course) {
+                $teachers = $course->teacherManyToMany->pluck('teacher_name')->unique()->implode(', ');
+                return (object)[
+                    'id' => $course->id,
+                    'course_name' => $course->course_name,
+                    'abbreviation' => $course->abbreviation,
+                    'teacher_name' => $teachers,
+                ];
+            });
+
         if ($courseIds->isEmpty()) {
             try {
                 if (\Schema::hasTable('branch_course')) {
@@ -626,6 +659,7 @@ class DosTimetableController extends Controller
             'lessonAssignments',
             'groupedLessons',
             'courses',
+            'coursesWithTeachers',
             'teachers'
         ));
     }

@@ -126,8 +126,13 @@
                                 <label class="form-label">Course</label>
                                 <select name="sessions[{{ $index }}][course_id]" class="form-select course-select" data-placeholder="Select course">
                                     <option value="">Select lesson first</option>
-                                    @foreach($courses as $course)
-                                        <option value="{{ $course->id }}" @selected(old("sessions.{$index}.course_id", $sessionData['course_id'] ?? '') == $course->id)>{{ $course->abbreviation ?? $course->course_name }}</option>
+                                    @foreach($coursesWithTeachers as $course)
+                                        <option value="{{ $course->id }}" data-teacher-name="{{ $course->teacher_name }}" @selected(old("sessions.{$index}.course_id", $sessionData['course_id'] ?? '') == $course->id)>
+                                            {{ $course->abbreviation ?? $course->course_name }}
+                                            @if($course->teacher_name)
+                                                ({{ $course->teacher_name }})
+                                            @endif
+                                        </option>
                                     @endforeach
                                 </select>
                             </div>
@@ -210,8 +215,13 @@
                     <label class="form-label">Course</label>
                     <select name="sessions[__INDEX__][course_id]" class="form-select course-select" data-placeholder="Select course">
                         <option value="">Select lesson first</option>
-                        @foreach($courses as $course)
-                            <option value="{{ $course->id }}">{{ $course->abbreviation ?? $course->course_name }}</option>
+                        @foreach($coursesWithTeachers as $course)
+                            <option value="{{ $course->id }}" data-teacher-name="{{ $course->teacher_name }}">
+                                {{ $course->abbreviation ?? $course->course_name }}
+                                @if($course->teacher_name)
+                                    ({{ $course->teacher_name }})
+                                @endif
+                            </option>
                         @endforeach
                     </select>
                 </div>
