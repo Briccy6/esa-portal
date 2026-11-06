@@ -244,11 +244,27 @@
             <div class="exam-details">
                 <div class="exam-detail-item">
                     <span class="exam-detail-label">Course:</span>
-                    <span class="exam-detail-value">{{ $exam->course->course_name ?? 'N/A' }}</span>
+                    <span class="exam-detail-value">
+                        @if($exam->course)
+                            {{ $exam->course->course_name }}
+                        @elseif($exam->courses->count() > 0)
+                            {{ $exam->courses->first()->course_name }}
+                        @else
+                            N/A
+                        @endif
+                    </span>
                 </div>
                 <div class="exam-detail-item">
                     <span class="exam-detail-label">Lesson:</span>
-                    <span class="exam-detail-value">{{ $exam->lesson->title ?? 'N/A' }}</span>
+                    <span class="exam-detail-value">
+                        @if($exam->lesson)
+                            {{ $exam->lesson->title }}
+                        @elseif($exam->lessons->count() > 0)
+                            {{ $exam->lessons->first()->title }}
+                        @else
+                            N/A
+                        @endif
+                    </span>
                 </div>
                 <div class="exam-detail-item">
                     <span class="exam-detail-label">Branch:</span>
@@ -301,7 +317,7 @@
         <div class="questions-section">
             <h2 style="text-align: center; margin-bottom: 20px; font-size: 16pt;">EXAM QUESTIONS</h2>
             
-            @if($exam->questions->count() > 0)
+            @if($exam->questions && $exam->questions->count() > 0)
                 @foreach($exam->questions as $index => $question)
                     <div class="question-item">
                         <div class="question-number">
@@ -359,7 +375,7 @@
 
         <!-- Exam Footer -->
         <div class="exam-footer">
-            <p><strong>Total Questions:</strong> {{ $exam->questions->count() }} | <strong>Total Marks:</strong> {{ $exam->total_marks }}</p>
+            <p><strong>Total Questions:</strong> {{ $exam->questions ? $exam->questions->count() : 0 }} | <strong>Total Marks:</strong> {{ $exam->total_marks }}</p>
             <p style="margin-top: 10px;">Generated on: {{ now()->format('d M Y H:i') }}</p>
             @if($schoolInfo)
                 <p style="margin-top: 5px;">{{ $schoolInfo->school_name ?? 'Excellent Servant Academy' }}</p>

@@ -333,7 +333,7 @@ class ExamController extends Controller
      */
     public function show(Exam $exam)
     {
-        $exam->load(['courses', 'lessons', 'academic_year', 'term', 'teacher', 'branch']);
+        $exam->load(['courses', 'lessons', 'course', 'lesson', 'academic_year', 'term', 'teacher', 'branch', 'questions']);
         
         // Load marks for this exam (both exam and test marks related to this exam)
         $marks = \App\Models\Mark::where('exam_id', $exam->id)
@@ -367,7 +367,7 @@ class ExamController extends Controller
     public function printExam(Exam $exam)
     {
         $schoolInfo = \App\Models\SchoolInformation::getActive();
-        $exam->load(['courses', 'lessons', 'academic_year', 'term', 'teacher', 'branch', 'questions']);
+        $exam->load(['courses', 'lessons', 'course', 'lesson', 'academic_year', 'term', 'teacher', 'branch', 'questions']);
         
         return view('exams.print', compact('exam', 'schoolInfo'));
     }

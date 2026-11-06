@@ -55,11 +55,27 @@
                     <table class="table table-bordered">
                         <tr>
                             <th width="30%">Course</th>
-                            <td>{{ $exam->course->course_name ?? 'N/A' }}</td>
+                            <td>
+                                @if($exam->course)
+                                    {{ $exam->course->course_name }}
+                                @elseif($exam->courses->count() > 0)
+                                    {{ $exam->courses->first()->course_name }}
+                                @else
+                                    N/A
+                                @endif
+                            </td>
                         </tr>
                         <tr>
                             <th>Lesson</th>
-                            <td>{{ $exam->lesson->title ?? 'N/A' }}</td>
+                            <td>
+                                @if($exam->lesson)
+                                    {{ $exam->lesson->title }}
+                                @elseif($exam->lessons->count() > 0)
+                                    {{ $exam->lessons->first()->title }}
+                                @else
+                                    N/A
+                                @endif
+                            </td>
                         </tr>
                         <tr>
                             <th>Teacher</th>
@@ -125,13 +141,14 @@
 
             <div class="mt-4">
                 <h5>Questions</h5>
-                @if($exam->questions->count() > 0)
+                @if($exam->questions && $exam->questions->count() > 0)
                     <div class="table-responsive">
                         <table class="table table-striped">
                             <thead>
                                 <tr>
                                     <th>#</th>
                                     <th>Question</th>
+                                    <th>Type</th>
                                     <th>Marks</th>
                                 </tr>
                             </thead>
@@ -139,7 +156,8 @@
                                 @foreach($exam->questions as $index => $question)
                                 <tr>
                                     <td>{{ $index + 1 }}</td>
-                                    <td>{{ $question->question_text ?? 'N/A' }}</td>
+                                    <td>{{ $question->question_text ?? $question->text ?? 'N/A' }}</td>
+                                    <td>{{ ucfirst(str_replace('_', ' ', $question->question_type ?? 'N/A')) }}</td>
                                     <td>{{ $question->marks ?? 0 }}</td>
                                 </tr>
                                 @endforeach

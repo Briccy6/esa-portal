@@ -45,6 +45,16 @@ class Exam extends Model
         return $this->belongsToMany(Lesson::class, 'lesson_exam');
     }
 
+    public function course()
+    {
+        return $this->belongsTo(Course::class);
+    }
+
+    public function lesson()
+    {
+        return $this->belongsTo(Lesson::class);
+    }
+
     public function marks()
     {
         return $this->hasMany(Mark::class);
