@@ -186,7 +186,20 @@
             <div class="card-body p-4">
                 <!-- Lesson Filter -->
                 <div class="row mb-4">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
+                        <label for="course-filter" class="form-label fw-bold">Select Course</label>
+                        <select id="course-filter" class="form-select">
+                            <option value="">All Courses</option>
+                            @php $coursesSeen = []; @endphp
+                            @foreach($students as $studentId => $studentInfo)
+                                @if(!isset($coursesSeen[$studentInfo['course']]))
+                                    @php $coursesSeen[$studentInfo['course']] = true; @endphp
+                                    <option value="{{ $studentInfo['course'] }}">{{ $studentInfo['course'] }}</option>
+                                @endif
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-3">
                         <label for="lesson-filter" class="form-label fw-bold">Select Lesson</label>
                         <select id="lesson-filter" class="form-select">
                             <option value="">All Lessons</option>
@@ -197,7 +210,7 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label for="term-filter" class="form-label fw-bold">Select Term</label>
                         <select id="term-filter" class="form-select">
                             <option value="">All Terms</option>
@@ -303,11 +316,13 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const courseFilter = document.getElementById('course-filter');
     const lessonFilter = document.getElementById('lesson-filter');
     const termFilter = document.getElementById('term-filter');
     const lessonSections = document.querySelectorAll('.lesson-section');
 
     function filterLessons() {
+        const selectedCourse = courseFilter.value;
         const selectedLesson = lessonFilter.value;
         const selectedTerm = termFilter.value;
 
@@ -318,7 +333,26 @@ document.addEventListener('DOMContentLoaded', function() {
             const termMatch = selectedTerm === '' || sectionTermId === selectedTerm;
             const lessonMatch = selectedLesson === '' || sectionLessonId === selectedLesson;
 
-            if (termMatch && lessonMatch) {
+            // Filter rows by course first
+            const rows = section.querySelectorAll('tbody tr');
+            let hasVisibleRows = false;
+            
+            rows.forEach(row => {
+                const courseCell = row.querySelector('td:nth-child(2)');
+                if (courseCell) {
+                    const courseName = courseCell.textContent.trim();
+                    const courseMatch = selectedCourse === '' || courseName === selectedCourse;
+                    if (courseMatch) {
+                        row.style.display = '';
+                        hasVisibleRows = true;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                }
+            });
+
+            // Show/hide section based on filters and whether it has visible rows
+            if (termMatch && lessonMatch && hasVisibleRows) {
                 section.style.display = 'block';
             } else {
                 section.style.display = 'none';
@@ -326,6 +360,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    courseFilter.addEventListener('change', filterLessons);
     lessonFilter.addEventListener('change', filterLessons);
     termFilter.addEventListener('change', filterLessons);
 });
