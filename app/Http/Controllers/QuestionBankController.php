@@ -148,6 +148,7 @@ class QuestionBankController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'course_id' => 'nullable|exists:courses,id',
+            'lesson_id' => 'nullable|exists:lessons,id',
             'academic_year_id' => 'nullable|exists:academic_years,id',
             'teacher_id' => 'required|exists:teachers,id',
         ]);
@@ -161,6 +162,7 @@ class QuestionBankController extends Controller
             'description' => $request->description,
             'teacher_id' => $request->teacher_id,
             'course_id' => $request->course_id,
+            'lesson_id' => $request->lesson_id,
             'academic_year_id' => $request->academic_year_id,
             'is_active' => true,
         ]);
@@ -208,6 +210,7 @@ class QuestionBankController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'course_id' => 'nullable|exists:courses,id',
+            'lesson_id' => 'nullable|exists:lessons,id',
             'academic_year_id' => 'nullable|exists:academic_years,id',
             'is_active' => 'boolean',
         ]);
@@ -220,6 +223,7 @@ class QuestionBankController extends Controller
             'name' => $request->name,
             'description' => $request->description,
             'course_id' => $request->course_id,
+            'lesson_id' => $request->lesson_id,
             'academic_year_id' => $request->academic_year_id,
             'is_active' => $request->has('is_active'),
         ]);

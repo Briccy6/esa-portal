@@ -362,6 +362,17 @@ class ExamController extends Controller
     }
 
     /**
+     * Print the specified exam with school branding.
+     */
+    public function printExam(Exam $exam)
+    {
+        $schoolInfo = \App\Models\SchoolInformation::getActive();
+        $exam->load(['courses', 'lessons', 'academic_year', 'term', 'teacher', 'branch', 'questions']);
+        
+        return view('exams.print', compact('exam', 'schoolInfo'));
+    }
+
+    /**
      * Show the form for editing the specified resource.
      */
     public function edit(Exam $exam)

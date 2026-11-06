@@ -1199,6 +1199,34 @@ Route::get('/api/lessons/{lesson}/course', function($lessonId) {
     return response()->json(['course_id' => $lesson?->course?->id]);
 });
 
+// API Route to get teachers for a lesson
+Route::get('/api/lessons/{lesson}/teachers', function($lessonId) {
+    $lesson = \App\Models\Lesson::find($lessonId);
+    if (!$lesson) {
+        return response()->json(['teachers' => []]);
+    }
+    
+    // Get teachers from lesson_branch_course pivot
+    $teacherIds = \DB::table('lesson_branch_course')
+        ->where('lesson_id', $lessonId)
+        ->whereNotNull('teacher_id')
+        ->pluck('teacher_id')
+        ->unique();
+    
+    $teachers = \App\Models\Teacher::whereIn('id', $teacherIds)
+        ->get(['id', 'teacher_name']);
+    
+    // Also include direct lesson teacher if exists
+    if ($lesson->teacher_id && !$teacherIds->contains($lesson->teacher_id)) {
+        $lessonTeacher = \App\Models\Teacher::find($lesson->teacher_id);
+        if ($lessonTeacher) {
+            $teachers->push($lessonTeacher);
+        }
+    }
+    
+    return response()->json(['teachers' => $teachers]);
+});
+
 // Marks resource route removed (duplicate - already defined in teacher group above)
 
 Route::get('/teacher/dailies', [TeacherDailyController::class, 'index'])->name('teacher.dailies.index');
@@ -1600,6 +1628,7 @@ Route::middleware(['auth:staff'])->prefix('dos/exams')->name('dos.exams.')->grou
     Route::get('/{exam}/edit', [ExamController::class, 'edit'])->name('edit');
     Route::put('/{exam}', [ExamController::class, 'update'])->name('update');
     Route::delete('/{exam}', [ExamController::class, 'destroy'])->name('destroy');
+    Route::get('/{exam}/print', [ExamController::class, 'printExam'])->name('print');
     
     // Staff Question Management Routes
     Route::get('{exam}/questions', [\App\Http\Controllers\Staff\StaffQuestionController::class, 'index'])->name('questions');

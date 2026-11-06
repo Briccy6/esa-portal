@@ -58,6 +58,23 @@
                             </div>
 
                             <div class="col-md-6 mb-3">
+                                <label for="lesson_id" class="form-label">Lesson</label>
+                                <select class="form-select" id="lesson_id" name="lesson_id">
+                                    <option value="">Select Lesson (Optional)</option>
+                                </select>
+                                <div class="form-text">Associate with a specific lesson.</div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="lesson_teachers" class="form-label">Teachers Assigned to This Lesson</label>
+                            <div id="lesson_teachers" class="alert alert-info">
+                                <small class="text-muted">Select a lesson to see assigned teachers</small>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
                                 <label for="academic_year_id" class="form-label">Academic Year</label>
                                 <select class="form-select" id="academic_year_id" name="academic_year_id">
                                     <option value="">Select Academic Year (Optional)</option>
@@ -102,4 +119,74 @@
         </div>
     </div>
 </div>
+
+<script>
+// Load lessons when course is selected
+document.getElementById('course_id').addEventListener('change', function() {
+    const courseId = this.value;
+    const lessonSelect = document.getElementById('lesson_id');
+    
+    lessonSelect.innerHTML = '<option value="">Select Lesson (Optional)</option>';
+    
+    if (courseId) {
+        fetch(`/api/courses/${courseId}/lessons`)
+            .then(response => response.json())
+            .then(data => {
+                data.forEach(lesson => {
+                    const option = document.createElement('option');
+                    option.value = lesson.id;
+                    option.textContent = lesson.title;
+                    // Select the lesson if it matches the current question bank's lesson
+                    @if($questionBank->lesson_id)
+                        if (lesson.id === {{ $questionBank->lesson_id }}) {
+                            option.selected = true;
+                        }
+                    @endif
+                    lessonSelect.appendChild(option);
+                });
+            })
+            .catch(error => {
+                console.error('Error loading lessons:', error);
+            });
+    }
+    
+    // Clear teachers display
+    document.getElementById('lesson_teachers').innerHTML = '<small class="text-muted">Select a lesson to see assigned teachers</small>';
+});
+
+// Load teachers when lesson is selected
+document.getElementById('lesson_id').addEventListener('change', function() {
+    const lessonId = this.value;
+    const teachersDiv = document.getElementById('lesson_teachers');
+    
+    if (lessonId) {
+        fetch(`/api/lessons/${lessonId}/teachers`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.teachers && data.teachers.length > 0) {
+                    let html = '<div class="d-flex flex-wrap gap-2">';
+                    data.teachers.forEach(teacher => {
+                        html += `<span class="badge bg-success">${teacher.teacher_name}</span>`;
+                    });
+                    html += '</div>';
+                    teachersDiv.innerHTML = html;
+                } else {
+                    teachersDiv.innerHTML = '<small class="text-muted">No teachers assigned to this lesson</small>';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading teachers:', error);
+                teachersDiv.innerHTML = '<small class="text-muted">Error loading teachers</small>';
+            });
+    } else {
+        teachersDiv.innerHTML = '<small class="text-muted">Select a lesson to see assigned teachers</small>';
+    }
+});
+
+// Initialize lesson selection if lesson_id is set
+@if($questionBank->lesson_id)
+    // Trigger course change to load lessons
+    document.getElementById('course_id').dispatchEvent(new Event('change'));
+@endif
+</script>
 @endsection
