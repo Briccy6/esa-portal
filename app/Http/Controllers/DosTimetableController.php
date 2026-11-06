@@ -927,12 +927,33 @@ class DosTimetableController extends Controller
         $this->authorizeDos();
         abort_unless(in_array($timetable->branch_id, $this->getAllowedBranchIds()), 403);
 
+        \Log::info('Publishing timetable', [
+            'timetable_id' => $timetable->id,
+            'current_status' => $timetable->status,
+        ]);
+
         $issues = $this->getPublishedOverlapIssues($timetable);
+        
+        \Log::info('Validation issues', [
+            'timetable_id' => $timetable->id,
+            'issues' => $issues,
+        ]);
+        
         if (!empty($issues)) {
+            \Log::warning('Timetable validation failed', [
+                'timetable_id' => $timetable->id,
+                'issues' => $issues,
+            ]);
             return redirect()->back()->withErrors(['publish' => 'The timetable cannot be published until validation issues are resolved: ' . implode(' ', $issues)])->with('validation_errors', $issues);
         }
 
-        $timetable->update(['status' => 'published']);
+        $updated = $timetable->update(['status' => 'published']);
+        
+        \Log::info('Timetable status updated', [
+            'timetable_id' => $timetable->id,
+            'updated' => $updated,
+            'new_status' => $timetable->fresh()->status,
+        ]);
 
         $courseIds = $timetable->sessions()->with('lesson')->get()->flatMap(function ($session) {
             return $this->collectCourseIdsFromSession($session);
