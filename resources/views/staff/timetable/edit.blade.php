@@ -297,19 +297,32 @@
 
             if (courseIds && courseSelect) {
                 const courseIdArray = courseIds.split(',').map(id => id.trim()).filter(id => id);
+                
                 // Clear current selections
-                Array.from(courseSelect.options).forEach(opt => opt.selected = false);
-                // Enable only courses associated with this lesson
-                Array.from(courseSelect.options).forEach(opt => {
-                    opt.disabled = !courseIdArray.includes(opt.value);
-                });
-                // Select the courses matching the lesson
-                Array.from(courseSelect.options).forEach(opt => {
-                    if (courseIdArray.includes(opt.value)) opt.selected = true;
-                });
-                // Trigger Select2 update if available
                 if (window.jQuery && jQuery().select2) {
-                    jQuery(courseSelect).trigger('change');
+                    jQuery(courseSelect).val(null).trigger('change');
+                } else {
+                    Array.from(courseSelect.options).forEach(opt => opt.selected = false);
+                }
+                
+                // Filter options to show only courses associated with this lesson
+                Array.from(courseSelect.options).forEach(opt => {
+                    if (courseIdArray.includes(opt.value)) {
+                        opt.disabled = false;
+                        opt.style.display = '';
+                    } else {
+                        opt.disabled = true;
+                        opt.style.display = 'none';
+                    }
+                });
+                
+                // Select the courses matching the lesson
+                if (window.jQuery && jQuery().select2) {
+                    jQuery(courseSelect).val(courseIdArray).trigger('change');
+                } else {
+                    Array.from(courseSelect.options).forEach(opt => {
+                        if (courseIdArray.includes(opt.value)) opt.selected = true;
+                    });
                 }
             }
         }
@@ -335,7 +348,9 @@
             $el.select2({
                 placeholder: $el.data('placeholder') || 'Select course(s)',
                 width: '100%',
-                allowClear: true
+                allowClear: true,
+                dropdownParent: $el.parent(),
+                closeOnSelect: false
             });
         });
     }
@@ -371,7 +386,15 @@
                     sel.appendChild(opt);
                 });
             });
-            initCourseSelects();
+            // Destroy and reinitialize Select2 for all course selects
+            if (window.jQuery && jQuery().select2) {
+                jQuery('.course-select').each(function() {
+                    if (jQuery(this).hasClass('select2-hidden-accessible')) {
+                        jQuery(this).select2('destroy');
+                    }
+                });
+                initCourseSelects();
+            }
         }
 
         if (branchSelect) {
