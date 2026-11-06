@@ -22,7 +22,7 @@ class PublicResourceController extends Controller
     public function index(Request $request)
     {
         $query = Resource::with(['teacher', 'course', 'branch', 'lesson'])
-            ->where('is_public', true)
+            ->where('is_public', true)  // Only show public resources
             ->where(function($q) {
                 $q->where('is_free', true)
                   ->orWhereNotNull('price');

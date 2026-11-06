@@ -32,7 +32,7 @@ class PublicExamController extends Controller
     {
         $exams = Exam::where('is_public', true)
             ->where('is_active', true)
-            ->with(['questions', 'academic_year', 'term', 'teacher', 'courses', 'lessons'])
+            ->with(['questions', 'academic_year', 'term', 'teacher', 'courses', 'lessons', 'course', 'lesson'])
             ->orderBy('created_at', 'desc')
             ->paginate(12);
 
@@ -60,12 +60,12 @@ class PublicExamController extends Controller
      */
     public function show(Exam $exam)
     {
-        // Allow public viewing of any exam that's marked public, don't abort
-        if (!$exam->is_public) {
+        // Allow public viewing of any exam that's marked public and active
+        if (!$exam->is_public || !$exam->is_active) {
             abort(404, 'Exam not available for public access');
         }
 
-        $exam->load(['questions', 'academic_year', 'term', 'teacher', 'courses', 'lessons']);
+        $exam->load(['questions', 'academic_year', 'term', 'teacher', 'courses', 'lessons', 'course', 'lesson']);
 
         $subscriptions = Subscription::active()
             ->orderBy('price')
