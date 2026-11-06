@@ -265,8 +265,42 @@ class TeacherDailyController extends Controller
             ->distinct()
             ->pluck('course_id');
         
+        // Log for debugging
+        \Log::info('getCoursesByBranch', [
+            'teacher_id' => $teacher->id,
+            'branch_id' => $branchId,
+            'course_ids' => $courseIds->toArray(),
+        ]);
+        
         $courses = Course::whereIn('id', $courseIds)
             ->get(['id', 'course_name']);
+        
+        // Fallback: if no courses found via lesson_branch_course, try teacher_course relationship
+        if ($courses->isEmpty()) {
+            \Log::warning('No courses found via lesson_branch_course, trying teacher_course', [
+                'teacher_id' => $teacher->id,
+                'branch_id' => $branchId,
+            ]);
+            
+            $courseIds = \DB::table('teacher_course')
+                ->where('teacher_id', $teacher->id)
+                ->pluck('course_id');
+            
+            $courses = Course::whereIn('id', $courseIds)
+                ->get(['id', 'course_name']);
+        }
+        
+        // Final fallback: if still no courses, show all courses in the branch
+        if ($courses->isEmpty()) {
+            \Log::warning('No courses found via teacher_course, showing all branch courses', [
+                'teacher_id' => $teacher->id,
+                'branch_id' => $branchId,
+            ]);
+            
+            $courses = Course::whereHas('branches', function($query) use ($branchId) {
+                $query->where('branches.id', $branchId);
+            })->get(['id', 'course_name']);
+        }
         
         return response()->json($courses);
     }
