@@ -62,9 +62,35 @@ class StudentController extends Controller
         foreach ($timetables as $timetable) {
             $filteredSessions = $timetable->sessions->filter(function($session) use ($student) {
                 // Check if any of the session's courses match the student's course
-                return $session->courses->contains('id', $student->course_id);
+                // OR if the session has no courses (show all sessions if course filtering is disabled)
+                if ($session->courses->isEmpty()) {
+                    return true; // Show sessions with no course assigned
+                }
+                $hasMatchingCourse = $session->courses->contains('id', $student->course_id);
+                
+                // Log for debugging
+                if (!$hasMatchingCourse) {
+                    \Log::info('Session filtered out - no matching course', [
+                        'session_id' => $session->id,
+                        'session_courses' => $session->courses->pluck('id')->toArray(),
+                        'student_course_id' => $student->course_id,
+                    ]);
+                }
+                
+                return $hasMatchingCourse;
             });
-            $timetable->sessions = $filteredSessions;
+            
+            // If all sessions were filtered out, show a warning and show all sessions for this timetable
+            if ($filteredSessions->isEmpty() && !$timetable->sessions->isEmpty()) {
+                \Log::warning('All sessions filtered out for timetable, showing all as fallback', [
+                    'timetable_id' => $timetable->id,
+                    'student_course_id' => $student->course_id,
+                    'session_count' => $timetable->sessions->count(),
+                ]);
+                $timetable->sessions = $timetable->sessions; // Show all sessions as fallback
+            } else {
+                $timetable->sessions = $filteredSessions;
+            }
             
             // For each session, get the branch-specific teacher if available
             foreach ($timetable->sessions as $session) {
@@ -90,6 +116,15 @@ class StudentController extends Controller
                 }
             }
         }
+
+        // Log for debugging
+        \Log::info('Student timetables loaded', [
+            'student_id' => $student->id,
+            'student_course_id' => $student->course_id,
+            'student_branch_id' => $student->branch_id,
+            'timetables_count' => $timetables->count(),
+            'total_sessions' => $timetables->sum(function($t) { return $t->sessions->count(); }),
+        ]);
 
         return view('students.timetables.index', compact('timetables'));
     }
