@@ -372,12 +372,11 @@
                                     </div>
                                     <div class="col-md-4">
                                         <label class="form-label">
-                                            <i class="fas fa-graduation-cap me-1"></i>Course
+                                            <i class="fas fa-graduation-cap me-1"></i>Course(s)
                                         </label>
-                                        <select name="sessions[{{ $index }}][course_id]" class="form-select course-select" data-placeholder="Select course">
-                                            <option value="">Select lesson first</option>
+                                        <select name="sessions[{{ $index }}][course_ids][]" class="form-select course-select" multiple data-placeholder="Select course(s)">
                                             @foreach($coursesWithTeachers as $course)
-                                                <option value="{{ $course->id }}" data-teacher-name="{{ $course->teacher_name }}" @selected(old("sessions.{$index}.course_id", $sessionData['course_id'] ?? '') == $course->id)>
+                                                <option value="{{ $course->id }}" data-teacher-name="{{ $course->teacher_name }}" @selected(in_array($course->id, old("sessions.{$index}.course_ids", $sessionData['course_ids'] ?? [])))>
                                                     {{ $course->abbreviation ?? $course->course_name }}
                                                     @if($course->teacher_name)
                                                         ({{ $course->teacher_name }})
@@ -487,10 +486,9 @@
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">
-                        <i class="fas fa-graduation-cap me-1"></i>Course
+                        <i class="fas fa-graduation-cap me-1"></i>Course(s)
                     </label>
-                    <select name="sessions[__INDEX__][course_id]" class="form-select course-select" data-placeholder="Select course">
-                        <option value="">Select lesson first</option>
+                    <select name="sessions[__INDEX__][course_ids][]" class="form-select course-select" multiple data-placeholder="Select course(s)">
                         @foreach($coursesWithTeachers as $course)
                             <option value="{{ $course->id }}" data-teacher-name="{{ $course->teacher_name }}">
                                 {{ $course->abbreviation ?? $course->course_name }}
@@ -586,30 +584,19 @@
 
             if (courseIds && courseSelect) {
                 const courseIdArray = courseIds.split(',').map(id => id.trim()).filter(id => id);
-                // Clear current options
-                courseSelect.innerHTML = '<option value="">Select course</option>';
-                // Add only courses associated with this lesson
-                courseIdArray.forEach(courseId => {
-                    // Try to find in any course select on the page
-                    const allCourseSelects = document.querySelectorAll('.course-select');
-                    for (const select of allCourseSelects) {
-                        const opt = Array.from(select.options).find(o => o.value === courseId);
-                        if (opt) {
-                            const newOpt = document.createElement('option');
-                            newOpt.value = opt.value;
-                            newOpt.textContent = opt.textContent;
-                            const teacherName = opt.getAttribute('data-teacher-name');
-                            if (teacherName) {
-                                newOpt.setAttribute('data-teacher-name', teacherName);
-                            }
-                            courseSelect.appendChild(newOpt);
-                            break;
-                        }
-                    }
+                // Clear current selections
+                Array.from(courseSelect.options).forEach(opt => opt.selected = false);
+                // Enable only courses associated with this lesson
+                Array.from(courseSelect.options).forEach(opt => {
+                    opt.disabled = !courseIdArray.includes(opt.value);
                 });
-                // If only one course, auto-select it
-                if (courseIdArray.length === 1) {
-                    courseSelect.value = courseIdArray[0];
+                // Select the courses matching the lesson
+                Array.from(courseSelect.options).forEach(opt => {
+                    if (courseIdArray.includes(opt.value)) opt.selected = true;
+                });
+                // Trigger Select2 update if available
+                if (window.jQuery && jQuery().select2) {
+                    jQuery(courseSelect).trigger('change');
                 }
             }
         }
@@ -675,6 +662,7 @@
             const rowMarkup = template.replace(/__INDEX__/g, nextIndex);
             container.insertAdjacentHTML('beforeend', rowMarkup);
             bindRemoveButtons();
+            initCourseSelects();
             bindLessonChangeHandlers();
             // Reload lessons for the new row based on current branch
             const currentBranchId = branchSelect ? branchSelect.value : null;
@@ -685,10 +673,17 @@
 
         // Initial bindings
         bindRemoveButtons();
+        initCourseSelects();
         bindLessonChangeHandlers();
-            bindLessonChangeHandlers();
-            updateIndexes();
-        }
+    }
+
+    function updateIndexes() {
+        container.querySelectorAll('.session-row').forEach((row, idx) => {
+            row.querySelectorAll('input, select').forEach(input => {
+                input.name = input.name.replace(/sessions\[\d+\]/, `sessions[${idx}]`);
+            });
+        });
+    }
 
         function bindRemoveButtons() {
             container.querySelectorAll('.remove-session-row').forEach(btn => {
