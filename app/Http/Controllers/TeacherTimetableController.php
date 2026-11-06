@@ -12,20 +12,25 @@ class TeacherTimetableController extends Controller
     {
         $teacher = Auth::guard('teacher')->user();
 
+        // Get teacher's branch ID
+        $teacherBranchId = $teacher->branch_id;
+
         // Debug: Log teacher info
         \Log::info('Teacher timetable query', [
             'teacher_id' => $teacher->id,
             'teacher_name' => $teacher->teacher_name,
+            'teacher_branch_id' => $teacherBranchId,
         ]);
 
         $timetables = Timetable::published()
             ->whereDate('valid_from', '<=', now())
             ->whereDate('valid_until', '>=', now())
+            ->where('branch_id', $teacherBranchId) // Filter by teacher's branch
             ->with(['branch', 'academicYear', 'term', 'sessions.lesson.teacher', 'sessions.lesson.teachers', 'sessions.courses'])
             ->get();
 
         // Filter timetables to only show those where teacher is assigned to at least one session
-        $filteredTimetables = $timetables->filter(function ($timetable) use ($teacher) {
+        $filteredTimetables = $timetables->filter(function ($timetable) use ($teacher, $teacherBranchId) {
             $hasAssignedSession = false;
             
             foreach ($timetable->sessions as $session) {
@@ -40,7 +45,7 @@ class TeacherTimetableController extends Controller
                     // Check through lesson_branch_course pivot table
                     $isPivotAssigned = $session->lesson->teachers()
                         ->where('teachers.id', $teacher->id)
-                        ->where('lesson_branch_course.branch_id', $timetable->branch_id)
+                        ->where('lesson_branch_course.branch_id', $teacherBranchId)
                         ->exists();
                     
                     if ($isPivotAssigned) {

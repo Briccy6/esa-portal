@@ -55,7 +55,7 @@ class StudentController extends Controller
                             ->whereDate('valid_until', '>=', now());
                       });
             })
-            ->with(['branch', 'academicYear', 'term', 'sessions.lesson.teacher', 'sessions.courses'])
+            ->with(['branch', 'academicYear', 'term', 'sessions.lesson.teacher', 'sessions.lesson.teachers', 'sessions.courses'])
             ->get();
 
         // Filter sessions to only show those for the student's course
@@ -100,6 +100,7 @@ class StudentController extends Controller
                         ->where('lesson_id', $session->lesson->id)
                         ->where('branch_id', $student->branch_id)
                         ->where('course_id', $student->course_id)
+                        ->whereNotNull('teacher_id')
                         ->first();
 
                     if ($branchAssignment && $branchAssignment->teacher_id) {
@@ -108,9 +109,23 @@ class StudentController extends Controller
                             $session->lesson->branch_teacher = $branchTeacher;
                         }
                     } else {
-                        // Fallback to direct lesson teacher if no branch-specific assignment
-                        if ($session->lesson->teacher) {
-                            $session->lesson->branch_teacher = $session->lesson->teacher;
+                        // Try to get teacher from lesson_branch_course without course restriction
+                        $branchAssignmentAnyCourse = \DB::table('lesson_branch_course')
+                            ->where('lesson_id', $session->lesson->id)
+                            ->where('branch_id', $student->branch_id)
+                            ->whereNotNull('teacher_id')
+                            ->first();
+
+                        if ($branchAssignmentAnyCourse && $branchAssignmentAnyCourse->teacher_id) {
+                            $branchTeacher = \App\Models\Teacher::find($branchAssignmentAnyCourse->teacher_id);
+                            if ($branchTeacher) {
+                                $session->lesson->branch_teacher = $branchTeacher;
+                            }
+                        } else {
+                            // Fallback to direct lesson teacher if no branch-specific assignment
+                            if ($session->lesson->teacher) {
+                                $session->lesson->branch_teacher = $session->lesson->teacher;
+                            }
                         }
                     }
                 }
