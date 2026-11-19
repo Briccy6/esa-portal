@@ -182,11 +182,11 @@
                             <tbody>
                                 @foreach($recentPayments as $payment)
                                 <tr>
-                                    <td>{{ $payment->student->full_name ?? 'N/A' }}</td>
-                                    <td>{{ number_format($payment->amount, 0) }}</td>
-                                    <td>{{ \Carbon\Carbon::parse($payment->created_at)->format('M d, Y') }}</td>
+                                    <td>{{ $payment['student_name'] ?? 'N/A' }}</td>
+                                    <td>{{ number_format($payment['amount'], 0) }}</td>
+                                    <td>{{ $payment['date'] }}</td>
                                     <td>
-                                        <span class="badge bg-success">{{ $payment->status }}</span>
+                                        <span class="badge bg-success">{{ $payment['status'] }}</span>
                                     </td>
                                 </tr>
                                 @endforeach
@@ -216,9 +216,9 @@
                             <tbody>
                                 @foreach($recentExpenses as $expense)
                                 <tr>
-                                    <td>{{ $expense->description }}</td>
-                                    <td>{{ number_format($expense->amount, 0) }}</td>
-                                    <td>{{ \Carbon\Carbon::parse($expense->expense_date)->format('M d, Y') }}</td>
+                                    <td>{{ $expense['description'] }}</td>
+                                    <td>{{ number_format($expense['amount'], 0) }}</td>
+                                    <td>{{ $expense['date'] }}</td>
                                 </tr>
                                 @endforeach
                             </tbody>
@@ -237,10 +237,10 @@ document.addEventListener('DOMContentLoaded', function() {
     new Chart(revenueCtx, {
         type: 'line',
         data: {
-            labels: {{ json_encode($chartData['labels'] ?? []) }},
+            labels: {{ json_encode($chartData['daily_collections']['labels'] ?? []) }},
             datasets: [{
                 label: 'Revenue',
-                data: {{ json_encode($chartData['revenue'] ?? []) }},
+                data: {{ json_encode($chartData['daily_collections']['amounts'] ?? []) }},
                 borderColor: '#1d4ed8',
                 backgroundColor: 'rgba(29, 78, 216, 0.1)',
                 fill: true,
@@ -265,12 +265,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Expense Chart
     const expenseCtx = document.getElementById('expenseChart').getContext('2d');
+    @php
+        $expenseLabels = collect($chartData['expenses_by_category'] ?? [])->pluck('category')->toArray();
+        $expenseAmounts = collect($chartData['expenses_by_category'] ?? [])->pluck('amount')->toArray();
+    @endphp
     new Chart(expenseCtx, {
         type: 'doughnut',
         data: {
-            labels: {{ json_encode($chartData['expenseCategories'] ?? []) }},
+            labels: {{ json_encode($expenseLabels) }},
             datasets: [{
-                data: {{ json_encode($chartData['expenseAmounts'] ?? []) }},
+                data: {{ json_encode($expenseAmounts) }},
                 backgroundColor: ['#1d4ed8', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
             }]
         },
