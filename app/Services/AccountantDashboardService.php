@@ -64,6 +64,9 @@ class AccountantDashboardService
 
             // Calculate total expected fees from loaded students (no additional queries)
             $totalExpected = $students->sum(function ($student) {
+                if (!$student->course) {
+                    return 0;
+                }
                 $discountAmount = ($student->course->discount_fee ?? 0);
                 $totalFees = ($student->course->registration_fee ?? 0)
                     + ($student->course->tuition_fee ?? 0)
@@ -108,6 +111,9 @@ class AccountantDashboardService
 
             $studentsWithArrears = 0;
             foreach ($students as $student) {
+                if (!$student->course) {
+                    continue;
+                }
                 $discountAmount = ($student->course->discount_fee ?? 0);
                 $totalFees = ($student->course->registration_fee ?? 0)
                     + ($student->course->tuition_fee ?? 0)
@@ -280,6 +286,7 @@ class AccountantDashboardService
             $query->where('academic_year_id', $this->academicYearId);
         }
 
+        // Only filter by branch if it's set, otherwise get all students
         if ($this->branchId) {
             $query->where('branch_id', $this->branchId);
         }
