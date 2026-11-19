@@ -1055,21 +1055,42 @@ Route::middleware('auth:teacher')->get('/api/teacher/branch/{branchId}/courses',
 });
 
 // Teacher marks recording - filtered lessons by branch, course and teacher
-Route::middleware('auth:teacher')->get('/api/teacher/branch/{branchId}/course/{courseId}/lessons', function($branchId, $courseId) {
+Route::middleware('auth:teacher')->get('/api/teacher/branch/{branchId}/course/{courseId}/lessons', function($branchId, $courseId, \Illuminate\Http\Request $request) {
     $teacher = auth('teacher')->user();
-    
+
     try {
         \Log::info('Teacher lessons API called', [
             'teacher_id' => $teacher->id,
             'branch_id' => $branchId,
-            'course_id' => $courseId
+            'course_id' => $courseId,
+            'term_id' => $request->query('term_id')
         ]);
-    
+
+        // Resolve term -> academic year so lessons are limited to the selected term's year
+        $lessonYearId = null;
+        if ($request->filled('term_id')) {
+            $term = \App\Models\Term::find($request->query('term_id'));
+            if ($term) {
+                $lessonYearId = $term->academic_year_id;
+            }
+        }
+        if (!$lessonYearId) {
+            $lessonYearId = \App\Services\AcademicYearContext::selectedId();
+        }
+
         // Get lessons directly from lesson_branch_course for this teacher, branch, and course
-        $lessons = \App\Models\LessonBranchCourse::where('teacher_id', $teacher->id)
+        $query = \App\Models\LessonBranchCourse::where('teacher_id', $teacher->id)
             ->where('branch_id', $branchId)
             ->where('course_id', $courseId)
-            ->with('lesson')
+            ->with('lesson');
+
+        if ($lessonYearId) {
+            $query->whereHas('lesson', function ($q) use ($lessonYearId) {
+                $q->where('academic_year_id', $lessonYearId);
+            });
+        }
+
+        $lessons = $query
             ->orderBy('lesson_id')
             ->get()
             ->map(function($item) {

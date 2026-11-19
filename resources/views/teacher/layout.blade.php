@@ -415,6 +415,13 @@
         }
 
         @media (max-width: 768px) {
+            /* Prevent horizontal scroll */
+            html, body {
+                overflow-x: hidden !important;
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+
             .navbar {
                 padding: 0.625rem 0;
                 min-height: 56px;
@@ -424,7 +431,13 @@
                 padding: 0.75rem 0.5rem;
             }
 
-            /* Extra small tables */
+            /* Mobile tables */
+            .table-responsive {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                width: 100%;
+            }
+
             .table {
                 font-size: 0.8125rem;
             }
@@ -432,23 +445,69 @@
             .table th,
             .table td {
                 padding: 0.375rem;
+                word-wrap: break-word;
+                white-space: normal;
+                min-width: 60px;
             }
 
             /* Extra small cards */
             .card-body {
                 padding: 0.75rem;
+                overflow: hidden;
+                word-wrap: break-word;
             }
 
             /* Action buttons */
             .btn-sm {
                 padding: 0.375rem 0.75rem;
                 font-size: 0.8125rem;
+                white-space: normal;
+                word-wrap: break-word;
+            }
+
+            .btn {
+                width: 100%;
+                margin-bottom: 0.5rem;
+            }
+
+            .btn-group .btn {
+                width: auto;
             }
 
             /* Badges */
             .badge {
                 font-size: 0.75rem;
                 padding: 0.25rem 0.5rem;
+                white-space: normal;
+                word-wrap: break-word;
+            }
+
+            /* Modal adjustments */
+            .modal-dialog {
+                margin: 0.5rem;
+                max-width: calc(100% - 1rem);
+            }
+
+            .modal-content {
+                border-radius: 0.5rem;
+            }
+
+            .modal-body {
+                padding: 1rem;
+            }
+
+            .modal-footer {
+                flex-direction: column;
+            }
+
+            .modal-footer .btn {
+                width: 100%;
+            }
+
+            /* Form controls */
+            .form-control,
+            .form-select {
+                font-size: 16px; /* Prevent iOS zoom */
             }
         }
 
@@ -534,6 +593,12 @@
         exit;
     }
     $teacher = Auth::guard('teacher')->user();
+
+    // Terms for the selected academic year (for Class Daily term selector)
+    $classDailyYearId = \App\Services\AcademicYearContext::selectedId();
+    $classDailyTerms = $classDailyYearId
+        ? \App\Models\Term::where('academic_year_id', $classDailyYearId)->orderBy('start_date')->get(['id', 'name', 'term'])
+        : collect();
 @endphp
 
 <!-- Enhanced Navbar -->
@@ -850,6 +915,20 @@
                     <small class="text-muted">Select the branch where this class was held</small>
                 </div>
 
+                <!-- Term Selection -->
+                <div class="mb-3">
+                    <label for="daily_term" class="form-label">
+                        <i class="bi bi-calendar3 me-1"></i>Term <span class="text-danger">*</span>
+                    </label>
+                    <select class="form-select" id="daily_term" name="term_id" required>
+                        <option value="">Select term</option>
+                        @foreach($classDailyTerms as $term)
+                            <option value="{{ $term->id }}">{{ $term->name ?: $term->term }}</option>
+                        @endforeach
+                    </select>
+                    <small class="text-muted">Only lessons for the selected term are shown</small>
+                </div>
+
                 <!-- Course Selection (Multiple with Search) -->
                 <div class="mb-3">
                     <label for="courses" class="form-label">
@@ -1102,19 +1181,23 @@ document.addEventListener('DOMContentLoaded', function() {
         if (attendanceDiv) attendanceDiv.remove();
     });
 
-    // When courses change, load lessons and show all students
+    // When courses change, load lessons (filtered by branch+course+term) and students (branch+course)
     $('#courses').on('change', function() {
         const selectedCourses = $(this).val();
+        const branchId = branchSelect.value;
+        const termId = document.getElementById('daily_term') ? document.getElementById('daily_term').value : '';
         setLoading(lessonSelect, true);
         unitSelect.innerHTML = '<option value="">Select unit</option>';
-        
+
         // Remove attendance section if present
         const attendanceDiv = document.getElementById('attendanceSection');
         if (attendanceDiv) attendanceDiv.remove();
-        
-        if (selectedCourses && selectedCourses.length > 0) {
-            // Fetch lessons for the first selected course
-            fetch(`/teacher/course/${selectedCourses[0]}/lessons`)
+
+        if (selectedCourses && selectedCourses.length > 0 && branchId) {
+            // Fetch lessons assigned to this teacher for branch+course+term
+            let lessonsUrl = `/api/teacher/branch/${branchId}/course/${selectedCourses[0]}/lessons`;
+            if (termId) lessonsUrl += `?term_id=${termId}`;
+            fetch(lessonsUrl)
                 .then(res => {
                     if (!res.ok) {
                         throw new Error('Failed to load lessons');
@@ -1139,47 +1222,53 @@ document.addEventListener('DOMContentLoaded', function() {
                     setLoading(lessonSelect, false);
                 });
 
-            // Load and show all students from all selected courses
-            const branchId = branchSelect.value;
-            if (branchId) {
-                let allStudents = [];
-                let completedRequests = 0;
-                
-                selectedCourses.forEach(courseId => {
-                    fetch(`/teacher/course/${courseId}/students?branch_id=${branchId}`)
-                        .then(res => {
-                            if (!res.ok) {
-                                throw new Error('Failed to load students');
-                            }
-                            return res.json();
-                        })
-                        .then(students => {
-                            // Add unique students
-                            if (students && Array.isArray(students)) {
-                                students.forEach(student => {
-                                    if (!allStudents.find(s => s.id === student.id)) {
-                                        allStudents.push(student);
-                                    }
-                                });
-                            }
-                            completedRequests++;
+            // Load students enrolled in selected branch + course for the academic year
+            let allStudents = [];
+            let completedRequests = 0;
 
-                            // Show attendance when all courses loaded
-                            if (completedRequests === selectedCourses.length) {
-                                showAttendanceList(allStudents);
+            selectedCourses.forEach(courseId => {
+                fetch(`/api/teacher/branch/${branchId}/course/${courseId}/students`)
+                    .then(res => {
+                        if (!res.ok) {
+                            throw new Error('Failed to load students');
+                        }
+                        return res.json();
+                    })
+                    .then(data => {
+                        const students = Array.isArray(data) ? data : (data.students || []);
+                        students.forEach(student => {
+                            const normalized = {
+                                id: student.id,
+                                name: student.name || student.full_name,
+                                reg_number: student.reg_number,
+                            };
+                            if (!allStudents.find(s => s.id === normalized.id)) {
+                                allStudents.push(normalized);
                             }
-                        })
-                        .catch(err => {
-                            console.error('Error fetching students:', err);
-                            completedRequests++;
                         });
-                });
-            }
+                        completedRequests++;
+                        if (completedRequests === selectedCourses.length) {
+                            showAttendanceList(allStudents);
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Error fetching students:', err);
+                        completedRequests++;
+                    });
+            });
         } else {
             lessonSelect.innerHTML = '<option value="">Select lesson</option>';
             setLoading(lessonSelect, false);
         }
     });
+
+    // When term changes, reload lessons for selected courses
+    const dailyTermSelect = document.getElementById('daily_term');
+    if (dailyTermSelect) {
+        dailyTermSelect.addEventListener('change', function() {
+            $('#courses').trigger('change');
+        });
+    }
 
     function showAttendanceList(students) {
         courseStudentCount = students.length;
@@ -1586,6 +1675,46 @@ function reRenderMathJax() {
 }
 </script>
 @yield('scripts')
+
+<!-- Global Modal Cleanup Script -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Fix Bootstrap modal backdrop issue
+    document.addEventListener('hidden.bs.modal', function(event) {
+        // Remove any remaining backdrop elements
+        document.querySelectorAll('.modal-backdrop').forEach(function(backdrop) {
+            backdrop.remove();
+        });
+        // Ensure body styles are restored
+        document.body.classList.remove('modal-open');
+        document.body.style.removeProperty('overflow');
+        document.body.style.removeProperty('padding-right');
+    });
+
+    // Handle all modal close buttons properly
+    document.querySelectorAll('[data-bs-dismiss="modal"]').forEach(function(button) {
+        button.addEventListener('click', function() {
+            const modal = this.closest('.modal');
+            if (modal) {
+                const modalInstance = bootstrap.Modal.getInstance(modal);
+                if (modalInstance) {
+                    modalInstance.hide();
+                }
+            }
+        });
+    });
+
+    // Clean up on page unload
+    window.addEventListener('beforeunload', function() {
+        document.querySelectorAll('.modal-backdrop').forEach(function(backdrop) {
+            backdrop.remove();
+        });
+        document.body.classList.remove('modal-open');
+        document.body.style.removeProperty('overflow');
+        document.body.style.removeProperty('padding-right');
+    });
+});
+</script>
 <!-- LiveChat script removed due to expired license -->
 </body>
 </html>
