@@ -1,4 +1,4 @@
-@extends('staff.partials.sidebar_dos')
+@extends('dos.layout')
 
 @section('content')
 <div class="container-fluid mt-4">
