@@ -26,8 +26,8 @@ class RoleMiddleware
         if (Auth::guard('staff')->check()) {
             $staff = Auth::guard('staff')->user();
             
-            // Allow access if staff role is in the allowed roles
-            if (in_array($staff->role, $roles)) {
+            // Allow access if staff role is in the allowed roles (case-insensitive)
+            if (in_array(strtolower($staff->role), array_map('strtolower', $roles))) {
                 return $next($request);
             }
         }
