@@ -390,7 +390,8 @@ class AccountantDashboardService
     {
         $query = Expense::query();
 
-        if ($this->staffId) {
+        // Only filter by staff_id if it's set and not admin
+        if ($this->staffId && !auth()->guard('admin')->check()) {
             $query->where('paid_by', $this->staffId);
         }
 
