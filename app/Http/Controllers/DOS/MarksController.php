@@ -23,7 +23,7 @@ class MarksController extends Controller
     {
         $courses = Course::query()->select('id', 'course_name')->get();
         $branches = Branch::query()->select('id', 'name')->get();
-        $exams = Exam::query()->select('id', 'exam_name')->get();
+        $exams = Exam::query()->select('id', 'title')->get();
         $lessons = Lesson::query()->select('id', 'title')->get();
         $terms = Term::query()->select('id', 'name')->orderBy('name')->get();
         
