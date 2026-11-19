@@ -1,4 +1,4 @@
-@extends('admin.layout')
+@extends(request()->routeIs('staff.accounting.*') ? 'accountant.layout' : 'admin.layout')
 
 @section('title', 'Income Statement')
 
@@ -11,7 +11,7 @@
                     <h3 class="card-title">Income Statement</h3>
                 </div>
                 <div class="card-body">
-                    <form method="GET" action="{{ route('admin.accounting.income-statement') }}" class="mb-3">
+                    <form method="GET" action="{{ route(request()->routeIs('staff.accounting.*') ? 'staff.accounting.income-statement' : 'admin.accounting.income-statement') }}" class="mb-3">
                         <div class="row">
                             <div class="col-md-4">
                                 <label for="start_date">Start Date</label>
@@ -26,7 +26,7 @@
                             <div class="col-md-4">
                                 <label>&nbsp;</label><br>
                                 <button type="submit" class="btn btn-primary">Generate</button>
-                                <a href="{{ route('admin.accounting.income-statement') }}" class="btn btn-secondary">Reset</a>
+                                <a href="{{ route(request()->routeIs('staff.accounting.*') ? 'staff.accounting.income-statement' : 'admin.accounting.income-statement') }}" class="btn btn-secondary">Reset</a>
                             </div>
                         </div>
                     </form>

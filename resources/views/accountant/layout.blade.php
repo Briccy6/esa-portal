@@ -45,8 +45,8 @@
         :root {
             --sidebar-width: 280px;
             --sidebar-collapsed: 70px;
-            --primary-blue: #1d4ed8;
-            --secondary-blue: #2563eb;
+            --primary-blue: #10233f;
+            --secondary-blue: #18345b;
             --accent-blue: #3b82f6;
             --success-green: #10b981;
             --warning-orange: #f59e0b;
@@ -81,7 +81,7 @@
             left: 0;
             width: var(--sidebar-width);
             height: 100vh;
-            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-blue) 100%);
+            background: linear-gradient(180deg, var(--primary-blue) 0%, #0b1930 100%);
             color: white;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 1050;
@@ -307,7 +307,7 @@
             cursor: pointer;
             transition: all 0.3s ease;
             z-index: 1051;
-            color: var(--primary-green);
+            color: var(--primary-blue);
         }
 
         .sidebar-toggle:hover {
@@ -354,9 +354,9 @@
         }
 
         .topbar-title {
-            font-size: 1.75rem;
+            font-size: 1.25rem;
             font-weight: 700;
-            background: linear-gradient(135deg, var(--primary-green) 0%, var(--secondary-green) 100%);
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-blue) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -365,12 +365,8 @@
         .time-display {
             font-family: 'JetBrains Mono', 'Courier New', monospace;
             font-size: 1.1rem;
-            color: #6b7280;
+            color: var(--accent-blue);
             font-weight: 600;
-            background: linear-gradient(45deg, var(--primary-green), var(--secondary-green));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
         }
 
         /* User Dropdown */
@@ -400,7 +396,7 @@
             border-radius: 50%;
             object-fit: cover;
             border: 3px solid transparent;
-            background: linear-gradient(135deg, var(--primary-green) 0%, var(--secondary-green) 100%);
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--accent-blue) 100%);
             padding: 2px;
             transition: all 0.3s ease;
         }
@@ -411,7 +407,7 @@
 
         .user-name {
             font-weight: 600;
-            color: var(--primary-green);
+            color: var(--primary-blue);
         }
 
         .user-dropdown-menu {
@@ -441,7 +437,7 @@
         .dropdown-item {
             display: block;
             padding: 0.75rem 1rem;
-            color: var(--primary-green);
+            color: var(--primary-blue);
             text-decoration: none;
             transition: all 0.2s ease;
             border: none;
@@ -452,7 +448,7 @@
 
         .dropdown-item:hover {
             background: #f3f4f6;
-            color: var(--secondary-green);
+            color: var(--accent-blue);
         }
 
         /* Content Area */
@@ -477,16 +473,16 @@
         }
 
         .card-header {
-            background: linear-gradient(135deg, var(--primary-green) 0%, var(--secondary-green) 100%);
-            color: white;
-            border: none;
+            background: #ffffff;
+            color: var(--text-dark);
+            border-bottom: 1px solid #e8edf4;
             font-weight: 600;
             padding: 15px 20px;
         }
 
         /* Button Styling */
         .btn-primary {
-            background: linear-gradient(135deg, var(--accent-green) 0%, #2980b9 100%);
+            background: linear-gradient(135deg, var(--accent-blue) 0%, var(--secondary-blue) 100%);
             border: none;
             border-radius: 25px;
             padding: 10px 25px;
@@ -500,7 +496,7 @@
         }
 
         .btn-success {
-            background: linear-gradient(135deg, var(--success-green) 0%, #229954 100%);
+            background: linear-gradient(135deg, var(--success-green) 0%, #047857 100%);
             border: none;
             border-radius: 25px;
             padding: 10px 25px;
@@ -521,7 +517,7 @@
         }
 
         .table thead th {
-            background: linear-gradient(135deg, var(--primary-green) 0%, var(--secondary-green) 100%);
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-blue) 100%);
             color: white;
             border: none;
             font-weight: 500;
@@ -584,7 +580,7 @@
 
         .mobile-toggle {
             display: none;
-            background: linear-gradient(135deg, var(--primary-green) 0%, var(--secondary-green) 100%);
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--accent-blue) 100%);
             border: none;
             border-radius: 8px;
             padding: 0.5rem;
@@ -811,14 +807,14 @@
                 <li class="nav-section-title">FINANCE</li>
                 
                 <li class="nav-item">
-                    <a href="{{ route('staff.accountant.dashboard') }}" class="nav-link {{ request()->routeIs('accountant.dashboard') ? 'active' : '' }}">
+                    <a href="{{ route('staff.accountant.dashboard') }}" class="nav-link {{ request()->routeIs('staff.accountant.dashboard') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-chart-line"></i>
                         <span class="nav-text">Dashboard</span>
                     </a>
                 </li>
 
                 <li class="nav-item">
-                    <a href="{{ route('staff.accountant.payment-schedule.index') }}" class="nav-link {{ request()->routeIs('accountant.payment-schedule.*') ? 'active' : '' }}">
+                    <a href="{{ route('staff.accountant.payment-schedule.index') }}" class="nav-link {{ request()->routeIs('staff.accountant.payment-schedule.*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-money-bill-wave"></i>
                         <span class="nav-text">School Fees</span>
                     </a>
@@ -832,14 +828,14 @@
                 </li>
 
                 <li class="nav-item">
-                    <a href="{{ route('staff.accountant.expenses.index') }}" class="nav-link {{ request()->routeIs('accountant.expenses.*') ? 'active' : '' }}">
+                    <a href="{{ route('staff.accountant.expenses.index') }}" class="nav-link {{ request()->routeIs('staff.accountant.expenses.*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-receipt"></i>
                         <span class="nav-text">Expenses</span>
                     </a>
                 </li>
 
                 <li class="nav-item">
-                    <a href="{{ route('staff.accountant.receipts.index') }}" class="nav-link {{ request()->routeIs('accountant.receipts.*') ? 'active' : '' }}">
+                    <a href="{{ route('staff.accountant.receipts.index') }}" class="nav-link {{ request()->routeIs('staff.accountant.receipts.*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-file-invoice"></i>
                         <span class="nav-text">Receipts</span>
                     </a>
@@ -852,22 +848,22 @@
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="reportsDropdown">
                         <li>
-                            <a class="dropdown-item {{ request()->routeIs('accounting.cashbook') ? 'active' : '' }}" href="{{ route('accounting.cashbook') }}">
+                            <a class="dropdown-item {{ request()->routeIs('staff.accounting.cashbook') ? 'active' : '' }}" href="{{ route('staff.accounting.cashbook') }}">
                                 <i class="fas fa-money-check-alt"></i> Cash Book
                             </a>
                         </li>
                         <li>
-                            <a class="dropdown-item {{ request()->routeIs('accounting.balance-sheet') ? 'active' : '' }}" href="{{ route('accounting.balance-sheet') }}">
+                            <a class="dropdown-item {{ request()->routeIs('staff.accounting.balance-sheet') ? 'active' : '' }}" href="{{ route('staff.accounting.balance-sheet') }}">
                                 <i class="fas fa-balance-scale"></i> Balance Sheet
                             </a>
                         </li>
                         <li>
-                            <a class="dropdown-item {{ request()->routeIs('accounting.income-statement') ? 'active' : '' }}" href="{{ route('accounting.income-statement') }}">
+                            <a class="dropdown-item {{ request()->routeIs('staff.accounting.income-statement') ? 'active' : '' }}" href="{{ route('staff.accounting.income-statement') }}">
                                 <i class="fas fa-chart-line"></i> Income Statement
                             </a>
                         </li>
                         <li>
-                            <a class="dropdown-item {{ request()->routeIs('accounting.trial-balance') ? 'active' : '' }}" href="{{ route('accounting.trial-balance') }}">
+                            <a class="dropdown-item {{ request()->routeIs('staff.accounting.trial-balance') ? 'active' : '' }}" href="{{ route('staff.accounting.trial-balance') }}">
                                 <i class="fas fa-list-ol"></i> Trial Balance
                             </a>
                         </li>
@@ -878,7 +874,7 @@
                 <li class="nav-section-title">OTHER</li>
 
                 <li class="nav-item">
-                    <a href="{{ route('students.index') }}" class="nav-link {{ request()->routeIs('students.index') ? 'active' : '' }}">
+                    <a href="{{ route('staff.students.index') }}" class="nav-link {{ request()->routeIs('staff.students.index') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-user-graduate"></i>
                         <span class="nav-text">Students</span>
                     </a>
@@ -914,9 +910,7 @@
                 <button class="mobile-toggle" type="button" onclick="toggleSidebar()">
                     <i class="fas fa-bars fs-3"></i>
                 </button>
-                <div class="topbar-title">
-                    Accountant Dashboard
-                </div>
+                <div class="topbar-title">@yield('title', 'Accountant Dashboard')</div>
             </div>
 
             <div class="d-flex align-items-center gap-3">
@@ -1215,6 +1209,8 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+
+@yield('scripts')
 
 </body>
 </html>

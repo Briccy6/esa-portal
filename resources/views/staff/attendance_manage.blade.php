@@ -1,5 +1,5 @@
 {{-- filepath: d:\website\esa\resources\views\staff\attendance_manage.blade.php --}}
-@extends('staff.partials.sidebar_dos')
+@extends('dos.layout')
 
 @section('content')
     <h2>Mark Attendance by Course & Lesson</h2>

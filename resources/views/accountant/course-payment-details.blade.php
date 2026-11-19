@@ -1,4 +1,4 @@
-@extends('staff.layout')
+@extends('accountant.layout')
 
 @section('title', 'Course Payment Details - ' . $course->course_name)
 
@@ -10,7 +10,7 @@
             <p class="text-muted">{{ $course->abbreviation }} - Complete payment breakdown by term</p>
         </div>
         <div>
-            <a href="{{ route('staff.accountant.payment-schedule.payment-schedule.index') }}" class="btn btn-outline-secondary">
+            <a href="{{ route('staff.accountant.payment-schedule.index') }}" class="btn btn-outline-secondary">
                 <i class="fas fa-arrow-left me-1"></i> Back to Schedule
             </a>
             <button onclick="window.print()" class="btn btn-outline-primary">
@@ -189,7 +189,7 @@
                             </td>
                             <td>
                                 <div class="btn-group btn-group-sm">
-                                    <a href="{{ route('staff.accountant.payment-schedule.payment-schedule.student-details', $studentPayment['student']->id) }}" 
+                                    <a href="{{ route('staff.accountant.payment-schedule.student-details', $studentPayment['student']->id) }}"
                                        class="btn btn-outline-info" title="Student Details">
                                         <i class="fas fa-user"></i>
                                     </a>

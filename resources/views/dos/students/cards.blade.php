@@ -1,4 +1,4 @@
-@extends('staff.partials.sidebar_dos')
+@extends('dos.layout')
 
 @section('title', 'Student Cards')
 
@@ -140,8 +140,8 @@
                             
                             <table class="table table-sm">
                                 <tr>
-                                    <td><strong>Student ID:</strong></td>
-                                    <td>{{ $student->student_id ?? 'N/A' }}</td>
+                                    <td><strong>Registration Number:</strong></td>
+                                    <td>{{ $student->reg_number ?? 'N/A' }}</td>
                                 </tr>
                                 <tr>
                                     <td><strong>Email:</strong></td>

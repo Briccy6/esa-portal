@@ -163,8 +163,8 @@
                                             </div>
                                             <div>
                                                 <strong>{{ $student->full_name }}</strong>
-                                                @if($student->student_id)
-                                                    <br><small class="text-muted">ID: {{ $student->student_id }}</small>
+                                                @if($student->reg_number)
+                                                    <br><small class="text-muted">Reg: {{ $student->reg_number }}</small>
                                                 @endif
                                             </div>
                                         </div>

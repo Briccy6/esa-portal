@@ -59,10 +59,10 @@
                             </div>
                             
                             <div class="col-md-6">
-                                <label for="student_id" class="form-label">Student ID</label>
-                                <input type="text" class="form-control" id="student_id" name="student_id" 
-                                       value="{{ old('student_id', $student->student_id) }}">
-                                @error('student_id')
+                                <label for="reg_number" class="form-label">Registration Number</label>
+                                <input type="text" class="form-control" id="reg_number" name="reg_number"
+                                       value="{{ old('reg_number', $student->reg_number) }}" required>
+                                @error('reg_number')
                                     <div class="text-danger small">{{ $message }}</div>
                                 @enderror
                             </div>
@@ -175,8 +175,8 @@
                     
                     <table class="table table-sm">
                         <tr>
-                            <td><strong>Student ID:</strong></td>
-                            <td>{{ $student->student_id ?? 'N/A' }}</td>
+                            <td><strong>Registration Number:</strong></td>
+                            <td>{{ $student->reg_number ?? 'N/A' }}</td>
                         </tr>
                         <tr>
                             <td><strong>Email:</strong></td>

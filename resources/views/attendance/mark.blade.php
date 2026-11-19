@@ -1,5 +1,5 @@
 {{-- filepath: d:\website\esa\resources\views\attendance\mark.blade.php --}}
-@extends('staff.partials.sidebar_dos')
+@extends('dos.layout')
 
 @section('content')
     <h2>Mark Attendance for {{ $today }}</h2>

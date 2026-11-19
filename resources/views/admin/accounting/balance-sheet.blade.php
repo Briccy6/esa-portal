@@ -1,4 +1,4 @@
-@extends('admin.layout')
+@extends(request()->routeIs('staff.accounting.*') ? 'accountant.layout' : 'admin.layout')
 
 @section('title', 'Balance Sheet')
 
@@ -276,13 +276,13 @@
                         <button type="button" class="btn btn-primary btn-sm" onclick="window.print()">
                             <i class="fas fa-print mr-1"></i> Print
                         </button>
-                        <a href="{{ route('admin.accounting.export.balance-sheet', request()->query()) }}" class="btn btn-success btn-sm ml-1">
+                        <a href="{{ route(request()->routeIs('staff.accounting.*') ? 'staff.accounting.export.balance-sheet' : 'admin.accounting.export.balance-sheet', request()->query()) }}" class="btn btn-success btn-sm ml-1">
                             <i class="fas fa-download"></i> Export CSV
                         </a>
                     </div>
                 </div>
                 <div class="card-body">
-                    <form method="GET" action="{{ route('admin.accounting.balance-sheet') }}" class="mb-4 no-print">
+                    <form method="GET" action="{{ route(request()->routeIs('staff.accounting.*') ? 'staff.accounting.balance-sheet' : 'admin.accounting.balance-sheet') }}" class="mb-4 no-print">
                         <div class="row align-items-end">
                             <div class="col-md-3">
                                 <label for="term_id" class="form-label">Academic Term</label>
@@ -302,7 +302,7 @@
                             </div>
                             <div class="col-md-3">
                                 <button type="submit" class="btn btn-primary">Generate</button>
-                                <a href="{{ route('admin.accounting.balance-sheet') }}" class="btn btn-secondary">Today</a>
+                                <a href="{{ route(request()->routeIs('staff.accounting.*') ? 'staff.accounting.balance-sheet' : 'admin.accounting.balance-sheet') }}" class="btn btn-secondary">Today</a>
                             </div>
                         </div>
                     </form>

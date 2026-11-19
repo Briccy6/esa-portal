@@ -653,7 +653,7 @@
         <header class="dashboard-chart-header">
             <div>
                 <h2>Total hours by lesson</h2>
-                <p>Live tracking of teaching hours per lesson <span id="lastUpdated" class="text-muted small"></span></p>
+                <p>Hours from approved class daily reports <span id="lastUpdated" class="text-muted small"></span></p>
             </div>
             <div class="d-flex align-items-center gap-2">
                 <span class="badge bg-success rounded-pill d-flex align-items-center gap-1">
@@ -678,7 +678,7 @@
                     </thead>
                     <tbody id="lessonHoursBody">
                         <tr>
-                            <td colspan="7" class="text-center text-muted">Loading live data...</td>
+                            <td colspan="7" class="text-center text-muted">Loading approved class daily hours...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -694,20 +694,31 @@
 document.addEventListener('DOMContentLoaded', function () {
     const attendanceCanvas = document.getElementById('attendanceChart');
     const lessonHoursUrl = "{{ route('dos.api.lesson-hours') }}";
-    let lessonHoursInterval;
 
-    // Live lesson hours tracking
     async function fetchLessonHours() {
         try {
-            const response = await fetch(lessonHoursUrl);
+            const response = await fetch(lessonHoursUrl, {
+                headers: { Accept: 'application/json' },
+                cache: 'no-store',
+                credentials: 'same-origin'
+            });
+
+            if (!response.ok) {
+                throw new Error(`Lesson hours request failed with status ${response.status}`);
+            }
+
             const data = await response.json();
 
-            if (data.success) {
-                updateLessonHoursTable(data.data);
-                document.getElementById('lastUpdated').textContent = 'Updated: ' + new Date(data.last_updated).toLocaleTimeString();
+            if (!data.success || !Array.isArray(data.data)) {
+                throw new Error('Lesson hours response was not successful.');
             }
+
+            updateLessonHoursTable(data.data);
+            document.getElementById('lastUpdated').textContent = 'Updated: ' + new Date(data.last_updated).toLocaleTimeString();
         } catch (error) {
             console.error('Failed to fetch lesson hours:', error);
+            document.getElementById('lessonHoursBody').innerHTML =
+                '<tr><td colspan="7" class="text-center text-danger">Approved class daily hours could not be loaded. Please refresh the page.</td></tr>';
         }
     }
 
@@ -715,38 +726,50 @@ document.addEventListener('DOMContentLoaded', function () {
         const tbody = document.getElementById('lessonHoursBody');
 
         if (lessonHours.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No lesson hours data available yet.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No approved class daily hours are available for your assigned branches yet.</td></tr>';
             return;
         }
 
+        const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, character => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        })[character]);
+
         tbody.innerHTML = lessonHours.map(item => {
-            const status = item.lesson ? item.lesson.status : 'active';
+            const lesson = item.lesson;
+            const status = lesson ? lesson.status : 'active';
             const statusBadge = status === 'ended' 
                 ? '<span class="badge bg-secondary">Ended</span>' 
                 : '<span class="badge bg-success">Active</span>';
-            const canMarkEnded = status === 'active' && item.lesson;
+            const canMarkEnded = status === 'active' && lesson;
             const markEndedBtn = canMarkEnded 
-                ? `<form method="POST" action="{{ route('dos.lessons.mark-ended', '__LESSON_ID__') }}" onsubmit="event.preventDefault(); markLessonEnded(this, '${item.lesson.id}', '${item.lesson.title}');">
+                ? `<form method="POST" action="{{ route('dos.lessons.mark-ended', '__LESSON_ID__') }}" data-lesson-title="${escapeHtml(lesson.title)}" onsubmit="event.preventDefault(); markLessonEnded(this, '${lesson.id}');">
                     @csrf
                     <button type="submit" class="btn btn-sm btn-outline-warning">Mark Ended</button>
                 </form>`
                 : '';
 
-            return `
+            const row = `
             <tr>
-                <td>${item.lesson ? item.lesson.title : 'N/A'}</td>
-                <td>${item.course ? item.course.course_name : 'N/A'}</td>
-                <td>${item.teacher ? item.teacher.teacher_name : 'N/A'}</td>
+                <td>${escapeHtml(lesson ? lesson.title : 'N/A')}</td>
+                <td>${escapeHtml(item.course ? item.course.course_name : 'N/A')}</td>
+                <td>${escapeHtml(item.teacher ? item.teacher.teacher_name : 'N/A')}</td>
                 <td><strong>${parseFloat(item.total_hours).toFixed(1)} hrs</strong></td>
-                <td>${item.sessions}</td>
+                <td>${Number(item.sessions) || 0}</td>
                 <td>${statusBadge}</td>
                 <td>${markEndedBtn}</td>
             </tr>
-        `.replace('__LESSON_ID__', item.lesson.id);
+            `;
+
+            return lesson ? row.replace('__LESSON_ID__', lesson.id) : row;
         }).join('');
     }
 
-    async function markLessonEnded(form, lessonId, lessonTitle) {
+    async function markLessonEnded(form, lessonId) {
+        const lessonTitle = form.dataset.lessonTitle;
         if (!confirm(`Are you sure you want to mark "${lessonTitle}" as ended?`)) {
             return;
         }
@@ -779,9 +802,8 @@ document.addEventListener('DOMContentLoaded', function () {
     fetchLessonHours();
 
     // Auto-refresh every 30 seconds
-    lessonHoursInterval = setInterval(fetchLessonHours, 30000);
+    setInterval(fetchLessonHours, 30000);
 
-    const attendanceCanvas = document.getElementById('attendanceChart');
     if (attendanceCanvas) {
         new Chart(attendanceCanvas, {
             type: 'bar',

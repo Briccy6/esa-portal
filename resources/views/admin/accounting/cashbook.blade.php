@@ -1,4 +1,4 @@
-@extends('admin.layout')
+@extends(request()->routeIs('staff.accounting.*') ? 'accountant.layout' : 'admin.layout')
 
 @section('title', 'Cash Book Report')
 
@@ -18,7 +18,7 @@
                         <button onclick="downloadPDF()" class="btn btn-info btn-sm ml-2">
                             <i class="fas fa-file-pdf mr-1"></i> Download PDF
                         </button>
-                        <a href="{{ route('admin.accounting.export.cashbook', request()->query()) }}" class="btn btn-success btn-sm ml-2">
+                        <a href="{{ route(request()->routeIs('staff.accounting.*') ? 'staff.accounting.export.cashbook' : 'admin.accounting.export.cashbook', request()->query()) }}" class="btn btn-success btn-sm ml-2">
                             <i class="fas fa-download mr-1"></i> Export CSV
                         </a>
                     </div>
@@ -27,7 +27,7 @@
                     <!-- Filter Form -->
                     <div class="row mb-4 filter-form">
                         <div class="col-12">
-                            <form method="GET" action="{{ route('admin.accounting.cashbook') }}" class="form-inline">
+                            <form method="GET" action="{{ route(request()->routeIs('staff.accounting.*') ? 'staff.accounting.cashbook' : 'admin.accounting.cashbook') }}" class="form-inline">
                                 <div class="row g-3 align-items-end">
                                     <div class="col-md-2">
                                         <label for="term_id" class="form-label">Academic Term</label>
@@ -53,7 +53,7 @@
                                         <button type="submit" class="btn btn-primary">
                                             <i class="fas fa-filter mr-1"></i> Filter
                                         </button>
-                                        <a href="{{ route('admin.accounting.cashbook') }}" class="btn btn-secondary ml-2">
+                                        <a href="{{ route(request()->routeIs('staff.accounting.*') ? 'staff.accounting.cashbook' : 'admin.accounting.cashbook') }}" class="btn btn-secondary ml-2">
                                             <i class="fas fa-times mr-1"></i> Clear
                                         </a>
                                     </div>

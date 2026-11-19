@@ -4,8 +4,19 @@
 
 @section('content')
 <div class="container-fluid py-4">
+    <div class="dashboard-heading d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <span class="dashboard-eyebrow">FINANCE OVERVIEW</span>
+            <h1 class="h3 mb-1">Accountant dashboard</h1>
+            <p class="text-muted mb-0">A clear view of fee collection, expenses, and balances.</p>
+        </div>
+        <a href="{{ route('staff.accounting.cashbook') }}" class="btn btn-primary">
+            <i class="fas fa-book-open me-2"></i>Open cash book
+        </a>
+    </div>
+
     <!-- Filters Section -->
-    <div class="card mb-4">
+    <div class="card dashboard-filter mb-4">
         <div class="card-body">
             <form method="GET" action="{{ route('staff.accountant.dashboard') }}" class="row g-3 align-items-end">
                 <div class="col-md-2">
@@ -442,7 +453,7 @@
                     </a>
                 </div>
                 <div class="col-md-2 col-4">
-                    <a href="{{ route('students.index') }}" class="btn btn-outline-success w-100 h-100 d-flex flex-column align-items-center justify-content-center py-3">
+                    <a href="{{ route('staff.students.index') }}" class="btn btn-outline-success w-100 h-100 d-flex flex-column align-items-center justify-content-center py-3">
                         <i class="fas fa-money-bill fa-2x mb-2"></i>
                         <span>Record Payment</span>
                     </a>
@@ -454,7 +465,7 @@
                     </a>
                 </div>
                 <div class="col-md-2 col-4">
-                    <a href="{{ route('accounting.cashbook') }}" class="btn btn-outline-info w-100 h-100 d-flex flex-column align-items-center justify-content-center py-3">
+                    <a href="{{ route('staff.accounting.cashbook') }}" class="btn btn-outline-info w-100 h-100 d-flex flex-column align-items-center justify-content-center py-3">
                         <i class="fas fa-file-alt fa-2x mb-2"></i>
                         <span>Fee Report</span>
                     </a>
@@ -466,7 +477,7 @@
                     </a>
                 </div>
                 <div class="col-md-2 col-4">
-                    <a href="{{ route('accounting.balance-sheet') }}" class="btn btn-outline-secondary w-100 h-100 d-flex flex-column align-items-center justify-content-center py-3">
+                    <a href="{{ route('staff.accounting.balance-sheet') }}" class="btn btn-outline-secondary w-100 h-100 d-flex flex-column align-items-center justify-content-center py-3">
                         <i class="fas fa-balance-scale fa-2x mb-2"></i>
                         <span>Balance Sheet</span>
                     </a>
@@ -675,13 +686,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
 .stat-card {
     background: white;
-    border-radius: var(--radius);
+    border-radius: 14px;
     padding: 1.5rem;
     display: flex;
     align-items: center;
     gap: 1rem;
     box-shadow: var(--shadow);
-    border: 1px solid #e5e7eb;
+    border: 1px solid #e6ebf2;
     transition: all 0.3s ease;
     position: relative;
     overflow: hidden;
@@ -753,14 +764,14 @@ document.addEventListener('DOMContentLoaded', function() {
     background: white;
     border-radius: var(--radius);
     box-shadow: var(--shadow);
-    border: 1px solid #e5e7eb;
+    border: 1px solid #e6ebf2;
     overflow: hidden;
 }
 
 .chart-card-header {
     padding: 1rem 1.25rem;
-    border-bottom: 1px solid #e5e7eb;
-    background: #f9fafb;
+    border-bottom: 1px solid #e6ebf2;
+    background: #ffffff;
 }
 
 .chart-card-title {
@@ -782,10 +793,41 @@ document.addEventListener('DOMContentLoaded', function() {
     height: 350px;
 }
 
+.dashboard-heading {
+    padding: 0.5rem 0 0.25rem;
+}
+
+.dashboard-heading h1 {
+    color: #10233f;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+}
+
+.dashboard-eyebrow {
+    display: inline-block;
+    margin-bottom: 0.4rem;
+    color: #2563eb;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+}
+
+.dashboard-filter {
+    border: 1px solid #e6ebf2;
+    border-radius: 14px;
+    box-shadow: 0 5px 20px rgba(16, 35, 63, 0.05);
+}
+
+.stat-card[data-link]:focus-visible {
+    outline: 3px solid rgba(37, 99, 235, 0.35);
+    outline-offset: 3px;
+}
+
 @media (max-width: 768px) {
     .stat-card-value { font-size: 1.5rem; }
     .chart-container { height: 250px; }
     .chart-container-doughnut { height: 300px; }
+    .dashboard-heading .btn { width: 100%; }
 }
 </style>
 @endsection

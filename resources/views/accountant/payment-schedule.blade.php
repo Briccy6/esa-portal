@@ -1,4 +1,4 @@
-@extends('staff.layout')
+@extends('accountant.layout')
 
 @section('title', 'Payment Schedule - Full Year Overview')
 
@@ -157,11 +157,11 @@
                             </td>
                             <td>
                                 <div class="btn-group btn-group-sm">
-                                    <a href="{{ route('staff.accountant.payment-schedule.payment-schedule.course-details', $schedule['course']->id) }}" 
+                                    <a href="{{ route('staff.accountant.payment-schedule.course-details', $schedule['course']->id) }}"
                                        class="btn btn-outline-primary" title="View Details">
                                         <i class="fas fa-eye"></i>
                                     </a>
-                                    <a href="{{ route('students.payments.ajax', $schedule['course']->id) }}" 
+                                    <a href="{{ route('staff.students.index') }}"
                                        class="btn btn-outline-success" title="Record Payment">
                                         <i class="fas fa-money-bill"></i>
                                     </a>

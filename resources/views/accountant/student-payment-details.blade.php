@@ -1,4 +1,4 @@
-@extends('staff.layout')
+@extends('accountant.layout')
 
 @section('title', 'Student Payment Details - ' . $student->full_name)
 
@@ -10,7 +10,7 @@
             <p class="text-muted">{{ $student->reg_number }} - Complete payment history by term</p>
         </div>
         <div>
-            <a href="{{ route('staff.accountant.payment-schedule.payment-schedule.index') }}" class="btn btn-outline-secondary">
+            <a href="{{ route('staff.accountant.payment-schedule.index') }}" class="btn btn-outline-secondary">
                 <i class="fas fa-arrow-left me-1"></i> Back to Schedule
             </a>
             <button onclick="window.print()" class="btn btn-outline-primary">

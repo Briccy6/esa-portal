@@ -274,16 +274,26 @@ class TokenController extends Controller
 
     public function secretaryIndex()
     {
-        $students = Student::with('token')->paginate(20);
-        
-        // Determine the base routes for token management based on auth guard
+        $query = Student::with('token')->orderBy('full_name');
+
+        if ($search = request('q')) {
+            $query->where(function ($builder) use ($search) {
+                $builder->where('full_name', 'like', "%{$search}%")
+                    ->orWhere('reg_number', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        $students = $query->paginate(20)->withQueryString();
+
         $isAdmin = auth()->guard('admin')->check();
         $tokenHistoryBaseRoute = $isAdmin ? route('admin.tokens.history') : route('secretary.tokens.history');
         $tokenHistoryRoute = $isAdmin ? route('admin.tokens.history', ':studentId') : route('secretary.tokens.history', ':studentId');
         $tokenAddRoute = $isAdmin ? route('admin.tokens.add', ':studentId') : route('secretary.tokens.add', ':studentId');
         $tokenDeductRoute = $isAdmin ? route('admin.tokens.deduct', ':studentId') : route('secretary.tokens.deduct', ':studentId');
-        
-        return view('tokens.secretary-index', compact('students', 'tokenHistoryBaseRoute', 'tokenHistoryRoute', 'tokenAddRoute', 'tokenDeductRoute'));
+        $view = auth()->guard('staff')->check() ? 'secretary.tokens.index' : 'tokens.secretary-index';
+
+        return view($view, compact('students', 'tokenHistoryBaseRoute', 'tokenHistoryRoute', 'tokenAddRoute', 'tokenDeductRoute'));
     }
 
     public function secretaryAddTokens(Request $request, Student $student)
@@ -302,7 +312,7 @@ class TokenController extends Controller
             $request->source
         );
 
-        return redirect()->route('tokens.secretary-index')
+        return redirect()->to($this->secretaryTokensIndexUrl())
             ->with('success', "Added {$request->amount} tokens to {$student->full_name}");
     }
 
@@ -316,7 +326,7 @@ class TokenController extends Controller
         $token = $student->token;
 
         if (!$token || !$token->canAfford($request->amount)) {
-            return redirect()->route('tokens.secretary-index')
+            return redirect()->to($this->secretaryTokensIndexUrl())
                 ->with('error', 'Student does not have enough tokens');
         }
 
@@ -326,7 +336,7 @@ class TokenController extends Controller
             'admin'
         );
 
-        return redirect()->route('tokens.secretary-index')
+        return redirect()->to($this->secretaryTokensIndexUrl())
             ->with('success', "Deducted {$request->amount} tokens from {$student->full_name}");
     }
 
@@ -341,7 +351,22 @@ class TokenController extends Controller
             $title = 'All Token Transactions';
         }
 
-        return view('transactions.history', compact('transactions', 'title', 'student'));
+        $view = auth()->guard('staff')->check() ? 'secretary.tokens.history' : 'transactions.history';
+
+        return view($view, compact('transactions', 'title', 'student'));
+    }
+
+    protected function secretaryTokensIndexUrl(): string
+    {
+        if (auth()->guard('staff')->check() && \Illuminate\Support\Facades\Route::has('secretary.tokens.index')) {
+            return route('secretary.tokens.index');
+        }
+
+        if (\Illuminate\Support\Facades\Route::has('tokens.secretary-index')) {
+            return route('tokens.secretary-index');
+        }
+
+        return url()->previous();
     }
 
     public function dashboard()
