@@ -78,6 +78,9 @@
                         <div>
                             <p class="text-muted mb-1">Total Fees Expected</p>
                             <h3 class="mb-0">{{ number_format($kpiData['total_fees_expected'], 0) }}</h3>
+                            @if($kpiData['total_fees_expected'] == 0)
+                                <small class="text-warning">No fee data - check course fees</small>
+                            @endif
                         </div>
                         <div class="bg-primary bg-opacity-10 p-3 rounded">
                             <i class="fas fa-coins text-primary"></i>
@@ -110,6 +113,9 @@
                         <div>
                             <p class="text-muted mb-1">Outstanding Balance</p>
                             <h3 class="mb-0">{{ number_format($kpiData['outstanding_balance'], 0) }}</h3>
+                            @if($kpiData['outstanding_balance'] == 0 && $kpiData['total_fees_expected'] > 0)
+                                <small class="text-success">All fees paid</small>
+                            @endif
                         </div>
                         <div class="bg-warning bg-opacity-10 p-3 rounded">
                             <i class="fas fa-exclamation-circle text-warning"></i>
