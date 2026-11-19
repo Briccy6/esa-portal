@@ -1,4 +1,4 @@
-@extends(request()->routeIs('staff.accounting.*') ? 'accountant.layout' : 'admin.layout')
+@extends(request()->routeIs('staff.accounting.*') ? 'staff.partials.sidebar_sec' : 'admin.layout')
 
 @section('title', 'Cash Book Report')
 
@@ -376,7 +376,7 @@
 
 <!-- Print Footer (Hidden on screen) -->
 <div class="print-footer no-print" style="display: none;">
-    Generated on {{ now()->format('M d, Y h:i A') }} by {{ auth('admin')->user()->first_name }} {{ auth('admin')->user()->last_name }} | {{ $school ? $school->school_name : 'ESA Education System' }}
+    Generated on {{ now()->format('M d, Y h:i A') }} by {{ auth()->guard('admin')->check() ? auth()->guard('admin')->user()->first_name . ' ' . auth()->guard('admin')->user()->last_name : auth()->guard('staff')->user()->name }} | {{ $school ? $school->school_name : 'ESA Education System' }}
 </div>
 
 <!-- JavaScript for PDF Download -->

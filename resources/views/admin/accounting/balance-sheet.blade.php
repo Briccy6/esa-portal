@@ -1,4 +1,4 @@
-@extends(request()->routeIs('staff.accounting.*') ? 'accountant.layout' : 'admin.layout')
+@extends(request()->routeIs('staff.accounting.*') ? 'staff.partials.sidebar_sec' : 'admin.layout')
 
 @section('title', 'Balance Sheet')
 
