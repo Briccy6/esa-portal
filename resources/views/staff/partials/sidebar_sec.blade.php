@@ -401,17 +401,28 @@
             <label for="payment_method" class="form-label">Payment Method</label>
             <select name="payment_method" id="payment_method" class="form-select" required>
               <option value="" disabled selected>Select method</option>
-              <option value="cash">Cash</option>
-              <option value="bank">Bank</option>
-              <option value="mobile_money">Mobile Money</option>
-              <option value="cheque">Cheque</option>
-              <option value="other">Other</option>
+              <option value="Cash">Cash</option>
+              <option value="Bank Transfer">Bank Transfer</option>
+              <option value="Mobile Money">Mobile Money</option>
+              <option value="Check">Check</option>
             </select>
           </div>
           <div class="mb-3">
-            <label for="term_id" class="form-label">Academic Term</label>
+            <label for="branch_id" class="form-label">Branch *</label>
+            <select name="branch_id" id="branch_id" class="form-select" required>
+              <option value="">Select Branch</option>
+              @php
+                  $branches = \App\Models\Branch::orderBy('name')->get();
+              @endphp
+              @foreach($branches as $branch)
+                  <option value="{{ $branch->id }}">{{ $branch->name }}</option>
+              @endforeach
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="term_id" class="form-label">Term (Optional)</label>
             <select name="term_id" id="term_id" class="form-select">
-              <option value="">Select Term (Optional)</option>
+              <option value="">Select Term</option>
               @php
                   $terms = \App\Models\Term::with('academicYear')
                       ->orderBy('start_date', 'desc')
@@ -420,7 +431,6 @@
               @foreach($terms as $term)
                   <option value="{{ $term->id }}">
                       {{ $term->name }} - {{ $term->academicYear->year ?? '' }}
-                      {{ $term->start_date->format('Y') }}/{{ $term->end_date->format('Y') }}
                   </option>
               @endforeach
             </select>
