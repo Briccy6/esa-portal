@@ -19,7 +19,7 @@
     <!-- Filters -->
     <div class="card mb-4">
         <div class="card-body">
-            <form method="GET" action="{{ route('accountant.expenses.index') }}" class="row g-3 align-items-end">
+            <form method="GET" action="{{ route('staff.accountant.expenses.index') }}" class="row g-3 align-items-end">
                 <div class="col-md-3">
                     <label class="form-label small text-muted">Search Type</label>
                     <input type="text" name="expense_type" class="form-control form-control-sm" placeholder="e.g. Stationery" value="{{ request('expense_type') }}">
@@ -49,7 +49,7 @@
                     </button>
                 </div>
                 <div class="col-md-1">
-                    <a href="{{ route('accountant.expenses.index') }}" class="btn btn-outline-secondary btn-sm w-100">
+                    <a href="{{ route('staff.accountant.expenses.index') }}" class="btn btn-outline-secondary btn-sm w-100">
                         <i class="fas fa-times"></i>
                     </a>
                 </div>
@@ -86,13 +86,13 @@
                             <td>{{ $expense->term ? $expense->term->name : 'N/A' }}</td>
                             <td>
                                 <div class="btn-group btn-group-sm">
-                                    <a href="{{ route('accountant.expenses.show', $expense->id) }}" class="btn btn-outline-info" title="View">
+                                    <a href="{{ route('staff.accountant.expenses.show', $expense->id) }}" class="btn btn-outline-info" title="View">
                                         <i class="fas fa-eye"></i>
                                     </a>
-                                    <a href="{{ route('accountant.expenses.edit', $expense->id) }}" class="btn btn-outline-primary" title="Edit">
+                                    <a href="{{ route('staff.accountant.expenses.edit', $expense->id) }}" class="btn btn-outline-primary" title="Edit">
                                         <i class="fas fa-edit"></i>
                                     </a>
-                                    <form method="POST" action="{{ route('accountant.expenses.destroy', $expense->id) }}" onsubmit="return confirm('Are you sure you want to delete this expense?');">
+                                    <form method="POST" action="{{ route('staff.accountant.expenses.destroy', $expense->id) }}" onsubmit="return confirm('Are you sure you want to delete this expense?');">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="btn btn-outline-danger" title="Delete">

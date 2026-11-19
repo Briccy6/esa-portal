@@ -14,7 +14,7 @@
     <!-- Filters -->
     <div class="card mb-4">
         <div class="card-body">
-            <form method="GET" action="{{ route('accountant.receipts.index') }}" class="row g-3 align-items-end">
+            <form method="GET" action="{{ route('staff.accountant.receipts.index') }}" class="row g-3 align-items-end">
                 <div class="col-md-3">
                     <label class="form-label small text-muted">Student</label>
                     <input type="text" name="student_search" class="form-control form-control-sm" placeholder="Name or Reg Number" value="{{ request('student_search') }}">
@@ -42,7 +42,7 @@
                     </button>
                 </div>
                 <div class="col-md-1">
-                    <a href="{{ route('accountant.receipts.index') }}" class="btn btn-outline-secondary btn-sm w-100">
+                    <a href="{{ route('staff.accountant.receipts.index') }}" class="btn btn-outline-secondary btn-sm w-100">
                         <i class="fas fa-times"></i>
                     </a>
                 </div>
@@ -86,10 +86,10 @@
                             </td>
                             <td>
                                 <div class="btn-group btn-group-sm">
-                                    <a href="{{ route('accountant.receipts.show', $transaction->id) }}" class="btn btn-outline-info" title="View">
+                                    <a href="{{ route('staff.accountant.receipts.show', $transaction->id) }}" class="btn btn-outline-info" title="View">
                                         <i class="fas fa-eye"></i>
                                     </a>
-                                    <a href="{{ route('accountant.receipts.print', $transaction->id) }}" class="btn btn-outline-primary" title="Print">
+                                    <a href="{{ route('staff.accountant.receipts.print', $transaction->id) }}" class="btn btn-outline-primary" title="Print">
                                         <i class="fas fa-print"></i>
                                     </a>
                                 </div>

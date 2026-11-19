@@ -157,7 +157,7 @@
                             </td>
                             <td>
                                 <div class="btn-group btn-group-sm">
-                                    <a href="{{ route('accountant.payment-schedule.course-details', $schedule['course']->id) }}" 
+                                    <a href="{{ route('staff.accountant.payment-schedule.payment-schedule.course-details', $schedule['course']->id) }}" 
                                        class="btn btn-outline-primary" title="View Details">
                                         <i class="fas fa-eye"></i>
                                     </a>

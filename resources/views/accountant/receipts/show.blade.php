@@ -10,10 +10,10 @@
             <p class="text-muted">Transaction ID: {{ $transaction->tx_ref }}</p>
         </div>
         <div>
-            <a href="{{ route('accountant.receipts.index') }}" class="btn btn-outline-secondary">
+            <a href="{{ route('staff.accountant.receipts.index') }}" class="btn btn-outline-secondary">
                 <i class="fas fa-arrow-left me-1"></i>Back
             </a>
-            <a href="{{ route('accountant.receipts.print', $transaction->id) }}" class="btn btn-primary" target="_blank">
+            <a href="{{ route('staff.accountant.receipts.print', $transaction->id) }}" class="btn btn-primary" target="_blank">
                 <i class="fas fa-print me-1"></i>Print
             </a>
         </div>
@@ -119,10 +119,10 @@
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        <a href="{{ route('accountant.receipts.print', $transaction->id) }}" class="btn btn-primary" target="_blank">
+                        <a href="{{ route('staff.accountant.receipts.print', $transaction->id) }}" class="btn btn-primary" target="_blank">
                             <i class="fas fa-print me-2"></i>Print Receipt
                         </a>
-                        <a href="{{ route('accountant.payment-schedule.student-details', $transaction->student->id) }}" class="btn btn-info">
+                        <a href="{{ route('staff.accountant.payment-schedule.student-details', $transaction->student->id) }}" class="btn btn-info">
                             <i class="fas fa-user me-2"></i>View Student Payments
                         </a>
                     </div>

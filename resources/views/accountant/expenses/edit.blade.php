@@ -9,14 +9,14 @@
             <h2><i class="fas fa-edit me-2"></i>Edit Expense</h2>
             <p class="text-muted">Update expense information</p>
         </div>
-        <a href="{{ route('accountant.expenses.show', $expense->id) }}" class="btn btn-outline-secondary">
+        <a href="{{ route('staff.accountant.expenses.show', $expense->id) }}" class="btn btn-outline-secondary">
             <i class="fas fa-arrow-left me-1"></i>Back
         </a>
     </div>
 
     <div class="card">
         <div class="card-body">
-            <form method="POST" action="{{ route('accountant.expenses.update', $expense->id) }}">
+            <form method="POST" action="{{ route('staff.accountant.expenses.update', $expense->id) }}">
                 @csrf
                 @method('PUT')
                 <div class="row">
@@ -70,7 +70,7 @@
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-save me-1"></i>Update Expense
                     </button>
-                    <a href="{{ route('accountant.expenses.show', $expense->id) }}" class="btn btn-secondary">Cancel</a>
+                    <a href="{{ route('staff.accountant.expenses.show', $expense->id) }}" class="btn btn-secondary">Cancel</a>
                 </div>
             </form>
         </div>

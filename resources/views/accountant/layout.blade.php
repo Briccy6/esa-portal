@@ -811,14 +811,14 @@
                 <li class="nav-section-title">FINANCE</li>
                 
                 <li class="nav-item">
-                    <a href="{{ route('accountant.dashboard') }}" class="nav-link {{ request()->routeIs('accountant.dashboard') ? 'active' : '' }}">
+                    <a href="{{ route('staff.accountant.dashboard') }}" class="nav-link {{ request()->routeIs('accountant.dashboard') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-chart-line"></i>
                         <span class="nav-text">Dashboard</span>
                     </a>
                 </li>
 
                 <li class="nav-item">
-                    <a href="{{ route('accountant.payment-schedule.index') }}" class="nav-link {{ request()->routeIs('accountant.payment-schedule.*') ? 'active' : '' }}">
+                    <a href="{{ route('staff.accountant.payment-schedule.index') }}" class="nav-link {{ request()->routeIs('accountant.payment-schedule.*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-money-bill-wave"></i>
                         <span class="nav-text">School Fees</span>
                     </a>
@@ -832,14 +832,14 @@
                 </li>
 
                 <li class="nav-item">
-                    <a href="{{ route('accountant.expenses.index') }}" class="nav-link {{ request()->routeIs('accountant.expenses.*') ? 'active' : '' }}">
+                    <a href="{{ route('staff.accountant.expenses.index') }}" class="nav-link {{ request()->routeIs('accountant.expenses.*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-receipt"></i>
                         <span class="nav-text">Expenses</span>
                     </a>
                 </li>
 
                 <li class="nav-item">
-                    <a href="{{ route('accountant.receipts.index') }}" class="nav-link {{ request()->routeIs('accountant.receipts.*') ? 'active' : '' }}">
+                    <a href="{{ route('staff.accountant.receipts.index') }}" class="nav-link {{ request()->routeIs('accountant.receipts.*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-file-invoice"></i>
                         <span class="nav-text">Receipts</span>
                     </a>

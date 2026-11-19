@@ -7,7 +7,7 @@
     <!-- Filters Section -->
     <div class="card mb-4">
         <div class="card-body">
-            <form method="GET" action="{{ route('accountant.dashboard') }}" class="row g-3 align-items-end">
+            <form method="GET" action="{{ route('staff.accountant.dashboard') }}" class="row g-3 align-items-end">
                 <div class="col-md-2">
                     <label class="form-label small text-muted">Academic Year</label>
                     <select name="academic_year_id" class="form-select form-select-sm">
@@ -61,7 +61,7 @@
     <!-- KPI Cards -->
     <div class="row g-4 mb-4">
         <div class="col-12 col-sm-6 col-xl-3">
-            <div class="stat-card stat-card-primary h-100" data-link="{{ route('accountant.payment-schedule.index') }}">
+            <div class="stat-card stat-card-primary h-100" data-link="{{ route('staff.accountant.payment-schedule.index') }}">
                 <div class="stat-card-icon">
                     <i class="fas fa-coins"></i>
                 </div>
@@ -88,7 +88,7 @@
         </div>
 
         <div class="col-12 col-sm-6 col-xl-3">
-            <div class="stat-card stat-card-success h-100" data-link="{{ route('accountant.payment-schedule.index') }}">
+            <div class="stat-card stat-card-success h-100" data-link="{{ route('staff.accountant.payment-schedule.index') }}">
                 <div class="stat-card-icon">
                     <i class="fas fa-money-bill-wave"></i>
                 </div>
@@ -105,7 +105,7 @@
         </div>
 
         <div class="col-12 col-sm-6 col-xl-3">
-            <div class="stat-card stat-card-warning h-100" data-link="{{ route('accountant.payment-schedule.index') }}">
+            <div class="stat-card stat-card-warning h-100" data-link="{{ route('staff.accountant.payment-schedule.index') }}">
                 <div class="stat-card-icon">
                     <i class="fas fa-exclamation-triangle"></i>
                 </div>
@@ -122,7 +122,7 @@
         </div>
 
         <div class="col-12 col-sm-6 col-xl-3">
-            <div class="stat-card stat-card-info h-100" data-link="{{ route('accountant.payment-schedule.index') }}">
+            <div class="stat-card stat-card-info h-100" data-link="{{ route('staff.accountant.payment-schedule.index') }}">
                 <div class="stat-card-icon">
                     <i class="fas fa-percentage"></i>
                 </div>
@@ -145,7 +145,7 @@
         </div>
 
         <div class="col-12 col-sm-6 col-xl-3">
-            <div class="stat-card stat-card-danger h-100" data-link="{{ route('accountant.expenses.index') }}">
+            <div class="stat-card stat-card-danger h-100" data-link="{{ route('staff.accountant.expenses.index') }}">
                 <div class="stat-card-icon">
                     <i class="fas fa-receipt"></i>
                 </div>
@@ -189,7 +189,7 @@
         </div>
 
         <div class="col-12 col-sm-6 col-xl-3">
-            <div class="stat-card stat-card-primary h-100" data-link="{{ route('accountant.payment-schedule.index') }}">
+            <div class="stat-card stat-card-primary h-100" data-link="{{ route('staff.accountant.payment-schedule.index') }}">
                 <div class="stat-card-icon">
                     <i class="fas fa-calendar-day"></i>
                 </div>
@@ -206,7 +206,7 @@
         </div>
 
         <div class="col-12 col-sm-6 col-xl-3">
-            <div class="stat-card stat-card-warning h-100" data-link="{{ route('accountant.payment-schedule.index') }}">
+            <div class="stat-card stat-card-warning h-100" data-link="{{ route('staff.accountant.payment-schedule.index') }}">
                 <div class="stat-card-icon">
                     <i class="fas fa-user-clock"></i>
                 </div>
@@ -309,7 +309,7 @@
             <div class="card h-100">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h6 class="mb-0"><i class="fas fa-history me-2"></i>Recent Payments</h6>
-                    <a href="{{ route('accountant.receipts.index') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                    <a href="{{ route('staff.accountant.receipts.index') }}" class="btn btn-sm btn-outline-primary">View All</a>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
@@ -347,7 +347,7 @@
             <div class="card h-100">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h6 class="mb-0"><i class="fas fa-exclamation-circle me-2"></i>Top Outstanding Balances</h6>
-                    <a href="{{ route('accountant.payment-schedule.index') }}" class="btn btn-sm btn-outline-warning">View All</a>
+                    <a href="{{ route('staff.accountant.payment-schedule.index') }}" class="btn btn-sm btn-outline-warning">View All</a>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
@@ -393,7 +393,7 @@
             <div class="card h-100">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h6 class="mb-0"><i class="fas fa-receipt me-2"></i>Recent Expenses</h6>
-                    <a href="{{ route('accountant.expenses.index') }}" class="btn btn-sm btn-outline-danger">View All</a>
+                    <a href="{{ route('staff.accountant.expenses.index') }}" class="btn btn-sm btn-outline-danger">View All</a>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
@@ -448,7 +448,7 @@
                     </a>
                 </div>
                 <div class="col-md-2 col-4">
-                    <a href="{{ route('accountant.receipts.index') }}" class="btn btn-outline-primary w-100 h-100 d-flex flex-column align-items-center justify-content-center py-3">
+                    <a href="{{ route('staff.accountant.receipts.index') }}" class="btn btn-outline-primary w-100 h-100 d-flex flex-column align-items-center justify-content-center py-3">
                         <i class="fas fa-print fa-2x mb-2"></i>
                         <span>Print Receipt</span>
                     </a>
@@ -460,7 +460,7 @@
                     </a>
                 </div>
                 <div class="col-md-2 col-4">
-                    <a href="{{ route('accountant.payment-schedule.index') }}" class="btn btn-outline-warning w-100 h-100 d-flex flex-column align-items-center justify-content-center py-3">
+                    <a href="{{ route('staff.accountant.payment-schedule.index') }}" class="btn btn-outline-warning w-100 h-100 d-flex flex-column align-items-center justify-content-center py-3">
                         <i class="fas fa-users-slash fa-2x mb-2"></i>
                         <span>View Defaulters</span>
                     </a>

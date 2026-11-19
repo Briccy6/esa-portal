@@ -10,10 +10,10 @@
             <p class="text-muted">View expense information</p>
         </div>
         <div>
-            <a href="{{ route('accountant.expenses.index') }}" class="btn btn-outline-secondary">
+            <a href="{{ route('staff.accountant.expenses.index') }}" class="btn btn-outline-secondary">
                 <i class="fas fa-arrow-left me-1"></i>Back
             </a>
-            <a href="{{ route('accountant.expenses.edit', $expense->id) }}" class="btn btn-primary">
+            <a href="{{ route('staff.accountant.expenses.edit', $expense->id) }}" class="btn btn-primary">
                 <i class="fas fa-edit me-1"></i>Edit
             </a>
         </div>
@@ -74,10 +74,10 @@
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        <a href="{{ route('accountant.expenses.edit', $expense->id) }}" class="btn btn-primary">
+                        <a href="{{ route('staff.accountant.expenses.edit', $expense->id) }}" class="btn btn-primary">
                             <i class="fas fa-edit me-2"></i>Edit Expense
                         </a>
-                        <form method="POST" action="{{ route('accountant.expenses.destroy', $expense->id) }}" onsubmit="return confirm('Are you sure you want to delete this expense?');">
+                        <form method="POST" action="{{ route('staff.accountant.expenses.destroy', $expense->id) }}" onsubmit="return confirm('Are you sure you want to delete this expense?');">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="btn btn-danger">
