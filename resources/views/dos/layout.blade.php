@@ -35,13 +35,13 @@
   :root {
     --sidebar-width: 280px;
     --sidebar-collapsed-width: 70px;
-    --sidebar-color: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    --accent-color: #667eea;
-    --hover-color: rgba(255, 255, 255, 0.15);
-    --active-color: rgba(255, 255, 255, 0.25);
+    --sidebar-color: #1e293b;
+    --accent-color: #3b82f6;
+    --hover-color: rgba(255, 255, 255, 0.1);
+    --active-color: rgba(59, 130, 246, 0.2);
     --text-primary: #1f2937;
     --text-secondary: #6b7280;
-    --border-color: rgba(255, 255, 255, 0.2);
+    --border-color: rgba(255, 255, 255, 0.1);
     --shadow-light: 0 2px 8px rgba(15, 23, 42, 0.06);
     --shadow-medium: 0 8px 24px rgba(15, 23, 42, 0.12);
     --shadow-heavy: 0 16px 36px rgba(15, 23, 42, 0.18);
@@ -68,7 +68,7 @@
     left: 0;
     width: var(--sidebar-width);
     height: 100vh;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--sidebar-color);
     color: white;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 1050;
@@ -173,7 +173,7 @@
     background: var(--active-color);
     color: white;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    border-left: 4px solid white;
+    border-left: 4px solid var(--accent-color);
   }
 
   .nav-link.active::after {
@@ -254,7 +254,7 @@
     cursor: pointer;
     transition: all 0.3s ease;
     z-index: 1051;
-    color: #667eea;
+    color: var(--accent-color);
   }
 
   .sidebar-toggle:hover {
@@ -389,7 +389,7 @@
 
   .dropdown-item:hover {
     background: #f3f4f6;
-    color: #667eea;
+    color: var(--accent-color);
   }
 
   /* Mobile Responsive */
@@ -466,7 +466,7 @@
 
   .mobile-toggle {
     display: none;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--accent-color);
     border: none;
     border-radius: 8px;
     padding: 0.5rem;
@@ -541,7 +541,7 @@
   }
 
   .card-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--sidebar-color);
     color: white;
     border: none;
     font-weight: 600;
@@ -549,7 +549,7 @@
   }
 
   .btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--accent-color);
     border: none;
     border-radius: 25px;
     padding: 10px 25px;
@@ -559,7 +559,7 @@
 
   .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
   }
 
   .alert {
@@ -590,13 +590,14 @@
   }
 
 </style>
+@include('dos.design-system')
 </head>
-<body>
+<body class="dos-dashboard">
 
 <!-- Sidebar overlay for small screens -->
 <div id="sidebar-overlay" onclick="toggleSidebar(false)"></div>
 
-<div class="d-flex">
+<div class="d-flex dos-app-shell">
   <!-- Sidebar -->
   <nav id="sidebar" class="d-flex flex-column">
     <!-- Toggle Button -->
