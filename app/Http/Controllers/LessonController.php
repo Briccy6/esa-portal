@@ -661,6 +661,65 @@ public function createDetails(Request $request, $lessonId)
     }
 
     /**
+     * API endpoint to get units for a lesson
+     */
+    public function getUnitsApi($lessonId)
+    {
+        try {
+            $units = LessonUnit::where('lesson_id', $lessonId)
+                ->with('term:id,name')
+                ->get(['id', 'unit_name', 'hours', 'course_level', 'term_id']);
+            
+            return response()->json($units);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to load units'], 500);
+        }
+    }
+
+    /**
+     * Store a new unit for a lesson
+     */
+    public function storeUnit(Request $request)
+    {
+        try {
+            $request->validate([
+                'lesson_id' => 'required|exists:lessons,id',
+                'unit_name' => 'required|string|max:255',
+                'hours' => 'required|numeric|min:0.5',
+                'term_id' => 'required|exists:terms,id',
+                'course_level' => 'required|in:beginner,intermediate,advanced',
+            ]);
+
+            $unit = LessonUnit::create([
+                'lesson_id' => $request->lesson_id,
+                'unit_name' => $request->unit_name,
+                'hours' => $request->hours,
+                'term_id' => $request->term_id,
+                'course_level' => $request->course_level,
+            ]);
+
+            return response()->json(['success' => true, 'unit' => $unit]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to create unit: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Delete a unit
+     */
+    public function deleteUnit($unitId)
+    {
+        try {
+            $unit = LessonUnit::findOrFail($unitId);
+            $unit->delete();
+
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to delete unit'], 500);
+        }
+    }
+
+    /**
      * Assign lesson to branches and courses (merges with existing assignments)
      */
     public function assignToBranches(Request $request)

@@ -18,7 +18,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="csrf-token" content="{{ csrf_token() }}">
-<title>@yield('page_title', 'DOS Dashboard') - {{ $systemName }}</title>
+<title>@hasSection('page_title')@yield('page_title')@else @yield('title', 'DOS Dashboard')@endif - {{ $systemName }}</title>
 
 <!-- Bootstrap CSS -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
@@ -647,13 +647,6 @@
           </a>
         </li>
         
-        <li class="nav-item">
-          <a href="{{ route('staff.lesson-units.index') }}" class="nav-link text-white d-flex align-items-center gap-2 {{ request()->routeIs('staff.lesson-units.*') ? 'active' : '' }}">
-            <i class="nav-icon bi bi-diagram-3-fill"></i>
-            <span class="nav-text">Manage Units</span>
-          </a>
-        </li>
-        
         <li class="nav-item dropdown">
           <a class="nav-link text-white d-flex align-items-center gap-2 dropdown-toggle" href="#" id="academicDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
             <i class="nav-icon bi bi-book-fill"></i>
@@ -772,7 +765,11 @@
           <i class="bi bi-list fs-3" aria-hidden="true"></i>
         </button>
         <div class="topbar-title">
-          @yield('page_title', 'DOS Dashboard')
+          @hasSection('page_title')
+            @yield('page_title')
+          @else
+            @yield('title', 'DOS Dashboard')
+          @endif
         </div>
       </div>
 

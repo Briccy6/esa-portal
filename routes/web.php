@@ -1868,6 +1868,11 @@ Route::middleware(['auth:staff'])->prefix('dos')->name('dos.')->group(function (
 
     // API for live lesson hours
     Route::get('/api/lesson-hours', [\App\Http\Controllers\DosTeacherDailyController::class, 'getLessonHoursApi'])->name('api.lesson-hours');
+    Route::get('/api/lessons/{lesson}/units', [LessonController::class, 'getUnitsApi'])->name('api.lessons.units');
+    
+    // Unit management routes
+    Route::post('/lesson-units/store', [LessonController::class, 'storeUnit'])->name('lesson-units.store');
+    Route::delete('/lesson-units/{unit}', [LessonController::class, 'deleteUnit'])->name('lesson-units.destroy');
 
     // Live Classes Management
     Route::get('/live-classes', [\App\Http\Controllers\DOS\LiveClassController::class, 'index'])->name('live-classes.index');
