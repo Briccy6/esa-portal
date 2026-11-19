@@ -75,6 +75,15 @@ class AccountantDashboardService
                 // Subtract discount from total
                 return max(0, $totalFees - $discountAmount);
             });
+
+            // Debug: Log if totalExpected is 0
+            if ($totalExpected == 0 && $totalStudents > 0) {
+                \Log::warning('Total fees expected is 0 but students exist', [
+                    'student_count' => $totalStudents,
+                    'academic_year_id' => $this->academicYearId,
+                    'branch_id' => $this->branchId,
+                ]);
+            }
             
             // Get total collected - use single query
             $totalCollected = $transactionQuery->where('status', 'successful')
