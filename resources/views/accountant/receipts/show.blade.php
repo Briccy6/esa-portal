@@ -3,129 +3,71 @@
 @section('title', 'Receipt Details')
 
 @section('content')
+@php
+    $transactionMeta = is_array($transaction->meta) ? $transaction->meta : json_decode($transaction->meta ?? '', true);
+    $isPaid = in_array($transaction->status, ['successful', 'paid'], true);
+@endphp
 <div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
         <div>
-            <h2><i class="fas fa-file-invoice me-2"></i>Receipt Details</h2>
-            <p class="text-muted">Transaction ID: {{ $transaction->tx_ref }}</p>
+            <p class="text-primary fw-semibold small text-uppercase mb-1">Payment receipts</p>
+            <h1 class="h3 fw-bold mb-1">Receipt Details</h1>
+            <p class="text-muted mb-0">Transaction <span class="font-monospace">{{ $transaction->tx_ref }}</span></p>
         </div>
-        <div>
-            <a href="{{ route('staff.accountant.receipts.index') }}" class="btn btn-outline-secondary">
-                <i class="fas fa-arrow-left me-1"></i>Back
-            </a>
-            <a href="{{ route('staff.accountant.receipts.print', $transaction->id) }}" class="btn btn-primary" target="_blank">
-                <i class="fas fa-print me-1"></i>Print
-            </a>
+        <div class="d-flex gap-2">
+            <a href="{{ route('staff.accountant.receipts.index') }}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-2" aria-hidden="true"></i>Receipts</a>
+            <a href="{{ route('staff.accountant.receipts.print', $transaction->id) }}" class="btn btn-primary" target="_blank" rel="noopener"><i class="fas fa-print me-2" aria-hidden="true"></i>Print Receipt</a>
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-lg-8">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Payment Details</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="small text-muted">Transaction ID</label>
-                            <div class="fw-bold">{{ $transaction->tx_ref }}</div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="small text-muted">Date</label>
-                            <div class="fw-bold">{{ $transaction->created_at->format('F d, Y H:i') }}</div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="small text-muted">Amount</label>
-                            <div class="fw-bold text-success fs-4">{{ number_format($transaction->amount, 0) }} RWF</div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="small text-muted">Status</label>
-                            <div>
-                                @if($transaction->status === 'successful' || $transaction->status === 'paid')
-                                    <span class="badge bg-success fs-6">{{ ucfirst($transaction->status) }}</span>
-                                @else
-                                    <span class="badge bg-warning fs-6">{{ ucfirst($transaction->status) }}</span>
-                                @endif
-                            </div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="small text-muted">Payment Type</label>
-                            <div>{{ ucfirst(str_replace('_', ' ', $transaction->type)) }}</div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="small text-muted">Payment Method</label>
-                            <div>
-                                @php
-                                    $meta = is_array($transaction->meta) ? $transaction->meta : json_decode($transaction->meta, true);
-                                    echo $meta['method'] ?? 'Unknown';
-                                @endphp
-                            </div>
-                        </div>
+    <div class="row g-4">
+        <div class="col-12 col-xl-8">
+            <div class="card border-0 shadow-sm rounded-3 mb-4">
+                <div class="card-header bg-white py-3"><h2 class="h6 fw-semibold mb-0">Payment details</h2></div>
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        <div class="col-12 col-md-6"><div class="small text-muted mb-1">Transaction ID</div><div class="fw-semibold font-monospace text-break">{{ $transaction->tx_ref }}</div></div>
+                        <div class="col-12 col-md-6"><div class="small text-muted mb-1">Date</div><div class="fw-semibold">{{ $transaction->created_at->format('F d, Y H:i') }}</div></div>
+                        <div class="col-12 col-md-6"><div class="small text-muted mb-1">Amount</div><div class="h4 text-success fw-bold mb-0">{{ number_format($transaction->amount, 0) }} RWF</div></div>
+                        <div class="col-12 col-md-6"><div class="small text-muted mb-1">Status</div><span class="badge {{ $isPaid ? 'text-bg-success' : ($transaction->status === 'pending' ? 'text-bg-warning' : 'text-bg-secondary') }}">{{ ucfirst($transaction->status) }}</span></div>
+                        <div class="col-12 col-md-6"><div class="small text-muted mb-1">Payment Type</div><div>{{ ucfirst(str_replace('_', ' ', $transaction->type)) }}</div></div>
+                        <div class="col-12 col-md-6"><div class="small text-muted mb-1">Payment Method</div><div>{{ $transactionMeta['method'] ?? 'Unknown' }}</div></div>
                     </div>
                 </div>
             </div>
 
-            <div class="card mt-4">
-                <div class="card-header">
-                    <h5 class="mb-0">Student Information</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="small text-muted">Name</label>
-                            <div class="fw-bold">{{ $transaction->student->full_name }}</div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="small text-muted">Registration Number</label>
-                            <div>{{ $transaction->student->reg_number }}</div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="small text-muted">Course</label>
-                            <div>{{ $transaction->student->course->course_name ?? 'N/A' }}</div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="small text-muted">Branch</label>
-                            <div>{{ $transaction->student->branch->name ?? 'N/A' }}</div>
-                        </div>
+            <div class="card border-0 shadow-sm rounded-3 mb-4">
+                <div class="card-header bg-white py-3"><h2 class="h6 fw-semibold mb-0">Student information</h2></div>
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        <div class="col-12 col-md-6"><div class="small text-muted mb-1">Name</div><div class="fw-semibold">{{ $transaction->student->full_name ?? 'Unknown student' }}</div></div>
+                        <div class="col-12 col-md-6"><div class="small text-muted mb-1">Registration Number</div><div>{{ $transaction->student->reg_number ?? '—' }}</div></div>
+                        <div class="col-12 col-md-6"><div class="small text-muted mb-1">Course</div><div>{{ $transaction->student->course->course_name ?? '—' }}</div></div>
+                        <div class="col-12 col-md-6"><div class="small text-muted mb-1">Branch</div><div>{{ $transaction->student->branch->name ?? '—' }}</div></div>
                     </div>
                 </div>
             </div>
 
             @if($transaction->courseTermFee)
-            <div class="card mt-4">
-                <div class="card-header">
-                    <h5 class="mb-0">Fee Information</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="small text-muted">Term</label>
-                            <div>{{ $transaction->courseTermFee->term->name ?? 'N/A' }}</div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="small text-muted">Academic Year</label>
-                            <div>{{ $transaction->courseTermFee->term->academicYear->year ?? 'N/A' }}</div>
+                <div class="card border-0 shadow-sm rounded-3">
+                    <div class="card-header bg-white py-3"><h2 class="h6 fw-semibold mb-0">Fee period</h2></div>
+                    <div class="card-body p-4">
+                        <div class="row g-4">
+                            <div class="col-12 col-md-6"><div class="small text-muted mb-1">Term</div><div>{{ $transaction->courseTermFee->term->name ?? '—' }}</div></div>
+                            <div class="col-12 col-md-6"><div class="small text-muted mb-1">Academic Year</div><div>{{ $transaction->courseTermFee->term->academicYear->year ?? '—' }}</div></div>
                         </div>
                     </div>
                 </div>
-            </div>
             @endif
         </div>
-        <div class="col-lg-4">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Quick Actions</h5>
-                </div>
-                <div class="card-body">
-                    <div class="d-grid gap-2">
-                        <a href="{{ route('staff.accountant.receipts.print', $transaction->id) }}" class="btn btn-primary" target="_blank">
-                            <i class="fas fa-print me-2"></i>Print Receipt
-                        </a>
-                        <a href="{{ route('staff.accountant.payment-schedule.student-details', $transaction->student->id) }}" class="btn btn-info">
-                            <i class="fas fa-user me-2"></i>View Student Payments
-                        </a>
-                    </div>
+        <div class="col-12 col-xl-4">
+            <div class="card border-0 shadow-sm rounded-3">
+                <div class="card-header bg-white py-3"><h2 class="h6 fw-semibold mb-0">Quick actions</h2></div>
+                <div class="card-body d-grid gap-2">
+                    <a href="{{ route('staff.accountant.receipts.print', $transaction->id) }}" class="btn btn-primary" target="_blank" rel="noopener"><i class="fas fa-print me-2" aria-hidden="true"></i>Print Receipt</a>
+                    @if($transaction->student)
+                        <a href="{{ route('staff.accountant.payment-schedule.student-details', $transaction->student->id) }}" class="btn btn-outline-primary"><i class="fas fa-user me-2" aria-hidden="true"></i>View Student Payments</a>
+                    @endif
                 </div>
             </div>
         </div>

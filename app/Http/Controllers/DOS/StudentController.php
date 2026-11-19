@@ -45,7 +45,7 @@ class StudentController extends Controller
             ->select([
                 'id',
                 'full_name',
-                'student_id',
+                'reg_number',
                 'email',
                 'phone',
                 'branch_id',
@@ -237,6 +237,7 @@ class StudentController extends Controller
         $request->validate([
             'full_name' => 'required|string|max:255',
             'email' => 'required|email|unique:students,email,' . $student->id,
+            'reg_number' => 'required|string|max:255|unique:students,reg_number,' . $student->id,
             'phone' => 'nullable|string|max:20',
             'branch_id' => 'required|exists:branches,id',
             'course_id' => 'required|exists:courses,id',

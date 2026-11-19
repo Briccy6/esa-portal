@@ -2653,10 +2653,12 @@ class StudentController extends Controller
         $actor     = auth('staff')->user() ?? auth('admin')->user();
         $actorName = $actor->name ?? $actor->email ?? 'system';
 
-        if (StudentCard::where('student_id', $student->id)->exists()) {
+        $existingCard = StudentCard::where('student_id', $student->id)->first();
+        if ($existingCard) {
             return response()->json([
-                'success' => false,
-                'message' => 'Student card already exists for this student.'
+                'success' => true,
+                'message' => 'Student card already exists. Opening the existing card.',
+                'cards_url' => route('staff.students.StudentCards', ['preview' => $existingCard->id]),
             ]);
         }
 
@@ -2723,7 +2725,7 @@ class StudentController extends Controller
             ]);
         }
 
-        StudentCard::create([
+        $studentCard = StudentCard::create([
             'student_id'        => $student->id,
             'reg_number'        => $student->reg_number,
             'course'            => $student->course->course_name ?? '',
@@ -2763,7 +2765,8 @@ class StudentController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Student card generated successfully and sent to email.'
+            'message' => 'Student card generated successfully.',
+            'cards_url' => route('staff.students.StudentCards', ['preview' => $studentCard->id]),
         ]);
     }
 

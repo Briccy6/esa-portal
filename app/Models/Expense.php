@@ -16,16 +16,17 @@ class Expense extends Model
         'paid_to_contact',
         'payment_method',
         'term_id',
+        'branch_id',
     ];
 
     public function paid_by_staff()
     {
         return $this->belongsTo(\App\Models\Staff::class, 'paid_by');
     }
-    
+
     public function branch()
     {
-        return $this->belongsTo(\App\Models\Branch::class, 'paid_by');
+        return $this->belongsTo(\App\Models\Branch::class, 'branch_id');
     }
 
     public function term()

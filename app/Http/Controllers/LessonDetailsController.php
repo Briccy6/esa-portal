@@ -6,6 +6,7 @@ use App\Models\Lesson;
 use App\Models\LessonUnit;
 use App\Models\Term;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class LessonDetailsController extends Controller
 {
@@ -52,8 +53,16 @@ public function index(Request $request) {
      */
     public function create(Request $request, $lessonId)
     {
-        $lesson = Lesson::with('course', 'branchCourses')->findOrFail($lessonId);
-        $terms = Term::with('academicYear')->get();
+        $lesson = Lesson::with(['course', 'academicYear', 'branchCourses', 'terms.academicYear'])->findOrFail($lessonId);
+        $terms = $lesson->terms->sortBy('start_date')->values();
+
+        if ($terms->isEmpty()) {
+            $terms = Term::with('academicYear')
+                ->where('academic_year_id', $lesson->academic_year_id)
+                ->orderBy('start_date')
+                ->get();
+        }
+
         return view('details.create', compact('lesson', 'terms'));
     }
 
@@ -62,26 +71,32 @@ public function index(Request $request) {
      */
     public function store(Request $request, $lessonId)
 {
+    $lesson = Lesson::with('terms')->findOrFail($lessonId);
+    $availableTermIds = $lesson->terms->pluck('id');
+
+    if ($availableTermIds->isEmpty()) {
+        $availableTermIds = Term::where('academic_year_id', $lesson->academic_year_id)->pluck('id');
+    }
+
     $request->validate([
-        'terms' => 'required|array',
-        'course_level' => 'required|string',
-        'units' => 'required|array',
+        'course_level' => ['required', Rule::in(['beginner', 'intermediate', 'advanced'])],
+        'units' => 'required|array|min:1',
         'units.*.name' => 'required|string|max:255',
+        'units.*.term_id' => ['required', 'integer', Rule::in($availableTermIds->all())],
         'units.*.hours' => 'required|integer|min:1',
     ]);
 
-    // Create each unit only once, associated with the lesson
     foreach ($request->units as $unit) {
         LessonUnit::create([
             'lesson_id' => $lessonId,
-            'term_id' => $request->terms[0], // Associate with the first selected term
+            'term_id' => $unit['term_id'],
             'unit_name' => $unit['name'],
             'hours' => $unit['hours'],
             'course_level' => $request->course_level,
         ]);
     }
 
-    $lesson = Lesson::with('branchCourses')->find($lessonId);
+    $lesson->load('branchCourses');
     $branchCount = $lesson->branchCourses->count();
     $branchInfo = $branchCount > 0 ? " and are now available across {$branchCount} branch-course combinations" : '';
     

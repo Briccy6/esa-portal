@@ -12,7 +12,7 @@ class ExpenseController extends Controller
      */
     public function index(Request $request)
     {
-        $query = \App\Models\Expense::with(['paid_by_staff', 'term']);
+        $query = \App\Models\Expense::with(['paid_by_staff', 'term', 'branch']);
 
         // Filter by staff if not admin
         if (!auth()->guard('admin')->check()) {
@@ -22,6 +22,11 @@ class ExpenseController extends Controller
         // Filter by term
         if ($request->filled('term_id')) {
             $query->where('term_id', $request->term_id);
+        }
+
+        // Filter by branch
+        if ($request->filled('branch_id')) {
+            $query->where('branch_id', $request->branch_id);
         }
 
         // Filter by date range
@@ -39,8 +44,9 @@ class ExpenseController extends Controller
 
         $expenses = $query->orderBy('expense_date', 'desc')->paginate(20);
         $terms = \App\Models\Term::with('academicYear')->orderBy('start_date', 'desc')->get();
+        $branches = \App\Models\Branch::orderBy('name')->get();
 
-        return view('accountant.expenses.index', compact('expenses', 'terms'));
+        return view('accountant.expenses.index', compact('expenses', 'terms', 'branches'));
     }
 
     /**
@@ -49,7 +55,8 @@ class ExpenseController extends Controller
     public function create()
     {
         $terms = \App\Models\Term::with('academicYear')->orderBy('start_date', 'desc')->get();
-        return view('accountant.expenses.create', compact('terms'));
+        $branches = \App\Models\Branch::orderBy('name')->get();
+        return view('accountant.expenses.create', compact('terms', 'branches'));
     }
 
     /**
@@ -66,6 +73,7 @@ class ExpenseController extends Controller
             'paid_to_contact' => 'required|string|max:50',
             'payment_method' => 'required|string|max:50',
             'term_id' => 'nullable|exists:terms,id',
+            'branch_id' => 'nullable|exists:branches,id',
         ]);
 
         $expense = \App\Models\Expense::create([
@@ -78,6 +86,7 @@ class ExpenseController extends Controller
             'paid_to_contact' => $request->paid_to_contact,
             'payment_method' => $request->payment_method,
             'term_id' => $request->term_id,
+            'branch_id' => $request->branch_id,
         ]);
 
         // Create journal entry for expense
@@ -105,13 +114,13 @@ class ExpenseController extends Controller
      */
     public function show(string $id)
     {
-        $expense = \App\Models\Expense::with(['paid_by_staff', 'term'])->findOrFail($id);
-        
+        $expense = \App\Models\Expense::with(['paid_by_staff', 'term', 'branch'])->findOrFail($id);
+
         // Check access
         if (!auth()->guard('admin')->check() && $expense->paid_by !== auth()->guard('staff')->id()) {
             abort(403);
         }
-        
+
         return view('accountant.expenses.show', compact('expense'));
     }
 
@@ -121,14 +130,15 @@ class ExpenseController extends Controller
     public function edit(string $id)
     {
         $expense = \App\Models\Expense::findOrFail($id);
-        
+
         // Check access
         if (!auth()->guard('admin')->check() && $expense->paid_by !== auth()->guard('staff')->id()) {
             abort(403);
         }
-        
+
         $terms = \App\Models\Term::with('academicYear')->orderBy('start_date', 'desc')->get();
-        return view('accountant.expenses.edit', compact('expense', 'terms'));
+        $branches = \App\Models\Branch::orderBy('name')->get();
+        return view('accountant.expenses.edit', compact('expense', 'terms', 'branches'));
     }
 
     /**
@@ -152,6 +162,7 @@ class ExpenseController extends Controller
             'paid_to_contact' => 'required|string|max:50',
             'payment_method' => 'required|string|max:50',
             'term_id' => 'nullable|exists:terms,id',
+            'branch_id' => 'nullable|exists:branches,id',
         ]);
 
         $expense->update([
@@ -163,6 +174,7 @@ class ExpenseController extends Controller
             'paid_to_contact' => $request->paid_to_contact,
             'payment_method' => $request->payment_method,
             'term_id' => $request->term_id,
+            'branch_id' => $request->branch_id,
         ]);
 
         return redirect()->route('staff.accountant.expenses.index')->with('success', 'Expense updated successfully.');

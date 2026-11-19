@@ -4,182 +4,187 @@
 
 @section('content')
 <div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
         <div>
-            <h2><i class="fas fa-receipt me-2"></i>Expenses</h2>
-            <p class="text-muted">Manage and track school expenses</p>
+            <p class="text-primary fw-semibold small text-uppercase mb-1">Finance management</p>
+            <h1 class="h3 fw-bold mb-1">Expenses</h1>
+            <p class="text-muted mb-0">Review and manage recorded school expenses.</p>
         </div>
-        <div>
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addExpenseModal">
-                <i class="fas fa-plus me-1"></i>Add Expense
-            </button>
-        </div>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addExpenseModal">
+            <i class="fas fa-plus me-2" aria-hidden="true"></i>Add Expense
+        </button>
     </div>
 
-    <!-- Filters -->
-    <div class="card mb-4">
+    @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+    @if($errors->any())
+        <div class="alert alert-danger" role="alert">
+            <div class="fw-semibold mb-1">Please correct the following before saving:</div>
+            <ul class="mb-0">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
+        </div>
+    @endif
+
+    <div class="card border-0 shadow-sm rounded-3 mb-4">
+        <div class="card-header bg-white py-3"><h2 class="h6 fw-semibold mb-0"><i class="fas fa-filter text-primary me-2" aria-hidden="true"></i>Filter expenses</h2></div>
         <div class="card-body">
             <form method="GET" action="{{ route('staff.accountant.expenses.index') }}" class="row g-3 align-items-end">
-                <div class="col-md-3">
-                    <label class="form-label small text-muted">Search Type</label>
-                    <input type="text" name="expense_type" class="form-control form-control-sm" placeholder="e.g. Stationery" value="{{ request('expense_type') }}">
+                <div class="col-12 col-md-4">
+                    <label for="expense_type" class="form-label small text-muted">Expense Type</label>
+                    <input id="expense_type" type="search" name="expense_type" class="form-control" placeholder="Search expense type" value="{{ request('expense_type') }}">
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label small text-muted">Term</label>
-                    <select name="term_id" class="form-select form-select-sm">
+                <div class="col-12 col-md-3">
+                    <label for="term_id" class="form-label small text-muted">Term</label>
+                    <select id="term_id" name="term_id" class="form-select">
                         <option value="">All Terms</option>
                         @foreach($terms as $term)
-                            <option value="{{ $term->id }}" {{ request('term_id') == $term->id ? 'selected' : '' }}>
-                                {{ $term->name }} - {{ $term->academicYear->year ?? '' }}
-                            </option>
+                            <option value="{{ $term->id }}" @selected(request('term_id') == $term->id)>{{ $term->name }}{{ $term->academicYear ? ' - ' . $term->academicYear->year : '' }}</option>
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label small text-muted">Start Date</label>
-                    <input type="date" name="start_date" class="form-control form-control-sm" value="{{ request('start_date') }}">
+                <div class="col-12 col-md-2">
+                    <label for="start_date" class="form-label small text-muted">Start Date</label>
+                    <input id="start_date" type="date" name="start_date" class="form-control" value="{{ request('start_date') }}">
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label small text-muted">End Date</label>
-                    <input type="date" name="end_date" class="form-control form-control-sm" value="{{ request('end_date') }}">
+                <div class="col-12 col-md-2">
+                    <label for="end_date" class="form-label small text-muted">End Date</label>
+                    <input id="end_date" type="date" name="end_date" class="form-control" value="{{ request('end_date') }}">
                 </div>
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-outline-primary btn-sm w-100">
-                        <i class="fas fa-filter me-1"></i>Filter
-                    </button>
-                </div>
-                <div class="col-md-1">
-                    <a href="{{ route('staff.accountant.expenses.index') }}" class="btn btn-outline-secondary btn-sm w-100">
-                        <i class="fas fa-times"></i>
-                    </a>
+                <div class="col-12 col-md-1 d-flex gap-2">
+                    <button type="submit" class="btn btn-outline-primary flex-grow-1" aria-label="Apply filters"><i class="fas fa-filter" aria-hidden="true"></i></button>
+                    <a href="{{ route('staff.accountant.expenses.index') }}" class="btn btn-outline-secondary" aria-label="Clear filters"><i class="fas fa-times" aria-hidden="true"></i></a>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Expenses Table -->
-    <div class="card">
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-striped table-hover">
-                    <thead class="table-dark">
+    <div class="card border-0 shadow-sm rounded-3">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h2 class="h6 fw-semibold mb-0">Expense records</h2>
+            <span class="text-muted small">{{ $expenses->total() }} records</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light"><tr><th>Date</th><th>Type</th><th>Description</th><th>Paid To</th><th>Amount</th><th>Method</th><th>Term</th><th class="text-end">Actions</th></tr></thead>
+                <tbody>
+                    @forelse($expenses as $expense)
                         <tr>
-                            <th>Date</th>
-                            <th>Type</th>
-                            <th>Description</th>
-                            <th>Paid To</th>
-                            <th>Amount</th>
-                            <th>Method</th>
-                            <th>Term</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($expenses as $expense)
-                        <tr>
-                            <td>{{ $expense->expense_date->format('M d, Y') }}</td>
-                            <td><strong>{{ $expense->expense_type }}</strong></td>
-                            <td>{{ $expense->description }}</td>
+                            <td class="text-nowrap">{{ $expense->expense_date->format('M d, Y') }}</td>
+                            <td><span class="badge text-bg-light border">{{ $expense->expense_type }}</span></td>
+                            <td class="text-truncate" style="max-width: 220px" title="{{ $expense->description }}">{{ $expense->description }}</td>
                             <td>{{ $expense->paid_to }}</td>
-                            <td class="fw-bold text-danger">{{ number_format($expense->amount, 0) }} RWF</td>
-                            <td>{{ ucfirst($expense->payment_method) }}</td>
-                            <td>{{ $expense->term ? $expense->term->name : 'N/A' }}</td>
-                            <td>
-                                <div class="btn-group btn-group-sm">
-                                    <a href="{{ route('staff.accountant.expenses.show', $expense->id) }}" class="btn btn-outline-info" title="View">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                    <a href="{{ route('staff.accountant.expenses.edit', $expense->id) }}" class="btn btn-outline-primary" title="Edit">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    <form method="POST" action="{{ route('staff.accountant.expenses.destroy', $expense->id) }}" onsubmit="return confirm('Are you sure you want to delete this expense?');">
+                            <td class="fw-semibold text-danger text-nowrap">{{ number_format($expense->amount, 0) }} RWF</td>
+                            <td>{{ ucfirst(str_replace('_', ' ', $expense->payment_method)) }}</td>
+                            <td>{{ $expense->term?->name ?? '—' }}</td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm" role="group" aria-label="Expense actions">
+                                    <a href="{{ route('staff.accountant.expenses.show', $expense->id) }}" class="btn btn-outline-secondary" title="View" aria-label="View expense"><i class="fas fa-eye" aria-hidden="true"></i></a>
+                                    <a href="{{ route('staff.accountant.expenses.edit', $expense->id) }}" class="btn btn-outline-primary" title="Edit" aria-label="Edit expense"><i class="fas fa-pen" aria-hidden="true"></i></a>
+                                    <form method="POST" action="{{ route('staff.accountant.expenses.destroy', $expense->id) }}" onsubmit="return confirm('Delete this expense?');">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn btn-outline-danger" title="Delete">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
+                                        <button type="submit" class="btn btn-outline-danger rounded-start-0" title="Delete" aria-label="Delete expense"><i class="fas fa-trash" aria-hidden="true"></i></button>
                                     </form>
                                 </div>
                             </td>
                         </tr>
-                        @empty
-                        <tr>
-                            <td colspan="8" class="text-center text-muted py-4">
-                                <i class="fas fa-receipt fa-3x mb-3 d-block"></i>
-                                No expenses found
-                            </td>
-                        </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-            {{ $expenses->links() }}
+                    @empty
+                        <tr><td colspan="8" class="text-center text-muted py-5"><i class="fas fa-file-invoice-dollar fa-2x d-block mb-2" aria-hidden="true"></i><div class="fw-semibold">No expenses found</div><small>Try changing the filters or add a new expense.</small></td></tr>
+                    @endforelse
+                </tbody>
+            </table>
         </div>
+        @if($expenses->hasPages())
+            <div class="card-footer bg-white">{{ $expenses->appends(request()->query())->links() }}</div>
+        @endif
     </div>
 </div>
 
-<!-- Add Expense Modal -->
-<div class="modal fade" id="addExpenseModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
-    <form method="POST" action="{{ route('expenses.store') }}">
-      @csrf
-      <div class="modal-content">
-        <div class="modal-header bg-danger text-white">
-          <h5 class="modal-title">Add Expense</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <div class="mb-3">
-            <label class="form-label">Date</label>
-            <input type="date" name="expense_date" class="form-control" required>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Type</label>
-            <input type="text" name="expense_type" class="form-control" required placeholder="e.g. Stationery, Utilities">
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Amount (RWF)</label>
-            <input type="number" name="amount" class="form-control" min="1" step="0.01" required>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Description</label>
-            <textarea name="description" class="form-control" rows="2" required></textarea>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Paid To</label>
-            <input type="text" name="paid_to" class="form-control" required>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Contact Number</label>
-            <input type="text" name="paid_to_contact" class="form-control" required>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Payment Method</label>
-            <select name="payment_method" class="form-select" required>
-              <option value="">Select method</option>
-              <option value="cash">Cash</option>
-              <option value="bank">Bank</option>
-              <option value="mobile_money">Mobile Money</option>
-              <option value="cheque">Cheque</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Term (Optional)</label>
-            <select name="term_id" class="form-select">
-              <option value="">Select Term</option>
-              @foreach($terms as $term)
-                  <option value="{{ $term->id }}">{{ $term->name }} - {{ $term->academicYear->year ?? '' }}</option>
-              @endforeach
-            </select>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-danger">Save Expense</button>
-        </div>
-      </div>
-    </form>
-  </div>
+<div class="modal fade" id="addExpenseModal" tabindex="-1" aria-labelledby="addExpenseModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <form method="POST" action="{{ route('expenses.store') }}" class="modal-content" id="addExpenseForm">
+            @csrf
+            <div class="modal-header">
+                <div><h2 class="modal-title h5 fw-semibold" id="addExpenseModalLabel">Record an expense</h2><p class="text-muted small mb-0">Enter the payment and payee details.</p></div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-12 col-md-6">
+                        <label for="modal_expense_date" class="form-label">Expense Date <span class="text-danger">*</span></label>
+                        <input id="modal_expense_date" type="date" name="expense_date" class="form-control @error('expense_date') is-invalid @enderror" value="{{ old('expense_date', now()->format('Y-m-d')) }}" required>
+                        @error('expense_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label for="modal_expense_type" class="form-label">Expense Type <span class="text-danger">*</span></label>
+                        <input id="modal_expense_type" type="text" name="expense_type" class="form-control @error('expense_type') is-invalid @enderror" value="{{ old('expense_type') }}" placeholder="e.g. Stationery" required>
+                        @error('expense_type')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label for="modal_amount" class="form-label">Amount (RWF) <span class="text-danger">*</span></label>
+                        <input id="modal_amount" type="number" name="amount" class="form-control @error('amount') is-invalid @enderror" value="{{ old('amount') }}" min="1" step="0.01" required>
+                        @error('amount')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label for="modal_term_id" class="form-label">Term <span class="text-muted">(optional)</span></label>
+                        <select id="modal_term_id" name="term_id" class="form-select @error('term_id') is-invalid @enderror">
+                            <option value="">Select term</option>
+                            @foreach($terms as $term)
+                                <option value="{{ $term->id }}" @selected(old('term_id') == $term->id)>{{ $term->name }}{{ $term->academicYear ? ' - ' . $term->academicYear->year : '' }}</option>
+                            @endforeach
+                        </select>
+                        @error('term_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="col-12">
+                        <label for="modal_description" class="form-label">Description <span class="text-danger">*</span></label>
+                        <textarea id="modal_description" name="description" class="form-control @error('description') is-invalid @enderror" rows="2" required>{{ old('description') }}</textarea>
+                        @error('description')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label for="modal_paid_to" class="form-label">Paid To <span class="text-danger">*</span></label>
+                        <input id="modal_paid_to" type="text" name="paid_to" class="form-control @error('paid_to') is-invalid @enderror" value="{{ old('paid_to') }}" required>
+                        @error('paid_to')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label for="modal_paid_to_contact" class="form-label">Contact <span class="text-danger">*</span></label>
+                        <input id="modal_paid_to_contact" type="text" name="paid_to_contact" class="form-control @error('paid_to_contact') is-invalid @enderror" value="{{ old('paid_to_contact') }}" required>
+                        @error('paid_to_contact')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label for="modal_payment_method" class="form-label">Payment Method <span class="text-danger">*</span></label>
+                        <select id="modal_payment_method" name="payment_method" class="form-select @error('payment_method') is-invalid @enderror" required>
+                            <option value="">Select method</option>
+                            @foreach(['cash' => 'Cash', 'bank' => 'Bank', 'mobile_money' => 'Mobile Money', 'cheque' => 'Cheque', 'other' => 'Other'] as $value => $label)
+                                <option value="{{ $value }}" @selected(old('payment_method') === $value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                        @error('payment_method')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="saveExpenseButton"><i class="fas fa-save me-1" aria-hidden="true"></i>Save Expense</button>
+            </div>
+        </form>
+    </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.getElementById('addExpenseForm').addEventListener('submit', function () {
+    const button = document.getElementById('saveExpenseButton');
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Saving';
+});
+@if($errors->any())
+document.addEventListener('DOMContentLoaded', function () {
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('addExpenseModal')).show();
+});
+@endif
+</script>
+@endpush

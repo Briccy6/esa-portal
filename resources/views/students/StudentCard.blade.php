@@ -542,6 +542,15 @@ document.addEventListener('DOMContentLoaded', function() {
     courseFilter.addEventListener('change', filterTable);
     branchFilter.addEventListener('change', filterTable);
     yearFilter.addEventListener('change', filterTable);
+
+    const previewCardId = new URLSearchParams(window.location.search).get('preview');
+    const previewModal = previewCardId && document.getElementById(`previewCardModal${previewCardId}`);
+    if (previewModal) {
+        bootstrap.Modal.getOrCreateInstance(previewModal).show();
+        const url = new URL(window.location.href);
+        url.searchParams.delete('preview');
+        window.history.replaceState({}, '', url);
+    }
 });
 
 function clearFilters() {

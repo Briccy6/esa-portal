@@ -1,295 +1,304 @@
 @extends('staff.partials.sidebar_sec')
 
-@section('title', 'Accountant Dashboard')
+@section('title', 'Finance Dashboard')
+
+@push('styles')
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+    .accountant-dashboard { font-family: 'Poppins', sans-serif; }
+    .accountant-dashboard .card { border: 0; border-radius: 12px; box-shadow: 0 4px 18px rgba(15, 23, 42, .06); }
+    .accountant-dashboard .card-header { background: #fff; border-bottom-color: #eef2f7; }
+    .accountant-dashboard .kpi-card { transition: transform .2s ease, box-shadow .2s ease; }
+    .accountant-dashboard .kpi-card:hover { transform: translateY(-3px); box-shadow: 0 10px 24px rgba(15, 23, 42, .1); }
+    .accountant-dashboard .chart-wrap { position: relative; height: 300px; }
+    .accountant-dashboard .table thead th { background: #f8fafc; color: #64748b; font-size: .75rem; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
+</style>
+@endpush
 
 @section('content')
-<div class="container-fluid py-4">
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
+<div class="container-fluid py-4 accountant-dashboard">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
         <div>
-            <h2 class="mb-0">Finance Dashboard</h2>
-            <p class="text-muted mb-0">Overview of fee collection, expenses, and balances</p>
+            <p class="text-primary fw-semibold small text-uppercase mb-1">Finance overview</p>
+            <h1 class="h3 fw-bold mb-1">Finance Dashboard</h1>
+            <p class="text-muted mb-0">Monitor fee collection, outstanding balances, and expenses.</p>
         </div>
-        <a href="{{ route('staff.accountant.expenses.index') }}" class="btn btn-primary">
-            <i class="fas fa-plus me-2"></i>Add Expense
-        </a>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{{ route('staff.accountant.expenses.index') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2" aria-hidden="true"></i>Add Expense
+            </a>
+            <a href="{{ route('staff.accountant.payment-schedule.index') }}" class="btn btn-outline-primary">
+                <i class="fas fa-calendar-check me-2" aria-hidden="true"></i>Payment Schedule
+            </a>
+        </div>
     </div>
 
-    <!-- Filters -->
+    <div class="alert alert-danger d-none" id="dashboardError" role="alert"></div>
+    @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
     <div class="card mb-4">
+        <div class="card-header py-3">
+            <h2 class="h6 fw-semibold mb-0"><i class="fas fa-sliders me-2 text-primary" aria-hidden="true"></i>Filter overview</h2>
+        </div>
         <div class="card-body">
-            <form method="GET" action="{{ route('staff.accountant.dashboard') }}" class="row g-3">
-                <div class="col-md-2">
-                    <label class="form-label small text-muted">Academic Year</label>
-                    <select name="academic_year_id" class="form-select">
+            <form method="GET" action="{{ route('staff.accountant.dashboard') }}" id="dashboardFilters" class="row g-3 align-items-end">
+                <div class="col-12 col-sm-6 col-xl">
+                    <label for="academic_year_id" class="form-label small text-muted">Academic Year</label>
+                    <select id="academic_year_id" name="academic_year_id" class="form-select">
                         <option value="">All Years</option>
                         @foreach($academicYears as $year)
-                            <option value="{{ $year->id }}" {{ $filters['academic_year_id'] == $year->id ? 'selected' : '' }}>
-                                {{ $year->year }}
-                            </option>
+                            <option value="{{ $year->id }}" @selected(($filters['academic_year_id'] ?? '') == $year->id)>{{ $year->year }}</option>
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label small text-muted">Branch</label>
-                    <select name="branch_id" class="form-select">
+                <div class="col-12 col-sm-6 col-xl">
+                    <label for="branch_id" class="form-label small text-muted">Branch</label>
+                    <select id="branch_id" name="branch_id" class="form-select">
                         <option value="">All Branches</option>
                         @foreach($branches as $branch)
-                            <option value="{{ $branch->id }}" {{ $filters['branch_id'] == $branch->id ? 'selected' : '' }}>
-                                {{ $branch->name }}
-                            </option>
+                            <option value="{{ $branch->id }}" @selected(($filters['branch_id'] ?? '') == $branch->id)>{{ $branch->name }}</option>
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label small text-muted">Term</label>
-                    <select name="term_id" class="form-select">
+                <div class="col-12 col-sm-6 col-xl">
+                    <label for="term_id" class="form-label small text-muted">Term</label>
+                    <select id="term_id" name="term_id" class="form-select">
                         <option value="">All Terms</option>
                         @foreach($terms as $term)
-                            <option value="{{ $term->id }}" {{ $filters['term_id'] == $term->id ? 'selected' : '' }}>
-                                {{ $term->name }}
-                            </option>
+                            <option value="{{ $term->id }}" @selected(($filters['term_id'] ?? '') == $term->id)>{{ $term->name }}{{ $term->academicYear ? ' - ' . $term->academicYear->year : '' }}</option>
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label small text-muted">Start Date</label>
-                    <input type="date" name="start_date" class="form-control" value="{{ $filters['start_date'] ?? '' }}">
+                <div class="col-12 col-sm-6 col-xl">
+                    <label for="start_date" class="form-label small text-muted">Start Date</label>
+                    <input id="start_date" type="date" name="start_date" class="form-control" value="{{ $filters['start_date'] ?? '' }}">
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label small text-muted">End Date</label>
-                    <input type="date" name="end_date" class="form-control" value="{{ $filters['end_date'] ?? '' }}">
+                <div class="col-12 col-sm-6 col-xl">
+                    <label for="end_date" class="form-label small text-muted">End Date</label>
+                    <input id="end_date" type="date" name="end_date" class="form-control" value="{{ $filters['end_date'] ?? '' }}">
                 </div>
-                <div class="col-md-2 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="fas fa-filter me-1"></i>Filter
+                <div class="col-12 col-sm-6 col-xl-auto d-flex gap-2">
+                    <button type="submit" class="btn btn-primary flex-grow-1" id="filterButton">
+                        <i class="fas fa-filter me-1" aria-hidden="true"></i>Apply
                     </button>
+                    <a href="{{ route('staff.accountant.dashboard') }}" class="btn btn-outline-secondary">Clear</a>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- KPI Cards -->
-    <div class="row g-4 mb-4">
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="card h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <p class="text-muted mb-1">Total Fees Expected</p>
-                            <h3 class="mb-0">{{ number_format($kpiData['total_fees_expected'], 0) }}</h3>
-                            @if($kpiData['total_fees_expected'] == 0)
-                                <small class="text-warning">No fee data - check course fees</small>
-                            @endif
-                        </div>
-                        <div class="bg-primary bg-opacity-10 p-3 rounded">
-                            <i class="fas fa-coins text-primary"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="card h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <p class="text-muted mb-1">Fees Collected</p>
-                            <h3 class="mb-0">{{ number_format($kpiData['fees_collected'], 0) }}</h3>
-                        </div>
-                        <div class="bg-success bg-opacity-10 p-3 rounded">
-                            <i class="fas fa-check-circle text-success"></i>
+    <div class="row g-3 g-xl-4 mb-4">
+        @php
+            $kpis = [
+                ['key' => 'total_fees_expected', 'label' => 'Total Fees Expected', 'icon' => 'fa-coins', 'tone' => 'primary'],
+                ['key' => 'fees_collected', 'label' => 'Fees Collected', 'icon' => 'fa-circle-check', 'tone' => 'success'],
+                ['key' => 'outstanding_balance', 'label' => 'Outstanding Balance', 'icon' => 'fa-triangle-exclamation', 'tone' => 'warning'],
+                ['key' => 'total_expenses', 'label' => 'Total Expenses', 'icon' => 'fa-receipt', 'tone' => 'danger'],
+            ];
+        @endphp
+        @foreach($kpis as $kpi)
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="card kpi-card h-100">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-start gap-3">
+                            <div>
+                                <p class="text-muted small mb-2">{{ $kpi['label'] }}</p>
+                                <div class="h3 fw-bold mb-2" id="kpi-{{ $kpi['key'] }}">{{ number_format($kpiData[$kpi['key']] ?? 0, 0) }}</div>
+                                @if($kpi['key'] === 'total_fees_expected' && ($kpiData[$kpi['key']] ?? 0) == 0)
+                                    <small class="text-warning">No fee data is available for these filters.</small>
+                                @elseif($kpi['key'] === 'outstanding_balance' && ($kpiData[$kpi['key']] ?? 0) == 0 && ($kpiData['total_fees_expected'] ?? 0) > 0)
+                                    <small class="text-success">All expected fees are paid.</small>
+                                @else
+                                    <small class="text-muted">Updated for the selected filters</small>
+                                @endif
+                            </div>
+                            <span class="rounded-3 bg-{{ $kpi['tone'] }} bg-opacity-10 text-{{ $kpi['tone'] }} p-3">
+                                <i class="fas {{ $kpi['icon'] }} fa-lg" aria-hidden="true"></i>
+                            </span>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        @endforeach
+    </div>
 
-        <div class="col-12 col-sm-6 col-xl-3">
+    <div class="row g-3 g-xl-4 mb-4">
+        <div class="col-12 col-xl-8">
             <div class="card h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <p class="text-muted mb-1">Outstanding Balance</p>
-                            <h3 class="mb-0">{{ number_format($kpiData['outstanding_balance'], 0) }}</h3>
-                            @if($kpiData['outstanding_balance'] == 0 && $kpiData['total_fees_expected'] > 0)
-                                <small class="text-success">All fees paid</small>
-                            @endif
-                        </div>
-                        <div class="bg-warning bg-opacity-10 p-3 rounded">
-                            <i class="fas fa-exclamation-circle text-warning"></i>
-                        </div>
+                <div class="card-header d-flex justify-content-between align-items-center py-3">
+                    <div>
+                        <h2 class="h6 fw-semibold mb-1">Revenue Trend</h2>
+                        <p class="text-muted small mb-0">Daily collections over the last 30 days</p>
                     </div>
+                    <span class="text-primary"><i class="fas fa-chart-line" aria-hidden="true"></i></span>
                 </div>
+                <div class="card-body"><div class="chart-wrap"><canvas id="revenueChart" aria-label="Daily fee collections chart"></canvas></div></div>
             </div>
         </div>
-
-        <div class="col-12 col-sm-6 col-xl-3">
+        <div class="col-12 col-xl-4">
             <div class="card h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <p class="text-muted mb-1">Total Expenses</p>
-                            <h3 class="mb-0">{{ number_format($kpiData['total_expenses'], 0) }}</h3>
-                        </div>
-                        <div class="bg-danger bg-opacity-10 p-3 rounded">
-                            <i class="fas fa-receipt text-danger"></i>
-                        </div>
+                <div class="card-header d-flex justify-content-between align-items-center py-3">
+                    <div>
+                        <h2 class="h6 fw-semibold mb-1">Expense Distribution</h2>
+                        <p class="text-muted small mb-0">Expenses grouped by category</p>
                     </div>
+                    <span class="text-danger"><i class="fas fa-chart-pie" aria-hidden="true"></i></span>
                 </div>
+                <div class="card-body"><div class="chart-wrap"><canvas id="expenseChart" aria-label="Expense categories chart"></canvas></div></div>
             </div>
         </div>
     </div>
 
-    <!-- Charts Row -->
-    <div class="row g-4 mb-4">
-        <div class="col-xl-8">
-            <div class="card">
-                <div class="card-header">
-                    <h6 class="mb-0">Revenue Trend</h6>
+    <div class="row g-3 g-xl-4">
+        <div class="col-12 col-xl-7">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center py-3">
+                    <h2 class="h6 fw-semibold mb-0">Recent Payments</h2>
+                    <a href="{{ route('staff.accountant.receipts.index') }}" class="btn btn-sm btn-outline-primary">View receipts</a>
                 </div>
-                <div class="card-body">
-                    <canvas id="revenueChart" height="300"></canvas>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead><tr><th>Student</th><th>Amount</th><th>Date</th><th>Status</th></tr></thead>
+                        <tbody>
+                            @forelse($recentPayments as $payment)
+                                <tr>
+                                    <td><div class="fw-semibold">{{ $payment['student_name'] ?? 'N/A' }}</div><small class="text-muted">{{ $payment['student_reg_number'] ?? '' }}</small></td>
+                                    <td class="fw-semibold text-success text-nowrap">{{ number_format($payment['amount'] ?? 0, 0) }} RWF</td>
+                                    <td class="text-nowrap">{{ $payment['date'] ?? 'N/A' }}</td>
+                                    <td><span class="badge text-bg-success">{{ ucfirst($payment['status'] ?? 'paid') }}</span></td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="4" class="text-center text-muted py-5"><i class="fas fa-receipt fa-2x d-block mb-2" aria-hidden="true"></i>No recent payments for these filters.</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
-        <div class="col-xl-4">
-            <div class="card">
-                <div class="card-header">
-                    <h6 class="mb-0">Expense Distribution</h6>
+        <div class="col-12 col-xl-5">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center py-3">
+                    <h2 class="h6 fw-semibold mb-0">Recent Expenses</h2>
+                    <a href="{{ route('staff.accountant.expenses.index') }}" class="btn btn-sm btn-outline-primary">View all</a>
                 </div>
-                <div class="card-body">
-                    <canvas id="expenseChart" height="300"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Tables Row -->
-    <div class="row g-4">
-        <div class="col-xl-7">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0">Recent Payments</h6>
-                    <a href="{{ route('staff.accountant.receipts.index') }}" class="btn btn-sm btn-outline-primary">View All</a>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead class="table-light">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead><tr><th>Expense</th><th>Date</th><th class="text-end">Amount</th></tr></thead>
+                        <tbody>
+                            @forelse($recentExpenses as $expense)
                                 <tr>
-                                    <th>Student</th>
-                                    <th>Amount</th>
-                                    <th>Date</th>
-                                    <th>Status</th>
+                                    <td><div class="fw-semibold">{{ $expense['type'] ?? 'Expense' }}</div><small class="text-muted">{{ $expense['description'] ?? '' }}</small></td>
+                                    <td class="text-nowrap">{{ $expense['date'] ?? 'N/A' }}</td>
+                                    <td class="fw-semibold text-danger text-end text-nowrap">{{ number_format($expense['amount'] ?? 0, 0) }} RWF</td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($recentPayments as $payment)
-                                <tr>
-                                    <td>{{ $payment['student_name'] ?? 'N/A' }}</td>
-                                    <td>{{ number_format($payment['amount'], 0) }}</td>
-                                    <td>{{ $payment['date'] }}</td>
-                                    <td>
-                                        <span class="badge bg-success">{{ $payment['status'] }}</span>
-                                    </td>
-                                </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-5">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0">Recent Expenses</h6>
-                    <a href="{{ route('staff.accountant.expenses.index') }}" class="btn btn-sm btn-outline-primary">View All</a>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Description</th>
-                                    <th>Amount</th>
-                                    <th>Date</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($recentExpenses as $expense)
-                                <tr>
-                                    <td>{{ $expense['description'] }}</td>
-                                    <td>{{ number_format($expense['amount'], 0) }}</td>
-                                    <td>{{ $expense['date'] }}</td>
-                                </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
+                            @empty
+                                <tr><td colspan="3" class="text-center text-muted py-5"><i class="fas fa-file-invoice-dollar fa-2x d-block mb-2" aria-hidden="true"></i>No recent expenses for these filters.</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
 </div>
+@endsection
 
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Revenue Chart
-    const revenueCtx = document.getElementById('revenueChart').getContext('2d');
-    new Chart(revenueCtx, {
+document.addEventListener('DOMContentLoaded', function () {
+    const filterForm = document.getElementById('dashboardFilters');
+    const filterButton = document.getElementById('filterButton');
+    const errorBox = document.getElementById('dashboardError');
+    const moneyFormat = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+
+    const revenueChart = new Chart(document.getElementById('revenueChart'), {
         type: 'line',
         data: {
-            labels: {{ json_encode($chartData['daily_collections']['labels'] ?? []) }},
+            labels: {{ \Illuminate\Support\Js::from($chartData['daily_collections']['labels'] ?? []) }},
             datasets: [{
-                label: 'Revenue',
-                data: {{ json_encode($chartData['daily_collections']['amounts'] ?? []) }},
-                borderColor: '#1d4ed8',
-                backgroundColor: 'rgba(29, 78, 216, 0.1)',
+                label: 'Collections',
+                data: {{ \Illuminate\Support\Js::from($chartData['daily_collections']['amounts'] ?? []) }},
+                borderColor: '#2563eb',
+                backgroundColor: 'rgba(37, 99, 235, .12)',
                 fill: true,
-                tension: 0.4
+                tension: .35,
+                pointRadius: 2
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true
-                }
-            }
+            interaction: { intersect: false, mode: 'index' },
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { callback: value => moneyFormat.format(value) } } }
         }
     });
 
-    // Expense Chart
-    const expenseCtx = document.getElementById('expenseChart').getContext('2d');
-    new Chart(expenseCtx, {
+    const expenseChart = new Chart(document.getElementById('expenseChart'), {
         type: 'doughnut',
         data: {
-            labels: {{ json_encode($chartData['expenses_by_category']['labels'] ?? []) }},
+            labels: {{ \Illuminate\Support\Js::from($chartData['expenses_by_category']['labels'] ?? []) }},
             datasets: [{
-                data: {{ json_encode($chartData['expenses_by_category']['amounts'] ?? []) }},
-                backgroundColor: ['#1d4ed8', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
+                data: {{ \Illuminate\Support\Js::from($chartData['expenses_by_category']['amounts'] ?? []) }},
+                backgroundColor: ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#64748b'],
+                borderWidth: 0
             }]
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom'
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+    });
+
+    async function getJson(url) {
+        const response = await fetch(url, { headers: { 'Accept': 'application/json' } });
+        if (!response.ok) {
+            throw new Error('Dashboard data could not be refreshed. Please try again.');
+        }
+        return response.json();
+    }
+
+    filterForm.addEventListener('submit', async function (event) {
+        event.preventDefault();
+        errorBox.classList.add('d-none');
+        filterButton.disabled = true;
+        const originalButtonText = filterButton.innerHTML;
+        filterButton.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Loading';
+        const query = new URLSearchParams(new FormData(filterForm)).toString();
+
+        try {
+            const [kpis, charts] = await Promise.all([
+                getJson('{{ route('staff.accountant.kpi-data') }}?' + query),
+                getJson('{{ route('staff.accountant.chart-data') }}?' + query)
+            ]);
+
+            ['total_fees_expected', 'fees_collected', 'outstanding_balance', 'total_expenses'].forEach(function (key) {
+                const element = document.getElementById('kpi-' + key);
+                if (element && Number.isFinite(Number(kpis[key]))) {
+                    element.textContent = moneyFormat.format(Number(kpis[key]));
                 }
-            }
+            });
+
+            revenueChart.data.labels = charts.daily_collections.labels || [];
+            revenueChart.data.datasets[0].data = charts.daily_collections.amounts || [];
+            revenueChart.update();
+            expenseChart.data.labels = charts.expenses_by_category.labels || [];
+            expenseChart.data.datasets[0].data = charts.expenses_by_category.amounts || [];
+            expenseChart.update();
+            window.history.replaceState({}, '', filterForm.action + (query ? '?' + query : ''));
+        } catch (error) {
+            errorBox.textContent = error.message || 'Dashboard data could not be refreshed. Please try again.';
+            errorBox.classList.remove('d-none');
+        } finally {
+            filterButton.disabled = false;
+            filterButton.innerHTML = originalButtonText;
         }
     });
 });
 </script>
-@endsection
+@endpush

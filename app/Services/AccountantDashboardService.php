@@ -308,7 +308,7 @@ class AccountantDashboardService
     {
         return Cache::remember($this->getCacheKey('recent_expenses'), 300, function () use ($limit) {
             return $this->getExpenseQuery()
-                ->with(['paid_by_staff:id,name', 'term:id,name,academicYear:id,year'])
+                ->with(['paid_by_staff:id,name', 'term:id,name', 'branch:id,name'])
                 ->orderBy('expense_date', 'desc')
                 ->limit($limit)
                 ->get()
@@ -393,6 +393,10 @@ class AccountantDashboardService
         // Only filter by staff_id if it's set and not admin
         if ($this->staffId && !auth()->guard('admin')->check()) {
             $query->where('paid_by', $this->staffId);
+        }
+
+        if ($this->branchId) {
+            $query->where('branch_id', $this->branchId);
         }
 
         if ($this->termId) {

@@ -1,113 +1,89 @@
 @extends('staff.partials.sidebar_sec')
 
-@section('title', 'Receipts')
+@section('title', 'Payment Receipts')
 
 @section('content')
 <div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2><i class="fas fa-file-invoice me-2"></i>Receipts</h2>
-            <p class="text-muted">View and print payment receipts</p>
-        </div>
+    <div class="mb-4">
+        <p class="text-primary fw-semibold small text-uppercase mb-1">Finance management</p>
+        <h1 class="h3 fw-bold mb-1">Payment Receipts</h1>
+        <p class="text-muted mb-0">Find transactions and view or print their receipts.</p>
     </div>
 
-    <!-- Filters -->
-    <div class="card mb-4">
+    <div class="card border-0 shadow-sm rounded-3 mb-4">
+        <div class="card-header bg-white py-3"><h2 class="h6 fw-semibold mb-0"><i class="fas fa-filter text-primary me-2" aria-hidden="true"></i>Filter receipts</h2></div>
         <div class="card-body">
             <form method="GET" action="{{ route('staff.accountant.receipts.index') }}" class="row g-3 align-items-end">
-                <div class="col-md-3">
-                    <label class="form-label small text-muted">Student</label>
-                    <input type="text" name="student_search" class="form-control form-control-sm" placeholder="Name or Reg Number" value="{{ request('student_search') }}">
+                <div class="col-12 col-md-3">
+                    <label for="student_id" class="form-label small text-muted">Student ID</label>
+                    <input id="student_id" type="number" min="1" name="student_id" class="form-control" placeholder="Enter student ID" value="{{ request('student_id') }}">
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label small text-muted">Status</label>
-                    <select name="status" class="form-select form-select-sm">
-                        <option value="">All Status</option>
-                        <option value="successful" {{ request('status') == 'successful' ? 'selected' : '' }}>Successful</option>
-                        <option value="paid" {{ request('status') == 'paid' ? 'selected' : '' }}>Paid</option>
-                        <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
+                <div class="col-12 col-md-2">
+                    <label for="status" class="form-label small text-muted">Status</label>
+                    <select id="status" name="status" class="form-select">
+                        <option value="">All statuses</option>
+                        @foreach(['successful' => 'Successful', 'paid' => 'Paid', 'pending' => 'Pending'] as $value => $label)
+                            <option value="{{ $value }}" @selected(request('status') === $value)>{{ $label }}</option>
+                        @endforeach
                     </select>
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label small text-muted">Start Date</label>
-                    <input type="date" name="start_date" class="form-control form-control-sm" value="{{ request('start_date') }}">
+                <div class="col-12 col-md-2">
+                    <label for="start_date" class="form-label small text-muted">Start Date</label>
+                    <input id="start_date" type="date" name="start_date" class="form-control" value="{{ request('start_date') }}">
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label small text-muted">End Date</label>
-                    <input type="date" name="end_date" class="form-control form-control-sm" value="{{ request('end_date') }}">
+                <div class="col-12 col-md-2">
+                    <label for="end_date" class="form-label small text-muted">End Date</label>
+                    <input id="end_date" type="date" name="end_date" class="form-control" value="{{ request('end_date') }}">
                 </div>
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-outline-primary btn-sm w-100">
-                        <i class="fas fa-filter me-1"></i>Filter
-                    </button>
-                </div>
-                <div class="col-md-1">
-                    <a href="{{ route('staff.accountant.receipts.index') }}" class="btn btn-outline-secondary btn-sm w-100">
-                        <i class="fas fa-times"></i>
-                    </a>
+                <div class="col-12 col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary flex-grow-1"><i class="fas fa-filter me-1" aria-hidden="true"></i>Apply filters</button>
+                    <a href="{{ route('staff.accountant.receipts.index') }}" class="btn btn-outline-secondary">Clear</a>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Receipts Table -->
-    <div class="card">
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-striped table-hover">
-                    <thead class="table-dark">
+    <div class="card border-0 shadow-sm rounded-3">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h2 class="h6 fw-semibold mb-0">Transactions</h2>
+            <span class="text-muted small">{{ $transactions->total() }} records</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light"><tr><th>Transaction</th><th>Student</th><th>Course</th><th>Amount</th><th>Date</th><th>Status</th><th class="text-end">Actions</th></tr></thead>
+                <tbody>
+                    @forelse($transactions as $transaction)
                         <tr>
-                            <th>Transaction ID</th>
-                            <th>Student</th>
-                            <th>Course</th>
-                            <th>Amount</th>
-                            <th>Date</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($transactions as $transaction)
-                        <tr>
-                            <td><small>{{ $transaction->tx_ref }}</small></td>
+                            <td><span class="font-monospace small">{{ $transaction->tx_ref }}</span></td>
+                            <td><div class="fw-semibold">{{ $transaction->student->full_name ?? 'Unknown student' }}</div><small class="text-muted">{{ $transaction->student->reg_number ?? 'No registration number' }}</small></td>
+                            <td>{{ $transaction->student->course->course_name ?? '—' }}</td>
+                            <td class="fw-semibold text-success text-nowrap">{{ number_format($transaction->amount, 0) }} RWF</td>
+                            <td class="text-nowrap">{{ $transaction->created_at->format('M d, Y H:i') }}</td>
                             <td>
-                                <div class="fw-bold">{{ $transaction->student->full_name }}</div>
-                                <small class="text-muted">{{ $transaction->student->reg_number }}</small>
-                            </td>
-                            <td>{{ $transaction->student->course->course_name ?? 'N/A' }}</td>
-                            <td class="fw-bold text-success">{{ number_format($transaction->amount, 0) }} RWF</td>
-                            <td>{{ $transaction->created_at->format('M d, Y H:i') }}</td>
-                            <td>
-                                @if($transaction->status === 'successful' || $transaction->status === 'paid')
-                                    <span class="badge bg-success">{{ ucfirst($transaction->status) }}</span>
+                                @if(in_array($transaction->status, ['successful', 'paid'], true))
+                                    <span class="badge text-bg-success">{{ ucfirst($transaction->status) }}</span>
+                                @elseif($transaction->status === 'pending')
+                                    <span class="badge text-bg-warning">{{ ucfirst($transaction->status) }}</span>
                                 @else
-                                    <span class="badge bg-warning">{{ ucfirst($transaction->status) }}</span>
+                                    <span class="badge text-bg-secondary">{{ ucfirst($transaction->status) }}</span>
                                 @endif
                             </td>
-                            <td>
-                                <div class="btn-group btn-group-sm">
-                                    <a href="{{ route('staff.accountant.receipts.show', $transaction->id) }}" class="btn btn-outline-info" title="View">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                    <a href="{{ route('staff.accountant.receipts.print', $transaction->id) }}" class="btn btn-outline-primary" title="Print">
-                                        <i class="fas fa-print"></i>
-                                    </a>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm" role="group" aria-label="Receipt actions">
+                                    <a href="{{ route('staff.accountant.receipts.show', $transaction->id) }}" class="btn btn-outline-primary" title="View receipt" aria-label="View receipt"><i class="fas fa-eye" aria-hidden="true"></i></a>
+                                    <a href="{{ route('staff.accountant.receipts.print', $transaction->id) }}" class="btn btn-outline-secondary" title="Print receipt" aria-label="Print receipt"><i class="fas fa-print" aria-hidden="true"></i></a>
                                 </div>
                             </td>
                         </tr>
-                        @empty
-                        <tr>
-                            <td colspan="7" class="text-center text-muted py-4">
-                                <i class="fas fa-file-invoice fa-3x mb-3 d-block"></i>
-                                No receipts found
-                            </td>
-                        </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-            {{ $transactions->links() }}
+                    @empty
+                        <tr><td colspan="7" class="text-center text-muted py-5"><i class="fas fa-file-invoice fa-2x d-block mb-2" aria-hidden="true"></i><div class="fw-semibold">No receipts found</div><small>Try adjusting your filters.</small></td></tr>
+                    @endforelse
+                </tbody>
+            </table>
         </div>
+        @if($transactions->hasPages())
+            <div class="card-footer bg-white">{{ $transactions->appends(request()->query())->links() }}</div>
+        @endif
     </div>
 </div>
 @endsection

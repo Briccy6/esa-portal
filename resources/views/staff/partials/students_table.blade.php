@@ -1338,6 +1338,11 @@ function handleGenerateCard(event, studentId) {
     })
     .then(({ ok, data }) => {
         if (ok && data.success !== false) {
+            if (data.cards_url) {
+                window.location.assign(data.cards_url);
+                return;
+            }
+
             bootstrap.Modal.getInstance(document.getElementById(`generateCardModal${studentId}`))?.hide();
             showAlert('success', data.message || 'Student card generated successfully');
             setTimeout(() => window.location.reload(), 1500);
