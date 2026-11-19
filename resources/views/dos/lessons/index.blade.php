@@ -662,6 +662,7 @@ function editUnit(unitId, unitName, hours, courseLevel, termId) {
 </script>
 @endsection
 
+@section('scripts')
 <script>
 let assignmentRowCount = 1;
 
