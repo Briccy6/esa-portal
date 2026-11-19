@@ -704,7 +704,7 @@ Route::prefix('staff')->name('staff.')->group(function () {
         Route::get('/students/qr-scan/{qrData}', [StudentController::class, 'verifyQRCode'])->name('students.qr_scan');
         Route::post('/students/{student}/generate-card', [StudentController::class, 'generateStudentCard'])->name('students.generate_card');
         Route::get('/dashboard_accountant', function() {
-            return redirect()->route('accountant.dashboard');
+            return redirect()->route('staff.accountant.dashboard');
         })->name('dashboard.accountant');
         
         // Accountant Dashboard Routes (new)
@@ -720,6 +720,16 @@ Route::prefix('staff')->name('staff.')->group(function () {
             Route::get('/receipts', [AccountantDashboardController::class, 'receipts'])->name('receipts.index');
             Route::get('/receipts/{transaction}', [AccountantDashboardController::class, 'receiptShow'])->name('receipts.show');
             Route::get('/receipts/{transaction}/print', [AccountantDashboardController::class, 'receiptPrint'])->name('receipts.print');
+        });
+
+        Route::middleware(['role:accountant,admin'])->prefix('accounting')->name('accounting.')->group(function () {
+            Route::get('/cashbook', [\App\Http\Controllers\AccountingController::class, 'cashbook'])->name('cashbook');
+            Route::get('/balance-sheet', [\App\Http\Controllers\AccountingController::class, 'balanceSheet'])->name('balance-sheet');
+            Route::get('/trial-balance', [\App\Http\Controllers\AccountingController::class, 'trialBalance'])->name('trial-balance');
+            Route::get('/income-statement', [\App\Http\Controllers\AccountingController::class, 'incomeStatement'])->name('income-statement');
+            Route::get('/export/cashbook', [\App\Http\Controllers\AccountingController::class, 'exportCashbook'])->name('export.cashbook');
+            Route::get('/export/balance-sheet', [\App\Http\Controllers\AccountingController::class, 'exportBalanceSheet'])->name('export.balance-sheet');
+            Route::get('/export/trial-balance', [\App\Http\Controllers\AccountingController::class, 'exportTrialBalance'])->name('export.trial-balance');
         });
         
         // Staff Profile

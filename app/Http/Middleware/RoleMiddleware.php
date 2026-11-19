@@ -10,29 +10,20 @@ class RoleMiddleware
 {
     public function handle(Request $request, Closure $next, ...$roles)
     {
-        $user = Auth::user();
-        
-        // Check if user is authenticated
-        if (!$user) {
-            return redirect()->route('login')->with('error', 'Please login to access this page.');
-        }
-
-        // Check if user is admin (using admin guard)
         if (Auth::guard('admin')->check()) {
             return $next($request);
         }
 
-        // Check if user is staff and has the required role
         if (Auth::guard('staff')->check()) {
             $staff = Auth::guard('staff')->user();
-            
-            // Allow access if staff role is in the allowed roles (case-insensitive)
-            if (in_array(strtolower($staff->role), array_map('strtolower', $roles))) {
+
+            if (in_array(strtolower((string) $staff->role), array_map('strtolower', $roles))) {
                 return $next($request);
             }
+
+            abort(403, 'You do not have permission to access this page.');
         }
 
-        // If no valid role found, deny access
-        return redirect()->route('login')->with('error', 'You do not have permission to access this page.');
+        return redirect()->route('login')->with('error', 'Please login to access this page.');
     }
 }

@@ -109,7 +109,11 @@ class StaffAuthController extends Controller
                     ->orderBy('course_name')
                     ->get(['courses.id', 'courses.course_name']);
 
-                $teachers = $branch->teachers()
+                $teachers = \App\Models\Teacher::query()
+                    ->where(function ($query) use ($branch) {
+                        $query->where('branch_id', $branch->id)
+                            ->orWhereHas('branches', fn ($branchQuery) => $branchQuery->whereKey($branch->id));
+                    })
                     ->orderBy('teacher_name')
                     ->get(['teachers.id', 'teachers.teacher_name']);
 
@@ -145,6 +149,8 @@ class StaffAuthController extends Controller
 
             $studiedHours = \App\Models\TeacherDaily::selectRaw('date, SUM(hours_studied) as hours')
                 ->where('date', '>=', now()->subDays(7)->toDateString())
+                ->where('approved', true)
+                ->whereIn('branch_id', $branches->modelKeys())
                 ->groupBy('date')
                 ->orderBy('date')
                 ->get();
@@ -159,7 +165,7 @@ class StaffAuthController extends Controller
 
         if ($role === 'Accountant') {
             // Redirect to the new accountant dashboard
-            return redirect()->route('accountant.dashboard');
+            return redirect()->route('staff.accountant.dashboard');
         }
 
         if ($role === 'SEC' || $role === 'Secretary') {

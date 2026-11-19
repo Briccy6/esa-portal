@@ -538,7 +538,7 @@ class StaffController extends Controller
         } elseif ($staff->role === 'Secretary') {
             return redirect()->route('secretary.dashboard');
         } elseif ($staff->role === 'Accountant') {
-            return redirect()->route('accountant.dashboard');
+            return redirect()->route('staff.accountant.dashboard');
         }
         
         // Default staff dashboard

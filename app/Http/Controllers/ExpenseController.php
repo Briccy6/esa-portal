@@ -165,7 +165,7 @@ class ExpenseController extends Controller
             'term_id' => $request->term_id,
         ]);
 
-        return redirect()->route('accountant.expenses.index')->with('success', 'Expense updated successfully.');
+        return redirect()->route('staff.accountant.expenses.index')->with('success', 'Expense updated successfully.');
     }
 
     /**
@@ -182,6 +182,6 @@ class ExpenseController extends Controller
 
         $expense->delete();
 
-        return redirect()->route('accountant.expenses.index')->with('success', 'Expense deleted successfully.');
+        return redirect()->route('staff.accountant.expenses.index')->with('success', 'Expense deleted successfully.');
     }
 }

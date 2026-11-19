@@ -44,7 +44,7 @@ class AccountantDashboardTest extends TestCase
     public function accountant_can_access_dashboard()
     {
         $response = $this->actingAs($this->accountant, 'staff')
-            ->get(route('accountant.dashboard'));
+            ->get(route('staff.accountant.dashboard'));
 
         $response->assertStatus(200);
     }
@@ -53,7 +53,7 @@ class AccountantDashboardTest extends TestCase
     public function non_accountant_cannot_access_accountant_dashboard()
     {
         $response = $this->actingAs($this->dos, 'staff')
-            ->get(route('accountant.dashboard'));
+            ->get(route('staff.accountant.dashboard'));
 
         $response->assertStatus(403);
     }
@@ -61,7 +61,7 @@ class AccountantDashboardTest extends TestCase
     /** @test */
     public function guest_cannot_access_accountant_dashboard()
     {
-        $response = $this->get(route('accountant.dashboard'));
+        $response = $this->get(route('staff.accountant.dashboard'));
 
         $response->assertRedirect(route('staff.login'));
     }
@@ -70,7 +70,7 @@ class AccountantDashboardTest extends TestCase
     public function accountant_can_access_expenses_index()
     {
         $response = $this->actingAs($this->accountant, 'staff')
-            ->get(route('accountant.expenses.index'));
+            ->get(route('staff.accountant.expenses.index'));
 
         $response->assertStatus(200);
     }
@@ -79,7 +79,7 @@ class AccountantDashboardTest extends TestCase
     public function non_accountant_cannot_access_expenses_index()
     {
         $response = $this->actingAs($this->dos, 'staff')
-            ->get(route('accountant.expenses.index'));
+            ->get(route('staff.accountant.expenses.index'));
 
         $response->assertStatus(403);
     }
@@ -88,7 +88,7 @@ class AccountantDashboardTest extends TestCase
     public function accountant_can_access_receipts_index()
     {
         $response = $this->actingAs($this->accountant, 'staff')
-            ->get(route('accountant.receipts.index'));
+            ->get(route('staff.accountant.receipts.index'));
 
         $response->assertStatus(200);
     }
@@ -97,7 +97,7 @@ class AccountantDashboardTest extends TestCase
     public function non_accountant_cannot_access_receipts_index()
     {
         $response = $this->actingAs($this->dos, 'staff')
-            ->get(route('accountant.receipts.index'));
+            ->get(route('staff.accountant.receipts.index'));
 
         $response->assertStatus(403);
     }
@@ -106,7 +106,7 @@ class AccountantDashboardTest extends TestCase
     public function accountant_can_access_chart_data_endpoint()
     {
         $response = $this->actingAs($this->accountant, 'staff')
-            ->get(route('accountant.chart-data'));
+            ->get(route('staff.accountant.chart-data'));
 
         $response->assertStatus(200);
         $response->assertJsonStructure([
@@ -122,7 +122,7 @@ class AccountantDashboardTest extends TestCase
     public function accountant_can_access_kpi_data_endpoint()
     {
         $response = $this->actingAs($this->accountant, 'staff')
-            ->get(route('accountant.kpi-data'));
+            ->get(route('staff.accountant.kpi-data'));
 
         $response->assertStatus(200);
         $response->assertJsonStructure([
@@ -142,14 +142,34 @@ class AccountantDashboardTest extends TestCase
     {
         // Admin role should also have access
         $admin = Staff::factory()->create([
-            'role' => 'DOS', // Using DOS as admin-like role
+            'role' => 'Admin',
             'email' => 'admin_access@test.com',
             'password' => bcrypt('password'),
         ]);
 
         $response = $this->actingAs($admin, 'staff')
-            ->get(route('accountant.dashboard'));
+            ->get(route('staff.accountant.dashboard'));
 
         $response->assertStatus(200);
+    }
+
+    /** @test */
+    public function accountant_dashboard_links_to_staff_accounting_reports()
+    {
+        $response = $this->actingAs($this->accountant, 'staff')
+            ->get(route('staff.accountant.dashboard'));
+
+        $response->assertOk()
+            ->assertSee(route('staff.accounting.cashbook'), false)
+            ->assertSee(route('staff.accounting.balance-sheet'), false);
+    }
+
+    /** @test */
+    public function accountant_can_access_cashbook_report()
+    {
+        $response = $this->actingAs($this->accountant, 'staff')
+            ->get(route('staff.accounting.cashbook'));
+
+        $response->assertOk();
     }
 }
