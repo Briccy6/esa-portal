@@ -7,7 +7,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>DOS Dashboard - ESA System</title>
+<title>@yield('title', 'DOS Dashboard') - ESA System</title>
 
 <!-- Bootstrap CSS -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
@@ -506,8 +506,9 @@
   }
 
 </style>
+@include('dos.design-system')
 </head>
-<body>
+<body class="dos-dashboard">
 @php
     $user = Auth::guard('staff')->user();
 
@@ -525,7 +526,7 @@
 <!-- Sidebar overlay for small screens -->
 <div id="sidebar-overlay" onclick="toggleSidebar(false)"></div>
 
-<div class="d-flex">
+<div class="d-flex dos-app-shell">
   <!-- Sidebar -->
   <nav id="sidebar" class="d-flex flex-column">
     <!-- Toggle Button -->
@@ -578,13 +579,6 @@
           <a href="{{ route('staff.lessons.index') }}" class="nav-link text-white d-flex align-items-center gap-2">
             <i class="nav-icon bi bi-list-ul"></i>
             <span class="nav-text">Manage Lessons</span>
-          </a>
-        </li>
-        
-        <li class="nav-item">
-          <a href="{{ route('staff.lesson-units.index') }}" class="nav-link text-white d-flex align-items-center gap-2">
-            <i class="nav-icon bi bi-diagram-3-fill"></i>
-            <span class="nav-text">Manage Units</span>
           </a>
         </li>
         
@@ -707,7 +701,7 @@
           <i class="bi bi-list fs-3"></i>
         </button>
         <div class="topbar-title">
-          DOS Dashboard
+          @yield('title', 'DOS Dashboard')
         </div>
       </div>
 
