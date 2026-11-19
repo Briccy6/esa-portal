@@ -1,4 +1,4 @@
-@extends('accountant.layout')
+@extends('staff.partials.sidebar_sec')
 
 @section('title', 'Receipt Details')
 
