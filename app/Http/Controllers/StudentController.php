@@ -2654,7 +2654,10 @@ class StudentController extends Controller
         $actorName = $actor->name ?? $actor->email ?? 'system';
 
         if (StudentCard::where('student_id', $student->id)->exists()) {
-            return back()->with('error', 'Student card already exists for this student.');
+            return response()->json([
+                'success' => false,
+                'message' => 'Student card already exists for this student.'
+            ]);
         }
 
         $studentCardPaid = StudentTransaction::where('student_id', $student->id)
@@ -2663,7 +2666,10 @@ class StudentController extends Controller
             ->exists();
 
         if (!$studentCardPaid) {
-            return back()->with('error', 'Student must pay the Student Card fee (2,000 RWF) before generating an ID card.');
+            return response()->json([
+                'success' => false,
+                'message' => 'Student must pay the Student Card fee (2,000 RWF) before generating an ID card.'
+            ]);
         }
 
         $passportPhotoBase64 = null;
@@ -2711,7 +2717,10 @@ class StudentController extends Controller
                 'student_id' => $student->id,
                 'error'      => $e->getMessage(),
             ]);
-            return back()->with('error', 'Failed to generate QR code: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to generate QR code: ' . $e->getMessage()
+            ]);
         }
 
         StudentCard::create([
@@ -2752,7 +2761,10 @@ class StudentController extends Controller
             }
         }
 
-        return back()->with('success', 'Student card generated successfully.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Student card generated successfully and sent to email.'
+        ]);
     }
 
     public function listStudentCards()
