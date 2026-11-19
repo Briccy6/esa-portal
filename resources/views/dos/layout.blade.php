@@ -590,7 +590,6 @@
   }
 
 </style>
-@include('dos.design-system')
 </head>
 <body class="dos-dashboard">
 
