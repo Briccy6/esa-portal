@@ -127,7 +127,7 @@ class AccountantDashboardController extends Controller
      */
     public function receiptShow($transactionId)
     {
-        $transaction = \App\Models\StudentTransaction::with(['student', 'student.course', 'student.branch', 'courseTermFee', 'courseTermFee.term'])
+        $transaction = \App\Models\StudentTransaction::with(['student', 'student.course', 'student.branch', 'term'])
             ->findOrFail($transactionId);
 
         return view('accountant.receipts.show', compact('transaction'));
@@ -138,7 +138,7 @@ class AccountantDashboardController extends Controller
      */
     public function receiptPrint($transactionId)
     {
-        $transaction = \App\Models\StudentTransaction::with(['student', 'student.course', 'student.branch', 'courseTermFee', 'courseTermFee.term'])
+        $transaction = \App\Models\StudentTransaction::with(['student', 'student.course', 'student.branch', 'term'])
             ->findOrFail($transactionId);
 
         $pdf = \PDF::loadView('accountant.receipts.print', compact('transaction'))
