@@ -713,6 +713,8 @@ Route::prefix('staff')->name('staff.')->group(function () {
             Route::get('/chart-data', [AccountantDashboardController::class, 'chartData'])->name('chart-data');
             Route::get('/kpi-data', [AccountantDashboardController::class, 'kpiData'])->name('kpi-data');
             Route::get('/expenses', [ExpenseController::class, 'index'])->name('expenses.index');
+            Route::get('/expenses/create', [ExpenseController::class, 'create'])->name('expenses.create');
+            Route::post('/expenses', [ExpenseController::class, 'store'])->name('expenses.store');
             Route::get('/expenses/{expense}', [ExpenseController::class, 'show'])->name('expenses.show');
             Route::get('/expenses/{expense}/edit', [ExpenseController::class, 'edit'])->name('expenses.edit');
             Route::put('/expenses/{expense}', [ExpenseController::class, 'update'])->name('expenses.update');
@@ -1709,7 +1711,6 @@ Route::get('/staff/one-time-login/{staff}', [StaffController::class, 'oneTimeLog
     ->name('staff.one_time_login')
     ->middleware('signed');
 
-Route::post('/expenses', [ExpenseController::class, 'store'])->name('expenses.store');
 Route::post('/timetable/generate-ai', [TimetableController::class, 'generateWithAI'])->name('timetable.generate.ai');
 
 Route::get('/staff/google-meet', function () {
