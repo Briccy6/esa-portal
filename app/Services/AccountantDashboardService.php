@@ -252,9 +252,12 @@ class AccountantDashboardService
                 ->limit($limit)
                 ->get()
                 ->map(function ($expense) {
+                    $expenseDate = is_string($expense->expense_date) 
+                        ? Carbon::parse($expense->expense_date) 
+                        : $expense->expense_date;
                     return [
                         'id' => $expense->id,
-                        'date' => $expense->expense_date->format('M d, Y'),
+                        'date' => $expenseDate->format('M d, Y'),
                         'type' => $expense->expense_type,
                         'amount' => $expense->amount,
                         'description' => $expense->description,
