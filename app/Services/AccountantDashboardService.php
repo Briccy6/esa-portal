@@ -56,12 +56,22 @@ class AccountantDashboardService
             $transactionQuery = $this->getTransactionQuery();
             $expenseQuery = $this->getExpenseQuery();
 
-            $totalStudents = $studentQuery->count();
+            // Get students with their courses in a single query
+            $students = $studentQuery->with(['course:id,course_name,registration_fee,tuition_fee,practical_fee,trip_fee,student_card_fee'])
+                ->get();
+
+            $totalStudents = $students->count();
             
-            // Get total expected fees
-            $totalExpected = $this->calculateTotalExpectedFees($studentQuery);
+            // Calculate total expected fees from loaded students (no additional queries)
+            $totalExpected = $students->sum(function ($student) {
+                return ($student->course->registration_fee ?? 0) 
+                    + ($student->course->tuition_fee ?? 0)
+                    + ($student->course->practical_fee ?? 0)
+                    + ($student->course->trip_fee ?? 0)
+                    + ($student->course->student_card_fee ?? 0);
+            });
             
-            // Get total collected
+            // Get total collected - use single query
             $totalCollected = $transactionQuery->where('status', 'successful')
                 ->orWhere('status', 'paid')
                 ->sum('amount');
@@ -78,19 +88,49 @@ class AccountantDashboardService
             // Net balance
             $netBalance = $totalCollected - $totalExpenses;
             
-            // Payments today
-            $paymentsToday = $transactionQuery
+            // Payments today - use single query
+            $paymentsToday = StudentTransaction::whereIn('status', ['successful', 'paid'])
                 ->whereDate('created_at', Carbon::today())
-                ->where(function($q) {
-                    $q->where('status', 'successful')->orWhere('status', 'paid');
-                })
+                ->when($this->academicYearId, fn($q) => $q->whereHas('student', fn($s) => $s->where('academic_year_id', $this->academicYearId)))
+                ->when($this->branchId, fn($q) => $q->whereHas('student', fn($s) => $s->where('branch_id', $this->branchId)))
                 ->sum('amount');
             
-            // Students with arrears
-            $studentsWithArrears = $this->getStudentsWithArrears($studentQuery);
+            // Students with arrears - use single aggregation query
+            $studentIds = $students->pluck('id');
+            $paidAmounts = StudentTransaction::whereIn('student_id', $studentIds)
+                ->whereIn('status', ['successful', 'paid'])
+                ->selectRaw('student_id, SUM(amount) as total_paid')
+                ->groupBy('student_id')
+                ->pluck('total_paid', 'student_id')
+                ->toArray();
+            
+            $studentsWithArrears = 0;
+            foreach ($students as $student) {
+                $expected = ($student->course->registration_fee ?? 0) 
+                    + ($student->course->tuition_fee ?? 0)
+                    + ($student->course->practical_fee ?? 0)
+                    + ($student->course->trip_fee ?? 0)
+                    + ($student->course->student_card_fee ?? 0);
+                $paid = $paidAmounts[$student->id] ?? 0;
+                if ($paid < $expected) {
+                    $studentsWithArrears++;
+                }
+            }
 
-            // Previous period data for trends
-            $previousPeriodData = $this->getPreviousPeriodData();
+            // Previous period data for trends - use single query
+            $previousStart = $this->startDate ? $this->startDate->copy()->subMonth() : Carbon::now()->subMonth();
+            $previousEnd = $this->endDate ? $this->endDate->copy()->subMonth() : Carbon::now();
+            
+            $previousCollected = StudentTransaction::whereIn('status', ['successful', 'paid'])
+                ->whereBetween('created_at', [$previousStart, $previousEnd])
+                ->when($this->academicYearId, fn($q) => $q->whereHas('student', fn($s) => $s->where('academic_year_id', $this->academicYearId)))
+                ->when($this->branchId, fn($q) => $q->whereHas('student', fn($s) => $s->where('branch_id', $this->branchId)))
+                ->sum('amount');
+            
+            $previousExpenses = Expense::whereBetween('expense_date', [$previousStart, $previousEnd])
+                ->when($this->staffId, fn($q) => $q->where('paid_by', $this->staffId))
+                ->when($this->termId, fn($q) => $q->where('term_id', $this->termId))
+                ->sum('amount');
 
             return [
                 'total_fees_expected' => $totalExpected,
@@ -102,7 +142,10 @@ class AccountantDashboardService
                 'payments_today' => $paymentsToday,
                 'students_with_arrears' => $studentsWithArrears,
                 'total_students' => $totalStudents,
-                'previous_period' => $previousPeriodData,
+                'previous_period' => [
+                    'fees_collected' => $previousCollected,
+                    'expenses' => $previousExpenses,
+                ],
             ];
         });
     }
@@ -130,7 +173,7 @@ class AccountantDashboardService
     {
         return Cache::remember($this->getCacheKey('recent_payments'), 300, function () use ($limit) {
             return $this->getTransactionQuery()
-                ->with(['student', 'student.course', 'student.branch'])
+                ->with(['student:id,full_name,reg_number', 'student.course:id,course_name', 'student.branch:id,name'])
                 ->where(function($q) {
                     $q->where('status', 'successful')->orWhere('status', 'paid');
                 })
@@ -138,6 +181,7 @@ class AccountantDashboardService
                 ->limit($limit)
                 ->get()
                 ->map(function ($transaction) {
+                    $meta = is_array($transaction->meta) ? $transaction->meta : json_decode($transaction->meta, true);
                     return [
                         'id' => $transaction->id,
                         'student_name' => $transaction->student->full_name ?? 'Unknown',
@@ -145,7 +189,7 @@ class AccountantDashboardService
                         'course' => $transaction->student->course->course_name ?? 'N/A',
                         'amount' => $transaction->amount,
                         'date' => $transaction->created_at->format('M d, Y H:i'),
-                        'method' => $this->getPaymentMethod($transaction),
+                        'method' => $meta['method'] ?? 'Unknown',
                         'status' => $transaction->status,
                     ];
                 });
@@ -160,30 +204,39 @@ class AccountantDashboardService
         return Cache::remember($this->getCacheKey('outstanding'), 300, function () use ($limit) {
             $studentQuery = $this->getStudentQuery();
             
-            return $studentQuery
-                ->with(['course', 'branch'])
-                ->get()
-                ->map(function ($student) {
-                    $paid = StudentTransaction::where('student_id', $student->id)
-                        ->where(function($q) {
-                            $q->where('status', 'successful')->orWhere('status', 'paid');
-                        })
-                        ->sum('amount');
-                    
-                    $expected = $this->getStudentExpectedFees($student);
-                    $outstanding = max(0, $expected - $paid);
-                    
-                    return [
-                        'student' => $student,
-                        'paid' => $paid,
-                        'expected' => $expected,
-                        'outstanding' => $outstanding,
-                    ];
-                })
-                ->filter(fn($item) => $item['outstanding'] > 0)
-                ->sortByDesc('outstanding')
-                ->take($limit)
-                ->values();
+            // Get students with courses in single query
+            $students = $studentQuery->with(['course:id,course_name,registration_fee,tuition_fee,practical_fee,trip_fee,student_card_fee', 'branch:id,name'])
+                ->get();
+            
+            // Get all payments in single query with aggregation
+            $studentIds = $students->pluck('id');
+            $paidAmounts = StudentTransaction::whereIn('student_id', $studentIds)
+                ->whereIn('status', ['successful', 'paid'])
+                ->selectRaw('student_id, SUM(amount) as total_paid')
+                ->groupBy('student_id')
+                ->pluck('total_paid', 'student_id')
+                ->toArray();
+            
+            return $students->map(function ($student) use ($paidAmounts) {
+                $paid = $paidAmounts[$student->id] ?? 0;
+                $expected = ($student->course->registration_fee ?? 0) 
+                    + ($student->course->tuition_fee ?? 0)
+                    + ($student->course->practical_fee ?? 0)
+                    + ($student->course->trip_fee ?? 0)
+                    + ($student->course->student_card_fee ?? 0);
+                $outstanding = max(0, $expected - $paid);
+                
+                return [
+                    'student' => $student,
+                    'paid' => $paid,
+                    'expected' => $expected,
+                    'outstanding' => $outstanding,
+                ];
+            })
+            ->filter(fn($item) => $item['outstanding'] > 0)
+            ->sortByDesc('outstanding')
+            ->take($limit)
+            ->values();
         });
     }
 
@@ -194,7 +247,7 @@ class AccountantDashboardService
     {
         return Cache::remember($this->getCacheKey('recent_expenses'), 300, function () use ($limit) {
             return $this->getExpenseQuery()
-                ->with(['paid_by_staff', 'term'])
+                ->with(['paid_by_staff:id,name', 'term:id,name,academicYear:id,year'])
                 ->orderBy('expense_date', 'desc')
                 ->limit($limit)
                 ->get()
@@ -289,256 +342,5 @@ class AccountantDashboardService
         }
 
         return $query;
-    }
-
-    /**
-     * Calculate total expected fees for students
-     */
-    protected function calculateTotalExpectedFees($studentQuery)
-    {
-        $total = 0;
-        $students = $studentQuery->with(['course'])->get();
-        
-        foreach ($students as $student) {
-            $total += $this->getStudentExpectedFees($student);
-        }
-        
-        return $total;
-    }
-
-    /**
-     * Get expected fees for a single student
-     */
-    protected function getStudentExpectedFees($student)
-    {
-        $expected = 0;
-        
-        if ($student->course) {
-            $expected += $student->course->registration_fee ?? 0;
-            $expected += $student->course->tuition_fee ?? 0;
-            $expected += $student->course->practical_fee ?? 0;
-            $expected += $student->course->trip_fee ?? 0;
-            $expected += $student->course->student_card_fee ?? 0;
-        }
-        
-        return $expected;
-    }
-
-    /**
-     * Get students with arrears
-     */
-    protected function getStudentsWithArrears($studentQuery)
-    {
-        $count = 0;
-        $students = $studentQuery->get();
-        
-        foreach ($students as $student) {
-            $paid = StudentTransaction::where('student_id', $student->id)
-                ->where(function($q) {
-                    $q->where('status', 'successful')->orWhere('status', 'paid');
-                })
-                ->sum('amount');
-            
-            $expected = $this->getStudentExpectedFees($student);
-            
-            if ($paid < $expected) {
-                $count++;
-            }
-        }
-        
-        return $count;
-    }
-
-    /**
-     * Get previous period data for trend calculation
-     */
-    protected function getPreviousPeriodData()
-    {
-        $previousStart = $this->startDate ? $this->startDate->copy()->subMonth() : Carbon::now()->subMonth();
-        $previousEnd = $this->endDate ? $this->endDate->copy()->subMonth() : Carbon::now();
-        
-        $previousCollected = StudentTransaction::whereBetween('created_at', [$previousStart, $previousEnd])
-            ->where(function($q) {
-                $q->where('status', 'successful')->orWhere('status', 'paid');
-            })
-            ->sum('amount');
-        
-        $previousExpenses = Expense::whereBetween('expense_date', [$previousStart, $previousEnd])
-            ->sum('amount');
-        
-        return [
-            'fees_collected' => $previousCollected,
-            'expenses' => $previousExpenses,
-        ];
-    }
-
-    /**
-     * Get fees vs expenses by month
-     */
-    protected function getFeesVsExpensesByMonth()
-    {
-        $months = [];
-        $startDate = $this->startDate ?? Carbon::now()->subMonths(11);
-        $endDate = $this->endDate ?? Carbon::now();
-        
-        for ($i = 0; $i < 12; $i++) {
-            $monthStart = $startDate->copy()->addMonths($i)->startOfMonth();
-            $monthEnd = $startDate->copy()->addMonths($i)->endOfMonth();
-            
-            if ($monthStart > $endDate) break;
-            
-            $fees = StudentTransaction::whereBetween('created_at', [$monthStart, $monthEnd])
-                ->where(function($q) {
-                    $q->where('status', 'successful')->orWhere('status', 'paid');
-                })
-                ->sum('amount');
-            
-            $expenses = Expense::whereBetween('expense_date', [$monthStart, $monthEnd])
-                ->sum('amount');
-            
-            $months[] = [
-                'month' => $monthStart->format('M Y'),
-                'fees' => $fees,
-                'expenses' => $expenses,
-            ];
-        }
-        
-        return $months;
-    }
-
-    /**
-     * Get fee status distribution
-     */
-    protected function getFeeStatusDistribution()
-    {
-        $studentQuery = $this->getStudentQuery();
-        $students = $studentQuery->get();
-        
-        $paid = 0;
-        $partial = 0;
-        $unpaid = 0;
-        
-        foreach ($students as $student) {
-            $paidAmount = StudentTransaction::where('student_id', $student->id)
-                ->where(function($q) {
-                    $q->where('status', 'successful')->orWhere('status', 'paid');
-                })
-                ->sum('amount');
-            
-            $expected = $this->getStudentExpectedFees($student);
-            
-            if ($expected <= 0) {
-                continue;
-            }
-            
-            if ($paidAmount >= $expected) {
-                $paid++;
-            } elseif ($paidAmount > 0) {
-                $partial++;
-            } else {
-                $unpaid++;
-            }
-        }
-        
-        return [
-            'paid' => $paid,
-            'partial' => $partial,
-            'unpaid' => $unpaid,
-        ];
-    }
-
-    /**
-     * Get collections by branch
-     */
-    protected function getCollectionsByBranch()
-    {
-        $branches = Branch::all();
-        $data = [];
-        
-        foreach ($branches as $branch) {
-            $query = StudentTransaction::whereHas('student', function($q) use ($branch) {
-                $q->where('branch_id', $branch->id);
-            });
-            
-            if ($this->academicYearId) {
-                $query->whereHas('student', function($q) {
-                    $q->where('academic_year_id', $this->academicYearId);
-                });
-            }
-            
-            if ($this->startDate) {
-                $query->where('created_at', '>=', $this->startDate);
-            }
-            
-            if ($this->endDate) {
-                $query->where('created_at', '<=', $this->endDate);
-            }
-            
-            $total = $query->where(function($q) {
-                $q->where('status', 'successful')->orWhere('status', 'paid');
-            })->sum('amount');
-            
-            $data[] = [
-                'branch' => $branch->name,
-                'amount' => $total,
-            ];
-        }
-        
-        return $data;
-    }
-
-    /**
-     * Get expenses by category
-     */
-    protected function getExpensesByCategory()
-    {
-        $expenses = $this->getExpenseQuery()
-            ->selectRaw('expense_type, SUM(amount) as total')
-            ->groupBy('expense_type')
-            ->orderByDesc('total')
-            ->get();
-        
-        return $expenses->map(function ($expense) {
-            return [
-                'category' => $expense->expense_type,
-                'amount' => $expense->total,
-            ];
-        });
-    }
-
-    /**
-     * Get daily collections for last 30 days
-     */
-    protected function getDailyCollections()
-    {
-        $days = [];
-        $startDate = Carbon::now()->subDays(29)->startOfDay();
-        
-        for ($i = 0; $i < 30; $i++) {
-            $dayStart = $startDate->copy()->addDays($i);
-            $dayEnd = $dayStart->copy()->endOfDay();
-            
-            $total = StudentTransaction::whereBetween('created_at', [$dayStart, $dayEnd])
-                ->where(function($q) {
-                    $q->where('status', 'successful')->orWhere('status', 'paid');
-                })
-                ->sum('amount');
-            
-            $days[] = [
-                'date' => $dayStart->format('M d'),
-                'amount' => $total,
-            ];
-        }
-        
-        return $days;
-    }
-
-    /**
-     * Get payment method from transaction
-     */
-    protected function getPaymentMethod($transaction)
-    {
-        $meta = is_array($transaction->meta) ? $transaction->meta : json_decode($transaction->meta, true);
-        return $meta['method'] ?? 'Unknown';
     }
 }
