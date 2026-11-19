@@ -703,7 +703,9 @@ Route::prefix('staff')->name('staff.')->group(function () {
         Route::post('/students/generate-cards-bulk', [StudentController::class, 'generateCardsBulk'])->name('students.generate_cards_bulk');
         Route::get('/students/qr-scan/{qrData}', [StudentController::class, 'verifyQRCode'])->name('students.qr_scan');
         Route::post('/students/{student}/generate-card', [StudentController::class, 'generateStudentCard'])->name('students.generate_card');
-        Route::get('/dashboard_accountant', [StaffAuthController::class, 'dashboard'])->name('dashboard.accountant');
+        Route::get('/dashboard_accountant', function() {
+            return redirect()->route('accountant.dashboard');
+        })->name('dashboard.accountant');
         
         // Accountant Dashboard Routes (new)
         Route::middleware(['role:accountant,admin'])->prefix('accountant')->name('accountant.')->group(function () {
