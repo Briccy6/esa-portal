@@ -33,13 +33,13 @@
                         <input type="number" name="amount" class="form-control" value="{{ $expense->amount }}" min="1" step="0.01" required>
                     </div>
                     <div class="col-md-6 mb-3">
-                        <label class="form-label">Payment Method</label>
+                        <label class="form-label">Payment Method *</label>
                         <select name="payment_method" class="form-select" required>
-                            <option value="cash" {{ $expense->payment_method === 'cash' ? 'selected' : '' }}>Cash</option>
-                            <option value="bank" {{ $expense->payment_method === 'bank' ? 'selected' : '' }}>Bank</option>
-                            <option value="mobile_money" {{ $expense->payment_method === 'mobile_money' ? 'selected' : '' }}>Mobile Money</option>
-                            <option value="cheque" {{ $expense->payment_method === 'cheque' ? 'selected' : '' }}>Cheque</option>
-                            <option value="other" {{ $expense->payment_method === 'other' ? 'selected' : '' }}>Other</option>
+                            <option value="">Select Method</option>
+                            <option value="Cash" {{ $expense->payment_method === 'Cash' ? 'selected' : '' }}>Cash</option>
+                            <option value="Bank Transfer" {{ $expense->payment_method === 'Bank Transfer' ? 'selected' : '' }}>Bank Transfer</option>
+                            <option value="Mobile Money" {{ $expense->payment_method === 'Mobile Money' ? 'selected' : '' }}>Mobile Money</option>
+                            <option value="Check" {{ $expense->payment_method === 'Check' ? 'selected' : '' }}>Check</option>
                         </select>
                     </div>
                     <div class="col-12 mb-3">

@@ -271,16 +271,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Expense Chart
     const expenseCtx = document.getElementById('expenseChart').getContext('2d');
-    @php
-        $expenseLabels = collect($chartData['expenses_by_category'] ?? [])->pluck('category')->toArray();
-        $expenseAmounts = collect($chartData['expenses_by_category'] ?? [])->pluck('amount')->toArray();
-    @endphp
     new Chart(expenseCtx, {
         type: 'doughnut',
         data: {
-            labels: {{ json_encode($expenseLabels) }},
+            labels: {{ json_encode($chartData['expenses_by_category']['labels'] ?? []) }},
             datasets: [{
-                data: {{ json_encode($expenseAmounts) }},
+                data: {{ json_encode($chartData['expenses_by_category']['amounts'] ?? []) }},
                 backgroundColor: ['#1d4ed8', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
             }]
         },

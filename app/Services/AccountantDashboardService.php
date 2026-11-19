@@ -545,12 +545,10 @@ class AccountantDashboardService
             ->orderByDesc('total')
             ->get();
 
-        return $expenses->map(function ($expense) {
-            return [
-                'category' => $expense->expense_type,
-                'amount' => $expense->total,
-            ];
-        });
+        return [
+            'labels' => $expenses->pluck('expense_type')->toArray(),
+            'amounts' => $expenses->pluck('total')->toArray(),
+        ];
     }
 
     /**
@@ -582,6 +580,9 @@ class AccountantDashboardService
             ];
         }
 
-        return $days;
+        return [
+            'labels' => collect($days)->pluck('date')->toArray(),
+            'amounts' => collect($days)->pluck('amount')->toArray(),
+        ];
     }
 }
