@@ -10,11 +10,6 @@ class AccountantDashboardController extends Controller
 {
     protected $service;
 
-    public function __construct()
-    {
-        $this->middleware('auth:staff');
-    }
-
     /**
      * Display the accountant dashboard
      */
