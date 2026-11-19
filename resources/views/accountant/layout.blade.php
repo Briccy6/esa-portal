@@ -1,5 +1,5 @@
 @php
-    $systemName = \Illuminate\Support\Facades\Cache::get('esa_system_name', 'ESA-Parnel');
+    $systemName = \Illuminate\Support\Facades\Cache::get('esa_system_name', 'ESA-Panel');
     $systemLogo = \App\Helpers\LogoHelper::getSystemLogo();
     $user = Auth::guard('staff')->user();
     
@@ -26,7 +26,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
     
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -37,20 +37,28 @@
     
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
     <style>
         :root {
             --sidebar-width: 280px;
             --sidebar-collapsed: 70px;
-            --primary-green: #2c3e50;
-            --secondary-green: #27ae60;
-            --accent-green: #3498db;
-            --success-green: #27ae60;
-            --warning-orange: #f39c12;
-            --danger-red: #e74c3c;
-            --text-light: #ecf0f1;
-            --text-muted: #bdc3c7;
-            --shadow: 0 2px 15px rgba(0,0,0,0.1);
+            --primary-blue: #1d4ed8;
+            --secondary-blue: #2563eb;
+            --accent-blue: #3b82f6;
+            --success-green: #10b981;
+            --warning-orange: #f59e0b;
+            --danger-red: #ef4444;
+            --text-light: #ffffff;
+            --text-muted: #94a3b8;
+            --text-dark: #1e293b;
+            --bg-light: #f4f7fe;
+            --bg-white: #ffffff;
+            --shadow: 0 2px 15px rgba(0,0,0,0.08);
+            --shadow-lg: 0 10px 40px rgba(0,0,0,0.12);
+            --radius: 16px;
         }
 
         * {
@@ -60,9 +68,9 @@
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: #f4f7fa;
-            color: #2c3e50;
+            font-family: 'Poppins', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-light);
+            color: var(--text-dark);
             overflow-x: hidden;
         }
 
@@ -73,12 +81,12 @@
             left: 0;
             width: var(--sidebar-width);
             height: 100vh;
-            background: linear-gradient(135deg, var(--primary-green) 0%, var(--secondary-green) 100%);
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-blue) 100%);
             color: white;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 1050;
             overflow: hidden;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            box-shadow: var(--shadow-lg);
         }
 
         .sidebar.collapsed {
@@ -159,6 +167,21 @@
             background: rgba(255,255,255,0.5);
         }
 
+        /* Navigation Section Title */
+        .nav-section-title {
+            padding: 0.75rem 1.5rem 0.25rem;
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: rgba(255,255,255,0.5);
+        }
+
+        .sidebar.collapsed .nav-section-title {
+            opacity: 0;
+            transform: translateX(-20px);
+        }
+
         /* Navigation Items */
         .nav-item {
             margin: 0.25rem 0.75rem;
@@ -210,13 +233,13 @@
         .nav-link.active::after {
             content: '';
             position: absolute;
-            right: 0;
+            left: 0;
             top: 50%;
             transform: translateY(-50%);
             width: 4px;
             height: 24px;
             background: white;
-            border-radius: 2px 0 0 2px;
+            border-radius: 0 2px 2px 0;
         }
 
         .nav-icon {
@@ -612,6 +635,150 @@
             from { transform: translateX(-20px); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
         }
+
+        /* Mobile Responsive Fixes */
+        @media (max-width: 768px) {
+            /* Prevent horizontal scroll */
+            html, body {
+                overflow-x: hidden !important;
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+
+            /* Tables - make them scrollable horizontally */
+            .table-responsive {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                width: 100%;
+            }
+
+            /* Card containers */
+            .card {
+                margin-bottom: 1rem;
+                border-radius: 0.5rem;
+            }
+
+            .card-body {
+                overflow: hidden;
+                word-wrap: break-word;
+            }
+
+            /* Fix modal width on mobile */
+            .modal-dialog {
+                margin: 0.5rem;
+                max-width: calc(100% - 1rem);
+            }
+
+            .modal-content {
+                border-radius: 0.5rem;
+            }
+
+            /* Button sizing */
+            .btn {
+                white-space: normal;
+                word-wrap: break-word;
+                width: 100%;
+                margin-bottom: 0.5rem;
+            }
+
+            .btn-group .btn {
+                width: auto;
+            }
+
+            .btn-sm {
+                font-size: 0.8rem;
+                padding: 0.375rem 0.75rem;
+            }
+
+            /* Form controls */
+            .form-control,
+            .form-select {
+                font-size: 16px; /* Prevent iOS zoom */
+            }
+
+            /* Badge sizing */
+            .badge {
+                font-size: 0.75rem;
+                white-space: normal;
+                word-wrap: break-word;
+            }
+
+            /* Table text */
+            table {
+                font-size: 0.875rem;
+            }
+
+            th, td {
+                padding: 0.5rem;
+                word-wrap: break-word;
+                white-space: normal;
+                min-width: 60px;
+            }
+
+            /* Sidebar adjustments */
+            .sidebar {
+                position: fixed;
+                z-index: 1040;
+                height: 100vh;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease-in-out;
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            /* Main content padding on mobile */
+            .main-content {
+                padding: 1rem;
+            }
+
+            /* Dashboard cards */
+            .stats-card {
+                margin-bottom: 1rem;
+            }
+
+            /* Action buttons in tables */
+            .table .btn {
+                margin: 0.25rem 0;
+                display: inline-block;
+            }
+        }
+
+        @media (max-width: 480px) {
+            /* Extra small mobile */
+            .card-body {
+                padding: 0.75rem;
+            }
+
+            .modal-body {
+                padding: 1rem;
+            }
+
+            .modal-footer {
+                flex-direction: column;
+            }
+
+            .modal-footer .btn {
+                width: 100%;
+            }
+
+            /* Collapse table columns on very small screens */
+            .table-responsive {
+                font-size: 0.75rem;
+            }
+        }
+
+        /* Ensure images don't overflow */
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* Prevent text selection issues */
+        * {
+            -webkit-tap-highlight-color: transparent;
+        }
     </style>
 </head>
 <body>
@@ -640,70 +807,52 @@
         <!-- Sidebar Navigation -->
         <div class="sidebar-nav">
             <ul class="nav nav-pills flex-column gap-1">
+                <!-- FINANCE Section -->
+                <li class="nav-section-title">FINANCE</li>
+                
                 <li class="nav-item">
-                    <a href="{{ route('staff.dashboard') }}" class="nav-link {{ request()->routeIs('staff.dashboard') ? 'active' : '' }}">
-                        <i class="nav-icon fas fa-tachometer-alt"></i>
+                    <a href="{{ route('accountant.dashboard') }}" class="nav-link {{ request()->routeIs('accountant.dashboard') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-chart-line"></i>
                         <span class="nav-text">Dashboard</span>
                     </a>
                 </li>
 
                 <li class="nav-item">
-                    <a href="{{ route('staff.profile') }}" class="nav-link {{ request()->routeIs('staff.profile') ? 'active' : '' }}">
-                        <i class="nav-icon fas fa-user"></i>
-                        <span class="nav-text">Profile</span>
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a href="{{ route('staff.students.index') }}" class="nav-link {{ request()->routeIs('staff.students.*') ? 'active' : '' }}">
-                        <i class="nav-icon fas fa-user-graduate"></i>
-                        <span class="nav-text">Students</span>
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a href="{{ route('staff.course_fees') }}" class="nav-link {{ request()->routeIs('staff.course_fees') ? 'active' : '' }}">
+                    <a href="{{ route('accountant.payment-schedule.index') }}" class="nav-link {{ request()->routeIs('accountant.payment-schedule.*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-money-bill-wave"></i>
-                        <span class="nav-text">Course Fees</span>
+                        <span class="nav-text">School Fees</span>
                     </a>
                 </li>
 
                 <li class="nav-item">
-                    <a href="{{ route('staff.lessons.index') }}" class="nav-link {{ request()->routeIs('staff.lessons.*') ? 'active' : '' }}">
-                        <i class="nav-icon fas fa-book"></i>
-                        <span class="nav-text">Lessons</span>
+                    <button type="button" class="nav-link w-100 text-start" data-bs-toggle="modal" data-bs-target="#addExpenseModal">
+                        <i class="nav-icon fas fa-plus-circle"></i>
+                        <span class="nav-text">Add Expense</span>
+                    </button>
+                </li>
+
+                <li class="nav-item">
+                    <a href="{{ route('accountant.expenses.index') }}" class="nav-link {{ request()->routeIs('accountant.expenses.*') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-receipt"></i>
+                        <span class="nav-text">Expenses</span>
                     </a>
                 </li>
 
                 <li class="nav-item">
-                    <a href="{{ route('staff.subscriptions.index') }}" class="nav-link {{ request()->routeIs('staff.subscriptions.*') ? 'active' : '' }}">
-                        <i class="nav-icon fas fa-coins"></i>
-                        <span class="nav-text">Subscriptions</span>
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a href="{{ route('to-whom.index') }}" class="nav-link {{ request()->routeIs('to-whom.*') ? 'active' : '' }}">
-                        <i class="nav-icon fas fa-file-alt"></i>
-                        <span class="nav-text">Professional Letters</span>
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a href="{{ route('babyeyi.index') }}" class="nav-link {{ request()->routeIs('babyeyi.*') ? 'active' : '' }}">
-                        <i class="nav-icon fas fa-file-contract"></i>
-                        <span class="nav-text">Babyeyi Documents</span>
+                    <a href="{{ route('accountant.receipts.index') }}" class="nav-link {{ request()->routeIs('accountant.receipts.*') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-file-invoice"></i>
+                        <span class="nav-text">Receipts</span>
                     </a>
                 </li>
 
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="accountingDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="nav-icon fas fa-calculator"></i>
-                        <span class="nav-text">Accounting</span>
+                    <a class="nav-link dropdown-toggle" href="#" id="reportsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="nav-icon fas fa-chart-bar"></i>
+                        <span class="nav-text">Reports</span>
                     </a>
-                    <ul class="dropdown-menu" aria-labelledby="accountingDropdown">
+                    <ul class="dropdown-menu" aria-labelledby="reportsDropdown">
                         <li>
-                            <a class="dropdown-item {{ request()->routeIs('accounting.cash-book') ? 'active' : '' }}" href="{{ route('accounting.cash-book') }}">
+                            <a class="dropdown-item {{ request()->routeIs('accounting.cashbook') ? 'active' : '' }}" href="{{ route('accounting.cashbook') }}">
                                 <i class="fas fa-money-check-alt"></i> Cash Book
                             </a>
                         </li>
@@ -722,12 +871,24 @@
                                 <i class="fas fa-list-ol"></i> Trial Balance
                             </a>
                         </li>
-                        <li>
-                            <a class="dropdown-item {{ request()->routeIs('accounting.general-ledger') ? 'active' : '' }}" href="{{ route('accounting.general-ledger') }}">
-                                <i class="fas fa-book-open"></i> General Ledger
-                            </a>
-                        </li>
                     </ul>
+                </li>
+
+                <!-- OTHER Section -->
+                <li class="nav-section-title">OTHER</li>
+
+                <li class="nav-item">
+                    <a href="{{ route('students.index') }}" class="nav-link {{ request()->routeIs('students.index') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-user-graduate"></i>
+                        <span class="nav-text">Students</span>
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a href="{{ route('staff.profile') }}" class="nav-link {{ request()->routeIs('staff.profile') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-user"></i>
+                        <span class="nav-text">Profile</span>
+                    </a>
                 </li>
 
                 <li class="nav-item nav-logout">
@@ -758,27 +919,41 @@
                 </div>
             </div>
 
-            <div class="time-display" id="kigali-time">
-                Loading time...
-            </div>
+            <div class="d-flex align-items-center gap-3">
+                <!-- Academic Year Selector -->
+                @include('partials.academic-year-switcher', [
+                    'switcherClass' => 'me-2',
+                    'labelClass' => 'text-muted small me-2',
+                    'selectClass' => 'form-select form-select-sm',
+                ])
 
-            <!-- User dropdown -->
-            <div class="user-dropdown position-relative">
-                <button class="user-btn" onclick="toggleUserDropdown()">
-                    <img src="{{ $photoUrl }}"
-                         alt="{{ $user->name }}'s photo"
-                         class="user-avatar">
+                <div class="time-display" id="kigali-time">
+                    Loading time...
+                </div>
 
-                    <span class="user-name">{{ $user->name }}</span>
-                    <i class="fas fa-caret-down"></i>
-                </button>
+                <!-- User dropdown -->
+                <div class="user-dropdown position-relative">
+                    <button class="user-btn" onclick="toggleUserDropdown()">
+                        <img src="{{ $photoUrl }}"
+                             alt="{{ $user->name }}'s photo"
+                             class="user-avatar">
 
-                <div class="user-dropdown-menu" id="userDropdown">
-                    <a href="{{ route('staff.profile') }}" class="dropdown-item">Profile</a>
-                    <form method="POST" action="{{ route('staff.logout') }}">
-                        @csrf
-                        <button type="submit" class="dropdown-item text-danger">Logout</button>
-                    </form>
+                        <span class="user-name">{{ $user->name }}</span>
+                        <i class="fas fa-caret-down"></i>
+                    </button>
+
+                    <div class="user-dropdown-menu" id="userDropdown">
+                        <a href="{{ route('staff.profile') }}" class="dropdown-item">
+                            <i class="fas fa-user me-2"></i>Profile
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <form method="POST" action="{{ route('staff.logout') }}">
+                            @csrf
+                            <button type="submit" class="dropdown-item text-danger">
+                                <i class="fas fa-sign-out-alt me-2"></i>Logout
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </nav>
@@ -830,6 +1005,79 @@
             @yield('content')
         </div>
     </div>
+</div>
+
+<!-- Add Expense Modal -->
+<div class="modal fade" id="addExpenseModal" tabindex="-1" aria-labelledby="addExpenseModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <form method="POST" action="{{ route('expenses.store') }}">
+      @csrf
+      <div class="modal-content">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title" id="addExpenseModalLabel">Add Expense</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="expense_date" class="form-label">Date</label>
+            <input type="date" name="expense_date" id="expense_date" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label for="expense_type" class="form-label">Type</label>
+            <input type="text" name="expense_type" id="expense_type" class="form-control" required placeholder="e.g. Stationery, Utilities">
+          </div>
+          <div class="mb-3">
+            <label for="amount" class="form-label">Amount (RWF)</label>
+            <input type="number" name="amount" id="amount" class="form-control" min="1" step="0.01" required>
+          </div>
+          <div class="mb-3">
+            <label for="description" class="form-label">Description</label>
+            <textarea name="description" id="description" class="form-control" rows="2" required></textarea>
+          </div>
+          <div class="mb-3">
+            <label for="paid_to" class="form-label">Paid To</label>
+            <input type="text" name="paid_to" id="paid_to" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label for="paid_to_contact" class="form-label">Contact Number of Paid To</label>
+            <input type="text" name="paid_to_contact" id="paid_to_contact" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label for="payment_method" class="form-label">Payment Method</label>
+            <select name="payment_method" id="payment_method" class="form-select" required>
+              <option value="" disabled selected>Select method</option>
+              <option value="cash">Cash</option>
+              <option value="bank">Bank</option>
+              <option value="mobile_money">Mobile Money</option>
+              <option value="cheque">Cheque</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="term_id" class="form-label">Academic Term</label>
+            <select name="term_id" id="term_id" class="form-select">
+              <option value="">Select Term (Optional)</option>
+              @php
+                  $terms = \App\Models\Term::with('academicYear')
+                      ->orderBy('start_date', 'desc')
+                      ->get();
+              @endphp
+              @foreach($terms as $term)
+                  <option value="{{ $term->id }}">
+                      {{ $term->name }} - {{ $term->academicYear->year ?? '' }}
+                  </option>
+              @endforeach
+            </select>
+            <small class="form-text text-muted">Select the academic term for this expense (optional)</small>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-danger">Save Expense</button>
+        </div>
+      </div>
+    </form>
+  </div>
 </div>
 
 <script>
@@ -927,6 +1175,46 @@
 
 <!-- Bootstrap JS Bundle (includes Popper) -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Global Modal Cleanup Script -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Fix Bootstrap modal backdrop issue
+    document.addEventListener('hidden.bs.modal', function(event) {
+        // Remove any remaining backdrop elements
+        document.querySelectorAll('.modal-backdrop').forEach(function(backdrop) {
+            backdrop.remove();
+        });
+        // Ensure body styles are restored
+        document.body.classList.remove('modal-open');
+        document.body.style.removeProperty('overflow');
+        document.body.style.removeProperty('padding-right');
+    });
+
+    // Handle all modal close buttons properly
+    document.querySelectorAll('[data-bs-dismiss="modal"]').forEach(function(button) {
+        button.addEventListener('click', function() {
+            const modal = this.closest('.modal');
+            if (modal) {
+                const modalInstance = bootstrap.Modal.getInstance(modal);
+                if (modalInstance) {
+                    modalInstance.hide();
+                }
+            }
+        });
+    });
+
+    // Clean up on page unload
+    window.addEventListener('beforeunload', function() {
+        document.querySelectorAll('.modal-backdrop').forEach(function(backdrop) {
+            backdrop.remove();
+        });
+        document.body.classList.remove('modal-open');
+        document.body.style.removeProperty('overflow');
+        document.body.style.removeProperty('padding-right');
+    });
+});
+</script>
 
 </body>
 </html>

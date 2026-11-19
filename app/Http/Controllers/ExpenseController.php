@@ -10,9 +10,37 @@ class ExpenseController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        //
+        $query = \App\Models\Expense::with(['paid_by_staff', 'term']);
+
+        // Filter by staff if not admin
+        if (!auth()->guard('admin')->check()) {
+            $query->where('paid_by', auth()->guard('staff')->id());
+        }
+
+        // Filter by term
+        if ($request->filled('term_id')) {
+            $query->where('term_id', $request->term_id);
+        }
+
+        // Filter by date range
+        if ($request->filled('start_date')) {
+            $query->where('expense_date', '>=', $request->start_date);
+        }
+        if ($request->filled('end_date')) {
+            $query->where('expense_date', '<=', $request->end_date);
+        }
+
+        // Filter by type
+        if ($request->filled('expense_type')) {
+            $query->where('expense_type', 'like', '%' . $request->expense_type . '%');
+        }
+
+        $expenses = $query->orderBy('expense_date', 'desc')->paginate(20);
+        $terms = \App\Models\Term::with('academicYear')->orderBy('start_date', 'desc')->get();
+
+        return view('accountant.expenses.index', compact('expenses', 'terms'));
     }
 
     /**
@@ -20,7 +48,8 @@ class ExpenseController extends Controller
      */
     public function create()
     {
-        //
+        $terms = \App\Models\Term::with('academicYear')->orderBy('start_date', 'desc')->get();
+        return view('accountant.expenses.create', compact('terms'));
     }
 
     /**
@@ -76,7 +105,14 @@ class ExpenseController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $expense = \App\Models\Expense::with(['paid_by_staff', 'term'])->findOrFail($id);
+        
+        // Check access
+        if (!auth()->guard('admin')->check() && $expense->paid_by !== auth()->guard('staff')->id()) {
+            abort(403);
+        }
+        
+        return view('accountant.expenses.show', compact('expense'));
     }
 
     /**
@@ -84,7 +120,15 @@ class ExpenseController extends Controller
      */
     public function edit(string $id)
     {
-        //
+        $expense = \App\Models\Expense::findOrFail($id);
+        
+        // Check access
+        if (!auth()->guard('admin')->check() && $expense->paid_by !== auth()->guard('staff')->id()) {
+            abort(403);
+        }
+        
+        $terms = \App\Models\Term::with('academicYear')->orderBy('start_date', 'desc')->get();
+        return view('accountant.expenses.edit', compact('expense', 'terms'));
     }
 
     /**
@@ -92,7 +136,36 @@ class ExpenseController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $expense = \App\Models\Expense::findOrFail($id);
+        
+        // Check access
+        if (!auth()->guard('admin')->check() && $expense->paid_by !== auth()->guard('staff')->id()) {
+            abort(403);
+        }
+
+        $request->validate([
+            'expense_date' => 'required|date',
+            'expense_type' => 'required|string|max:255',
+            'amount' => 'required|numeric|min:1',
+            'description' => 'required|string',
+            'paid_to' => 'required|string|max:255',
+            'paid_to_contact' => 'required|string|max:50',
+            'payment_method' => 'required|string|max:50',
+            'term_id' => 'nullable|exists:terms,id',
+        ]);
+
+        $expense->update([
+            'expense_date' => $request->expense_date,
+            'expense_type' => $request->expense_type,
+            'amount' => $request->amount,
+            'description' => $request->description,
+            'paid_to' => $request->paid_to,
+            'paid_to_contact' => $request->paid_to_contact,
+            'payment_method' => $request->payment_method,
+            'term_id' => $request->term_id,
+        ]);
+
+        return redirect()->route('accountant.expenses.index')->with('success', 'Expense updated successfully.');
     }
 
     /**
@@ -100,6 +173,15 @@ class ExpenseController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $expense = \App\Models\Expense::findOrFail($id);
+        
+        // Check access
+        if (!auth()->guard('admin')->check() && $expense->paid_by !== auth()->guard('staff')->id()) {
+            abort(403);
+        }
+
+        $expense->delete();
+
+        return redirect()->route('accountant.expenses.index')->with('success', 'Expense deleted successfully.');
     }
 }

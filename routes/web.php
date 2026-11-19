@@ -54,6 +54,7 @@ use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\ToWhomLetterController;
 use App\Http\Controllers\BabyeyiController;
 use App\Http\Controllers\SecretaryAuthController;
+use App\Http\Controllers\AccountantDashboardController;
 use App\Http\Controllers\ReportCardController;
 use App\Http\Controllers\PublicExamController;
 use App\Http\Controllers\PopulateLessonBranchCourseController;
@@ -704,6 +705,21 @@ Route::prefix('staff')->name('staff.')->group(function () {
         Route::post('/students/{student}/generate-card', [StudentController::class, 'generateStudentCard'])->name('students.generate_card');
         Route::get('/dashboard_accountant', [StaffAuthController::class, 'dashboard'])->name('dashboard.accountant');
         
+        // Accountant Dashboard Routes (new)
+        Route::middleware(['role:accountant,admin'])->prefix('accountant')->name('accountant.')->group(function () {
+            Route::get('/dashboard', [AccountantDashboardController::class, 'index'])->name('dashboard');
+            Route::get('/chart-data', [AccountantDashboardController::class, 'chartData'])->name('chart-data');
+            Route::get('/kpi-data', [AccountantDashboardController::class, 'kpiData'])->name('kpi-data');
+            Route::get('/expenses', [ExpenseController::class, 'index'])->name('expenses.index');
+            Route::get('/expenses/{expense}', [ExpenseController::class, 'show'])->name('expenses.show');
+            Route::get('/expenses/{expense}/edit', [ExpenseController::class, 'edit'])->name('expenses.edit');
+            Route::put('/expenses/{expense}', [ExpenseController::class, 'update'])->name('expenses.update');
+            Route::delete('/expenses/{expense}', [ExpenseController::class, 'destroy'])->name('expenses.destroy');
+            Route::get('/receipts', [AccountantDashboardController::class, 'receipts'])->name('receipts.index');
+            Route::get('/receipts/{transaction}', [AccountantDashboardController::class, 'receiptShow'])->name('receipts.show');
+            Route::get('/receipts/{transaction}/print', [AccountantDashboardController::class, 'receiptPrint'])->name('receipts.print');
+        });
+        
         // Staff Profile
         Route::get('profile', function () {
             $staff = auth()->guard('staff')->user();
@@ -875,6 +891,9 @@ Route::middleware('auth:teacher')->prefix('teacher')->name('teacher.')->group(fu
     Route::get('marks/view', [\App\Http\Controllers\Teacher\MarksController::class, 'viewMarks'])->name('marks.view');
     Route::get('marks/edit/{lessonId}/{testDate}', [\App\Http\Controllers\Teacher\MarksController::class, 'editMarks'])->name('marks.edit');
     Route::put('marks/update/{lessonId}/{testDate}', [\App\Http\Controllers\Teacher\MarksController::class, 'updateMarks'])->name('marks.update');
+    Route::get('marks/download-template', [\App\Http\Controllers\Teacher\MarksController::class, 'downloadTemplate'])->name('marks.download-template');
+    Route::post('marks/upload', [\App\Http\Controllers\Teacher\MarksController::class, 'uploadMarks'])->name('marks.upload');
+    Route::post('marks/confirm-upload', [\App\Http\Controllers\Teacher\MarksController::class, 'confirmUpload'])->name('marks.confirm-upload');
 });
 
 // Teacher marks recording helper: fetch existing marks for a context (to prefill inputs)
@@ -1054,7 +1073,95 @@ Route::middleware('auth:teacher')->get('/api/teacher/branch/{branchId}/courses',
     }
 });
 
-// Teacher marks recording - filtered lessons by branch, course and teacher
+// Teacher marks recording - filtered lessons by branch, multiple courses and teacher
+Route::middleware('auth:teacher')->get('/api/teacher/branch/{branchId}/courses/lessons', function($branchId, \Illuminate\Http\Request $request) {
+    $teacher = auth('teacher')->user();
+    $courseIds = $request->query('course_ids');
+
+    if (!$courseIds || !is_array($courseIds) || empty($courseIds)) {
+        return response()->json([]);
+    }
+
+    try {
+        \Log::info('Teacher lessons API called (multiple courses)', [
+            'teacher_id' => $teacher->id,
+            'branch_id' => $branchId,
+            'course_ids' => $courseIds,
+            'term_id' => $request->query('term_id')
+        ]);
+
+        // Resolve term -> academic year so lessons are limited to the selected term's year
+        $lessonYearId = null;
+        if ($request->filled('term_id')) {
+            $term = \App\Models\Term::find($request->query('term_id'));
+            if ($term) {
+                $lessonYearId = $term->academic_year_id;
+            }
+        }
+        if (!$lessonYearId) {
+            $lessonYearId = \App\Services\AcademicYearContext::selectedId();
+        }
+
+        // Get lessons assigned to this teacher for ALL selected courses in this branch
+        // via lesson_branch_course pivot table
+        $query = \App\Models\LessonBranchCourse::where('teacher_id', $teacher->id)
+            ->where('branch_id', $branchId)
+            ->whereIn('course_id', $courseIds)
+            ->with('lesson');
+
+        if ($lessonYearId) {
+            $query->whereHas('lesson', function ($q) use ($lessonYearId) {
+                $q->where('academic_year_id', $lessonYearId);
+            });
+        }
+
+        // Get lesson IDs and count how many courses each lesson is assigned to
+        $lessonAssignments = $query->get()
+            ->groupBy('lesson_id')
+            ->map(function($items) {
+                return [
+                    'lesson_id' => $items->first()->lesson_id,
+                    'lesson' => $items->first()->lesson,
+                    'course_count' => $items->pluck('course_id')->unique()->count(),
+                    'courses' => $items->pluck('course_id')->unique()->toArray(),
+                ];
+            });
+
+        // Only include lessons that are assigned to ALL selected courses
+        $requiredCourseCount = count($courseIds);
+        $filteredLessons = $lessonAssignments->filter(function($item) use ($requiredCourseCount) {
+            return $item['course_count'] >= $requiredCourseCount;
+        });
+
+        $lessons = $filteredLessons->map(function($item) {
+            return [
+                'id' => $item['lesson_id'],
+                'title' => $item['lesson'] ? ($item['lesson']->title ?? $item['lesson']->name ?? 'Lesson ' . $item['lesson_id']) : 'Lesson ' . $item['lesson_id'],
+                'branch_id' => $branchId,
+                'course_ids' => $item['courses'],
+                'teacher_id' => $teacher->id,
+            ];
+        })->values();
+
+        \Log::info('Lessons retrieved (multiple courses)', [
+            'total_assignments' => $lessonAssignments->count(),
+            'filtered_count' => $lessons->count(),
+            'required_course_count' => $requiredCourseCount
+        ]);
+
+        return response()->json($lessons);
+    } catch (\Exception $e) {
+        \Log::error('Error fetching lessons (multiple courses)', [
+            'teacher_id' => $teacher->id,
+            'branch_id' => $branchId,
+            'course_ids' => $courseIds,
+            'error' => $e->getMessage(),
+        ]);
+        return response()->json(['error' => 'Failed to load lessons'], 500);
+    }
+});
+
+// Teacher marks recording - filtered lessons by branch, single course and teacher (legacy)
 Route::middleware('auth:teacher')->get('/api/teacher/branch/{branchId}/course/{courseId}/lessons', function($branchId, $courseId, \Illuminate\Http\Request $request) {
     $teacher = auth('teacher')->user();
 
@@ -1118,6 +1225,57 @@ Route::middleware('auth:teacher')->get('/api/teacher/branch/{branchId}/course/{c
             'error' => 'Failed to load lessons',
             'message' => $e->getMessage()
         ], 500);
+    }
+});
+
+// Teacher marks recording - get students for multiple courses in a branch
+Route::middleware('auth:teacher')->get('/api/teacher/branch/{branchId}/courses/students', function($branchId, \Illuminate\Http\Request $request) {
+    $teacher = auth('teacher')->user();
+    $courseIds = $request->query('course_ids');
+
+    if (!$courseIds || !is_array($courseIds) || empty($courseIds)) {
+        return response()->json([]);
+    }
+
+    try {
+        \Log::info('Teacher students API called (multiple courses)', [
+            'teacher_id' => $teacher->id,
+            'branch_id' => $branchId,
+            'course_ids' => $courseIds
+        ]);
+
+        // Validate branch exists
+        $branch = \App\Models\Branch::findOrFail($branchId);
+
+        // Get students enrolled in this branch and ANY of the selected courses for the selected academic year
+        $studentsQuery = \App\Models\Student::where('branch_id', $branchId)
+            ->whereIn('course_id', $courseIds)
+            ->where('status', '!=', 'inactive');
+
+        if ($yearId = \App\Services\AcademicYearContext::selectedId()) {
+            $studentsQuery->where('academic_year_id', $yearId);
+        }
+
+        $students = $studentsQuery
+            ->orderBy('full_name')
+            ->get(['id', 'full_name', 'reg_number', 'email']);
+
+        \Log::info('Students retrieved (multiple courses)', [
+            'count' => $students->count(),
+            'branch_id' => $branchId,
+            'course_ids' => $courseIds,
+            'branch_name' => $branch->name
+        ]);
+
+        return response()->json($students);
+    } catch (\Exception $e) {
+        \Log::error('Error fetching students (multiple courses)', [
+            'teacher_id' => $teacher->id,
+            'branch_id' => $branchId,
+            'course_ids' => $courseIds,
+            'error' => $e->getMessage()
+        ]);
+        return response()->json(['error' => 'Failed to load students'], 500);
     }
 });
 

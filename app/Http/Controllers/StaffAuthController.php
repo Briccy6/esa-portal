@@ -37,7 +37,7 @@ class StaffAuthController extends Controller
             if ($role === 'DOS') {
                 return redirect()->route('staff.dashboard.dos')->with('success', 'Welcome, DOS!');
             } elseif ($role === 'Accountant') {
-                return redirect()->route('staff.dashboard.accountant')->with('success', 'Welcome, Accountant!');
+                return redirect()->route('accountant.dashboard')->with('success', 'Welcome, Accountant!');
             } elseif ($role === 'SEC' || $role === 'Secretary') {
                 return redirect()->route('secretary.dashboard')->with('success', 'Welcome, Secretary!');
             } else {

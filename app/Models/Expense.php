@@ -15,6 +15,7 @@ class Expense extends Model
         'paid_to',
         'paid_to_contact',
         'payment_method',
+        'term_id',
     ];
 
     public function paid_by_staff()
