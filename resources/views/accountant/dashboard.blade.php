@@ -32,6 +32,8 @@
             <a href="{{ route('staff.accountant.payment-schedule.index') }}" class="btn btn-outline-primary">
                 <i class="fas fa-calendar-check me-2" aria-hidden="true"></i>Payment Schedule
             </a>
+            <a href="{{ route('staff.accounting.cashbook') }}" class="btn btn-outline-secondary">Cashbook</a>
+            <a href="{{ route('staff.accounting.balance-sheet') }}" class="btn btn-outline-secondary">Balance Sheet</a>
         </div>
     </div>
 
@@ -190,16 +192,17 @@
                 </div>
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
-                        <thead><tr><th>Expense</th><th>Date</th><th class="text-end">Amount</th></tr></thead>
+                        <thead><tr><th>Expense</th><th>Branch</th><th>Date</th><th class="text-end">Amount</th></tr></thead>
                         <tbody>
                             @forelse($recentExpenses as $expense)
                                 <tr>
                                     <td><div class="fw-semibold">{{ $expense['type'] ?? 'Expense' }}</div><small class="text-muted">{{ $expense['description'] ?? '' }}</small></td>
+                                    <td><small class="text-muted">{{ $expense['branch'] ?? 'N/A' }}</small></td>
                                     <td class="text-nowrap">{{ $expense['date'] ?? 'N/A' }}</td>
                                     <td class="fw-semibold text-danger text-end text-nowrap">{{ number_format($expense['amount'] ?? 0, 0) }} RWF</td>
                                 </tr>
                             @empty
-                                <tr><td colspan="3" class="text-center text-muted py-5"><i class="fas fa-file-invoice-dollar fa-2x d-block mb-2" aria-hidden="true"></i>No recent expenses for these filters.</td></tr>
+                                <tr><td colspan="4" class="text-center text-muted py-5"><i class="fas fa-file-invoice-dollar fa-2x d-block mb-2" aria-hidden="true"></i>No recent expenses for these filters.</td></tr>
                             @endforelse
                         </tbody>
                     </table>

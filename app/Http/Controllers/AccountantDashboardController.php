@@ -109,7 +109,7 @@ class AccountantDashboardController extends Controller
             $query->where('created_at', '>=', $request->start_date);
         }
         if ($request->filled('end_date')) {
-            $query->where('created_at', '<=', $request->end_date);
+            $query->whereDate('created_at', '<=', $request->end_date);
         }
 
         // Filter by status

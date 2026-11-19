@@ -12,11 +12,16 @@ class ExpenseController extends Controller
      */
     public function index(Request $request)
     {
-        $query = \App\Models\Expense::with(['paid_by_staff', 'term', 'branch']);
+        $query = \App\Models\Expense::with(['paid_by_staff', 'term', 'branch', 'academicYear']);
 
         // Filter by staff if not admin
         if (!auth()->guard('admin')->check()) {
             $query->where('paid_by', auth()->guard('staff')->id());
+        }
+
+        // Filter by academic year
+        if ($request->filled('academic_year_id')) {
+            $query->where('academic_year_id', $request->academic_year_id);
         }
 
         // Filter by term
@@ -45,8 +50,9 @@ class ExpenseController extends Controller
         $expenses = $query->orderBy('expense_date', 'desc')->paginate(20);
         $terms = \App\Models\Term::with('academicYear')->orderBy('start_date', 'desc')->get();
         $branches = \App\Models\Branch::orderBy('name')->get();
+        $academicYears = \App\Models\AcademicYear::orderBy('year', 'desc')->get();
 
-        return view('accountant.expenses.index', compact('expenses', 'terms', 'branches'));
+        return view('accountant.expenses.index', compact('expenses', 'terms', 'branches', 'academicYears'));
     }
 
     /**
@@ -87,6 +93,7 @@ class ExpenseController extends Controller
             'payment_method' => $request->payment_method,
             'term_id' => $request->term_id,
             'branch_id' => $request->branch_id,
+            'academic_year_id' => \App\Services\AcademicYearContext::selectedId(),
         ]);
 
         // Create journal entry for expense
@@ -114,7 +121,7 @@ class ExpenseController extends Controller
      */
     public function show(string $id)
     {
-        $expense = \App\Models\Expense::with(['paid_by_staff', 'term', 'branch'])->findOrFail($id);
+        $expense = \App\Models\Expense::with(['paid_by_staff', 'term', 'branch', 'academicYear'])->findOrFail($id);
 
         // Check access
         if (!auth()->guard('admin')->check() && $expense->paid_by !== auth()->guard('staff')->id()) {

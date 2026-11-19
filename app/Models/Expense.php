@@ -17,6 +17,7 @@ class Expense extends Model
         'payment_method',
         'term_id',
         'branch_id',
+        'academic_year_id',
     ];
 
     public function paid_by_staff()
@@ -32,5 +33,10 @@ class Expense extends Model
     public function term()
     {
         return $this->belongsTo(\App\Models\Term::class);
+    }
+
+    public function academicYear()
+    {
+        return $this->belongsTo(\App\Models\AcademicYear::class);
     }
 }

@@ -308,13 +308,13 @@ class AccountantDashboardService
     {
         return Cache::remember($this->getCacheKey('recent_expenses'), 300, function () use ($limit) {
             return $this->getExpenseQuery()
-                ->with(['paid_by_staff:id,name', 'term:id,name', 'branch:id,name'])
+                ->with(['paid_by_staff:id,name', 'term:id,name', 'branch:id,name', 'academicYear:id,year'])
                 ->orderBy('expense_date', 'desc')
                 ->limit($limit)
                 ->get()
                 ->map(function ($expense) {
-                    $expenseDate = is_string($expense->expense_date) 
-                        ? Carbon::parse($expense->expense_date) 
+                    $expenseDate = is_string($expense->expense_date)
+                        ? Carbon::parse($expense->expense_date)
                         : $expense->expense_date;
                     return [
                         'id' => $expense->id,
@@ -325,6 +325,9 @@ class AccountantDashboardService
                         'paid_to' => $expense->paid_to,
                         'paid_by' => $expense->paid_by_staff->name ?? 'Unknown',
                         'payment_method' => $expense->payment_method,
+                        'branch' => $expense->branch->name ?? 'Unknown',
+                        'term' => $expense->term->name ?? 'Unknown',
+                        'academic_year' => $expense->academicYear->year ?? 'Unknown',
                     ];
                 });
         });
@@ -393,6 +396,10 @@ class AccountantDashboardService
         // Only filter by staff_id if it's set and not admin
         if ($this->staffId && !auth()->guard('admin')->check()) {
             $query->where('paid_by', $this->staffId);
+        }
+
+        if ($this->academicYearId) {
+            $query->where('academic_year_id', $this->academicYearId);
         }
 
         if ($this->branchId) {
