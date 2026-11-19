@@ -3,13 +3,13 @@
 @section('title', 'Student Cards')
 
 @section('content')
-<div class="container-fluid p-4">
+<div class="container-fluid p-4 student-card-page">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="mb-0">
             <i class="bi bi-id-card me-2"></i>
             Student Cards
         </h2>
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 no-print">
             <button class="btn btn-outline-success" onclick="try { generateAllCards(); } catch(e) { console.error('Generate all cards error:', e); alert('Unable to generate all cards. Please try again.'); }">
                 <i class="bi bi-download me-1"></i> Generate All Cards
             </button>
@@ -20,7 +20,7 @@
     </div>
 
     <!-- Statistics Cards -->
-    <div class="row mb-4">
+    <div class="row mb-4 no-print">
         <div class="col-md-4">
             <div class="card bg-primary text-white">
                 <div class="card-body">
@@ -69,7 +69,7 @@
     </div>
 
     <!-- Filters -->
-    <div class="card mb-4">
+    <div class="card mb-4 no-print">
         <div class="card-body">
             <form method="GET" action="{{ route('dos.students.StudentCards') }}">
                 <div class="row g-3">
@@ -121,10 +121,10 @@
     </div>
 
     <!-- Student Cards Grid -->
-    <div class="row">
+    <div class="row" id="student-card-grid">
         @if(isset($students) && $students->count() > 0)
             @foreach($students as $student)
-                <div class="col-md-6 col-lg-4 mb-4">
+                <div class="col-md-6 col-lg-4 mb-4 student-card-column" data-student-id="{{ $student->id }}">
                     <div class="card student-card">
                         <div class="card-header bg-primary text-white">
                             <h6 class="card-title mb-0">Student ID Card</h6>
@@ -180,7 +180,7 @@
                                 </div>
                             @endif
                         </div>
-                        <div class="card-footer">
+                        <div class="card-footer no-print">
                             <div class="btn-group w-100" role="group">
                                 <button onclick="try { generateCard({{ $student->id }}); } catch(e) { console.error('Card generation error:', e); alert('Unable to generate card. Please try again.'); }" class="btn btn-primary">
                                     <i class="bi bi-download me-1"></i> Generate
@@ -238,6 +238,16 @@ function generateCard(studentId) {
 }
 
 function printCard(studentId) {
+    document.querySelectorAll('#student-card-grid .student-card-column').forEach(function (column) {
+        column.classList.toggle('print-selected', column.dataset.studentId === String(studentId));
+    });
+    document.body.classList.add('printing-student-card');
+    window.addEventListener('afterprint', function () {
+        document.body.classList.remove('printing-student-card');
+        document.querySelectorAll('#student-card-grid .student-card-column').forEach(function (column) {
+            column.classList.remove('print-selected');
+        });
+    }, { once: true });
     window.print();
 }
 

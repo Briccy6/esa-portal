@@ -1,4 +1,4 @@
-@extends('staff.partials.sidebar_dos')
+@extends('dos.layout')
 
 @section('title', 'Assignments Management')
 
