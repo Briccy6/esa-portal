@@ -10,9 +10,9 @@
             <h1 class="h3 fw-bold mb-1">Expenses</h1>
             <p class="text-muted mb-0">Review and manage recorded school expenses.</p>
         </div>
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addExpenseModal">
+        <a href="{{ route('staff.accountant.expenses.create') }}" class="btn btn-primary">
             <i class="fas fa-plus me-2" aria-hidden="true"></i>Add Expense
-        </button>
+        </a>
     </div>
 
     @if(session('success'))
@@ -32,11 +32,25 @@
         <div class="card-header bg-white py-3"><h2 class="h6 fw-semibold mb-0"><i class="fas fa-filter text-primary me-2" aria-hidden="true"></i>Filter expenses</h2></div>
         <div class="card-body">
             <form method="GET" action="{{ route('staff.accountant.expenses.index') }}" class="row g-3 align-items-end">
-                <div class="col-12 col-md-4">
-                    <label for="expense_type" class="form-label small text-muted">Expense Type</label>
-                    <input id="expense_type" type="search" name="expense_type" class="form-control" placeholder="Search expense type" value="{{ request('expense_type') }}">
+                <div class="col-12 col-md-3">
+                    <label for="academic_year_id" class="form-label small text-muted">Academic Year</label>
+                    <select id="academic_year_id" name="academic_year_id" class="form-select">
+                        <option value="">All Years</option>
+                        @foreach($academicYears as $academicYear)
+                            <option value="{{ $academicYear->id }}" @selected(request('academic_year_id') == $academicYear->id)>{{ $academicYear->year }}</option>
+                        @endforeach
+                    </select>
                 </div>
                 <div class="col-12 col-md-3">
+                    <label for="branch_id" class="form-label small text-muted">Branch</label>
+                    <select id="branch_id" name="branch_id" class="form-select">
+                        <option value="">All Branches</option>
+                        @foreach($branches as $branch)
+                            <option value="{{ $branch->id }}" @selected(request('branch_id') == $branch->id)>{{ $branch->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-12 col-md-2">
                     <label for="term_id" class="form-label small text-muted">Term</label>
                     <select id="term_id" name="term_id" class="form-select">
                         <option value="">All Terms</option>
@@ -46,14 +60,10 @@
                     </select>
                 </div>
                 <div class="col-12 col-md-2">
-                    <label for="start_date" class="form-label small text-muted">Start Date</label>
-                    <input id="start_date" type="date" name="start_date" class="form-control" value="{{ request('start_date') }}">
+                    <label for="expense_type" class="form-label small text-muted">Expense Type</label>
+                    <input id="expense_type" type="search" name="expense_type" class="form-control" placeholder="Search type" value="{{ request('expense_type') }}">
                 </div>
-                <div class="col-12 col-md-2">
-                    <label for="end_date" class="form-label small text-muted">End Date</label>
-                    <input id="end_date" type="date" name="end_date" class="form-control" value="{{ request('end_date') }}">
-                </div>
-                <div class="col-12 col-md-1 d-flex gap-2">
+                <div class="col-12 col-md-2 d-flex gap-2">
                     <button type="submit" class="btn btn-outline-primary flex-grow-1" aria-label="Apply filters"><i class="fas fa-filter" aria-hidden="true"></i></button>
                     <a href="{{ route('staff.accountant.expenses.index') }}" class="btn btn-outline-secondary" aria-label="Clear filters"><i class="fas fa-times" aria-hidden="true"></i></a>
                 </div>
@@ -68,14 +78,15 @@
         </div>
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
-                <thead class="table-light"><tr><th>Date</th><th>Type</th><th>Description</th><th>Paid To</th><th>Amount</th><th>Method</th><th>Term</th><th class="text-end">Actions</th></tr></thead>
+                <thead class="table-light"><tr><th>Date</th><th>Type</th><th>Description</th><th>Paid To</th><th>Branch</th><th>Amount</th><th>Method</th><th>Term</th><th class="text-end">Actions</th></tr></thead>
                 <tbody>
                     @forelse($expenses as $expense)
                         <tr>
-                            <td class="text-nowrap">{{ $expense->expense_date->format('M d, Y') }}</td>
+                            <td class="text-nowrap">{{ is_string($expense->expense_date) ? \Carbon\Carbon::parse($expense->expense_date)->format('M d, Y') : $expense->expense_date->format('M d, Y') }}</td>
                             <td><span class="badge text-bg-light border">{{ $expense->expense_type }}</span></td>
                             <td class="text-truncate" style="max-width: 220px" title="{{ $expense->description }}">{{ $expense->description }}</td>
                             <td>{{ $expense->paid_to }}</td>
+                            <td><small class="text-muted">{{ $expense->branch?->name ?? '—' }}</small></td>
                             <td class="fw-semibold text-danger text-nowrap">{{ number_format($expense->amount, 0) }} RWF</td>
                             <td>{{ ucfirst(str_replace('_', ' ', $expense->payment_method)) }}</td>
                             <td>{{ $expense->term?->name ?? '—' }}</td>
@@ -92,7 +103,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="8" class="text-center text-muted py-5"><i class="fas fa-file-invoice-dollar fa-2x d-block mb-2" aria-hidden="true"></i><div class="fw-semibold">No expenses found</div><small>Try changing the filters or add a new expense.</small></td></tr>
+                        <tr><td colspan="9" class="text-center text-muted py-5"><i class="fas fa-file-invoice-dollar fa-2x d-block mb-2" aria-hidden="true"></i><div class="fw-semibold">No expenses found</div><small>Try changing the filters or add a new expense.</small></td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -102,40 +113,7 @@
         @endif
     </div>
 </div>
-
-<div class="modal fade" id="addExpenseModal" tabindex="-1" aria-labelledby="addExpenseModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <form method="POST" action="{{ route('expenses.store') }}" class="modal-content" id="addExpenseForm">
-            @csrf
-            <div class="modal-header">
-                <div><h2 class="modal-title h5 fw-semibold" id="addExpenseModalLabel">Record an expense</h2><p class="text-muted small mb-0">Enter the payment and payee details.</p></div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="row g-3">
-                    <div class="col-12 col-md-6">
-                        <label for="modal_expense_date" class="form-label">Expense Date <span class="text-danger">*</span></label>
-                        <input id="modal_expense_date" type="date" name="expense_date" class="form-control @error('expense_date') is-invalid @enderror" value="{{ old('expense_date', now()->format('Y-m-d')) }}" required>
-                        @error('expense_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <label for="modal_expense_type" class="form-label">Expense Type <span class="text-danger">*</span></label>
-                        <input id="modal_expense_type" type="text" name="expense_type" class="form-control @error('expense_type') is-invalid @enderror" value="{{ old('expense_type') }}" placeholder="e.g. Stationery" required>
-                        @error('expense_type')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <label for="modal_amount" class="form-label">Amount (RWF) <span class="text-danger">*</span></label>
-                        <input id="modal_amount" type="number" name="amount" class="form-control @error('amount') is-invalid @enderror" value="{{ old('amount') }}" min="1" step="0.01" required>
-                        @error('amount')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <label for="modal_term_id" class="form-label">Term <span class="text-muted">(optional)</span></label>
-                        <select id="modal_term_id" name="term_id" class="form-select @error('term_id') is-invalid @enderror">
-                            <option value="">Select term</option>
-                            @foreach($terms as $term)
-                                <option value="{{ $term->id }}" @selected(old('term_id') == $term->id)>{{ $term->name }}{{ $term->academicYear ? ' - ' . $term->academicYear->year : '' }}</option>
-                            @endforeach
-                        </select>
+@endsection
                         @error('term_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                     <div class="col-12">
