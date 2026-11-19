@@ -19,6 +19,8 @@ class Lesson extends Model
         'max_test_marks',
         'max_exam_marks',
         'academic_year_id',
+        'status',
+        'ended_at',
     ];
 
     public function teacher()

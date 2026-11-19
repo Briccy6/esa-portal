@@ -672,11 +672,13 @@
                             <th>Teacher</th>
                             <th>Total Hours</th>
                             <th>Sessions</th>
+                            <th>Status</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody id="lessonHoursBody">
                         <tr>
-                            <td colspan="5" class="text-center text-muted">Loading live data...</td>
+                            <td colspan="7" class="text-center text-muted">Loading live data...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -713,19 +715,64 @@ document.addEventListener('DOMContentLoaded', function () {
         const tbody = document.getElementById('lessonHoursBody');
 
         if (lessonHours.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No lesson hours data available yet.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No lesson hours data available yet.</td></tr>';
             return;
         }
 
-        tbody.innerHTML = lessonHours.map(item => `
+        tbody.innerHTML = lessonHours.map(item => {
+            const status = item.lesson ? item.lesson.status : 'active';
+            const statusBadge = status === 'ended' 
+                ? '<span class="badge bg-secondary">Ended</span>' 
+                : '<span class="badge bg-success">Active</span>';
+            const canMarkEnded = status === 'active' && item.lesson;
+            const markEndedBtn = canMarkEnded 
+                ? `<form method="POST" action="{{ route('dos.lessons.mark-ended', '__LESSON_ID__') }}" onsubmit="event.preventDefault(); markLessonEnded(this, '${item.lesson.id}', '${item.lesson.title}');">
+                    @csrf
+                    <button type="submit" class="btn btn-sm btn-outline-warning">Mark Ended</button>
+                </form>`
+                : '';
+
+            return `
             <tr>
                 <td>${item.lesson ? item.lesson.title : 'N/A'}</td>
                 <td>${item.course ? item.course.course_name : 'N/A'}</td>
                 <td>${item.teacher ? item.teacher.teacher_name : 'N/A'}</td>
                 <td><strong>${parseFloat(item.total_hours).toFixed(1)} hrs</strong></td>
                 <td>${item.sessions}</td>
+                <td>${statusBadge}</td>
+                <td>${markEndedBtn}</td>
             </tr>
-        `).join('');
+        `.replace('__LESSON_ID__', item.lesson.id);
+        }).join('');
+    }
+
+    async function markLessonEnded(form, lessonId, lessonTitle) {
+        if (!confirm(`Are you sure you want to mark "${lessonTitle}" as ended?`)) {
+            return;
+        }
+
+        try {
+            const formData = new FormData(form);
+            const response = await fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            if (response.ok) {
+                // Refresh the lesson hours data
+                fetchLessonHours();
+                // Show success message
+                alert('Lesson marked as ended successfully!');
+            } else {
+                alert('Failed to mark lesson as ended. Please try again.');
+            }
+        } catch (error) {
+            console.error('Error marking lesson as ended:', error);
+            alert('An error occurred. Please try again.');
+        }
     }
 
     // Initial fetch

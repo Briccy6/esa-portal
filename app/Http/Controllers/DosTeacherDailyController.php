@@ -298,10 +298,10 @@ class DosTeacherDailyController extends Controller
         $staff = Auth::guard('staff')->user();
         $branchIds = $staff->branches()->pluck('branches.id');
 
-        // Get lesson hours data
+        // Get lesson hours data with lesson status
         $lessonHours = TeacherDaily::where('approved', true)
             ->whereIn('branch_id', $branchIds)
-            ->with(['lesson:id,title', 'course:id,course_name', 'teacher:id,teacher_name'])
+            ->with(['lesson:id,title,status,ended_at', 'course:id,course_name', 'teacher:id,teacher_name'])
             ->selectRaw('lesson_id, course_id, teacher_id, SUM(hours_studied) as total_hours, COUNT(*) as sessions')
             ->groupBy('lesson_id', 'course_id', 'teacher_id')
             ->orderByDesc('total_hours')

@@ -1864,15 +1864,10 @@ Route::middleware(['auth:staff'])->prefix('dos')->name('dos.')->group(function (
     Route::put('/lessons/{lesson}', [LessonController::class, 'update'])->name('lessons.update');
     Route::delete('/lessons/{lesson}', [LessonController::class, 'destroy'])->name('lessons.destroy');
     Route::delete('/lessons/{assignmentId}/delete-assignment', [LessonController::class, 'deleteAssignment'])->name('lessons.delete-assignment');
+    Route::post('/lessons/{lesson}/mark-ended', [LessonController::class, 'markEnded'])->name('lessons.mark-ended');
 
     // API for live lesson hours
     Route::get('/api/lesson-hours', [\App\Http\Controllers\DosTeacherDailyController::class, 'getLessonHoursApi'])->name('api.lesson-hours');
-    Route::get('/lessons/{lesson}/edit', [LessonController::class, 'edit'])->name('lessons.edit');
-    Route::put('/lessons/{lesson}', [LessonController::class, 'update'])->name('lessons.update');
-    Route::delete('/lessons/{lesson}', [LessonController::class, 'destroy'])->name('lessons.destroy');
-    Route::post('/lessons/assign', [LessonController::class, 'assignToBranches'])->name('lessons.assign');
-    Route::get('/lessons/{lesson}/assignments', [LessonController::class, 'getAssignments'])->name('lessons.assignments');
-    Route::delete('/lessons/{assignmentId}/delete-assignment', [LessonController::class, 'deleteAssignment'])->name('lessons.delete-assignment');
 
     // Live Classes Management
     Route::get('/live-classes', [\App\Http\Controllers\DOS\LiveClassController::class, 'index'])->name('live-classes.index');

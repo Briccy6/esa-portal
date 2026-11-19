@@ -644,6 +644,23 @@ public function createDetails(Request $request, $lessonId)
     }
 
     /**
+     * Mark a lesson as ended
+     */
+    public function markEnded($lessonId)
+    {
+        try {
+            $lesson = Lesson::findOrFail($lessonId);
+            $lesson->status = 'ended';
+            $lesson->ended_at = now();
+            $lesson->save();
+
+            return redirect()->back()->with('success', 'Lesson marked as ended successfully!');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Failed to mark lesson as ended: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Assign lesson to branches and courses (merges with existing assignments)
      */
     public function assignToBranches(Request $request)
