@@ -64,11 +64,13 @@ class AccountantDashboardService
 
             // Calculate total expected fees from loaded students (no additional queries)
             $totalExpected = $students->sum(function ($student) {
-                return ($student->course->registration_fee ?? 0)
+                $discountAmount = ($student->course->discount_fee ?? 0);
+                $totalFees = ($student->course->registration_fee ?? 0)
                     + ($student->course->tuition_fee ?? 0)
                     + ($student->course->practical_fee ?? 0)
-                    + ($student->course->trip_fee ?? 0)
-                    + ($student->course->discount_fee ?? 0);
+                    + ($student->course->trip_fee ?? 0);
+                // Subtract discount from total
+                return max(0, $totalFees - $discountAmount);
             });
             
             // Get total collected - use single query
@@ -106,11 +108,12 @@ class AccountantDashboardService
 
             $studentsWithArrears = 0;
             foreach ($students as $student) {
-                $expected = ($student->course->registration_fee ?? 0)
+                $discountAmount = ($student->course->discount_fee ?? 0);
+                $totalFees = ($student->course->registration_fee ?? 0)
                     + ($student->course->tuition_fee ?? 0)
                     + ($student->course->practical_fee ?? 0)
-                    + ($student->course->trip_fee ?? 0)
-                    + ($student->course->discount_fee ?? 0);
+                    + ($student->course->trip_fee ?? 0);
+                $expected = max(0, $totalFees - $discountAmount);
                 $paid = $paidAmounts[$student->id] ?? 0;
                 if ($paid < $expected) {
                     $studentsWithArrears++;
@@ -157,11 +160,8 @@ class AccountantDashboardService
     {
         return Cache::remember($this->getCacheKey('charts'), 300, function () {
             return [
-                'fees_vs_expenses_by_month' => $this->getFeesVsExpensesByMonth(),
-                'fee_status' => $this->getFeeStatusDistribution(),
-                'collections_by_branch' => $this->getCollectionsByBranch(),
-                'expenses_by_category' => $this->getExpensesByCategory(),
                 'daily_collections' => $this->getDailyCollections(),
+                'expenses_by_category' => $this->getExpensesByCategory(),
             ];
         });
     }
