@@ -373,7 +373,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
-            <form id="assignmentForm" method="POST" action="{{ route('staff.lessons.assign', [], false) }}">
+            <form id="assignmentForm" method="POST" action="{{ route('dos.lessons.assign', [], false) }}">
                 @csrf
                 <input type="hidden" name="lesson_id" id="modalLessonId">
                 <div class="modal-body">
@@ -428,10 +428,10 @@
     const branches = @json($branches);
     const teachers = @json($teachers);
     const listUrl = window.location.pathname;
-    const assignmentsUrl = @json(route('staff.lessons.assignments', ['lesson' => '__LESSON_ID__'], false));
-    const deleteAssignmentUrl = @json(route('staff.lessons.delete-assignment', ['assignmentId' => '__ASSIGNMENT_ID__'], false));
-    const deleteLessonUrl = @json(route('staff.lessons.destroy', ['lesson' => '__LESSON_ID__'], false));
-    const editLessonUrl = @json(route('staff.lessons.edit', ['lesson' => '__LESSON_ID__'], false));
+    const assignmentsUrl = @json(route('dos.lessons.assignments', ['lesson' => '__LESSON_ID__'], false));
+    const deleteAssignmentUrl = @json(route('dos.lessons.delete-assignment', ['assignmentId' => '__ASSIGNMENT_ID__'], false));
+    const deleteLessonUrl = @json(route('dos.lessons.destroy', ['lesson' => '__LESSON_ID__'], false));
+    const editLessonUrl = @json(route('dos.lessons.edit', ['lesson' => '__LESSON_ID__'], false));
     const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
     const searchInput = document.getElementById('lessonSearch');
     const rowsContainer = document.getElementById('lessonRows');
