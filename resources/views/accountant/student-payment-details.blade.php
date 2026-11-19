@@ -250,18 +250,77 @@ function recordPayment(studentId, termId) {
 
 <style>
 @media print {
-    .btn, .card-header h5 {
-        display: none !important;
+    @page {
+        size: A3;
+        margin: 1cm;
     }
-    
+
+    /* Hide all navigation and header elements */
+    .main-sidebar, .main-header, .card-header, .card-tools, .no-print, .filter-form,
+    footer, .nav-section, nav, .navbar, .sidebar, .Header, .user-panel, .treeview,
+    .brand-link, .alert, .alert-info, .alert-warning, .alert-light,
+    .d-flex.justify-content-between.align-items-center.mb-4,
+    .btn, button, a[href*="route"] {
+        display: none !important;
+        visibility: hidden !important;
+    }
+
+    /* Reset body and wrapper styles */
+    body, html {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: white !important;
+        font-size: 10pt !important;
+    }
+
+    /* Make content full width */
+    .content-wrapper, .content-header, .content, .container-fluid {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    /* Card styling for print */
     .card {
-        border: 1px solid #dee2e6 !important;
+        border: 1px solid #000 !important;
         box-shadow: none !important;
         page-break-inside: avoid;
+        margin-bottom: 20px !important;
     }
-    
+
+    .card-body {
+        padding: 10px !important;
+    }
+
+    /* Table styling for print */
     .table-responsive {
         overflow: visible !important;
+    }
+
+    .table {
+        font-size: 9pt !important;
+        width: 100% !important;
+    }
+
+    .table th, .table td {
+        border: 1px solid #000 !important;
+        padding: 5px !important;
+    }
+
+    /* Hide certain sections */
+    .mb-4:not(.card):not(.table-responsive) {
+        display: none !important;
+    }
+
+    /* Show only payment tables */
+    .card.mb-4 {
+        display: block !important;
+    }
+
+    /* Ensure student info card is shown */
+    .card.mb-4:first-of-type {
+        display: block !important;
     }
 }
 </style>
