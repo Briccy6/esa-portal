@@ -82,6 +82,8 @@ class AccountantDashboardService
                     'student_count' => $totalStudents,
                     'academic_year_id' => $this->academicYearId,
                     'branch_id' => $this->branchId,
+                    'students_without_course' => $students->whereNull('course_id')->count(),
+                    'sample_student' => $students->first()->toArray(),
                 ]);
             }
             
