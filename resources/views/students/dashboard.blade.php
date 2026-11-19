@@ -911,7 +911,7 @@
                                             @if($fee['remaining'] > 0)
                                             <button type="button"
                                                     class="btn btn-sm btn-outline-primary mt-2 w-100"
-                                                    onclick="selectTermAndFee({{ $termData['term']->id }}, '{{ $fee['type'] }}', {{ $fee['remaining'] }})">
+                                                    onclick="try { selectTermAndFee({{ $termData['term']->id }}, '{{ $fee['type'] }}', {{ $fee['remaining'] }}); } catch(e) { console.error('Payment selection error:', e); alert('Unable to select payment. Please try again.'); }">
                                                 <i class="fas fa-money-bill-wave me-1"></i>Pay {{ number_format($fee['remaining'], 0) }} RWF
                                             </button>
                                             @endif
@@ -1302,7 +1302,7 @@
                             <div class="col-lg-6 col-xl-4 mb-4">
                                 <div class="alx-card">
                                     <div class="alx-card-header resources">
-                                        <button onclick="shareResource({{ $resource->id }}, @json(Str::limit($resource->document_name ?: $resource->video_name ?: 'Resource', 30)))"
+                                        <button onclick="try { shareResource({{ $resource->id }}, @json(Str::limit($resource->document_name ?: $resource->video_name ?: 'Resource', 30))); } catch(e) { console.error('Share error:', e); alert('Unable to share resource. Please try again.'); }"
                                                 class="alx-share-btn" title="Share this resource">
                                             <i class="fas fa-share-alt"></i>
                                         </button>
@@ -1413,7 +1413,7 @@
             <div class="info-card">
                 <div class="info-card-header">
                     <h4><i class="bi bi-award"></i>Registration Status</h4>
-                    <button class="btn btn-sm btn-info" onclick="showNesaModal()">
+                    <button class="btn btn-sm btn-info" onclick="try { showNesaModal(); } catch(e) { console.error('NESA modal error:', e); alert('Unable to open NESA status. Please try again.'); }">
                         <i class="bi bi-info-circle"></i> Check Status
                     </button>
                 </div>
@@ -1809,7 +1809,7 @@ function loadLiveClasses() {
                         </div>
                         <div class="text-end">
                             <span class="badge bg-success">Active</span><br>
-                            <button class="btn btn-sm btn-primary mt-1" onclick="joinLiveClass(${lc.id})">
+                            <button class="btn btn-sm btn-primary mt-1" onclick="try { joinLiveClass(${lc.id}); } catch(e) { console.error('Live class join error:', e); alert('Unable to join live class. Please try again.'); }">
                                 <i class="bi bi-camera-video me-1"></i>Join
                             </button>
                         </div>

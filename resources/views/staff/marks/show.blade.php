@@ -17,7 +17,7 @@
                     <a href="{{ route('dos.marks.index') }}" class="btn btn-secondary">
                         <i class="fas fa-arrow-left me-1"></i> Back to Marks
                     </a>
-                    <button onclick="window.print()" class="btn btn-primary">
+                    <button onclick="try { window.print(); } catch(e) { console.error('Print error:', e); alert('Unable to print. Please try again.'); }" class="btn btn-primary">
                         <i class="fas fa-print me-1"></i> Print
                     </a>
                     <form action="{{ route('dos.marks.destroy', $mark->id) }}" 
@@ -366,7 +366,7 @@
                            class="btn btn-primary">
                             <i class="fas fa-user-graduate me-1"></i> View Student Report
                         </a>
-                        <button onclick="window.print()" class="btn btn-success">
+                        <button onclick="try { window.print(); } catch(e) { console.error('Print error:', e); alert('Unable to print. Please try again.'); }" class="btn btn-success">
                             <i class="fas fa-print me-1"></i> Print Details
                         </button>
                         <a href="{{ route('dos.marks.index') }}" class="btn btn-secondary">

@@ -51,12 +51,12 @@
                             @if($timetable->status === 'draft')
                                 <form action="{{ route('dos.timetable.publish', $timetable->id) }}" method="POST" class="d-inline">
                                     @csrf
-                                    <button type="submit" class="btn btn-success btn-sm ms-1" onclick="return confirm('Are you sure you want to publish this timetable?')">Publish</button>
+                                    <button type="submit" class="btn btn-success btn-sm ms-1" onclick="try { return confirm('Are you sure you want to publish this timetable?'); } catch(e) { console.error('Publish error:', e); return false; }">Publish</button>
                                 </form>
                                 <form action="{{ route('dos.timetable.destroy', $timetable->id) }}" method="POST" class="d-inline ms-1">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Delete this timetable? This action cannot be undone.')">Delete</button>
+                                    <button type="submit" class="btn btn-danger btn-sm" onclick="try { return confirm('Delete this timetable? This action cannot be undone.'); } catch(e) { console.error('Delete error:', e); return false; }">Delete</button>
                                 </form>
                             @endif
                         </td>

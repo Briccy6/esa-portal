@@ -10,7 +10,7 @@
             Student Cards
         </h2>
         <div class="d-flex gap-2">
-            <button class="btn btn-outline-success" onclick="generateAllCards()">
+            <button class="btn btn-outline-success" onclick="try { generateAllCards(); } catch(e) { console.error('Generate all cards error:', e); alert('Unable to generate all cards. Please try again.'); }">
                 <i class="bi bi-download me-1"></i> Generate All Cards
             </button>
             <a href="{{ route('dos.students.index') }}" class="btn btn-secondary">
@@ -182,10 +182,10 @@
                         </div>
                         <div class="card-footer">
                             <div class="btn-group w-100" role="group">
-                                <button onclick="generateCard({{ $student->id }})" class="btn btn-primary">
+                                <button onclick="try { generateCard({{ $student->id }}); } catch(e) { console.error('Card generation error:', e); alert('Unable to generate card. Please try again.'); }" class="btn btn-primary">
                                     <i class="bi bi-download me-1"></i> Generate
                                 </button>
-                                <button onclick="printCard({{ $student->id }})" class="btn btn-outline-secondary">
+                                <button onclick="try { printCard({{ $student->id }}); } catch(e) { console.error('Print error:', e); alert('Unable to print card. Please try again.'); }" class="btn btn-outline-secondary">
                                     <i class="bi bi-printer me-1"></i> Print
                                 </button>
                             </div>

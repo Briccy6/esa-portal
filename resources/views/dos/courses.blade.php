@@ -10,7 +10,7 @@
             Courses Management
         </h2>
         <div class="d-flex gap-2">
-            <button class="btn btn-outline-primary" onclick="exportCourses()">
+            <button class="btn btn-outline-primary" onclick="try { exportCourses(); } catch(e) { console.error('Export courses error:', e); alert('Unable to export courses. Please try again.'); }">
                 <i class="bi bi-download me-1"></i> Export
             </button>
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCourseModal">
@@ -144,20 +144,20 @@
                                         <td><span class="badge bg-info">{{ $course->branches->first()->name ?? 'N/A' }}</span></td>
                                         <td>{{ $course->duration ?? 'N/A' }}</td>
                                         <td>
-                                            <span class="badge bg-info">{{ $course->students->count() ?? 0 }}</span>
+                                            <span class="badge bg-info">{{ $course->students_count }}</span>
                                         </td>
                                         <td>
                                             <div class="btn-group btn-group-sm" role="group">
-                                                <button type="button" class="btn btn-outline-primary" 
-                                                        onclick="viewCourse({{ $course->id }})">
+                                                <button type="button" class="btn btn-outline-primary"
+                                                        onclick="try { viewCourse({{ $course->id }}); } catch(e) { console.error('View course error:', e); alert('Unable to view course. Please try again.'); }">
                                                     <i class="bi bi-eye"></i>
                                                 </button>
-                                                <button type="button" class="btn btn-outline-warning" 
-                                                        onclick="editCourse({{ $course->id }})">
+                                                <button type="button" class="btn btn-outline-warning"
+                                                        onclick="try { editCourse({{ $course->id }}); } catch(e) { console.error('Edit course error:', e); alert('Unable to edit course. Please try again.'); }">
                                                     <i class="bi bi-pencil"></i>
                                                 </button>
-                                                <button type="button" class="btn btn-outline-danger" 
-                                                        onclick="deleteCourse({{ $course->id }})">
+                                                <button type="button" class="btn btn-outline-danger"
+                                                        onclick="try { deleteCourse({{ $course->id }}); } catch(e) { console.error('Delete course error:', e); alert('Unable to delete course. Please try again.'); }">
                                                     <i class="bi bi-trash"></i>
                                                 </button>
                                             </div>

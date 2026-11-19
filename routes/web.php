@@ -738,6 +738,9 @@ Route::prefix('staff')->name('staff.')->group(function () {
 
         // Lesson Management
         Route::resource('lessons', LessonController::class);
+        Route::post('/lessons/assign', [LessonController::class, 'assignToBranches'])->name('lessons.assign');
+        Route::get('/lessons/{lesson}/assignments', [LessonController::class, 'getAssignments'])->name('lessons.assignments');
+        Route::delete('/lessons/{assignmentId}/delete-assignment', [LessonController::class, 'deleteAssignment'])->name('lessons.delete-assignment');
         Route::get('/lessons/get-teachers/{courseId}', [LessonController::class, 'getTeachers'])->name('lessons.get-teachers');
         Route::post('/lessons/get-courses-for-branches', [LessonController::class, 'getCoursesForBranches'])->name('lessons.get-courses-for-branches');
         

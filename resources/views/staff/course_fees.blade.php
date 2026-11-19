@@ -182,13 +182,13 @@
                         <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#courseDetailsModal{{ $course->id }}">
                             <i class="fas fa-info-circle"></i> Course Details
                         </button>
-                        <button type="button" class="btn btn-outline-warning btn-sm" onclick="showPaymentSchedule({{ $course->id }})">
+                        <button type="button" class="btn btn-outline-warning btn-sm" onclick="try { showPaymentSchedule({{ $course->id }}); } catch(e) { console.error('Error:', e); alert('Unable to load payment schedule. Please try again.'); }">
                             <i class="fas fa-calendar"></i> Payment Schedule by Term
                         </button>
-                        <button type="button" class="btn btn-outline-success btn-sm" onclick="loadCourseTranscripts({{ $course->id }})">
+                        <button type="button" class="btn btn-outline-success btn-sm" onclick="try { loadCourseTranscripts({{ $course->id }}); } catch(e) { console.error('Error:', e); alert('Unable to load transcripts. Please try again.'); }">
                             <i class="fas fa-file-invoice"></i> View Transcripts
                         </button>
-                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="printStudentTranscript({{ $course->id }})">
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="try { printStudentTranscript({{ $course->id }}); } catch(e) { console.error('Error:', e); alert('Unable to print transcript. Please try again.'); }">
                             <i class="fas fa-print"></i> Print Student Transcript
                         </button>
                     </div>

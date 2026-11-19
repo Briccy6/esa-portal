@@ -9,7 +9,7 @@
     <div class="card p-4" style="max-width: 600px;">
         <div class="mb-3 text-center">
             @if($staff->photo)
-                <img src="data:image/jpeg;base64,{{ $staff->photo }}" alt="Staff Photo" class="img-thumbnail" style="max-width: 150px;">
+                <img src="{{ \App\Support\StaffPhoto::url($staff->photo) }}" alt="Staff Photo" class="img-thumbnail" style="max-width: 150px;">
             @else
                 <div class="text-muted">No photo available</div>
             @endif

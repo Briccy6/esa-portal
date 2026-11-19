@@ -259,11 +259,7 @@
                                                 <tr>
                                                     @foreach($lessonData['dates'] as $date => $dateMarks)
                                                         <th class="text-center" style="min-width: 120px;">
-                                                            @if($date === 'no-date')
-                                                                <small>No Date</small>
-                                                            @else
-                                                                <small>{{ \Carbon\Carbon::parse($date)->format('M d, Y') }}</small>
-                                                            @endif
+                                                            <small>Marks</small>
                                                         </th>
                                                     @endforeach
                                                 </tr>

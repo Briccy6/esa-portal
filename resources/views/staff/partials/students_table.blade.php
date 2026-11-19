@@ -76,10 +76,10 @@
             <i class="fas fa-users me-2"></i>Students List
         </h5>
         <div class="table-actions">
-            <button class="btn btn-outline-primary btn-sm me-2" onclick="exportToCSV()">
+            <button class="btn btn-outline-primary btn-sm me-2" onclick="try { exportToCSV(); } catch(e) { console.error('Export error:', e); alert('Unable to export. Please try again.'); }">
                 <i class="fas fa-download me-1"></i><span class="d-none d-sm-inline">Export</span>
             </button>
-            <button class="btn btn-outline-success btn-sm" onclick="printTable()">
+            <button class="btn btn-outline-success btn-sm" onclick="try { printTable(); } catch(e) { console.error('Print error:', e); alert('Unable to print. Please try again.'); }">
                 <i class="fas fa-printer me-1"></i><span class="d-none d-sm-inline">Print</span>
             </button>
         </div>
@@ -307,7 +307,7 @@
                                 @if(auth()->user() && auth()->user()->email === 'hirwabran9@gmail.com')
                                     <button type="button"
                                             class="btn btn-sm btn-danger action-btn-icon"
-                                            onclick="confirmDelete({{ $student->id }}, '{{ addslashes($student->full_name) }}')"
+                                            onclick="try { confirmDelete({{ $student->id }}, '{{ addslashes($student->full_name) }}'); } catch(e) { console.error('Delete error:', e); alert('Unable to delete student. Please try again.'); }"
                                             title="Delete Student">
                                         <i class="fas fa-trash"></i>
                                     </button>

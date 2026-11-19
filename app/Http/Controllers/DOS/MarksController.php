@@ -21,14 +21,34 @@ class MarksController extends Controller
 {
     public function index(Request $request)
     {
-        $courses = Course::all();
-        $branches = Branch::all();
-        $exams = Exam::all();
-        $lessons = Lesson::all();
-        $terms = Term::orderBy('name')->get();
+        $courses = Course::query()->select('id', 'course_name')->get();
+        $branches = Branch::query()->select('id', 'name')->get();
+        $exams = Exam::query()->select('id', 'exam_name')->get();
+        $lessons = Lesson::query()->select('id', 'title')->get();
+        $terms = Term::query()->select('id', 'name')->orderBy('name')->get();
         
         // Get marks and group them by lesson and date
-        $query = Mark::with(['student', 'course', 'branch', 'exam', 'lesson', 'grade', 'term'])
+        $query = Mark::query()
+            ->select([
+                'id',
+                'student_id',
+                'course_id',
+                'branch_id',
+                'exam_id',
+                'lesson_id',
+                'term_id',
+                'assessment_type',
+                'test_date',
+                'value',
+                'marks_out_of',
+            ])
+            ->with([
+                'student:id,full_name,reg_number',
+                'course:id,course_name',
+                'branch:id,name',
+                'lesson:id,title',
+                'term:id,name',
+            ])
             ->when($request->course_id, fn($q) => $q->where('course_id', $request->course_id))
             ->when($request->branch_id, fn($q) => $q->where('branch_id', $request->branch_id))
             ->when($request->exam_id, fn($q) => $q->where('exam_id', $request->exam_id))
@@ -123,14 +143,16 @@ class MarksController extends Controller
         });
 
         // Statistics
-        $stats = [
-            'total_marks' => Mark::count(),
-            'exam_marks' => Mark::where('assessment_type', 'exam')->count(),
-            'test_marks' => Mark::where('assessment_type', 'test')->count(),
-            'average_score' => Mark::whereNotNull('value')->avg('value'),
-            'highest_score' => Mark::max('value'),
-            'lowest_score' => Mark::min('value'),
-        ];
+        $stats = (array) Mark::query()
+            ->selectRaw(
+                'COUNT(*) as total_marks, ' .
+                'COALESCE(SUM(CASE WHEN assessment_type = ? THEN 1 ELSE 0 END), 0) as exam_marks, ' .
+                'COALESCE(SUM(CASE WHEN assessment_type = ? THEN 1 ELSE 0 END), 0) as test_marks, ' .
+                'AVG(value) as average_score, MAX(value) as highest_score, MIN(value) as lowest_score',
+                ['exam', 'test']
+            )
+            ->first()
+            ->getAttributes();
 
         return view('staff.marks.index', compact('groupedMarks', 'students', 'courses', 'branches', 'exams', 'lessons', 'terms', 'stats'));
     }

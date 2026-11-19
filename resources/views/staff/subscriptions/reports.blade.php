@@ -64,10 +64,10 @@
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h6>Subscription Payment History</h6>
                         <div class="btn-group btn-group-sm">
-                            <button type="button" class="btn btn-outline-primary" onclick="exportToCSV()">
+                            <button type="button" class="btn btn-outline-primary" onclick="try { exportToCSV(); } catch(e) { console.error('Export error:', e); alert('Unable to export. Please try again.'); }">
                                 <i class="fas fa-file-csv"></i> Export CSV
                             </button>
-                            <button type="button" class="btn btn-outline-success" onclick="window.print()">
+                            <button type="button" class="btn btn-outline-success" onclick="try { window.print(); } catch(e) { console.error('Print error:', e); alert('Unable to print. Please try again.'); }">
                                 <i class="fas fa-print"></i> Print
                             </button>
                         </div>

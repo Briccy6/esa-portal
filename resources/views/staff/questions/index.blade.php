@@ -234,10 +234,10 @@ window.MathJax = {
                             @endif
                             
                             <div class="mt-3 d-flex gap-2">
-                                <button class="btn btn-sm btn-outline-primary" onclick="editQuestion({{ $question->id }})">
+                                <button class="btn btn-sm btn-outline-primary" onclick="try { editQuestion({{ $question->id }}); } catch(e) { console.error('Edit error:', e); alert('Unable to edit question. Please try again.'); }">
                                     <i class="bi bi-pencil"></i> Edit
                                 </button>
-                                <button class="btn btn-sm btn-outline-danger" onclick="deleteQuestion({{ $question->id }})">
+                                <button class="btn btn-sm btn-outline-danger" onclick="try { deleteQuestion({{ $question->id }}); } catch(e) { console.error('Delete error:', e); alert('Unable to delete question. Please try again.'); }">
                                     <i class="bi bi-trash"></i> Delete
                                 </button>
                             </div>
@@ -367,13 +367,13 @@ window.MathJax = {
                 </div>
                 
                 <div class="mt-3">
-                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="previewQuestionBankQuestions()">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="try { previewQuestionBankQuestions(); } catch(e) { console.error('Preview error:', e); alert('Unable to preview questions. Please try again.'); }">
                         <i class="bi bi-eye"></i> Preview
                     </button>
                 </div>
             </div>
         </div>
-        
+
         <div id="questionBankPreview" class="mt-3" style="display: none;">
             <h6>Questions Preview:</h6>
             <div id="questionBankPreviewList" style="max-height: 300px; overflow-y: auto;"></div>
@@ -381,7 +381,7 @@ window.MathJax = {
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-warning" onclick="importFromQuestionBanks()">
+        <button type="button" class="btn btn-warning" onclick="try { importFromQuestionBanks(); } catch(e) { console.error('Import error:', e); alert('Unable to import questions. Please try again.'); }">
             <i class="bi bi-database"></i> Import Questions
         </button>
       </div>

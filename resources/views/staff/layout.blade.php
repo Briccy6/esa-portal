@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Staff Dashboard - @yield('title', 'ESA-Parnel')</title>
+    <title>Staff Dashboard - @yield('title', 'ESA-Panel')</title>
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -183,12 +183,20 @@
                 min-height: 44px;
             }
 
+            /* Prevent horizontal scroll */
+            html, body {
+                overflow-x: hidden !important;
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+
             /* Mobile tables */
             .table-responsive {
                 overflow-x: auto;
                 -webkit-overflow-scrolling: touch;
                 margin: 0 -1rem 1rem -1rem;
                 padding: 0 1rem;
+                width: 100%;
             }
 
             .table {
@@ -199,7 +207,9 @@
             .table th,
             .table td {
                 padding: 0.5rem;
-                white-space: nowrap;
+                word-wrap: break-word;
+                white-space: normal;
+                min-width: 60px;
             }
 
             /* Mobile cards */
@@ -210,6 +220,8 @@
 
             .card-body {
                 padding: 1rem;
+                overflow: hidden;
+                word-wrap: break-word;
             }
 
             .card-header {
@@ -249,6 +261,35 @@
             .dropdown-menu {
                 min-width: 200px;
             }
+
+            /* Modal adjustments */
+            .modal-dialog {
+                margin: 0.5rem;
+                max-width: calc(100% - 1rem);
+            }
+
+            .modal-content {
+                border-radius: 0.5rem;
+            }
+
+            /* Badge sizing */
+            .badge {
+                font-size: 0.75rem;
+                white-space: normal;
+                word-wrap: break-word;
+            }
+
+            /* Button sizing */
+            .btn {
+                white-space: normal;
+                word-wrap: break-word;
+            }
+
+            /* Action buttons in tables */
+            .table .btn {
+                margin: 0.25rem 0;
+                display: inline-block;
+            }
         }
 
         @media (max-width: 576px) {
@@ -272,6 +313,7 @@
             .table th,
             .table td {
                 padding: 0.375rem;
+                word-wrap: break-word;
             }
 
             /* Extra small cards */
@@ -288,6 +330,12 @@
             .btn {
                 padding: 0.5rem 1rem;
                 font-size: 0.875rem;
+                width: 100%;
+                margin-bottom: 0.5rem;
+            }
+
+            .btn-group .btn {
+                width: auto;
             }
 
             .btn-sm {
@@ -300,6 +348,30 @@
                 font-size: 0.75rem;
                 padding: 0.25rem 0.5rem;
             }
+
+            /* Modal adjustments */
+            .modal-body {
+                padding: 1rem;
+            }
+
+            .modal-footer {
+                flex-direction: column;
+            }
+
+            .modal-footer .btn {
+                width: 100%;
+            }
+        }
+
+        /* Ensure images don't overflow */
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* Prevent text selection issues */
+        * {
+            -webkit-tap-highlight-color: transparent;
         }
     </style>
 </head>
@@ -309,7 +381,7 @@
         <div class="container-fluid">
             <a class="navbar-brand" href="#">
                 <i class="fas fa-school me-2"></i>
-                ESA-Parnel Staff Portal
+                ESA-Panel Staff Portal
             </a>
             
             <div class="navbar-nav ms-auto d-flex align-items-center">
@@ -446,8 +518,48 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     @yield('scripts')
+
+    <!-- Global Modal Cleanup Script -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Fix Bootstrap modal backdrop issue
+        document.addEventListener('hidden.bs.modal', function(event) {
+            // Remove any remaining backdrop elements
+            document.querySelectorAll('.modal-backdrop').forEach(function(backdrop) {
+                backdrop.remove();
+            });
+            // Ensure body styles are restored
+            document.body.classList.remove('modal-open');
+            document.body.style.removeProperty('overflow');
+            document.body.style.removeProperty('padding-right');
+        });
+
+        // Handle all modal close buttons properly
+        document.querySelectorAll('[data-bs-dismiss="modal"]').forEach(function(button) {
+            button.addEventListener('click', function() {
+                const modal = this.closest('.modal');
+                if (modal) {
+                    const modalInstance = bootstrap.Modal.getInstance(modal);
+                    if (modalInstance) {
+                        modalInstance.hide();
+                    }
+                }
+            });
+        });
+
+        // Clean up on page unload
+        window.addEventListener('beforeunload', function() {
+            document.querySelectorAll('.modal-backdrop').forEach(function(backdrop) {
+                backdrop.remove();
+            });
+            document.body.classList.remove('modal-open');
+            document.body.style.removeProperty('overflow');
+            document.body.style.removeProperty('padding-right');
+        });
+    });
+    </script>
 
     <!-- Start of LiveChat (www.livechat.com) code -->
 <script>

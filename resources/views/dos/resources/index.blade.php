@@ -10,7 +10,7 @@
             Study Resources Management
         </h2>
         <div class="d-flex gap-2">
-            <button class="btn btn-outline-primary" onclick="exportResources()">
+            <button class="btn btn-outline-primary" onclick="try { exportResources(); } catch(e) { console.error('Export error:', e); alert('Unable to export resources. Please try again.'); }">
                 <i class="bi bi-download me-1"></i> Export
             </button>
             <a href="{{ route('dos.resources.create') }}" class="btn btn-primary">

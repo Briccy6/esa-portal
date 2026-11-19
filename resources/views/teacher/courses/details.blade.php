@@ -2,20 +2,18 @@
 @extends('teacher.layout')
 
 @section('content')
-<div class="container-fluid py-4">
+<div class="dashboard-content px-4 py-5">
     <!-- Header Section -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="d-flex align-items-center justify-content-between flex-wrap">
-                <div>
-                    <h1 class="display-6 fw-bold text-dark mb-0">My Courses & Units</h1>
-                    <p class="text-muted mb-0">Manage and track your teaching progress</p>
-                </div>
-                <div class="d-flex align-items-center gap-2">
-                    <span class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill">
-                        <i class="fas fa-book me-1"></i>
-                        {{ $courses->count() }} Course{{ $courses->count() !== 1 ? 's' : '' }}
-                    </span>
+    <div class="mb-6">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div>
+                <h1 class="h2 fw-bold mb-1" style="color: #1e293b;">My Courses & Units</h1>
+                <p class="text-muted mb-0">Track your teaching progress and manage course units</p>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <div class="stat-card bg-white border rounded-3 px-4 py-2 shadow-sm">
+                    <span class="text-muted small me-2">Total Courses</span>
+                    <span class="fw-bold" style="color: #1e40af;">{{ $courses->count() }}</span>
                 </div>
             </div>
         </div>
@@ -31,66 +29,71 @@
                     $courseBranches = $course->branch_lessons->pluck('branch_id', 'branch_name');
                 @endphp
                 <div class="col-12">
-                    <div class="card border-0 shadow-lg rounded-4 overflow-hidden course-card">
+                    <div class="course-card bg-white border rounded-4 shadow-sm overflow-hidden">
                         <!-- Course Header -->
-                        <div class="card-header bg-gradient-primary text-white border-0 p-4">
-                            <div class="row align-items-center">
-                                <div class="col-md-8">
-                                    <h3 class="card-title mb-2 fw-bold">
-                                        <i class="fas fa-graduation-cap me-2"></i>
-                                        {{ $course->course_name }}
-                                    </h3>
-                                    <p class="mb-0 opacity-90">
-                                        <i class="fas fa-users me-1"></i>
-                                        {{ $course->students->count() }} enrolled student{{ $course->students->count() !== 1 ? 's' : '' }}
-                                    </p>
+                        <div class="course-header px-5 py-4 d-flex align-items-center justify-content-between" style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);">
+                            <div class="d-flex align-items-center gap-4">
+                                <div class="course-icon bg-white bg-opacity-20 rounded-3 d-flex align-items-center justify-content-center" style="width: 56px; height: 56px;">
+                                    <i class="fas fa-graduation-cap text-white fs-4"></i>
                                 </div>
-                                <div class="col-md-4 text-md-end">
-                                    <div class="d-flex gap-2 align-items-center justify-content-md-end flex-wrap">
-                                        @if($course->students->count() > 0)
-                                            @if($courseBranches->count() > 1)
-                                                <!-- Multiple branches: show branch selector -->
-                                                <div class="dropdown">
-                                                    <button class="btn btn-sm btn-light rounded-pill dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                                        <i class="fas fa-file-csv me-1"></i>Export CSV
-                                                    </button>
-                                                    <ul class="dropdown-menu dropdown-menu-end">
-                                                        <li><h6 class="dropdown-header">Select Branch</h6></li>
-                                                        @foreach($course->branch_lessons as $branchData)
-                                                            <li>
-                                                                <a class="dropdown-item" href="{{ route('teacher.courses.export-students', ['course' => $course->id, 'branch' => $branchData['branch_id']]) }}">
-                                                                    <i class="fas fa-map-marker-alt me-2 text-primary"></i>{{ $branchData['branch_name'] }}
-                                                                </a>
-                                                            </li>
-                                                        @endforeach
-                                                    </ul>
-                                                </div>
-                                            @else
-                                                <a href="{{ route('teacher.courses.export-students', ['course' => $course->id, 'branch' => $course->branch_lessons->first()['branch_id'] ?? null]) }}"
-                                                   class="btn btn-sm btn-light rounded-pill">
-                                                    <i class="fas fa-file-csv me-1"></i>Export CSV
-                                                </a>
-                                            @endif
-                                        @endif
-                                        <div class="badge bg-white text-primary px-3 py-2 rounded-pill fs-6">
-                                            <i class="fas fa-chart-line me-1"></i>
-                                            {{ $totalLessons }} Lesson{{ $totalLessons !== 1 ? 's' : '' }}
-                                        </div>
+                                <div class="text-white">
+                                    <h3 class="fw-bold mb-1 fs-4">{{ $course->course_name }}</h3>
+                                    <div class="d-flex align-items-center gap-3 opacity-90">
+                                        <span class="small">
+                                            <i class="fas fa-users me-1"></i>
+                                            {{ $course->students->count() }} enrolled student{{ $course->students->count() !== 1 ? 's' : '' }}
+                                        </span>
+                                        <span class="small">
+                                            <i class="fas fa-book me-1"></i>
+                                            {{ $totalLessons }} lesson{{ $totalLessons !== 1 ? 's' : '' }}
+                                        </span>
+                                        <span class="small">
+                                            <i class="fas fa-puzzle-piece me-1"></i>
+                                            {{ $totalUnits }} unit{{ $totalUnits !== 1 ? 's' : '' }}
+                                        </span>
                                     </div>
                                 </div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                @if($course->students->count() > 0)
+                                    @if($courseBranches->count() > 1)
+                                        <div class="dropdown">
+                                            <button class="btn btn-white btn-sm rounded-3 px-3" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                <i class="fas fa-download me-2"></i>Export CSV
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                                                <li><h6 class="dropdown-header small text-muted">Select Branch</h6></li>
+                                                @foreach($course->branch_lessons as $branchData)
+                                                    <li>
+                                                        <a class="dropdown-item py-2" href="{{ route('teacher.courses.export-students', ['course' => $course->id, 'branch' => $branchData['branch_id']]) }}">
+                                                            <i class="fas fa-map-marker-alt me-2" style="color: #3b82f6;"></i>{{ $branchData['branch_name'] }}
+                                                        </a>
+                                                    </li>
+                                                @endforeach
+                                            </ul>
+                                        </div>
+                                    @else
+                                        <a href="{{ route('teacher.courses.export-students', ['course' => $course->id, 'branch' => $course->branch_lessons->first()['branch_id'] ?? null]) }}"
+                                           class="btn btn-white btn-sm rounded-3 px-3">
+                                            <i class="fas fa-download me-2"></i>Export CSV
+                                        </a>
+                                    @endif
+                                @endif
                             </div>
                         </div>
 
                         <!-- Course Content -->
-                        <div class="card-body p-0">
+                        <div class="course-body">
                             @if($course->branch_lessons->count())
                                 @foreach($course->branch_lessons as $branchData)
                                     <!-- Branch Section -->
                                     <div class="branch-section border-bottom">
-                                        <div class="branch-header bg-light px-4 py-3 d-flex align-items-center">
-                                            <i class="fas fa-map-marker-alt text-primary me-2"></i>
-                                            <span class="fw-semibold text-dark">{{ $branchData['branch_name'] }}</span>
-                                            <span class="badge bg-primary-subtle text-primary ms-2">
+                                        <div class="branch-header px-5 py-3 d-flex align-items-center" style="background: #f8fafc;">
+                                            <div class="branch-icon bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 32px; height: 32px;">
+                                                <i class="fas fa-map-marker-alt" style="color: #1e40af; font-size: 14px;"></i>
+                                            </div>
+                                            <span class="fw-semibold" style="color: #1e293b;">{{ $branchData['branch_name'] }}</span>
+                                            <span class="badge bg-primary bg-opacity-10 ms-2" style="color: #1e40af;">
                                                 {{ $branchData['lessons']->count() }} lesson{{ $branchData['lessons']->count() !== 1 ? 's' : '' }}
                                             </span>
                                         </div>
@@ -98,37 +101,35 @@
                                         @foreach($branchData['lessons'] as $lessonIndex => $lesson)
                                             <div class="lesson-container {{ $lessonIndex > 0 ? 'border-top' : '' }}">
                                                 <!-- Lesson Header -->
-                                                <div class="lesson-header bg-light p-4">
-                                                    <div class="d-flex align-items-center justify-content-between">
-                                                        <div class="d-flex align-items-center">
-                                                            <div class="lesson-icon bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3"
-                                                                 style="width: 40px; height: 40px;">
-                                                                <i class="fas fa-book-open"></i>
-                                                            </div>
-                                                            <div>
-                                                                <h5 class="mb-1 fw-semibold text-dark">{{ $lesson['title'] }}</h5>
-                                                                <small class="text-muted">
-                                                                    <i class="fas fa-puzzle-piece me-1"></i>
-                                                                    {{ $lesson['units']->count() }} unit{{ $lesson['units']->count() !== 1 ? 's' : '' }}
-                                                                </small>
-                                                            </div>
+                                                <div class="lesson-header px-5 py-4 d-flex align-items-center justify-content-between" style="background: #ffffff;">
+                                                    <div class="d-flex align-items-center gap-3">
+                                                        <div class="lesson-number bg-primary rounded-circle d-flex align-items-center justify-content-center text-white fw-bold" style="width: 36px; height: 36px; font-size: 14px;">
+                                                            {{ $lessonIndex + 1 }}
                                                         </div>
-                                                        @if($lesson['units']->count())
-                                                            <button class="btn btn-outline-primary btn-sm rounded-pill toggle-units"
-                                                                    data-bs-toggle="collapse"
-                                                                    data-bs-target="#lesson-{{ $lesson['id'] }}-units-{{ $branchData['branch_id'] }}"
-                                                                    aria-expanded="false">
-                                                                <i class="fas fa-chevron-down transition-icon"></i>
-                                                                <span class="ms-1">View Units</span>
-                                                            </button>
-                                                        @endif
+                                                        <div>
+                                                            <h5 class="fw-semibold mb-1" style="color: #1e293b;">{{ $lesson['title'] }}</h5>
+                                                            <span class="small text-muted">
+                                                                <i class="fas fa-puzzle-piece me-1"></i>
+                                                                {{ $lesson['units']->count() }} unit{{ $lesson['units']->count() !== 1 ? 's' : '' }}
+                                                            </span>
+                                                        </div>
                                                     </div>
+                                                    @if($lesson['units']->count())
+                                                        <button class="btn btn-outline-primary btn-sm rounded-3 px-3 toggle-units"
+                                                                data-bs-toggle="collapse"
+                                                                data-bs-target="#lesson-{{ $lesson['id'] }}-units-{{ $branchData['branch_id'] }}"
+                                                                aria-expanded="false"
+                                                                style="border-color: #e2e8f0; color: #64748b;">
+                                                            <i class="fas fa-chevron-down transition-icon me-1"></i>
+                                                            <span class="fw-medium">View Units</span>
+                                                        </button>
+                                                    @endif
                                                 </div>
 
                                                 <!-- Units Section -->
                                                 @if($lesson['units']->count())
                                                     <div class="collapse show" id="lesson-{{ $lesson['id'] }}-units-{{ $branchData['branch_id'] }}">
-                                                        <div class="units-grid p-4">
+                                                        <div class="units-grid px-5 py-4" style="background: #f8fafc;">
                                                             <div class="row g-3">
                                                                 @foreach($lesson['units'] as $unit)
                                                                     @php
@@ -138,59 +139,50 @@
                                                                         $progressPercentage = $requiredHours > 0 ? min(($completedHours / $requiredHours) * 100, 100) : 0;
                                                                     @endphp
                                                                     <div class="col-lg-6 col-xl-4">
-                                                                        <div class="unit-card card border h-100 {{ $isDone ? 'border-success' : 'border-warning' }} position-relative">
-                                                                            <!-- Completion Status Badge -->
-                                                                            <div class="position-absolute top-0 end-0 m-2">
-                                                                                @if($isDone)
-                                                                                    <span class="badge bg-success rounded-pill">
-                                                                                        <i class="fas fa-check me-1"></i>Complete
-                                                                                    </span>
-                                                                                @else
-                                                                                    <span class="badge bg-warning text-dark rounded-pill">
-                                                                                        <i class="fas fa-clock me-1"></i>In Progress
-                                                                                    </span>
-                                                                                @endif
-                                                                            </div>
+                                                                        <div class="unit-card bg-white border rounded-3 h-100 {{ $isDone ? 'border-success-subtle' : 'border' }} shadow-sm position-relative overflow-hidden">
+                                                                            <!-- Status Indicator -->
+                                                                            <div class="status-indicator position-absolute top-0 start-0 w-100" style="height: 4px; background: {{ $isDone ? '#10b981' : '#f59e0b' }};"></div>
 
-                                                                            <div class="card-body p-3">
-                                                                                <!-- Unit Title -->
-                                                                                <div class="d-flex align-items-start mb-3">
-                                                                                    <div class="form-check me-2 mt-1">
-                                                                                        <input type="checkbox"
-                                                                                               class="form-check-input"
-                                                                                               id="unit_done_{{ $unit['id'] }}"
-                                                                                               {{ $isDone ? 'checked' : '' }}
-                                                                                               disabled>
-                                                                                    </div>
-                                                                                    <div class="flex-grow-1">
-                                                                                        <h6 class="card-title mb-2 {{ $isDone ? 'text-decoration-line-through text-muted' : 'text-dark' }}">
-                                                                                            {{ $unit['unit_name'] }}
-                                                                                        </h6>
+                                                                            <div class="card-body p-4">
+                                                                                <!-- Unit Header -->
+                                                                                <div class="d-flex align-items-start justify-content-between mb-3">
+                                                                                    <div class="d-flex align-items-start gap-3">
+                                                                                        <div class="status-icon {{ $isDone ? 'bg-success' : 'bg-warning' }} bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mt-1" style="width: 32px; height: 32px;">
+                                                                                            <i class="fas {{ $isDone ? 'fa-check' : 'fa-clock' }}" style="color: {{ $isDone ? '#10b981' : '#f59e0b' }}; font-size: 12px;"></i>
+                                                                                        </div>
+                                                                                        <div>
+                                                                                            <h6 class="fw-semibold mb-1" style="color: #1e293b;">{{ $unit['unit_name'] }}</h6>
+                                                                                            <span class="badge {{ $isDone ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning' }} rounded-pill small">
+                                                                                                {{ $isDone ? 'Complete' : 'In Progress' }}
+                                                                                            </span>
+                                                                                        </div>
                                                                                     </div>
                                                                                 </div>
 
                                                                                 <!-- Progress Section -->
-                                                                                <div class="progress-section">
+                                                                                <div class="progress-section mt-4">
                                                                                     <div class="d-flex justify-content-between align-items-center mb-2">
-                                                                                        <small class="text-muted fw-medium">Progress</small>
-                                                                                        <span class="badge {{ $isDone ? 'bg-success' : 'bg-primary' }} rounded-pill">
-                                                                                            {{ $completedHours }}/{{ $requiredHours }} hrs
+                                                                                        <span class="small text-muted">Hours Progress</span>
+                                                                                        <span class="fw-semibold small" style="color: #1e293b;">
+                                                                                            {{ $completedHours }} / {{ $requiredHours }} hrs
                                                                                         </span>
                                                                                     </div>
 
                                                                                     <!-- Progress Bar -->
-                                                                                    <div class="progress rounded-pill" style="height: 8px;">
-                                                                                        <div class="progress-bar {{ $isDone ? 'bg-success' : 'bg-primary' }} progress-bar-striped progress-bar-animated"
+                                                                                    <div class="progress rounded-pill" style="height: 6px; background: #e2e8f0;">
+                                                                                        <div class="progress-bar rounded-pill"
                                                                                              role="progressbar"
-                                                                                             style="width: {{ $progressPercentage }}%"
+                                                                                             style="width: {{ $progressPercentage }}%; background: {{ $isDone ? '#10b981' : '#3b82f6' }}; transition: width 0.6s ease;"
                                                                                              aria-valuenow="{{ $progressPercentage }}"
                                                                                              aria-valuemin="0"
                                                                                              aria-valuemax="100">
                                                                                         </div>
                                                                                     </div>
 
-                                                                                    <div class="text-center mt-2">
-                                                                                        <small class="text-muted">{{ number_format($progressPercentage, 1) }}% Complete</small>
+                                                                                    <div class="text-end mt-2">
+                                                                                        <span class="small fw-medium" style="color: {{ $isDone ? '#10b981' : '#3b82f6' }};">
+                                                                                            {{ number_format($progressPercentage, 0) }}% Complete
+                                                                                        </span>
                                                                                     </div>
                                                                                 </div>
                                                                             </div>
@@ -201,9 +193,9 @@
                                                         </div>
                                                     </div>
                                                 @else
-                                                    <div class="p-4 text-center">
-                                                        <div class="text-muted">
-                                                            <i class="fas fa-info-circle me-2"></i>
+                                                    <div class="px-5 py-4 text-center">
+                                                        <div class="text-muted small">
+                                                            <i class="fas fa-inbox me-2"></i>
                                                             No units assigned to this lesson yet.
                                                         </div>
                                                     </div>
@@ -213,11 +205,11 @@
                                     </div>
                                 @endforeach
                             @else
-                                <div class="card-body text-center py-5">
+                                <div class="text-center py-5">
                                     <div class="text-muted">
-                                        <i class="fas fa-book-open fa-3x mb-3 opacity-50"></i>
-                                        <h5>No lessons assigned</h5>
-                                        <p class="mb-0">This course doesn't have any lessons assigned to you yet.</p>
+                                        <i class="fas fa-book-open fa-3x mb-3 opacity-25"></i>
+                                        <h5 class="fw-semibold" style="color: #64748b;">No lessons assigned</h5>
+                                        <p class="small text-muted">This course doesn't have any lessons assigned to you yet.</p>
                                     </div>
                                 </div>
                             @endif
@@ -230,14 +222,12 @@
         <!-- Empty State -->
         <div class="row justify-content-center">
             <div class="col-md-8 col-lg-6">
-                <div class="card border-0 shadow-sm text-center py-5">
-                    <div class="card-body">
-                        <div class="mb-4">
-                            <i class="fas fa-graduation-cap fa-4x text-primary opacity-50"></i>
-                        </div>
-                        <h3 class="card-title text-dark mb-3">No Courses Assigned</h3>
-                        <p class="text-muted mb-4">You haven't been assigned any courses yet. Contact your administrator for course assignments.</p>
+                <div class="bg-white border rounded-4 shadow-sm text-center py-5">
+                    <div class="empty-state-icon bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-4" style="width: 80px; height: 80px;">
+                        <i class="fas fa-graduation-cap text-primary fs-2"></i>
                     </div>
+                    <h3 class="fw-bold mb-2" style="color: #1e293b;">No Courses Assigned</h3>
+                    <p class="text-muted mb-0">You haven't been assigned any courses yet. Contact your administrator for course assignments.</p>
                 </div>
             </div>
         </div>
@@ -245,132 +235,248 @@
 </div>
 
 <style>
-/* Custom Styles */
-.bg-gradient-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+/* Modern Dashboard Styles */
+.dashboard-content {
+    max-width: 1400px;
+    margin: 0 auto;
 }
 
 .course-card {
-    transition: all 0.3s ease;
-    border: 1px solid rgba(0,0,0,0.08);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-color: #e2e8f0;
 }
 
 .course-card:hover {
+    box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.12);
     transform: translateY(-2px);
-    box-shadow: 0 1rem 3rem rgba(0,0,0,0.15) !important;
+}
+
+.course-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.course-icon {
+    backdrop-filter: blur(10px);
+}
+
+.branch-section:last-child {
+    border-bottom: none;
 }
 
 .branch-header {
-    border-bottom: 1px solid rgba(0,0,0,0.05);
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.lesson-container {
+    transition: background-color 0.2s ease;
+}
+
+.lesson-container:hover {
+    background-color: #fafbfc;
 }
 
 .lesson-header {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    border-bottom: 1px solid rgba(0,0,0,0.05);
+    border-bottom: 1px solid #f1f5f9;
 }
 
-.lesson-icon {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+.lesson-number {
+    box-shadow: 0 2px 8px rgba(30, 64, 175, 0.2);
 }
 
 .unit-card {
-    transition: all 0.2s ease;
-    border-radius: 12px;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    border-color: #e2e8f0;
 }
 
 .unit-card:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    box-shadow: 0 8px 20px -6px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+    border-color: #cbd5e1;
+}
+
+.unit-card.border-success-subtle {
+    border-color: #d1fae5;
+}
+
+.unit-card.border-success-subtle:hover {
+    border-color: #a7f3d0;
+}
+
+.status-indicator {
+    transition: background-color 0.3s ease;
+}
+
+.status-icon {
+    backdrop-filter: blur(4px);
+}
+
+.toggle-units {
+    transition: all 0.2s ease;
+}
+
+.toggle-units:hover {
+    background-color: #f1f5f9;
+    border-color: #cbd5e1;
+    color: #1e293b;
 }
 
 .toggle-units .transition-icon {
-    transition: transform 0.2s ease;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .toggle-units[aria-expanded="true"] .transition-icon {
     transform: rotate(180deg);
 }
 
-.progress {
-    background-color: rgba(0,0,0,0.08);
+.toggle-units[aria-expanded="true"] {
+    background-color: #eff6ff;
+    border-color: #3b82f6;
+    color: #1e40af;
 }
 
-.badge {
-    font-weight: 500;
+.stat-card {
+    transition: all 0.2s ease;
 }
 
-.form-check-input:checked {
-    background-color: #28a745;
-    border-color: #28a745;
+.stat-card:hover {
+    box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 0.1);
 }
 
-.units-grid {
-    background: linear-gradient(135deg, #fafbff 0%, #f8f9fa 100%);
+/* Progress bar animation */
+@keyframes progressFill {
+    from {
+        width: 0;
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.progress-bar {
+    animation: progressFill 0.8s ease-out;
+}
+
+/* Custom badge styles */
+.badge.bg-success-subtle {
+    background-color: #d1fae5 !important;
+    color: #065f46 !important;
+}
+
+.badge.bg-warning-subtle {
+    background-color: #fef3c7 !important;
+    color: #92400e !important;
+}
+
+.badge.bg-primary-subtle {
+    background-color: #dbeafe !important;
+    color: #1e40af !important;
 }
 
 /* Responsive adjustments */
+@media (max-width: 992px) {
+    .course-header {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 1rem;
+    }
+
+    .course-header .d-flex {
+        width: 100%;
+    }
+
+    .course-header .d-flex:last-child {
+        justify-content: flex-start !important;
+    }
+}
+
 @media (max-width: 768px) {
-    .display-6 {
-        font-size: 1.5rem;
+    .dashboard-content {
+        padding: 1rem !important;
     }
 
-    .card-header .row {
-        text-align: center;
+    .course-header {
+        padding: 1.25rem !important;
     }
 
-    .card-header .col-md-4 {
-        margin-top: 1rem;
+    .branch-header,
+    .lesson-header {
+        padding: 1rem !important;
+    }
+
+    .units-grid {
+        padding: 1rem !important;
     }
 
     .lesson-header .d-flex {
         flex-direction: column;
         align-items: flex-start !important;
+        gap: 0.75rem;
     }
 
     .toggle-units {
-        margin-top: 1rem;
-        align-self: stretch;
+        width: 100%;
+        text-align: center;
+    }
+
+    .unit-card {
+        margin-bottom: 0.5rem;
     }
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-    .lesson-header {
-        background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
-    }
-
-    .units-grid {
-        background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
-    }
+/* Smooth scrolling */
+html {
+    scroll-behavior: smooth;
 }
 
-/* Animation for progress bars */
-@keyframes progress-animation {
-    0% { width: 0; }
-    100% { width: var(--progress-width); }
+/* Focus states for accessibility */
+button:focus,
+a:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
 }
 
-.progress-bar {
-    animation: progress-animation 1s ease-out;
+/* Empty state animation */
+.empty-state-icon {
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-8px);
+    }
 }
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    if (typeof bootstrap !== 'undefined') {
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl);
-        });
-    }
-
+    // Smooth scroll to button after toggle
     document.querySelectorAll('.toggle-units').forEach(function(button) {
         button.addEventListener('click', function() {
             setTimeout(function() {
                 button.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }, 300);
         });
+    });
+
+    // Add subtle entrance animation for cards
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.course-card, .unit-card').forEach(card => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(10px)';
+        card.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+        observer.observe(card);
     });
 });
 </script>

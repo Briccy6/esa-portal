@@ -66,6 +66,21 @@
         margin-bottom: 24px;
     }
 
+    .draft-status {
+        display: none;
+        align-items: center;
+        gap: 7px;
+        padding: 9px 24px;
+        border-bottom: 1px solid #bfdbfe;
+        background: #eff6ff;
+        color: #1e40af;
+        font-size: 12px;
+    }
+
+    .draft-status.visible {
+        display: flex;
+    }
+
     .section-block {
         padding: 24px;
         border-bottom: 1px solid var(--rule);
@@ -109,16 +124,19 @@
     .progress-bar {
         display: flex;
         justify-content: space-between;
-        margin-bottom: 40px;
+        margin-bottom: 0;
+        padding: 24px 24px 18px;
         position: relative;
+        background: #fff;
+        border-bottom: 1px solid var(--rule);
     }
 
     .progress-bar::before {
         content: '';
         position: absolute;
-        top: 20px;
-        left: 0;
-        right: 0;
+        top: 44px;
+        left: 8%;
+        right: 8%;
         height: 2px;
         background: var(--rule);
         z-index: 0;
@@ -158,6 +176,204 @@
         font-size: 12px;
         color: var(--ink-2);
         text-align: center;
+    }
+
+    .step-panel {
+        display: none;
+    }
+
+    .step-panel.active {
+        display: block;
+    }
+
+    .wizard-navigation {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 18px 24px;
+        border-top: 1px solid var(--rule);
+        background: #fff;
+    }
+
+    .wizard-navigation-group {
+        display: flex;
+        gap: 10px;
+        margin-left: auto;
+    }
+
+    .wizard-error {
+        display: none;
+        margin: 0 24px 16px;
+        padding: 12px 14px;
+        border: 1px solid #fecaca;
+        border-radius: var(--radius-sm);
+        background: #fef2f2;
+        color: #b91c1c;
+        font-size: 14px;
+    }
+
+    .wizard-error.show {
+        display: block;
+    }
+
+    .terms-hint,
+    .step-hint {
+        color: var(--ink-2);
+        font-size: 13px;
+        margin-top: 6px;
+    }
+
+    .term-check-pill.selected {
+        border-color: var(--primary);
+        background: #eff6ff;
+        color: #1d4ed8;
+    }
+
+    .term-date {
+        display: block;
+        color: var(--ink-2);
+        font-size: 12px;
+    }
+
+    .course-assignment-card {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+        padding: 14px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        margin-bottom: 12px;
+        background: #fff;
+    }
+
+    .course-assignment-options {
+        flex: 1;
+        min-width: 180px;
+        margin-left: 12px;
+    }
+
+    .course-branch-option.is-disabled {
+        opacity: 0.45;
+        cursor: not-allowed !important;
+    }
+
+    .teacher-assignment-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 12px;
+    }
+
+    .teacher-assignment-card {
+        display: grid;
+        gap: 8px;
+        padding: 14px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background: #fff;
+    }
+
+    .teacher-assignment-card > strong {
+        color: var(--ink);
+    }
+
+    .teacher-assignment-card > span {
+        color: var(--ink-2);
+        font-size: 13px;
+    }
+
+    .review-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .review-item {
+        padding: 16px;
+        border: 1px solid var(--rule);
+        border-radius: 8px;
+        background: #fff;
+        min-width: 0;
+    }
+
+    .review-item strong {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--ink-2);
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+
+    .review-item span {
+        overflow-wrap: anywhere;
+        color: var(--ink);
+    }
+
+    .review-item-wide {
+        grid-column: 1 / -1;
+    }
+
+    .review-assignment-list {
+        display: grid;
+        gap: 10px;
+    }
+
+    .review-branch-group {
+        border: 1px solid var(--rule);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .review-branch-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px;
+        background: #f3f6fb;
+        color: #1f2937;
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .review-branch-title i {
+        color: var(--primary);
+    }
+
+    .review-course-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(180px, 0.45fr);
+        gap: 12px;
+        align-items: center;
+        padding: 11px 12px;
+        border-top: 1px solid var(--rule);
+    }
+
+    .review-course-name {
+        min-width: 0;
+        font-weight: 600;
+        color: var(--ink);
+        overflow-wrap: anywhere;
+    }
+
+    .review-teacher {
+        color: var(--ink-2);
+        font-size: 13px;
+        text-align: right;
+    }
+
+    .review-teacher strong {
+        display: inline;
+        margin: 0 4px 0 0;
+        color: var(--ink-2);
+        font-size: 11px;
+    }
+
+    .progress-step.complete .ps-dot {
+        background: #e8f5ee;
+        border-color: #16845b;
+        color: #16845b;
     }
 
     .field-group {
@@ -306,6 +522,11 @@
         background: var(--bg);
     }
 
+    .branch-card:focus-within {
+        outline: 3px solid rgba(37, 99, 235, 0.2);
+        outline-offset: 2px;
+    }
+
     .branch-card.selected {
         border-color: var(--primary);
         background: #eff6ff;
@@ -379,7 +600,7 @@
 
     @media (max-width: 768px) {
         .page-wrapper {
-            padding: 16px;
+            padding: 12px;
         }
 
         .debug-bar {
@@ -394,13 +615,94 @@
         .term-checks {
             flex-direction: column;
         }
+
+        .section-block {
+            padding: 18px;
+        }
+
+        .progress-bar {
+            padding: 18px 12px 14px;
+        }
+
+        .progress-bar::before {
+            top: 36px;
+        }
+
+        .ps-dot {
+            width: 34px;
+            height: 34px;
+        }
+
+        .ps-label {
+            max-width: 76px;
+            font-size: 10px;
+            line-height: 1.2;
+        }
+
+        .course-assignment-card {
+            flex-direction: column;
+        }
+
+        .course-assignment-options {
+            width: 100%;
+            min-width: 0;
+            margin: 10px 0 0;
+        }
+
+        .wizard-navigation {
+            align-items: stretch;
+            flex-direction: column;
+            padding: 14px;
+        }
+
+        .wizard-navigation-group {
+            width: 100%;
+            margin-left: 0;
+        }
+
+        .wizard-navigation .btn {
+            flex: 1;
+            justify-content: center;
+        }
+
+        .wizard-navigation .btn[hidden] {
+            display: none !important;
+        }
+
+        .review-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .review-course-row {
+            grid-template-columns: 1fr;
+            gap: 4px;
+        }
+
+        .review-teacher {
+            text-align: left;
+        }
+    }
+
+    @media (max-width: 400px) {
+        .page-wrapper {
+            padding: 8px;
+        }
+
+        .page-title {
+            font-size: 23px;
+        }
+
+        .progress-bar {
+            padding-right: 6px;
+            padding-left: 6px;
+        }
     }
 </style>
 
 <div class="page-wrapper">
     <div class="page-header">
-        <h1 class="page-title">Create Multi-Branch Lesson</h1>
-        <p class="page-desc">Set up a lesson that spans multiple branches with proper assignments</p>
+        <h1 class="page-title">Create a lesson</h1>
+        <p class="page-desc">Follow the steps to define the lesson, assign branches and teachers, and choose its study terms.</p>
     </div>
 
     @if(session('success'))
@@ -433,86 +735,93 @@
         @csrf
         <input type="hidden" name="is_multi_branch" value="1">
         
+        @php
+            $oldTeacherAssignments = collect(old('selected_courses', []))
+                ->filter(fn ($assignment) => !empty($assignment['teacher_id']))
+                ->mapWithKeys(fn ($assignment) => [
+                    $assignment['course_id'] . '_' . $assignment['branch_id'] => $assignment['teacher_id'],
+                ])
+                ->all();
+        @endphp
+
         <!-- Store course-teachers mapping for JavaScript -->
         <script>
-            window.courseTeachersMap = {!! json_encode($courseTeachersData ?? []) !!};
-            window.courseNamesMap = {!! json_encode($courses->pluck('course_name', 'id')->toArray()) !!};
-            window.branchNamesMap = {!! json_encode($branches->pluck('name', 'id')->toArray()) !!};
+            window.courseTeachersMap = @json($courseTeachersData ?? []);
+            window.courseNamesMap = @json($courses->pluck('course_name', 'id')->toArray());
+            window.branchNamesMap = @json($branches->pluck('name', 'id')->toArray());
+            window.oldTeacherAssignments = @json($oldTeacherAssignments);
         </script>
 
         <div class="form-card">
-            <div class="progress-bar">
-                <div class="progress-step" id="ps1">
+            <div class="draft-status" id="draftStatus" role="status" aria-live="polite">
+                <i class="fas fa-check-circle" aria-hidden="true"></i>
+                <span>Draft saved on this device</span>
+            </div>
+            <div class="progress-bar" aria-label="Lesson creation progress">
+                <div class="progress-step" id="ps1" aria-current="step">
                     <div class="ps-dot" id="pd1">1</div>
-                    <span class="ps-label">Select branches</span>
+                    <span class="ps-label">Lesson details</span>
                 </div>
                 <div class="progress-step" id="ps2">
                     <div class="ps-dot" id="pd2">2</div>
-                    <span class="ps-label">Assign courses</span>
+                    <span class="ps-label">Assignments</span>
                 </div>
                 <div class="progress-step" id="ps3">
                     <div class="ps-dot" id="pd3">3</div>
-                    <span class="ps-label">Assign teachers</span>
+                    <span class="ps-label">Study terms</span>
+                </div>
+                <div class="progress-step" id="ps4">
+                    <div class="ps-dot" id="pd4">4</div>
+                    <span class="ps-label">Review</span>
                 </div>
             </div>
+            <div class="wizard-error" id="wizardError" role="alert"></div>
 
             {{-- Basic Info --}}
+            <section class="step-panel active" data-step-panel="1" aria-labelledby="step1-title">
             <div class="section-block">
                 <div class="section-hd">
                     <div class="section-hd-badge"><i class="fas fa-info fa-xs"></i></div>
                     <div>
-                        <h2>Basic Information</h2>
-                        <p>Lesson title and core details</p>
-                    </div>
-                </div>
-
-                <div class="debug-bar">
-                    <div class="debug-cell">
-                        <strong>Branches</strong>
-                        <span>
-                            {{ $branches->count() }} available
-                            @if($branches->count() > 0)
-                                - {{ $branches->pluck('name')->implode(', ') }}
-                            @endif
-                        </span>
-                    </div>
-                    <div class="debug-cell">
-                        <strong>Courses</strong>
-                        <span>
-                            {{ $courses->count() }} available
-                            @if($courses->count() > 0)
-                                - {{ $courses->take(3)->pluck('course_name')->implode(', ') }}{{ $courses->count() > 3 ? '...' : '' }}
-                            @endif
-                        </span>
-                    </div>
-                    <div class="debug-cell">
-                        <strong>Terms</strong>
-                        <span>
-                            {{ $terms->count() }} available
-                            @if($terms->count() > 0)
-                                - {{ $terms->pluck('name')->implode(', ') }}
-                            @endif
-                        </span>
+                        <h2 id="step1-title">Lesson details</h2>
+                        <p>Name the lesson and set its grading values.</p>
                     </div>
                 </div>
 
                 <div class="field-group">
-                    <label class="field-label">Lesson Title <span class="req">*</span></label>
-                    <input type="text" name="lesson_title" class="f-control" value="{{ old('lesson_title') }}" required>
+                    <label class="field-label" for="lesson-title">Lesson title <span class="req">*</span></label>
+                    <input type="text" id="lesson-title" name="lesson_title" class="f-control"
+                           value="{{ old('lesson_title') }}" maxlength="255" autocomplete="off" required>
+                    <p class="step-hint">Use a clear name that teachers and students will recognize.</p>
                 </div>
 
-                <div class="field-group">
-                    <label class="field-label">Description</label>
-                    <textarea name="description" class="f-control" rows="4">{{ old('description') }}</textarea>
+                <div class="row">
+                    <div class="col-md-4 field-group">
+                        <label class="field-label" for="max-test-marks">Maximum test marks</label>
+                        <input type="number" id="max-test-marks" name="max_test_marks" class="f-control"
+                               value="{{ old('max_test_marks', 100) }}" min="0" step="1">
+                    </div>
+                    <div class="col-md-4 field-group">
+                        <label class="field-label" for="max-exam-marks">Maximum exam marks</label>
+                        <input type="number" id="max-exam-marks" name="max_exam_marks" class="f-control"
+                               value="{{ old('max_exam_marks', 100) }}" min="0" step="1">
+                    </div>
+                    <div class="col-md-4 field-group">
+                        <label class="field-label" for="lesson-weight">Lesson weight (%) <span class="req">*</span></label>
+                        <input type="number" id="lesson-weight" name="lesson_weight" class="f-control"
+                               value="{{ old('lesson_weight', 1) }}" min="1" max="100" step="1" required>
+                    </div>
                 </div>
             </div>
+            </section>
 
-            {{-- Step 1: Branches --}}
+            <section class="step-panel" data-step-panel="2" aria-labelledby="step2-title">
+            {{-- Step 2: Branches --}}
             <div class="section-block">
                 <div class="section-hd">
                     <div class="section-hd-badge"><i class="fas fa-map-marker-alt fa-xs"></i></div>
                     <div>
-                        <h2>Select Branches</h2>
+                        <h2 id="step2-title">Select branches</h2>
                         <p>Choose which branches this lesson will be available in</p>
                     </div>
                 </div>
@@ -522,7 +831,8 @@
                         @foreach($branches as $branch)
                             <label class="branch-card" style="cursor:pointer;">
                                 <input type="checkbox" name="branches[]" value="{{ $branch->id }}"
-                                       class="branch-checkbox" style="display:none;"
+                                       class="branch-checkbox visually-hidden"
+                                       {{ in_array($branch->id, old('branches', [])) ? 'checked' : '' }}
                                        onchange="updateBranchSelection()">
                                 <div class="branch-card-icon"><i class="fas fa-building"></i></div>
                                 <div class="branch-card-name">{{ $branch->name }}</div>
@@ -541,7 +851,7 @@
                 @endif
             </div>
 
-            {{-- Step 2: Courses --}}
+            {{-- Course assignments --}}
             <div class="section-block">
                 <div class="section-hd">
                     <div class="section-hd-badge"><i class="fas fa-book fa-xs"></i></div>
@@ -561,21 +871,22 @@
                             For each course, select which branches should have this lesson in that course:
                         </p>
                         @foreach($courses as $course)
-                            <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:12px;border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:12px;background:var(--bg);">
+                            <div class="course-assignment-card">
                                 <div style="flex:1;">
                                     <strong style="font-size:.88rem;display:block;">{{ $course->course_name }}</strong>
                                     <div style="font-size:.82rem;color:var(--ink-2);margin-top:4px;">
                                         {{ $course->course_code }}{{ $course->description ? ' - ' . $course->description : '' }}
                                     </div>
                                 </div>
-                                <div style="flex:1;margin-left:20px;">
+                                <div class="course-assignment-options">
                                     <div style="display:flex;flex-direction:column;gap:6px;">
                                         @if($course->branches && $course->branches->count() > 0)
                                             @foreach($course->branches as $b)
-                                                <label style="display:flex;align-items:center;gap:6px;font-size:.82rem;cursor:pointer;">
+                                                <label class="course-branch-option" style="display:flex;align-items:center;gap:6px;font-size:.82rem;cursor:pointer;">
                                                     <input type="checkbox" name="course_branch_pairs[]" 
                                                            value="{{ $course->id }}_{{ $b->id }}"
                                                            class="course-checkbox"
+                                                           {{ in_array($course->id . '_' . $b->id, old('course_branch_pairs', [])) ? 'checked' : '' }}
                                                            onchange="updateCourseSelection()">
                                                     {{ $b->name }}
                                                 </label>
@@ -600,7 +911,7 @@
                 @endif
             </div>
 
-            {{-- Step 3: Assign Teachers --}}
+            {{-- Teacher assignments --}}
             <div class="section-block">
                 <div class="section-hd">
                     <div class="section-hd-badge"><i class="fas fa-chalkboard-user fa-xs"></i></div>
@@ -617,60 +928,87 @@
                     </p>
                 </div>
             </div>
+            </section>
 
-            {{-- Step 4: Academic Details --}}
+            <section class="step-panel" data-step-panel="3" aria-labelledby="step3-title">
             <div class="section-block">
                 <div class="section-hd">
                     <div class="section-hd-badge"><i class="fas fa-calendar fa-xs"></i></div>
                     <div>
-                        <h2>Academic Details</h2>
-                        <p>Set academic year and terms for this lesson</p>
+                        <h2 id="step3-title">Academic year and study terms</h2>
+                        <p>Select the school year and the terms in which this lesson will be studied.</p>
                     </div>
                 </div>
 
-                <div class="row" style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+                <div class="row">
                     <div class="field-group">
-                        <label class="field-label">Academic Year <span class="req">*</span></label>
-                        <select name="academic_year_id" class="f-control" required>
+                        <label class="field-label" for="academic-year">Academic year <span class="req">*</span></label>
+                        <select id="academic-year" name="academic_year_id" class="f-control" required>
                             <option value="">Select academic year</option>
                             @if($ongoingAcademicYear)
-                                <option value="{{ $ongoingAcademicYear->id }}" selected>
+                                <option value="{{ $ongoingAcademicYear->id }}" @selected(old('academic_year_id', $ongoingAcademicYear->id) == $ongoingAcademicYear->id)>
                                     {{ $ongoingAcademicYear->year }} ({{ ucfirst($ongoingAcademicYear->status) }})
                                 </option>
                             @endif
                         </select>
                     </div>
-                    <div class="field-group">
-                        <label class="field-label">Lesson Weight <span class="req">*</span></label>
-                        <input type="number" name="lesson_weight" class="f-control" value="{{ old('lesson_weight', 1) }}" min="1" max="100" required>
-                    </div>
                 </div>
 
                 <div class="field-group">
-                    <label class="field-label">Terms <span class="req">*</span></label>
+                    <label class="field-label">Terms to be studied <span class="req">*</span></label>
+                    <p class="terms-hint">Choose one or two terms for this lesson. At least one term is required.</p>
                     <div class="term-checks">
                         @foreach($terms as $term)
-                            <label class="term-check-pill">
+                            <label class="term-check-pill {{ in_array($term->id, old('terms', [])) ? 'selected' : '' }}">
                                 <input type="checkbox" name="terms[]" value="{{ $term->id }}"
-                                       {{ in_array($term->id, old('terms', [])) ? 'checked' : '' }}>
-                                {{ $term->name }}
+                                       {{ in_array($term->id, old('terms', [])) ? 'checked' : '' }}
+                                       onchange="updateTermSelection(this)">
+                                <span>
+                                    {{ $term->name }}
+                                    @if($term->start_date || $term->end_date)
+                                        <span class="term-date">
+                                            {{ $term->start_date?->format('M j, Y') ?? 'Start date not set' }}
+                                            – {{ $term->end_date?->format('M j, Y') ?? 'End date not set' }}
+                                        </span>
+                                    @endif
+                                </span>
                             </label>
                         @endforeach
                         @if($terms->count() === 0)
-                            <span style="font-size:.82rem;color:var(--ink-4);">No terms available</span>
+                            <span style="font-size:.82rem;color:var(--ink-2);">No terms are configured for this academic year. Add terms before creating a lesson.</span>
                         @endif
                     </div>
+                    <p class="terms-hint"><span id="selectedTermCount">0</span> selected (maximum 2).</p>
                 </div>
             </div>
+            </section>
 
-            {{-- Submit Buttons --}}
-            <div class="section-block">
-                <div style="display:flex;gap:12px;justify-content:flex-end;">
-                    <a href="{{ route('staff.lessons.index') }}" class="btn btn-secondary">
-                        <i class="fas fa-times"></i> Cancel
-                    </a>
-                    <button type="submit" class="btn btn-success" id="submitBtn" disabled>
-                        <i class="fas fa-save"></i> Create Lesson
+            <section class="step-panel" data-step-panel="4" aria-labelledby="step4-title">
+                <div class="section-block">
+                    <div class="section-hd">
+                        <div class="section-hd-badge"><i class="fas fa-clipboard-check fa-xs"></i></div>
+                        <div>
+                            <h2 id="step4-title">Review lesson</h2>
+                            <p>Confirm the lesson details, terms, and branch assignments before saving.</p>
+                        </div>
+                    </div>
+                    <div class="review-grid" id="lessonReview" aria-live="polite"></div>
+                </div>
+            </section>
+
+            <div class="wizard-navigation">
+                <a href="{{ route('staff.lessons.index') }}" class="btn btn-secondary">
+                    <i class="fas fa-times" aria-hidden="true"></i>Cancel
+                </a>
+                <div class="wizard-navigation-group">
+                    <button type="button" class="btn btn-secondary" id="previousStepBtn" onclick="changeStep(-1)" hidden>
+                        <i class="fas fa-arrow-left" aria-hidden="true"></i>Back
+                    </button>
+                    <button type="button" class="btn btn-primary" id="nextStepBtn" onclick="changeStep(1)">
+                        Continue<i class="fas fa-arrow-right" aria-hidden="true"></i>
+                    </button>
+                    <button type="submit" class="btn btn-success" id="submitBtn" hidden>
+                        <i class="fas fa-save" aria-hidden="true"></i>Create lesson
                     </button>
                 </div>
             </div>
@@ -682,8 +1020,96 @@
     // ── State Management ──────────────────────────────────────────
     let selectedBranches = new Set();
     let selectedCourses = new Set();
-    let selectedTeachers = {}; // Map: "courseId_branchId" -> teacher_id
+    let selectedTeachers = window.oldTeacherAssignments || {};
     let currentStep = 1;
+    const lessonDraftKey = 'dos.lesson-create-draft';
+    let draftSaveTimer = null;
+    const failedFields = @json($errors->keys());
+    if (failedFields.some(field => field.startsWith('branches') || field.startsWith('selected_courses'))) {
+        currentStep = 2;
+    } else if (failedFields.some(field => field.startsWith('terms') || field === 'academic_year_id')) {
+        currentStep = 3;
+    }
+
+    function saveLessonDraft() {
+        const draft = {
+            lessonTitle: document.querySelector('[name="lesson_title"]')?.value || '',
+            maxTestMarks: document.querySelector('[name="max_test_marks"]')?.value || '',
+            maxExamMarks: document.querySelector('[name="max_exam_marks"]')?.value || '',
+            lessonWeight: document.querySelector('[name="lesson_weight"]')?.value || '',
+            academicYearId: document.querySelector('[name="academic_year_id"]')?.value || '',
+            branches: Array.from(document.querySelectorAll('[name="branches[]"]:checked')).map(input => input.value),
+            courses: Array.from(document.querySelectorAll('[name="course_branch_pairs[]"]:checked')).map(input => input.value),
+            terms: Array.from(document.querySelectorAll('[name="terms[]"]:checked')).map(input => input.value),
+            teachers: selectedTeachers
+        };
+
+        try {
+            localStorage.setItem(lessonDraftKey, JSON.stringify(draft));
+            const status = document.getElementById('draftStatus');
+            status.classList.add('visible');
+            clearTimeout(draftSaveTimer);
+            draftSaveTimer = setTimeout(() => status.classList.remove('visible'), 2500);
+        } catch (error) {
+            // Storage may be unavailable in private or restricted browser contexts.
+        }
+    }
+
+    function clearLessonDraft() {
+        try {
+            localStorage.removeItem(lessonDraftKey);
+        } catch (error) {
+            // Storage may be unavailable in private or restricted browser contexts.
+        }
+    }
+
+    function restoreLessonDraft() {
+        if (failedFields.length > 0) {
+            return false;
+        }
+
+        let draft;
+        try {
+            const storedDraft = localStorage.getItem(lessonDraftKey);
+            draft = storedDraft ? JSON.parse(storedDraft) : null;
+        } catch (error) {
+            return false;
+        }
+
+        if (!draft || typeof draft !== 'object') {
+            return false;
+        }
+
+        const setValue = (name, value) => {
+            const input = document.querySelector(`[name="${name}"]`);
+            if (input && value !== undefined && value !== null) {
+                input.value = value;
+            }
+        };
+
+        setValue('lesson_title', draft.lessonTitle);
+        setValue('max_test_marks', draft.maxTestMarks);
+        setValue('max_exam_marks', draft.maxExamMarks);
+        setValue('lesson_weight', draft.lessonWeight);
+        setValue('academic_year_id', draft.academicYearId);
+
+        document.querySelectorAll('[name="branches[]"]').forEach(input => {
+            input.checked = Array.isArray(draft.branches) && draft.branches.includes(input.value);
+        });
+        document.querySelectorAll('[name="course_branch_pairs[]"]').forEach(input => {
+            input.checked = Array.isArray(draft.courses) && draft.courses.includes(input.value);
+        });
+        document.querySelectorAll('[name="terms[]"]').forEach(input => {
+            input.checked = Array.isArray(draft.terms) && draft.terms.includes(input.value);
+        });
+        selectedTeachers = draft.teachers && typeof draft.teachers === 'object' ? draft.teachers : {};
+
+        const status = document.getElementById('draftStatus');
+        status.querySelector('span').textContent = 'Saved draft restored';
+        status.classList.add('visible');
+        setTimeout(() => status.classList.remove('visible'), 3500);
+        return true;
+    }
 
     // ── Branch Selection ──────────────────────────────────────────
     function updateBranchSelection() {
@@ -705,11 +1131,22 @@
                 card.classList.add('selected');
             }
         });
+
+        document.querySelectorAll('.course-checkbox').forEach(checkbox => {
+            const branchId = parseInt(checkbox.value.split('_')[1], 10);
+            const branchIsSelected = selectedBranches.has(branchId);
+            checkbox.disabled = !branchIsSelected;
+            if (!branchIsSelected) {
+                checkbox.checked = false;
+            }
+            checkbox.closest('.course-branch-option')?.classList.toggle('is-disabled', !branchIsSelected);
+        });
         
         // Update display
         const countEl = document.getElementById('selectedBranchCount');
         if (countEl) countEl.textContent = selectedBranches.size;
-        updateSubmitButton();
+        updateCourseSelection();
+        saveLessonDraft();
     }
 
     // ── Course Selection ──────────────────────────────────────────
@@ -720,6 +1157,11 @@
         checkboxes.forEach(checkbox => {
             selectedCourses.add(checkbox.value);
         });
+        Object.keys(selectedTeachers).forEach(pair => {
+            if (!selectedCourses.has(pair)) {
+                delete selectedTeachers[pair];
+            }
+        });
         
         const countEl = document.getElementById('selectedCourseCount');
         if (countEl) countEl.textContent = selectedCourses.size;
@@ -727,54 +1169,85 @@
         // Update teacher assignment UI
         renderTeacherAssignments();
         updateSubmitButton();
+        saveLessonDraft();
+    }
+
+    function updateTermSelection(changedCheckbox) {
+        const checkboxes = Array.from(document.querySelectorAll('input[name="terms[]"]'));
+        let selected = checkboxes.filter(checkbox => checkbox.checked);
+        if (selected.length > 2) {
+            changedCheckbox.checked = false;
+            selected = checkboxes.filter(checkbox => checkbox.checked);
+            showWizardError('A lesson can be assigned to no more than two terms.');
+        } else {
+            clearWizardError();
+        }
+        const countEl = document.getElementById('selectedTermCount');
+        if (countEl) countEl.textContent = selected.length;
+
+        checkboxes.forEach(checkbox => {
+            checkbox.closest('.term-check-pill')?.classList.toggle('selected', checkbox.checked);
+        });
+        updateSubmitButton();
+        saveLessonDraft();
     }
 
     // ── Teacher Selection UI ──────────────────────────────────────
     function renderTeacherAssignments() {
         const container = document.getElementById('teacherAssignmentsContainer');
+        container.replaceChildren();
         
         if (selectedCourses.size === 0) {
-            container.innerHTML = '<p style="font-size:.82rem;color:var(--ink-2);margin-bottom:16px;padding:12px;background:var(--bg);border-radius:var(--radius-sm);"><i class="fas fa-info-circle" style="margin-right:4px;"></i>Select courses above first, then assign teachers to each branch-course combination.</p>';
+            const hint = document.createElement('p');
+            hint.className = 'step-hint';
+            hint.textContent = 'Select course and branch combinations above to assign teachers.';
+            container.appendChild(hint);
             return;
         }
-        
-        let html = '<div style="display:flex;flex-direction:column;gap:16px;">';
-        
-        // Group selected courses by branch-course pair
-        const courseBranchPairs = Array.from(selectedCourses);
-        
-        courseBranchPairs.forEach((pair, index) => {
+
+        const assignments = document.createElement('div');
+        assignments.className = 'teacher-assignment-list';
+        selectedCourses.forEach(pair => {
             const [courseId, branchId] = pair.split('_');
             const pairKey = `${courseId}_${branchId}`;
-            
-            // Get course and branch names
-            const courseName = getCourseNameById(courseId);
-            const branchName = getBranchNameById(branchId);
             const teachers = window.courseTeachersMap[courseId] || [];
-            
-            html += `
-                <div style="padding:16px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);">
-                    <div style="margin-bottom:12px;">
-                        <strong style="font-size:.88rem;display:block;color:var(--ink);">${courseName}</strong>
-                        <span style="font-size:.82rem;color:var(--ink-2);">📍 ${branchName}</span>
-                    </div>
-                    <div class="field-group">
-                        <label class="field-label">Assign Teacher</label>
-                        <select class="f-control teacher-select" data-pair="${pairKey}" onchange="updateTeacherSelection(this)">
-                            <option value="">-- No teacher --</option>
-                            ${teachers.map(teacher => `
-                                <option value="${teacher.id}" ${selectedTeachers[pairKey] == teacher.id ? 'selected' : ''}>
-                                    ${teacher.teacher_name}
-                                </option>
-                            `).join('')}
-                        </select>
-                    </div>
-                </div>
-            `;
+
+            const card = document.createElement('div');
+            card.className = 'teacher-assignment-card';
+            const courseName = document.createElement('strong');
+            courseName.textContent = getCourseNameById(courseId);
+            const branchName = document.createElement('span');
+            branchName.textContent = getBranchNameById(branchId);
+
+            const label = document.createElement('label');
+            label.className = 'field-label';
+            label.textContent = 'Assign teacher (optional)';
+            const select = document.createElement('select');
+            const selectId = `teacher-${pairKey}`;
+            label.htmlFor = selectId;
+            select.id = selectId;
+            select.className = 'f-control teacher-select';
+            select.dataset.pair = pairKey;
+            select.addEventListener('change', function () {
+                updateTeacherSelection(this);
+            });
+
+            const noTeacher = document.createElement('option');
+            noTeacher.value = '';
+            noTeacher.textContent = 'No teacher assigned';
+            select.appendChild(noTeacher);
+            teachers.forEach(teacher => {
+                const option = document.createElement('option');
+                option.value = teacher.id;
+                option.textContent = teacher.teacher_name;
+                option.selected = selectedTeachers[pairKey] == teacher.id;
+                select.appendChild(option);
+            });
+
+            card.append(courseName, branchName, label, select);
+            assignments.appendChild(card);
         });
-        
-        html += '</div>';
-        container.innerHTML = html;
+        container.appendChild(assignments);
     }
 
     function updateTeacherSelection(selectElement) {
@@ -788,6 +1261,7 @@
         }
         
         updateSubmitButton();
+        saveLessonDraft();
     }
 
     function getCourseNameById(courseId) {
@@ -800,18 +1274,198 @@
 
     // ── UI Helpers ────────────────────────────────────────────────
     function syncSteps() {
-        const steps = document.querySelectorAll('.progress-step');
-        
-        steps.forEach((step, index) => {
-            const stepNum = index + 1;
-            const dot = step.querySelector('.ps-dot');
-            
-            if (stepNum <= currentStep) {
-                dot.classList.add('active');
-            } else {
-                dot.classList.remove('active');
-            }
+        document.querySelectorAll('.step-panel').forEach(panel => {
+            const isCurrent = Number(panel.dataset.stepPanel) === currentStep;
+            panel.classList.toggle('active', isCurrent);
+            panel.setAttribute('aria-hidden', String(!isCurrent));
         });
+
+        document.querySelectorAll('.progress-step').forEach((step, index) => {
+            const stepNumber = index + 1;
+            step.classList.toggle('complete', stepNumber < currentStep);
+            step.classList.toggle('current', stepNumber === currentStep);
+            step.removeAttribute('aria-current');
+            if (stepNumber === currentStep) {
+                step.setAttribute('aria-current', 'step');
+            }
+            const dot = step.querySelector('.ps-dot');
+            dot.classList.toggle('active', stepNumber === currentStep);
+            dot.textContent = String(stepNumber);
+        });
+
+        document.getElementById('previousStepBtn').hidden = currentStep === 1;
+        document.getElementById('nextStepBtn').hidden = currentStep === 4;
+        document.getElementById('submitBtn').hidden = currentStep !== 4;
+
+        if (currentStep === 4) {
+            renderLessonReview();
+        }
+    }
+
+    function showWizardError(message) {
+        const error = document.getElementById('wizardError');
+        error.textContent = message;
+        error.classList.add('show');
+    }
+
+    function clearWizardError() {
+        const error = document.getElementById('wizardError');
+        error.textContent = '';
+        error.classList.remove('show');
+    }
+
+    function validateCurrentStep() {
+        clearWizardError();
+
+        if (currentStep === 1) {
+            const fields = document.querySelectorAll('[data-step-panel="1"] input[required], [data-step-panel="1"] input[type="number"]');
+            for (const field of fields) {
+                if (!field.checkValidity()) {
+                    field.reportValidity();
+                    return false;
+                }
+            }
+        }
+
+        if (currentStep === 2) {
+            if (selectedBranches.size === 0) {
+                showWizardError('Select at least one branch to continue.');
+                return false;
+            }
+            if (selectedCourses.size === 0) {
+                showWizardError('Select at least one available course and branch combination.');
+                return false;
+            }
+        }
+
+        if (currentStep === 3) {
+            const academicYear = document.getElementById('academic-year');
+            if (!academicYear.checkValidity()) {
+                academicYear.reportValidity();
+                return false;
+            }
+            const selectedTerms = document.querySelectorAll('input[name="terms[]"]:checked').length;
+            if (selectedTerms === 0 || selectedTerms > 2) {
+                showWizardError('Choose at least one term and no more than two terms for this lesson.');
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    function changeStep(direction) {
+        if (direction > 0 && !validateCurrentStep()) {
+            return;
+        }
+
+        currentStep = Math.min(4, Math.max(1, currentStep + direction));
+        syncSteps();
+        clearWizardError();
+        document.querySelector('.page-header').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function renderLessonReview() {
+        const container = document.getElementById('lessonReview');
+        container.replaceChildren();
+
+        const academicYear = document.getElementById('academic-year');
+        const terms = Array.from(document.querySelectorAll('input[name="terms[]"]:checked'))
+            .map(checkbox => checkbox.closest('label').innerText.trim().replace(/\s+/g, ' '));
+        const branches = Array.from(selectedBranches)
+            .map(branchId => window.branchNamesMap[branchId])
+            .filter(Boolean);
+        const assignmentsByBranch = new Map();
+
+        Array.from(selectedCourses).forEach(pair => {
+            const [courseId, branchId] = pair.split('_');
+            const branchName = getBranchNameById(branchId);
+            const teacherSelect = document.querySelector(`.teacher-select[data-pair="${pair}"]`);
+            const teacher = teacherSelect?.selectedOptions[0]?.textContent.trim();
+
+            if (!assignmentsByBranch.has(branchName)) {
+                assignmentsByBranch.set(branchName, []);
+            }
+            assignmentsByBranch.get(branchName).push({
+                courseName: getCourseNameById(courseId),
+                teacher: teacher && teacher !== 'Select a teacher' && teacher !== 'No teacher assigned'
+                    ? teacher
+                    : 'Not assigned'
+            });
+        });
+
+        const summaryItems = [
+            ['Lesson', document.getElementById('lesson-title').value.trim()],
+            ['Academic year', academicYear.selectedOptions[0]?.textContent.trim() || 'Not selected'],
+            ['Study terms', terms.join(', ') || 'None selected'],
+            ['Branches', branches.join(', ') || 'None selected'],
+            ['Grading', `Test: ${document.getElementById('max-test-marks').value || 0} · Exam: ${document.getElementById('max-exam-marks').value || 0} · Weight: ${document.getElementById('lesson-weight').value}%`]
+        ];
+
+        summaryItems.forEach(([label, value]) => {
+            const item = document.createElement('div');
+            item.className = 'review-item';
+            const heading = document.createElement('strong');
+            heading.textContent = label;
+            const detail = document.createElement('span');
+            detail.textContent = value;
+            item.append(heading, detail);
+            container.appendChild(item);
+        });
+
+        const assignmentsItem = document.createElement('div');
+        assignmentsItem.className = 'review-item review-item-wide';
+
+        const assignmentsHeading = document.createElement('strong');
+        assignmentsHeading.textContent = 'Course assignments';
+
+        if (assignmentsByBranch.size === 0) {
+            const empty = document.createElement('span');
+            empty.textContent = 'No course assignments selected';
+            assignmentsItem.append(assignmentsHeading, empty);
+        } else {
+            const list = document.createElement('div');
+            list.className = 'review-assignment-list';
+
+            Array.from(assignmentsByBranch.entries()).forEach(([branchName, courses]) => {
+                const group = document.createElement('div');
+                group.className = 'review-branch-group';
+
+                const title = document.createElement('div');
+                title.className = 'review-branch-title';
+                title.innerHTML = '<i class="fas fa-code-branch" aria-hidden="true"></i>';
+                const titleText = document.createElement('span');
+                titleText.textContent = branchName;
+                title.appendChild(titleText);
+                group.appendChild(title);
+
+                courses
+                    .sort((a, b) => a.courseName.localeCompare(b.courseName))
+                    .forEach(assignment => {
+                        const row = document.createElement('div');
+                        row.className = 'review-course-row';
+
+                        const courseName = document.createElement('span');
+                        courseName.className = 'review-course-name';
+                        courseName.textContent = assignment.courseName;
+
+                        const teacher = document.createElement('span');
+                        teacher.className = 'review-teacher';
+                        const teacherLabel = document.createElement('strong');
+                        teacherLabel.textContent = 'TEACHER';
+                        teacher.append(teacherLabel, document.createTextNode(assignment.teacher));
+
+                        row.append(courseName, teacher);
+                        group.appendChild(row);
+                    });
+
+                list.appendChild(group);
+            });
+
+            assignmentsItem.append(assignmentsHeading, list);
+        }
+
+        container.appendChild(assignmentsItem);
     }
 
     function updateSubmitButton() {
@@ -822,39 +1476,54 @@
         const hasCourses = selectedCourses.size > 0;
         const hasTitle = titleField && titleField.value.trim().length > 0;
         const hasWeight = weightField && parseFloat(weightField.value) > 0;
+        const hasAcademicYear = Boolean(document.getElementById('academic-year')?.value);
+        const termCount = document.querySelectorAll('input[name="terms[]"]:checked').length;
         
-        // All fields must be selected to enable submit
-        submitBtn.disabled = !(hasTitle && hasWeight && hasBranches && hasCourses);
+        submitBtn.disabled = !(hasTitle && hasWeight && hasBranches && hasCourses && hasAcademicYear && termCount >= 1 && termCount <= 2);
     }
 
     // ── Form Submission Handler ──────────────────────────────────
     function prepareFormSubmission(event) {
-        const titleField = document.querySelector('input[name="lesson_title"]');
-        const weightField = document.querySelector('input[name="lesson_weight"]');
+        if (currentStep !== 4) {
+            event.preventDefault();
+            if (validateCurrentStep()) {
+                changeStep(1);
+            }
+            return false;
+        }
+
         const courseCheckboxes = document.querySelectorAll('.course-checkbox:checked');
         const branchCheckboxes = document.querySelectorAll('.branch-checkbox:checked');
-        
-        let errors = [];
-        
-        if (!titleField || !titleField.value.trim()) {
-            errors.push('Please enter a lesson title');
-        }
-        
-        if (!weightField || parseFloat(weightField.value) <= 0) {
-            errors.push('Please enter a valid lesson weight');
-        }
-        
-        if (branchCheckboxes.length === 0) {
-            errors.push('Please select at least one branch');
-        }
-        
-        if (courseCheckboxes.length === 0) {
-            errors.push('Please select at least one course-branch combination');
-        }
-        
-        if (errors.length > 0) {
+        const selectedTerms = document.querySelectorAll('input[name="terms[]"]:checked').length;
+        const academicYear = document.getElementById('academic-year');
+
+        const basicFields = document.querySelectorAll('[data-step-panel="1"] input[required], [data-step-panel="1"] input[type="number"]');
+        const invalidBasicField = Array.from(basicFields).find(field => !field.checkValidity());
+        if (invalidBasicField) {
             event.preventDefault();
-            alert('Please fix the following errors:\n\n' + errors.join('\n'));
+            currentStep = 1;
+            syncSteps();
+            invalidBasicField.reportValidity();
+            return false;
+        }
+
+        if (branchCheckboxes.length === 0 || courseCheckboxes.length === 0) {
+            event.preventDefault();
+            currentStep = 2;
+            syncSteps();
+            showWizardError('Select at least one branch and one course-branch combination.');
+            return false;
+        }
+
+        if (!academicYear.checkValidity() || selectedTerms === 0 || selectedTerms > 2) {
+            event.preventDefault();
+            currentStep = 3;
+            syncSteps();
+            if (!academicYear.checkValidity()) {
+                academicYear.reportValidity();
+            } else {
+                showWizardError('Choose at least one term and no more than two terms for this lesson.');
+            }
             return false;
         }
         
@@ -890,18 +1559,24 @@
         // Append to form
         const form = document.getElementById('multiBranchForm');
         form.appendChild(selectedCoursesContainer);
+        clearLessonDraft();
+        document.getElementById('submitBtn').disabled = true;
+        document.getElementById('submitBtn').innerHTML = '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Creating lesson…';
         
         return true;
     }
 
     // ── Init ──────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('multiBranchForm');
+        form.noValidate = true;
+        restoreLessonDraft();
         syncSteps();
         updateBranchSelection();
         updateCourseSelection();
+        updateTermSelection();
         
         // Add form submission handler
-        const form = document.getElementById('multiBranchForm');
         if (form) {
             form.addEventListener('submit', prepareFormSubmission);
         }
@@ -909,8 +1584,25 @@
         // Listen to all input changes to update button state
         const titleInput = document.querySelector('input[name="lesson_title"]');
         const weightInput = document.querySelector('input[name="lesson_weight"]');
-        if (titleInput) titleInput.addEventListener('input', updateSubmitButton);
-        if (weightInput) weightInput.addEventListener('input', updateSubmitButton);
+        if (titleInput) titleInput.addEventListener('input', function() {
+            updateSubmitButton();
+            saveLessonDraft();
+        });
+        if (weightInput) weightInput.addEventListener('input', function() {
+            updateSubmitButton();
+            saveLessonDraft();
+        });
+        document.querySelectorAll('input[name="max_test_marks"], input[name="max_exam_marks"]').forEach(input => {
+            input.addEventListener('input', function() {
+                updateSubmitButton();
+                saveLessonDraft();
+            });
+        });
+        document.getElementById('academic-year').addEventListener('change', function() {
+            updateSubmitButton();
+            saveLessonDraft();
+        });
+        window.addEventListener('pagehide', saveLessonDraft);
     });
 
 </script>

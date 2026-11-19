@@ -1,5 +1,5 @@
 @php
-    $systemName = 'ESA-Parnel'; // Static value to avoid cache dependency
+    $systemName = 'ESA-Panel'; // Static value to avoid cache dependency
     $logoUrl = asset('images/esa.jpg'); // Static logo URL
     $systemLogo = 'images/esa.jpg'; // Static system logo
 @endphp

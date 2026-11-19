@@ -15,17 +15,64 @@ use Illuminate\Support\Facades\DB;
 
 class StudentController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $students = Student::with(['branch', 'course', 'academicYear'])
+        $query = Student::query();
+
+        if ($request->filled('branch')) {
+            $query->where('branch_id', $request->input('branch'));
+        }
+
+        if ($request->filled('course')) {
+            $query->where('course_id', $request->input('course'));
+        }
+
+        if ($request->input('status') === 'active') {
+            $query->where('payed_registration_fees', 1);
+        } elseif ($request->input('status') === 'inactive') {
+            $query->where('payed_registration_fees', 0);
+        }
+
+        $studentStats = (clone $query)
+            ->selectRaw(
+                'COUNT(*) as total, ' .
+                'COALESCE(SUM(CASE WHEN payed_registration_fees = 1 THEN 1 ELSE 0 END), 0) as active, ' .
+                'COALESCE(SUM(CASE WHEN payed_registration_fees = 0 THEN 1 ELSE 0 END), 0) as inactive'
+            )
+            ->first();
+
+        $students = $query
+            ->select([
+                'id',
+                'full_name',
+                'student_id',
+                'email',
+                'phone',
+                'branch_id',
+                'course_id',
+                'academic_year_id',
+                'payed_registration_fees',
+            ])
+            ->with([
+                'branch:id,name',
+                'course:id,course_name',
+                'academicYear:id,year',
+            ])
             ->orderBy('full_name')
-            ->paginate(20);
+            ->paginate(20)
+            ->withQueryString();
+
+        $branches = Branch::query()->select('id', 'name')->get();
+        $courses = Course::query()->select('id', 'course_name')->get();
+        $academicYears = AcademicYear::query()->select('id', 'year')->get();
         
-        $branches = Branch::all();
-        $courses = Course::all();
-        $academicYears = AcademicYear::all();
-        
-        return view('dos.students.index', compact('students', 'branches', 'courses', 'academicYears'));
+        return view('dos.students.index', compact(
+            'students',
+            'studentStats',
+            'branches',
+            'courses',
+            'academicYears'
+        ));
     }
 
     public function listStudentCards()

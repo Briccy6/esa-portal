@@ -11,6 +11,7 @@ use App\Models\LessonUnit;
 use App\Models\Branch;
 use App\Models\LessonBranchCourse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use App\Services\AcademicYearContext;
 use App\Models\TimetableSession;
 use App\Models\ReportCardSubject;
@@ -22,23 +23,33 @@ class LessonController extends Controller
 {
     public function index(Request $request)
     {
-        // Optimize: Only load necessary relationships with specific columns
-        $query = Lesson::with([
-            'course:id,course_name,course_code',
-            'teacher:id,teacher_name',
-            'units:id,lesson_id,unit_name',
-            'branches:id,name',
-            'terms:id,name,start_date,end_date,academic_year_id',
-            'branchCourses' => function($q) {
-                $q->with([
-                    'branch:id,name',
-                    'course:id,course_name',
-                    'teacher:id,teacher_name'
-                ]);
-            }
-        ]);
+        $isDos = auth('staff')->check() && auth('staff')->user()->role === 'DOS';
+        $query = Lesson::query();
 
-        // Search across multiple fields
+        if ($isDos) {
+            $query->with([
+                'branches:id,name',
+                'branchCourses' => function ($q) {
+                    $q->with('branch:id,name');
+                },
+            ]);
+        } else {
+            $query->with([
+                'course:id,course_name,course_code',
+                'teacher:id,teacher_name',
+                'units:id,lesson_id,unit_name',
+                'branches:id,name',
+                'terms:id,name,start_date,end_date,academic_year_id',
+                'branchCourses' => function ($q) {
+                    $q->with([
+                        'branch:id,name',
+                        'course:id,course_name',
+                        'teacher:id,teacher_name',
+                    ]);
+                },
+            ]);
+        }
+
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
@@ -51,15 +62,37 @@ class LessonController extends Controller
                   })
                   ->orWhereHas('terms', function($q3) use ($search) {
                       $q3->where('name', 'like', "%$search%");
+                  })
+                  ->orWhereHas('branches', function($q4) use ($search) {
+                      $q4->where('name', 'like', "%$search%");
+                  })
+                  ->orWhereHas('branchCourses.course', function($q5) use ($search) {
+                      $q5->where('course_name', 'like', "%$search%");
+                  })
+                  ->orWhereHas('branchCourses.teacher', function($q6) use ($search) {
+                      $q6->where('teacher_name', 'like', "%$search%");
                   });
             });
         }
 
-        $lessonDetails = $query->paginate(15);
+        $lessonDetails = $query->orderBy('title')->paginate(15)->withQueryString();
 
-        // Check if user is DOS and return DOS view
-        if (auth('staff')->check() && auth('staff')->user()->role === 'DOS') {
-            return view('dos.lessons.index', compact('lessonDetails'));
+        if ($isDos) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'rows' => view('dos.lessons.partials.rows', compact('lessonDetails'))->render(),
+                    'pagination' => view('dos.lessons.partials.pagination', compact('lessonDetails'))->render(),
+                    'total' => $lessonDetails->total(),
+                    'from' => $lessonDetails->firstItem(),
+                    'to' => $lessonDetails->lastItem(),
+                    'last_page' => $lessonDetails->lastPage(),
+                ]);
+            }
+
+            $branches = Branch::query()->select('id', 'name')->orderBy('name')->get();
+            $teachers = Teacher::query()->select('id', 'teacher_name')->orderBy('teacher_name')->get();
+
+            return view('dos.lessons.manage', compact('lessonDetails', 'branches', 'teachers'));
         }
 
         // Check if user is staff (non-DOS) and return appropriate view
@@ -81,13 +114,15 @@ class LessonController extends Controller
         // Optimize: Only select needed columns
         $courses = Course::select('id', 'course_name', 'course_code')->get();
         $branches = \App\Models\Branch::select('id', 'name')->get();
-        $terms = Term::select('id', 'name', 'start_date', 'end_date', 'academic_year_id')->get();
+        $ongoingAcademicYear = AcademicYearContext::current();
+        $terms = Term::select('id', 'name', 'start_date', 'end_date', 'academic_year_id')
+            ->when($ongoingAcademicYear, fn ($query) => $query->where('academic_year_id', $ongoingAcademicYear->id))
+            ->orderBy('start_date')
+            ->get();
         $teachers = collect();
 
         // For DOS dashboard, we need multi-branch, multi-course support
         if (auth('staff')->check() && auth('staff')->user()->role === 'DOS') {
-            $ongoingAcademicYear = AcademicYearContext::current();
-
             // Optimize: Single query to get all course-teacher relationships
             $courseTeachersData = DB::table('teacher_course')
                 ->join('teachers', 'teacher_course.teacher_id', '=', 'teachers.id')
@@ -123,8 +158,6 @@ class LessonController extends Controller
                 ->get();
         }
 
-        $ongoingAcademicYear = AcademicYearContext::current();
-
         return view('staff.lessons.create', compact('courses', 'teachers', 'ongoingAcademicYear', 'terms'));
     }
 
@@ -144,7 +177,11 @@ class LessonController extends Controller
             'max_exam_marks' => 'nullable|integer|min:0',
             'lesson_weight' => 'required|integer|min:1|max:100', // <-- add this line
             'terms' => 'required|array|min:1|max:2',
-            'terms.*' => 'exists:terms,id',
+            'terms.*' => [
+                'required',
+                'integer',
+                Rule::exists('terms', 'id')->where('academic_year_id', $request->input('academic_year_id')),
+            ],
             'academic_year_id' => 'required|exists:academic_years,id',
         ]);
 
@@ -186,8 +223,14 @@ class LessonController extends Controller
             'max_test_marks' => 'nullable|integer|min:0',
             'max_exam_marks' => 'nullable|integer|min:0',
             'lesson_weight' => 'required|integer|min:1|max:100',
+            'branches' => 'required|array|min:1',
+            'branches.*' => 'required|exists:branches,id',
             'terms' => 'required|array|min:1|max:2',
-            'terms.*' => 'exists:terms,id',
+            'terms.*' => [
+                'required',
+                'integer',
+                Rule::exists('terms', 'id')->where('academic_year_id', $request->input('academic_year_id')),
+            ],
             'academic_year_id' => 'required|exists:academic_years,id',
         ]);
 
@@ -571,6 +614,13 @@ public function createDetails(Request $request, $lessonId)
             \Log::info('Deleted lesson successfully');
             
             DB::commit();
+
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Lesson and all related data deleted successfully.',
+                ]);
+            }
             
             return redirect()->route('staff.lessons.index')
                              ->with('success', 'Lesson and all related data deleted successfully.');
@@ -580,6 +630,13 @@ public function createDetails(Request $request, $lessonId)
             
             \Log::error('Error deleting lesson: ' . $e->getMessage());
             \Log::error('Stack trace: ' . $e->getTraceAsString());
+
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error deleting lesson. Please try again.',
+                ], 500);
+            }
             
             return redirect()->route('staff.lessons.index')
                              ->with('error', 'Error deleting lesson: ' . $e->getMessage());
@@ -636,12 +693,28 @@ public function createDetails(Request $request, $lessonId)
             DB::commit();
 
             $totalAssignments = \App\Models\LessonBranchCourse::where('lesson_id', $lesson->id)->count();
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Lesson assignments updated successfully.',
+                    'total_assignments' => $totalAssignments,
+                ]);
+            }
+
             return redirect()->route('dos.lessons.index')
                              ->with('success', 'Lesson assignments updated successfully. ' . $totalAssignments . ' total branch-course combinations assigned.');
 
         } catch (\Exception $e) {
             DB::rollback();
             \Log::error('Error assigning lesson: ' . $e->getMessage());
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error assigning lesson. Please try again.',
+                ], 500);
+            }
             
             return redirect()->back()
                              ->with('error', 'Error assigning lesson: ' . $e->getMessage())
@@ -654,13 +727,17 @@ public function createDetails(Request $request, $lessonId)
      */
     public function getAssignments($lessonId)
     {
-        $lesson = Lesson::with(['branches', 'courses', 'teachers'])->findOrFail($lessonId);
+        $lesson = Lesson::query()->select('id', 'title')->findOrFail($lessonId);
         
         $assignments = [];
         
-        // Get assignments from lesson_branch_course table
         $lessonAssignments = \App\Models\LessonBranchCourse::where('lesson_id', $lessonId)
-            ->with(['branch', 'course', 'teacher'])
+            ->select('id', 'lesson_id', 'branch_id', 'course_id', 'teacher_id')
+            ->with([
+                'branch:id,name',
+                'course:id,course_name,course_code',
+                'teacher:id,teacher_name',
+            ])
             ->get();
         
         foreach ($lessonAssignments as $assignment) {
@@ -675,7 +752,10 @@ public function createDetails(Request $request, $lessonId)
             ];
         }
 
-        return response()->json(['assignments' => $assignments]);
+        return response()->json([
+            'lesson' => ['id' => $lesson->id, 'title' => $lesson->title],
+            'assignments' => $assignments,
+        ]);
     }
 
     /**

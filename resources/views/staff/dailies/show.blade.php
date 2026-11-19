@@ -172,15 +172,20 @@
                             <i class="fas fa-users me-2"></i>
                             Student Attendance Management
                         </h5>
-                        <div class="attendance-stats">
-                            <span class="badge bg-light text-dark me-2">
-                                <i class="fas fa-user-check me-1"></i>
-                                {{ $attendances->where('status', 'P')->count() }} Present
-                            </span>
-                            <span class="badge bg-light text-dark">
-                                <i class="fas fa-user-times me-1"></i>
-                                {{ $attendances->where('status', 'A')->count() }} Absent
-                            </span>
+                        <div class="d-flex align-items-center gap-3">
+                            <button type="button" id="sort-attendance-btn" class="btn btn-sm btn-light">
+                                <i class="bi bi-sort-alpha-down me-1"></i>Sort: A-Z
+                            </button>
+                            <div class="attendance-stats">
+                                <span class="badge bg-light text-dark me-2">
+                                    <i class="fas fa-user-check me-1"></i>
+                                    {{ $attendances->where('status', 'P')->count() }} Present
+                                </span>
+                                <span class="badge bg-light text-dark">
+                                    <i class="fas fa-user-times me-1"></i>
+                                    {{ $attendances->where('status', 'A')->count() }} Absent
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -481,6 +486,40 @@ document.addEventListener('DOMContentLoaded', function() {
     // Event listeners for filtering
     studentSearch.addEventListener('input', filterStudents);
     statusFilter.addEventListener('change', filterStudents);
+
+    // Sort attendance button functionality
+    const sortBtn = document.getElementById('sort-attendance-btn');
+    if (sortBtn) {
+        let isAscending = true;
+        sortBtn.addEventListener('click', function() {
+            const rows = Array.from(document.querySelectorAll('.attendance-row'));
+            const tbody = document.querySelector('#attendanceTable tbody');
+
+            rows.sort(function(a, b) {
+                const nameA = a.querySelector('.student-name').textContent.trim();
+                const nameB = b.querySelector('.student-name').textContent.trim();
+
+                if (isAscending) {
+                    return nameA.localeCompare(nameB);
+                } else {
+                    return nameB.localeCompare(nameA);
+                }
+            });
+
+            // Re-append rows in sorted order
+            rows.forEach(function(row) {
+                tbody.appendChild(row);
+            });
+
+            // Update button state
+            isAscending = !isAscending;
+            if (isAscending) {
+                sortBtn.innerHTML = '<i class="bi bi-sort-alpha-down me-1"></i>Sort: A-Z';
+            } else {
+                sortBtn.innerHTML = '<i class="bi bi-sort-alpha-up me-1"></i>Sort: Z-A';
+            }
+        });
+    }
 
     // Track changes in attendance
     attendanceSelects.forEach(select => {

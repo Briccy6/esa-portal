@@ -57,6 +57,21 @@
                             </div>
 
                             <div class="col-md-6 mb-3">
+                                <label for="branch_id" class="form-label">Branch</label>
+                                <select class="form-select" id="branch_id" name="branch_id">
+                                    <option value="">Select Branch (Optional)</option>
+                                    @foreach($branches as $branch)
+                                        <option value="{{ $branch->id }}" {{ old('branch_id') == $branch->id ? 'selected' : '' }}>
+                                            {{ $branch->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <div class="form-text">Associate with a specific branch.</div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
                                 <label for="lesson_id" class="form-label">Lesson</label>
                                 <select class="form-select" id="lesson_id" name="lesson_id">
                                     <option value="">Select Lesson (Optional)</option>

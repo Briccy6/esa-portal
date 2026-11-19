@@ -92,7 +92,7 @@
         </div>
         <div class="card-footer">
             @if(!$daily->approved)
-                <button type="button" class="btn btn-success" onclick="approveDaily({{ $daily->id }})">
+                <button type="button" class="btn btn-success" onclick="try { approveDaily({{ $daily->id }}); } catch(e) { console.error('Approve error:', e); alert('Unable to approve activity. Please try again.'); }">
                     <i class="bi bi-check-circle me-2"></i>Approve Activity
                 </button>
                 <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#rejectModal">
@@ -106,15 +106,18 @@
 
     <!-- Attendance Records -->
     <div class="card">
-        <div class="card-header bg-info text-white">
+        <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Attendance Records</h5>
+            <button type="button" id="sort-attendance-btn" class="btn btn-sm btn-light">
+                <i class="bi bi-sort-alpha-down me-1"></i>Sort: A-Z
+            </button>
         </div>
         <div class="card-body">
             @if($attendances->isEmpty())
                 <p class="text-muted">No attendance records found for this activity.</p>
             @else
                 <div class="table-responsive">
-                    <table class="table table-bordered table-striped">
+                    <table class="table table-bordered table-striped" id="attendanceTable">
                         <thead>
                             <tr>
                                 <th>Student Name</th>
@@ -179,13 +182,49 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger" onclick="submitReject()">Reject</button>
+                <button type="button" class="btn btn-danger" onclick="try { submitReject(); } catch(e) { console.error('Reject error:', e); alert('Unable to reject activity. Please try again.'); }">Reject</button>
             </div>
         </div>
     </div>
 </div>
 
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Sort attendance button functionality
+    const sortBtn = document.getElementById('sort-attendance-btn');
+    if (sortBtn) {
+        let isAscending = true;
+        sortBtn.addEventListener('click', function() {
+            const rows = Array.from(document.querySelectorAll('#attendanceTable tbody tr'));
+            const tbody = document.querySelector('#attendanceTable tbody');
+
+            rows.sort(function(a, b) {
+                const nameA = a.querySelector('td:nth-child(1)').textContent.trim();
+                const nameB = b.querySelector('td:nth-child(1)').textContent.trim();
+
+                if (isAscending) {
+                    return nameA.localeCompare(nameB);
+                } else {
+                    return nameB.localeCompare(nameA);
+                }
+            });
+
+            // Re-append rows in sorted order
+            rows.forEach(function(row) {
+                tbody.appendChild(row);
+            });
+
+            // Update button state
+            isAscending = !isAscending;
+            if (isAscending) {
+                sortBtn.innerHTML = '<i class="bi bi-sort-alpha-down me-1"></i>Sort: A-Z';
+            } else {
+                sortBtn.innerHTML = '<i class="bi bi-sort-alpha-up me-1"></i>Sort: Z-A';
+            }
+        });
+    }
+});
+
 function approveDaily(id) {
     if (confirm('Are you sure you want to approve this daily activity and all related attendance records?')) {
         fetch('{{ route('dos.teacher-dailies.approve', ':id') }}'.replace(':id', id), {

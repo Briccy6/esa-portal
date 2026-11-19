@@ -159,13 +159,13 @@
         <button type="submit" class="btn btn-primary">Update Timetable</button>
         <form action="{{ route('dos.timetable.publish', $timetable) }}" method="POST" class="d-inline ms-2">
             @csrf
-            <button type="submit" class="btn btn-success" onclick="return confirm('Are you sure you want to publish this timetable?')">Publish Timetable</button>
+            <button type="submit" class="btn btn-success" onclick="try { return confirm('Are you sure you want to publish this timetable?'); } catch(e) { console.error('Publish error:', e); return false; }">Publish Timetable</button>
         </form>
         @if($timetable->status === 'draft')
             <form action="{{ route('dos.timetable.destroy', $timetable) }}" method="POST" class="d-inline ms-2">
                 @csrf
                 @method('DELETE')
-                <button type="submit" class="btn btn-danger" onclick="return confirm('Delete this timetable? This action cannot be undone.')">Delete Timetable</button>
+                <button type="submit" class="btn btn-danger" onclick="try { return confirm('Delete this timetable? This action cannot be undone.'); } catch(e) { console.error('Delete error:', e); return false; }">Delete Timetable</button>
             </form>
         @else
             <div class="d-inline ms-2 align-middle text-muted">

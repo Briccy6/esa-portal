@@ -33,7 +33,13 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach($marks as $mark)
+                                    @php
+                                        // Sort marks by student name (A-Z)
+                                        $sortedMarks = $marks->sortBy(function($mark) {
+                                            return $mark->student->full_name ?? '';
+                                        });
+                                    @endphp
+                                    @foreach($sortedMarks as $mark)
                                         <tr>
                                             <td>{{ $mark->student->full_name ?? 'N/A' }}</td>
                                             <td>{{ $mark->course->course_name ?? 'N/A' }}</td>

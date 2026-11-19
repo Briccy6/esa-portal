@@ -26,7 +26,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
-                            <h4 class="card-title">{{ $students->count() ?? 0 }}</h4>
+                            <h4 class="card-title">{{ $studentStats->total ?? 0 }}</h4>
                             <p class="card-text">Total Students</p>
                         </div>
                         <div class="align-self-center">
@@ -41,7 +41,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
-                            <h4 class="card-title">{{ $students->where('payed_registration_fees', 1)->count() ?? 0 }}</h4>
+                            <h4 class="card-title">{{ $studentStats->active ?? 0 }}</h4>
                             <p class="card-text">Active</p>
                         </div>
                         <div class="align-self-center">
@@ -56,7 +56,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
-                            <h4 class="card-title">{{ $students->where('payed_registration_fees', 0)->count() ?? 0 }}</h4>
+                            <h4 class="card-title">{{ $studentStats->inactive ?? 0 }}</h4>
                             <p class="card-text">Inactive</p>
                         </div>
                         <div class="align-self-center">
@@ -184,10 +184,10 @@
                                             <a href="{{ route('dos.students.edit', $student->id) }}" class="btn btn-outline-primary">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
-                                            <button onclick="generateCard({{ $student->id }})" class="btn btn-outline-info">
+                                            <button onclick="try { generateCard({{ $student->id }}); } catch(e) { console.error('Card generation error:', e); alert('Unable to generate card. Please try again.'); }" class="btn btn-outline-info">
                                                 <i class="bi bi-id-card"></i>
                                             </button>
-                                            <button onclick="viewDetails({{ $student->id }})" class="btn btn-outline-success">
+                                            <button onclick="try { viewDetails({{ $student->id }}); } catch(e) { console.error('View details error:', e); alert('Unable to view details. Please try again.'); }" class="btn btn-outline-success">
                                                 <i class="bi bi-eye"></i>
                                             </button>
                                         </div>

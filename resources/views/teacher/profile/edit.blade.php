@@ -9,6 +9,33 @@
                     <h5 class="mb-0"><i class="fas fa-user-edit me-2"></i>Edit Profile</h5>
                 </div>
                 <div class="card-body">
+                    @if(session('success'))
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    @endif
+
+                    @if(session('error'))
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    @endif
+
+                    @if($errors->any())
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Please fix the following errors:</strong>
+                            <ul class="mb-0 mt-2">
+                                @foreach($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    @endif
+
                     <form method="POST" action="{{ route('teacher.profile.update') }}" enctype="multipart/form-data">
                         @csrf
                         @method('PATCH')
@@ -17,7 +44,11 @@
                             <div class="col-md-4">
                                 <div class="text-center mb-4">
                                     @if($teacher->photo)
-                                        <img src="{{ asset('storage/teachers/' . $teacher->photo) }}" alt="Profile Photo" class="rounded-circle img-thumbnail" style="width: 150px; height: 150px; object-fit: cover;">
+                                        @if(str_starts_with($teacher->photo, 'data:image'))
+                                            <img src="{{ $teacher->photo }}" alt="Profile Photo" class="rounded-circle img-thumbnail" style="width: 150px; height: 150px; object-fit: cover;">
+                                        @else
+                                            <img src="data:image/jpeg;base64,{{ $teacher->photo }}" alt="Profile Photo" class="rounded-circle img-thumbnail" style="width: 150px; height: 150px; object-fit: cover;">
+                                        @endif
                                     @else
                                         <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center" style="width: 150px; height: 150px;">
                                             <i class="fas fa-user fa-4x text-white"></i>

@@ -1,5 +1,5 @@
 @php
-    $systemName = \Illuminate\Support\Facades\Cache::get('esa_system_name', 'ESA-Parnel');
+    $systemName = \Illuminate\Support\Facades\Cache::get('esa_system_name', 'ESA-Panel');
     $systemLogo = \App\Helpers\LogoHelper::getSystemLogo();
 
     $courses = $courses ?? (Auth::guard('teacher')->check() ? Auth::guard('teacher')->user()->courses()->with('lessons.units')->get() : collect());
@@ -937,7 +937,7 @@
                     <select class="form-select select2" id="courses" name="courses[]" multiple required disabled>
                         <option value="">Select branch first</option>
                     </select>
-                    <small class="text-muted">Search courses by name and select multiple (all must have the same lesson)</small>
+                    <small class="text-muted">Select multiple courses. Only lessons you teach in ALL selected courses will be shown.</small>
                 </div>
 
                 <!-- Lesson Selection -->
@@ -1181,7 +1181,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (attendanceDiv) attendanceDiv.remove();
     });
 
-    // When courses change, load lessons (filtered by branch+course+term) and students (branch+course)
+    // When courses change, load lessons (filtered by branch+courses+term) and students (branch+courses)
     $('#courses').on('change', function() {
         const selectedCourses = $(this).val();
         const branchId = branchSelect.value;
@@ -1194,9 +1194,14 @@ document.addEventListener('DOMContentLoaded', function() {
         if (attendanceDiv) attendanceDiv.remove();
 
         if (selectedCourses && selectedCourses.length > 0 && branchId) {
-            // Fetch lessons assigned to this teacher for branch+course+term
-            let lessonsUrl = `/api/teacher/branch/${branchId}/course/${selectedCourses[0]}/lessons`;
-            if (termId) lessonsUrl += `?term_id=${termId}`;
+            // Fetch lessons assigned to this teacher for branch+courses+term
+            // Use the new multi-course endpoint
+            let lessonsUrl = `/api/teacher/branch/${branchId}/courses/lessons`;
+            const params = new URLSearchParams();
+            selectedCourses.forEach(id => params.append('course_ids[]', id));
+            if (termId) params.append('term_id', termId);
+            lessonsUrl += `?${params.toString()}`;
+
             fetch(lessonsUrl)
                 .then(res => {
                     if (!res.ok) {
@@ -1211,7 +1216,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             options += `<option value="${lesson.id}">${lesson.title}</option>`;
                         });
                     } else {
-                        options += '<option value="">No lessons available</option>';
+                        options += '<option value="">No lessons available for all selected courses</option>';
                     }
                     lessonSelect.innerHTML = options;
                     setLoading(lessonSelect, false);
@@ -1222,40 +1227,31 @@ document.addEventListener('DOMContentLoaded', function() {
                     setLoading(lessonSelect, false);
                 });
 
-            // Load students enrolled in selected branch + course for the academic year
-            let allStudents = [];
-            let completedRequests = 0;
+            // Load students enrolled in selected branch + courses for the academic year
+            let studentsUrl = `/api/teacher/branch/${branchId}/courses/students`;
+            const studentParams = new URLSearchParams();
+            selectedCourses.forEach(id => studentParams.append('course_ids[]', id));
+            studentsUrl += `?${studentParams.toString()}`;
 
-            selectedCourses.forEach(courseId => {
-                fetch(`/api/teacher/branch/${branchId}/course/${courseId}/students`)
-                    .then(res => {
-                        if (!res.ok) {
-                            throw new Error('Failed to load students');
-                        }
-                        return res.json();
-                    })
-                    .then(data => {
-                        const students = Array.isArray(data) ? data : (data.students || []);
-                        students.forEach(student => {
-                            const normalized = {
-                                id: student.id,
-                                name: student.name || student.full_name,
-                                reg_number: student.reg_number,
-                            };
-                            if (!allStudents.find(s => s.id === normalized.id)) {
-                                allStudents.push(normalized);
-                            }
-                        });
-                        completedRequests++;
-                        if (completedRequests === selectedCourses.length) {
-                            showAttendanceList(allStudents);
-                        }
-                    })
-                    .catch(err => {
-                        console.error('Error fetching students:', err);
-                        completedRequests++;
-                    });
-            });
+            fetch(studentsUrl)
+                .then(res => {
+                    if (!res.ok) {
+                        throw new Error('Failed to load students');
+                    }
+                    return res.json();
+                })
+                .then(data => {
+                    const students = Array.isArray(data) ? data : (data.students || []);
+                    const allStudents = students.map(student => ({
+                        id: student.id,
+                        name: student.name || student.full_name,
+                        reg_number: student.reg_number,
+                    }));
+                    showAttendanceList(allStudents);
+                })
+                .catch(err => {
+                    console.error('Error fetching students:', err);
+                });
         } else {
             lessonSelect.innerHTML = '<option value="">Select lesson</option>';
             setLoading(lessonSelect, false);

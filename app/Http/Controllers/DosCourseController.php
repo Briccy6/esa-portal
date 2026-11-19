@@ -10,7 +10,7 @@ class DosCourseController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Course::with(['lessons', 'teachers', 'branches', 'students']);
+        $query = Course::with('branches:id,name')->withCount('students');
         
         // Filter by branch
         if ($request->filled('branch')) {

@@ -77,7 +77,7 @@
 
             @if($staff->photo)
                 <div class="mt-2">
-                    <img src="data:image/jpeg;base64,{{ $staff->photo }}" alt="Current Photo" style="max-width: 150px;">
+                    <img src="{{ \App\Support\StaffPhoto::url($staff->photo) }}" alt="Current Photo" style="max-width: 150px;">
                 </div>
             @endif
         </div>

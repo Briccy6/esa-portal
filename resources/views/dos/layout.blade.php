@@ -6,11 +6,9 @@
         exit;
     }
 
-    $photoUrl = $staff->photo 
-        ? (filter_var($staff->photo, FILTER_VALIDATE_URL) ? $staff->photo : asset('storage/' . $staff->photo))
-        : asset('images/default-user.png');
+    $photoUrl = \App\Support\StaffPhoto::url($staff->photo, asset('images/default-user.png'));
 
-    $systemName = \Illuminate\Support\Facades\Cache::get('esa_system_name', 'ESA-Parnel');
+    $systemName = \Illuminate\Support\Facades\Cache::get('esa_system_name', 'ESA-Panel');
     $systemLogo = \Illuminate\Support\Facades\Cache::get('esa_system_logo');
 @endphp
 
@@ -20,7 +18,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="csrf-token" content="{{ csrf_token() }}">
-<title>DOS Dashboard - {{ $systemName }}</title>
+<title>@yield('page_title', 'DOS Dashboard') - {{ $systemName }}</title>
 
 <!-- Bootstrap CSS -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
@@ -28,6 +26,7 @@
 <!-- Bootstrap Icons -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
 <link rel="icon" type="image/png" href="{{ \App\Helpers\LogoHelper::getFaviconUrl() }}">
+@yield('styles')
 
 <!-- Google Fonts -->
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -36,17 +35,16 @@
   :root {
     --sidebar-width: 280px;
     --sidebar-collapsed-width: 70px;
-    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    --accent-color: #4f46e5;
-    --hover-color: rgba(255, 255, 255, 0.1);
-    --active-color: rgba(255, 255, 255, 0.2);
+    --sidebar-color: #172b4d;
+    --accent-color: #2457a7;
+    --hover-color: rgba(255, 255, 255, 0.08);
+    --active-color: rgba(255, 255, 255, 0.14);
     --text-primary: #1f2937;
     --text-secondary: #6b7280;
-    --border-color: rgba(255, 255, 255, 0.1);
-    --shadow-light: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    --shadow-medium: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    --shadow-heavy: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    --border-color: rgba(255, 255, 255, 0.12);
+    --shadow-light: 0 2px 8px rgba(15, 23, 42, 0.06);
+    --shadow-medium: 0 8px 24px rgba(15, 23, 42, 0.12);
+    --shadow-heavy: 0 16px 36px rgba(15, 23, 42, 0.18);
   }
 
   * {
@@ -70,7 +68,7 @@
     left: 0;
     width: var(--sidebar-width);
     height: 100vh;
-    background: var(--primary-gradient);
+    background: var(--sidebar-color);
     color: white;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 1050;
@@ -82,17 +80,6 @@
     width: var(--sidebar-collapsed-width);
   }
 
-  #sidebar::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(180deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 50%, rgba(0,0,0,0.1) 100%);
-    pointer-events: none;
-  }
-
   /* Sidebar Header */
   .sidebar-header {
     position: relative;
@@ -100,7 +87,6 @@
     text-align: center;
     border-bottom: 1px solid var(--border-color);
     background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(10px);
   }
 
   .sidebar-logo {
@@ -174,21 +160,6 @@
     font-size: 0.95rem;
     position: relative;
     overflow: hidden;
-  }
-
-  .nav-link::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-    transition: left 0.5s;
-  }
-
-  .nav-link:hover::before {
-    left: 100%;
   }
 
   .nav-link:hover {
@@ -303,7 +274,7 @@
     margin-left: var(--sidebar-width);
     transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     min-height: 100vh;
-    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    background: #f4f7fb;
     display: flex;
     flex-direction: column;
   }
@@ -323,17 +294,13 @@
     position: sticky;
     top: 0;
     z-index: 1000;
-    backdrop-filter: blur(10px);
     background: rgba(255, 255, 255, 0.95);
   }
 
   .topbar-title {
     font-size: 1.75rem;
     font-weight: 700;
-    background: var(--primary-gradient);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: var(--text-primary);
   }
 
   .time-display {
@@ -341,10 +308,6 @@
     font-size: 1.1rem;
     color: var(--text-secondary);
     font-weight: 600;
-    background: linear-gradient(45deg, #667eea, #764ba2);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
   }
 
   /* User Dropdown */
@@ -373,9 +336,7 @@
     height: 45px;
     border-radius: 50%;
     object-fit: cover;
-    border: 3px solid transparent;
-    background: var(--primary-gradient);
-    padding: 2px;
+    border: 2px solid #e5eaf2;
     transition: all 0.3s ease;
   }
 
@@ -433,10 +394,12 @@
   @media (max-width: 768px) {
     #sidebar {
       transform: translateX(-100%);
+      visibility: hidden;
     }
 
     #sidebar.show {
       transform: translateX(0);
+      visibility: visible;
     }
 
     #main-content {
@@ -452,11 +415,37 @@
     }
 
     .topbar {
-      padding: 1rem;
+      padding: 0.75rem 1rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
     }
 
     .topbar-title {
-      font-size: 1.5rem;
+      font-size: 1.15rem;
+    }
+
+    .time-display {
+      display: none;
+    }
+
+    .topbar .academic-year-switcher {
+      order: 3;
+      flex: 1 1 100%;
+      margin: 0 !important;
+    }
+
+    .topbar .academic-year-switcher select {
+      width: 100%;
+    }
+
+    .user-name,
+    .user-btn > .bi-caret-down-fill {
+      display: none;
+    }
+
+    .user-avatar {
+      width: 38px;
+      height: 38px;
     }
 
     body.sidebar-open {
@@ -475,7 +464,7 @@
 
   .mobile-toggle {
     display: none;
-    background: var(--primary-gradient);
+    background: var(--accent-color);
     border: none;
     border-radius: 8px;
     padding: 0.5rem;
@@ -529,14 +518,16 @@
 
   /* Content Styling */
   .content-wrapper {
-    padding: 2rem;
+    padding: clamp(1rem, 3vw, 2rem);
     flex: 1;
+    width: 100%;
+    min-width: 0;
   }
 
   .card {
     border: none;
-    border-radius: 15px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    border-radius: 12px;
+    box-shadow: var(--shadow-light);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     overflow: hidden;
     margin-bottom: 1.5rem;
@@ -544,11 +535,11 @@
 
   .card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    box-shadow: var(--shadow-medium);
   }
 
   .card-header {
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    background: var(--sidebar-color);
     color: white;
     border: none;
     font-weight: 600;
@@ -556,7 +547,7 @@
   }
 
   .btn-primary {
-    background: linear-gradient(135deg, var(--accent-color) 0%, #2980b9 100%);
+    background: var(--accent-color);
     border: none;
     border-radius: 25px;
     padding: 10px 25px;
@@ -573,6 +564,27 @@
     border: none;
     border-radius: 10px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  }
+
+  @media (max-width: 576px) {
+    :root {
+      --sidebar-width: min(86vw, 320px);
+    }
+
+    .topbar > .d-flex:first-child {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .topbar-title {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .user-btn {
+      padding: 0.25rem;
+    }
   }
 
 </style>
@@ -753,11 +765,11 @@
     <nav class="topbar">
       <div class="d-flex align-items-center gap-3">
         <!-- Sidebar toggle button for small screens -->
-        <button class="mobile-toggle" type="button" onclick="toggleSidebar()">
-          <i class="bi bi-list fs-3"></i>
+        <button class="mobile-toggle" id="mobile-sidebar-toggle" type="button" onclick="toggleSidebar()" aria-label="Open navigation menu" aria-controls="sidebar" aria-expanded="false">
+          <i class="bi bi-list fs-3" aria-hidden="true"></i>
         </button>
         <div class="topbar-title">
-          DOS Dashboard
+          @yield('page_title', 'DOS Dashboard')
         </div>
       </div>
 
@@ -880,6 +892,9 @@
       overlay.classList.remove('show');
       body.classList.remove('sidebar-open');
     }
+
+    document.getElementById('mobile-sidebar-toggle').setAttribute('aria-expanded', String(shouldShow));
+    document.getElementById('mobile-sidebar-toggle').setAttribute('aria-label', shouldShow ? 'Close navigation menu' : 'Open navigation menu');
   }
 
   // Toggle user dropdown
@@ -905,6 +920,20 @@
     }
   });
 
+  document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+      toggleSidebar(false);
+    }
+  });
+
+  document.querySelectorAll('#sidebar .nav-link').forEach(function(link) {
+    link.addEventListener('click', function() {
+      if (window.innerWidth <= 768 && !link.classList.contains('dropdown-toggle')) {
+        toggleSidebar(false);
+      }
+    });
+  });
+
   // Kigali time update
   function updateTime() {
     const options = { timeZone: 'Africa/Kigali', hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' };
@@ -923,6 +952,8 @@
       sidebar.classList.remove('show');
       overlay.classList.remove('show');
       document.body.classList.remove('sidebar-open');
+      document.getElementById('mobile-sidebar-toggle').setAttribute('aria-expanded', 'false');
+      document.getElementById('mobile-sidebar-toggle').setAttribute('aria-label', 'Open navigation menu');
     }
   });
 
@@ -937,6 +968,47 @@
 
 <!-- Bootstrap JS Bundle (includes Popper) -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+@yield('scripts')
+
+<!-- Global Modal Cleanup Script -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Fix Bootstrap modal backdrop issue
+    document.addEventListener('hidden.bs.modal', function(event) {
+        // Remove any remaining backdrop elements
+        document.querySelectorAll('.modal-backdrop').forEach(function(backdrop) {
+            backdrop.remove();
+        });
+        // Ensure body styles are restored
+        document.body.classList.remove('modal-open');
+        document.body.style.removeProperty('overflow');
+        document.body.style.removeProperty('padding-right');
+    });
+
+    // Handle all modal close buttons properly
+    document.querySelectorAll('[data-bs-dismiss="modal"]').forEach(function(button) {
+        button.addEventListener('click', function() {
+            const modal = this.closest('.modal');
+            if (modal) {
+                const modalInstance = bootstrap.Modal.getInstance(modal);
+                if (modalInstance) {
+                    modalInstance.hide();
+                }
+            }
+        });
+    });
+
+    // Clean up on page unload
+    window.addEventListener('beforeunload', function() {
+        document.querySelectorAll('.modal-backdrop').forEach(function(backdrop) {
+            backdrop.remove();
+        });
+        document.body.classList.remove('modal-open');
+        document.body.style.removeProperty('overflow');
+        document.body.style.removeProperty('padding-right');
+    });
+});
+</script>
 
 </body>
 </html>

@@ -13,7 +13,7 @@ class QuestionBank extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name', 'description', 'teacher_id', 'course_id', 'lesson_id', 'academic_year_id', 'is_active'
+        'name', 'description', 'teacher_id', 'course_id', 'lesson_id', 'branch_id', 'academic_year_id', 'is_active'
     ];
 
     public function teacher()
@@ -24,6 +24,11 @@ class QuestionBank extends Model
     public function course()
     {
         return $this->belongsTo(Course::class);
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(\App\Models\Branch::class);
     }
 
     public function academicYear()

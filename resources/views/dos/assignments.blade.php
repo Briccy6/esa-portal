@@ -10,7 +10,7 @@
             Assignments Management
         </h2>
         <div class="d-flex gap-2">
-            <button class="btn btn-outline-primary" onclick="exportAssignments()">
+            <button class="btn btn-outline-primary" onclick="try { exportAssignments(); } catch(e) { console.error('Export assignments error:', e); alert('Unable to export assignments. Please try again.'); }">
                 <i class="bi bi-download me-1"></i> Export
             </button>
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAssignmentModal">
@@ -199,26 +199,26 @@
                                     <td>{{ $assignment->created_at->format('d M Y') }}</td>
                                     <td>
                                         <div class="btn-group btn-group-sm" role="group">
-                                            <button type="button" class="btn btn-outline-primary" 
-                                                    onclick="viewAssignment({{ $assignment->id }})">
+                                            <button type="button" class="btn btn-outline-primary"
+                                                    onclick="try { viewAssignment({{ $assignment->id }}); } catch(e) { console.error('View assignment error:', e); alert('Unable to view assignment. Please try again.'); }">
                                                 <i class="bi bi-eye"></i>
                                             </button>
-                                            <button type="button" class="btn btn-outline-info" 
-                                                    onclick="viewSubmissions({{ $assignment->id }})">
+                                            <button type="button" class="btn btn-outline-info"
+                                                    onclick="try { viewSubmissions({{ $assignment->id }}); } catch(e) { console.error('View submissions error:', e); alert('Unable to view submissions. Please try again.'); }">
                                                 <i class="bi bi-list-ul"></i>
                                             </button>
-                                            <button type="button" class="btn btn-outline-warning" 
-                                                    onclick="editAssignment({{ $assignment->id }})">
+                                            <button type="button" class="btn btn-outline-warning"
+                                                    onclick="try { editAssignment({{ $assignment->id }}); } catch(e) { console.error('Edit assignment error:', e); alert('Unable to edit assignment. Please try again.'); }">
                                                 <i class="bi bi-pencil"></i>
                                             </button>
                                             @if($assignment->status === 'active')
-                                                <button type="button" class="btn btn-outline-success" 
-                                                        onclick="publishAssignment({{ $assignment->id }})">
+                                                <button type="button" class="btn btn-outline-success"
+                                                        onclick="try { publishAssignment({{ $assignment->id }}); } catch(e) { console.error('Publish assignment error:', e); alert('Unable to publish assignment. Please try again.'); }">
                                                     <i class="bi bi-send"></i>
                                                 </button>
                                             @endif
-                                            <button type="button" class="btn btn-outline-danger" 
-                                                    onclick="deleteAssignment({{ $assignment->id }})">
+                                            <button type="button" class="btn btn-outline-danger"
+                                                    onclick="try { deleteAssignment({{ $assignment->id }}); } catch(e) { console.error('Delete assignment error:', e); alert('Unable to delete assignment. Please try again.'); }">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </div>

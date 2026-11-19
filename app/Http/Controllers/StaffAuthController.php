@@ -72,6 +72,64 @@ class StaffAuthController extends Controller
         ]);
 
         if ($role === 'DOS') {
+            $branches = $staff->branches()->orderBy('name')->get();
+
+            $branchAnalytics = $branches->map(function ($branch) use ($academicYearId) {
+                $students = \App\Models\Student::query()
+                    ->where('branch_id', $branch->id)
+                    ->when($academicYearId, fn ($query) => $query->where('academic_year_id', $academicYearId));
+
+                $totalStudents = (clone $students)->count();
+                $profileCompleted = (clone $students)
+                    ->whereNotNull('id_number')
+                    ->whereNotNull('identification_type')
+                    ->whereNotNull('id_photo')
+                    ->whereNotNull('passport_photo')
+                    ->count();
+                $verifiedStudents = (clone $students)
+                    ->whereIn('email', function ($query) {
+                        $query->select('email')
+                            ->from('email_verifications')
+                            ->where('verified', true);
+                    })
+                    ->count();
+
+                $genderCounts = (clone $students)
+                    ->selectRaw("COALESCE(NULLIF(TRIM(sex), ''), 'Unknown') as gender, COUNT(*) as total")
+                    ->groupBy('gender')
+                    ->get()
+                    ->mapWithKeys(fn ($row) => [ucfirst(strtolower($row->gender)) => (int) $row->total])
+                    ->all();
+
+                $courses = $branch->courses()
+                    ->withCount(['students as student_count' => function ($query) use ($branch, $academicYearId) {
+                        $query->where('branch_id', $branch->id)
+                            ->when($academicYearId, fn ($studentQuery) => $studentQuery->where('academic_year_id', $academicYearId));
+                    }])
+                    ->orderBy('course_name')
+                    ->get(['courses.id', 'courses.course_name']);
+
+                $teachers = $branch->teachers()
+                    ->orderBy('teacher_name')
+                    ->get(['teachers.id', 'teachers.teacher_name']);
+
+                return [
+                    'branch' => $branch,
+                    'total_students' => $totalStudents,
+                    'profile_completed' => $profileCompleted,
+                    'profile_completed_rate' => $totalStudents > 0
+                        ? round(($profileCompleted / $totalStudents) * 100, 1)
+                        : null,
+                    'verified_students' => $verifiedStudents,
+                    'verified_rate' => $totalStudents > 0
+                        ? round(($verifiedStudents / $totalStudents) * 100, 1)
+                        : null,
+                    'gender_counts' => $genderCounts,
+                    'courses' => $courses,
+                    'teachers' => $teachers,
+                ];
+            });
+
             $attendanceQuery = \App\Models\Attendance::query()
                 ->where('date', '>=', now()->subDays(7)->toDateString());
 
@@ -91,7 +149,12 @@ class StaffAuthController extends Controller
                 ->orderBy('date')
                 ->get();
 
-            return view('staff.dashboard_dos', compact('attendanceStats', 'studiedHours', 'selectedAcademicYear'));
+            return view('staff.dashboard_dos', compact(
+                'attendanceStats',
+                'studiedHours',
+                'selectedAcademicYear',
+                'branchAnalytics'
+            ));
         }
 
         if ($role === 'Accountant') {

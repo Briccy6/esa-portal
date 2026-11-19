@@ -4,30 +4,42 @@ namespace App\Services;
 
 use App\Models\AcademicYear;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 
 class AcademicYearContext
 {
     public const SESSION_KEY = 'admin_academic_year_id';
+    private const CACHE_PREFIX = 'academic_year_context.';
 
     public static function current(): ?AcademicYear
     {
-        return AcademicYear::ongoing()->orderByDesc('starting_date')->first()
-            ?? AcademicYear::orderByDesc('starting_date')->first();
+        return self::rememberForRequest('current', function () {
+            $today = now()->toDateString();
+
+            return self::allOrdered()->first(function (AcademicYear $year) use ($today) {
+                return $year->starting_date
+                    && $year->expiry_date
+                    && $year->starting_date->toDateString() <= $today
+                    && $year->expiry_date->toDateString() >= $today;
+            }) ?? self::allOrdered()->first();
+        });
     }
 
     public static function selected(): ?AcademicYear
     {
-        $id = Session::get(self::SESSION_KEY);
+        return self::rememberForRequest('selected', function () {
+            $id = Session::get(self::SESSION_KEY);
 
-        if ($id) {
-            $year = AcademicYear::find($id);
-            if ($year) {
-                return $year;
+            if ($id) {
+                $year = self::allOrdered()->firstWhere('id', (int) $id);
+                if ($year) {
+                    return $year;
+                }
             }
-        }
 
-        return self::current();
+            return self::current();
+        });
     }
 
     public static function selectedId(): ?int
@@ -38,6 +50,7 @@ class AcademicYearContext
     public static function setSelected(int $academicYearId): void
     {
         Session::put(self::SESSION_KEY, $academicYearId);
+        self::forgetForRequest('selected');
     }
 
     public static function isViewingPastYear(): bool
@@ -50,7 +63,10 @@ class AcademicYearContext
 
     public static function allOrdered()
     {
-        return AcademicYear::orderByDesc('starting_date')->get();
+        return self::rememberForRequest(
+            'all_ordered',
+            fn () => AcademicYear::orderByDesc('starting_date')->get()
+        );
     }
 
     public static function filterStudents(Builder $query): Builder
@@ -91,5 +107,31 @@ class AcademicYearContext
         $id = self::selectedId();
 
         return $id ? $query->where('academic_year_id', $id) : $query;
+    }
+
+    private static function rememberForRequest(string $key, callable $resolver)
+    {
+        if (! app()->bound('request')) {
+            return $resolver();
+        }
+
+        $request = app(Request::class);
+        $attribute = self::CACHE_PREFIX . $key;
+
+        if ($request->attributes->has($attribute)) {
+            return $request->attributes->get($attribute);
+        }
+
+        $value = $resolver();
+        $request->attributes->set($attribute, $value);
+
+        return $value;
+    }
+
+    private static function forgetForRequest(string $key): void
+    {
+        if (app()->bound('request')) {
+            app(Request::class)->attributes->remove(self::CACHE_PREFIX . $key);
+        }
     }
 }

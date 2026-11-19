@@ -10,7 +10,7 @@
             Study Resources Management
         </h2>
         <div class="d-flex gap-2">
-            <button class="btn btn-outline-primary" onclick="exportResources()">
+            <button class="btn btn-outline-primary" onclick="try { exportResources(); } catch(e) { console.error('Export error:', e); alert('Unable to export resources. Please try again.'); }">
                 <i class="bi bi-download me-1"></i> Export
             </button>
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addResourceModal">
@@ -144,14 +144,14 @@
                                     <i class="bi bi-three-dots"></i>
                                 </button>
                                 <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="#" onclick="viewResource({{ $resource->id }})">
+                                    <li><a class="dropdown-item" href="#" onclick="try { viewResource({{ $resource->id }}); } catch(e) { console.error('View error:', e); alert('Unable to view resource. Please try again.'); }">
                                         <i class="bi bi-eye"></i> View Details
                                     </a></li>
-                                    <li><a class="dropdown-item" href="#" onclick="editResource({{ $resource->id }})">
+                                    <li><a class="dropdown-item" href="#" onclick="try { editResource({{ $resource->id }}); } catch(e) { console.error('Edit error:', e); alert('Unable to edit resource. Please try again.'); }">
                                         <i class="bi bi-pencil"></i> Edit
                                     </a></li>
                                     <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item text-danger" href="#" onclick="deleteResource({{ $resource->id }})">
+                                    <li><a class="dropdown-item text-danger" href="#" onclick="try { deleteResource({{ $resource->id }}); } catch(e) { console.error('Delete error:', e); alert('Unable to delete resource. Please try again.'); }">
                                         <i class="bi bi-trash"></i> Delete
                                     </a></li>
                                 </ul>
@@ -203,7 +203,7 @@
 
                             <!-- Action Buttons -->
                             <div class="d-grid gap-2">
-                                <button class="btn btn-outline-primary btn-sm" onclick="viewResource({{ $resource->id }})">
+                                <button class="btn btn-outline-primary btn-sm" onclick="try { viewResource({{ $resource->id }}); } catch(e) { console.error('View error:', e); alert('Unable to view resource. Please try again.'); }">
                                     <i class="bi bi-eye"></i> View Details
                                 </button>
                                 @if($resource->document_blob || $resource->video_blob)

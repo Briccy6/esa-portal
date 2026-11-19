@@ -53,8 +53,16 @@ class QuestionBankController extends Controller
             ->paginate(10);
         } elseif (auth('teacher')->check()) {
             $teacher = auth('teacher')->user();
+            // Get teacher's branches
+            $teacherBranchIds = $teacher->branches->pluck('id')->toArray();
+            
             $questionBanks = QuestionBank::where('teacher_id', $teacher->id)
-                ->with(['course', 'academicYear', 'teacher', 'questions' => function($query) {
+                ->where(function($query) use ($teacherBranchIds) {
+                    // Show question banks for teacher's branches OR without a branch (global)
+                    $query->whereIn('branch_id', $teacherBranchIds)
+                          ->orWhereNull('branch_id');
+                })
+                ->with(['course', 'branch', 'academicYear', 'teacher', 'questions' => function($query) {
                     $query->select('id', 'question_bank_id', 'question_type', 'text', 'marks');
                 }])
                 ->orderBy('name')
@@ -123,15 +131,21 @@ class QuestionBankController extends Controller
 
         if (auth('admin')->check()) {
             $courses = Course::all();
+            $branches = \App\Models\Branch::all();
+            $lessons = \App\Models\Lesson::all();
             $academicYears = \App\Models\AcademicYear::orderBy('year', 'desc')->get();
             $teachers = \App\Models\Teacher::all();
         } elseif (auth('staff')->check()) {
             $courses = Course::all();
+            $branches = \App\Models\Branch::all();
+            $lessons = \App\Models\Lesson::all();
             $academicYears = \App\Models\AcademicYear::orderBy('year', 'desc')->get();
             $teachers = \App\Models\Teacher::all();
         } elseif (auth('teacher')->check()) {
             $teacher = auth('teacher')->user();
             $courses = $teacher->courses;
+            $branches = $teacher->branches;
+            $lessons = \App\Models\Lesson::all();
             $academicYears = \App\Models\AcademicYear::orderBy('year', 'desc')->get();
             $teachers = collect([$teacher]);
         } else {
@@ -139,7 +153,7 @@ class QuestionBankController extends Controller
         }
 
         $viewPath = $this->getViewPath() . '.create';
-        return view($viewPath, compact('courses', 'academicYears', 'teachers'));
+        return view($viewPath, compact('courses', 'branches', 'lessons', 'academicYears', 'teachers'));
     }
 
     public function store(Request $request)
@@ -149,6 +163,7 @@ class QuestionBankController extends Controller
             'description' => 'nullable|string',
             'course_id' => 'nullable|exists:courses,id',
             'lesson_id' => 'nullable|exists:lessons,id',
+            'branch_id' => 'nullable|exists:branches,id',
             'academic_year_id' => 'nullable|exists:academic_years,id',
             'teacher_id' => 'required|exists:teachers,id',
         ]);
@@ -163,6 +178,7 @@ class QuestionBankController extends Controller
             'teacher_id' => $request->teacher_id,
             'course_id' => $request->course_id,
             'lesson_id' => $request->lesson_id,
+            'branch_id' => $request->branch_id,
             'academic_year_id' => $request->academic_year_id,
             'is_active' => true,
         ]);
@@ -189,17 +205,21 @@ class QuestionBankController extends Controller
 
         if (auth('admin')->check() || auth('staff')->check()) {
             $courses = Course::all();
+            $branches = \App\Models\Branch::all();
+            $lessons = \App\Models\Lesson::all();
             $academicYears = \App\Models\AcademicYear::orderBy('year', 'desc')->get();
             $teachers = \App\Models\Teacher::all();
         } else {
             $teacher = auth('teacher')->user();
             $courses = $teacher->courses;
+            $branches = $teacher->branches;
+            $lessons = \App\Models\Lesson::all();
             $academicYears = \App\Models\AcademicYear::orderBy('year', 'desc')->get();
             $teachers = collect([$teacher]);
         }
 
         $viewPath = $this->getViewPath() . '.edit';
-        return view($viewPath, compact('questionBank', 'courses', 'academicYears', 'teachers'));
+        return view($viewPath, compact('questionBank', 'courses', 'branches', 'lessons', 'academicYears', 'teachers'));
     }
 
     public function update(Request $request, QuestionBank $questionBank)
@@ -211,6 +231,7 @@ class QuestionBankController extends Controller
             'description' => 'nullable|string',
             'course_id' => 'nullable|exists:courses,id',
             'lesson_id' => 'nullable|exists:lessons,id',
+            'branch_id' => 'nullable|exists:branches,id',
             'academic_year_id' => 'nullable|exists:academic_years,id',
             'is_active' => 'boolean',
         ]);
@@ -224,6 +245,7 @@ class QuestionBankController extends Controller
             'description' => $request->description,
             'course_id' => $request->course_id,
             'lesson_id' => $request->lesson_id,
+            'branch_id' => $request->branch_id,
             'academic_year_id' => $request->academic_year_id,
             'is_active' => $request->has('is_active'),
         ]);

@@ -77,6 +77,13 @@
                             </ul>
                         </div>
 
+                        <!-- Payment Summary (Breakdown by Fee Type) -->
+                        <div id="paymentSummary" class="alert alert-success d-none mb-3">
+                            <i class="fas fa-receipt me-2"></i>
+                            <strong>Payment Summary:</strong>
+                            <div id="paymentSummaryContent" class="mt-2"></div>
+                        </div>
+
                         <!-- Step 2: Select Fee Type (Hidden Until Term Selected) -->
                         <div id="feeTypeContainer" class="mb-3 d-none">
                             <label class="form-label required">
@@ -174,6 +181,7 @@ async function loadTermFees() {
     if (!termId) {
         // Hide all fields when term is cleared
         document.getElementById('termSummary').classList.add('d-none');
+        document.getElementById('paymentSummary').classList.add('d-none');
         document.getElementById('feeTypeContainer').classList.add('d-none');
         document.getElementById('amountContainer').classList.add('d-none');
         document.getElementById('notesContainer').classList.add('d-none');
@@ -200,23 +208,44 @@ async function loadTermFees() {
 
         if (data.success) {
             // Update summary
-            document.getElementById('totalTermFees').textContent = 
+            document.getElementById('totalTermFees').textContent =
                 new Intl.NumberFormat('en-US').format(Math.round(data.summary.total_fees));
-            document.getElementById('totalTermPaid').textContent = 
+            document.getElementById('totalTermPaid').textContent =
                 new Intl.NumberFormat('en-US').format(Math.round(data.summary.total_paid));
-            document.getElementById('totalTermRemaining').textContent = 
+            document.getElementById('totalTermRemaining').textContent =
                 new Intl.NumberFormat('en-US').format(Math.round(data.summary.total_remaining));
             document.getElementById('termSummary').classList.remove('d-none');
 
-            // Populate fee dropdown
+            // Populate payment summary breakdown
+            const summaryContent = document.getElementById('paymentSummaryContent');
+            let summaryHtml = '<table class="table table-sm mb-0">';
+            summaryHtml += '<thead><tr><th>Fee Type</th><th>Total</th><th>Paid</th><th>Remaining</th></tr></thead>';
+            summaryHtml += '<tbody>';
+            data.fees.forEach(fee => {
+                const statusClass = fee.remaining === 0 ? 'text-success' : 'text-danger';
+                summaryHtml += `<tr>
+                    <td>${fee.name} ${fee.remaining === 0 ? '<span class="badge bg-success">Paid</span>' : ''}</td>
+                    <td>${new Intl.NumberFormat('en-US').format(Math.round(fee.total))} RWF</td>
+                    <td>${new Intl.NumberFormat('en-US').format(Math.round(fee.paid))} RWF</td>
+                    <td class="${statusClass}">${fee.remaining === 0 ? '0' : new Intl.NumberFormat('en-US').format(Math.round(fee.remaining))} RWF</td>
+                </tr>`;
+            });
+            summaryHtml += '</tbody></table>';
+            summaryContent.innerHTML = summaryHtml;
+            document.getElementById('paymentSummary').classList.remove('d-none');
+
+            // Populate fee dropdown - exclude fully paid fees
             const feeSelect = document.getElementById('feeTypeSelect');
             feeSelect.innerHTML = '<option value="">-- Select a Fee --</option>';
-            
-            if (data.fees.length === 0) {
+
+            // Filter out fees that are fully paid (remaining = 0)
+            const unpaidFees = data.fees.filter(fee => fee.remaining > 0);
+
+            if (unpaidFees.length === 0) {
                 feeSelect.innerHTML += '<option disabled>All fees have been paid for this term!</option>';
                 document.getElementById('feeTypeContainer').classList.add('d-none');
             } else {
-                data.fees.forEach(fee => {
+                unpaidFees.forEach(fee => {
                     const option = document.createElement('option');
                     option.value = fee.type;
                     option.textContent = `${fee.name} — Remaining: ${new Intl.NumberFormat('en-US').format(Math.round(fee.remaining))} RWF`;

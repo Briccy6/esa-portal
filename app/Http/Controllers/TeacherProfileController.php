@@ -39,32 +39,35 @@ class TeacherProfileController extends Controller
                     ->numbers()
                     ->symbols()
                     ->uncompromised(),
-                function ($attribute, $value, $fail) {
-                    // No repeated numbers (e.g., 111, 2222)
-                    if (preg_match('/(\d)\1{1,}/', $value)) {
-                        $fail('The password must not contain repeated numbers.');
-                    }
-                }
             ],
+        ], [
+            'password.min' => 'Password must be at least 8 characters',
+            'password.mixed_case' => 'Password must contain both uppercase and lowercase letters',
+            'password.letters' => 'Password must contain letters',
+            'password.numbers' => 'Password must contain numbers',
+            'password.symbols' => 'Password must contain symbols',
+            'current_password.required_with' => 'Current password is required when changing password',
         ]);
 
         // Verify current password if changing password
-        if (!empty($data['password'])) {
-            if (!\Hash::check($data['current_password'], $teacher->password)) {
-                return back()->with('error', 'Current password is incorrect.');
+        if (!empty($request->password)) {
+            if (!\Hash::check($request->current_password, $teacher->password)) {
+                return back()
+                    ->withInput()
+                    ->withErrors(['current_password' => 'Current password is incorrect.']);
             }
-            $data['password'] = bcrypt($data['password']);
+            $data['password'] = bcrypt($request->password);
         } else {
             unset($data['password']);
         }
 
         unset($data['current_password']);
 
+        // Handle photo upload - store as base64 to match navbar display
         if ($request->hasFile('photo')) {
-            $photo = $request->file('photo');
-            $photoName = time() . '_' . $teacher->id . '.' . $photo->getClientOriginalExtension();
-            $photo->storeAs('teachers', $photoName, 'public');
-            $data['photo'] = $photoName;
+            $data['photo'] = base64_encode(file_get_contents($request->file('photo')->getRealPath()));
+        } else {
+            unset($data['photo']);
         }
 
         $teacher->update($data);

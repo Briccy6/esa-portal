@@ -98,7 +98,7 @@
                                                 </a>
                                                 <form action="{{ route('secretary.student-registration.complete', $student) }}" method="POST" style="display: inline;">
                                                     @csrf
-                                                    <button type="submit" class="btn btn-sm btn-success" title="Mark Complete" onclick="return confirm('Are you sure this student\'s registration is complete?')">
+                                                    <button type="submit" class="btn btn-sm btn-success" title="Mark Complete" onclick="try { return confirm('Are you sure this student\'s registration is complete?'); } catch(e) { console.error('Confirmation error:', e); return false; }">
                                                         <i class="fas fa-check"></i>
                                                     </button>
                                                 </form>

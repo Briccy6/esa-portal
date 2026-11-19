@@ -57,6 +57,39 @@
                                 @enderror
                             </div>
                             <div class="col-md-6">
+                                <label for="branch_id" class="form-label">Branch</label>
+                                <select class="form-select @error('branch_id') is-invalid @enderror" 
+                                        id="branch_id" name="branch_id">
+                                    <option value="">Select Branch (Optional)</option>
+                                    @foreach($branches as $branch)
+                                        <option value="{{ $branch->id }}" {{ old('branch_id') == $branch->id ? 'selected' : '' }}>
+                                            {{ $branch->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('branch_id')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="lesson_id" class="form-label">Lesson</label>
+                                <select class="form-select @error('lesson_id') is-invalid @enderror" 
+                                        id="lesson_id" name="lesson_id">
+                                    <option value="">Select Lesson (Optional)</option>
+                                    @foreach($lessons as $lesson)
+                                        <option value="{{ $lesson->id }}" {{ old('lesson_id') == $lesson->id ? 'selected' : '' }}>
+                                            {{ $lesson->title }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('lesson_id')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <div class="col-md-6">
                                 <label for="academic_year_id" class="form-label">Academic Year</label>
                                 <select class="form-select @error('academic_year_id') is-invalid @enderror" 
                                         id="academic_year_id" name="academic_year_id">

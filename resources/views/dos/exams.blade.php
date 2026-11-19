@@ -10,7 +10,7 @@
             Exams Management
         </h2>
         <div class="d-flex gap-2">
-            <button class="btn btn-outline-primary" onclick="exportExams()">
+            <button class="btn btn-outline-primary" onclick="try { exportExams(); } catch(e) { console.error('Export exams error:', e); alert('Unable to export exams. Please try again.'); }">
                 <i class="bi bi-download me-1"></i> Export
             </button>
             <button class="btn btn-primary" href="{{ route('dos.exams.create') }}">
@@ -185,26 +185,26 @@
                                     <td>{{ $exam->created_at->format('d M Y') }}</td>
                                     <td>
                                         <div class="btn-group btn-group-sm" role="group">
-                                            <button type="button" class="btn btn-outline-primary" 
-                                                    onclick="viewExam({{ $exam->id }})">
+                                            <button type="button" class="btn btn-outline-primary"
+                                                    onclick="try { viewExam({{ $exam->id }}); } catch(e) { console.error('View exam error:', e); alert('Unable to view exam. Please try again.'); }">
                                                 <i class="bi bi-eye"></i>
                                             </button>
-                                            <button type="button" class="btn btn-outline-info" 
-                                                    onclick="viewQuestions({{ $exam->id }})">
+                                            <button type="button" class="btn btn-outline-info"
+                                                    onclick="try { viewQuestions({{ $exam->id }}); } catch(e) { console.error('View questions error:', e); alert('Unable to view questions. Please try again.'); }">
                                                 <i class="bi bi-list-ul"></i>
                                             </button>
-                                            <button type="button" class="btn btn-outline-warning" 
-                                                    onclick="editExam({{ $exam->id }})">
+                                            <button type="button" class="btn btn-outline-warning"
+                                                    onclick="try { editExam({{ $exam->id }}); } catch(e) { console.error('Edit exam error:', e); alert('Unable to edit exam. Please try again.'); }">
                                                 <i class="bi bi-pencil"></i>
                                             </button>
                                             @if($exam->is_published)
-                                                <button type="button" class="btn btn-outline-success" 
-                                                        onclick="previewExam({{ $exam->id }})">
+                                                <button type="button" class="btn btn-outline-success"
+                                                        onclick="try { previewExam({{ $exam->id }}); } catch(e) { console.error('Preview exam error:', e); alert('Unable to preview exam. Please try again.'); }">
                                                     <i class="bi bi-play-circle"></i>
                                                 </button>
                                             @endif
-                                            <button type="button" class="btn btn-outline-danger" 
-                                                    onclick="deleteExam({{ $exam->id }})">
+                                            <button type="button" class="btn btn-outline-danger"
+                                                    onclick="try { deleteExam({{ $exam->id }}); } catch(e) { console.error('Delete exam error:', e); alert('Unable to delete exam. Please try again.'); }">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </div>

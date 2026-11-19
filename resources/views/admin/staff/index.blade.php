@@ -65,7 +65,7 @@
                 </td>
                 <td>
                     @if($staff->photo)
-                        <img src="data:image/jpeg;base64,{{ $staff->photo }}" alt="Photo" width="50" height="50">
+                        <img src="{{ \App\Support\StaffPhoto::url($staff->photo) }}" alt="Photo" width="50" height="50">
                     @endif
                 </td>
                 <td>

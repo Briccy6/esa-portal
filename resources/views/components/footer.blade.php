@@ -2,7 +2,7 @@
     $schoolInfo = \App\Models\SchoolInformation::getActive();
     
     // Use school info if available, otherwise fall back to cache
-    $systemName = $schoolInfo?->school_name ?? \Illuminate\Support\Facades\Cache::get('esa_system_name', 'ESA-Parnel');
+    $systemName = $schoolInfo?->school_name ?? \Illuminate\Support\Facades\Cache::get('esa_system_name', 'ESA-Panel');
     $systemEmail = $schoolInfo?->email ?? \Illuminate\Support\Facades\Cache::get('esa_system_email', 'info@excellentservantacademy.com');
     $systemPhone = $schoolInfo?->phone ?? \Illuminate\Support\Facades\Cache::get('esa_system_phone', '+1 (555) 123-4567');
     $systemAddress = $schoolInfo?->address ?? \Illuminate\Support\Facades\Cache::get('esa_system_address', '123 Education Street, Learning City');

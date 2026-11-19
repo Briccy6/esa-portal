@@ -317,19 +317,19 @@
                                         <i class="fas fa-eye"></i> View
                                     </a>
                                     @if($liveClass->status === 'scheduled')
-                                        <button onclick="startLiveClass({{ $liveClass->id }})" class="lc-btn lc-btn-start">
+                                        <button onclick="try { startLiveClass({{ $liveClass->id }}); } catch(e) { console.error('Start live class error:', e); alert('Unable to start live class. Please try again.'); }" class="lc-btn lc-btn-start">
                                             <i class="fas fa-play"></i> Start
                                         </button>
                                     @endif
                                     @if($liveClass->status === 'live')
-                                        <button onclick="endLiveClass({{ $liveClass->id }})" class="lc-btn lc-btn-end">
+                                        <button onclick="try { endLiveClass({{ $liveClass->id }}); } catch(e) { console.error('End live class error:', e); alert('Unable to end live class. Please try again.'); }" class="lc-btn lc-btn-end">
                                             <i class="fas fa-stop"></i> End
                                         </button>
                                     @endif
                                     <a href="{{ route('dos.live-classes.edit', $liveClass->id) }}" class="lc-btn lc-btn-edit">
                                         <i class="fas fa-edit"></i> Edit
                                     </a>
-                                    <button onclick="deleteLiveClass({{ $liveClass->id }})" class="lc-btn lc-btn-delete">
+                                    <button onclick="try { deleteLiveClass({{ $liveClass->id }}); } catch(e) { console.error('Delete live class error:', e); alert('Unable to delete live class. Please try again.'); }" class="lc-btn lc-btn-delete">
                                         <i class="fas fa-trash"></i> Delete
                                     </button>
                                 </div>

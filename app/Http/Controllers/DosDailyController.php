@@ -19,11 +19,14 @@ class DosDailyController extends Controller
             ->where('lesson_id', $daily->lesson_id)
             ->where('date', $daily->date)
             ->with('student')
-            ->get();
-            
+            ->get()
+            ->sortBy(function($attendance) {
+                return $attendance->student->full_name ?? '';
+            });
+
         // Debug: Log attendance count
         \Log::info("Found {$attendances->count()} attendance records for daily {$daily->id}");
-        
+
         return view('staff.dailies.show', compact('daily', 'attendances'));
     }
 

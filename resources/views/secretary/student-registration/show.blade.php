@@ -275,7 +275,7 @@
                             @if($student->id_number && $student->id_photo && $student->passport_photo)
                                 <form action="{{ route('secretary.student-registration.complete', $student) }}" method="POST" style="display: inline;">
                                     @csrf
-                                    <button type="submit" class="btn btn-success ms-2" onclick="return confirm('Are you sure this student\'s registration is complete?')">
+                                    <button type="submit" class="btn btn-success ms-2" onclick="try { return confirm('Are you sure this student\'s registration is complete?'); } catch(e) { console.error('Confirmation error:', e); return false; }">
                                         <i class="fas fa-check"></i> Mark Complete
                                     </button>
                                 </form>

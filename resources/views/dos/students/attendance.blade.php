@@ -195,10 +195,10 @@
                                     </td>
                                     <td>
                                         <div class="btn-group btn-group-sm" role="group">
-                                            <button onclick="editAttendance({{ $attendance->id }})" class="btn btn-outline-primary">
+                                            <button onclick="try { editAttendance({{ $attendance->id }}); } catch(e) { console.error('Edit attendance error:', e); alert('Unable to edit attendance. Please try again.'); }" class="btn btn-outline-primary">
                                                 <i class="bi bi-pencil"></i>
                                             </button>
-                                            <button onclick="viewStudent({{ $attendance->student->id }})" class="btn btn-outline-info">
+                                            <button onclick="try { viewStudent({{ $attendance->student->id }}); } catch(e) { console.error('View student error:', e); alert('Unable to view student. Please try again.'); }" class="btn btn-outline-info">
                                                 <i class="bi bi-person"></i>
                                             </button>
                                         </div>
@@ -276,13 +276,13 @@
                         <div class="col-md-6">
                             <label class="form-label">Quick Actions</label>
                             <div class="btn-group w-100" role="group">
-                                <button type="button" class="btn btn-success" onclick="markAll('present')">
+                                <button type="button" class="btn btn-success" onclick="try { markAll('present'); } catch(e) { console.error('Mark all present error:', e); alert('Unable to mark all present. Please try again.'); }">
                                     <i class="bi bi-check-circle"></i> All Present
                                 </button>
-                                <button type="button" class="btn btn-warning" onclick="markAll('late')">
+                                <button type="button" class="btn btn-warning" onclick="try { markAll('late'); } catch(e) { console.error('Mark all late error:', e); alert('Unable to mark all late. Please try again.'); }">
                                     <i class="bi bi-clock"></i> All Late
                                 </button>
-                                <button type="button" class="btn btn-danger" onclick="markAll('absent')">
+                                <button type="button" class="btn btn-danger" onclick="try { markAll('absent'); } catch(e) { console.error('Mark all absent error:', e); alert('Unable to mark all absent. Please try again.'); }">
                                     <i class="bi bi-x-circle"></i> All Absent
                                 </button>
                             </div>

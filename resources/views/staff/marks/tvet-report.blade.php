@@ -214,7 +214,7 @@
                 <a href="{{ route('dos.marks.index') }}" class="btn btn-secondary">
                     <i class="fas fa-arrow-left me-1"></i> Back to Marks
                 </a>
-                <button onclick="window.print()" class="btn btn-success">
+                <button onclick="try { window.print(); } catch(e) { console.error('Print error:', e); alert('Unable to print. Please try again.'); }" class="btn btn-success">
                     <i class="fas fa-print me-1"></i> Print Report Card
                 </button>
             </div>

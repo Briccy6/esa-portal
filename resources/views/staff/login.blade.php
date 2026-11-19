@@ -1,5 +1,5 @@
 @php
-    $systemName = \Illuminate\Support\Facades\Cache::get('esa_system_name', 'ESA-Parnel');
+    $systemName = \Illuminate\Support\Facades\Cache::get('esa_system_name', 'ESA-Panel');
     $systemLogo = \App\Helpers\LogoHelper::getSystemLogo();
 @endphp
 <!DOCTYPE html>

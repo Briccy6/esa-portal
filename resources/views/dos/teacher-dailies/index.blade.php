@@ -61,7 +61,7 @@
 
     <!-- Bulk Actions -->
     <div class="mb-3">
-        <button type="button" class="btn btn-success" onclick="bulkApprove()">
+        <button type="button" class="btn btn-success" onclick="try { bulkApprove(); } catch(e) { console.error('Bulk approve error:', e); alert('Unable to bulk approve. Please try again.'); }">
             <i class="bi bi-check-circle me-2"></i>Bulk Approve Selected
         </button>
     </div>
@@ -102,11 +102,8 @@
                                     <td>{{ $daily->branch->name ?? 'N/A' }}</td>
                                     <td>
                                         @if($daily->course_ids && is_array($daily->course_ids) && count($daily->course_ids) > 1)
-                                            @php
-                                                $courses = \App\Models\Course::whereIn('id', $daily->course_ids)->get();
-                                            @endphp
-                                            @foreach($courses as $course)
-                                                <span class="badge bg-primary">{{ $course->course_name }}</span>
+                                            @foreach(array_unique($daily->course_ids) as $courseId)
+                                                <span class="badge bg-primary">{{ $courseNamesById->get($courseId, 'N/A') }}</span>
                                                 @if(!$loop->last) <br>@endif
                                             @endforeach
                                         @else
@@ -133,11 +130,11 @@
                                             <i class="bi bi-eye"></i> View
                                         </a>
                                         @if(!$daily->approved)
-                                            <button type="button" class="btn btn-sm btn-success" onclick="approveDaily({{ $daily->id }})">
+                                            <button type="button" class="btn btn-sm btn-success" onclick="try { approveDaily({{ $daily->id }}); } catch(e) { console.error('Approve error:', e); alert('Unable to approve. Please try again.'); }">
                                                 <i class="bi bi-check-circle"></i> Approve
                                             </button>
                                         @endif
-                                        <button type="button" class="btn btn-sm btn-danger" onclick="deleteDaily({{ $daily->id }})">
+                                        <button type="button" class="btn btn-sm btn-danger" onclick="try { deleteDaily({{ $daily->id }}); } catch(e) { console.error('Delete error:', e); alert('Unable to delete. Please try again.'); }">
                                             <i class="bi bi-trash"></i> Delete
                                         </button>
                                     </td>

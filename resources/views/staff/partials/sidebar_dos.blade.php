@@ -516,11 +516,9 @@
         exit;
     }
 
-    $photoUrl = $user->photo 
-        ? (filter_var($user->photo, FILTER_VALIDATE_URL) ? $user->photo : asset('storage/' . $user->photo))
-        : asset('images/default-user.png');
+    $photoUrl = \App\Support\StaffPhoto::url($user->photo, asset('images/default-user.png'));
 
-    $systemName = \Illuminate\Support\Facades\Cache::get('esa_system_name', 'ESA-Parnel');
+    $systemName = \Illuminate\Support\Facades\Cache::get('esa_system_name', 'ESA-Panel');
     $systemLogo = \Illuminate\Support\Facades\Cache::get('esa_system_logo');
 @endphp
 
@@ -728,9 +726,7 @@
         <button class="user-btn" onclick="toggleUserDropdown()">
           @php
             $user = Auth::guard('staff')->user();
-            $photoUrl = $user->photo && filter_var($user->photo, FILTER_VALIDATE_URL) 
-                        ? $user->photo 
-                        : ($user->photo ? asset('storage/' . $user->photo) : asset('images/default-user.png'));
+            $photoUrl = \App\Support\StaffPhoto::url($user->photo, asset('images/default-user.png'));
           @endphp
 
           <img src="{{ $photoUrl }}"

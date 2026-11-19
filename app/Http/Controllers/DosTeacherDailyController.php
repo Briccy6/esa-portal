@@ -17,7 +17,13 @@ class DosTeacherDailyController extends Controller
      */
     public function index(Request $request)
     {
-        $query = TeacherDaily::with(['teacher', 'course', 'lesson', 'unit', 'branch'])
+        $query = TeacherDaily::with([
+            'teacher:id,teacher_name',
+            'course:id,course_name',
+            'lesson:id,title',
+            'unit:id,unit_name',
+            'branch:id,name',
+        ])
             ->orderByDesc('date');
 
         // Filter by branch if selected
@@ -46,11 +52,23 @@ class DosTeacherDailyController extends Controller
 
         $dailies = $query->paginate(20);
 
-        $branches = Branch::all();
-        $courses = Course::all();
-        $teachers = Teacher::orderBy('teacher_name')->get();
+        $courseIds = $dailies->getCollection()
+            ->flatMap(fn (TeacherDaily $daily) => $daily->course_ids ?? [])
+            ->unique()
+            ->values();
+        $courseNamesById = Course::whereIn('id', $courseIds)->pluck('course_name', 'id');
 
-        return view('dos.teacher-dailies.index', compact('dailies', 'branches', 'courses', 'teachers'));
+        $branches = Branch::query()->select('id', 'name')->get();
+        $courses = Course::query()->select('id', 'course_name')->get();
+        $teachers = Teacher::query()->select('id', 'teacher_name')->orderBy('teacher_name')->get();
+
+        return view('dos.teacher-dailies.index', compact(
+            'dailies',
+            'branches',
+            'courses',
+            'teachers',
+            'courseNamesById'
+        ));
     }
 
     /**
@@ -67,7 +85,10 @@ class DosTeacherDailyController extends Controller
             ->where('lesson_id', $daily->lesson_id)
             ->where('branch_id', $daily->branch_id)
             ->with('student')
-            ->get();
+            ->get()
+            ->sortBy(function($attendance) {
+                return $attendance->student->full_name ?? '';
+            });
 
         return view('dos.teacher-dailies.show', compact('daily', 'attendances'));
     }

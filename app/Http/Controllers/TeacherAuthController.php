@@ -87,7 +87,7 @@ class TeacherAuthController extends Controller
         $pivotRows = \DB::table('lesson_branch_course as lbc')
             ->join('lessons', 'lessons.id', '=', 'lbc.lesson_id')
             ->join('branches', 'branches.id', '=', 'lbc.branch_id')
-            ->leftJoin('units', 'units.lesson_id', '=', 'lessons.id')
+            ->leftJoin('lesson_units as units', 'units.lesson_id', '=', 'lessons.id')
             ->where('lbc.teacher_id', $teacher->id)
             ->whereIn('lbc.course_id', $courses->pluck('id'))
             ->select(
@@ -195,14 +195,24 @@ class TeacherAuthController extends Controller
         }
 
         // Get students for this course (and branch if specified)
+        // Try with academic year filter first
         $studentsQuery = $course->students();
-        if ($yearId) {
-            $studentsQuery->where('academic_year_id', $yearId);
-        }
         if ($branchId) {
             $studentsQuery->where('branch_id', $branchId);
         }
+        if ($yearId) {
+            $studentsQuery->where('academic_year_id', $yearId);
+        }
         $students = $studentsQuery->orderBy('full_name')->get(['id', 'full_name', 'reg_number']);
+
+        // If no students found with academic year filter, try without it
+        if ($students->isEmpty()) {
+            $studentsQuery = $course->students();
+            if ($branchId) {
+                $studentsQuery->where('branch_id', $branchId);
+            }
+            $students = $studentsQuery->orderBy('full_name')->get(['id', 'full_name', 'reg_number']);
+        }
 
         $branchName = '';
         if ($branchId) {

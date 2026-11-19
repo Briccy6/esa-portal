@@ -1,5 +1,5 @@
 @php
-    $systemName = \Illuminate\Support\Facades\Cache::get('esa_system_name', 'ESA-Parnel');
+    $systemName = \Illuminate\Support\Facades\Cache::get('esa_system_name', 'ESA-Panel');
     $systemLogo = \App\Helpers\LogoHelper::getSystemLogo();
 @endphp
 <!DOCTYPE html>
@@ -85,6 +85,148 @@
 
         .card-body .col {
             min-width: 0;
+        }
+
+        /* Mobile Responsive Fixes */
+        @media (max-width: 768px) {
+            /* Prevent horizontal scroll on mobile */
+            html, body {
+                overflow-x: hidden !important;
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+
+            /* Tables - make them scrollable horizontally */
+            .table-responsive {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                width: 100%;
+            }
+
+            /* Card containers */
+            .card {
+                margin-bottom: 1rem;
+                border-radius: 0.5rem;
+            }
+
+            /* Fix modal width on mobile */
+            .modal-dialog {
+                margin: 0.5rem;
+                max-width: calc(100% - 1rem);
+            }
+
+            .modal-content {
+                border-radius: 0.5rem;
+            }
+
+            /* Button sizing */
+            .btn {
+                white-space: normal;
+                word-wrap: break-word;
+            }
+
+            .btn-sm {
+                font-size: 0.8rem;
+                padding: 0.375rem 0.75rem;
+            }
+
+            /* Form controls */
+            .form-control,
+            .form-select {
+                font-size: 16px; /* Prevent iOS zoom */
+            }
+
+            /* Badge sizing */
+            .badge {
+                font-size: 0.75rem;
+                white-space: normal;
+                word-wrap: break-word;
+            }
+
+            /* Table text */
+            table {
+                font-size: 0.875rem;
+            }
+
+            th, td {
+                padding: 0.5rem;
+                word-wrap: break-word;
+                min-width: 60px;
+            }
+
+            /* Sidebar adjustments */
+            .sidebar {
+                position: fixed;
+                z-index: 1040;
+                height: 100vh;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease-in-out;
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            /* Main content padding on mobile */
+            .main-content {
+                padding: 1rem;
+            }
+
+            /* Dashboard cards */
+            .stats-card {
+                margin-bottom: 1rem;
+            }
+
+            /* Action buttons in tables */
+            .table .btn {
+                margin: 0.25rem 0;
+                display: inline-block;
+            }
+        }
+
+        @media (max-width: 480px) {
+            /* Extra small mobile */
+            .card-body {
+                padding: 0.75rem;
+            }
+
+            .btn {
+                width: 100%;
+                margin-bottom: 0.5rem;
+            }
+
+            .btn-group .btn {
+                width: auto;
+            }
+
+            /* Collapse table columns on very small screens */
+            .table-responsive {
+                font-size: 0.75rem;
+            }
+
+            /* Modal adjustments */
+            .modal-body {
+                padding: 1rem;
+            }
+
+            .modal-footer {
+                flex-direction: column;
+            }
+
+            .modal-footer .btn {
+                width: 100%;
+            }
+        }
+
+        /* Ensure images don't overflow */
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* Prevent text selection issues */
+        * {
+            -webkit-tap-highlight-color: transparent;
         }
 
         /* Top Navbar */
@@ -1261,7 +1403,7 @@
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             @php
-                $systemName = \Illuminate\Support\Facades\Cache::get('esa_system_name', 'ESA-Parnel');
+                $systemName = \Illuminate\Support\Facades\Cache::get('esa_system_name', 'ESA-Panel');
                 $systemLogo = \Illuminate\Support\Facades\Cache::get('esa_system_logo');
             @endphp
 
@@ -1726,6 +1868,46 @@
         @stack('scripts')
         @livewireScripts
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+        <!-- Global Modal Cleanup Script -->
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Fix Bootstrap modal backdrop issue
+            document.addEventListener('hidden.bs.modal', function(event) {
+                // Remove any remaining backdrop elements
+                document.querySelectorAll('.modal-backdrop').forEach(function(backdrop) {
+                    backdrop.remove();
+                });
+                // Ensure body styles are restored
+                document.body.classList.remove('modal-open');
+                document.body.style.removeProperty('overflow');
+                document.body.style.removeProperty('padding-right');
+            });
+
+            // Handle all modal close buttons properly
+            document.querySelectorAll('[data-bs-dismiss="modal"]').forEach(function(button) {
+                button.addEventListener('click', function() {
+                    const modal = this.closest('.modal');
+                    if (modal) {
+                        const modalInstance = bootstrap.Modal.getInstance(modal);
+                        if (modalInstance) {
+                            modalInstance.hide();
+                        }
+                    }
+                });
+            });
+
+            // Clean up on page unload
+            window.addEventListener('beforeunload', function() {
+                document.querySelectorAll('.modal-backdrop').forEach(function(backdrop) {
+                    backdrop.remove();
+                });
+                document.body.classList.remove('modal-open');
+                document.body.style.removeProperty('overflow');
+                document.body.style.removeProperty('padding-right');
+            });
+        });
+        </script>
 
     </body>
 </html>

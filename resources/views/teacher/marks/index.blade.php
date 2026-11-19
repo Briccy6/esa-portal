@@ -249,10 +249,18 @@ body { background: var(--surface-2); padding: 2.5rem 0 4rem; }
                             </div>
                         </div>
 
-                        <div class="d-flex justify-content-between align-items-center mt-4">
-                            <a href="{{ route('teacher.marks.view') }}" class="btn btn-outline-info">
-                                <i class="bi bi-eye me-2"></i>View Recorded Marks
-                            </a>
+                        <div class="d-flex justify-content-between align-items-center mt-4 flex-wrap gap-2">
+                            <div class="d-flex gap-2 flex-wrap">
+                                <a href="{{ route('teacher.marks.view') }}" class="btn btn-outline-info">
+                                    <i class="bi bi-eye me-2"></i>View Recorded Marks
+                                </a>
+                                <button type="button" class="btn btn-success" id="downloadTemplateBtn" disabled>
+                                    <i class="bi bi-download me-2"></i>Download CSV Template
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" id="uploadCsvBtn" disabled data-bs-toggle="modal" data-bs-target="#uploadModal">
+                                    <i class="bi bi-upload me-2"></i>Upload CSV
+                                </button>
+                            </div>
                             <button type="button" class="btn btn-primary px-4" id="showStudentsBtn" disabled data-bs-toggle="modal" data-bs-target="#studentsModal">
                                 <i class="bi bi-people me-2"></i>Show Students
                             </button>
@@ -292,9 +300,16 @@ body { background: var(--surface-2); padding: 2.5rem 0 4rem; }
                 </div>
             </div>
 
-            <div class="mb-3">
-                <input type="text" id="student-search" class="form-control" placeholder="Search student by name or ID...">
-                <small class="form-text text-muted mt-1"><i class="bi bi-search me-1"></i>Type to filter students</small>
+            <div class="row mb-3">
+                <div class="col-md-8">
+                    <input type="text" id="student-search" class="form-control" placeholder="Search student by name or ID...">
+                    <small class="form-text text-muted mt-1"><i class="bi bi-search me-1"></i>Type to filter students</small>
+                </div>
+                <div class="col-md-4">
+                    <button type="button" id="sort-students-btn" class="btn btn-outline-primary w-100">
+                        <i class="bi bi-sort-alpha-down me-2"></i>Sort: A-Z
+                    </button>
+                </div>
             </div>
 
             <div class="card border-0 shadow-sm">
@@ -330,6 +345,55 @@ body { background: var(--surface-2); padding: 2.5rem 0 4rem; }
             </div>
         </form>
         <div id="modal-message" class="mt-3"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Upload CSV Modal -->
+<div class="modal fade" id="uploadModal" tabindex="-1" aria-labelledby="uploadModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header">
+        <div class="d-flex align-items-center">
+            <div class="me-3">
+                <i class="bi bi-upload" style="font-size: 1.5rem; color: var(--accent);"></i>
+            </div>
+            <div>
+                <h5 class="modal-title mb-0" id="uploadModalLabel">Upload Marks CSV</h5>
+                <small style="color: rgba(255,255,255,0.7);">Upload marks from CSV file</small>
+            </div>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="uploadCsvForm">
+            @csrf
+            <div class="alert alert-info mb-4">
+                <i class="bi bi-info-circle me-2" style="font-size: 1.2rem;"></i>
+                <div>
+                    <strong>Instructions:</strong> Download the CSV template first, fill in the marks, then upload it here.
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="csv_file" class="form-label">
+                    <i class="bi bi-file-earmark-csv me-1" style="color: var(--accent);"></i>CSV File
+                </label>
+                <input type="file" name="csv_file" id="csv_file" class="form-control" accept=".csv" required>
+                <small class="form-text text-muted">Only CSV files are allowed</small>
+            </div>
+
+            <div id="uploadMessage"></div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+            <i class="bi bi-x-circle me-2"></i>Cancel
+        </button>
+        <button type="submit" form="uploadCsvForm" class="btn btn-primary" id="uploadCsvSubmitBtn">
+            <i class="bi bi-check-circle me-2"></i>Upload Marks
+        </button>
       </div>
     </div>
   </div>
@@ -692,6 +756,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     return;
                 }
 
+                // Sort students by name (A-Z by default)
+                students.sort(function(a, b) {
+                    return a.full_name.localeCompare(b.full_name);
+                });
+
                 var maxMark = assessmentType === 'test' ? marksOutOf : 100;
 
                 existingMarksPromise.then(function(existingResp) {
@@ -805,6 +874,41 @@ document.addEventListener('DOMContentLoaded', function () {
                 filterInfo.textContent = 'Showing ' + visible + ' of ' + total + ' students';
             } else {
                 filterInfo.style.display = 'none';
+            }
+        });
+    }
+
+    // ─── Sort Students Toggle ───────────────────────────────────────────
+    var sortBtn = document.getElementById('sort-students-btn');
+    var isAscending = true;
+
+    if (sortBtn) {
+        sortBtn.addEventListener('click', function() {
+            var rows = Array.from(document.querySelectorAll('.student-row'));
+            var tbody = document.getElementById('students-modal-list');
+
+            rows.sort(function(a, b) {
+                var nameA = a.querySelector('td:nth-child(2)').textContent.trim();
+                var nameB = b.querySelector('td:nth-child(2)').textContent.trim();
+
+                if (isAscending) {
+                    return nameA.localeCompare(nameB);
+                } else {
+                    return nameB.localeCompare(nameA);
+                }
+            });
+
+            // Re-append rows in sorted order
+            rows.forEach(function(row) {
+                tbody.appendChild(row);
+            });
+
+            // Update button state
+            isAscending = !isAscending;
+            if (isAscending) {
+                sortBtn.innerHTML = '<i class="bi bi-sort-alpha-down me-2"></i>Sort: A-Z';
+            } else {
+                sortBtn.innerHTML = '<i class="bi bi-sort-alpha-up me-2"></i>Sort: Z-A';
             }
         });
     }
@@ -975,6 +1079,252 @@ document.addEventListener('DOMContentLoaded', function () {
             && !(assessmentType === 'test' && (!marksOutOf || !testDate));
 
         document.getElementById('showStudentsBtn').disabled = !ready;
+        document.getElementById('downloadTemplateBtn').disabled = !ready;
+        document.getElementById('uploadCsvBtn').disabled = !ready;
+    }
+
+    // ─── Download CSV Template ────────────────────────────────────────
+    document.getElementById('downloadTemplateBtn').addEventListener('click', function() {
+        var branchId       = document.getElementById('branch_id').value;
+        var courseId       = document.getElementById('course_id').value;
+        var lessonId       = document.getElementById('lesson_id').value;
+        var termId         = document.getElementById('term_id').value;
+        var assessmentType = document.getElementById('assessment_type').value;
+        var examId         = document.getElementById('exam_id').value;
+        var examDate       = document.getElementById('exam_date').value;
+        var marksOutOf     = document.getElementById('marks_out_of').value;
+        var testDate       = document.getElementById('test_date').value;
+
+        var params = new URLSearchParams();
+        params.append('branch_id', branchId);
+        params.append('course_id', courseId);
+        params.append('lesson_id', lessonId);
+        params.append('term_id', termId);
+        params.append('assessment_type', assessmentType);
+
+        if (assessmentType === 'test') {
+            params.append('marks_out_of', marksOutOf);
+            params.append('test_date', testDate);
+        } else {
+            params.append('exam_id', examId);
+            params.append('exam_date', examDate);
+        }
+
+        window.location.href = '{{ route("teacher.marks.download-template") }}?' + params.toString();
+    });
+
+    // ─── Upload CSV Marks ─────────────────────────────────────────────
+    var previewMarksData = null;
+
+    document.getElementById('uploadCsvForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        var formData = new FormData(this);
+        var assessmentType = document.getElementById('assessment_type').value;
+        var branchId = document.getElementById('branch_id').value;
+        var courseId = document.getElementById('course_id').value;
+        var lessonId = document.getElementById('lesson_id').value;
+        var termId = document.getElementById('term_id').value;
+
+        console.log('Upload form values:', { branchId, courseId, lessonId, termId, assessmentType });
+
+        if (!branchId || !courseId || !lessonId || !termId) {
+            document.getElementById('uploadMessage').innerHTML =
+                '<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i>Please ensure Branch, Course, Lesson, and Term are selected before uploading.</div>';
+            return;
+        }
+
+        // Ensure CSRF token is included
+        var csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        if (csrfToken && !formData.has('_token')) {
+            formData.append('_token', csrfToken);
+        }
+
+        formData.append('branch_id', branchId);
+        formData.append('course_id', courseId);
+        formData.append('lesson_id', lessonId);
+        formData.append('term_id', termId);
+        formData.append('assessment_type', assessmentType);
+
+        // Only send exam fields if assessment type is exam
+        if (assessmentType === 'exam') {
+            formData.append('exam_id', document.getElementById('exam_id').value);
+            formData.append('exam_date', document.getElementById('exam_date').value);
+        }
+
+        // Only send test fields if assessment type is test
+        if (assessmentType === 'test') {
+            formData.append('marks_out_of', document.getElementById('marks_out_of').value);
+            formData.append('test_date', document.getElementById('test_date').value);
+        }
+
+        var uploadBtn = document.getElementById('uploadCsvSubmitBtn');
+        var uploadMsg = document.getElementById('uploadMessage');
+        var originalText = uploadBtn.textContent;
+
+        uploadBtn.disabled = true;
+        uploadBtn.textContent = 'Uploading...';
+        uploadMsg.innerHTML = '';
+
+        fetch('{{ route("teacher.marks.upload") }}', {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            body: formData
+        })
+        .then(function(res) {
+            return res.json();
+        })
+        .then(function(data) {
+            uploadBtn.disabled = false;
+            uploadBtn.textContent = originalText;
+
+            if (data.success && data.preview) {
+                // Show preview table
+                previewMarksData = data.marks;
+                uploadMsg.innerHTML = '<div class="alert alert-info"><i class="bi bi-info-circle me-2"></i>' + data.message + '</div>';
+
+                // Build preview table
+                var tableHtml = '<div class="table-responsive mt-3"><table class="table table-bordered table-sm">';
+                tableHtml += '<thead><tr><th>Student Name</th><th>Reg Number</th><th>Mark</th></tr></thead><tbody>';
+                data.marks.forEach(function(item) {
+                    tableHtml += '<tr><td>' + item.student_name + '</td><td>' + item.reg_number + '</td><td>' + item.mark + '</td></tr>';
+                });
+                tableHtml += '</tbody></table></div>';
+
+                uploadMsg.innerHTML += tableHtml;
+
+                // Change button to confirm
+                uploadBtn.textContent = 'Confirm & Save Marks';
+                uploadBtn.className = 'btn btn-success';
+                uploadBtn.onclick = function(e) {
+                    e.preventDefault();
+                    confirmMarksUpload();
+                };
+
+                if (data.failedDetails && data.failedDetails.length > 0) {
+                    uploadMsg.innerHTML += '<div class="alert alert-warning mt-2"><strong>Failed rows:</strong><ul class="mb-0 mt-1">';
+                    data.failedDetails.forEach(function(detail) {
+                        uploadMsg.innerHTML += '<li>' + detail + '</li>';
+                    });
+                    uploadMsg.innerHTML += '</ul></div>';
+                }
+            } else if (data.success) {
+                uploadMsg.innerHTML = '<div class="alert alert-success"><i class="bi bi-check-circle me-2"></i>' + data.message + '</div>';
+                setTimeout(function() {
+                    var modal = bootstrap.Modal.getInstance(document.getElementById('uploadModal'));
+                    if (modal) modal.hide();
+                }, 2000);
+            } else {
+                uploadMsg.innerHTML = '<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i>' + (data.message || 'Upload failed') + '</div>';
+            }
+        })
+        .catch(function(err) {
+            uploadBtn.disabled = false;
+            uploadBtn.textContent = originalText;
+            uploadMsg.innerHTML = '<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i>Upload failed: ' + (err.message || 'Unknown error') + '</div>';
+        });
+    });
+
+    function confirmMarksUpload() {
+        if (!previewMarksData || previewMarksData.length === 0) {
+            return;
+        }
+
+        var confirmBtn = document.getElementById('uploadCsvSubmitBtn');
+        var uploadMsg = document.getElementById('uploadMessage');
+        var assessmentType = document.getElementById('assessment_type').value;
+        var branchId = document.getElementById('branch_id').value;
+        var courseId = document.getElementById('course_id').value;
+        var lessonId = document.getElementById('lesson_id').value;
+        var termId = document.getElementById('term_id').value;
+
+        console.log('Confirm upload values:', { branchId, courseId, lessonId, termId, assessmentType });
+
+        if (!branchId || !courseId || !lessonId || !termId) {
+            uploadMsg.innerHTML = '<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i>Please ensure Branch, Course, Lesson, and Term are selected.</div>';
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = 'Confirm & Save Marks';
+            return;
+        }
+
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = 'Saving...';
+
+        var formData = new FormData();
+        // Add CSRF token
+        var csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        if (csrfToken) {
+            formData.append('_token', csrfToken);
+        }
+
+        formData.append('branch_id', branchId);
+        formData.append('course_id', courseId);
+        formData.append('lesson_id', lessonId);
+        formData.append('term_id', termId);
+        formData.append('assessment_type', assessmentType);
+
+        // Only send exam fields if assessment type is exam
+        if (assessmentType === 'exam') {
+            formData.append('exam_id', document.getElementById('exam_id').value);
+            formData.append('exam_date', document.getElementById('exam_date').value);
+        }
+
+        // Only send test fields if assessment type is test
+        if (assessmentType === 'test') {
+            formData.append('marks_out_of', document.getElementById('marks_out_of').value);
+            formData.append('test_date', document.getElementById('test_date').value);
+        }
+
+        previewMarksData.forEach(function(item, index) {
+            formData.append('marks[' + index + '][student_id]', item.student_id);
+            formData.append('marks[' + index + '][mark]', item.mark);
+        });
+
+        fetch('{{ route("teacher.marks.confirm-upload") }}', {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            body: formData
+        })
+        .then(function(res) {
+            return res.json();
+        })
+        .then(function(data) {
+            if (data.success) {
+                uploadMsg.innerHTML = '<div class="alert alert-success"><i class="bi bi-check-circle me-2"></i>' + data.message + '</div>';
+                if (data.failedDetails && data.failedDetails.length > 0) {
+                    uploadMsg.innerHTML += '<div class="alert alert-warning mt-2"><strong>Failed rows:</strong><ul class="mb-0 mt-1">';
+                    data.failedDetails.forEach(function(detail) {
+                        uploadMsg.innerHTML += '<li>' + detail + '</li>';
+                    });
+                    uploadMsg.innerHTML += '</ul></div>';
+                }
+                setTimeout(function() {
+                    var modal = bootstrap.Modal.getInstance(document.getElementById('uploadModal'));
+                    if (modal) modal.hide();
+                    // Reset form
+                    document.getElementById('uploadCsvForm').reset();
+                    previewMarksData = null;
+                    confirmBtn.textContent = 'Upload Marks';
+                    confirmBtn.className = 'btn btn-primary';
+                    confirmBtn.onclick = null;
+                }, 2000);
+            } else {
+                uploadMsg.innerHTML = '<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i>' + (data.message || 'Save failed') + '</div>';
+                confirmBtn.disabled = false;
+                confirmBtn.textContent = 'Confirm & Save Marks';
+            }
+        })
+        .catch(function(err) {
+            uploadMsg.innerHTML = '<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i>Save failed: ' + (err.message || 'Unknown error') + '</div>';
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = 'Confirm & Save Marks';
+        });
     }
 
     // Attach change listeners for button state

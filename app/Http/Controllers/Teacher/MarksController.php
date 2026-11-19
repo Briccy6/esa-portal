@@ -114,19 +114,30 @@ public function index()
             
             foreach ($request->students as $studentId) {
                 $value = $request->marks[$studentId]['value'] ?? null;
-                
+
                 // DEBUG: Log each student processing
                 \Log::debug('Processing student mark', [
                     'student_id' => $studentId,
                     'mark_value' => $value,
                     'marks_array' => $request->marks[$studentId] ?? null
                 ]);
-                
+
                 // Ensure value is provided
                 if ($value === null || $value === '' || !is_numeric($value)) {
                     $errorMsg = "Student ID {$studentId} - No mark value provided (value: " . var_export($value, true) . ")";
                     $marksFailed[] = $errorMsg;
                     \Log::warning('Mark value missing or invalid', ['student_id' => $studentId, 'value' => $value]);
+                    continue;
+                }
+
+                // Convert to float to allow decimal marks
+                $value = (float) $value;
+
+                // Validate mark is not negative
+                if ($value < 0) {
+                    $errorMsg = "Student ID {$studentId} - Mark cannot be negative (value: {$value})";
+                    $marksFailed[] = $errorMsg;
+                    \Log::warning('Mark value is negative', ['student_id' => $studentId, 'value' => $value]);
                     continue;
                 }
                 
@@ -288,7 +299,7 @@ public function index()
             if (!isset($students[$studentId])) {
                 $students[$studentId] = [
                     'name' => $mark->student->full_name,
-                    'course' => $mark->course->course_name,
+                    'course' => $mark->course->abbreviation ?? $mark->course->course_code ?? $mark->course->course_name,
                     'branch' => $mark->branch->name,
                     'reg_number' => $mark->student->reg_number
                 ];
@@ -344,7 +355,7 @@ public function index()
             }
         }
         
-        // Sort students by name
+        // Sort students by name (A-Z by default)
         uasort($students, function($a, $b) {
             return strcasecmp($a['name'], $b['name']);
         });
@@ -416,6 +427,442 @@ public function index()
                 'success' => false,
                 'message' => 'Failed to update marks: ' . $e->getMessage(),
                 'errors' => ['server' => [$e->getMessage()]]
+            ], 500);
+        }
+    }
+
+    /**
+     * Download CSV template for marks recording
+     */
+    public function downloadTemplate(Request $request)
+    {
+        $validator = \Validator::make($request->all(), [
+            'branch_id' => 'required|exists:branches,id',
+            'course_id' => 'required|exists:courses,id',
+            'lesson_id' => 'required|exists:lessons,id',
+            'term_id' => 'required|exists:terms,id',
+            'assessment_type' => 'required|in:test,exam',
+            'marks_out_of' => 'required_if:assessment_type,test|numeric|min:1',
+            'test_date' => 'required_if:assessment_type,test|date',
+            'exam_id' => 'required_if:assessment_type,exam|exists:exams,id',
+            'exam_date' => 'required_if:assessment_type,exam|date',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator->errors());
+        }
+
+        $teacher = auth('teacher')->user();
+
+        // Verify teacher is assigned to this course/branch/lesson
+        $assigned = \DB::table('lesson_branch_course')
+            ->where('teacher_id', $teacher->id)
+            ->where('branch_id', $request->branch_id)
+            ->where('course_id', $request->course_id)
+            ->where('lesson_id', $request->lesson_id)
+            ->exists();
+
+        if (!$assigned) {
+            return back()->with('error', 'You are not assigned to this lesson in this course/branch.');
+        }
+
+        // Get students for this course and branch
+        $students = \App\Models\Student::where('course_id', $request->course_id)
+            ->where('branch_id', $request->branch_id)
+            ->orderBy('full_name')
+            ->get(['id', 'full_name', 'reg_number']);
+
+        // Get lesson and course info for filename
+        $lesson = \App\Models\Lesson::find($request->lesson_id);
+        $course = \App\Models\Course::find($request->course_id);
+        $branch = \App\Models\Branch::find($request->branch_id);
+        $term = \App\Models\Term::find($request->term_id);
+
+        $assessmentType = $request->assessment_type;
+        $marksOutOf = $assessmentType === 'test' ? $request->marks_out_of : 100;
+        $date = $assessmentType === 'test' ? $request->test_date : $request->exam_date;
+        $examId = $assessmentType === 'exam' ? $request->exam_id : null;
+
+        $filename = 'marks_template_' . \Illuminate\Support\Str::slug($lesson->title)
+            . '_' . \Illuminate\Support\Str::slug($course->course_name)
+            . '_' . \Illuminate\Support\Str::slug($branch->name)
+            . '_' . date('Y-m-d') . '.csv';
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ];
+
+        $callback = function () use ($students, $assessmentType, $marksOutOf, $date, $lesson, $course, $branch, $term) {
+            $file = fopen('php://output', 'w');
+
+            // Write header row with metadata
+            fputcsv($file, [
+                '# METADATA (DO NOT EDIT)',
+                'Assessment Type:' . $assessmentType,
+                'Marks Out Of:' . $marksOutOf,
+                'Date:' . $date,
+                'Lesson ID:' . $lesson->id,
+                'Course ID:' . $course->id,
+                'Branch ID:' . $branch->id,
+                'Term ID:' . $term->id,
+                'Exam ID:' . ($examId ?? ''),
+            ]);
+
+            // Empty row as separator
+            fputcsv($file, []);
+
+            // Write column headers
+            fputcsv($file, ['Student ID', 'Registration Number', 'Student Name', 'Mark']);
+
+            // Write student rows
+            foreach ($students as $student) {
+                fputcsv($file, [
+                    $student->id,
+                    $student->reg_number,
+                    $student->full_name,
+                    '', // Empty mark field for teacher to fill
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Upload marks from CSV file (preview only - doesn't save)
+     */
+    public function uploadMarks(Request $request)
+    {
+        $validator = \Validator::make($request->all(), [
+            'csv_file' => 'required|file|mimes:csv,txt',
+            'branch_id' => 'required|exists:branches,id',
+            'course_id' => 'required|exists:courses,id',
+            'lesson_id' => 'required|exists:lessons,id',
+            'term_id' => 'required|exists:terms,id',
+            'assessment_type' => 'required|in:test,exam',
+            'marks_out_of' => 'required_if:assessment_type,test|numeric|min:1',
+            'test_date' => 'required_if:assessment_type,test|date',
+            'exam_id' => 'required_if:assessment_type,exam|exists:exams,id',
+            'exam_date' => 'required_if:assessment_type,exam|date',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $teacher = auth('teacher')->user();
+
+        // Verify teacher is assigned to this course/branch/lesson
+        $assigned = \DB::table('lesson_branch_course')
+            ->where('teacher_id', $teacher->id)
+            ->where('branch_id', $request->branch_id)
+            ->where('course_id', $request->course_id)
+            ->where('lesson_id', $request->lesson_id)
+            ->exists();
+
+        if (!$assigned) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You are not assigned to this lesson in this course/branch.'
+            ], 403);
+        }
+
+        try {
+            $file = $request->file('csv_file');
+            $path = $file->getRealPath();
+            $rows = array_map('str_getcsv', file($path));
+
+            if (empty($rows)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'CSV file is empty'
+                ], 400);
+            }
+
+            // Skip metadata rows (starting with #) and find the header row
+            $headerRow = null;
+            $dataStartIndex = 0;
+
+            foreach ($rows as $index => $row) {
+                if (empty($row)) continue;
+                if (isset($row[0]) && str_starts_with($row[0], '#')) continue;
+                if (isset($row[0]) && str_starts_with($row[0], 'Student ID')) {
+                    $headerRow = $row;
+                    $dataStartIndex = $index + 1;
+                    break;
+                }
+            }
+
+            if (!$headerRow) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Could not find header row in CSV. Expected header: Student ID, Registration Number, Student Name, Mark'
+                ], 400);
+            }
+
+            // Parse column indices
+            $studentIdIndex = array_search('Student ID', $headerRow);
+            $regNumberIndex = array_search('Registration Number', $headerRow);
+            $studentNameIndex = array_search('Student Name', $headerRow);
+            $markIndex = array_search('Mark', $headerRow);
+
+            if ($studentIdIndex === false || $markIndex === false) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'CSV header is missing required columns: Student ID, Mark'
+                ], 400);
+            }
+
+            $marksCreated = 0;
+            $marksFailed = [];
+            $marksUpdated = 0;
+
+            // Process data rows
+            for ($i = $dataStartIndex; $i < count($rows); $i++) {
+                $row = $rows[$i];
+
+                if (empty($row) || count($row) < max($studentIdIndex, $markIndex) + 1) {
+                    continue; // Skip empty or malformed rows
+                }
+
+                $studentId = trim($row[$studentIdIndex] ?? '');
+                $markValue = trim($row[$markIndex] ?? '');
+
+                // Validate student ID
+                if (!is_numeric($studentId) || $studentId <= 0) {
+                    $marksFailed[] = "Row " . ($i + 1) . ": Invalid Student ID - {$studentId}";
+                    continue;
+                }
+
+                // Validate mark value
+                if ($markValue === '' || !is_numeric($markValue)) {
+                    $marksFailed[] = "Row " . ($i + 1) . ": Invalid or missing mark for Student ID {$studentId}";
+                    continue;
+                }
+
+                $markValue = (float) $markValue;
+
+                // Validate mark is not negative
+                if ($markValue < 0) {
+                    $marksFailed[] = "Row " . ($i + 1) . ": Mark cannot be negative for Student ID {$studentId}";
+                    continue;
+                }
+
+                // Check if student exists and is enrolled in this course/branch
+                $student = \App\Models\Student::where('id', $studentId)
+                    ->where('course_id', $request->course_id)
+                    ->where('branch_id', $request->branch_id)
+                    ->first();
+
+                if (!$student) {
+                    $marksFailed[] = "Row " . ($i + 1) . ": Student ID {$studentId} not found or not enrolled in this course/branch";
+                    continue;
+                }
+
+                // Prepare mark data
+                $createData = [
+                    'student_id' => $studentId,
+                    'course_id' => $request->course_id,
+                    'branch_id' => $request->branch_id,
+                    'lesson_id' => $request->lesson_id,
+                    'term_id' => $request->term_id,
+                    'assessment_type' => $request->assessment_type,
+                    'value' => $markValue,
+                    'status' => 'recorded',
+                ];
+
+                if ($request->assessment_type === 'exam') {
+                    $createData['exam_id'] = $request->exam_id;
+                    $createData['exam_date'] = $request->exam_date;
+                    $createData['marks_out_of'] = 100;
+                } else {
+                    $createData['marks_out_of'] = $request->marks_out_of;
+                    $createData['test_date'] = $request->test_date;
+                }
+
+                // Add to preview data instead of saving
+                $previewData[] = [
+                    'student_id' => $studentId,
+                    'student_name' => $student->full_name,
+                    'reg_number' => $student->reg_number,
+                    'mark' => $markValue,
+                    'status' => 'new'
+                ];
+            }
+
+            return response()->json([
+                'success' => true,
+                'preview' => true,
+                'message' => 'CSV parsed successfully. Please review the marks below before confirming.',
+                'marksCount' => count($previewData),
+                'marksFailed' => count($marksFailed),
+                'failedDetails' => $marksFailed,
+                'marks' => $previewData
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error uploading marks from CSV', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to upload marks: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Confirm and save marks from CSV preview
+     */
+    public function confirmUpload(Request $request)
+    {
+        $validator = \Validator::make($request->all(), [
+            'marks' => 'required|array',
+            'marks.*.student_id' => 'required|exists:students,id',
+            'marks.*.mark' => 'required|numeric|min:0',
+            'branch_id' => 'required|exists:branches,id',
+            'course_id' => 'required|exists:courses,id',
+            'lesson_id' => 'required|exists:lessons,id',
+            'term_id' => 'required|exists:terms,id',
+            'assessment_type' => 'required|in:test,exam',
+            'marks_out_of' => 'required_if:assessment_type,test|numeric|min:1',
+            'test_date' => 'required_if:assessment_type,test|date',
+            'exam_id' => 'required_if:assessment_type,exam|exists:exams,id',
+            'exam_date' => 'required_if:assessment_type,exam|date',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $teacher = auth('teacher')->user();
+
+        // Verify teacher is assigned to this course/branch/lesson
+        $assigned = \DB::table('lesson_branch_course')
+            ->where('teacher_id', $teacher->id)
+            ->where('branch_id', $request->branch_id)
+            ->where('course_id', $request->course_id)
+            ->where('lesson_id', $request->lesson_id)
+            ->exists();
+
+        if (!$assigned) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You are not assigned to this lesson in this course/branch.'
+            ], 403);
+        }
+
+        try {
+            $marksCreated = 0;
+            $marksUpdated = 0;
+            $marksFailed = [];
+
+            foreach ($request->marks as $markData) {
+                $studentId = $markData['student_id'];
+                $markValue = (float) $markData['mark'];
+
+                // Verify student is enrolled in this course/branch
+                $student = \App\Models\Student::where('id', $studentId)
+                    ->where('course_id', $request->course_id)
+                    ->where('branch_id', $request->branch_id)
+                    ->first();
+
+                if (!$student) {
+                    $marksFailed[] = "Student ID {$studentId} not found or not enrolled in this course/branch";
+                    continue;
+                }
+
+                // Prepare mark data
+                $createData = [
+                    'student_id' => $studentId,
+                    'course_id' => $request->course_id,
+                    'branch_id' => $request->branch_id,
+                    'lesson_id' => $request->lesson_id,
+                    'term_id' => $request->term_id,
+                    'assessment_type' => $request->assessment_type,
+                    'value' => $markValue,
+                    'status' => 'recorded',
+                ];
+
+                if ($request->assessment_type === 'exam') {
+                    $createData['exam_id'] = $request->exam_id;
+                    $createData['exam_date'] = $request->exam_date;
+                    $createData['marks_out_of'] = 100;
+                } else {
+                    $createData['marks_out_of'] = $request->marks_out_of;
+                    $createData['test_date'] = $request->test_date;
+                }
+
+                // Check if mark already exists
+                $existingMark = Mark::where('student_id', $studentId)
+                    ->where('course_id', $request->course_id)
+                    ->where('branch_id', $request->branch_id)
+                    ->where('lesson_id', $request->lesson_id)
+                    ->where('term_id', $request->term_id)
+                    ->where('assessment_type', $request->assessment_type);
+
+                if ($request->assessment_type === 'test') {
+                    $existingMark->where('test_date', $request->test_date);
+                } else {
+                    $existingMark->where('exam_id', $request->exam_id);
+                }
+
+                $existingMark = $existingMark->first();
+
+                if ($existingMark) {
+                    $existingMark->update([
+                        'value' => $markValue,
+                        'status' => 'updated'
+                    ]);
+                    $marksUpdated++;
+                } else {
+                    Mark::create($createData);
+                    $marksCreated++;
+                }
+            }
+
+            // Refresh report cards if marks were created/updated
+            if ($marksCreated > 0 || $marksUpdated > 0) {
+                $studentIds = array_column($request->marks, 'student_id');
+                $this->refreshReportCardsForMarks($request->course_id, $request->term_id, $studentIds);
+            }
+
+            $message = "Marks saved successfully! Created: {$marksCreated}, Updated: {$marksUpdated}";
+            if (!empty($marksFailed)) {
+                $message .= ". Failed: " . count($marksFailed);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'marksCreated' => $marksCreated,
+                'marksUpdated' => $marksUpdated,
+                'marksFailed' => count($marksFailed),
+                'failedDetails' => $marksFailed
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error confirming marks upload', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to save marks: ' . $e->getMessage()
             ], 500);
         }
     }
