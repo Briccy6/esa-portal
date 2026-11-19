@@ -10,8 +10,8 @@
             <h1 class="h3 mb-1">Accountant dashboard</h1>
             <p class="text-muted mb-0">A clear view of fee collection, expenses, and balances.</p>
         </div>
-        <a href="{{ route('staff.accounting.cashbook') }}" class="btn btn-primary">
-            <i class="fas fa-book-open me-2"></i>Open cash book
+        <a href="{{ route('staff.accountant.expenses.index') }}" class="btn btn-primary">
+            <i class="fas fa-book-open me-2"></i>View Expenses
         </a>
     </div>
 
@@ -465,7 +465,7 @@
                     </a>
                 </div>
                 <div class="col-md-2 col-4">
-                    <a href="{{ route('staff.accounting.cashbook') }}" class="btn btn-outline-info w-100 h-100 d-flex flex-column align-items-center justify-content-center py-3">
+                    <a href="{{ route('staff.accountant.expenses.index') }}" class="btn btn-outline-info w-100 h-100 d-flex flex-column align-items-center justify-content-center py-3">
                         <i class="fas fa-file-alt fa-2x mb-2"></i>
                         <span>Fee Report</span>
                     </a>
@@ -477,7 +477,7 @@
                     </a>
                 </div>
                 <div class="col-md-2 col-4">
-                    <a href="{{ route('staff.accounting.balance-sheet') }}" class="btn btn-outline-secondary w-100 h-100 d-flex flex-column align-items-center justify-content-center py-3">
+                    <a href="{{ route('staff.accountant.expenses.index') }}" class="btn btn-outline-secondary w-100 h-100 d-flex flex-column align-items-center justify-content-center py-3">
                         <i class="fas fa-balance-scale fa-2x mb-2"></i>
                         <span>Balance Sheet</span>
                     </a>

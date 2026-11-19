@@ -848,22 +848,22 @@
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="reportsDropdown">
                         <li>
-                            <a class="dropdown-item {{ request()->routeIs('staff.accounting.cashbook') ? 'active' : '' }}" href="{{ route('staff.accounting.cashbook') }}">
+                            <a class="dropdown-item {{ request()->routeIs('staff.accountant.expenses.index') ? 'active' : '' }}" href="{{ route('staff.accountant.expenses.index') }}">
                                 <i class="fas fa-money-check-alt"></i> Cash Book
                             </a>
                         </li>
                         <li>
-                            <a class="dropdown-item {{ request()->routeIs('staff.accounting.balance-sheet') ? 'active' : '' }}" href="{{ route('staff.accounting.balance-sheet') }}">
+                            <a class="dropdown-item {{ request()->routeIs('staff.accountant.expenses.index') ? 'active' : '' }}" href="{{ route('staff.accountant.expenses.index') }}">
                                 <i class="fas fa-balance-scale"></i> Balance Sheet
                             </a>
                         </li>
                         <li>
-                            <a class="dropdown-item {{ request()->routeIs('staff.accounting.income-statement') ? 'active' : '' }}" href="{{ route('staff.accounting.income-statement') }}">
+                            <a class="dropdown-item {{ request()->routeIs('staff.accountant.receipts.index') ? 'active' : '' }}" href="{{ route('staff.accountant.receipts.index') }}">
                                 <i class="fas fa-chart-line"></i> Income Statement
                             </a>
                         </li>
                         <li>
-                            <a class="dropdown-item {{ request()->routeIs('staff.accounting.trial-balance') ? 'active' : '' }}" href="{{ route('staff.accounting.trial-balance') }}">
+                            <a class="dropdown-item {{ request()->routeIs('staff.accountant.payment-schedule.index') ? 'active' : '' }}" href="{{ route('staff.accountant.payment-schedule.index') }}">
                                 <i class="fas fa-list-ol"></i> Trial Balance
                             </a>
                         </li>
