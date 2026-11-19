@@ -2,132 +2,89 @@
 
 @section('styles')
 <style>
-/* Modern Design System */
+/* Professional Design System */
 :root {
-    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    --success-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    --info-gradient: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-    --warning-gradient: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-    --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
-    --card-shadow-hover: 0 12px 20px rgba(0, 0, 0, 0.12);
-    --border-radius: 15px;
-    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --primary-color: #1e40af;
+    --primary-light: #3b82f6;
+    --primary-dark: #1e3a8a;
+    --success-color: #059669;
+    --info-color: #0891b2;
+    --warning-color: #d97706;
+    --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --card-shadow-hover: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --border-radius: 12px;
+    --transition: all 0.2s ease;
 }
 
 /* Page Header */
 .question-banks-header {
-    background: var(--primary-gradient);
+    background: var(--primary-color);
     color: white;
-    padding: 3rem 0;
+    padding: 2rem 0;
     margin-bottom: 2rem;
     border-radius: var(--border-radius);
-    position: relative;
-    overflow: hidden;
-}
-
-.question-banks-header::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="50" cy="50" r="1" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
-    pointer-events: none;
 }
 
 .question-banks-header h1 {
     font-weight: 700;
-    font-size: 2.5rem;
+    font-size: 2rem;
     margin-bottom: 0.5rem;
-    position: relative;
-    z-index: 1;
 }
 
 .question-banks-header p {
     opacity: 0.9;
     margin-bottom: 0;
-    font-size: 1.1rem;
-    position: relative;
-    z-index: 1;
+    font-size: 1rem;
 }
 
 .question-banks-header .stats-card {
     background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 12px;
-    padding: 1.5rem;
+    border-radius: 8px;
+    padding: 1rem;
     text-align: center;
-    transition: var(--transition);
-}
-
-.question-banks-header .stats-card:hover {
-    background: rgba(255, 255, 255, 0.25);
-    transform: translateY(-2px);
 }
 
 .question-banks-header .stats-number {
-    font-size: 2.5rem;
+    font-size: 2rem;
     font-weight: 700;
     margin-bottom: 0.25rem;
 }
 
 /* Import Section */
 .import-section {
-    background: var(--success-gradient);
+    background: var(--success-color);
     color: white;
-    padding: 2.5rem;
+    padding: 2rem;
     border-radius: var(--border-radius);
     margin-bottom: 2rem;
     text-align: center;
-    position: relative;
-    overflow: hidden;
-}
-
-.import-section::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="import-pattern" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M10 0 L20 10 L10 20 L0 10 Z" fill="white" opacity="0.05"/></pattern></defs><rect width="100" height="100" fill="url(%23import-pattern)"/></svg>');
-    pointer-events: none;
 }
 
 .import-section h4 {
     margin-bottom: 0.5rem;
     font-weight: 600;
-    font-size: 1.5rem;
-    position: relative;
-    z-index: 1;
+    font-size: 1.25rem;
 }
 
 .import-section p {
     margin-bottom: 1rem;
     opacity: 0.9;
-    font-size: 1.1rem;
-    position: relative;
-    z-index: 1;
+    font-size: 0.95rem;
 }
 
 .import-section .btn-light {
     background: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 10px;
-    padding: 1rem;
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem;
     font-weight: 500;
     transition: var(--transition);
-    position: relative;
-    z-index: 1;
 }
 
 .import-section .btn-light:hover {
-    background: rgba(255, 255, 255, 1);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+    background: white;
+    transform: translateY(-1px);
 }
 
 /* Question Bank Cards */
@@ -136,80 +93,47 @@
     border-radius: var(--border-radius);
     overflow: hidden;
     box-shadow: var(--card-shadow);
-    border: 1px solid #e5e7eb;
+    border: 1px solid #e2e8f0;
     transition: var(--transition);
     height: 100%;
-    position: relative;
-}
-
-.question-bank-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: var(--primary-gradient);
-    opacity: 0;
-    transition: var(--transition);
 }
 
 .question-bank-card:hover {
-    transform: translateY(-5px);
+    transform: translateY(-2px);
     box-shadow: var(--card-shadow-hover);
-}
-
-.question-bank-card:hover::before {
-    opacity: 1;
+    border-color: var(--primary-light);
 }
 
 .question-bank-header {
-    background: var(--primary-gradient);
+    background: var(--primary-color);
     color: white;
-    padding: 1.5rem;
-    position: relative;
-}
-
-.question-bank-header::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    padding: 1.25rem;
 }
 
 .question-bank-header h5 {
     font-weight: 600;
     margin: 0;
-    font-size: 1.25rem;
+    font-size: 1.125rem;
 }
 
 .question-bank-body {
-    padding: 1.5rem;
+    padding: 1.25rem;
 }
 
 .question-info {
     display: flex;
     align-items: center;
-    margin-bottom: 1rem;
-    color: #6b7280;
-    font-size: 0.9rem;
+    margin-bottom: 0.75rem;
+    color: #64748b;
+    font-size: 0.875rem;
     padding: 0.5rem;
-    background: #f9fafb;
-    border-radius: 8px;
-    transition: var(--transition);
-}
-
-.question-info:hover {
-    background: #f3f4f6;
-    transform: translateX(2px);
+    background: #f8fafc;
+    border-radius: 6px;
 }
 
 .question-info i {
     margin-right: 0.75rem;
-    color: #667eea;
+    color: var(--primary-color);
     font-size: 1rem;
 }
 
@@ -220,169 +144,136 @@
 /* Status Badges */
 .status-badge {
     display: inline-block;
-    padding: 0.4rem 1rem;
-    border-radius: 25px;
-    font-size: 0.8rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    transition: var(--transition);
 }
 
 .status-active {
-    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    background: #d1fae5;
     color: #065f46;
-    border: 1px solid #a7f3d0;
 }
 
 .status-inactive {
-    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-    color: #6b7280;
-    border: 1px solid #d1d5db;
+    background: #f1f5f9;
+    color: #64748b;
 }
 
 /* Action Buttons */
 .question-bank-actions {
-    padding: 1.5rem;
-    background: #f9fafb;
-    border-top: 1px solid #e5e7eb;
+    padding: 1rem;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
 }
 
 .btn-custom {
-    border-radius: 10px;
+    border-radius: 8px;
     font-weight: 500;
-    padding: 0.75rem 1rem;
+    padding: 0.625rem 1rem;
     transition: var(--transition);
     border: none;
-    position: relative;
-    overflow: hidden;
-}
-
-.btn-custom::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-    transition: left 0.5s;
-}
-
-.btn-custom:hover::before {
-    left: 100%;
 }
 
 .btn-custom:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+    transform: translateY(-1px);
 }
 
 .btn-primary {
-    background: var(--info-gradient);
+    background: var(--info-color);
+}
+
+.btn-primary:hover {
+    background: #0e7490;
 }
 
 .btn-success {
-    background: var(--success-gradient);
+    background: var(--success-color);
+}
+
+.btn-success:hover {
+    background: #047857;
 }
 
 /* Empty State */
 .empty-state {
     text-align: center;
-    padding: 5rem 2rem;
+    padding: 3rem 2rem;
     background: white;
     border-radius: var(--border-radius);
-    border: 2px dashed #e5e7eb;
-    position: relative;
+    border: 2px dashed #e2e8f0;
 }
 
 .empty-state i {
-    color: #d1d5db;
-    margin-bottom: 1.5rem;
-    font-size: 4rem;
+    color: #cbd5e1;
+    margin-bottom: 1rem;
+    font-size: 3rem;
 }
 
 .empty-state h3 {
-    color: #6b7280;
+    color: #64748b;
     margin-bottom: 1rem;
 }
 
 /* Alerts */
 .alert {
-    border-radius: 12px;
+    border-radius: 8px;
     border: none;
-    padding: 1rem 1.5rem;
+    padding: 1rem 1.25rem;
     margin-bottom: 1rem;
-    position: relative;
 }
 
 .alert-success {
-    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    background: #d1fae5;
     color: #065f46;
 }
 
 .alert-danger {
-    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    background: #fee2e2;
     color: #991b1b;
 }
 
 .alert-warning {
-    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    background: #fef3c7;
     color: #92400e;
 }
 
 .alert-info {
-    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    background: #dbeafe;
     color: #1e40af;
 }
 
 /* Pagination */
 .pagination .page-link {
-    border-radius: 8px;
+    border-radius: 6px;
     margin: 0 2px;
-    border: none;
-    color: #667eea;
+    border: 1px solid #e2e8f0;
+    color: var(--primary-color);
     font-weight: 500;
 }
 
 .pagination .page-item.active .page-link {
-    background: var(--primary-gradient);
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: #fff;
 }
-
-/* Animations */
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(30px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.question-bank-card {
-    animation: fadeInUp 0.6s ease-out;
-}
-
-.question-bank-card:nth-child(1) { animation-delay: 0.1s; }
-.question-bank-card:nth-child(2) { animation-delay: 0.2s; }
-.question-bank-card:nth-child(3) { animation-delay: 0.3s; }
 
 /* Responsive Design */
 @media (max-width: 768px) {
     .question-banks-header h1 {
-        font-size: 2rem;
+        font-size: 1.5rem;
     }
-    
+
     .question-banks-header {
-        padding: 2rem 0;
+        padding: 1.5rem 0;
     }
-    
+
     .import-section {
         padding: 1.5rem;
     }
-    
+
     .question-bank-card {
         margin-bottom: 1rem;
     }

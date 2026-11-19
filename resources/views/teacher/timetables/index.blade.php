@@ -3,37 +3,51 @@
 @section('content')
 <style>
     .timetable-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: #1e40af;
         color: white;
-        padding: 2rem;
-        border-radius: 1rem;
-        margin-bottom: 2rem;
+        padding: 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+    }
+
+    .timetable-header h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 0.25rem;
+    }
+
+    .timetable-header p {
+        opacity: 0.9;
+        margin-bottom: 0;
+        font-size: 0.95rem;
     }
 
     .timetable-table {
         background: white;
-        border-radius: 0.5rem;
+        border-radius: 12px;
         overflow: hidden;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        border: 1px solid #e2e8f0;
     }
 
     .timetable-table thead {
-        background: #667eea;
+        background: #1e40af;
         color: white;
         display: table-header-group !important;
         visibility: visible !important;
     }
 
     .timetable-table th {
-        padding: 1rem;
+        padding: 0.875rem 1rem;
         font-weight: 600;
         border: none;
         color: white !important;
         visibility: visible !important;
+        font-size: 0.875rem;
     }
 
     .timetable-table td {
-        padding: 1rem;
+        padding: 0.875rem 1rem;
         vertical-align: middle;
         border-bottom: 1px solid #e2e8f0;
     }
@@ -43,18 +57,19 @@
     }
 
     .download-btn {
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        background: #1e40af;
         border: none;
         color: white;
-        padding: 0.5rem 1.5rem;
-        border-radius: 0.5rem;
-        font-weight: 600;
-        transition: all 0.3s ease;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-weight: 500;
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
     }
 
     .download-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        background: #1e3a8a;
+        transform: translateY(-1px);
     }
 </style>
 
@@ -90,9 +105,9 @@
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table id="timetable-{{ $timetable->id }}" class="table table-bordered table-hover" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; overflow: hidden;">
+                        <table id="timetable-{{ $timetable->id }}" class="table table-bordered table-hover" style="background: white;">
                             <thead>
-                                <tr style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                                <tr style="background: #1e40af; color: white;">
                                     <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Time</th>
                                     <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Day</th>
                                     <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Course</th>

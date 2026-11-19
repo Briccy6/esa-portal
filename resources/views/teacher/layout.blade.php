@@ -44,8 +44,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary-color: #2563eb;
-            --primary-dark: #1d4ed8;
+            --primary-color: #1e40af;
+            --primary-light: #3b82f6;
+            --primary-dark: #1e3a8a;
             --secondary-color: #64748b;
             --success-color: #059669;
             --warning-color: #d97706;
@@ -78,11 +79,14 @@
 
         /* Professional Navbar */
         .navbar {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            background: var(--primary-color);
             box-shadow: var(--shadow-md);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            padding: 1rem 0;
+            border-bottom: none;
+            padding: 0.75rem 0;
+            min-height: 64px;
+            position: sticky;
+            top: 0;
+            z-index: 1030;
         }
 
         .navbar-brand {
@@ -160,8 +164,8 @@
         }
 
         .sidebar .nav-link.active {
-            background: var(--active-bg);
-            color: var(--primary-color);
+            background: var(--primary-color);
+            color: #fff;
             font-weight: 600;
             box-shadow: var(--shadow-sm);
         }
@@ -174,7 +178,7 @@
             transform: translateY(-50%);
             width: 4px;
             height: 24px;
-            background: var(--primary-color);
+            background: #fff;
             border-radius: 0 2px 2px 0;
         }
 
@@ -198,10 +202,28 @@
         .nav-link.text-primary:hover { background: var(--active-bg); color: var(--primary-color) !important; }
         .nav-link.text-secondary:hover { background: #f1f5f9; color: var(--secondary-color) !important; }
 
+        /* Announcement link styling */
+        .announcement-link {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+            display: block;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .announcement-link:hover {
+            color: var(--primary-light);
+        }
+
+        .announcement-link:last-child {
+            border-bottom: none;
+        }
+
         /* Main content area */
         .main-content {
             margin-left: 280px;
-            padding: 2rem;
+            padding: 1.5rem 2rem;
             min-height: 100vh;
             transition: margin-left 0.3s ease;
         }
@@ -264,10 +286,10 @@
 
         /* Modal enhancements */
         .modal-header {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            background: var(--primary-color);
             color: white;
             border-radius: 0.75rem 0.75rem 0 0;
-            padding: 1.5rem;
+            padding: 1.25rem;
         }
 
         .modal-title {
@@ -326,7 +348,11 @@
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            background: var(--primary-color);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
         }
 
         /* Responsive design */
@@ -390,11 +416,12 @@
 
         @media (max-width: 768px) {
             .navbar {
-                padding: 0.75rem 0;
+                padding: 0.625rem 0;
+                min-height: 56px;
             }
 
             .main-content {
-                padding: 1rem 0.5rem;
+                padding: 0.75rem 0.5rem;
             }
 
             /* Extra small tables */
@@ -463,10 +490,10 @@
 
         /* Enhanced mobile menu */
         .mobile-menu-toggle {
-            background: rgba(255,255,255,0.2);
-            border: 1px solid rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.2);
             color: white;
-            border-radius: 0.5rem;
+            border-radius: 6px;
             padding: 0.5rem;
             transition: all 0.2s ease;
         }
@@ -1156,17 +1183,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function showAttendanceList(students) {
         courseStudentCount = students.length;
-        
+
+        // Sort students by name (A-Z by default)
+        students.sort(function(a, b) {
+            return a.name.localeCompare(b.name);
+        });
+
         // Always show attendance table with all students
         let html = `<div id="attendanceSection" class="border rounded p-3 mt-3 bg-light">
-            <h6 class="text-primary mb-3">
-                <i class="bi bi-people me-2"></i>Attendance List (${students.length} students)
-            </h6>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="text-primary mb-0">
+                    <i class="bi bi-people me-2"></i>Attendance List (${students.length} students)
+                </h6>
+                <button type="button" id="sort-attendance-btn" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-sort-alpha-down me-1"></i>Sort: A-Z
+                </button>
+            </div>
             <p class="small text-muted mb-3">
                 Mark attendance for each student:
             </p>
             <div class="table-responsive">
-                <table class="table table-bordered table-sm align-middle">
+                <table class="table table-bordered table-sm align-middle" id="attendanceTable">
                     <thead>
                         <tr>
                             <th>Name</th>
@@ -1178,8 +1215,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     </thead>
                     <tbody>`;
         students.forEach(student => {
-            html += `<tr>
-                <td>${student.name}</td>
+            html += `<tr class="attendance-row">
+                <td class="student-name">${student.name}</td>
                 <td><input type="radio" name="attendance[${student.id}]" value="P" checked></td>
                 <td><input type="radio" name="attendance[${student.id}]" value="A"></td>
                 <td><input type="radio" name="attendance[${student.id}]" value="AR"></td>
@@ -1187,16 +1224,50 @@ document.addEventListener('DOMContentLoaded', function() {
             </tr>`;
         });
         html += `</tbody></table></div></div>`;
-        
+
         const oldSection = document.getElementById('attendanceSection');
         if (oldSection) oldSection.remove();
-        
+
         // Insert after the total_students field's parent div
         const totalStudentsDiv = document.getElementById('total_students').closest('.col-md-6').parentNode;
         totalStudentsDiv.insertAdjacentHTML('afterend', html);
-        
+
         // Auto-fill total students count
         document.getElementById('total_students').value = students.length;
+
+        // Add sort button functionality
+        const sortBtn = document.getElementById('sort-attendance-btn');
+        if (sortBtn) {
+            let isAscending = true;
+            sortBtn.addEventListener('click', function() {
+                const rows = Array.from(document.querySelectorAll('.attendance-row'));
+                const tbody = document.querySelector('#attendanceTable tbody');
+
+                rows.sort(function(a, b) {
+                    const nameA = a.querySelector('.student-name').textContent.trim();
+                    const nameB = b.querySelector('.student-name').textContent.trim();
+
+                    if (isAscending) {
+                        return nameA.localeCompare(nameB);
+                    } else {
+                        return nameB.localeCompare(nameA);
+                    }
+                });
+
+                // Re-append rows in sorted order
+                rows.forEach(function(row) {
+                    tbody.appendChild(row);
+                });
+
+                // Update button state
+                isAscending = !isAscending;
+                if (isAscending) {
+                    sortBtn.innerHTML = '<i class="bi bi-sort-alpha-down me-1"></i>Sort: A-Z';
+                } else {
+                    sortBtn.innerHTML = '<i class="bi bi-sort-alpha-up me-1"></i>Sort: Z-A';
+                }
+            });
+        }
     }
 
     // Student attendance validation - just validates the count

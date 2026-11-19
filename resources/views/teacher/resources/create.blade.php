@@ -3,45 +3,47 @@
 @section('styles')
 <style>
 .upload-header {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    background: #1e40af;
     color: white;
-    padding: 2rem 0;
-    margin-bottom: 2rem;
-    border-radius: 15px;
+    padding: 1.5rem 0;
+    margin-bottom: 1.5rem;
+    border-radius: 12px;
 }
 
 .upload-header h2 {
     font-weight: 700;
     margin-bottom: 0.5rem;
+    font-size: 1.5rem;
 }
 
 .upload-header p {
     opacity: 0.9;
     margin-bottom: 0;
+    font-size: 0.95rem;
 }
 
 .upload-card {
     background: white;
-    border-radius: 15px;
+    border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
-    border: 1px solid #e5e7eb;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
 }
 
 .upload-card .card-header {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    background: #1e40af;
     color: white;
     border: none;
-    padding: 1.5rem;
+    padding: 1.25rem;
 }
 
 .form-group {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.25rem;
 }
 
 .form-label {
     font-weight: 600;
-    color: #374151;
+    color: #1e293b;
     margin-bottom: 0.5rem;
     display: flex;
     align-items: center;
@@ -49,25 +51,25 @@
 
 .form-label i {
     margin-right: 0.5rem;
-    color: #10b981;
+    color: #1e40af;
 }
 
 .form-control, .form-select {
-    border: 2px solid #e5e7eb;
+    border: 1px solid #e2e8f0;
     border-radius: 8px;
-    padding: 0.75rem;
+    padding: 0.625rem 0.875rem;
     transition: all 0.2s ease;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
 }
 
 .form-control:focus, .form-select:focus {
-    border-color: #10b981;
-    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+    border-color: #1e40af;
+    box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
 }
 
 .form-text {
-    color: #6b7280;
-    font-size: 0.875rem;
+    color: #64748b;
+    font-size: 0.8125rem;
     margin-top: 0.25rem;
 }
 
@@ -77,7 +79,7 @@
     color: #dc2626;
     padding: 0.5rem 0.75rem;
     border-radius: 6px;
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     margin-top: 0.25rem;
     display: none;
 }
@@ -87,46 +89,44 @@
 }
 
 .submit-btn {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    background: #1e40af;
     border: none;
     color: white;
-    padding: 1rem 2rem;
+    padding: 0.875rem 1.5rem;
     border-radius: 8px;
     font-weight: 600;
-    font-size: 1rem;
+    font-size: 0.9375rem;
     transition: all 0.2s ease;
     cursor: pointer;
-    min-width: 200px;
+    min-width: 180px;
 }
 
 .submit-btn:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 15px rgba(16, 185, 129, 0.3);
+    background: #1e3a8a;
+    transform: translateY(-1px);
 }
 
 .submit-btn:disabled {
-    background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+    background: #94a3b8;
     cursor: not-allowed;
     transform: none;
 }
 
 .alert {
-    border-radius: 10px;
+    border-radius: 8px;
     border: none;
-    padding: 1rem 1.5rem;
-    margin-bottom: 1.5rem;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.25rem;
 }
 
 .alert-success {
-    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    background: #d1fae5;
     color: #065f46;
-    border-left: 4px solid #10b981;
 }
 
 .alert-danger {
-    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+    background: #fee2e2;
     color: #991b1b;
-    border-left: 4px solid #ef4444;
 }
 
 .alert i {
@@ -136,42 +136,42 @@
 .upload-area {
     background: #f8fafc;
     border: 2px dashed #cbd5e1;
-    border-radius: 10px;
-    padding: 2rem;
+    border-radius: 8px;
+    padding: 1.5rem;
     text-align: center;
-    transition: all 0.3s ease;
-    margin-bottom: 1rem;
+    transition: all 0.2s ease;
+    margin-bottom: 0.75rem;
 }
 
 .upload-area:hover {
-    border-color: #10b981;
-    background: #f0fdf4;
+    border-color: #1e40af;
+    background: #eff6ff;
 }
 
 .upload-icon {
-    font-size: 3rem;
-    color: #10b981;
-    margin-bottom: 1rem;
+    font-size: 2.5rem;
+    color: #1e40af;
+    margin-bottom: 0.75rem;
 }
 
 .section-title {
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 600;
-    color: #374151;
+    color: #1e293b;
     margin-bottom: 1rem;
     padding-bottom: 0.5rem;
-    border-bottom: 2px solid #e5e7eb;
+    border-bottom: 1px solid #e2e8f0;
 }
 
 @media (max-width: 768px) {
     .upload-header {
-        padding: 1.5rem 0;
+        padding: 1.25rem 0;
     }
-    
+
     .upload-header h2 {
-        font-size: 1.5rem;
+        font-size: 1.25rem;
     }
-    
+
     .submit-btn {
         width: 100%;
     }
