@@ -56,44 +56,45 @@ class AccountantDashboardService
             $transactionQuery = $this->getTransactionQuery();
             $expenseQuery = $this->getExpenseQuery();
 
-            // Get students with their courses, branches, and terms
-            $students = $studentQuery->with(['course:id,course_name', 'branch:id,name', 'term:id,name'])
+            // Get students with their courses and branches
+            $students = $studentQuery->with(['course:id,course_name', 'branch:id,name'])
                 ->get();
 
             $totalStudents = $students->count();
 
-            // Get course_term_branch_fees for all unique course_id, term_id, branch_id combinations
-            $feeMap = [];
-            $students->each(function ($student) use (&$feeMap) {
-                if ($student->course_id && $student->term_id && $student->branch_id) {
-                    $key = $student->course_id . '_' . $student->term_id . '_' . $student->branch_id;
-                    if (!isset($feeMap[$key])) {
-                        $feeMap[$key] = \App\Models\CourseTermBranchFee::where('course_id', $student->course_id)
-                            ->where('term_id', $student->term_id)
-                            ->where('branch_id', $student->branch_id)
-                            ->where('is_active', true)
-                            ->first();
-                    }
-                }
-            });
+            // Get all course_term_branch_fees records for the academic year
+            $feeRecords = \App\Models\CourseTermBranchFee::where('is_active', true)
+                ->when($this->academicYearId, function($q) {
+                    // Join with courses to filter by academic year if course has academic_year_id
+                    $q->whereHas('course', function($query) {
+                        $query->where('academic_year_id', $this->academicYearId);
+                    });
+                })
+                ->when($this->branchId, function($q) {
+                    $q->where('branch_id', $this->branchId);
+                })
+                ->get()
+                ->keyBy(function($record) {
+                    return $record->course_id . '_' . $record->term_id . '_' . $record->branch_id;
+                });
 
             // Calculate total expected fees using course_term_branch_fees
-            $totalExpected = $students->sum(function ($student) use ($feeMap) {
-                if (!$student->course_id || !$student->term_id || !$student->branch_id) {
+            $totalExpected = $students->sum(function ($student) use ($feeRecords) {
+                if (!$student->course_id || !$student->branch_id) {
                     return 0;
                 }
                 
-                $key = $student->course_id . '_' . $student->term_id . '_' . $student->branch_id;
-                $feeRecord = $feeMap[$key] ?? null;
-                
-                if (!$feeRecord) {
-                    return 0;
+                // Since student doesn't have term, we need to sum fees across all terms for this course/branch
+                $totalFees = 0;
+                foreach ($feeRecords as $key => $feeRecord) {
+                    $parts = explode('_', $key);
+                    if ($parts[0] == $student->course_id && $parts[2] == $student->branch_id) {
+                        $totalFees += ($feeRecord->registration_fee ?? 0)
+                            + ($feeRecord->tuition_fee ?? 0)
+                            + ($feeRecord->practical_fee ?? 0)
+                            + ($feeRecord->trip_fee ?? 0);
+                    }
                 }
-                
-                $totalFees = ($feeRecord->registration_fee ?? 0)
-                    + ($feeRecord->tuition_fee ?? 0)
-                    + ($feeRecord->practical_fee ?? 0)
-                    + ($feeRecord->trip_fee ?? 0);
                 
                 // Apply student discount if any
                 $discountAmount = ($student->discount ?? 0);
@@ -151,21 +152,21 @@ class AccountantDashboardService
 
             $studentsWithArrears = 0;
             foreach ($students as $student) {
-                if (!$student->course_id || !$student->term_id || !$student->branch_id) {
+                if (!$student->course_id || !$student->branch_id) {
                     continue;
                 }
                 
-                $key = $student->course_id . '_' . $student->term_id . '_' . $student->branch_id;
-                $feeRecord = $feeMap[$key] ?? null;
-                
-                if (!$feeRecord) {
-                    continue;
+                // Since student doesn't have term, we need to sum fees across all terms for this course/branch
+                $totalFees = 0;
+                foreach ($feeRecords as $key => $feeRecord) {
+                    $parts = explode('_', $key);
+                    if ($parts[0] == $student->course_id && $parts[2] == $student->branch_id) {
+                        $totalFees += ($feeRecord->registration_fee ?? 0)
+                            + ($feeRecord->tuition_fee ?? 0)
+                            + ($feeRecord->practical_fee ?? 0)
+                            + ($feeRecord->trip_fee ?? 0);
+                    }
                 }
-                
-                $totalFees = ($feeRecord->registration_fee ?? 0)
-                    + ($feeRecord->tuition_fee ?? 0)
-                    + ($feeRecord->practical_fee ?? 0)
-                    + ($feeRecord->trip_fee ?? 0);
                 
                 // Apply student discount if any
                 $discountAmount = ($student->discount ?? 0);
