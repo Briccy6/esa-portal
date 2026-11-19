@@ -343,4 +343,180 @@ class AccountantDashboardService
 
         return $query;
     }
+
+    /**
+     * Get fees vs expenses by month
+     */
+    protected function getFeesVsExpensesByMonth()
+    {
+        $months = [];
+        $startDate = $this->startDate ?? Carbon::now()->subMonths(11);
+        $endDate = $this->endDate ?? Carbon::now();
+
+        for ($i = 0; $i < 12; $i++) {
+            $monthStart = $startDate->copy()->addMonths($i)->startOfMonth();
+            $monthEnd = $startDate->copy()->addMonths($i)->endOfMonth();
+
+            if ($monthStart > $endDate) break;
+
+            // Single query for fees
+            $fees = StudentTransaction::whereIn('status', ['successful', 'paid'])
+                ->whereBetween('created_at', [$monthStart, $monthEnd])
+                ->when($this->academicYearId, fn($q) => $q->whereHas('student', fn($s) => $s->where('academic_year_id', $this->academicYearId)))
+                ->when($this->branchId, fn($q) => $q->whereHas('student', fn($s) => $s->where('branch_id', $this->branchId)))
+                ->sum('amount');
+
+            // Single query for expenses
+            $expenses = Expense::whereBetween('expense_date', [$monthStart, $monthEnd])
+                ->when($this->staffId, fn($q) => $q->where('paid_by', $this->staffId))
+                ->when($this->termId, fn($q) => $q->where('term_id', $this->termId))
+                ->sum('amount');
+
+            $months[] = [
+                'month' => $monthStart->format('M Y'),
+                'fees' => $fees,
+                'expenses' => $expenses,
+            ];
+        }
+
+        return $months;
+    }
+
+    /**
+     * Get fee status distribution
+     */
+    protected function getFeeStatusDistribution()
+    {
+        $studentQuery = $this->getStudentQuery();
+
+        // Get students with courses in single query
+        $students = $studentQuery->with(['course:id,registration_fee,tuition_fee,practical_fee,trip_fee,discount_fee'])
+            ->get();
+
+        // Get all payments in single aggregation query
+        $studentIds = $students->pluck('id');
+        $paidAmounts = StudentTransaction::whereIn('student_id', $studentIds)
+            ->whereIn('status', ['successful', 'paid'])
+            ->selectRaw('student_id, SUM(amount) as total_paid')
+            ->groupBy('student_id')
+            ->pluck('total_paid', 'student_id')
+            ->toArray();
+
+        $paid = 0;
+        $partial = 0;
+        $unpaid = 0;
+
+        foreach ($students as $student) {
+            $paidAmount = $paidAmounts[$student->id] ?? 0;
+            $expected = ($student->course->registration_fee ?? 0)
+                + ($student->course->tuition_fee ?? 0)
+                + ($student->course->practical_fee ?? 0)
+                + ($student->course->trip_fee ?? 0)
+                + ($student->course->discount_fee ?? 0);
+
+            if ($expected <= 0) {
+                continue;
+            }
+
+            if ($paidAmount >= $expected) {
+                $paid++;
+            } elseif ($paidAmount > 0) {
+                $partial++;
+            } else {
+                $unpaid++;
+            }
+        }
+
+        return [
+            'paid' => $paid,
+            'partial' => $partial,
+            'unpaid' => $unpaid,
+        ];
+    }
+
+    /**
+     * Get collections by branch
+     */
+    protected function getCollectionsByBranch()
+    {
+        // Get branches with student counts in single query
+        $branches = Branch::withCount(['students' => function($q) {
+            $q->when($this->academicYearId, fn($s) => $s->where('academic_year_id', $this->academicYearId));
+        }])->get();
+
+        $data = [];
+
+        foreach ($branches as $branch) {
+            // Single query per branch for collections
+            $total = StudentTransaction::whereHas('student', function($q) use ($branch) {
+                $q->where('branch_id', $branch->id);
+                if ($this->academicYearId) {
+                    $q->where('academic_year_id', $this->academicYearId);
+                }
+            })
+            ->whereBetween('created_at', [$this->startDate ?? Carbon::now()->subMonths(11), $this->endDate ?? Carbon::now()])
+            ->where(function($q) {
+                $q->where('status', 'successful')->orWhere('status', 'paid');
+            })
+            ->sum('amount');
+
+            $data[] = [
+                'branch' => $branch->name,
+                'amount' => $total,
+            ];
+        }
+
+        return $data;
+    }
+
+    /**
+     * Get expenses by category
+     */
+    protected function getExpensesByCategory()
+    {
+        $expenses = $this->getExpenseQuery()
+            ->selectRaw('expense_type, SUM(amount) as total')
+            ->groupBy('expense_type')
+            ->orderByDesc('total')
+            ->get();
+
+        return $expenses->map(function ($expense) {
+            return [
+                'category' => $expense->expense_type,
+                'amount' => $expense->total,
+            ];
+        });
+    }
+
+    /**
+     * Get daily collections for last 30 days
+     */
+    protected function getDailyCollections()
+    {
+        $days = [];
+        $startDate = Carbon::now()->subDays(29)->startOfDay();
+
+        // Get all data in single query with date grouping
+        $collections = StudentTransaction::whereIn('status', ['successful', 'paid'])
+            ->where('created_at', '>=', $startDate)
+            ->when($this->academicYearId, fn($q) => $q->whereHas('student', fn($s) => $s->where('academic_year_id', $this->academicYearId)))
+            ->when($this->branchId, fn($q) => $q->whereHas('student', fn($s) => $s->where('branch_id', $this->branchId)))
+            ->selectRaw('DATE(created_at) as date, SUM(amount) as total')
+            ->groupBy('date')
+            ->orderBy('date')
+            ->pluck('total', 'date')
+            ->toArray();
+
+        for ($i = 0; $i < 30; $i++) {
+            $dayStart = $startDate->copy()->addDays($i);
+            $dateStr = $dayStart->toDateString();
+
+            $days[] = [
+                'date' => $dayStart->format('M d'),
+                'amount' => $collections[$dateStr] ?? 0,
+            ];
+        }
+
+        return $days;
+    }
 }
