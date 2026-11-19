@@ -361,7 +361,7 @@
 <!-- Expense Modal -->
 <div class="modal fade" id="addExpenseModal" tabindex="-1" aria-labelledby="addExpenseModalLabel" aria-hidden="true">
   <div class="modal-dialog">
-    <form method="POST" action="{{ route('expenses.store') }}">
+    <form method="POST" action="{{ route('staff.accountant.expenses.store') }}">
       @csrf
       <div class="modal-content">
         <div class="modal-header bg-danger text-white">
