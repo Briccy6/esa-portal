@@ -347,6 +347,12 @@
         font-size: 1.5rem;
     }
 
+    .spinner-border-sm {
+        width: 0.75rem;
+        height: 0.75rem;
+        border-width: 0.15em;
+    }
+
     @media (max-width: 1100px) {
         .dashboard-kpis {
             grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -642,6 +648,41 @@
             </div>
         </article>
     </section>
+
+    <section class="dashboard-chart mt-4" aria-label="Live lesson hours tracking">
+        <header class="dashboard-chart-header">
+            <div>
+                <h2>Total hours by lesson</h2>
+                <p>Live tracking of teaching hours per lesson <span id="lastUpdated" class="text-muted small"></span></p>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-success rounded-pill d-flex align-items-center gap-1">
+                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                    Live
+                </span>
+            </div>
+        </header>
+        <div class="dashboard-chart-body">
+            <div class="branch-table-wrap">
+                <table class="branch-table" id="lessonHoursTable">
+                    <thead>
+                        <tr>
+                            <th>Lesson</th>
+                            <th>Course</th>
+                            <th>Teacher</th>
+                            <th>Total Hours</th>
+                            <th>Sessions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lessonHoursBody">
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">Loading live data...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
 </main>
 @endsection
 
@@ -649,6 +690,50 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    const attendanceCanvas = document.getElementById('attendanceChart');
+    const lessonHoursUrl = "{{ route('dos.api.lesson-hours') }}";
+    let lessonHoursInterval;
+
+    // Live lesson hours tracking
+    async function fetchLessonHours() {
+        try {
+            const response = await fetch(lessonHoursUrl);
+            const data = await response.json();
+
+            if (data.success) {
+                updateLessonHoursTable(data.data);
+                document.getElementById('lastUpdated').textContent = 'Updated: ' + new Date(data.last_updated).toLocaleTimeString();
+            }
+        } catch (error) {
+            console.error('Failed to fetch lesson hours:', error);
+        }
+    }
+
+    function updateLessonHoursTable(lessonHours) {
+        const tbody = document.getElementById('lessonHoursBody');
+
+        if (lessonHours.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No lesson hours data available yet.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = lessonHours.map(item => `
+            <tr>
+                <td>${item.lesson ? item.lesson.title : 'N/A'}</td>
+                <td>${item.course ? item.course.course_name : 'N/A'}</td>
+                <td>${item.teacher ? item.teacher.teacher_name : 'N/A'}</td>
+                <td><strong>${parseFloat(item.total_hours).toFixed(1)} hrs</strong></td>
+                <td>${item.sessions}</td>
+            </tr>
+        `).join('');
+    }
+
+    // Initial fetch
+    fetchLessonHours();
+
+    // Auto-refresh every 30 seconds
+    lessonHoursInterval = setInterval(fetchLessonHours, 30000);
+
     const attendanceCanvas = document.getElementById('attendanceChart');
     if (attendanceCanvas) {
         new Chart(attendanceCanvas, {

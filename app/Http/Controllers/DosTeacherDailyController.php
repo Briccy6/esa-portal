@@ -289,4 +289,28 @@ class DosTeacherDailyController extends Controller
             return back()->with('error', 'Failed to delete daily activity: ' . $e->getMessage());
         }
     }
+
+    /**
+     * API endpoint to get total hours studied by each lesson
+     */
+    public function getLessonHoursApi(Request $request)
+    {
+        $staff = Auth::guard('staff')->user();
+        $branchIds = $staff->branches()->pluck('branches.id');
+
+        // Get lesson hours data
+        $lessonHours = TeacherDaily::where('approved', true)
+            ->whereIn('branch_id', $branchIds)
+            ->with(['lesson:id,title', 'course:id,course_name', 'teacher:id,teacher_name'])
+            ->selectRaw('lesson_id, course_id, teacher_id, SUM(hours_studied) as total_hours, COUNT(*) as sessions')
+            ->groupBy('lesson_id', 'course_id', 'teacher_id')
+            ->orderByDesc('total_hours')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $lessonHours,
+            'last_updated' => now()->toIso8601String()
+        ]);
+    }
 }
