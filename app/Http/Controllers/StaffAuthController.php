@@ -95,66 +95,8 @@ class StaffAuthController extends Controller
         }
 
         if ($role === 'Accountant') {
-            $branches = $staff->branches;
-            $branchStats = [];
-            $allExpenses = AcademicYearContext::filterExpenses(
-                \App\Models\Expense::where('paid_by', $staff->id)
-            )->get();
-
-            foreach ($branches as $branch) {
-                $studentQuery = \App\Models\Student::where('branch_id', $branch->id);
-                if ($academicYearId) {
-                    $studentQuery->where('academic_year_id', $academicYearId);
-                }
-                $studentIds = $studentQuery->pluck('id');
-
-                $totalIncome = \App\Models\StudentTransaction::whereIn('status', ['successful', 'paid'])
-                    ->whereIn('student_id', $studentIds)
-                    ->sum('amount');
-
-                $branchExpenses = $allExpenses;
-                $totalExpenses = $branchExpenses->sum('amount');
-                $expensesCount = $branchExpenses->count();
-                $studentsCount = $studentIds->count();
-
-                $courseQuery = \App\Models\Course::whereHas('branches', function ($q) use ($branch) {
-                    $q->where('branch_id', $branch->id);
-                });
-
-                if ($academicYearId) {
-                    $courseQuery->where('academic_year_id', $academicYearId);
-                }
-
-                $courseData = $courseQuery
-                    ->withCount(['students' => function ($q) use ($branch, $academicYearId) {
-                        $q->where('branch_id', $branch->id);
-                        if ($academicYearId) {
-                            $q->where('academic_year_id', $academicYearId);
-                        }
-                    }])
-                    ->get()
-                    ->map(function ($course) {
-                        return [
-                            'id' => $course->id,
-                            'name' => $course->abbreviation ?? $course->course_name,
-                            'count' => $course->students_count,
-                        ];
-                    })
-                    ->filter(fn ($course) => $course['count'] > 0)
-                    ->values()
-                    ->toArray();
-
-                $branchStats[] = [
-                    'branch' => $branch,
-                    'totalIncome' => $totalIncome,
-                    'totalExpenses' => $totalExpenses,
-                    'studentsCount' => $studentsCount,
-                    'expensesCount' => $expensesCount,
-                    'courseData' => $courseData,
-                ];
-            }
-
-            return view('staff.dashboard_accountant', compact('branchStats', 'selectedAcademicYear'));
+            // Redirect to the new accountant dashboard
+            return redirect()->route('accountant.dashboard');
         }
 
         if ($role === 'SEC' || $role === 'Secretary') {
