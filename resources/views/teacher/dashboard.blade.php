@@ -18,11 +18,13 @@
     }
 
     .dashboard-wrapper {
-        padding: 0;
+        padding: 1.5rem;
+        max-width: 1400px;
+        margin: 0 auto;
     }
 
     .welcome-section {
-        margin-bottom: 1.5rem;
+        margin-bottom: 2rem;
     }
 
     .welcome-title {
