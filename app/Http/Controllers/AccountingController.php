@@ -54,12 +54,14 @@ class AccountingController extends Controller
     {
         $asOfDate = $request->get('as_of_date') ? Carbon::parse($request->get('as_of_date')) : now();
         $termId = $request->get('term_id');
+        $branchId = $request->get('branch_id');
 
-        $data = AccountingReport::getBalanceSheetData($asOfDate, $termId);
+        $data = AccountingReport::getBalanceSheetData($asOfDate, $termId, $branchId);
         $school = SchoolInformation::getActive();
         $terms = \App\Models\Term::with('academicYear')->orderBy('start_date', 'desc')->get();
+        $branches = \App\Models\Branch::orderBy('name')->get();
 
-        return view('admin.accounting.balance-sheet', compact('data', 'asOfDate', 'termId', 'terms', 'school'));
+        return view('admin.accounting.balance-sheet', compact('data', 'asOfDate', 'termId', 'branchId', 'terms', 'branches', 'school'));
     }
 
     public function trialBalance(Request $request)

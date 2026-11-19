@@ -130,15 +130,15 @@ class AccountingReport extends Model
      * Balance sheet from operational tables: student_transactions, expenses, students, courses
      * Uses course_term_fees for more accurate receivables calculation.
      */
-    public static function getBalanceSheetData($asOfDate = null, $termId = null)
+    public static function getBalanceSheetData($asOfDate = null, $termId = null, $branchId = null)
     {
         $asOfDate = $asOfDate ?: now()->endOfDay();
 
-        $totalReceipts = self::sumStudentReceiptsThrough($asOfDate, $termId);
-        $totalExpenses = self::sumExpensesThrough($asOfDate, $termId);
+        $totalReceipts = self::sumStudentReceiptsThrough($asOfDate, $termId, $branchId);
+        $totalExpenses = self::sumExpensesThrough($asOfDate, $termId, $branchId);
         $cash = $totalReceipts - $totalExpenses;
 
-        $feePosition = self::aggregateStudentFeePositionThrough($asOfDate, $termId);
+        $feePosition = self::aggregateStudentFeePositionThrough($asOfDate, $termId, $branchId);
         $receivable = $feePosition['receivable'];
         $deferred = $feePosition['deferred'];
 
@@ -221,27 +221,40 @@ class AccountingReport extends Model
         });
     }
 
-    private static function sumStudentReceiptsThrough(Carbon $asOfDate, $termId = null): float
+    private static function sumStudentReceiptsThrough(Carbon $asOfDate, $termId = null, $branchId = null): float
     {
         $q = DB::table('student_transactions')
             ->whereIn('status', ['paid', 'successful']);
-            
+
         if ($termId) {
             $q->where('term_id', $termId);
         }
-        
+
+        if ($branchId) {
+            $q->whereExists(function ($query) use ($branchId) {
+                $query->select(DB::raw(1))
+                    ->from('students')
+                    ->whereColumn('student_transactions.student_id', 'students.id')
+                    ->where('branch_id', $branchId);
+            });
+        }
+
         self::applyStudentTransactionThroughDate($q, $asOfDate);
 
         return (float) ($q->sum('amount') ?? 0);
     }
 
-    private static function sumExpensesThrough(Carbon $asOfDate, $termId = null): float
+    private static function sumExpensesThrough(Carbon $asOfDate, $termId = null, $branchId = null): float
     {
         $q = DB::table('expenses')
             ->whereDate('expense_date', '<=', $asOfDate);
-            
+
         if ($termId) {
             $q->where('term_id', $termId);
+        }
+
+        if ($branchId) {
+            $q->where('branch_id', $branchId);
         }
 
         return (float) ($q->sum('amount') ?? 0);
@@ -312,22 +325,26 @@ class AccountingReport extends Model
     /**
      * @return array{receivable: float, deferred: float}
      */
-    private static function aggregateStudentFeePositionThrough(Carbon $asOfDate, $termId = null): array
+    private static function aggregateStudentFeePositionThrough(Carbon $asOfDate, $termId = null, $branchId = null): array
     {
         $receivable = 0.0;
         $deferred = 0.0;
 
-        Student::query()
-            ->with('course')
-            ->chunkById(200, function ($students) use ($asOfDate, &$receivable, &$deferred, $termId) {
-                foreach ($students as $student) {
-                    $expected = self::expectedTotalFeesForStudent($student, $termId);
-                    if ($expected <= 0) {
-                        continue;
-                    }
-                    $paid = self::studentPaidThrough($student, $asOfDate, $termId);
-                    $diff = $expected - $paid;
-                    if ($diff > 0) {
+        $query = Student::query()->with('course');
+
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        }
+
+        $query->chunkById(200, function ($students) use ($asOfDate, &$receivable, &$deferred, $termId) {
+            foreach ($students as $student) {
+                $expected = self::expectedTotalFeesForStudent($student, $termId);
+                if ($expected <= 0) {
+                    continue;
+                }
+                $paid = self::studentPaidThrough($student, $asOfDate, $termId);
+                $diff = $expected - $paid;
+                if ($diff > 0) {
                         $receivable += $diff;
                     } elseif ($diff < 0) {
                         $deferred += abs($diff);
