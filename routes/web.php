@@ -644,6 +644,7 @@ Route::middleware(['auth:student'])->group(function () {
 Route::get('/teacher/resources', [ResourceController::class, 'index'])->name('teacher.resources.index');
 Route::get('/teachers/export', [TeacherController::class, 'export'])->name('admin.teachers.export');
 Route::get('/teacher/courses', [CourseController::class, 'index'])->name('teacher.courses.index');
+Route::get('/teacher/courses/{course}/export-students/{branch?}', [\App\Http\Controllers\TeacherAuthController::class, 'exportCourseStudents'])->name('teacher.courses.export-students');
 
 Route::prefix('staff')->name('staff.')->group(function () {
     // Staff Authentication
