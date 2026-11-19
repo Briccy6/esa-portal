@@ -587,7 +587,12 @@ function downloadPDF() {
     // Add footer
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'normal');
-    const footerText = 'Generated on {{ now()->format('M d, Y h:i A') }} by {{ auth('admin')->user()->first_name }} {{ auth('admin')->user()->last_name }} | ' + schoolName;
+    @php
+        $userName = auth()->guard('admin')->check()
+            ? auth()->guard('admin')->user()->first_name . ' ' . auth()->guard('admin')->user()->last_name
+            : auth()->guard('staff')->user()->name;
+    @endphp
+    const footerText = 'Generated on {{ now()->format('M d, Y h:i A') }} by {{ $userName }} | ' + schoolName;
     pdf.text(footerText, pageWidth / 2, pageHeight - 10, { align: 'center' });
     
     // Save the PDF
