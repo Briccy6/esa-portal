@@ -57,18 +57,18 @@ class AccountantDashboardService
             $expenseQuery = $this->getExpenseQuery();
 
             // Get students with their courses in a single query
-            $students = $studentQuery->with(['course:id,course_name,registration_fee,tuition_fee,practical_fee,trip_fee,student_card_fee'])
+            $students = $studentQuery->with(['course:id,course_name,registration_fee,tuition_fee,practical_fee,trip_fee,discount_fee'])
                 ->get();
 
             $totalStudents = $students->count();
-            
+
             // Calculate total expected fees from loaded students (no additional queries)
             $totalExpected = $students->sum(function ($student) {
-                return ($student->course->registration_fee ?? 0) 
+                return ($student->course->registration_fee ?? 0)
                     + ($student->course->tuition_fee ?? 0)
                     + ($student->course->practical_fee ?? 0)
                     + ($student->course->trip_fee ?? 0)
-                    + ($student->course->student_card_fee ?? 0);
+                    + ($student->course->discount_fee ?? 0);
             });
             
             // Get total collected - use single query
@@ -103,14 +103,14 @@ class AccountantDashboardService
                 ->groupBy('student_id')
                 ->pluck('total_paid', 'student_id')
                 ->toArray();
-            
+
             $studentsWithArrears = 0;
             foreach ($students as $student) {
-                $expected = ($student->course->registration_fee ?? 0) 
+                $expected = ($student->course->registration_fee ?? 0)
                     + ($student->course->tuition_fee ?? 0)
                     + ($student->course->practical_fee ?? 0)
                     + ($student->course->trip_fee ?? 0)
-                    + ($student->course->student_card_fee ?? 0);
+                    + ($student->course->discount_fee ?? 0);
                 $paid = $paidAmounts[$student->id] ?? 0;
                 if ($paid < $expected) {
                     $studentsWithArrears++;
@@ -205,7 +205,7 @@ class AccountantDashboardService
             $studentQuery = $this->getStudentQuery();
             
             // Get students with courses in single query
-            $students = $studentQuery->with(['course:id,course_name,registration_fee,tuition_fee,practical_fee,trip_fee,student_card_fee', 'branch:id,name'])
+            $students = $studentQuery->with(['course:id,course_name,registration_fee,tuition_fee,practical_fee,trip_fee,discount_fee', 'branch:id,name'])
                 ->get();
             
             // Get all payments in single query with aggregation
@@ -219,11 +219,11 @@ class AccountantDashboardService
             
             return $students->map(function ($student) use ($paidAmounts) {
                 $paid = $paidAmounts[$student->id] ?? 0;
-                $expected = ($student->course->registration_fee ?? 0) 
+                $expected = ($student->course->registration_fee ?? 0)
                     + ($student->course->tuition_fee ?? 0)
                     + ($student->course->practical_fee ?? 0)
                     + ($student->course->trip_fee ?? 0)
-                    + ($student->course->student_card_fee ?? 0);
+                    + ($student->course->discount_fee ?? 0);
                 $outstanding = max(0, $expected - $paid);
                 
                 return [
