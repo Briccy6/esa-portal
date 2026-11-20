@@ -279,13 +279,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
     // Admin password reset via email code
     Route::get('/forgot-password', [\App\Http\Controllers\AdminPasswordResetController::class, 'showRequestForm'])
-        ->name('admin.password.request');
+        ->name('password.request');
     Route::post('/forgot-password', [\App\Http\Controllers\AdminPasswordResetController::class, 'sendCode'])
-        ->name('admin.password.email');
+        ->name('password.email');
     Route::get('/reset-password', [\App\Http\Controllers\AdminPasswordResetController::class, 'showResetForm'])
-        ->name('admin.password.reset.form');
+        ->name('password.reset.form');
     Route::post('/reset-password/code', [\App\Http\Controllers\AdminPasswordResetController::class, 'resetWithCode'])
-        ->name('admin.password.reset.code');
+        ->name('password.reset.code');
 });
 
 
