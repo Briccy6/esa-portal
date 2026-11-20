@@ -2,12 +2,14 @@
 
 @section('title', 'Receipt Details')
 
+@include('accountant.partials.theme')
+
 @section('content')
 @php
     $transactionMeta = is_array($transaction->meta) ? $transaction->meta : json_decode($transaction->meta ?? '', true);
     $isPaid = in_array($transaction->status, ['successful', 'paid'], true);
 @endphp
-<div class="container-fluid py-4">
+<div class="container-fluid py-4 accountant-module">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
         <div>
             <p class="text-primary fw-semibold small text-uppercase mb-1">Payment receipts</p>

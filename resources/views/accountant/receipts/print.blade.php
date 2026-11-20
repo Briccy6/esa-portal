@@ -19,7 +19,7 @@
         }
         .header {
             text-align: center;
-            border-bottom: 2px solid #333;
+            border-bottom: 2px solid #0f766e;
             padding-bottom: 20px;
             margin-bottom: 20px;
         }
@@ -33,6 +33,7 @@
             font-weight: bold;
             margin: 20px 0;
             text-transform: uppercase;
+            color: #0f766e;
         }
         .info-row {
             display: flex;
@@ -53,12 +54,13 @@
             text-align: left;
         }
         .table th {
-            background: #f5f5f5;
+            background: #eef6f5;
             font-weight: bold;
         }
         .total-row {
             font-weight: bold;
             font-size: 14px;
+            color: #0f766e;
         }
         .footer {
             margin-top: 40px;
@@ -73,7 +75,7 @@
         }
         .signature-box {
             width: 45%;
-            border-top: 1px solid #333;
+            border-top: 1px solid #0f766e;
             padding-top: 10px;
             text-align: center;
         }

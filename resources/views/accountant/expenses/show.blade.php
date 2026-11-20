@@ -2,8 +2,10 @@
 
 @section('title', 'Expense Details')
 
+@include('accountant.partials.theme')
+
 @section('content')
-<div class="container-fluid py-4">
+<div class="container-fluid py-4 accountant-module">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
         <div>
             <p class="text-primary fw-semibold small text-uppercase mb-1">Finance management</p>
@@ -22,13 +24,14 @@
                 <div class="card-header bg-white py-3"><h2 class="h6 fw-semibold mb-0">Expense information</h2></div>
                 <div class="card-body p-4">
                     <div class="row g-4">
-                        <div class="col-12 col-md-6"><div class="small text-muted mb-1">Date</div><div class="fw-semibold">{{ $expense->expense_date->format('F d, Y') }}</div></div>
+                        <div class="col-12 col-md-6"><div class="small text-muted mb-1">Date</div><div class="fw-semibold">{{ \Carbon\Carbon::parse($expense->expense_date)->format('F d, Y') }}</div></div>
                         <div class="col-12 col-md-6"><div class="small text-muted mb-1">Expense Type</div><div class="fw-semibold">{{ $expense->expense_type }}</div></div>
                         <div class="col-12 col-md-6"><div class="small text-muted mb-1">Amount</div><div class="h4 text-danger fw-bold mb-0">{{ number_format($expense->amount, 0) }} RWF</div></div>
                         <div class="col-12 col-md-6"><div class="small text-muted mb-1">Payment Method</div><div class="fw-semibold">{{ ucfirst(str_replace('_', ' ', $expense->payment_method)) }}</div></div>
                         <div class="col-12"><div class="small text-muted mb-1">Description</div><div class="text-break">{{ $expense->description }}</div></div>
                         <div class="col-12 col-md-6"><div class="small text-muted mb-1">Paid To</div><div class="fw-semibold">{{ $expense->paid_to }}</div></div>
                         <div class="col-12 col-md-6"><div class="small text-muted mb-1">Contact</div><div>{{ $expense->paid_to_contact }}</div></div>
+                        <div class="col-12 col-md-6"><div class="small text-muted mb-1">Branch</div><div>{{ $expense->branch?->name ?? '—' }}</div></div>
                         <div class="col-12 col-md-6"><div class="small text-muted mb-1">Recorded By</div><div>{{ $expense->paid_by_staff->name ?? 'Unknown' }}</div></div>
                         <div class="col-12 col-md-6"><div class="small text-muted mb-1">Term</div><div>{{ $expense->term ? $expense->term->name . ($expense->term->academicYear ? ' - ' . $expense->term->academicYear->year : '') : 'Not specified' }}</div></div>
                     </div>

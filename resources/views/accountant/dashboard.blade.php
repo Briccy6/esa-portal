@@ -2,23 +2,35 @@
 
 @section('title', 'Finance Dashboard')
 
+@include('accountant.partials.theme')
+
 @push('styles')
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-    .accountant-dashboard { font-family: 'Poppins', sans-serif; }
-    .accountant-dashboard .card { border: 0; border-radius: 12px; box-shadow: 0 4px 18px rgba(15, 23, 42, .06); }
-    .accountant-dashboard .card-header { background: #fff; border-bottom-color: #eef2f7; }
     .accountant-dashboard .kpi-card { transition: transform .2s ease, box-shadow .2s ease; }
     .accountant-dashboard .kpi-card:hover { transform: translateY(-3px); box-shadow: 0 10px 24px rgba(15, 23, 42, .1); }
-    .accountant-dashboard .chart-wrap { position: relative; height: 300px; }
-    .accountant-dashboard .table thead th { background: #f8fafc; color: #64748b; font-size: .75rem; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
+    .accountant-dashboard .chart-wrap { position: relative; height: clamp(250px, 34vh, 360px); }
+    .accountant-dashboard .chart-empty { position: absolute; inset: 0; display: grid; place-items: center; color: #64748b; text-align: center; padding: 1rem; }
+    .accountant-dashboard .dashboard-watermark {
+        position: fixed;
+        z-index: 5;
+        top: 28%;
+        right: 3%;
+        width: min(32vw, 360px);
+        max-height: 45vh;
+        object-fit: contain;
+        opacity: .045;
+        pointer-events: none;
+    }
+    @media (max-width: 575.98px) {
+        .accountant-dashboard .chart-wrap { height: 260px; }
+        .accountant-dashboard .dashboard-watermark { width: 52vw; right: -10%; top: 35%; }
+    }
 </style>
 @endpush
 
 @section('content')
-<div class="container-fluid py-4 accountant-dashboard">
+<div class="container-fluid py-4 accountant-dashboard accountant-module">
+    <img class="dashboard-watermark" src="{{ \App\Helpers\LogoHelper::getLogoUrl() }}" alt="" aria-hidden="true">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
         <div>
             <p class="text-primary fw-semibold small text-uppercase mb-1">Finance overview</p>
@@ -141,7 +153,7 @@
                     </div>
                     <span class="text-primary"><i class="fas fa-chart-line" aria-hidden="true"></i></span>
                 </div>
-                <div class="card-body"><div class="chart-wrap"><canvas id="revenueChart" aria-label="Daily fee collections chart"></canvas></div></div>
+                <div class="card-body"><div class="chart-wrap"><canvas id="revenueChart" aria-label="Daily fee collections chart"></canvas><div class="chart-empty d-none" id="revenueChartEmpty">No collection data is available for this selection.</div></div></div>
             </div>
         </div>
         <div class="col-12 col-xl-4">
@@ -153,7 +165,7 @@
                     </div>
                     <span class="text-danger"><i class="fas fa-chart-pie" aria-hidden="true"></i></span>
                 </div>
-                <div class="card-body"><div class="chart-wrap"><canvas id="expenseChart" aria-label="Expense categories chart"></canvas></div></div>
+                <div class="card-body"><div class="chart-wrap"><canvas id="expenseChart" aria-label="Expense categories chart"></canvas><div class="chart-empty d-none" id="expenseChartEmpty">No expense data is available for this selection.</div></div></div>
             </div>
         </div>
     </div>
@@ -229,19 +241,26 @@ document.addEventListener('DOMContentLoaded', function () {
             datasets: [{
                 label: 'Collections',
                 data: {{ \Illuminate\Support\Js::from($chartData['daily_collections']['amounts'] ?? []) }},
-                borderColor: '#2563eb',
-                backgroundColor: 'rgba(37, 99, 235, .12)',
+                borderColor: '#0f766e',
+                backgroundColor: 'rgba(15, 118, 110, .12)',
                 fill: true,
                 tension: .35,
-                pointRadius: 2
+                pointRadius: 2,
+                pointHoverRadius: 5
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             interaction: { intersect: false, mode: 'index' },
-            plugins: { legend: { display: false } },
-            scales: { y: { beginAtZero: true, ticks: { callback: value => moneyFormat.format(value) } } }
+            plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: { label: context => ' ' + moneyFormat.format(context.parsed.y) + ' RWF' } }
+            },
+            scales: {
+                x: { grid: { display: false } },
+                y: { beginAtZero: true, grid: { color: 'rgba(100, 116, 139, .12)' }, ticks: { callback: value => moneyFormat.format(value) } }
+            }
         }
     });
 
@@ -251,12 +270,30 @@ document.addEventListener('DOMContentLoaded', function () {
             labels: {{ \Illuminate\Support\Js::from($chartData['expenses_by_category']['labels'] ?? []) }},
             datasets: [{
                 data: {{ \Illuminate\Support\Js::from($chartData['expenses_by_category']['amounts'] ?? []) }},
-                backgroundColor: ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#64748b'],
-                borderWidth: 0
+                backgroundColor: ['#0f766e', '#2563a6', '#b45309', '#be123c', '#5b4b9a', '#0891b2', '#64748b'],
+                borderColor: '#ffffff',
+                borderWidth: 3,
+                hoverOffset: 8
             }]
         },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom', labels: { usePointStyle: true, padding: 16 } },
+                tooltip: { callbacks: { label: context => ' ' + context.label + ': ' + moneyFormat.format(context.parsed) + ' RWF' } }
+            }
+        }
     });
+
+    function updateChartEmptyState(chart, emptyState) {
+        const hasValues = chart.data.datasets[0].data.some(value => Number(value) > 0);
+        chart.canvas.classList.toggle('d-none', !hasValues);
+        emptyState.classList.toggle('d-none', hasValues);
+    }
+
+    updateChartEmptyState(revenueChart, document.getElementById('revenueChartEmpty'));
+    updateChartEmptyState(expenseChart, document.getElementById('expenseChartEmpty'));
 
     async function getJson(url) {
         const response = await fetch(url, { headers: { 'Accept': 'application/json' } });
@@ -293,6 +330,8 @@ document.addEventListener('DOMContentLoaded', function () {
             expenseChart.data.labels = charts.expenses_by_category.labels || [];
             expenseChart.data.datasets[0].data = charts.expenses_by_category.amounts || [];
             expenseChart.update();
+            updateChartEmptyState(revenueChart, document.getElementById('revenueChartEmpty'));
+            updateChartEmptyState(expenseChart, document.getElementById('expenseChartEmpty'));
             window.history.replaceState({}, '', filterForm.action + (query ? '?' + query : ''));
         } catch (error) {
             errorBox.textContent = error.message || 'Dashboard data could not be refreshed. Please try again.';

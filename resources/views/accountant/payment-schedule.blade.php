@@ -2,13 +2,15 @@
 
 @section('title', 'Payment Schedule')
 
+@include('accountant.partials.theme')
+
 @section('content')
 @php
     $allExpected = collect($paymentSchedule)->sum('total_expected');
     $allCollected = collect($paymentSchedule)->sum('total_collected');
     $overallRate = $allExpected > 0 ? ($allCollected / $allExpected) * 100 : 0;
 @endphp
-<div class="container-fluid py-4">
+<div class="container-fluid py-4 accountant-module">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
         <div>
             <p class="text-primary fw-semibold small text-uppercase mb-1">Finance management</p>

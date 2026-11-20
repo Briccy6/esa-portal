@@ -13,6 +13,7 @@ class StudentCard extends Model
         'branch',
         'passport_photo',
         'qr_code',
+        'verification_url',
         'academic_year',
         'card_generated_by',
         'generated_at',

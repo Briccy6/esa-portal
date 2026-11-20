@@ -61,6 +61,10 @@ use App\Http\Controllers\PopulateLessonBranchCourseController;
 use App\Http\Controllers\PaymentScheduleController;
 use Illuminate\Http\Request;
 
+Route::domain('elearning.excellentservantacademy.com')
+    ->get('/verify-card/{studentCard}', [StudentController::class, 'verifyStudentCard'])
+    ->name('public.student-card.verify');
+
 /*
 |--------------------------------------------------------------------------
 | Routes (updated)

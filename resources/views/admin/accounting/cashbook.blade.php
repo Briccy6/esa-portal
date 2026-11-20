@@ -3,33 +3,35 @@
 @section('title', 'Cash Book Report')
 
 @section('content')
-<div class="container-fluid">
+<div class="container-fluid py-4 accounting-report accounting-cashbook-page">
     <div class="row">
         <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">
-                        <i class="fas fa-book mr-2"></i>Cash Book Report
-                    </h3>
-                    <div class="card-tools">
+            <div class="card report-shell">
+                <div class="card-header report-header">
+                    <div>
+                        <p class="report-eyebrow mb-1">Finance / Reports</p>
+                        <h1 class="report-title mb-1"><i class="fas fa-book-open me-2" aria-hidden="true"></i>Cash Book</h1>
+                        <p class="report-subtitle mb-0">Review receipts, payments, and the resulting cash position.</p>
+                    </div>
+                    <div class="card-tools report-actions">
                         <button onclick="window.print()" class="btn btn-primary btn-sm">
-                            <i class="fas fa-print mr-1"></i> Print
+                            <i class="fas fa-print me-1"></i> Print
                         </button>
-                        <button onclick="downloadPDF()" class="btn btn-info btn-sm ml-2">
-                            <i class="fas fa-file-pdf mr-1"></i> Download PDF
+                        <button onclick="downloadPDF()" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-file-pdf me-1"></i> Download PDF
                         </button>
-                        <a href="{{ route(request()->routeIs('staff.accounting.*') ? 'staff.accounting.export.cashbook' : 'admin.accounting.export.cashbook', request()->query()) }}" class="btn btn-success btn-sm ml-2">
-                            <i class="fas fa-download mr-1"></i> Export CSV
+                        <a href="{{ route(request()->routeIs('staff.accounting.*') ? 'staff.accounting.export.cashbook' : 'admin.accounting.export.cashbook', request()->query()) }}" class="btn btn-outline-success btn-sm">
+                            <i class="fas fa-download me-1"></i> Export CSV
                         </a>
                     </div>
                 </div>
                 <div class="card-body">
                     <!-- Filter Form -->
-                    <div class="row mb-4 filter-form">
+                    <div class="filter-panel mb-4 filter-form">
                         <div class="col-12">
                             <form method="GET" action="{{ route(request()->routeIs('staff.accounting.*') ? 'staff.accounting.cashbook' : 'admin.accounting.cashbook') }}" class="form-inline">
                                 <div class="row g-3 align-items-end">
-                                    <div class="col-md-2">
+                                    <div class="col-12 col-lg-5">
                                         <label for="term_id" class="form-label">Academic Term</label>
                                         <select id="term_id" name="term_id" class="form-control">
                                             <option value="">All Terms</option>
@@ -41,20 +43,20 @@
                                             @endforeach
                                         </select>
                                     </div>
-                                    <div class="col-md-2">
+                                    <div class="col-12 col-md-6 col-lg-2">
                                         <label for="start_date" class="form-label">Start Date</label>
                                         <input type="date" id="start_date" name="start_date" class="form-control" value="{{ $startDate ? $startDate->format('Y-m-d') : '' }}">
                                     </div>
-                                    <div class="col-md-2">
+                                    <div class="col-12 col-md-6 col-lg-2">
                                         <label for="end_date" class="form-label">End Date</label>
                                         <input type="date" id="end_date" name="end_date" class="form-control" value="{{ $endDate ? $endDate->format('Y-m-d') : '' }}">
                                     </div>
-                                    <div class="col-md-2">
-                                        <button type="submit" class="btn btn-primary">
-                                            <i class="fas fa-filter mr-1"></i> Filter
+                                    <div class="col-12 col-lg-3 d-flex gap-2">
+                                        <button type="submit" class="btn btn-primary flex-grow-1">
+                                            <i class="fas fa-filter me-1"></i> Apply filters
                                         </button>
-                                        <a href="{{ route(request()->routeIs('staff.accounting.*') ? 'staff.accounting.cashbook' : 'admin.accounting.cashbook') }}" class="btn btn-secondary ml-2">
-                                            <i class="fas fa-times mr-1"></i> Clear
+                                        <a href="{{ route(request()->routeIs('staff.accounting.*') ? 'staff.accounting.cashbook' : 'admin.accounting.cashbook') }}" class="btn btn-outline-secondary">
+                                            Clear
                                         </a>
                                     </div>
                                 </div>
@@ -63,44 +65,41 @@
                     </div>
 
                     <!-- Summary Cards -->
-                    <div class="row mb-4">
-                        <div class="col-md-4">
-                            <div class="card bg-success border-0">
+                    <div class="row g-3 mb-4">
+                        <div class="col-12 col-md-4">
+                            <div class="card cashbook-summary income border-0">
                                 <div class="card-body">
-                                    <div class="d-flex align-items-center">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <span class="summary-icon"><i class="fas fa-arrow-trend-up" aria-hidden="true"></i></span>
                                         <div class="flex-grow-1">
-                                            <h6 class="card-title text-white mb-0">Total Income</h6>
-                                        </div>
-                                        <div class="ml-3">
-                                            <h4 class="text-white mb-0">{{ number_format($data['total_receipts'], 2) }} RWF</h4>
+                                            <h2 class="summary-label mb-1">Total Income</h2>
+                                            <div class="summary-value">{{ number_format($data['total_receipts'], 2) }} <small>RWF</small></div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-4">
-                            <div class="card bg-danger border-0">
+                        <div class="col-12 col-md-4">
+                            <div class="card cashbook-summary expense border-0">
                                 <div class="card-body">
-                                    <div class="d-flex align-items-center">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <span class="summary-icon"><i class="fas fa-arrow-trend-down" aria-hidden="true"></i></span>
                                         <div class="flex-grow-1">
-                                            <h6 class="card-title text-white mb-0">Total Expenses</h6>
-                                        </div>
-                                        <div class="ml-3">
-                                            <h4 class="text-white mb-0">{{ number_format($data['total_payments'], 2) }} RWF</h4>
+                                            <h2 class="summary-label mb-1">Total Expenses</h2>
+                                            <div class="summary-value">{{ number_format($data['total_payments'], 2) }} <small>RWF</small></div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-4">
-                            <div class="card {{ $data['net_cash'] >= 0 ? 'bg-primary' : 'bg-warning' }} border-0">
+                        <div class="col-12 col-md-4">
+                            <div class="card cashbook-summary {{ $data['net_cash'] >= 0 ? 'balance-positive' : 'balance-negative' }} border-0">
                                 <div class="card-body">
-                                    <div class="d-flex align-items-center">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <span class="summary-icon"><i class="fas fa-scale-balanced" aria-hidden="true"></i></span>
                                         <div class="flex-grow-1">
-                                            <h6 class="card-title text-white mb-0">Net Cash</h6>
-                                        </div>
-                                        <div class="ml-3">
-                                            <h4 class="text-white mb-0">{{ number_format($data['net_cash'], 2) }} RWF</h4>
+                                            <h2 class="summary-label mb-1">Net Cash</h2>
+                                            <div class="summary-value">{{ number_format($data['net_cash'], 2) }} <small>RWF</small></div>
                                         </div>
                                     </div>
                                 </div>
@@ -110,10 +109,10 @@
 
                     <!-- Cash Book - Double Column Format -->
                     <div class="table-responsive">
-                        <table class="table table-bordered table-hover">
-                            <thead class="thead-dark">
+                        <table class="table table-hover cashbook-table">
+                            <thead>
                                 <tr>
-                                    <th colspan="7" class="text-center bg-primary text-white">
+                                    <th colspan="6" class="text-center cashbook-period">
                                         <h5 class="mb-0">Cash Book</h5>
                                         <small>
                                             @if($termId && isset($terms))
@@ -144,13 +143,13 @@
                                 </tr>
                                 <tr>
                                     <!-- Debit Side -->
-                                    <th class="text-center bg-light" width="8%">Date</th>
-                                    <th class="text-center bg-light" width="42%">Particulars</th>
-                                    <th class="text-center bg-light" width="20%">Cash (FRW)</th>
+                                    <th class="text-center" width="10%">Date</th>
+                                    <th class="text-center" width="30%">Particulars</th>
+                                    <th class="text-center" width="10%">Cash (FRW)</th>
                                     <!-- Credit Side -->
-                                    <th class="text-center bg-light" width="8%">Date</th>
-                                    <th class="text-center bg-light" width="42%">Particulars</th>
-                                    <th class="text-center bg-light" width="20%">Cash (FRW)</th>
+                                    <th class="text-center" width="10%">Date</th>
+                                    <th class="text-center" width="30%">Particulars</th>
+                                    <th class="text-center" width="10%">Cash (FRW)</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -171,6 +170,9 @@
                                 $debitIndex = 0;
                                 $creditIndex = 0;
                                 ?>
+                                @if($maxRows === 0)
+                                    <tr><td colspan="6" class="text-center text-muted py-5"><i class="fas fa-receipt fa-2x d-block mb-2" aria-hidden="true"></i>No transactions found for this period.</td></tr>
+                                @endif
                                 
                                 @for($i = 0; $i < $maxRows; $i++)
                                     <tr>
@@ -262,6 +264,60 @@
         </div>
     </div>
 </div>
+
+<style>
+    .accounting-cashbook-page {
+        --report-teal: #0f766e;
+        --report-ink: #173247;
+        --report-muted: #64748b;
+        --report-line: #e2e8f0;
+        font-family: 'Poppins', Arial, sans-serif;
+        color: var(--report-ink);
+    }
+    .accounting-cashbook-page .report-shell { overflow: hidden; border: 1px solid var(--report-line); border-radius: 16px; box-shadow: 0 8px 26px rgba(15, 23, 42, .06); }
+    .accounting-cashbook-page .report-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 18px; padding: 22px 24px; background: #fff; border-bottom: 1px solid var(--report-line); }
+    .accounting-cashbook-page .report-eyebrow { color: var(--report-teal); font-size: .72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+    .accounting-cashbook-page .report-title { color: var(--report-ink); font-size: clamp(1.35rem, 3vw, 1.8rem); font-weight: 700; }
+    .accounting-cashbook-page .report-title i { color: var(--report-teal); }
+    .accounting-cashbook-page .report-subtitle { color: var(--report-muted); font-size: .9rem; }
+    .accounting-cashbook-page .report-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .accounting-cashbook-page .report-actions .btn { margin: 0; border-radius: 8px; }
+    .accounting-cashbook-page .btn-primary { background: var(--report-teal); border-color: var(--report-teal); }
+    .accounting-cashbook-page .btn-primary:hover { background: #115e59; border-color: #115e59; }
+    .accounting-cashbook-page .btn-outline-primary { color: var(--report-teal); border-color: var(--report-teal); }
+    .accounting-cashbook-page .btn-outline-primary:hover { color: #fff; background: var(--report-teal); }
+    .accounting-cashbook-page .filter-panel { padding: 18px; border: 1px solid var(--report-line); border-radius: 12px; background: #f8fafc; }
+    .accounting-cashbook-page .form-label { color: #475569; font-size: .82rem; font-weight: 600; }
+    .accounting-cashbook-page .form-control:focus { border-color: #5aa69f; box-shadow: 0 0 0 .2rem rgba(15, 118, 110, .14); }
+    .accounting-cashbook-page .cashbook-summary { height: 100%; border-radius: 12px; box-shadow: none; }
+    .accounting-cashbook-page .cashbook-summary .card-body { padding: 18px; }
+    .accounting-cashbook-page .cashbook-summary .summary-icon { display: grid; place-items: center; width: 44px; height: 44px; flex: 0 0 44px; border-radius: 12px; font-size: 1.1rem; }
+    .accounting-cashbook-page .cashbook-summary .summary-label { color: var(--report-muted); font-size: .78rem; font-weight: 600; }
+    .accounting-cashbook-page .cashbook-summary .summary-value { color: var(--report-ink); font-size: clamp(1.05rem, 2vw, 1.4rem); font-weight: 700; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+    .accounting-cashbook-page .cashbook-summary .summary-value small { color: var(--report-muted); font-size: .7rem; font-weight: 600; }
+    .accounting-cashbook-page .cashbook-summary.income { border: 1px solid #cce8df; background: #f3fbf7; }
+    .accounting-cashbook-page .income .summary-icon { color: #14785d; background: #dff3ea; }
+    .accounting-cashbook-page .cashbook-summary.expense { border: 1px solid #f1d8d6; background: #fff7f6; }
+    .accounting-cashbook-page .expense .summary-icon { color: #b54742; background: #fde8e6; }
+    .accounting-cashbook-page .cashbook-summary.balance-positive { border: 1px solid #cfe0ee; background: #f3f8fc; }
+    .accounting-cashbook-page .balance-positive .summary-icon { color: #27669a; background: #e1eef8; }
+    .accounting-cashbook-page .cashbook-summary.balance-negative { border: 1px solid #f0dfc0; background: #fffaf0; }
+    .accounting-cashbook-page .balance-negative .summary-icon { color: #9a6a17; background: #fff0cf; }
+    .accounting-cashbook-page .cashbook-table { min-width: 760px; border-color: var(--report-line); }
+    .accounting-cashbook-page .cashbook-table th { padding: 12px 10px; color: #475569; background: #f1f5f9; font-size: .72rem; letter-spacing: .04em; text-transform: uppercase; }
+    .accounting-cashbook-page .cashbook-table td { padding: 11px 10px; border-color: var(--report-line); vertical-align: middle; }
+    .accounting-cashbook-page .cashbook-table .cashbook-period { color: #fff; background: #124e55; text-transform: none; letter-spacing: 0; }
+    .accounting-cashbook-page .cashbook-table .cashbook-period small { color: #d7edeb; }
+    .accounting-cashbook-page .cashbook-table .bg-success { background: #14785d !important; }
+    .accounting-cashbook-page .print-header, .accounting-cashbook-page .print-footer { display: none; }
+    @media (max-width: 575.98px) {
+        .accounting-cashbook-page .card-body { padding: 14px; }
+        .accounting-cashbook-page .report-header { padding: 18px; }
+        .accounting-cashbook-page .report-actions { width: 100%; }
+        .accounting-cashbook-page .report-actions .btn { flex: 1 1 auto; }
+        .accounting-cashbook-page .filter-panel { padding: 12px; }
+    }
+</style>
 
 <!-- Print Styles -->
 <style>

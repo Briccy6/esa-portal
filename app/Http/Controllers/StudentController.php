@@ -2655,6 +2655,22 @@ class StudentController extends Controller
 
         $existingCard = StudentCard::where('student_id', $student->id)->first();
         if ($existingCard) {
+            if (!$existingCard->verification_url || !$existingCard->qr_code) {
+                try {
+                    $this->refreshStudentCardQr($existingCard);
+                } catch (\Exception $e) {
+                    Log::error('Existing student card QR refresh failed', [
+                        'student_id' => $student->id,
+                        'error' => $e->getMessage(),
+                    ]);
+
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'The existing card could not be updated with a verification QR code.',
+                    ], 500);
+                }
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Student card already exists. Opening the existing card.',
@@ -2696,46 +2712,33 @@ class StudentController extends Controller
             }
         }
 
-        $qrData = json_encode([
-            'student_name'   => $student->full_name,
-            'reg_number'     => $student->reg_number,
-            'course'         => $student->course->course_name ?? '',
-            'branch'         => $student->branch->name ?? '',
-            'academic_year'  => $student->academicYear->year ?? date('Y'),
-            'generated_date' => now()->format('Y-m-d H:i:s'),
-        ]);
-
-        try {
-            $qrSvg  = \QrCode::size(200)
-                ->margin(0)
-                ->errorCorrection('H')
-                ->encoding('UTF-8')
-                ->generate($qrData);
-
-            $qrCode = (string) $qrSvg;
-
-        } catch (\Exception $e) {
-            Log::error('QR code generation failed', [
-                'student_id' => $student->id,
-                'error'      => $e->getMessage(),
-            ]);
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to generate QR code: ' . $e->getMessage()
-            ]);
-        }
-
         $studentCard = StudentCard::create([
             'student_id'        => $student->id,
             'reg_number'        => $student->reg_number,
             'course'            => $student->course->course_name ?? '',
             'branch'            => $student->branch->name ?? '',
             'passport_photo'    => $passportPhotoBase64,
-            'qr_code'           => $qrCode,
+            'qr_code'           => null,
+            'verification_url'  => null,
             'academic_year'     => $student->academicYear->year ?? date('Y'),
             'card_generated_by' => $actorName,
             'generated_at'      => now(),
         ]);
+
+        try {
+            $this->refreshStudentCardQr($studentCard);
+        } catch (\Exception $e) {
+            $studentCard->delete();
+            Log::error('QR code generation failed', [
+                'student_id' => $student->id,
+                'error'      => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to generate the card verification QR code.',
+            ], 500);
+        }
 
         if ($student->email) {
             try {
@@ -2773,7 +2776,43 @@ class StudentController extends Controller
     public function listStudentCards()
     {
         $cards = StudentCard::with('student')->latest()->paginate(20);
-        return view('students.StudentCard', compact('cards'));
+        $schoolInfo = \App\Models\SchoolInformation::getActive();
+        $schoolName = $schoolInfo->school_name ?? config('app.name', 'Excellent Servant Academy');
+        $logoUrl = $schoolInfo->logo_url ?? \App\Helpers\LogoHelper::getLogoUrl();
+
+        foreach ($cards as $card) {
+            if (!$card->verification_url || !$card->qr_code) {
+                try {
+                    $this->refreshStudentCardQr($card);
+                } catch (\Exception $e) {
+                    Log::error('Student card QR refresh failed', [
+                        'student_card_id' => $card->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+        }
+
+        return view('students.StudentCard', compact('cards', 'schoolName', 'logoUrl'));
+    }
+
+    private function refreshStudentCardQr(StudentCard $studentCard): void
+    {
+        $verificationUrl = \Illuminate\Support\Facades\URL::signedRoute(
+            'public.student-card.verify',
+            ['studentCard' => $studentCard->id]
+        );
+
+        $qrSvg = \QrCode::size(220)
+            ->margin(1)
+            ->errorCorrection('H')
+            ->encoding('UTF-8')
+            ->generate($verificationUrl);
+
+        $studentCard->forceFill([
+            'verification_url' => $verificationUrl,
+            'qr_code' => (string) $qrSvg,
+        ])->save();
     }
 
     // =========================================================================
@@ -2830,32 +2869,6 @@ class StudentController extends Controller
                 continue;
             }
 
-            $qrData = json_encode([
-                'student_name'   => $student->full_name,
-                'reg_number'     => $student->reg_number,
-                'course'         => $student->course->course_name ?? '',
-                'branch'         => $student->branch->name ?? '',
-                'academic_year'  => $student->academicYear->year ?? date('Y'),
-                'generated_date' => now()->format('Y-m-d H:i:s'),
-            ]);
-
-            try {
-                $qrSvg  = \QrCode::size(200)
-                    ->margin(0)
-                    ->errorCorrection('H')
-                    ->encoding('UTF-8')
-                    ->generate($qrData);
-
-                $qrCode = (string) $qrSvg;
-            } catch (\Exception $e) {
-                Log::error('Bulk QR generation failed for student', [
-                    'student_id' => $student->id,
-                    'error'      => $e->getMessage(),
-                ]);
-                $skipped++;
-                continue;
-            }
-
             $passportPhotoBase64 = null;
             if ($student->passport_photo) {
                 $photoValue = $student->passport_photo;
@@ -2870,22 +2883,63 @@ class StudentController extends Controller
                 }
             }
 
-            StudentCard::create([
+            $studentCard = StudentCard::create([
                 'student_id'        => $student->id,
                 'reg_number'        => $student->reg_number,
                 'course'            => $student->course->course_name ?? '',
                 'branch'            => $student->branch->name ?? '',
                 'passport_photo'    => $passportPhotoBase64,
-                'qr_code'           => $qrCode,
+                'qr_code'           => null,
+                'verification_url'  => null,
                 'academic_year'     => $student->academicYear->year ?? date('Y'),
                 'card_generated_by' => $actorName,
                 'generated_at'      => now(),
             ]);
 
+            try {
+                $this->refreshStudentCardQr($studentCard);
+            } catch (\Exception $e) {
+                $studentCard->delete();
+                Log::error('Bulk QR generation failed for student', [
+                    'student_id' => $student->id,
+                    'error'      => $e->getMessage(),
+                ]);
+                $skipped++;
+                continue;
+            }
+
             $generated++;
         }
 
         return back()->with('success', "{$generated} student card(s) generated. {$skipped} skipped (already exists or fee not paid).");
+    }
+
+    public function verifyStudentCard(Request $request, StudentCard $studentCard)
+    {
+        if (!$request->hasValidSignature()) {
+            return response()->view('public.student-card-verification', [
+                'verified' => false,
+                'card' => null,
+                'student' => null,
+            ], 403);
+        }
+
+        $studentCard->loadMissing('student.course', 'student.branch');
+        $student = $studentCard->student;
+
+        if (!$student) {
+            return response()->view('public.student-card-verification', [
+                'verified' => false,
+                'card' => null,
+                'student' => null,
+            ], 404);
+        }
+
+        return view('public.student-card-verification', [
+            'verified' => true,
+            'card' => $studentCard,
+            'student' => $student,
+        ]);
     }
 
     // =========================================================================

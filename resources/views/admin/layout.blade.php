@@ -9,6 +9,9 @@
     <title> {{ $systemName }}-@yield('title', 'Admin Panel')</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,600;6..72,700&display=swap" rel="stylesheet">
         <link rel="icon" type="image/png" href="{{ \App\Helpers\LogoHelper::getFaviconUrl() }}">
         {{-- In your main layout, before your custom JS --}}
         <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -1287,6 +1290,196 @@
                 padding: 0.2rem 0.35rem !important;
             }
         }
+    /* ESA Panel 2026 design system */
+    :root {
+        --esa-ink: #17211c;
+        --esa-muted: #6d7771;
+        --esa-green: #166b4d;
+        --esa-green-dark: #0e5038;
+        --esa-lime: #d7e95b;
+        --esa-paper: #f3f5ef;
+        --esa-card: #ffffff;
+        --esa-line: #dde3da;
+        --esa-shadow: 0 18px 50px rgba(27, 49, 38, 0.08);
+        --esa-radius: 18px;
+    }
+
+    body {
+        font-family: "DM Sans", sans-serif !important;
+        background:
+            radial-gradient(circle at 92% 8%, rgba(215, 233, 91, 0.16), transparent 18rem),
+            var(--esa-paper) !important;
+        color: var(--esa-ink);
+    }
+
+    h1, h2, h3, .sidebar-logo {
+        font-family: "Newsreader", Georgia, serif;
+        letter-spacing: -0.02em;
+    }
+
+    .top-navbar {
+        height: 64px;
+        background: rgba(23, 33, 28, 0.96) !important;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+        backdrop-filter: blur(18px);
+    }
+
+    .sidebar {
+        background: #17211c !important;
+        border-right: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .sidebar-header {
+        height: 64px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: transparent !important;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .sidebar-logo {
+        color: #f7f9f3;
+        font-size: 1.55rem;
+    }
+
+    .nav-header {
+        color: #9aaa9f;
+        font-family: "DM Sans", sans-serif;
+        font-size: 0.68rem;
+    }
+
+    .nav-link {
+        min-height: 44px;
+        margin: 2px 10px;
+        border-radius: 10px;
+        color: #cdd7d0;
+        transition: background 180ms ease, color 180ms ease, transform 180ms ease;
+    }
+
+    .nav-link:hover {
+        background: rgba(215, 233, 91, 0.10);
+        color: #eff7df;
+        transform: translateX(2px);
+    }
+
+    .nav-link.active {
+        background: var(--esa-lime) !important;
+        color: var(--esa-ink) !important;
+        border: 0;
+        box-shadow: 0 8px 24px rgba(215, 233, 91, 0.12);
+    }
+
+    .main-content {
+        background: transparent !important;
+        padding-top: 64px;
+    }
+
+    .main-content-inner {
+        min-height: calc(100vh - 64px);
+        padding: 28px 30px 44px;
+    }
+
+    .card, .table-card, .chart-card, .stat-card, .quick-action-card {
+        border: 1px solid var(--esa-line) !important;
+        border-radius: var(--esa-radius) !important;
+        box-shadow: var(--esa-shadow) !important;
+    }
+
+    .btn {
+        min-height: 42px;
+        border-radius: 10px !important;
+        font-weight: 700;
+    }
+
+    .btn-primary {
+        background: var(--esa-green) !important;
+        border-color: var(--esa-green) !important;
+    }
+
+    .btn-primary:hover {
+        background: var(--esa-green-dark) !important;
+        border-color: var(--esa-green-dark) !important;
+    }
+
+    .form-control, .form-select {
+        min-height: 44px;
+        border: 1px solid var(--esa-line);
+        border-radius: 10px;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: var(--esa-green);
+        box-shadow: 0 0 0 3px rgba(22, 107, 77, 0.12);
+    }
+
+    .table-responsive {
+        border-radius: 14px;
+    }
+
+    .table thead th {
+        background: #edf1e9;
+        color: #566159;
+        border-bottom: 1px solid var(--esa-line);
+        white-space: nowrap;
+    }
+
+    .table tbody tr {
+        transition: background 160ms ease;
+    }
+
+    .table tbody tr:hover {
+        background: #f7f9f4;
+    }
+
+    [data-theme="dark"] body,
+    body[data-theme="dark"] {
+        --esa-ink: #edf3ed;
+        --esa-muted: #adb8b0;
+        --esa-paper: #111815;
+        --esa-card: #19211d;
+        --esa-line: #303b35;
+        background: var(--esa-paper) !important;
+    }
+
+    body[data-theme="dark"] .card,
+    body[data-theme="dark"] .chart-card,
+    body[data-theme="dark"] .stat-card,
+    body[data-theme="dark"] .table-card,
+    body[data-theme="dark"] .quick-action-card {
+        background: var(--esa-card) !important;
+    }
+
+    body[data-theme="dark"] .table thead th,
+    body[data-theme="dark"] .table tbody tr:hover {
+        background: #202a25;
+        color: #edf3ed;
+    }
+
+    .theme-toggle {
+        width: 42px;
+        height: 42px;
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 50%;
+        background: rgba(255,255,255,0.08);
+        color: white;
+    }
+
+    @media (max-width: 768px) {
+        .main-content-inner {
+            padding: 18px 14px 32px;
+        }
+
+        .top-navbar {
+            height: 60px;
+            padding-left: 1rem !important;
+        }
+
+        .main-content {
+            margin-left: 0 !important;
+            padding-top: 60px;
+        }
+    }
     </style>
     @yield('styles')
     @livewireStyles
@@ -1864,6 +2057,86 @@
         }
     </script>
 
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const navbarRight = document.querySelector('.navbar-right');
+                if (navbarRight && !document.getElementById('esaThemeToggle')) {
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.id = 'esaThemeToggle';
+                    button.className = 'theme-toggle';
+                    button.setAttribute('aria-label', 'Toggle dark theme');
+                    button.innerHTML = '<i class="fas fa-moon"></i>';
+                    navbarRight.prepend(button);
+
+                    const savedTheme = localStorage.getItem('esa-theme');
+                    if (savedTheme === 'dark') {
+                        document.body.dataset.theme = 'dark';
+                        button.innerHTML = '<i class="fas fa-sun"></i>';
+                    }
+
+                    button.addEventListener('click', function () {
+                        const dark = document.body.dataset.theme !== 'dark';
+                        document.body.dataset.theme = dark ? 'dark' : 'light';
+                        localStorage.setItem('esa-theme', dark ? 'dark' : 'light');
+                        button.innerHTML = dark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+                    });
+                }
+
+                if (window.Swal) {
+                    @if(session('success'))
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success',
+                            text: @json(session('success')),
+                            timer: 3500,
+                            timerProgressBar: true,
+                            showConfirmButton: false
+                        });
+                    @endif
+                    @if(session('error'))
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Something went wrong',
+                            text: @json(session('error')),
+                            confirmButtonColor: '#166b4d'
+                        });
+                    @endif
+                    @if($errors->any())
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Please review the form',
+                            text: @json($errors->first()),
+                            confirmButtonColor: '#166b4d'
+                        });
+                    @endif
+                }
+            });
+
+            window.ESA = window.ESA || {};
+            window.ESA.confirmDelete = function (options) {
+                const config = Object.assign({
+                    title: 'Delete this record?',
+                    text: 'This action cannot be undone.',
+                    confirmText: 'Delete',
+                    form: null
+                }, options || {});
+
+                if (!window.Swal) return config.form && config.form.submit();
+
+                Swal.fire({
+                    icon: 'warning',
+                    title: config.title,
+                    text: config.text,
+                    showCancelButton: true,
+                    confirmButtonText: config.confirmText,
+                    confirmButtonColor: '#b42318',
+                    cancelButtonColor: '#6d7771'
+                }).then(function (result) {
+                    if (result.isConfirmed && config.form) config.form.submit();
+                });
+            };
+        </script>
         @yield('scripts')
         @stack('scripts')
         @livewireScripts

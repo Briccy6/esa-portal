@@ -2,8 +2,10 @@
 
 @section('title', 'Expenses')
 
+@include('accountant.partials.theme')
+
 @section('content')
-<div class="container-fluid py-4">
+<div class="container-fluid py-4 accountant-module">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
         <div>
             <p class="text-primary fw-semibold small text-uppercase mb-1">Finance management</p>

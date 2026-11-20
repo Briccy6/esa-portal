@@ -719,6 +719,115 @@ body {
 ::-webkit-scrollbar-thumb:hover {
     background: var(--text-muted);
 }
+
+/* ESA editorial analytics theme */
+.dashboard-container {
+    max-width: 1540px;
+    padding: 0;
+}
+
+.dashboard-header {
+    min-height: 184px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    background:
+        linear-gradient(110deg, rgba(23,33,28,0.96) 0%, rgba(23,33,28,0.82) 64%, rgba(22,107,77,0.55) 100%),
+        radial-gradient(circle at 86% 20%, #d7e95b 0, transparent 32%);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 22px;
+    box-shadow: 0 24px 64px rgba(23,33,28,0.14);
+}
+
+.dashboard-header::before {
+    width: 220px;
+    height: 220px;
+    top: -90px;
+    right: 30px;
+    border: 1px solid rgba(215,233,91,0.28);
+    border-radius: 50%;
+    background: transparent;
+}
+
+.dashboard-header h1 {
+    font-family: "Newsreader", Georgia, serif;
+    font-size: clamp(2.15rem, 4vw, 3.8rem);
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+}
+
+.dashboard-header p {
+    max-width: 620px;
+    color: #ccd7cf;
+}
+
+.stats-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.stat-card {
+    min-height: 178px;
+    background: #fff;
+    border-radius: 16px;
+    padding: 20px;
+}
+
+.stat-card::before {
+    height: 3px;
+    opacity: 0.9;
+}
+
+.stat-card-value {
+    font-family: "Newsreader", Georgia, serif;
+    font-size: clamp(1.75rem, 2.4vw, 2.35rem);
+    background: none;
+    -webkit-text-fill-color: initial;
+    color: var(--text-dark);
+}
+
+.stat-card-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+}
+
+.chart-card, .recent-activity {
+    border-radius: 18px;
+}
+
+.chart-card-title, .recent-activity-title, .section-title {
+    font-family: "Newsreader", Georgia, serif;
+}
+
+.quick-action-card {
+    border-radius: 16px;
+}
+
+@media (max-width: 1100px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    .dashboard-header {
+        min-height: 156px;
+        padding: 20px;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .stat-card {
+        min-height: 150px;
+    }
+
+    .charts-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
 </style>
 @endpush
 
@@ -731,8 +840,13 @@ body {
 
     <!-- Dashboard Header -->
     <div class="dashboard-header">
-        <h1>Analytics Dashboard</h1>
-        <p>Overview of your institution's performance metrics and key indicators</p>
+        <div style="position:relative;z-index:1;">
+            <div style="margin-bottom:.75rem;color:#d7e95b;font-size:.72rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;">
+                Institution overview
+            </div>
+            <h1>Analytics Dashboard</h1>
+            <p>Live financial, academic, and operational signals across your institution.</p>
+        </div>
     </div>
 
     <!-- Financial Stats -->

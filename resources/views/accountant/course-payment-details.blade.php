@@ -2,8 +2,10 @@
 
 @section('title', 'Course Payment Details - ' . $course->course_name)
 
+@include('accountant.partials.theme')
+
 @section('content')
-<div class="container-fluid py-4">
+<div class="container-fluid py-4 accountant-module">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2><i class="fas fa-graduation-cap me-2"></i>{{ $course->course_name }} Payment Details</h2>

@@ -2,8 +2,10 @@
 
 @section('title', 'Payment Receipts')
 
+@include('accountant.partials.theme')
+
 @section('content')
-<div class="container-fluid py-4">
+<div class="container-fluid py-4 accountant-module">
     <div class="mb-4">
         <p class="text-primary fw-semibold small text-uppercase mb-1">Finance management</p>
         <h1 class="h3 fw-bold mb-1">Payment Receipts</h1>

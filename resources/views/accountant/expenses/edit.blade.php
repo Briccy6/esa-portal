@@ -2,8 +2,10 @@
 
 @section('title', 'Edit Expense')
 
+@include('accountant.partials.theme')
+
 @section('content')
-<div class="container-fluid py-4">
+<div class="container-fluid py-4 accountant-module">
     <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mb-4">
         <div>
             <p class="text-primary fw-semibold small text-uppercase mb-1">Finance management</p>
@@ -29,7 +31,7 @@
                 <div class="row g-3">
                     <div class="col-12 col-md-6">
                         <label for="expense_date" class="form-label">Expense Date <span class="text-danger">*</span></label>
-                        <input id="expense_date" type="date" name="expense_date" class="form-control @error('expense_date') is-invalid @enderror" value="{{ old('expense_date', $expense->expense_date->format('Y-m-d')) }}" required>
+                        <input id="expense_date" type="date" name="expense_date" class="form-control @error('expense_date') is-invalid @enderror" value="{{ old('expense_date', \Carbon\Carbon::parse($expense->expense_date)->format('Y-m-d')) }}" required>
                         @error('expense_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                     <div class="col-12 col-md-6">
