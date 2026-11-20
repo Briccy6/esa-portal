@@ -227,10 +227,11 @@
                                         data-bs-toggle="dropdown"
                                         data-bs-boundary="viewport"
                                         aria-expanded="false"
-                                        aria-label="Actions for {{ $student->full_name }}">
+                                        aria-label="Actions for {{ $student->full_name }}"
+                                        onclick="toggleStudentActionsDropdown(this, event)">
                                     <i class="fas fa-ellipsis me-2"></i>Actions
                                 </button>
-                                <ul class="dropdown-menu dropdown-menu-end student-actions-menu">
+                                <ul class="dropdown-menu dropdown-menu-end student-actions-menu" id="actions-menu-{{ $student->id }}">
                                     <li>
                                         <a class="dropdown-item" href="{{ route('staff.students.edit', $student) }}">
                                             <i class="fas fa-user-pen"></i><span>Edit student information</span>
@@ -1235,8 +1236,38 @@ function showAlert(type, message) {
     }, 5000);
 }
 
+// ─── Dropdown Toggle (Fallback for Bootstrap issues) ───────────────────────────
+function toggleStudentActionsDropdown(button, event) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    // Close all other dropdowns first
+    document.querySelectorAll('.student-actions-menu.show').forEach(menu => {
+        if (menu.id !== button.nextElementSibling.id) {
+            menu.classList.remove('show');
+        }
+    });
+
+    // Toggle this dropdown
+    const menu = button.nextElementSibling;
+    menu.classList.toggle('show');
+    button.setAttribute('aria-expanded', menu.classList.contains('show'));
+}
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', function(event) {
+    if (!event.target.closest('.student-actions')) {
+        document.querySelectorAll('.student-actions-menu.show').forEach(menu => {
+            menu.classList.remove('show');
+        });
+        document.querySelectorAll('.student-actions .dropdown-toggle').forEach(btn => {
+            btn.setAttribute('aria-expanded', 'false');
+        });
+    }
+});
+
 // ─── Explicit Modal Opener (Fallback for Bootstrap issues) ────────────────────
-// FIX: If Bootstrap isn't working due to SSL issues,  these functions will 
+// FIX: If Bootstrap isn't working due to SSL issues,  these functions will
 //      explicitly open modals using vanilla JavaScript
 function openPayModal(studentId) {
     console.log('🔓 openPayModal called for:', studentId);
