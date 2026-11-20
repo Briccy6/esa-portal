@@ -890,7 +890,7 @@ function loadStudentsBelowPercentage() {
                                     <th>Remaining (RWF)</th>
                                     <th>Payment %</th>
                                     <th>Status</th>
-                                    <th>Actions</th>
+                                    <th class="text-end">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -911,11 +911,13 @@ function loadStudentsBelowPercentage() {
                             <td class="text-end text-danger fw-semibold">${number_format(student.remaining_amount)}</td>
                             <td class="text-end">${student.payment_percentage}%</td>
                             <td>${isBlocked ? '<span class="badge bg-danger">Blocked</span>' : '<span class="badge bg-success">Active</span>'}</td>
-                            <td>
-                                ${isBlocked ? 
-                                    `<button class="btn btn-sm btn-outline-success" onclick="unblockStudent(${student.id})">Unblock</button>` :
-                                    `<button class="btn btn-sm btn-outline-danger" onclick="blockStudent(${student.id})">Block</button>`
-                                }
+                            <td class="text-end">
+                                <div class="btn-group" role="group">
+                                    ${isBlocked ? 
+                                        `<button class="btn btn-sm btn-outline-success" onclick="unblockStudent(${student.id})" title="Unblock"><i class="fas fa-unlock"></i></button>` :
+                                        `<button class="btn btn-sm btn-outline-danger" onclick="blockStudent(${student.id})" title="Block"><i class="fas fa-ban"></i></button>`
+                                    }
+                                </div>
                             </td>
                         </tr>
                     `;
