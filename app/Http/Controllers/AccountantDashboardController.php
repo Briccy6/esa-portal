@@ -297,6 +297,12 @@ class AccountantDashboardController extends Controller
         $filteredStudents = collect();
 
         foreach ($students as $student) {
+            // Get total paid amount for this academic year
+            $paidAmount = $student->transactions()
+                ->where('status', 'successful')
+                ->whereHas('term', fn ($q) => $q->where('academic_year_id', $student->academic_year_id))
+                ->sum('amount');
+
             // Get the student's total fees (from course term fees)
             $totalFees = 0;
             if ($student->course) {
@@ -317,16 +323,20 @@ class AccountantDashboardController extends Controller
                 }
             }
 
-            // Get total paid amount
-            $paidAmount = $student->transactions()
-                ->where('status', 'successful')
-                ->whereHas('term', fn ($q) => $q->where('academic_year_id', $student->academic_year_id))
-                ->sum('amount');
-
             // Calculate payment percentage
-            $paymentPercentage = $totalFees > 0 ? ($paidAmount / $totalFees) * 100 : 0;
+            // If totalFees is 0 but student has made payments, consider it as 100% (no expected fee set)
+            // If totalFees is 0 and no payments, percentage is 0
+            if ($totalFees > 0) {
+                $paymentPercentage = ($paidAmount / $totalFees) * 100;
+            } elseif ($paidAmount > 0) {
+                // Student has made payments but no expected fee is set - assume they've paid what they owe
+                $paymentPercentage = 100;
+                $totalFees = $paidAmount; // Set total fees to paid amount for display
+            } else {
+                $paymentPercentage = 0;
+            }
 
-            // Check if student meets the threshold
+            // Check if student meets the threshold (greater than or equal to the specified percentage)
             if ($paymentPercentage >= $percentage) {
                 $filteredStudents->push([
                     'id' => $student->id,
