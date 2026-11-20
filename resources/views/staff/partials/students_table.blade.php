@@ -280,6 +280,14 @@
                                             <i class="fas fa-user-pen"></i><span>Edit student information</span>
                                         </a>
                                     </li>
+                                    <li>
+                                        <button type="button"
+                                                class="dropdown-item"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#changeShiftModal{{ $student->id }}">
+                                            <i class="fas fa-clock"></i><span>Change shift</span>
+                                        </button>
+                                    </li>
 
                                     @if(!$registrationComplete)
                                         <li>
@@ -961,6 +969,46 @@
                                         <i class="fas fa-save me-1"></i>Update Status
                                     </button>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Change Shift Modal --}}
+                    <div class="modal fade" id="changeShiftModal{{ $student->id }}" tabindex="-1" aria-labelledby="changeShiftLabel{{ $student->id }}" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header bg-primary text-white">
+                                    <h5 class="modal-title" id="changeShiftLabel{{ $student->id }}">
+                                        <i class="fas fa-clock me-2"></i>
+                                        Change Shift — {{ $student->full_name }}
+                                    </h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                </div>
+                                <form action="{{ route('staff.students.update', $student) }}" method="POST">
+                                    @csrf
+                                    @method('PUT')
+                                    <div class="modal-body">
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            Current shift: <strong>{{ ucfirst($student->shift ?? 'day') }}</strong>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="shift_{{ $student->id }}" class="form-label">Select New Shift</label>
+                                            <select name="shift" id="shift_{{ $student->id }}" class="form-select" required>
+                                                <option value="">Select Shift</option>
+                                                <option value="day" {{ $student->shift === 'day' ? 'selected' : '' }}>Day</option>
+                                                <option value="evening" {{ $student->shift === 'evening' ? 'selected' : '' }}>Evening</option>
+                                                <option value="weekend" {{ $student->shift === 'weekend' ? 'selected' : '' }}>Weekend</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-save me-1"></i>Update Shift
+                                        </button>
+                                    </div>
+                                </form>
                             </div>
                         </div>
                     </div>

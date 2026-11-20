@@ -952,6 +952,18 @@
                             @error('education_level')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
 
+                        <div class="profile-field profile-field--wide">
+                            <label for="shiftSelect">Shift</label>
+                            <select name="shift" id="shiftSelect" class="form-select @error('shift') is-invalid @enderror">
+                                <option value="">Select your shift</option>
+                                <option value="day" {{ old('shift', $student->shift) === 'day' ? 'selected' : '' }}>Day</option>
+                                <option value="evening" {{ old('shift', $student->shift) === 'evening' ? 'selected' : '' }}>Evening</option>
+                                <option value="weekend" {{ old('shift', $student->shift) === 'weekend' ? 'selected' : '' }}>Weekend</option>
+                            </select>
+                            <span class="profile-field-hint">Select your preferred study shift.</span>
+                            @error('shift')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+
                         <div class="profile-field profile-field--wide profile-conditional"
                              id="senior3DocumentDiv" @if($selectedEducationLevel !== 'Senior 3') hidden @endif>
                             <label for="senior3DocumentInput">Senior 3 document</label>

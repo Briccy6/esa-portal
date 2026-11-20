@@ -3607,6 +3607,7 @@ class StudentController extends Controller
             'id_photo'                   => 'nullable|image|mimes:jpg,jpeg,png|max:200',
             'passport_photo'             => 'nullable|image|mimes:jpg,jpeg,png|max:200',
             'education_level'            => 'nullable|string|max:50',
+            'shift'                      => 'nullable|in:day,evening,weekend',
             'senior3_document'           => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:200',
             'senior6_document'           => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:200',
             'other_supporting_document'  => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:200',
@@ -3662,6 +3663,10 @@ class StudentController extends Controller
         if ($request->education_level === 'Other' && $request->hasFile('other_supporting_document')) {
             $student->other_supporting_document = base64_encode(file_get_contents($request->file('other_supporting_document')->getRealPath()));
             $updatedFields[] = 'Other Supporting Document';
+        }
+        if ($request->filled('shift') && $request->shift !== $student->shift) {
+            $student->shift = $request->shift;
+            $updatedFields[] = 'Shift';
         }
         if ($request->filled('password')) {
             $student->password = Hash::make($request->password);
