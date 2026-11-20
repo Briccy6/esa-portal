@@ -222,6 +222,250 @@
             </div>
         </div>
     </div>
+
+    <!-- Student Statistics Cards -->
+    <div class="row g-3 g-xl-4 mb-4">
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card kpi-card h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start gap-3">
+                        <div>
+                            <p class="text-muted small mb-2">Fully Paid Students</p>
+                            <div class="h3 fw-bold mb-2">{{ number_format($fullyPaidStudents ?? 0) }}</div>
+                            <small class="text-success">Students with successful payments</small>
+                        </div>
+                        <span class="rounded-3 bg-success bg-opacity-10 text-success p-3">
+                            <i class="fas fa-check-circle fa-lg" aria-hidden="true"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card kpi-card h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start gap-3">
+                        <div>
+                            <p class="text-muted small mb-2">No Payment Students</p>
+                            <div class="h3 fw-bold mb-2">{{ number_format($studentsWithNoPayment ?? 0) }}</div>
+                            <small class="text-danger">Students with no fee payments</small>
+                        </div>
+                        <span class="rounded-3 bg-danger bg-opacity-10 text-danger p-3">
+                            <i class="fas fa-times-circle fa-lg" aria-hidden="true"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card kpi-card h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start gap-3">
+                        <div>
+                            <p class="text-muted small mb-2">Profile Completion</p>
+                            <div class="h3 fw-bold mb-2">{{ number_format($studentsWithCompletedProfileByBranch->sum('total') ?? 0) }}</div>
+                            <small class="text-info">Students with complete profiles</small>
+                        </div>
+                        <span class="rounded-3 bg-info bg-opacity-10 text-info p-3">
+                            <i class="fas fa-user-check fa-lg" aria-hidden="true"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card kpi-card h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start gap-3">
+                        <div>
+                            <p class="text-muted small mb-2">Payment Analysis</p>
+                            <div class="h3 fw-bold mb-2">Custom</div>
+                            <small class="text-warning">Filter by payment percentage</small>
+                        </div>
+                        <span class="rounded-3 bg-warning bg-opacity-10 text-warning p-3">
+                            <i class="fas fa-percentage fa-lg" aria-hidden="true"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Students by Shift in Branch -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center py-3">
+            <h2 class="h6 fw-semibold mb-0">Students by Shift in Each Branch</h2>
+            <span class="text-primary"><i class="fas fa-clock" aria-hidden="true"></i></span>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Branch</th>
+                            <th>Day</th>
+                            <th>Evening</th>
+                            <th>Weekend</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @php
+                            $shiftData = [];
+                            foreach($studentsByShiftInBranch as $item) {
+                                if (!isset($shiftData[$item->branch_name])) {
+                                    $shiftData[$item->branch_name] = ['day' => 0, 'evening' => 0, 'weekend' => 0];
+                                }
+                                $shiftData[$item->branch_name][$item->shift] = $item->total;
+                            }
+                        @endphp
+                        @foreach($shiftData as $branch => $shifts)
+                            <tr>
+                                <td><strong>{{ $branch }}</strong></td>
+                                <td>{{ number_format($shifts['day']) }}</td>
+                                <td>{{ number_format($shifts['evening']) }}</td>
+                                <td>{{ number_format($shifts['weekend']) }}</td>
+                                <td><strong>{{ number_format(array_sum($shifts)) }}</strong></td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Completion by Course and Shift -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center py-3">
+            <h2 class="h6 fw-semibold mb-0">Profile Completion by Course and Shift</h2>
+            <span class="text-success"><i class="fas fa-user-check" aria-hidden="true"></i></span>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Course</th>
+                            <th>Shift</th>
+                            <th>Total Students</th>
+                            <th>Completed Profiles</th>
+                            <th>Completion %</th>
+                            <th>Remaining</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($profileCompletionByCourseShift as $item)
+                            @php
+                                $completionPercent = $item->total > 0 ? round(($item->completed / $item->total) * 100, 1) : 0;
+                                $remaining = $item->total - $item->completed;
+                            @endphp
+                            <tr>
+                                <td><strong>{{ $item->course_name }}</strong></td>
+                                <td><span class="badge bg-info">{{ ucfirst($item->shift ?? 'N/A') }}</span></td>
+                                <td>{{ number_format($item->total) }}</td>
+                                <td><span class="text-success fw-semibold">{{ number_format($item->completed) }}</span></td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="progress flex-grow-1" style="height: 8px;">
+                                            <div class="progress-bar bg-success" role="progressbar" style="width: {{ $completionPercent }}%;" aria-valuenow="{{ $completionPercent }}" aria-valuemin="0" aria-valuemax="100">{{ $completionPercent }}%</div>
+                                        </div>
+                                        <small class="text-muted">{{ $completionPercent }}%</small>
+                                    </div>
+                                </td>
+                                <td><span class="text-danger">{{ number_format($remaining) }}</span></td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Students with Completed Profiles by Branch -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center py-3">
+            <h2 class="h6 fw-semibold mb-0">Students with Completed Profiles by Branch</h2>
+            <span class="text-primary"><i class="fas fa-user-check" aria-hidden="true"></i></span>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Branch</th>
+                            <th>Completed Profiles</th>
+                            <th>Percentage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($studentsWithCompletedProfileByBranch as $item)
+                            @php
+                                $branchTotal = $studentsByBranch->where('branch_name', $item->branch_name)->first()->total ?? 0;
+                                $percentage = $branchTotal > 0 ? round(($item->total / $branchTotal) * 100, 1) : 0;
+                            @endphp
+                            <tr>
+                                <td><strong>{{ $item->branch_name }}</strong></td>
+                                <td>{{ number_format($item->total) }}</td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="progress flex-grow-1" style="height: 8px;">
+                                            <div class="progress-bar bg-success" role="progressbar" style="width: {{ $percentage }}%;" aria-valuenow="{{ $percentage }}" aria-valuemin="0" aria-valuemax="100">{{ $percentage }}%</div>
+                                        </div>
+                                        <small class="text-muted">{{ $percentage }}%</small>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Percentage Filter Card -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center py-3">
+            <h2 class="h6 fw-semibold mb-0">Students by Payment Percentage</h2>
+            <button class="btn btn-sm btn-outline-primary" onclick="filterByPaymentPercentage()">Filter</button>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label class="form-label">Payment Percentage (%)</label>
+                    <input type="number" id="paymentPercentage" class="form-control" min="0" max="100" value="50" placeholder="Enter percentage">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Branch</label>
+                    <select id="filterBranch" class="form-select">
+                        <option value="">All Branches</option>
+                        @foreach($branches as $branch)
+                            <option value="{{ $branch->id }}">{{ $branch->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Course</label>
+                    <select id="filterCourse" class="form-select">
+                        <option value="">All Courses</option>
+                        @foreach(\App\Models\Course::all() as $course)
+                            <option value="{{ $course->id }}">{{ $course->course_name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button class="btn btn-primary w-100" onclick="filterByPaymentPercentage()">
+                        <i class="fas fa-search me-2"></i>Search
+                    </button>
+                </div>
+            </div>
+            <div id="paymentPercentageResults">
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-info-circle fa-2x mb-2"></i>
+                    <p>Enter a percentage and click Search to see students who have paid at least that percentage of their fees.</p>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 @endsection
 
@@ -341,6 +585,103 @@ document.addEventListener('DOMContentLoaded', function () {
             filterButton.innerHTML = originalButtonText;
         }
     });
+
+    // Payment Percentage Filter Function
+    window.filterByPaymentPercentage = function() {
+        const percentage = document.getElementById('paymentPercentage').value;
+        const branchId = document.getElementById('filterBranch').value;
+        const courseId = document.getElementById('filterCourse').value;
+
+        if (!percentage || percentage < 0 || percentage > 100) {
+            alert('Please enter a valid percentage between 0 and 100');
+            return;
+        }
+
+        const resultsDiv = document.getElementById('paymentPercentageResults');
+        resultsDiv.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Loading...</p></div>';
+
+        fetch('{{ route("staff.accountant.dashboard.filter-payment-percentage") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({
+                percentage: percentage,
+                branch_id: branchId || null,
+                course_id: courseId || null
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (data.students.length === 0) {
+                    resultsDiv.innerHTML = `
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            No students found who have paid at least ${percentage}% of their fees.
+                        </div>
+                    `;
+                } else {
+                    let tableHtml = `
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle me-2"></i>
+                            Found ${data.count} students who have paid at least ${percentage}% of their fees.
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Reg Number</th>
+                                        <th>Branch</th>
+                                        <th>Course</th>
+                                        <th>Paid</th>
+                                        <th>Total Fees</th>
+                                        <th>Percentage</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+                    data.students.forEach(student => {
+                        tableHtml += `
+                            <tr>
+                                <td><strong>${student.name}</strong></td>
+                                <td>${student.reg_number}</td>
+                                <td>${student.branch}</td>
+                                <td>${student.course}</td>
+                                <td>${number_format(student.paid_amount)} RWF</td>
+                                <td>${number_format(student.total_fees)} RWF</td>
+                                <td><span class="badge bg-success">${student.payment_percentage}%</span></td>
+                            </tr>
+                        `;
+                    });
+                    tableHtml += `
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                    resultsDiv.innerHTML = tableHtml;
+                }
+            } else {
+                resultsDiv.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        Error: ${data.message || 'Failed to filter students'}
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            resultsDiv.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    Error: Failed to fetch data. Please try again.
+                </div>
+            `;
+        });
+    };
 });
 </script>
 @endpush

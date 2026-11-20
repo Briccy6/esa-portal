@@ -38,6 +38,79 @@ class AccountantDashboardController extends Controller
         $terms = \App\Models\Term::with('academicYear')->orderBy('start_date', 'desc')->get();
         $selectedAcademicYear = AcademicYearContext::selected();
 
+        // Student statistics data
+        $selectedAcademicYear = AcademicYearContext::selected();
+        $academicYearId = $selectedAcademicYear?->id;
+
+        // Students by shift in each branch
+        $studentsByShiftInBranch = \App\Models\Student::select('branches.name as branch_name', 'shift', \DB::raw('count(*) as total'))
+            ->join('branches', 'students.branch_id', '=', 'branches.id')
+            ->when($academicYearId, fn($q) => $q->where('academic_year_id', $academicYearId))
+            ->when($filters['branch_id'], fn($q) => $q->where('branch_id', $filters['branch_id']))
+            ->groupBy('branches.id', 'branches.name', 'shift')
+            ->orderBy('branches.name')
+            ->orderBy('shift')
+            ->get();
+
+        // Students with completed profiles for each branch
+        $studentsWithCompletedProfileByBranch = \App\Models\Student::select('branches.name as branch_name', \DB::raw('count(*) as total'))
+            ->join('branches', 'students.branch_id', '=', 'branches.id')
+            ->whereNotNull('email')
+            ->whereNotNull('phone')
+            ->whereNotNull('sex')
+            ->whereNotNull('identification_type')
+            ->whereNotNull('id_number')
+            ->where('email', '!=', '')
+            ->where('phone', '!=', '')
+            ->where('sex', '!=', '')
+            ->where('identification_type', '!=', '')
+            ->where('id_number', '!=', '')
+            ->when($academicYearId, fn($q) => $q->where('academic_year_id', $academicYearId))
+            ->when($filters['branch_id'], fn($q) => $q->where('branch_id', $filters['branch_id']))
+            ->groupBy('branches.id', 'branches.name')
+            ->orderBy('total', 'desc')
+            ->get();
+
+        // Students by branch for calculations
+        $studentsByBranch = \App\Models\Student::select('branches.name as branch_name', \DB::raw('count(*) as total'))
+            ->join('branches', 'students.branch_id', '=', 'branches.id')
+            ->when($academicYearId, fn($q) => $q->where('academic_year_id', $academicYearId))
+            ->when($filters['branch_id'], fn($q) => $q->where('branch_id', $filters['branch_id']))
+            ->groupBy('branches.id', 'branches.name')
+            ->orderBy('total', 'desc')
+            ->get();
+
+        // Profile completion by course and shift
+        $profileCompletionByCourseShift = \App\Models\Student::select(
+                'courses.course_name as course_name',
+                'shift',
+                \DB::raw('count(*) as total'),
+                \DB::raw('SUM(CASE WHEN email IS NOT NULL AND email != "" AND phone IS NOT NULL AND phone != "" AND sex IS NOT NULL AND sex != "" AND identification_type IS NOT NULL AND identification_type != "" AND id_number IS NOT NULL AND id_number != "" THEN 1 ELSE 0 END) as completed')
+            )
+            ->join('courses', 'students.course_id', '=', 'courses.id')
+            ->when($academicYearId, fn($q) => $q->where('academic_year_id', $academicYearId))
+            ->when($filters['branch_id'], fn($q) => $q->where('branch_id', $filters['branch_id']))
+            ->groupBy('courses.id', 'courses.course_name', 'shift')
+            ->orderBy('courses.course_name')
+            ->orderBy('shift')
+            ->get();
+
+        // Students who fully paid their fees
+        $fullyPaidStudents = \App\Models\Student::whereHas('transactions', function($query) use ($academicYearId) {
+            $query->where('status', 'successful');
+        })
+            ->when($academicYearId, fn($q) => $q->where('academic_year_id', $academicYearId))
+            ->when($filters['branch_id'], fn($q) => $q->where('branch_id', $filters['branch_id']))
+            ->count();
+
+        // Students who did not pay anything
+        $studentsWithNoPayment = \App\Models\Student::whereDoesntHave('transactions', function($query) use ($academicYearId) {
+            $query->where('status', 'successful');
+        })
+            ->when($academicYearId, fn($q) => $q->where('academic_year_id', $academicYearId))
+            ->when($filters['branch_id'], fn($q) => $q->where('branch_id', $filters['branch_id']))
+            ->count();
+
         return view('accountant.dashboard', compact(
             'kpiData',
             'chartData',
@@ -48,7 +121,13 @@ class AccountantDashboardController extends Controller
             'branches',
             'terms',
             'selectedAcademicYear',
-            'filters'
+            'filters',
+            'studentsByShiftInBranch',
+            'studentsWithCompletedProfileByBranch',
+            'studentsByBranch',
+            'profileCompletionByCourseShift',
+            'fullyPaidStudents',
+            'studentsWithNoPayment'
         ));
     }
 
@@ -149,5 +228,88 @@ class AccountantDashboardController extends Controller
             ->setOption('margin-right', '10mm');
 
         return $pdf->download('receipt_' . $transaction->tx_ref . '.pdf');
+    }
+
+    /**
+     * Filter students by payment percentage
+     */
+    public function filterByPaymentPercentage(Request $request)
+    {
+        $percentage = $request->input('percentage', 50);
+        $branchId = $request->input('branch_id');
+        $courseId = $request->input('course_id');
+
+        $query = \App\Models\Student::with(['branch', 'course', 'transactions']);
+
+        // Apply academic year filter
+        $selectedAcademicYear = AcademicYearContext::selected();
+        if ($selectedAcademicYear) {
+            $query->where('academic_year_id', $selectedAcademicYear->id);
+        }
+
+        // Apply branch filter
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        }
+
+        // Apply course filter
+        if ($courseId) {
+            $query->where('course_id', $courseId);
+        }
+
+        $students = $query->get();
+
+        $filteredStudents = collect();
+
+        foreach ($students as $student) {
+            // Get the student's total fees (from course term fees)
+            $totalFees = 0;
+            if ($student->course) {
+                $currentTerm = \App\Models\Term::where('academic_year_id', $student->academic_year_id)
+                    ->where('start_date', '<=', now())
+                    ->where('end_date', '>=', now())
+                    ->first();
+
+                if ($currentTerm) {
+                    $courseTermFee = \App\Models\CourseTermFee::where('course_id', $student->course_id)
+                        ->where('term_id', $currentTerm->id)
+                        ->where('is_active', true)
+                        ->first();
+
+                    if ($courseTermFee) {
+                        $totalFees = $courseTermFee->total_fees;
+                    }
+                }
+            }
+
+            // Get total paid amount
+            $paidAmount = $student->transactions()
+                ->where('status', 'successful')
+                ->whereHas('term', fn ($q) => $q->where('academic_year_id', $student->academic_year_id))
+                ->sum('amount');
+
+            // Calculate payment percentage
+            $paymentPercentage = $totalFees > 0 ? ($paidAmount / $totalFees) * 100 : 0;
+
+            // Check if student meets the threshold
+            if ($paymentPercentage >= $percentage) {
+                $filteredStudents->push([
+                    'id' => $student->id,
+                    'name' => $student->full_name,
+                    'reg_number' => $student->reg_number,
+                    'branch' => $student->branch->name ?? 'N/A',
+                    'course' => $student->course->course_name ?? 'N/A',
+                    'paid_amount' => $paidAmount,
+                    'total_fees' => $totalFees,
+                    'payment_percentage' => round($paymentPercentage, 2),
+                ]);
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'count' => $filteredStudents->count(),
+            'students' => $filteredStudents,
+        ]);
     }
 }
