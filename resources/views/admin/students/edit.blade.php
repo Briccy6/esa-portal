@@ -237,6 +237,22 @@
                                     </div>
 
                                     <div class="mb-3">
+                                        <label for="shift" class="form-label fw-bold">Shift *</label>
+                                        <select class="form-select @error('shift') is-invalid @enderror" 
+                                                id="shift" 
+                                                name="shift" 
+                                                required>
+                                            <option value="">Select Shift</option>
+                                            <option value="day" {{ old('shift', $student->shift ?? 'day') == 'day' ? 'selected' : '' }}>Day</option>
+                                            <option value="evening" {{ old('shift', $student->shift) == 'evening' ? 'selected' : '' }}>Evening</option>
+                                            <option value="weekend" {{ old('shift', $student->shift) == 'weekend' ? 'selected' : '' }}>Weekend</option>
+                                        </select>
+                                        @error('shift')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+
+                                    <div class="mb-3">
                                         <label class="form-label fw-bold">Registration Number</label>
                                         <input type="text" 
                                                class="form-control" 

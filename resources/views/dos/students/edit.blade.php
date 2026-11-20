@@ -117,6 +117,19 @@
                                     <div class="text-danger small">{{ $message }}</div>
                                 @enderror
                             </div>
+
+                            <div class="col-md-6">
+                                <label for="shift" class="form-label">Shift *</label>
+                                <select class="form-select" id="shift" name="shift" required>
+                                    <option value="">Select Shift</option>
+                                    <option value="day" {{ old('shift', $student->shift ?? 'day') == 'day' ? 'selected' : '' }}>Day</option>
+                                    <option value="evening" {{ old('shift', $student->shift) == 'evening' ? 'selected' : '' }}>Evening</option>
+                                    <option value="weekend" {{ old('shift', $student->shift) == 'weekend' ? 'selected' : '' }}>Weekend</option>
+                                </select>
+                                @error('shift')
+                                    <div class="text-danger small">{{ $message }}</div>
+                                @enderror
+                            </div>
                             
                             <div class="col-12">
                                 <label for="address" class="form-label">Address</label>

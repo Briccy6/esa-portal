@@ -432,6 +432,7 @@ class StudentController extends Controller
                 'branch_id'         => 'required|exists:branches,id',
                 'course_id'         => 'required|exists:courses,id',
                 'academic_year_id'  => 'required|exists:academic_years,id',
+                'shift'             => 'required|in:day,evening,weekend',
                 'fee_type'          => 'nullable|string|in:registration_fee,school_fee,trip_fee,practical_fee,student_card',
                 'amount_paid'       => 'nullable|numeric|min:0',
             ]);
@@ -457,6 +458,7 @@ class StudentController extends Controller
                         'branch_id'        => $validated['branch_id'],
                         'course_id'        => $validated['course_id'],
                         'academic_year_id' => $validated['academic_year_id'],
+                        'shift'            => $validated['shift'] ?? 'day',
                         'reg_number'       => $regNumber,
                         'password'         => bcrypt(Str::random(12)), // Random password for manual registration
                     ]);
@@ -773,6 +775,7 @@ class StudentController extends Controller
             'branch_id'                  => 'required|exists:branches,id',
             'course_id'                  => 'required|exists:courses,id',
             'academic_year_id'           => 'required|exists:academic_years,id',
+            'shift'                      => 'required|in:day,evening,weekend',
             'discount'                   => 'nullable|numeric|min:0|max:100',
             'education_level'            => 'nullable|string|max:50',
             'identification_type'        => 'nullable|in:ID,Passport',
@@ -789,6 +792,8 @@ class StudentController extends Controller
             'email.unique'          => 'This email is already registered',
             'phone.required'        => 'Phone number is required',
             'sex.required'          => 'Sex is required',
+            'shift.required'        => 'Shift is required',
+            'shift.in'              => 'Shift must be day, evening, or weekend',
             'id_photo.image'        => 'ID photo must be an image file',
             'id_photo.max'          => 'ID photo size must not exceed 2MB',
             'passport_photo.image'  => 'Passport photo must be an image file',
@@ -827,6 +832,10 @@ class StudentController extends Controller
             if ($request->academic_year_id != $student->academic_year_id) {
                 $student->academic_year_id = $request->academic_year_id;
                 $updatedFields[] = 'Academic Year';
+            }
+            if ($request->filled('shift') && $request->shift !== $student->shift) {
+                $student->shift = $request->shift;
+                $updatedFields[] = 'Shift';
             }
             if ($request->filled('discount') && $request->discount != $student->discount) {
                 $student->discount = $request->discount;
@@ -956,6 +965,7 @@ class StudentController extends Controller
             'branch_id'                  => 'required|exists:branches,id',
             'course_id'                  => 'required|exists:courses,id',
             'academic_year_id'           => 'required|exists:academic_years,id',
+            'shift'                      => 'required|in:day,evening,weekend',
             'discount'                   => 'nullable|numeric|min:0|max:100',
             'education_level'            => 'nullable|string|max:50',
             'identification_type'        => 'nullable|in:ID,Passport',
@@ -972,6 +982,8 @@ class StudentController extends Controller
             'email.unique'          => 'This email is already registered',
             'phone.required'        => 'Phone number is required',
             'sex.required'          => 'Sex is required',
+            'shift.required'        => 'Shift is required',
+            'shift.in'              => 'Shift must be day, evening, or weekend',
             'id_photo.image'        => 'ID photo must be an image file',
             'id_photo.max'          => 'ID photo size must not exceed 2MB',
             'passport_photo.image'  => 'Passport photo must be an image file',
@@ -1010,6 +1022,10 @@ class StudentController extends Controller
             if ($request->academic_year_id != $student->academic_year_id) {
                 $student->academic_year_id = $request->academic_year_id;
                 $updatedFields[] = 'Academic Year';
+            }
+            if ($request->filled('shift') && $request->shift !== $student->shift) {
+                $student->shift = $request->shift;
+                $updatedFields[] = 'Shift';
             }
             if ($request->filled('discount') && $request->discount != $student->discount) {
                 $student->discount = $request->discount;
@@ -1708,6 +1724,28 @@ class StudentController extends Controller
         $student = auth()->guard('student')->user();
         $student->load('course'); // Load course relationship
 
+        $requiredProfileFields = [
+            'full_name' => 'Full name',
+            'phone' => 'Telephone number',
+            'email' => 'Email address',
+            'sex' => 'Sex',
+            'passport_photo' => 'Profile photo',
+            'identification_type' => 'Identification type',
+            'id_number' => 'Identification number',
+            'id_photo' => 'Identification photo',
+            'education_level' => 'Education level',
+        ];
+        $profileMissingFields = [];
+        foreach ($requiredProfileFields as $field => $label) {
+            if (blank($student->{$field})) {
+                $profileMissingFields[] = $label;
+            }
+        }
+
+        $profileDeadline = \Carbon\Carbon::create(2026, 11, 22, 12, 0, 0, 'Africa/Kigali');
+        $showProfileReminder = count($profileMissingFields) > 0
+            && now('Africa/Kigali')->lt($profileDeadline);
+
         $student->initializeTokens();
 
         $approvedAttendances = $student->attendances()
@@ -2059,7 +2097,10 @@ class StudentController extends Controller
             'announcements',
             'exams',
             'subscriptions',
-            'activeSubscription'
+            'activeSubscription',
+            'profileMissingFields',
+            'profileDeadline',
+            'showProfileReminder'
         ));
     }
 

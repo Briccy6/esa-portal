@@ -35,6 +35,7 @@ class Student extends Authenticatable
         'nesa_document',
         'nesa_registration_date',
         'nesa_remarks',
+        'shift',
     ];
 
     protected $casts = [

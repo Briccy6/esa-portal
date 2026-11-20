@@ -246,6 +246,7 @@ class StudentController extends Controller
             'branch_id' => 'required|exists:branches,id',
             'course_id' => 'required|exists:courses,id',
             'academic_year_id' => 'required|exists:academic_years,id',
+            'shift' => 'required|in:day,evening,weekend',
             'address' => 'nullable|string',
             'parent_name' => 'nullable|string|max:255',
             'parent_phone' => 'nullable|string|max:20',

@@ -218,6 +218,15 @@
                                 @endforeach
                             </select>
                         </div>
+                        <div class="col-md-4">
+                            <label class="form-label required">Shift</label>
+                            <select name="shift" class="form-select" required>
+                                <option value="">Select Shift</option>
+                                <option value="day" {{ old('shift', $student->shift ?? 'day') == 'day' ? 'selected' : '' }}>Day</option>
+                                <option value="evening" {{ old('shift', $student->shift) == 'evening' ? 'selected' : '' }}>Evening</option>
+                                <option value="weekend" {{ old('shift', $student->shift) == 'weekend' ? 'selected' : '' }}>Weekend</option>
+                            </select>
+                        </div>
                     </div>
 
                     {{-- Identification --}}

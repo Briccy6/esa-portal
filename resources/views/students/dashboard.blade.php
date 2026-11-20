@@ -44,6 +44,193 @@
         margin: 0;
     }
 
+    .quick-access-section {
+        margin-bottom: 1.75rem;
+    }
+
+    .quick-access-heading {
+        margin-bottom: 0.85rem;
+        color: var(--text-primary);
+        font-size: 1rem;
+        font-weight: 700;
+    }
+
+    .quick-access-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.9rem;
+    }
+
+    .quick-access-card {
+        display: flex;
+        min-width: 0;
+        min-height: 96px;
+        align-items: center;
+        gap: 0.85rem;
+        padding: 1rem;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        background: var(--bg-card);
+        box-shadow: var(--shadow-sm);
+        color: var(--text-primary);
+        text-decoration: none;
+        transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+    }
+
+    .quick-access-card:hover {
+        transform: translateY(-2px);
+        border-color: #93b4f7;
+        box-shadow: var(--shadow-md);
+        color: var(--text-primary);
+    }
+
+    .quick-access-card:focus-visible {
+        outline: 3px solid rgba(59, 130, 246, .35);
+        outline-offset: 2px;
+    }
+
+    .quick-access-icon {
+        display: grid;
+        width: 44px;
+        height: 44px;
+        flex: 0 0 44px;
+        place-items: center;
+        border-radius: 12px;
+        background: #eff6ff;
+        color: var(--primary);
+        font-size: 1.2rem;
+    }
+
+    .quick-access-copy {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .quick-access-copy strong,
+    .quick-access-copy span {
+        display: block;
+    }
+
+    .quick-access-copy strong {
+        margin-bottom: 0.2rem;
+        font-size: 0.9rem;
+        font-weight: 700;
+    }
+
+    .quick-access-copy span {
+        color: var(--text-secondary);
+        font-size: 0.76rem;
+        line-height: 1.4;
+    }
+
+    .quick-access-arrow {
+        flex: 0 0 auto;
+        color: var(--text-muted);
+    }
+
+    .profile-reminder-modal .modal-content {
+        overflow: hidden;
+        border: 0;
+        border-radius: 18px;
+        box-shadow: 0 24px 70px rgba(15, 23, 42, .24);
+    }
+
+    .profile-reminder-modal .modal-header {
+        align-items: flex-start;
+        padding: 1.5rem 1.5rem 0;
+        border: 0;
+    }
+
+    .profile-reminder-icon {
+        display: grid;
+        width: 48px;
+        height: 48px;
+        place-items: center;
+        border-radius: 14px;
+        background: #fff7e6;
+        color: #b7791f;
+        font-size: 1.25rem;
+    }
+
+    .profile-reminder-modal .modal-body {
+        padding: 1rem 1.5rem 1.5rem;
+    }
+
+    .profile-reminder-eyebrow {
+        margin: 0 0 .45rem;
+        color: #b7791f;
+        font-size: .7rem;
+        font-weight: 800;
+        letter-spacing: .12em;
+        text-transform: uppercase;
+    }
+
+    .profile-reminder-title {
+        margin: 0 0 .6rem;
+        color: var(--text-primary);
+        font-size: 1.45rem;
+        font-weight: 750;
+        letter-spacing: -.03em;
+    }
+
+    .profile-reminder-copy {
+        margin: 0;
+        color: var(--text-secondary);
+        line-height: 1.65;
+    }
+
+    .profile-deadline {
+        display: flex;
+        align-items: flex-start;
+        gap: .7rem;
+        margin-top: 1rem;
+        padding: .8rem .9rem;
+        border: 1px solid #f2d69a;
+        border-radius: 10px;
+        background: #fffaf0;
+        color: #805a18;
+        font-size: .86rem;
+        font-weight: 700;
+    }
+
+    .profile-missing-fields {
+        margin-top: 1rem;
+        color: var(--text-secondary);
+        font-size: .84rem;
+    }
+
+    .profile-missing-fields ul {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .4rem;
+        margin: .55rem 0 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .profile-missing-fields li {
+        padding: .3rem .55rem;
+        border-radius: 99px;
+        background: #f1f5f9;
+        color: #475569;
+    }
+
+    .profile-reminder-modal .modal-footer {
+        gap: .5rem;
+        padding: 0 1.5rem 1.5rem;
+        border: 0;
+    }
+
+    .profile-reminder-modal .modal-footer .btn {
+        margin: 0;
+    }
+
+    @media (max-width: 991.98px) {
+        .quick-access-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
     .section-title {
         font-size: 1.125rem;
         font-weight: 600;
@@ -664,6 +851,34 @@
         }
     }
 
+    @media (max-width: 575.98px) {
+        .quick-access-grid {
+            grid-template-columns: 1fr;
+            gap: .65rem;
+        }
+
+        .quick-access-card {
+            min-height: 82px;
+            padding: .8rem;
+        }
+
+        .profile-reminder-modal .modal-header {
+            padding: 1.1rem 1.1rem 0;
+        }
+
+        .profile-reminder-modal .modal-body {
+            padding: .9rem 1.1rem 1.1rem;
+        }
+
+        .profile-reminder-modal .modal-footer {
+            padding: 0 1.1rem 1.1rem;
+        }
+
+        .profile-reminder-title {
+            font-size: 1.25rem;
+        }
+    }
+
     @media (max-width: 360px) {
         .countdown-display {
             gap: 0.375rem;
@@ -686,6 +901,93 @@
         <h1 class="welcome-title">Welcome back, {{ $student->full_name ?? 'Student' }}!</h1>
         <p class="welcome-subtitle">Track your academic progress and manage your fees</p>
     </div>
+
+    @if($showProfileReminder)
+        <div class="modal fade profile-reminder-modal" id="profileReminderModal" tabindex="-1"
+             aria-labelledby="profileReminderTitle" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <div class="profile-reminder-icon" aria-hidden="true">
+                            <i class="bi bi-person-vcard"></i>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="profile-reminder-eyebrow">Student profile update</p>
+                        <h2 class="profile-reminder-title" id="profileReminderTitle">Please complete your profile</h2>
+                        <p class="profile-reminder-copy">
+                            Update your personal, contact, and identification information so the school has your correct details.
+                        </p>
+                        <div class="profile-deadline">
+                            <i class="bi bi-clock-history" aria-hidden="true"></i>
+                            <span>Please complete this before {{ $profileDeadline->format('l, F j, Y \a\t g:i A') }} (Kigali time).</span>
+                        </div>
+                        @if(count($profileMissingFields))
+                            <div class="profile-missing-fields">
+                                <strong>Still needed</strong>
+                                <ul>
+                                    @foreach($profileMissingFields as $field)
+                                        <li>{{ $field }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Remind me later</button>
+                        <a href="{{ route('students.profile') }}" class="btn btn-primary">
+                            <i class="bi bi-pencil-square me-1" aria-hidden="true"></i>Complete profile
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                var reminderModal = document.getElementById('profileReminderModal');
+                if (reminderModal && window.bootstrap && window.bootstrap.Modal) {
+                    window.bootstrap.Modal.getOrCreateInstance(reminderModal).show();
+                }
+            });
+        </script>
+    @endif
+
+    <section class="quick-access-section" aria-labelledby="quickAccessTitle">
+        <h2 class="quick-access-heading" id="quickAccessTitle">Quick access</h2>
+        <div class="quick-access-grid">
+            <a class="quick-access-card" href="{{ route('student.courses') }}">
+                <span class="quick-access-icon" aria-hidden="true"><i class="bi bi-journal-text"></i></span>
+                <span class="quick-access-copy"><strong>My courses</strong><span>Course materials and details</span></span>
+                <i class="bi bi-arrow-up-right quick-access-arrow" aria-hidden="true"></i>
+            </a>
+            <a class="quick-access-card" href="{{ route('student.timetables.index') }}">
+                <span class="quick-access-icon" aria-hidden="true"><i class="bi bi-calendar2-week"></i></span>
+                <span class="quick-access-copy"><strong>Timetable</strong><span>See your weekly schedule</span></span>
+                <i class="bi bi-arrow-up-right quick-access-arrow" aria-hidden="true"></i>
+            </a>
+            <a class="quick-access-card" href="{{ route('student.exams') }}">
+                <span class="quick-access-icon" aria-hidden="true"><i class="bi bi-file-earmark-text"></i></span>
+                <span class="quick-access-copy"><strong>Exams</strong><span>Review your examinations</span></span>
+                <i class="bi bi-arrow-up-right quick-access-arrow" aria-hidden="true"></i>
+            </a>
+            <a class="quick-access-card" href="{{ route('student.report-cards.index') }}">
+                <span class="quick-access-icon" aria-hidden="true"><i class="bi bi-award"></i></span>
+                <span class="quick-access-copy"><strong>Report cards</strong><span>View your academic results</span></span>
+                <i class="bi bi-arrow-up-right quick-access-arrow" aria-hidden="true"></i>
+            </a>
+            <a class="quick-access-card" href="{{ route('student.resources.index') }}">
+                <span class="quick-access-icon" aria-hidden="true"><i class="bi bi-collection"></i></span>
+                <span class="quick-access-copy"><strong>Study references</strong><span>Open your learning resources</span></span>
+                <i class="bi bi-arrow-up-right quick-access-arrow" aria-hidden="true"></i>
+            </a>
+            <a class="quick-access-card" href="{{ route('student.payment-schedule') }}">
+                <span class="quick-access-icon" aria-hidden="true"><i class="bi bi-credit-card"></i></span>
+                <span class="quick-access-copy"><strong>Payments</strong><span>Check your payment schedule</span></span>
+                <i class="bi bi-arrow-up-right quick-access-arrow" aria-hidden="true"></i>
+            </a>
+        </div>
+    </section>
 
     <!-- Attendance Details Modal -->
     <div class="modal fade" id="attendanceDetailsModal" tabindex="-1" aria-labelledby="attendanceDetailsModalLabel" aria-hidden="true">
@@ -791,6 +1093,41 @@
                 <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#attendanceDetailsModal">
                     View Details
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Student Information -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h3 class="section-title">
+                <i class="bi bi-person-circle"></i>Your Information
+            </h3>
+        </div>
+        <div class="col-12">
+            <div class="info-card">
+                <div class="info-card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <strong>Full Name:</strong> {{ $student->full_name }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <strong>Registration Number:</strong> {{ $student->reg_number }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <strong>Course:</strong> {{ $student->course->course_name ?? 'N/A' }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <strong>Branch:</strong> {{ $student->branch->name ?? 'N/A' }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <strong>Academic Year:</strong> {{ $student->academicYear->year ?? 'N/A' }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <strong>Shift:</strong> <span class="badge bg-info">{{ ucfirst($student->shift ?? 'Day') }}</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
