@@ -1646,7 +1646,8 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // Gradient helper
-    function createGradient(ctx, color1, color2) {
+    function createGradient(canvas, color1, color2) {
+        const ctx = canvas.getContext('2d');
         const gradient = ctx.createLinearGradient(0, 0, 0, 400);
         gradient.addColorStop(0, color1);
         gradient.addColorStop(1, color2);
@@ -1698,7 +1699,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 datasets: [{
                     label: 'Total Students',
                     data: studentsByBranchData.length > 0 ? studentsByBranchData.map(item => item.total) : [0],
-                    backgroundColor: createGradient(studentsByBranchCtx, '#477a57', '#8fb68d'),
+                    backgroundColor: createGradient(studentsByBranchCtx.canvas, '#477a57', '#8fb68d'),
                     borderWidth: 0,
                     borderRadius: 8
                 }]
@@ -1835,7 +1836,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 datasets: [{
                     label: 'Expenses (Rwf)',
                     data: expensesByBranchData.length > 0 ? expensesByBranchData.map(item => parseFloat(item.total)) : [0],
-                    backgroundColor: createGradient(expBranchCtx, '#b85b52', '#d58778'),
+                    backgroundColor: createGradient(expBranchCtx.canvas, '#b85b52', '#d58778'),
                     borderWidth: 0,
                     borderRadius: 8
                 }]
@@ -1888,6 +1889,11 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 
 <script>
+// Helper function for number formatting (JavaScript equivalent of PHP number_format)
+function number_format(num) {
+    return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(num);
+}
+
 // Payment Percentage Filter Function - defined outside DOMContentLoaded for global access
 function filterByPaymentPercentage() {
     const percentage = document.getElementById('paymentPercentage').value;

@@ -675,6 +675,11 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 
 <script>
+// Helper function for number formatting (JavaScript equivalent of PHP number_format)
+function number_format(num) {
+    return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(num);
+}
+
 // Payment Percentage Filter Function - defined outside DOMContentLoaded for global access
 function filterByPaymentPercentage() {
     const percentage = document.getElementById('paymentPercentage').value;
