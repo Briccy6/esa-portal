@@ -247,7 +247,6 @@ Route::prefix('student')->name('student.')->group(function () {
 
     // Google OAuth Routes
     Route::get('/auth/google', [GoogleAuthController::class, 'redirectToGoogle'])->name('auth.google');
-    Route::get('/auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback'])->name('auth.google.callback');
 });
 
 // Authenticated user routes
@@ -275,7 +274,6 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
     // Google OAuth Routes
     Route::get('/auth/google', [GoogleAuthController::class, 'redirectToGoogle'])->name('auth.google');
-    Route::get('/auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback'])->name('auth.google.callback');
 
     // Admin password reset via email code
     Route::get('/forgot-password', [\App\Http\Controllers\AdminPasswordResetController::class, 'showRequestForm'])
@@ -680,7 +678,6 @@ Route::prefix('staff')->name('staff.')->group(function () {
 
     // Google OAuth Routes
     Route::get('/auth/google', [GoogleAuthController::class, 'redirectToGoogle'])->name('auth.google');
-    Route::get('/auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback'])->name('auth.google.callback');
 
     // Staff password reset via email code
     Route::get('forgot-password', [\App\Http\Controllers\StaffPasswordResetController::class, 'showRequestForm'])
@@ -893,7 +890,6 @@ Route::prefix('teacher')->name('teacher.')->group(function () {
 
     // Google OAuth Routes
     Route::get('/auth/google', [GoogleAuthController::class, 'redirectToGoogle'])->name('auth.google');
-    Route::get('/auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback'])->name('auth.google.callback');
 
     // Teacher password reset via email code
     Route::get('forgot-password', [\App\Http\Controllers\TeacherPasswordResetController::class, 'showRequestForm'])

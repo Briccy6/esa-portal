@@ -42,17 +42,6 @@ class GoogleAuthController extends Controller
         // Store the user type in session for callback
         session(['google_user_type' => $userType]);
 
-        // Set the redirect URI based on user type - use production URL
-        $redirectUri = match($userType) {
-            'student' => 'https://elearning.excellentservantacademy.com/student/auth/google/callback',
-            'teacher' => 'https://elearning.excellentservantacademy.com/teacher/auth/google/callback',
-            'staff' => 'https://elearning.excellentservantacademy.com/staff/auth/google/callback',
-            'admin' => 'https://elearning.excellentservantacademy.com/admin/auth/google/callback',
-            default => 'https://elearning.excellentservantacademy.com/auth/google/callback',
-        };
-
-        config(['services.google.redirect' => $redirectUri]);
-
         return Socialite::driver('google')->redirect();
     }
 
