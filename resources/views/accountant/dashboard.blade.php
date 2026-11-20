@@ -749,6 +749,9 @@ function loadNoPaymentStudents() {
                                     <th>Branch</th>
                                     <th>Course</th>
                                     <th>Shift</th>
+                                    <th>Total Fees (RWF)</th>
+                                    <th>Paid (RWF)</th>
+                                    <th>Remaining (RWF)</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -763,6 +766,9 @@ function loadNoPaymentStudents() {
                             <td>${student.branch ? student.branch.name : 'N/A'}</td>
                             <td>${student.course ? student.course.course_name : 'N/A'}</td>
                             <td><span class="badge bg-info">${student.shift || 'N/A'}</span></td>
+                            <td class="text-end">${number_format(student.total_fees)}</td>
+                            <td class="text-end text-success">${number_format(student.paid_amount)}</td>
+                            <td class="text-end text-danger fw-semibold">${number_format(student.remaining_amount)}</td>
                         </tr>
                     `;
                 });

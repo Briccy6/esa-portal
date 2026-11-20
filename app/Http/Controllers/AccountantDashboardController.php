@@ -369,7 +369,7 @@ class AccountantDashboardController extends Controller
         // Get accountant's assigned branches
         $accountantBranches = auth()->guard('staff')->user()->branches->pluck('id')->toArray();
 
-        $query = \App\Models\Student::with(['branch', 'course'])
+        $query = \App\Models\Student::with(['branch', 'course', 'transactions'])
             ->whereDoesntHave('transactions', function($query) use ($academicYearId) {
                 $query->where('status', 'successful');
             })
@@ -385,10 +385,56 @@ class AccountantDashboardController extends Controller
 
         $students = $query->get();
 
+        // Calculate fees for each student
+        $studentsWithFees = $students->map(function($student) use ($academicYearId) {
+            // Get total fees from course term fees
+            $totalFees = 0;
+            if ($student->course) {
+                $currentTerm = \App\Models\Term::where('academic_year_id', $student->academic_year_id)
+                    ->where('start_date', '<=', now())
+                    ->where('end_date', '>=', now())
+                    ->first();
+
+                if ($currentTerm) {
+                    $courseTermFee = \App\Models\CourseTermFee::where('course_id', $student->course_id)
+                        ->where('term_id', $currentTerm->id)
+                        ->where('is_active', true)
+                        ->first();
+
+                    if ($courseTermFee) {
+                        $totalFees = $courseTermFee->total_fees;
+                    }
+                }
+            }
+
+            // Get total paid amount
+            $paidAmount = $student->transactions()
+                ->where('status', 'successful')
+                ->whereHas('term', fn ($q) => $q->where('academic_year_id', $student->academic_year_id))
+                ->sum('amount');
+
+            // Calculate remaining amount
+            $remainingAmount = $totalFees - $paidAmount;
+
+            return [
+                'id' => $student->id,
+                'reg_number' => $student->reg_number,
+                'full_name' => $student->full_name,
+                'email' => $student->email,
+                'phone' => $student->phone,
+                'branch' => $student->branch,
+                'course' => $student->course,
+                'shift' => $student->shift,
+                'total_fees' => $totalFees,
+                'paid_amount' => $paidAmount,
+                'remaining_amount' => $remainingAmount,
+            ];
+        });
+
         return response()->json([
             'success' => true,
-            'count' => $students->count(),
-            'students' => $students,
+            'count' => $studentsWithFees->count(),
+            'students' => $studentsWithFees,
         ]);
     }
 
@@ -403,7 +449,7 @@ class AccountantDashboardController extends Controller
         // Get accountant's assigned branches
         $accountantBranches = auth()->guard('staff')->user()->branches->pluck('id')->toArray();
 
-        $query = \App\Models\Student::with(['branch', 'course'])
+        $query = \App\Models\Student::with(['branch', 'course', 'transactions'])
             ->whereDoesntHave('transactions', function($query) use ($academicYearId) {
                 $query->where('status', 'successful');
             })
@@ -419,25 +465,73 @@ class AccountantDashboardController extends Controller
 
         $students = $query->get();
 
+        // Calculate fees for each student
+        $studentsWithFees = $students->map(function($student) use ($academicYearId) {
+            // Get total fees from course term fees
+            $totalFees = 0;
+            if ($student->course) {
+                $currentTerm = \App\Models\Term::where('academic_year_id', $student->academic_year_id)
+                    ->where('start_date', '<=', now())
+                    ->where('end_date', '>=', now())
+                    ->first();
+
+                if ($currentTerm) {
+                    $courseTermFee = \App\Models\CourseTermFee::where('course_id', $student->course_id)
+                        ->where('term_id', $currentTerm->id)
+                        ->where('is_active', true)
+                        ->first();
+
+                    if ($courseTermFee) {
+                        $totalFees = $courseTermFee->total_fees;
+                    }
+                }
+            }
+
+            // Get total paid amount
+            $paidAmount = $student->transactions()
+                ->where('status', 'successful')
+                ->whereHas('term', fn ($q) => $q->where('academic_year_id', $student->academic_year_id))
+                ->sum('amount');
+
+            // Calculate remaining amount
+            $remainingAmount = $totalFees - $paidAmount;
+
+            return [
+                'reg_number' => $student->reg_number,
+                'full_name' => $student->full_name,
+                'email' => $student->email,
+                'phone' => $student->phone,
+                'branch_name' => $student->branch->name ?? 'N/A',
+                'course_name' => $student->course->course_name ?? 'N/A',
+                'shift' => $student->shift ?? 'N/A',
+                'total_fees' => $totalFees,
+                'paid_amount' => $paidAmount,
+                'remaining_amount' => $remainingAmount,
+            ];
+        });
+
         $filename = 'no_payment_students_' . date('Y-m-d') . '.csv';
         $headers = [
             'Content-Type' => 'text/csv',
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ];
 
-        $callback = function() use ($students) {
+        $callback = function() use ($studentsWithFees) {
             $file = fopen('php://output', 'w');
-            fputcsv($file, ['Reg Number', 'Full Name', 'Email', 'Phone', 'Branch', 'Course', 'Shift']);
+            fputcsv($file, ['Reg Number', 'Full Name', 'Email', 'Phone', 'Branch', 'Course', 'Shift', 'Total Fees (RWF)', 'Paid Amount (RWF)', 'Remaining Amount (RWF)']);
 
-            foreach ($students as $student) {
+            foreach ($studentsWithFees as $student) {
                 fputcsv($file, [
-                    $student->reg_number,
-                    $student->full_name,
-                    $student->email ?? 'N/A',
-                    $student->phone ?? 'N/A',
-                    $student->branch->name ?? 'N/A',
-                    $student->course->course_name ?? 'N/A',
-                    $student->shift ?? 'N/A',
+                    $student['reg_number'],
+                    $student['full_name'],
+                    $student['email'] ?? 'N/A',
+                    $student['phone'] ?? 'N/A',
+                    $student['branch_name'],
+                    $student['course_name'],
+                    $student['shift'] ?? 'N/A',
+                    number_format($student['total_fees'], 0),
+                    number_format($student['paid_amount'], 0),
+                    number_format($student['remaining_amount'], 0),
                 ]);
             }
 
