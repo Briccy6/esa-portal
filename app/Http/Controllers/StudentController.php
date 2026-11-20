@@ -1650,6 +1650,11 @@ class StudentController extends Controller
         return view('students.id-number-form', compact('identificationType'));
     }
 
+    public function showSimpleLoginForm()
+    {
+        return view('students.login-simple');
+    }
+
     public function loginWithCode(Request $request)
     {
         try {
