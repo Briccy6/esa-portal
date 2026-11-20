@@ -954,14 +954,22 @@
 
                         <div class="profile-field profile-field--wide">
                             <label for="shiftSelect">Shift</label>
-                            <select name="shift" id="shiftSelect" class="form-select @error('shift') is-invalid @enderror">
-                                <option value="">Select your shift</option>
-                                <option value="day" {{ old('shift', $student->shift) === 'day' ? 'selected' : '' }}>Day</option>
-                                <option value="evening" {{ old('shift', $student->shift) === 'evening' ? 'selected' : '' }}>Evening</option>
-                                <option value="weekend" {{ old('shift', $student->shift) === 'weekend' ? 'selected' : '' }}>Weekend</option>
-                            </select>
-                            <span class="profile-field-hint">Select your preferred study shift.</span>
-                            @error('shift')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            @if($student->shift_changed_at)
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle me-2"></i>
+                                    Your shift is set to <strong>{{ ucfirst($student->shift ?? 'day') }}</strong>. You can only change your shift once, and you have already changed it on {{ $student->shift_changed_at->format('F j, Y \a\t g:i A') }}.
+                                </div>
+                                <input type="hidden" name="shift" value="{{ $student->shift }}">
+                            @else
+                                <select name="shift" id="shiftSelect" class="form-select @error('shift') is-invalid @enderror">
+                                    <option value="">Select your shift</option>
+                                    <option value="day" {{ old('shift', $student->shift) === 'day' ? 'selected' : '' }}>Day</option>
+                                    <option value="evening" {{ old('shift', $student->shift) === 'evening' ? 'selected' : '' }}>Evening</option>
+                                    <option value="weekend" {{ old('shift', $student->shift) === 'weekend' ? 'selected' : '' }}>Weekend</option>
+                                </select>
+                                <span class="profile-field-hint">Select your preferred study shift. <strong>Note:</strong> You can only change your shift once.</span>
+                                @error('shift')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            @endif
                         </div>
 
                         <div class="profile-field profile-field--wide profile-conditional"

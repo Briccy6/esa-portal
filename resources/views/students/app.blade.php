@@ -723,7 +723,7 @@
                 <img src="{{ $systemLogo }}" alt="Logo" class="me-2">
                 <span>{{ $systemName }}</span>
             </a>
-            <div class="ms-auto">
+            <div class="ms-auto d-flex align-items-center gap-2">
                 <div class="dropdown">
                     <button class="user-info student-account-trigger dropdown-toggle" type="button"
                             id="studentAccountDropdown" data-bs-toggle="dropdown" aria-expanded="false"
@@ -747,18 +747,14 @@
                                 My profile
                             </a>
                         </li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li>
-                            <form action="{{ route('student.logout') }}" method="POST">
-                                @csrf
-                                <button class="dropdown-item logout-item" type="submit">
-                                    <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
-                                    Log out
-                                </button>
-                            </form>
-                        </li>
                     </ul>
                 </div>
+                <form action="{{ route('student.logout') }}" method="POST" class="d-inline">
+                    @csrf
+                    <button type="submit" class="btn btn-outline-light btn-sm" aria-label="Log out">
+                        <i class="bi bi-box-arrow-right"></i>
+                    </button>
+                </form>
             </div>
         </div>
     </nav>

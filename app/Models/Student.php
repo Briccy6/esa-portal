@@ -37,6 +37,7 @@ class Student extends Authenticatable
         'nesa_registration_date',
         'nesa_remarks',
         'shift',
+        'shift_changed_at',
         'is_blocked',
         'block_reason',
         'blocked_at',
