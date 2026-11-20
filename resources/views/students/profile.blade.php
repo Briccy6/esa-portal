@@ -810,7 +810,7 @@
                                        data-error-target="passportPhotoError"
                                        data-original-status="{{ $passportPhotoSource ? 'Current photo is on file. Choose a new photo to replace it.' : 'No photo uploaded yet.' }}"
                                        data-max-bytes="204800" data-preview-kind="image">
-                                <span class="profile-field-hint">JPG or PNG, up to 200 KB. Your image appears here before you save.</span>
+                                <span class="profile-field-hint">JPG, JPEG, or PNG, up to 200 KB. Your image appears here before you save.</span>
                                 <p class="profile-upload-status" id="passportPhotoName">
                                     {{ $passportPhotoSource ? 'Current photo is on file. Choose a new photo to replace it.' : 'No photo uploaded yet.' }}
                                 </p>
@@ -919,7 +919,7 @@
                                            data-error-target="idPhotoError"
                                            data-original-status="{{ $idPhotoSource ? 'Current document image is on file. Choose a new image to replace it.' : 'No document image uploaded yet.' }}"
                                            data-max-bytes="204800" data-preview-kind="image">
-                                    <span class="profile-field-hint">Clear, readable JPG or PNG, up to 200 KB.</span>
+                                    <span class="profile-field-hint">Clear, readable JPG, JPEG, or PNG, up to 200 KB.</span>
                                     <p class="profile-upload-status" id="idPhotoName">
                                         {{ $idPhotoSource ? 'Current document image is on file. Choose a new image to replace it.' : 'No document image uploaded yet.' }}
                                     </p>
@@ -972,7 +972,7 @@
                                            data-error-target="senior3DocumentError"
                                            data-original-status="{{ $student->senior3_document ? 'A document is already on file. Choose a new one to replace it.' : 'No document uploaded yet.' }}"
                                            data-max-bytes="204800" data-preview-kind="document">
-                                    <span class="profile-field-hint">PDF, JPG, or PNG, up to 200 KB.</span>
+                                    <span class="profile-field-hint">PDF, JPG, JPEG, or PNG, up to 200 KB.</span>
                                     <p class="profile-upload-status" id="senior3DocumentName">
                                         {{ $student->senior3_document ? 'A document is already on file. Choose a new one to replace it.' : 'No document uploaded yet.' }}
                                     </p>
@@ -1002,7 +1002,7 @@
                                            data-error-target="senior6DocumentError"
                                            data-original-status="{{ $student->senior6_document ? 'A document is already on file. Choose a new one to replace it.' : 'No document uploaded yet.' }}"
                                            data-max-bytes="204800" data-preview-kind="document">
-                                    <span class="profile-field-hint">PDF, JPG, or PNG, up to 200 KB.</span>
+                                    <span class="profile-field-hint">PDF, JPG, JPEG, or PNG, up to 200 KB.</span>
                                     <p class="profile-upload-status" id="senior6DocumentName">
                                         {{ $student->senior6_document ? 'A document is already on file. Choose a new one to replace it.' : 'No document uploaded yet.' }}
                                     </p>
@@ -1032,7 +1032,7 @@
                                            data-error-target="otherSupportingDocumentError"
                                            data-original-status="{{ $student->other_supporting_document ? 'A document is already on file. Choose a new one to replace it.' : 'No document uploaded yet.' }}"
                                            data-max-bytes="204800" data-preview-kind="document">
-                                    <span class="profile-field-hint">PDF, JPG, or PNG, up to 200 KB.</span>
+                                    <span class="profile-field-hint">PDF, JPG, JPEG, or PNG, up to 200 KB.</span>
                                     <p class="profile-upload-status" id="otherSupportingDocumentName">
                                         {{ $student->other_supporting_document ? 'A document is already on file. Choose a new one to replace it.' : 'No document uploaded yet.' }}
                                     </p>
@@ -1199,7 +1199,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
             if (!isImage && !(input.dataset.previewKind === 'document' && isPdf)) {
                 input.value = '';
-                restoreFilePreview(input, 'Choose a JPG, PNG, or PDF file as indicated.');
+                restoreFilePreview(input, 'Choose a JPG, JPEG, PNG, or PDF file as indicated.');
                 return;
             }
 
