@@ -698,6 +698,66 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 
+// Export to CSV function
+function exportToCSV() {
+    const table = document.querySelector('.table');
+    if (!table) {
+        alert('No table found to export');
+        return;
+    }
+
+    const rows = Array.from(table.querySelectorAll('tr'));
+    if (rows.length === 0) {
+        alert('No data to export');
+        return;
+    }
+
+    let csv = [];
+    
+    // Extract headers
+    const headers = Array.from(rows[0].querySelectorAll('th')).map(th => th.textContent.trim());
+    csv.push(headers.join(','));
+
+    // Extract data rows
+    for (let i = 1; i < rows.length; i++) {
+        const cells = Array.from(rows[i].querySelectorAll('td')).map(td => td.textContent.trim());
+        csv.push(cells.join(','));
+    }
+
+    // Create download link
+    const csvContent = csv.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'students_' + new Date().toISOString().slice(0,10) + '.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+// Print table function
+function printTable() {
+    const table = document.querySelector('.table');
+    if (!table) {
+        alert('No table found to print');
+        return;
+    }
+
+    const printContent = table.outerHTML;
+    const printWindow = window.open('', '', 'height=600,width=800');
+    printWindow.document.write('<html><head><title>Students List</title>');
+    printWindow.document.write('<style>table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background-color:#f2f2f2}body{font-family:Arial,sans-serif;padding:20px;}</style>');
+    printWindow.document.write('</head><body>');
+    printWindow.document.write('<h2>Students List</h2>');
+    printWindow.document.write(printContent);
+    printWindow.document.write('</body></html>');
+    printWindow.document.close();
+    printWindow.print();
+}
+
 // ─── Generate Student Card ───────────────────────────────────────────────────
 function confirmGenerateCard(event, studentName) {
     event.preventDefault();
