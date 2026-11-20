@@ -357,4 +357,93 @@ class AccountantDashboardController extends Controller
             'students' => $filteredStudents,
         ]);
     }
+
+    /**
+     * Get no payment students by branch
+     */
+    public function noPaymentStudents(Request $request)
+    {
+        $branchId = $request->get('branch_id');
+        $academicYearId = AcademicYearContext::selectedId();
+
+        // Get accountant's assigned branches
+        $accountantBranches = auth()->guard('staff')->user()->branches->pluck('id')->toArray();
+
+        $query = \App\Models\Student::with(['branch', 'course'])
+            ->whereDoesntHave('transactions', function($query) use ($academicYearId) {
+                $query->where('status', 'successful');
+            })
+            ->whereIn('branch_id', $accountantBranches);
+
+        if ($academicYearId) {
+            $query->where('academic_year_id', $academicYearId);
+        }
+
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        }
+
+        $students = $query->get();
+
+        return response()->json([
+            'success' => true,
+            'count' => $students->count(),
+            'students' => $students,
+        ]);
+    }
+
+    /**
+     * Export no payment students to CSV
+     */
+    public function exportNoPaymentStudents(Request $request)
+    {
+        $branchId = $request->get('branch_id');
+        $academicYearId = AcademicYearContext::selectedId();
+
+        // Get accountant's assigned branches
+        $accountantBranches = auth()->guard('staff')->user()->branches->pluck('id')->toArray();
+
+        $query = \App\Models\Student::with(['branch', 'course'])
+            ->whereDoesntHave('transactions', function($query) use ($academicYearId) {
+                $query->where('status', 'successful');
+            })
+            ->whereIn('branch_id', $accountantBranches);
+
+        if ($academicYearId) {
+            $query->where('academic_year_id', $academicYearId);
+        }
+
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        }
+
+        $students = $query->get();
+
+        $filename = 'no_payment_students_' . date('Y-m-d') . '.csv';
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ];
+
+        $callback = function() use ($students) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, ['Reg Number', 'Full Name', 'Email', 'Phone', 'Branch', 'Course', 'Shift']);
+
+            foreach ($students as $student) {
+                fputcsv($file, [
+                    $student->reg_number,
+                    $student->full_name,
+                    $student->email ?? 'N/A',
+                    $student->phone ?? 'N/A',
+                    $student->branch->name ?? 'N/A',
+                    $student->course->course_name ?? 'N/A',
+                    $student->shift ?? 'N/A',
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
 }

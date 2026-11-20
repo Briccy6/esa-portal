@@ -319,6 +319,35 @@
         </div>
     </div>
 
+    <!-- No Payment Students by Branch -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center py-3">
+            <h2 class="h6 fw-semibold mb-0">No Payment Students by Branch</h2>
+            <div class="d-flex gap-2">
+                <select id="noPaymentBranchFilter" class="form-select form-select-sm" style="width: 200px;">
+                    <option value="">All Branches</option>
+                    @foreach($branches as $branch)
+                        <option value="{{ $branch->id }}">{{ $branch->name }}</option>
+                    @endforeach
+                </select>
+                <button class="btn btn-sm btn-outline-primary" onclick="loadNoPaymentStudents()">
+                    <i class="fas fa-search me-1"></i>View
+                </button>
+                <button class="btn btn-sm btn-success" onclick="exportNoPaymentStudents()">
+                    <i class="fas fa-file-csv me-1"></i>Export CSV
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div id="noPaymentStudentsTable">
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-info-circle fa-2x mb-2"></i>
+                    <p>Select a branch and click "View" to see students with no payments.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Students by Shift in Branch -->
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center py-3">
@@ -678,6 +707,97 @@ document.addEventListener('DOMContentLoaded', function () {
 // Helper function for number formatting (JavaScript equivalent of PHP number_format)
 function number_format(num) {
     return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(num);
+}
+
+// Load No Payment Students
+function loadNoPaymentStudents() {
+    const branchId = document.getElementById('noPaymentBranchFilter').value;
+    const tableDiv = document.getElementById('noPaymentStudentsTable');
+
+    tableDiv.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Loading...</p></div>';
+
+    fetch('/staff/accountant/no-payment-students?branch_id=' + branchId, {
+        headers: {
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            if (data.students.length === 0) {
+                tableDiv.innerHTML = `
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        No students with no payments found for the selected branch.
+                    </div>
+                `;
+            } else {
+                let tableHtml = `
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle me-2"></i>
+                        Found ${data.count} students with no payments.
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Reg Number</th>
+                                    <th>Full Name</th>
+                                    <th>Email</th>
+                                    <th>Phone</th>
+                                    <th>Branch</th>
+                                    <th>Course</th>
+                                    <th>Shift</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                data.students.forEach(student => {
+                    tableHtml += `
+                        <tr>
+                            <td><strong>${student.reg_number}</strong></td>
+                            <td>${student.full_name}</td>
+                            <td>${student.email || 'N/A'}</td>
+                            <td>${student.phone || 'N/A'}</td>
+                            <td>${student.branch ? student.branch.name : 'N/A'}</td>
+                            <td>${student.course ? student.course.course_name : 'N/A'}</td>
+                            <td><span class="badge bg-info">${student.shift || 'N/A'}</span></td>
+                        </tr>
+                    `;
+                });
+                tableHtml += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                tableDiv.innerHTML = tableHtml;
+            }
+        } else {
+            tableDiv.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    Error: Failed to load students.
+                </div>
+            `;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        tableDiv.innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                Error: Failed to fetch data. Please try again.
+            </div>
+        `;
+    });
+}
+
+// Export No Payment Students to CSV
+function exportNoPaymentStudents() {
+    const branchId = document.getElementById('noPaymentBranchFilter').value;
+    const url = '/staff/accountant/no-payment-students/export?branch_id=' + branchId;
+    window.location.href = url;
 }
 
 // Payment Percentage Filter Function - defined outside DOMContentLoaded for global access

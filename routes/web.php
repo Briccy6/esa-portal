@@ -718,6 +718,8 @@ Route::prefix('staff')->name('staff.')->group(function () {
         Route::middleware(['role:accountant,admin'])->prefix('accountant')->name('accountant.')->group(function () {
             Route::get('/dashboard', [AccountantDashboardController::class, 'index'])->name('dashboard');
             Route::post('/dashboard/filter-payment-percentage', [AccountantDashboardController::class, 'filterByPaymentPercentage'])->name('dashboard.filter-payment-percentage');
+            Route::get('/no-payment-students', [AccountantDashboardController::class, 'noPaymentStudents'])->name('no-payment-students');
+            Route::get('/no-payment-students/export', [AccountantDashboardController::class, 'exportNoPaymentStudents'])->name('no-payment-students.export');
             Route::get('/chart-data', [AccountantDashboardController::class, 'chartData'])->name('chart-data');
             Route::get('/kpi-data', [AccountantDashboardController::class, 'kpiData'])->name('kpi-data');
             Route::get('/expenses', [ExpenseController::class, 'index'])->name('expenses.index');
