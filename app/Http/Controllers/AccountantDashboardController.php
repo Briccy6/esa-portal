@@ -540,4 +540,246 @@ class AccountantDashboardController extends Controller
 
         return response()->stream($callback, 200, $headers);
     }
+
+    /**
+     * Get students below payment percentage
+     */
+    public function studentsBelowPaymentPercentage(Request $request)
+    {
+        $percentage = $request->get('percentage', 50);
+        $branchId = $request->get('branch_id');
+        $academicYearId = AcademicYearContext::selectedId();
+
+        // Get accountant's assigned branches
+        $accountantBranches = auth()->guard('staff')->user()->branches->pluck('id')->toArray();
+
+        $query = \App\Models\Student::with(['branch', 'course', 'transactions'])
+            ->whereIn('branch_id', $accountantBranches);
+
+        if ($academicYearId) {
+            $query->where('academic_year_id', $academicYearId);
+        }
+
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        }
+
+        $students = $query->get();
+
+        $filteredStudents = collect();
+
+        foreach ($students as $student) {
+            // Get total paid amount for this academic year
+            $paidAmount = $student->transactions()
+                ->where('status', 'successful')
+                ->whereHas('term', fn ($q) => $q->where('academic_year_id', $student->academic_year_id))
+                ->sum('amount');
+
+            // Get the student's total fees (from course term fees)
+            $totalFees = 0;
+            if ($student->course) {
+                $currentTerm = \App\Models\Term::where('academic_year_id', $student->academic_year_id)
+                    ->where('start_date', '<=', now())
+                    ->where('end_date', '>=', now())
+                    ->first();
+
+                if ($currentTerm) {
+                    $courseTermFee = \App\Models\CourseTermFee::where('course_id', $student->course_id)
+                        ->where('term_id', $currentTerm->id)
+                        ->where('is_active', true)
+                        ->first();
+
+                    if ($courseTermFee) {
+                        $totalFees = $courseTermFee->total_fees;
+                    }
+                }
+            }
+
+            // Calculate payment percentage
+            if ($totalFees > 0) {
+                $paymentPercentage = ($paidAmount / $totalFees) * 100;
+            } elseif ($paidAmount > 0) {
+                $paymentPercentage = 100;
+                $totalFees = $paidAmount;
+            } else {
+                $paymentPercentage = 0;
+            }
+
+            // Include students below the threshold
+            if ($paymentPercentage < $percentage) {
+                $filteredStudents->push([
+                    'id' => $student->id,
+                    'reg_number' => $student->reg_number,
+                    'full_name' => $student->full_name,
+                    'email' => $student->email,
+                    'phone' => $student->phone,
+                    'branch' => $student->branch,
+                    'course' => $student->course,
+                    'shift' => $student->shift,
+                    'total_fees' => $totalFees,
+                    'paid_amount' => $paidAmount,
+                    'remaining_amount' => $totalFees - $paidAmount,
+                    'payment_percentage' => round($paymentPercentage, 2),
+                    'is_blocked' => $student->is_blocked,
+                ]);
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'count' => $filteredStudents->count(),
+            'students' => $filteredStudents,
+        ]);
+    }
+
+    /**
+     * Block student
+     */
+    public function blockStudent(Request $request)
+    {
+        $studentId = $request->get('student_id');
+        $reason = $request->get('reason', 'Insufficient fee payment');
+
+        $student = \App\Models\Student::findOrFail($studentId);
+        $student->is_blocked = true;
+        $student->block_reason = $reason;
+        $student->blocked_at = now();
+        $student->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Student has been blocked successfully.',
+        ]);
+    }
+
+    /**
+     * Unblock student
+     */
+    public function unblockStudent(Request $request)
+    {
+        $studentId = $request->get('student_id');
+
+        $student = \App\Models\Student::findOrFail($studentId);
+        $student->is_blocked = false;
+        $student->block_reason = null;
+        $student->blocked_at = null;
+        $student->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Student has been unblocked successfully.',
+        ]);
+    }
+
+    /**
+     * Export students below payment percentage to CSV
+     */
+    public function exportStudentsBelowPercentage(Request $request)
+    {
+        $percentage = $request->get('percentage', 50);
+        $branchId = $request->get('branch_id');
+        $academicYearId = AcademicYearContext::selectedId();
+
+        // Get accountant's assigned branches
+        $accountantBranches = auth()->guard('staff')->user()->branches->pluck('id')->toArray();
+
+        $query = \App\Models\Student::with(['branch', 'course', 'transactions'])
+            ->whereIn('branch_id', $accountantBranches);
+
+        if ($academicYearId) {
+            $query->where('academic_year_id', $academicYearId);
+        }
+
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        }
+
+        $students = $query->get();
+
+        $filteredStudents = collect();
+
+        foreach ($students as $student) {
+            $paidAmount = $student->transactions()
+                ->where('status', 'successful')
+                ->whereHas('term', fn ($q) => $q->where('academic_year_id', $student->academic_year_id))
+                ->sum('amount');
+
+            $totalFees = 0;
+            if ($student->course) {
+                $currentTerm = \App\Models\Term::where('academic_year_id', $student->academic_year_id)
+                    ->where('start_date', '<=', now())
+                    ->where('end_date', '>=', now())
+                    ->first();
+
+                if ($currentTerm) {
+                    $courseTermFee = \App\Models\CourseTermFee::where('course_id', $student->course_id)
+                        ->where('term_id', $currentTerm->id)
+                        ->where('is_active', true)
+                        ->first();
+
+                    if ($courseTermFee) {
+                        $totalFees = $courseTermFee->total_fees;
+                    }
+                }
+            }
+
+            if ($totalFees > 0) {
+                $paymentPercentage = ($paidAmount / $totalFees) * 100;
+            } elseif ($paidAmount > 0) {
+                $paymentPercentage = 100;
+                $totalFees = $paidAmount;
+            } else {
+                $paymentPercentage = 0;
+            }
+
+            if ($paymentPercentage < $percentage) {
+                $filteredStudents->push([
+                    'reg_number' => $student->reg_number,
+                    'full_name' => $student->full_name,
+                    'email' => $student->email,
+                    'phone' => $student->phone,
+                    'branch_name' => $student->branch->name ?? 'N/A',
+                    'course_name' => $student->course->course_name ?? 'N/A',
+                    'shift' => $student->shift ?? 'N/A',
+                    'total_fees' => $totalFees,
+                    'paid_amount' => $paidAmount,
+                    'remaining_amount' => $totalFees - $paidAmount,
+                    'payment_percentage' => round($paymentPercentage, 2),
+                    'is_blocked' => $student->is_blocked,
+                ]);
+            }
+        }
+
+        $filename = 'students_below_' . $percentage . '_percent_' . date('Y-m-d') . '.csv';
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ];
+
+        $callback = function() use ($filteredStudents) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, ['Reg Number', 'Full Name', 'Email', 'Phone', 'Branch', 'Course', 'Shift', 'Total Fees (RWF)', 'Paid Amount (RWF)', 'Remaining Amount (RWF)', 'Payment %', 'Blocked Status']);
+
+            foreach ($filteredStudents as $student) {
+                fputcsv($file, [
+                    $student['reg_number'],
+                    $student['full_name'],
+                    $student['email'] ?? 'N/A',
+                    $student['phone'] ?? 'N/A',
+                    $student['branch_name'],
+                    $student['course_name'],
+                    $student['shift'] ?? 'N/A',
+                    number_format($student['total_fees'], 0),
+                    number_format($student['paid_amount'], 0),
+                    number_format($student['remaining_amount'], 0),
+                    $student['payment_percentage'] . '%',
+                    $student['is_blocked'] ? 'Yes' : 'No',
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
 }

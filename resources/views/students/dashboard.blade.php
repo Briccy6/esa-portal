@@ -215,6 +215,102 @@
         color: #475569;
     }
 
+    .profile-countdown-label {
+        display: block;
+        margin: 1.15rem 0 .55rem;
+        color: #64748b;
+        font-size: .72rem;
+        font-weight: 800;
+        letter-spacing: .1em;
+        text-transform: uppercase;
+    }
+
+    .profile-countdown {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: .55rem;
+    }
+
+    .profile-countdown-unit {
+        padding: .65rem .35rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        background: #f8fafc;
+        text-align: center;
+    }
+
+    .profile-countdown-unit strong,
+    .profile-countdown-unit span {
+        display: block;
+    }
+
+    .profile-countdown-unit strong {
+        color: #0f172a;
+        font-size: 1.2rem;
+        font-variant-numeric: tabular-nums;
+        line-height: 1.2;
+    }
+
+    .profile-countdown-unit span {
+        margin-top: .2rem;
+        color: #64748b;
+        font-size: .64rem;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .profile-gate {
+        display: grid;
+        min-height: min(68vh, 640px);
+        place-items: center;
+        padding: clamp(1rem, 4vw, 3rem);
+        border: 1px solid #dbe4ef;
+        border-radius: 22px;
+        background:
+            radial-gradient(ellipse at 12% 0%, rgba(245, 158, 11, .13), transparent 38%),
+            linear-gradient(145deg, #f8fafc, #edf3fa);
+    }
+
+    .profile-gate-card {
+        width: min(100%, 700px);
+        padding: clamp(1.5rem, 5vw, 3.25rem);
+        border: 1px solid rgba(255, 255, 255, .9);
+        border-radius: 20px;
+        background: rgba(255, 255, 255, .94);
+        box-shadow: 0 24px 70px rgba(15, 23, 42, .12);
+    }
+
+    .profile-gate-icon {
+        display: grid;
+        width: 54px;
+        height: 54px;
+        margin-bottom: 1.4rem;
+        place-items: center;
+        border-radius: 16px;
+        background: #fff3d6;
+        color: #a16207;
+        font-size: 1.45rem;
+    }
+
+    .profile-gate-title {
+        margin: 0 0 .65rem;
+        color: #0f172a;
+        font-size: clamp(1.5rem, 4vw, 2rem);
+        font-weight: 800;
+        letter-spacing: -.04em;
+    }
+
+    .profile-gate-copy {
+        max-width: 560px;
+        margin-bottom: 1.25rem;
+        color: #475569;
+        line-height: 1.7;
+    }
+
+    .profile-gate-card .profile-missing-fields {
+        margin-bottom: 1.5rem;
+    }
+
     .profile-reminder-modal .modal-footer {
         gap: .5rem;
         padding: 0 1.5rem 1.5rem;
@@ -896,6 +992,34 @@
 </style>
 
 <div class="container-fluid p-0">
+    @if($profileAccessRestricted)
+        <section class="profile-gate" aria-labelledby="profileGateTitle">
+            <div class="profile-gate-card">
+                <div class="profile-gate-icon" aria-hidden="true">
+                    <i class="bi bi-person-lock"></i>
+                </div>
+                <p class="profile-reminder-eyebrow">Profile completion required</p>
+                <h1 class="profile-gate-title" id="profileGateTitle">Complete your profile to continue</h1>
+                <p class="profile-gate-copy">
+                    The profile deadline has passed. Until your details are complete, access to the student portal is paused.
+                    Update your profile to restore access to your courses, test skills, and other student services.
+                </p>
+                @if(count($profileMissingFields))
+                    <div class="profile-missing-fields">
+                        <strong>Still needed</strong>
+                        <ul>
+                            @foreach($profileMissingFields as $field)
+                                <li>{{ $field }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+                <a href="{{ route('students.profile') }}" class="btn btn-primary btn-lg">
+                    <i class="bi bi-pencil-square me-2" aria-hidden="true"></i>Complete your profile
+                </a>
+            </div>
+        </section>
+    @else
     <!-- Welcome Header -->
     <div class="welcome-header">
         <h1 class="welcome-title">Welcome back, {{ $student->full_name ?? 'Student' }}!</h1>
@@ -923,6 +1047,15 @@
                             <i class="bi bi-clock-history" aria-hidden="true"></i>
                             <span>Please complete this before {{ $profileDeadline->format('l, F j, Y \a\t g:i A') }} (Kigali time).</span>
                         </div>
+                        <span class="profile-countdown-label">Time remaining</span>
+                        <div class="profile-countdown" id="profileDeadlineCountdown"
+                             data-deadline="{{ $profileDeadline->toIso8601String() }}"
+                             role="timer" aria-label="Time remaining to complete your profile">
+                            <div class="profile-countdown-unit"><strong data-countdown-days>--</strong><span>Days</span></div>
+                            <div class="profile-countdown-unit"><strong data-countdown-hours>--</strong><span>Hours</span></div>
+                            <div class="profile-countdown-unit"><strong data-countdown-minutes>--</strong><span>Minutes</span></div>
+                            <div class="profile-countdown-unit"><strong data-countdown-seconds>--</strong><span>Seconds</span></div>
+                        </div>
                         @if(count($profileMissingFields))
                             <div class="profile-missing-fields">
                                 <strong>Still needed</strong>
@@ -949,6 +1082,37 @@
                 if (reminderModal && window.bootstrap && window.bootstrap.Modal) {
                     window.bootstrap.Modal.getOrCreateInstance(reminderModal).show();
                 }
+
+                var countdown = document.getElementById('profileDeadlineCountdown');
+                if (!countdown) {
+                    return;
+                }
+
+                var deadline = new Date(countdown.dataset.deadline).getTime();
+                function updateCountdown() {
+                    var remainingSeconds = Math.ceil((deadline - Date.now()) / 1000);
+                    if (remainingSeconds <= 0) {
+                        window.location.reload();
+                        return;
+                    }
+
+                    var values = {
+                        days: Math.floor(remainingSeconds / 86400),
+                        hours: Math.floor((remainingSeconds % 86400) / 3600),
+                        minutes: Math.floor((remainingSeconds % 3600) / 60),
+                        seconds: remainingSeconds % 60
+                    };
+
+                    Object.keys(values).forEach(function (unit) {
+                        var element = countdown.querySelector('[data-countdown-' + unit + ']');
+                        if (element) {
+                            element.textContent = String(values[unit]).padStart(2, '0');
+                        }
+                    });
+                }
+
+                updateCountdown();
+                window.setInterval(updateCountdown, 1000);
             });
         </script>
     @endif
@@ -967,8 +1131,8 @@
                 <i class="bi bi-arrow-up-right quick-access-arrow" aria-hidden="true"></i>
             </a>
             <a class="quick-access-card" href="{{ route('student.exams') }}">
-                <span class="quick-access-icon" aria-hidden="true"><i class="bi bi-file-earmark-text"></i></span>
-                <span class="quick-access-copy"><strong>Exams</strong><span>Review your examinations</span></span>
+                <span class="quick-access-icon" aria-hidden="true"><i class="bi bi-patch-question"></i></span>
+                <span class="quick-access-copy"><strong>Test Skills</strong><span>Check what you have learned</span></span>
                 <i class="bi bi-arrow-up-right quick-access-arrow" aria-hidden="true"></i>
             </a>
             <a class="quick-access-card" href="{{ route('student.report-cards.index') }}">
@@ -1711,15 +1875,15 @@
         </div>
     </div>
 
-    <!-- Exams Section -->
+    <!-- Test Skills Section -->
     <div class="row mb-4">
         <div class="col-12">
-            <h3 class="section-title"><i class="bi bi-file-earmark-text"></i>Exams</h3>
+            <h3 class="section-title"><i class="bi bi-patch-question"></i>Test Skills</h3>
         </div>
         <div class="col-12">
             <div class="info-card">
                 <div class="info-card-header">
-                    <h4><i class="bi bi-journal-check"></i>Upcoming Exams</h4>
+                    <h4><i class="bi bi-journal-check"></i>Upcoming Tests</h4>
                     <a href="{{ route('student.exams') }}" class="btn btn-sm btn-primary">
                         <i class="bi bi-list"></i> View All
                     </a>
@@ -1728,8 +1892,8 @@
                     <div class="exam-item">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="mb-1">Final Examinations</h6>
-                                <p class="text-muted mb-0 small">Check your exam schedule and results</p>
+                                <h6 class="mb-1">Practice and assessment</h6>
+                                <p class="text-muted mb-0 small">Check upcoming tests and review your results</p>
                             </div>
                             <div class="text-end">
                                 <span class="badge bg-warning text-dark">Upcoming</span>
@@ -1808,12 +1972,12 @@
             </div>
         @endif
 
-        <!-- Exams & Results -->
+        <!-- Test Skills & Results -->
         @if($exams->count())
             <div class="col-lg-6 mb-4">
                 <div class="info-card">
                     <div class="info-card-header">
-                        <h4><i class="bi bi-clipboard-check"></i>Exams & Results</h4>
+                        <h4><i class="bi bi-clipboard-check"></i>Test Skills & Results</h4>
                     </div>
                     <div class="info-card-body p-0">
                         @foreach($exams as $exam)
@@ -1855,7 +2019,7 @@
                                                 </span>
                                             @else
                                                 <a href="{{ route('student.exams.take', $exam->id) }}" class="btn btn-sm btn-primary">
-                                                    <i class="bi bi-play-circle me-1"></i>Take Exam
+                                                    <i class="bi bi-play-circle me-1"></i>Start test
                                                 </a>
                                             @endif
                                         @endif
@@ -1911,11 +2075,13 @@
         </div>
     </div>
 
+    @endif
 </div>
 
 @endsection
 
 @section('scripts')
+@if(!$profileAccessRestricted)
 <script>
 function showPaymentModal(button) {
     const feeTypeInput = document.getElementById('feeTypeInput');
@@ -2301,4 +2467,5 @@ document.addEventListener('DOMContentLoaded', function() {
     setInterval(updateReportCardStatus, 30000);
 });
 </script>
+@endif
 @endsection

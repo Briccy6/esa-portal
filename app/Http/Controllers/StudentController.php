@@ -1722,30 +1722,25 @@ class StudentController extends Controller
     public function dashboard(Request $request)
     {
         $student = auth()->guard('student')->user();
-        $student->load('course'); // Load course relationship
 
-        $requiredProfileFields = [
-            'full_name' => 'Full name',
-            'phone' => 'Telephone number',
-            'email' => 'Email address',
-            'sex' => 'Sex',
-            'passport_photo' => 'Profile photo',
-            'identification_type' => 'Identification type',
-            'id_number' => 'Identification number',
-            'id_photo' => 'Identification photo',
-            'education_level' => 'Education level',
-        ];
-        $profileMissingFields = [];
-        foreach ($requiredProfileFields as $field => $label) {
-            if (blank($student->{$field})) {
-                $profileMissingFields[] = $label;
-            }
-        }
-
-        $profileDeadline = \Carbon\Carbon::create(2026, 11, 22, 12, 0, 0, 'Africa/Kigali');
+        $profileMissingFields = $student->missingProfileFields();
+        $profileDeadline = Student::profileCompletionDeadline();
+        $profileAccessRestricted = count($profileMissingFields) > 0
+            && now('Africa/Kigali')->greaterThanOrEqualTo($profileDeadline);
         $showProfileReminder = count($profileMissingFields) > 0
             && now('Africa/Kigali')->lt($profileDeadline);
 
+        if ($profileAccessRestricted) {
+            return view('students.dashboard', compact(
+                'student',
+                'profileMissingFields',
+                'profileDeadline',
+                'showProfileReminder',
+                'profileAccessRestricted'
+            ));
+        }
+
+        $student->load('course');
         $student->initializeTokens();
 
         $approvedAttendances = $student->attendances()
@@ -2100,7 +2095,8 @@ class StudentController extends Controller
             'activeSubscription',
             'profileMissingFields',
             'profileDeadline',
-            'showProfileReminder'
+            'showProfileReminder',
+            'profileAccessRestricted'
         ));
     }
 

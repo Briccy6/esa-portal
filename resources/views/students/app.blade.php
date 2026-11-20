@@ -1,6 +1,35 @@
 @php
     $systemName = \Illuminate\Support\Facades\Cache::get('esa_system_name', 'ESA-Panel');
     $systemLogo = \App\Helpers\LogoHelper::getLogoUrl();
+    $studentUser = Auth::guard('student')->user();
+    $studentProfilePhoto = null;
+    $studentAccessRestricted = $studentUser && (
+        isset($profileAccessRestricted)
+            ? $profileAccessRestricted
+            : (
+                !$studentUser->hasCompletedProfile()
+                && now('Africa/Kigali')->greaterThanOrEqualTo(\App\Models\Student::profileCompletionDeadline())
+            )
+    );
+
+    if (!$studentProfilePhoto && $studentUser && $studentUser->passport_photo) {
+        $storedProfilePhoto = $studentUser->passport_photo;
+        $profilePhotoPath = ltrim($storedProfilePhoto, '/');
+
+        if (str_starts_with($storedProfilePhoto, 'data:') || filter_var($storedProfilePhoto, FILTER_VALIDATE_URL)) {
+            $studentProfilePhoto = $storedProfilePhoto;
+        } elseif (str_starts_with($profilePhotoPath, 'storage/')) {
+            $studentProfilePhoto = asset($profilePhotoPath);
+        } elseif (preg_match('/\.(jpe?g|png|gif|webp)$/i', $storedProfilePhoto) && file_exists(public_path($storedProfilePhoto))) {
+            $studentProfilePhoto = asset($storedProfilePhoto);
+        } elseif (preg_match('/\.(jpe?g|png|gif|webp)$/i', $storedProfilePhoto)
+            && \Illuminate\Support\Facades\Storage::disk('public')->exists($storedProfilePhoto)) {
+            $studentProfilePhoto = \Illuminate\Support\Facades\Storage::disk('public')->url($storedProfilePhoto);
+        } else {
+            $profilePhotoMimeType = str_starts_with($storedProfilePhoto, 'iVBORw0KGgo') ? 'image/png' : 'image/jpeg';
+            $studentProfilePhoto = 'data:' . $profilePhotoMimeType . ';base64,' . $storedProfilePhoto;
+        }
+    }
 @endphp
 <!DOCTYPE html>
 <html lang="en">
@@ -94,6 +123,88 @@
             color: #fff;
             margin: 0;
             line-height: 1.2;
+        }
+
+        .student-account-trigger {
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+            max-width: min(340px, 42vw);
+            padding: 0.375rem 0.75rem;
+            color: #fff;
+            font: inherit;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .student-account-trigger::after {
+            flex-shrink: 0;
+        }
+
+        .student-avatar {
+            display: grid;
+            width: 42px;
+            height: 42px;
+            flex: 0 0 42px;
+            place-items: center;
+            overflow: hidden;
+            border: 2px solid rgba(255, 255, 255, 0.72);
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            font-size: 1.15rem;
+        }
+
+        .student-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .student-account-copy {
+            min-width: 0;
+        }
+
+        .student-account-copy .welcome-text,
+        .student-account-copy .reg-number {
+            display: block;
+        }
+
+        .student-account-copy .reg-number {
+            overflow: hidden;
+            max-width: 220px;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .student-account-menu {
+            min-width: 220px;
+            padding: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .student-account-menu .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            border-radius: 8px;
+            padding: 0.65rem 0.75rem;
+        }
+
+        .student-account-menu .dropdown-item i {
+            width: 1rem;
+            text-align: center;
+        }
+
+        .student-account-menu .dropdown-item.logout-item {
+            color: #b42318;
+        }
+
+        .student-account-menu .dropdown-item.logout-item:hover {
+            background: #fff1f0;
+            color: #8f1d15;
         }
 
         /* Mobile Toggle Button */
@@ -309,6 +420,26 @@
 
             .user-info {
                 padding: 0.375rem 0.75rem;
+            }
+
+            .student-account-trigger {
+                max-width: 52vw;
+                gap: 0.45rem;
+                padding: 0.3rem 0.45rem;
+            }
+
+            .student-avatar {
+                width: 36px;
+                height: 36px;
+                flex-basis: 36px;
+            }
+
+            .student-account-copy .welcome-text {
+                display: none;
+            }
+
+            .student-account-copy .reg-number {
+                max-width: 140px;
             }
 
             .user-info .welcome-text {
@@ -573,9 +704,40 @@
                 <span>{{ $systemName }}</span>
             </a>
             <div class="ms-auto">
-                <div class="user-info">
-                    <p class="welcome-text">Welcome back</p>
-                    <p class="reg-number">{{ Auth::guard('student')->user()->reg_number ?? 'N/A' }}</p>
+                <div class="dropdown">
+                    <button class="user-info student-account-trigger dropdown-toggle" type="button"
+                            id="studentAccountDropdown" data-bs-toggle="dropdown" aria-expanded="false"
+                            aria-label="Student account menu">
+                        <span class="student-avatar">
+                            @if($studentProfilePhoto)
+                                <img src="{{ $studentProfilePhoto }}" alt="Student profile photo">
+                            @else
+                                <i class="bi bi-person-fill" aria-hidden="true"></i>
+                            @endif
+                        </span>
+                        <span class="student-account-copy">
+                            <span class="welcome-text">Welcome back</span>
+                            <span class="reg-number">{{ $studentUser->reg_number ?? 'N/A' }}</span>
+                        </span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end student-account-menu" aria-labelledby="studentAccountDropdown">
+                        <li>
+                            <a class="dropdown-item" href="{{ route('students.profile') }}">
+                                <i class="bi bi-person-circle" aria-hidden="true"></i>
+                                My profile
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <form action="{{ route('student.logout') }}" method="POST">
+                                @csrf
+                                <button class="dropdown-item logout-item" type="submit">
+                                    <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+                                    Log out
+                                </button>
+                            </form>
+                        </li>
+                    </ul>
                 </div>
             </div>
         </div>
@@ -606,6 +768,7 @@
                     </ul>
                 </div>
 
+                @if(!$studentAccessRestricted)
                 {{-- Academic Section --}}
                 <div class="nav-group">
                     <div class="nav-group-title">Academic</div>
@@ -636,8 +799,8 @@
                         </li>
                         <li class="nav-item">
                             <a href="{{ route('student.exams') }}" class="nav-link {{ request()->routeIs('student.exams') ? 'active' : '' }}">
-                                <i class="bi bi-file-earmark-text"></i>
-                                Exams
+                                <i class="bi bi-patch-question"></i>
+                                Test Skills
                             </a>
                         </li>
                         <li class="nav-item">
@@ -692,6 +855,7 @@
                         </li>
                     </ul>
                 </div>
+                @endif
 
                 {{-- Account Section --}}
                 <div class="nav-group">

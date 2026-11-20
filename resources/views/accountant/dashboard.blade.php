@@ -348,6 +348,39 @@
         </div>
     </div>
 
+    <!-- Students Below Payment Percentage -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center py-3">
+            <h2 class="h6 fw-semibold mb-0">Students Below Payment Percentage</h2>
+            <div class="d-flex gap-2">
+                <input type="number" id="belowPercentageInput" class="form-control form-control-sm" placeholder="%" value="50" min="0" max="100" style="width: 80px;">
+                <select id="belowPercentageBranchFilter" class="form-select form-select-sm" style="width: 200px;">
+                    <option value="">All Branches</option>
+                    @foreach($branches as $branch)
+                        <option value="{{ $branch->id }}">{{ $branch->name }}</option>
+                    @endforeach
+                </select>
+                <button class="btn btn-sm btn-outline-primary" onclick="loadStudentsBelowPercentage()">
+                    <i class="fas fa-search me-1"></i>View
+                </button>
+                <button class="btn btn-sm btn-primary" onclick="printStudentsBelowPercentage()">
+                    <i class="fas fa-print me-1"></i>Print
+                </button>
+                <button class="btn btn-sm btn-success" onclick="exportStudentsBelowPercentage()">
+                    <i class="fas fa-file-csv me-1"></i>Export CSV
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div id="studentsBelowPercentageTable">
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-info-circle fa-2x mb-2"></i>
+                    <p>Enter a percentage and click "View" to see students who paid below that percentage.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Students by Shift in Branch -->
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center py-3">
@@ -804,6 +837,198 @@ function exportNoPaymentStudents() {
     const branchId = document.getElementById('noPaymentBranchFilter').value;
     const url = '/staff/accountant/no-payment-students/export?branch_id=' + branchId;
     window.location.href = url;
+}
+
+// Load Students Below Payment Percentage
+function loadStudentsBelowPercentage() {
+    const percentage = document.getElementById('belowPercentageInput').value;
+    const branchId = document.getElementById('belowPercentageBranchFilter').value;
+    const tableDiv = document.getElementById('studentsBelowPercentageTable');
+
+    if (!percentage || percentage < 0 || percentage > 100) {
+        alert('Please enter a valid percentage between 0 and 100');
+        return;
+    }
+
+    tableDiv.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Loading...</p></div>';
+
+    fetch('/staff/accountant/students-below-percentage?percentage=' + percentage + '&branch_id=' + branchId, {
+        headers: {
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            if (data.students.length === 0) {
+                tableDiv.innerHTML = `
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        No students found who paid below ${percentage}%.
+                    </div>
+                `;
+            } else {
+                let tableHtml = `
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle me-2"></i>
+                        Found ${data.count} students who paid below ${percentage}%.
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="studentsBelowTable">
+                            <thead>
+                                <tr>
+                                    <th>Reg Number</th>
+                                    <th>Full Name</th>
+                                    <th>Email</th>
+                                    <th>Phone</th>
+                                    <th>Branch</th>
+                                    <th>Course</th>
+                                    <th>Shift</th>
+                                    <th>Total Fees (RWF)</th>
+                                    <th>Paid (RWF)</th>
+                                    <th>Remaining (RWF)</th>
+                                    <th>Payment %</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                data.students.forEach(student => {
+                    const isBlocked = student.is_blocked;
+                    tableHtml += `
+                        <tr>
+                            <td><strong>${student.reg_number}</strong></td>
+                            <td>${student.full_name}</td>
+                            <td>${student.email || 'N/A'}</td>
+                            <td>${student.phone || 'N/A'}</td>
+                            <td>${student.branch ? student.branch.name : 'N/A'}</td>
+                            <td>${student.course ? student.course.course_name : 'N/A'}</td>
+                            <td><span class="badge bg-info">${student.shift || 'N/A'}</span></td>
+                            <td class="text-end">${number_format(student.total_fees)}</td>
+                            <td class="text-end text-success">${number_format(student.paid_amount)}</td>
+                            <td class="text-end text-danger fw-semibold">${number_format(student.remaining_amount)}</td>
+                            <td class="text-end">${student.payment_percentage}%</td>
+                            <td>${isBlocked ? '<span class="badge bg-danger">Blocked</span>' : '<span class="badge bg-success">Active</span>'}</td>
+                            <td>
+                                ${isBlocked ? 
+                                    `<button class="btn btn-sm btn-outline-success" onclick="unblockStudent(${student.id})">Unblock</button>` :
+                                    `<button class="btn btn-sm btn-outline-danger" onclick="blockStudent(${student.id})">Block</button>`
+                                }
+                            </td>
+                        </tr>
+                    `;
+                });
+                tableHtml += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                tableDiv.innerHTML = tableHtml;
+            }
+        } else {
+            tableDiv.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    Error: Failed to load students.
+                </div>
+            `;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        tableDiv.innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                Error: Failed to fetch data. Please try again.
+            </div>
+        `;
+    });
+}
+
+// Print Students Below Percentage
+function printStudentsBelowPercentage() {
+    const printContent = document.getElementById('studentsBelowPercentageTable').innerHTML;
+    const printWindow = window.open('', '', 'height=600,width=800');
+    printWindow.document.write('<html><head><title>Students Below Payment Percentage</title>');
+    printWindow.document.write('<style>table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background-color:#f2f2f2}</style>');
+    printWindow.document.write('</head><body>');
+    printWindow.document.write(printContent);
+    printWindow.document.write('</body></html>');
+    printWindow.document.close();
+    printWindow.print();
+}
+
+// Export Students Below Percentage to CSV
+function exportStudentsBelowPercentage() {
+    const percentage = document.getElementById('belowPercentageInput').value;
+    const branchId = document.getElementById('belowPercentageBranchFilter').value;
+    const url = '/staff/accountant/students-below-percentage/export?percentage=' + percentage + '&branch_id=' + branchId;
+    window.location.href = url;
+}
+
+// Block Student
+function blockStudent(studentId) {
+    if (!confirm('Are you sure you want to block this student? They will not be able to access the system.')) {
+        return;
+    }
+
+    fetch('/staff/accountant/block-student', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({
+            student_id: studentId,
+            reason: 'Insufficient fee payment'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            loadStudentsBelowPercentage(); // Reload the table
+        } else {
+            alert('Failed to block student.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to block student.');
+    });
+}
+
+// Unblock Student
+function unblockStudent(studentId) {
+    if (!confirm('Are you sure you want to unblock this student?')) {
+        return;
+    }
+
+    fetch('/staff/accountant/unblock-student', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({
+            student_id: studentId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            loadStudentsBelowPercentage(); // Reload the table
+        } else {
+            alert('Failed to unblock student.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to unblock student.');
+    });
 }
 
 // Payment Percentage Filter Function - defined outside DOMContentLoaded for global access

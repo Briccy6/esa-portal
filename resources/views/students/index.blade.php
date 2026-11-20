@@ -1,7 +1,7 @@
 @extends('staff.partials.sidebar_sec')
 
 @section('content')
-<div class="container-fluid py-4">
+<div class="container-fluid py-4 students-page">
     <!-- Success/Error Messages -->
     @if(session('error'))
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -34,7 +34,7 @@
                 @endif
             </div>
             <div>
-                <span class="badge bg-primary fs-6">
+                <span class="badge fs-6 student-total">
                     <i class="fas fa-database me-1"></i>{{ $students->total() }} Total Students
                 </span>
                 @if(request('nesa') == 'true')
@@ -93,64 +93,109 @@
 </div>
 
 <style>
-    .page-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 1.5rem;
-        border-radius: 15px;
-        box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    .students-page {
+        --student-ink: #1d302b;
+        --student-muted: #687670;
+        --student-line: #e3e9e5;
     }
 
-    .page-title {
-        font-size: clamp(1.5rem, 4vw, 2rem);
+    .students-page .page-header {
+        position: relative;
+        overflow: hidden;
+        padding: clamp(1.35rem, 3vw, 2rem);
+        color: #fff;
+        border: 1px solid rgba(255,255,255,.12);
+        border-radius: 18px;
+        background:
+            radial-gradient(ellipse at 92% 10%, rgba(216,170,84,.2), transparent 34%),
+            linear-gradient(115deg, #173b34 0%, #285c4d 62%, #34705c 100%);
+        box-shadow: 0 14px 34px rgba(25, 57, 48, .14);
+    }
+
+    .students-page .page-title {
+        margin: 0;
+        font-size: clamp(1.55rem, 3vw, 2rem);
         font-weight: 700;
-        margin-bottom: 0;
+        letter-spacing: -.025em;
     }
 
-    .page-subtitle {
-        font-size: clamp(0.9rem, 2vw, 1rem);
-        opacity: 0.9;
+    .students-page .page-title i {
+        color: #e5bd70;
     }
 
-    .search-card {
-        border: none;
-        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
-        border-radius: 15px;
+    .students-page .page-subtitle {
+        margin-top: .45rem;
+        color: rgba(255,255,255,.76);
+        font-size: .96rem;
     }
 
-    .form-control {
-        border-radius: 10px;
-        border: 2px solid #e9ecef;
-        transition: all 0.3s ease;
+    .students-page .student-total {
+        padding: .7rem .95rem;
+        color: #f7f2e7;
+        background: rgba(10, 34, 29, .3);
+        border: 1px solid rgba(238, 210, 151, .35);
+        border-radius: 999px;
+        font-size: .88rem !important;
+        font-weight: 600;
+        white-space: nowrap;
     }
 
-    .form-control:focus {
-        border-color: #667eea;
-        box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.15);
+    .students-page .search-card {
+        border: 1px solid var(--student-line);
+        border-radius: 14px;
+        background: #fff;
+        box-shadow: 0 8px 24px rgba(30, 52, 44, .055);
     }
 
-    #loadingIndicator {
-        font-size: 14px;
+    .students-page .search-card .card-body {
+        padding: 1.15rem;
+    }
+
+    .students-page .form-control {
+        min-height: 44px;
+        border: 1px solid #dce4df;
+        border-radius: 9px;
+        color: var(--student-ink);
+        transition: border-color .18s ease, box-shadow .18s ease;
+    }
+
+    .students-page .form-control::placeholder {
+        color: #89948f;
+    }
+
+    .students-page .form-control:focus {
+        border-color: #568575;
+        box-shadow: 0 0 0 .2rem rgba(36, 87, 75, .12);
+    }
+
+    .students-page #resetBtn {
+        min-height: 44px;
+        border-radius: 9px;
+    }
+
+    .students-page #loadingIndicator {
+        color: var(--student-muted) !important;
+        font-size: .85rem;
     }
 
     /* Responsive adjustments */
     @media (max-width: 768px) {
-        .page-header {
-            padding: 1rem;
+        .students-page .page-header {
+            padding: 1.2rem;
         }
 
-        .page-title {
-            font-size: 1.5rem;
+        .students-page .page-header > div {
+            align-items: flex-start !important;
         }
 
-        .search-card .card-body {
-            padding: 1rem;
+        .students-page .search-card .card-body {
+            padding: .85rem;
         }
     }
 
     @media (max-width: 576px) {
-        .badge {
-            font-size: 0.85rem !important;
+        .students-page .student-total {
+            font-size: .8rem !important;
         }
     }
 </style>
@@ -368,7 +413,7 @@ $(function() {
         $(document).on('click', '#paginationLinks a, .pagination a', function(e) {
             e.preventDefault();
             const url = $(this).attr('href');
-            const page = new URL(url).searchParams.get('page') || 1;
+            const page = new URL(url, window.location.href).searchParams.get('page') || 1;
             performSearch(page);
         });
     }

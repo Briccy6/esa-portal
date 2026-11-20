@@ -517,6 +517,18 @@
                     <i class="fas fa-exclamation-triangle me-2"></i>{{ session('error') }}
                 </div>
             @endif
+
+            {{-- Show blocked message --}}
+            @if(session('blocked'))
+                <div class="alert alert-danger">
+                    <i class="fas fa-ban me-2"></i>
+                    <strong>Account Blocked</strong>
+                    <p class="mb-0 mt-2">Your account has been blocked. Please visit the office for more information.</p>
+                    @if(session('block_reason'))
+                        <p class="mb-0 mt-1"><strong>Reason:</strong> {{ session('block_reason') }}</p>
+                    @endif
+                </div>
+            @endif
             
             {{-- Show auth debug message --}}
             @if(session('auth_debug'))

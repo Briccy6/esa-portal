@@ -40,12 +40,12 @@
         :root {
             --sidebar-width: 280px;
             --sidebar-collapsed: 70px;
-            --primary-blue: #14283f;
-            --secondary-blue: #1d3854;
-            --accent-blue: #e8ef68;
-            --hover-blue: #3a88a8;
-            --text-light: #f2f8fb;
-            --text-muted: #b7c8d4;
+            --primary-blue: #19382d;
+            --secondary-blue: #244b3b;
+            --accent-blue: #e5b968;
+            --hover-blue: #55876a;
+            --text-light: #f4f3e9;
+            --text-muted: #bdc9bd;
             --shadow: 0 2px 15px rgba(0,0,0,0.1);
         }
 
@@ -242,7 +242,7 @@
             left: 0;
             right: 0;
             height: 70px;
-            background: #14283f;
+            background: #19382d;
             box-shadow: var(--shadow);
             z-index: 999;
             display: flex;
@@ -1295,22 +1295,22 @@
         }
     /* ESA Panel 2026 design system */
     :root {
-        --esa-ink: #14283f;
-        --esa-muted: #5b7083;
-        --esa-primary: #317997;
-        --esa-primary-dark: #286680;
-        --esa-accent: #e8ef68;
-        --esa-paper: #f2f7fa;
-        --esa-card: #ffffff;
-        --esa-line: #d9e6ed;
-        --esa-shadow: 0 18px 50px rgba(24, 55, 76, 0.09);
+        --esa-ink: #202b24;
+        --esa-muted: #647168;
+        --esa-primary: #477a57;
+        --esa-primary-dark: #356346;
+        --esa-accent: #e5b968;
+        --esa-paper: #f5f4ed;
+        --esa-card: #fffefa;
+        --esa-line: #dfe3d8;
+        --esa-shadow: 0 18px 50px rgba(38, 55, 40, 0.09);
         --esa-radius: 18px;
     }
 
     body {
         font-family: "DM Sans", sans-serif !important;
         background:
-            radial-gradient(circle at 92% 8%, rgba(110, 190, 218, 0.14), transparent 18rem),
+            radial-gradient(circle at 92% 8%, rgba(117, 153, 111, 0.13), transparent 18rem),
             var(--esa-paper) !important;
         color: var(--esa-ink);
         --bs-body-color: var(--esa-ink);
@@ -1329,13 +1329,13 @@
 
     .top-navbar {
         height: 64px;
-        background: rgba(20, 40, 63, 0.97) !important;
+        background: rgba(25, 56, 45, 0.97) !important;
         border-bottom: 1px solid rgba(255,255,255,0.08);
         backdrop-filter: blur(18px);
     }
 
     .sidebar {
-        background: #14283f !important;
+        background: #19382d !important;
         border-right: 1px solid rgba(255,255,255,0.06);
     }
 
@@ -1349,12 +1349,12 @@
     }
 
     .sidebar-logo {
-        color: #f2f8fb;
+        color: #f4f3e9;
         font-size: 1.55rem;
     }
 
     .nav-header {
-        color: #b7c8d4;
+        color: #bdc9bd;
         font-family: "DM Sans", sans-serif;
         font-size: 0.68rem;
     }
@@ -1363,12 +1363,12 @@
         min-height: 44px;
         margin: 2px 10px;
         border-radius: 10px;
-        color: #d8e7ef;
+        color: #e0e8df;
         transition: background 180ms ease, color 180ms ease, transform 180ms ease;
     }
 
     .nav-link:hover {
-        background: rgba(110, 190, 218, 0.16);
+        background: rgba(143, 183, 142, 0.18);
         color: #ffffff;
         transform: translateX(2px);
     }
@@ -1377,7 +1377,7 @@
         background: var(--esa-accent) !important;
         color: var(--esa-ink) !important;
         border: 0;
-        box-shadow: 0 8px 24px rgba(232, 239, 104, 0.12);
+        box-shadow: 0 8px 24px rgba(229, 185, 104, 0.16);
     }
 
     .main-content {
@@ -1428,14 +1428,14 @@
     }
 
     .btn-success {
-        background: #397875 !important;
-        border-color: #397875 !important;
+        background: #477a57 !important;
+        border-color: #477a57 !important;
         color: #ffffff !important;
     }
 
     .btn-success:hover {
-        background: #2f6562 !important;
-        border-color: #2f6562 !important;
+        background: #356346 !important;
+        border-color: #356346 !important;
     }
 
     .form-control, .form-select {
@@ -1446,7 +1446,7 @@
 
     .form-control:focus, .form-select:focus {
         border-color: var(--esa-primary);
-        box-shadow: 0 0 0 3px rgba(49, 121, 151, 0.16);
+        box-shadow: 0 0 0 3px rgba(71, 122, 87, 0.17);
     }
 
     .table-responsive {
@@ -1454,8 +1454,8 @@
     }
 
     .table thead th {
-        background: #e7f0f5;
-        color: #405d72;
+        background: #e9eee4;
+        color: #46564a;
         border-bottom: 1px solid var(--esa-line);
         white-space: nowrap;
     }
@@ -1465,19 +1465,19 @@
     }
 
     .table tbody tr:hover {
-        background: #f4f9fb;
+        background: #f2f4ec;
     }
 
     [data-theme="dark"] body,
     body[data-theme="dark"] {
-        --esa-ink: #edf6fa;
-        --esa-muted: #b4c7d4;
-        --esa-primary: #76c3dd;
-        --esa-primary-dark: #91d4e9;
-        --esa-accent: #e8ef68;
-        --esa-paper: #101d2c;
-        --esa-card: #192b3e;
-        --esa-line: #30475b;
+        --esa-ink: #f0f3ed;
+        --esa-muted: #bdc9bd;
+        --esa-primary: #9ac69e;
+        --esa-primary-dark: #b3d5b5;
+        --esa-accent: #e5b968;
+        --esa-paper: #121b16;
+        --esa-card: #1b2920;
+        --esa-line: #35463a;
         --bs-body-color: var(--esa-ink);
         --bs-body-bg: var(--esa-paper);
         --bs-emphasis-color: var(--esa-ink);
@@ -1589,7 +1589,7 @@
 
     body[data-theme="dark"] .select2-results__option--highlighted[aria-selected] {
         background-color: var(--esa-primary);
-        color: #14283f;
+        color: #19382d;
     }
 
     body[data-theme="dark"] .swal2-popup {
@@ -1608,12 +1608,12 @@
 
     body[data-theme="dark"] .table thead th,
     body[data-theme="dark"] .table tbody tr:hover {
-        background: #233950;
-        color: #edf6fa;
+        background: #26372b;
+        color: #f0f3ed;
     }
 
     body[data-theme="dark"] .btn-primary {
-        color: #14283f !important;
+        color: #19382d !important;
     }
 
     .theme-toggle {
@@ -1858,6 +1858,31 @@
     </style>
     @yield('styles')
     @stack('styles')
+    <style>
+        .main-content table tbody tr:hover > td,
+        .main-content table tbody tr:hover > th {
+            background-color: #e9eee4 !important;
+            color: #202b24 !important;
+        }
+
+        [data-theme="dark"] .main-content table tbody tr:hover > td,
+        [data-theme="dark"] .main-content table tbody tr:hover > th {
+            background-color: #26372b !important;
+            color: #f0f3ed !important;
+        }
+
+        .esa-school-watermark {
+            z-index: 0;
+        }
+
+        .main-content {
+            position: relative;
+        }
+
+        .main-content-inner {
+            position: relative;
+        }
+    </style>
     @livewireStyles
 </head>
 <body>
@@ -1927,7 +1952,7 @@
             @include('partials.academic-year-switcher', [
                 'switcherClass' => 'me-3',
                 'labelClass' => 'text-white-50',
-                'selectStyle' => 'background: #1d3854; color: #fff; border-color: #5a91aa;',
+                'selectStyle' => 'background: #244b3b; color: #fff; border-color: #759b77;',
             ])
             @endif
 
@@ -2502,7 +2527,7 @@
                             icon: 'error',
                             title: 'Something went wrong',
                             text: @json(session('error')),
-                            confirmButtonColor: '#317997'
+                            confirmButtonColor: '#477a57'
                         });
                     @endif
                     @if($errors->any())
@@ -2510,7 +2535,7 @@
                             icon: 'error',
                             title: 'Please review the form',
                             text: @json($errors->first()),
-                            confirmButtonColor: '#317997'
+                            confirmButtonColor: '#477a57'
                         });
                     @endif
                 }

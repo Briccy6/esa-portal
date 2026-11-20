@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable; // So students can log in if needed
 use Illuminate\Notifications\Notifiable;
+use Carbon\CarbonImmutable;
 use App\Models\Branch;
 use App\Notifications\StudentResetPassword;
 
@@ -36,6 +37,9 @@ class Student extends Authenticatable
         'nesa_registration_date',
         'nesa_remarks',
         'shift',
+        'is_blocked',
+        'block_reason',
+        'blocked_at',
     ];
 
     protected $casts = [
@@ -46,11 +50,50 @@ class Student extends Authenticatable
         'passport_photo' => 'string',
         'nesa_registered' => 'boolean',
         'nesa_registration_date' => 'date',
+        'is_blocked' => 'boolean',
+        'blocked_at' => 'datetime',
     ];
 
     protected $hidden = [
         'password',
     ];
+
+    public static function requiredProfileFields(): array
+    {
+        return [
+            'full_name' => 'Full name',
+            'phone' => 'Telephone number',
+            'email' => 'Email address',
+            'sex' => 'Sex',
+            'passport_photo' => 'Profile photo',
+            'identification_type' => 'Identification type',
+            'id_number' => 'Identification number',
+            'id_photo' => 'Identification photo',
+            'education_level' => 'Education level',
+        ];
+    }
+
+    public function missingProfileFields(): array
+    {
+        $missingFields = [];
+        foreach (static::requiredProfileFields() as $field => $label) {
+            if (blank($this->{$field})) {
+                $missingFields[] = $label;
+            }
+        }
+
+        return $missingFields;
+    }
+
+    public function hasCompletedProfile(): bool
+    {
+        return $this->missingProfileFields() === [];
+    }
+
+    public static function profileCompletionDeadline(): CarbonImmutable
+    {
+        return CarbonImmutable::create(2026, 11, 22, 12, 0, 0, 'Africa/Kigali');
+    }
 
     /**
      * Relationships

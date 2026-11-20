@@ -1,483 +1,413 @@
-{{-- filepath: d:\website\esa\resources\views\students\exams.blade.php --}}
 @extends('students.app')
 
 @section('content')
 <style>
-    body {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        min-height: 100vh;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    .test-skills-page {
+        --test-ink: #172b4d;
+        --test-muted: #63748b;
+        --test-border: #e2e8f0;
+        --test-blue: #2457a7;
+        --test-blue-dark: #1d4688;
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: clamp(1rem, 3vw, 2rem);
+        color: var(--test-ink);
+        font-family: "Aptos", "Segoe UI", sans-serif;
     }
-    
-    .exams-container {
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
-        border-radius: 20px;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        margin: 20px auto;
-        max-width: 1200px;
-        overflow: hidden;
+
+    .test-skills-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        padding: clamp(1.25rem, 3vw, 2rem);
+        border: 1px solid var(--test-border);
+        border-radius: 16px;
+        background: #fff;
     }
-    
-    .exams-header {
-        background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
-        color: white;
-        padding: 30px;
-        text-align: center;
-        position: relative;
-        overflow: hidden;
+
+    .test-skills-heading-icon {
+        display: grid;
+        width: 52px;
+        height: 52px;
+        flex: 0 0 52px;
+        place-items: center;
+        border: 1px solid #d5e2f5;
+        border-radius: 13px;
+        background: #edf4ff;
+        color: var(--test-blue);
+        font-size: 1.35rem;
     }
-    
-    .exams-header::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        left: -50%;
-        width: 200%;
-        height: 200%;
-        background: repeating-linear-gradient(
-            45deg,
-            transparent,
-            transparent 10px,
-            rgba(255, 255, 255, 0.1) 10px,
-            rgba(255, 255, 255, 0.1) 20px
-        );
-        animation: shimmer 20s linear infinite;
-    }
-    
-    @keyframes shimmer {
-        0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-        100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
-    }
-    
-    .exams-title {
-        font-size: 2.5rem;
+
+    .test-skills-eyebrow {
+        margin: 0 0 .35rem;
+        color: var(--test-blue);
+        font-size: .73rem;
         font-weight: 700;
+        letter-spacing: .12em;
+        text-transform: uppercase;
+    }
+
+    .test-skills-title {
         margin: 0;
-        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-        position: relative;
-        z-index: 1;
-    }
-    
-    .exams-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-        gap: 25px;
-        padding: 30px;
-    }
-    
-    .exam-card {
-        background: rgba(255, 255, 255, 0.9);
-        border-radius: 20px;
-        padding: 25px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .exam-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 4px;
-        background: linear-gradient(45deg, #4facfe, #00f2fe);
-    }
-    
-    .exam-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-    }
-    
-    .exam-card-future::before {
-        background: linear-gradient(45deg, #56ab2f, #a8e6cf);
-    }
-    
-    .exam-card-completed::before {
-        background: linear-gradient(45deg, #4facfe, #00f2fe);
-    }
-    
-    .exam-card-past::before {
-        background: linear-gradient(45deg, #bdc3c7, #2c3e50);
-    }
-    
-    .exam-title {
-        font-size: 1.4rem;
+        color: var(--test-ink);
+        font-size: clamp(1.55rem, 3vw, 2rem);
         font-weight: 700;
-        color: #2c3e50;
-        margin-bottom: 10px;
-        line-height: 1.3;
+        letter-spacing: -.035em;
     }
-    
-    .exam-description {
-        color: #7f8c8d;
-        font-size: 1rem;
-        margin-bottom: 20px;
-        line-height: 1.5;
-        min-height: 48px;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
+
+    .test-skills-intro {
+        max-width: 680px;
+        margin: .45rem 0 0;
+        color: var(--test-muted);
+        font-size: .98rem;
+        line-height: 1.6;
     }
-    
-    .exam-details {
+
+    .test-skills-grid {
         display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 15px;
-        margin-bottom: 20px;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+        gap: 1.1rem;
     }
-    
-    .exam-detail {
-        background: rgba(79, 172, 254, 0.1);
-        padding: 12px 15px;
-        border-radius: 12px;
-        text-align: center;
-        border: 1px solid rgba(79, 172, 254, 0.2);
-    }
-    
-    .exam-detail-label {
-        font-size: 0.8rem;
-        color: #7f8c8d;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        font-weight: 600;
-        margin-bottom: 5px;
-    }
-    
-    .exam-detail-value {
-        font-size: 1.1rem;
-        font-weight: 700;
-        color: #2c3e50;
-    }
-    
-    .exam-date-detail {
-        grid-column: 1 / -1;
-        background: rgba(255, 193, 7, 0.1);
-        border-color: rgba(255, 193, 7, 0.3);
-    }
-    
-    .exam-date-detail .exam-detail-value {
-        color: #f39c12;
-        font-size: 1rem;
-    }
-    
-    .exam-actions {
+
+    .test-skill-card {
         display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 10px;
+        min-width: 0;
+        flex-direction: column;
+        padding: 1.35rem;
+        border: 1px solid var(--test-border);
+        border-radius: 14px;
+        background: #fff;
+        box-shadow: 0 3px 12px rgba(23, 43, 77, .045);
+        transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
     }
-    
-    .action-btn {
-        padding: 12px 25px;
-        border-radius: 25px;
-        font-weight: 600;
-        border: none;
-        text-decoration: none;
-        transition: all 0.3s ease;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        font-size: 0.9rem;
-        position: relative;
-        overflow: hidden;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-    }
-    
-    .action-btn::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-        transition: left 0.5s;
-    }
-    
-    .action-btn:hover::before {
-        left: 100%;
-    }
-    
-    .action-btn:hover {
+
+    .test-skill-card:hover {
         transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
-        text-decoration: none;
+        border-color: #c5d5ec;
+        box-shadow: 0 10px 24px rgba(23, 43, 77, .09);
     }
-    
-    .btn-take-exam {
-        background: linear-gradient(45deg, #56ab2f, #a8e6cf);
-        color: white;
-        box-shadow: 0 5px 15px rgba(86, 171, 47, 0.3);
+
+    .test-skill-card-top,
+    .test-skill-meta,
+    .test-skill-meta-item,
+    .test-skill-actions {
+        display: flex;
+        align-items: center;
     }
-    
-    .btn-take-exam:hover {
-        background: linear-gradient(45deg, #4c956c, #a8e6cf);
-        color: white;
+
+    .test-skill-card-top {
+        justify-content: space-between;
+        gap: .75rem;
+        margin-bottom: 1rem;
     }
-    
-    .btn-view-marks {
-        background: linear-gradient(45deg, #4facfe, #00f2fe);
-        color: white;
-        box-shadow: 0 5px 15px rgba(79, 172, 254, 0.3);
-    }
-    
-    .btn-view-marks:hover {
-        background: linear-gradient(45deg, #3498db, #00f2fe);
-        color: white;
-    }
-    
-    .status-badge {
-        padding: 8px 16px;
-        border-radius: 20px;
-        font-weight: 600;
-        font-size: 0.9rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+
+    .test-skill-type {
         display: inline-flex;
         align-items: center;
-        gap: 6px;
+        gap: .45rem;
+        color: var(--test-muted);
+        font-size: .78rem;
+        font-weight: 600;
     }
-    
-    .badge-completed {
-        background: linear-gradient(45deg, #56ab2f, #a8e6cf);
-        color: white;
-        box-shadow: 0 3px 10px rgba(86, 171, 47, 0.3);
+
+    .test-skill-type i {
+        color: var(--test-blue);
+        font-size: 1rem;
     }
-    
-    .badge-not-attempted {
-        background: linear-gradient(45deg, #bdc3c7, #2c3e50);
-        color: white;
-        box-shadow: 0 3px 10px rgba(189, 195, 199, 0.3);
-    }
-    
-    .empty-state {
-        grid-column: 1 / -1;
-        text-align: center;
-        padding: 60px 20px;
-        background: rgba(255, 255, 255, 0.9);
-        border-radius: 20px;
-        border: 2px dashed #e3f2fd;
-    }
-    
-    .empty-state-icon {
-        font-size: 4rem;
-        color: #bdc3c7;
-        margin-bottom: 20px;
-    }
-    
-    .empty-state-title {
-        font-size: 1.5rem;
+
+    .test-skill-status {
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+        padding: .35rem .65rem;
+        border: 1px solid transparent;
+        border-radius: 999px;
+        font-size: .72rem;
         font-weight: 700;
-        color: #2c3e50;
-        margin-bottom: 10px;
+        line-height: 1;
+        white-space: nowrap;
     }
-    
-    .empty-state-text {
-        color: #7f8c8d;
+
+    .test-skill-status-ready {
+        border-color: #b7e4ca;
+        background: #effaf3;
+        color: #17643a;
+    }
+
+    .test-skill-status-completed {
+        border-color: #c7d8f1;
+        background: #f0f5fc;
+        color: #244e86;
+    }
+
+    .test-skill-status-missed {
+        border-color: #e2e8f0;
+        background: #f6f8fa;
+        color: #596579;
+    }
+
+    .test-skill-name {
+        margin: 0;
+        color: var(--test-ink);
+        font-size: 1.2rem;
+        font-weight: 700;
+        line-height: 1.35;
+        overflow-wrap: anywhere;
+    }
+
+    .test-skill-description {
+        min-height: 3.2em;
+        margin: .55rem 0 1.1rem;
+        color: var(--test-muted);
+        font-size: .92rem;
+        line-height: 1.6;
+    }
+
+    .test-skill-meta {
+        flex-wrap: wrap;
+        gap: .65rem 1rem;
+        margin-bottom: 1rem;
+        color: #52657e;
+        font-size: .84rem;
+    }
+
+    .test-skill-meta-item {
+        gap: .45rem;
+    }
+
+    .test-skill-meta-item i {
+        color: var(--test-blue);
+    }
+
+    .test-skill-details {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: .7rem;
+        margin-bottom: 1.2rem;
+    }
+
+    .test-skill-detail {
+        padding: .8rem .9rem;
+        border: 1px solid #e6edf6;
+        border-radius: 10px;
+        background: #f7f9fc;
+    }
+
+    .test-skill-detail-label {
+        display: block;
+        margin-bottom: .25rem;
+        color: var(--test-muted);
+        font-size: .68rem;
+        font-weight: 700;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+    }
+
+    .test-skill-detail-value {
+        color: var(--test-ink);
+        font-size: 1rem;
+        font-weight: 700;
+    }
+
+    .test-skill-actions {
+        justify-content: flex-start;
+        margin-top: auto;
+    }
+
+    .test-skill-button {
+        display: inline-flex;
+        min-height: 42px;
+        align-items: center;
+        justify-content: center;
+        gap: .5rem;
+        padding: .65rem 1rem;
+        border: 1px solid var(--test-blue);
+        border-radius: 8px;
+        background: var(--test-blue);
+        color: #fff;
+        font-size: .88rem;
+        font-weight: 700;
+        text-decoration: none;
+        transition: background-color .18s ease, border-color .18s ease;
+    }
+
+    .test-skill-button:hover,
+    .test-skill-button:focus-visible {
+        border-color: var(--test-blue-dark);
+        background: var(--test-blue-dark);
+        color: #fff;
+        text-decoration: none;
+    }
+
+    .test-skill-empty {
+        grid-column: 1 / -1;
+        padding: clamp(2rem, 6vw, 4rem) 1.5rem;
+        border: 1px dashed #cbd6e4;
+        border-radius: 14px;
+        background: #fff;
+        text-align: center;
+    }
+
+    .test-skill-empty-icon {
+        display: grid;
+        width: 54px;
+        height: 54px;
+        margin: 0 auto 1rem;
+        place-items: center;
+        border-radius: 14px;
+        background: #edf4ff;
+        color: var(--test-blue);
+        font-size: 1.35rem;
+    }
+
+    .test-skill-empty-title {
+        margin: 0 0 .4rem;
+        color: var(--test-ink);
         font-size: 1.1rem;
+        font-weight: 700;
     }
-    
-    .exam-status-indicator {
-        position: absolute;
-        top: 15px;
-        right: 15px;
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.8);
+
+    .test-skill-empty-copy {
+        max-width: 480px;
+        margin: 0 auto;
+        color: var(--test-muted);
+        font-size: .92rem;
+        line-height: 1.6;
     }
-    
-    .status-future {
-        background: #56ab2f;
-        animation: pulse-green 2s infinite;
-    }
-    
-    .status-completed {
-        background: #4facfe;
-    }
-    
-    .status-past {
-        background: #bdc3c7;
-    }
-    
-    @keyframes pulse-green {
-        0% { box-shadow: 0 0 0 0 rgba(86, 171, 47, 0.7); }
-        70% { box-shadow: 0 0 0 10px rgba(86, 171, 47, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(86, 171, 47, 0); }
-    }
-    
-    .exam-meta {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        margin-bottom: 15px;
-        font-size: 0.9rem;
-        color: #7f8c8d;
-    }
-    
-    .exam-meta-item {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-    }
-    
-    @media (max-width: 768px) {
-        .exams-grid {
-            grid-template-columns: 1fr;
-            padding: 20px;
-            gap: 20px;
+
+    @media (max-width: 520px) {
+        .test-skills-page {
+            padding: .8rem;
         }
-        
-        .exams-title {
-            font-size: 2rem;
+
+        .test-skills-header {
+            gap: .75rem;
+            padding: 1rem;
         }
-        
-        .exam-details {
-            grid-template-columns: 1fr;
+
+        .test-skills-heading-icon {
+            width: 44px;
+            height: 44px;
+            flex-basis: 44px;
+            font-size: 1.15rem;
         }
-        
-        .exam-detail {
-            padding: 10px 12px;
+
+        .test-skill-card {
+            padding: 1rem;
         }
-        
-        .action-btn {
-            padding: 10px 20px;
-            font-size: 0.8rem;
+
+        .test-skill-description {
+            min-height: 0;
         }
-    }
-    
-    @media (max-width: 480px) {
-        .exam-card {
-            padding: 20px;
-        }
-        
-        .exam-title {
-            font-size: 1.2rem;
-        }
-        
-        .exams-header {
-            padding: 20px;
+
+        .test-skill-actions,
+        .test-skill-button {
+            width: 100%;
         }
     }
 </style>
 
-<div class="exams-container">
-    <div class="exams-header">
-        <h2 class="exams-title">📚 My Exams</h2>
-    </div>
-    
-    <div class="exams-grid">
+<main class="test-skills-page" aria-labelledby="testSkillsTitle">
+    <header class="test-skills-header">
+        <div class="test-skills-heading-icon" aria-hidden="true">
+            <i class="bi bi-patch-question"></i>
+        </div>
+        <div>
+            <p class="test-skills-eyebrow">Learn · Practice · Improve</p>
+            <h1 class="test-skills-title" id="testSkillsTitle">Test Skills</h1>
+            <p class="test-skills-intro">
+                Use these practice tests to check what you have learned, see where you are confident,
+                and decide what to study next.
+            </p>
+        </div>
+    </header>
+
+    <section class="test-skills-grid" aria-label="Available tests">
         @forelse($exams as $exam)
             @php
-                $today = \Carbon\Carbon::today();
                 $examDate = \Carbon\Carbon::parse($exam->class_date);
                 $hasMark = $exam->marks && $exam->marks->count() > 0;
-                
-                $cardClass = '';
-                $statusClass = '';
-                if ($examDate->isFuture() || $examDate->isToday()) {
-                    $cardClass = 'exam-card-future';
-                    $statusClass = 'status-future';
-                } elseif ($hasMark) {
-                    $cardClass = 'exam-card-completed';
-                    $statusClass = 'status-completed';
+                $isUpcoming = $examDate->isFuture() || $examDate->isToday();
+
+                if ($hasMark) {
+                    $statusLabel = 'Completed';
+                    $statusClass = 'test-skill-status-completed';
+                    $statusIcon = 'bi-check-circle';
+                } elseif ($isUpcoming) {
+                    $statusLabel = 'Ready to try';
+                    $statusClass = 'test-skill-status-ready';
+                    $statusIcon = 'bi-play-circle';
                 } else {
-                    $cardClass = 'exam-card-past';
-                    $statusClass = 'status-past';
+                    $statusLabel = 'Not attempted';
+                    $statusClass = 'test-skill-status-missed';
+                    $statusIcon = 'bi-clock';
                 }
             @endphp
-            
-            <div class="exam-card {{ $cardClass }}">
-                <div class="exam-status-indicator {{ $statusClass }}"></div>
-                
-                <div class="exam-title">{{ $exam->title }}</div>
-                
-                <div class="exam-description">
-                    {{ $exam->description ?? 'No description available for this exam.' }}
+
+            <article class="test-skill-card">
+                <div class="test-skill-card-top">
+                    <span class="test-skill-type"><i class="bi bi-journal-check" aria-hidden="true"></i>Practice test</span>
+                    <span class="test-skill-status {{ $statusClass }}">
+                        <i class="bi {{ $statusIcon }}" aria-hidden="true"></i>
+                        {{ $statusLabel }}
+                    </span>
                 </div>
-                
-                <div class="exam-meta">
-                    <div class="exam-meta-item">
-                        <span>📅</span>
-                        <span>{{ \Carbon\Carbon::parse($exam->class_date)->format('M d, Y') }}</span>
+
+                <h2 class="test-skill-name">{{ $exam->title }}</h2>
+                <p class="test-skill-description">
+                    {{ $exam->description ?: 'Use this test to review your understanding and identify topics to study further.' }}
+                </p>
+
+                <div class="test-skill-meta">
+                    <span class="test-skill-meta-item">
+                        <i class="bi bi-calendar3" aria-hidden="true"></i>
+                        {{ $examDate->format('M d, Y') }}
+                    </span>
+                    <span class="test-skill-meta-item">
+                        <i class="bi bi-clock" aria-hidden="true"></i>
+                        {{ $examDate->format('g:i A') }}
+                    </span>
+                </div>
+
+                <div class="test-skill-details" aria-label="Test information">
+                    <div class="test-skill-detail">
+                        <span class="test-skill-detail-label">Total marks</span>
+                        <span class="test-skill-detail-value">{{ $exam->total_marks }}</span>
                     </div>
-                    <div class="exam-meta-item">
-                        <span>⏱️</span>
-                        <span>{{ \Carbon\Carbon::parse($exam->class_date)->format('h:i A') }}</span>
+                    <div class="test-skill-detail">
+                        <span class="test-skill-detail-label">Weight</span>
+                        <span class="test-skill-detail-value">{{ $exam->exam_weight }}%</span>
                     </div>
                 </div>
-                
-                <div class="exam-details">
-                    <div class="exam-detail">
-                        <div class="exam-detail-label">Total Marks</div>
-                        <div class="exam-detail-value">{{ $exam->total_marks }}</div>
-                    </div>
-                    <div class="exam-detail">
-                        <div class="exam-detail-label">Weight</div>
-                        <div class="exam-detail-value">{{ $exam->exam_weight }}%</div>
-                    </div>
-                    <div class="exam-detail exam-date-detail">
-                        <div class="exam-detail-label">Exam Date</div>
-                        <div class="exam-detail-value">{{ \Carbon\Carbon::parse($exam->class_date)->format('l, F j, Y \a\t g:i A') }}</div>
-                    </div>
-                </div>
-                
-                <div class="exam-actions">
-                    @if($examDate->isFuture() || $examDate->isToday())
+
+                <div class="test-skill-actions">
+                    @if($isUpcoming)
                         @if(!$hasMark)
-                            {{-- DEBUG: Show authentication status --}}
-                            @php
-                                $isAuthenticated = auth('student')->check();
-                                $debugInfo = "Auth: " . ($isAuthenticated ? "YES" : "NO");
-                                if ($isAuthenticated) {
-                                    $student = auth('student')->user();
-                                    $debugInfo .= " | Student: " . $student->full_name . " (ID: " . $student->id . ")";
-                                }
-                                Log::info('TAKE EXAM BUTTON DEBUG - ' . $debugInfo);
-                            @endphp
-                            
-                            <a href="{{ route('student.exams.take', $exam->id) }}" 
-                               class="action-btn btn-take-exam"
-                               onclick="console.log('{{$debugInfo}}'); console.log('Exam ID: {{$exam->id}}, Route: {{route('student.exams.take', $exam->id)}}');">
-                                🚀 Take Exam
+                            <a href="{{ route('student.exams.take', $exam->id) }}" class="test-skill-button">
+                                <i class="bi bi-play-fill" aria-hidden="true"></i>
+                                Start test
                             </a>
-                            
-                            {{-- DEBUG INFO DISPLAY --}}
-                            <div style="font-size: 10px; color: #666; margin-top: 5px;">
-                                Debug: {{$debugInfo}}
-                            </div>
-                        @else
-                            <div class="status-badge badge-completed">
-                                ✅ Completed
-                            </div>
                         @endif
-                    @elseif($examDate->isPast())
-                        @if($hasMark)
-                            <a href="{{ route('student.exams.marks', $exam->id) }}" class="action-btn btn-view-marks">
-                                📊 View Marks
-                            </a>
-                        @else
-                            <div class="status-badge badge-not-attempted">
-                                ⏰ Not Attempted
-                            </div>
-                        @endif
+                    @elseif($hasMark)
+                        <a href="{{ route('student.exams.marks', $exam->id) }}" class="test-skill-button">
+                            <i class="bi bi-bar-chart-line" aria-hidden="true"></i>
+                            Review result
+                        </a>
                     @endif
                 </div>
-            </div>
+            </article>
         @empty
-            <div class="empty-state">
-                <div class="empty-state-icon">📚</div>
-                <div class="empty-state-title">No Exams Available</div>
-                <div class="empty-state-text">You don't have any exams scheduled at the moment. Check back later or contact your instructor.</div>
+            <div class="test-skill-empty">
+                <div class="test-skill-empty-icon" aria-hidden="true">
+                    <i class="bi bi-journal-check"></i>
+                </div>
+                <h2 class="test-skill-empty-title">No tests available yet</h2>
+                <p class="test-skill-empty-copy">
+                    When a practice test is scheduled for you, it will appear here. Check back later and keep working through your study materials.
+                </p>
             </div>
         @endforelse
-    </div>
-</div>
+    </section>
+</main>
 @endsection

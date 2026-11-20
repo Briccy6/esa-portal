@@ -2,26 +2,12 @@
 
 <style>
 .action-btn-icon {
-    width: 36px;
-    height: 36px;
-    padding: 8px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 6px;
-    font-size: 14px;
-    transition: all 0.2s ease;
-    margin: 2px;
-    position: relative;
-}
-
-.action-btn-icon:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-}
-
-.action-btn-icon i {
-    margin: 0;
+    min-height: 40px;
+    padding: .5rem .85rem;
+    border-radius: 9px;
+    font-size: .85rem;
+    font-weight: 600;
+    white-space: nowrap;
 }
 
 .student-photo-avatar {
@@ -72,15 +58,18 @@
 
 <div class="table-card">
     <div class="table-header">
-        <h5 class="table-title mb-0">
-            <i class="fas fa-users me-2"></i>Students List
-        </h5>
+        <div>
+            <h5 class="table-title mb-1">
+                <i class="fas fa-users me-2"></i>Students List
+            </h5>
+            <div class="table-caption">Student records, registration and payment activity</div>
+        </div>
         <div class="table-actions">
-            <button class="btn btn-outline-primary btn-sm me-2" onclick="try { exportToCSV(); } catch(e) { console.error('Export error:', e); alert('Unable to export. Please try again.'); }">
-                <i class="fas fa-download me-1"></i><span class="d-none d-sm-inline">Export</span>
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="try { exportToCSV(); } catch(e) { console.error('Export error:', e); alert('Unable to export. Please try again.'); }">
+                <i class="fas fa-download me-2"></i>Export
             </button>
-            <button class="btn btn-outline-success btn-sm" onclick="try { printTable(); } catch(e) { console.error('Print error:', e); alert('Unable to print. Please try again.'); }">
-                <i class="fas fa-printer me-1"></i><span class="d-none d-sm-inline">Print</span>
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="try { printTable(); } catch(e) { console.error('Print error:', e); alert('Unable to print. Please try again.'); }">
+                <i class="fas fa-print me-2"></i>Print
             </button>
         </div>
     </div>
@@ -217,101 +206,100 @@
 
                         <td class="d-none d-lg-table-cell">
                             @if($student->nesa_registered)
-                                <span class="badge bg-success"><i class="fas fa-check-circle"></i></span>
+                                <span class="badge status-badge status-success"><i class="fas fa-check-circle me-1"></i>Registered</span>
                             @else
-                                <span class="badge bg-secondary"><i class="fas fa-times-circle"></i></span>
+                                <span class="badge status-badge status-neutral"><i class="fas fa-times-circle me-1"></i>Not registered</span>
                             @endif
                         </td>
 
                         <td class="d-none d-lg-table-cell">
                             @if($registrationComplete)
-                                <span class="badge bg-success"><i class="fas fa-check-circle"></i></span>
+                                <span class="badge status-badge status-success"><i class="fas fa-check-circle me-1"></i>Complete</span>
                             @else
-                                <span class="badge bg-warning text-dark"><i class="fas fa-exclamation-triangle"></i></span>
+                                <span class="badge status-badge status-warning"><i class="fas fa-exclamation-triangle me-1"></i>Incomplete</span>
                             @endif
                         </td>
 
                         <td>
-                            {{-- ─────────────────────────────────────────────────────────────
-                                 ACTION BUTTONS
-                                 FIX: Each button uses ONLY data-bs-toggle="modal".
-                                 Tooltips are handled via the title attribute + Bootstrap
-                                 tooltip initialisation below (title-only, no duplicate toggle).
-                            ───────────────────────────────────────────────────────────── --}}
-                            <div class="d-flex gap-1 flex-wrap" role="group">
-
-                                {{-- Edit --}}
-                                <a href="{{ route('staff.students.edit', $student) }}"
-                                   class="btn btn-sm btn-outline-primary action-btn-icon"
-                                   title="Edit Student Info">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-
-                                {{-- Complete Registration (only shown when incomplete) --}}
-                                @if(!$registrationComplete)
-                                    <button type="button"
-                                            class="btn btn-sm btn-outline-warning action-btn-icon"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#completeRegModal{{ $student->id }}"
-                                            title="Complete Registration">
-                                        <i class="fas fa-clipboard-check"></i>
-                                    </button>
-                                @endif
-
-                                {{-- Pay Cash --}}
+                            <div class="dropdown student-actions">
                                 <button type="button"
-                                        class="btn btn-sm btn-primary action-btn-icon pay-cash-btn"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#payModal{{ $student->id }}"
-                                        data-student-id="{{ $student->id }}"
-                                        onclick="openPayModal({{ $student->id }}); return false;"
-                                        title="Record Cash Payment">
-                                    <i class="fas fa-money-bill-wave"></i>
+                                        class="btn btn-outline-secondary dropdown-toggle"
+                                        data-bs-toggle="dropdown"
+                                        data-bs-boundary="viewport"
+                                        aria-expanded="false"
+                                        aria-label="Actions for {{ $student->full_name }}">
+                                    <i class="fas fa-ellipsis me-2"></i>Actions
                                 </button>
+                                <ul class="dropdown-menu dropdown-menu-end student-actions-menu">
+                                    <li>
+                                        <a class="dropdown-item" href="{{ route('staff.students.edit', $student) }}">
+                                            <i class="fas fa-user-pen"></i><span>Edit student information</span>
+                                        </a>
+                                    </li>
 
-                                {{-- Generate ID Card --}}
-                                <button type="button"
-                                        class="btn btn-sm btn-warning action-btn-icon"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#generateCardModal{{ $student->id }}"
-                                        title="Generate Student ID Card">
-                                    <i class="fas fa-id-card"></i>
-                                </button>
+                                    @if(!$registrationComplete)
+                                        <li>
+                                            <button type="button"
+                                                    class="dropdown-item"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#completeRegModal{{ $student->id }}">
+                                                <i class="fas fa-clipboard-check"></i><span>Complete registration</span>
+                                            </button>
+                                        </li>
+                                    @endif
 
-                                {{-- Transcript (modal) --}}
-                                <button type="button"
-                                        class="btn btn-sm btn-info text-white action-btn-icon"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#transcriptModal{{ $student->id }}"
-                                        title="View Payment Transcript">
-                                    <i class="fas fa-file-invoice-dollar"></i>
-                                </button>
+                                    <li>
+                                        <button type="button"
+                                                class="dropdown-item"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#payModal{{ $student->id }}"
+                                                data-student-id="{{ $student->id }}"
+                                                onclick="openPayModal({{ $student->id }}); return false;">
+                                            <i class="fas fa-money-bill-wave"></i><span>Record cash payment</span>
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button type="button"
+                                                class="dropdown-item"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#generateCardModal{{ $student->id }}">
+                                            <i class="fas fa-id-card"></i><span>Generate student ID card</span>
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button type="button"
+                                                class="dropdown-item"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#transcriptModal{{ $student->id }}">
+                                            <i class="fas fa-file-invoice-dollar"></i><span>View payment transcript</span>
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="{{ route('staff.students.transcript.send', $student->id) }}">
+                                            <i class="fas fa-envelope"></i><span>Email transcript to student</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <button type="button"
+                                                class="dropdown-item"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#nesaStatusModal{{ $student->id }}">
+                                            <i class="fas fa-award"></i>
+                                            <span>@if($student->nesa_registered) Update NESA status @else Set NESA status @endif</span>
+                                        </button>
+                                    </li>
 
-                                {{-- Send Email --}}
-                                <a href="{{ route('staff.students.transcript.send', $student->id) }}"
-                                   class="btn btn-sm btn-success action-btn-icon"
-                                   title="Email Transcript to Student">
-                                    <i class="fas fa-envelope"></i>
-                                </a>
-
-                                {{-- NESA Status Management --}}
-                                <button type="button"
-                                        class="btn btn-sm @if($student->nesa_registered) btn-outline-success @else btn-warning @endif action-btn-icon"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#nesaStatusModal{{ $student->id }}"
-                                        title="@if($student->nesa_registered) Update NESA Status @else Set NESA Status @endif">
-                                    <i class="fas @if($student->nesa_registered) fa-check-circle @else fa-exclamation-triangle @endif"></i>
-                                </button>
-
-                                {{-- Delete (admin only) --}}
-                                @if(auth()->user() && auth()->user()->email === 'hirwabran9@gmail.com')
-                                    <button type="button"
-                                            class="btn btn-sm btn-danger action-btn-icon"
-                                            onclick="try { confirmDelete({{ $student->id }}, '{{ addslashes($student->full_name) }}'); } catch(e) { console.error('Delete error:', e); alert('Unable to delete student. Please try again.'); }"
-                                            title="Delete Student">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                @endif
+                                    @if(auth()->user() && auth()->user()->email === 'hirwabran9@gmail.com')
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <button type="button"
+                                                    class="dropdown-item text-danger"
+                                                    onclick="try { confirmDelete({{ $student->id }}, '{{ addslashes($student->full_name) }}'); } catch(e) { console.error('Delete error:', e); alert('Unable to delete student. Please try again.'); }">
+                                                <i class="fas fa-trash"></i><span>Delete student</span>
+                                            </button>
+                                        </li>
+                                    @endif
+                                </ul>
                             </div>
                         </td>
                     </tr>
@@ -950,11 +938,14 @@
 
     @if($students->hasPages())
     <div class="table-footer">
-        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center p-3 gap-3">
-            <div class="text-muted">
-                Showing {{ $students->firstItem() }} to {{ $students->lastItem() }} of {{ $students->total() }} students
+        <div class="table-pagination">
+            <div class="pagination-summary" aria-live="polite">
+                Showing <strong>{{ $students->firstItem() }}</strong>–<strong>{{ $students->lastItem() }}</strong>
+                of <strong>{{ number_format($students->total()) }}</strong> students
             </div>
-            <div id="paginationLinks">{{ $students->links() }}</div>
+            <div id="paginationLinks">
+                {{ $students->appends(request()->except('page'))->links('pagination::bootstrap-5') }}
+            </div>
         </div>
     </div>
     @endif
@@ -963,24 +954,247 @@
 <style>
 .required::after { content: ' *'; color: #dc3545; }
 
+.table-card {
+    overflow: visible;
+    border: 1px solid #e3e9e5;
+    border-radius: 15px;
+    background: #fff;
+    box-shadow: 0 10px 28px rgba(30, 52, 44, .06);
+}
+
+.table-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.15rem 1.4rem;
+    border-bottom: 1px solid #e8ede9;
+}
+
+.table-title {
+    color: #20352e;
+    font-size: 1.02rem;
+    font-weight: 700;
+}
+
+.table-title i { color: #39705c; }
+
+.table-caption {
+    color: #78847e;
+    font-size: .82rem;
+}
+
+.table-actions {
+    display: flex;
+    gap: .55rem;
+}
+
+.table-actions .btn {
+    padding: .48rem .75rem;
+    border-color: #d7e0da;
+    border-radius: 8px;
+    color: #40574d;
+    font-weight: 600;
+}
+
+.table-actions .btn:hover {
+    border-color: #9ab4a6;
+    color: #1d493d;
+    background: #f3f7f4;
+}
+
+.table-card .table-responsive { overflow: visible; }
+
+.table-card .table {
+    margin-bottom: 0;
+    color: #34443d;
+    font-size: .9rem;
+}
+
+.table-card .table > :not(caption) > * > * {
+    padding: .9rem .8rem;
+    border-bottom-color: #edf0ee;
+}
+
+.table-header-custom th {
+    padding-top: .75rem !important;
+    padding-bottom: .75rem !important;
+    color: #6b7972;
+    background: #f7f9f7;
+    border-bottom: 1px solid #e3e9e5 !important;
+    font-size: .73rem;
+    font-weight: 700;
+    letter-spacing: .055em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.student-row { transition: background-color .16s ease; }
+.student-row:hover { background: #f8faf8; }
+
 .student-info    { display: flex; align-items: center; gap: 12px; }
 
 .student-avatar  {
     width: 50px; height: 50px; border-radius: 50%; overflow: hidden;
     flex-shrink: 0; border: 2px solid #e9ecef;
     display: flex; align-items: center; justify-content: center;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #e8f0eb;
 }
 
 .avatar-placeholder {
     width: 100%; height: 100%;
     display: flex; align-items: center; justify-content: center;
-    font-weight: 600; color: white; font-size: 18px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    font-weight: 700; color: #285748; font-size: 18px;
+    background: #e8f0eb;
 }
 
 .student-details { flex: 1; min-width: 0; }
-.student-name    { font-weight: 600; color: #2c3e50; }
+.student-name    { font-weight: 650; color: #23372f; }
+
+.status-badge {
+    padding: .42rem .58rem;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-size: .72rem;
+    font-weight: 600;
+}
+
+.status-success { color: #286047; background: #eaf4ee; border-color: #d4e9dc; }
+.status-neutral { color: #66736c; background: #f0f3f1; border-color: #e1e7e3; }
+.status-warning { color: #825d19; background: #fff5dc; border-color: #f2e3b9; }
+
+.student-actions .dropdown-toggle {
+    min-height: 38px;
+    padding: .42rem .7rem;
+    border-color: #d5dfd9;
+    border-radius: 8px;
+    color: #355347;
+    background: #fff;
+    font-size: .82rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.student-actions .dropdown-toggle:hover,
+.student-actions .dropdown-toggle:focus {
+    border-color: #8eac9d;
+    color: #1f4b3e;
+    background: #f4f8f5;
+    box-shadow: 0 0 0 .18rem rgba(36, 87, 75, .1);
+}
+
+.student-actions-menu {
+    min-width: 245px;
+    padding: .4rem;
+    border: 1px solid #e1e8e3;
+    border-radius: 11px;
+    box-shadow: 0 14px 34px rgba(26, 47, 39, .16);
+    z-index: 1090;
+}
+
+.student-actions-menu .dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    min-height: 39px;
+    padding: .55rem .65rem;
+    border-radius: 7px;
+    color: #34463d;
+    font-size: .84rem;
+    text-align: left;
+}
+
+.student-actions-menu .dropdown-item:hover,
+.student-actions-menu .dropdown-item:focus {
+    color: #1f5141;
+    background: #eef5f0;
+}
+
+.student-actions-menu .dropdown-item i {
+    width: 17px;
+    color: #648274;
+    text-align: center;
+}
+
+.student-actions-menu .dropdown-item.text-danger i { color: inherit; }
+.student-actions-menu .dropdown-divider { margin: .35rem 0; }
+
+.table-footer {
+    padding: .9rem 1.25rem;
+    border-top: 1px solid #e8ede9;
+    background: #fbfcfb;
+}
+
+.table-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.pagination-summary {
+    color: #738078;
+    font-size: .84rem;
+    white-space: nowrap;
+}
+
+.pagination-summary strong { color: #34483e; font-weight: 700; }
+
+#paginationLinks .pagination {
+    gap: .3rem;
+    margin: 0;
+}
+
+#paginationLinks .page-link {
+    min-width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: .35rem .65rem;
+    border: 1px solid #dfe7e2;
+    border-radius: 8px !important;
+    color: #4a6256;
+    background: #fff;
+    font-size: .84rem;
+    box-shadow: none;
+}
+
+#paginationLinks .page-link:hover {
+    border-color: #9db8a8;
+    color: #1d503f;
+    background: #f0f6f2;
+}
+
+#paginationLinks .page-item.active .page-link {
+    border-color: #285c4d;
+    color: #fff;
+    background: #285c4d;
+}
+
+#paginationLinks .page-item.disabled .page-link {
+    color: #a4aea8;
+    background: #f7f9f7;
+}
+
+#paginationLinks .page-link:focus {
+    box-shadow: 0 0 0 .18rem rgba(36, 87, 75, .14);
+}
+
+@media (max-width: 768px) {
+    .table-header { padding: 1rem; }
+    .table-pagination { flex-direction: column; align-items: flex-start; }
+    #paginationLinks { max-width: 100%; }
+    #paginationLinks .pagination { flex-wrap: wrap; }
+}
+
+@media (max-width: 480px) {
+    .table-header { align-items: flex-start; }
+    .table-caption { max-width: 220px; }
+    .table-actions { flex-direction: column; }
+    .table-actions .btn { padding: .4rem .55rem; }
+    .table-card .table > :not(caption) > * > * { padding: .7rem .55rem; }
+}
 </style>
 
 <script>

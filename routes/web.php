@@ -720,6 +720,10 @@ Route::prefix('staff')->name('staff.')->group(function () {
             Route::post('/dashboard/filter-payment-percentage', [AccountantDashboardController::class, 'filterByPaymentPercentage'])->name('dashboard.filter-payment-percentage');
             Route::get('/no-payment-students', [AccountantDashboardController::class, 'noPaymentStudents'])->name('no-payment-students');
             Route::get('/no-payment-students/export', [AccountantDashboardController::class, 'exportNoPaymentStudents'])->name('no-payment-students.export');
+            Route::get('/students-below-percentage', [AccountantDashboardController::class, 'studentsBelowPaymentPercentage'])->name('students-below-percentage');
+            Route::get('/students-below-percentage/export', [AccountantDashboardController::class, 'exportStudentsBelowPercentage'])->name('students-below-percentage.export');
+            Route::post('/block-student', [AccountantDashboardController::class, 'blockStudent'])->name('block-student');
+            Route::post('/unblock-student', [AccountantDashboardController::class, 'unblockStudent'])->name('unblock-student');
             Route::get('/chart-data', [AccountantDashboardController::class, 'chartData'])->name('chart-data');
             Route::get('/kpi-data', [AccountantDashboardController::class, 'kpiData'])->name('kpi-data');
             Route::get('/expenses', [ExpenseController::class, 'index'])->name('expenses.index');

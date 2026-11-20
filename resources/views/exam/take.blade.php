@@ -5,6 +5,9 @@
 @push('styles')
 <!-- KaTeX CSS for mathematical expressions -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600;6..72,700&display=swap" rel="stylesheet">
 <!-- KaTeX JS loaded SYNCHRONOUSLY (no defer) so it is available on DOMContentLoaded -->
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
 <style>
@@ -289,6 +292,129 @@
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to   { opacity: 1; transform: translateY(0); }
+}
+
+/* A quieter, paper-and-ink workspace for focused assessment. */
+:root {
+    --exam-ink: #1d2925;
+    --exam-muted: #65726c;
+    --exam-green: #1c4b3d;
+    --exam-green-dark: #14392f;
+    --exam-green-soft: #e7f0e9;
+    --exam-paper: #fffefa;
+    --exam-line: #e5e3d8;
+    --exam-amber: #d89038;
+}
+
+.exam-container {
+    max-width: 1240px;
+    padding: 34px 24px 56px;
+    color: var(--exam-ink);
+    font-family: 'DM Sans', sans-serif;
+}
+
+.exam-header {
+    padding: 34px 38px 28px;
+    border: 1px solid rgba(28, 75, 61, .12);
+    border-radius: 18px;
+    background:
+        radial-gradient(circle at 94% 8%, rgba(216, 144, 56, .22), transparent 16rem),
+        linear-gradient(120deg, #173e33 0%, #245543 72%, #2f634f 100%);
+    box-shadow: 0 16px 38px rgba(28, 56, 44, .16);
+}
+.exam-header::before {
+    width: 280px;
+    height: 280px;
+    border: 1px solid rgba(255,255,255,.12);
+    background: transparent;
+}
+.exam-title {
+    font-family: 'Newsreader', Georgia, serif;
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 600;
+    letter-spacing: -.04em;
+}
+.exam-subtitle { max-width: 660px; font-size: 1rem; line-height: 1.7; }
+.exam-stats { gap: 0; }
+.stat-item { min-width: 104px; padding: 0 22px; border-left: 1px solid rgba(255,255,255,.2); }
+.stat-item:first-child { padding-left: 0; border-left: 0; }
+.stat-value { font-family: 'Newsreader', Georgia, serif; font-size: 1.7rem; font-weight: 600; }
+.stat-label { font-size: .68rem; letter-spacing: .12em; }
+.progress-bar { height: 5px; background: rgba(255,255,255,.2); }
+.progress-fill { background: #e5b469; }
+.exam-content { grid-template-columns: minmax(0, 1fr) 302px; gap: 20px; }
+.question-card, .sidebar-card {
+    border: 1px solid rgba(28, 75, 61, .09);
+    border-radius: 16px;
+    background: var(--exam-paper);
+    box-shadow: 0 12px 32px rgba(34, 49, 41, .07);
+}
+.question-card { padding: clamp(24px, 3.2vw, 38px); }
+.question-header { margin-bottom: 25px; padding-bottom: 18px; border-bottom: 1px solid var(--exam-line); }
+.question-number {
+    padding: 8px 13px;
+    border-radius: 7px;
+    color: var(--exam-green);
+    background: var(--exam-green-soft);
+    font-size: .75rem;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+.marks-badge { border-radius: 99px; color: #855a23; background: #f8f0df; font-size: .75rem; }
+.question-text { color: var(--exam-ink); font-family: 'Newsreader', Georgia, serif; font-size: 1.45rem; line-height: 1.55; }
+.answer-options { gap: 10px; }
+.answer-option {
+    padding: 17px 18px;
+    border: 1px solid var(--exam-line);
+    border-radius: 11px;
+    background: #fff;
+}
+.answer-option:hover { border-color: #9ab6a5; background: #f7faf6; box-shadow: 0 5px 16px rgba(28,75,61,.07); }
+.answer-option.selected { border-color: var(--exam-green); background: #f1f6f1; box-shadow: inset 0 0 0 1px var(--exam-green); }
+.option-indicator { border-color: #bcc7bd; }
+.answer-option.selected .option-indicator { border-color: var(--exam-green); background: var(--exam-green); }
+.option-text { color: #34443b; font-family: 'DM Sans', sans-serif; font-size: 1rem; line-height: 1.6; }
+.option-letter { color: var(--exam-green); background: #edf2eb; }
+.answer-option.selected .option-letter { color: #fff; background: var(--exam-green); }
+.navigation { margin-top: 28px; padding-top: 21px; border-color: var(--exam-line); }
+.nav-btn { border-radius: 9px; }
+.nav-btn.primary { background: var(--exam-green); }
+.nav-btn.primary:hover { background: var(--exam-green-dark); }
+.nav-btn.secondary { color: var(--exam-green); background: #fff; border-color: var(--exam-line); }
+.nav-btn.secondary:hover { color: var(--exam-green-dark); background: var(--exam-green-soft); }
+.nav-btn.success { background: #a7692c; }
+.nav-btn.success:hover { background: #8d5522; }
+.sidebar { gap: 14px; }
+.sidebar-card { padding: 21px; }
+.sidebar-title { color: var(--exam-ink); font-size: .9rem; }
+.timer-display { color: var(--exam-green); font-family: 'DM Sans', sans-serif; font-size: 2rem; font-variant-numeric: tabular-nums; }
+.question-nav { gap: 7px; }
+.question-btn { border-color: var(--exam-line); border-radius: 7px; }
+.question-btn.current { color: #fff; background: var(--exam-green); border-color: var(--exam-green); }
+.question-btn.answered { color: #fff; background: #4c8569; border-color: #4c8569; }
+.question-btn.flagged { background: var(--exam-amber); border-color: var(--exam-amber); }
+.legend-box.current { background: var(--exam-green); border-color: var(--exam-green); }
+.legend-box.answered { background: #4c8569; border-color: #4c8569; }
+.legend-box.flagged { background: var(--exam-amber); border-color: var(--exam-amber); }
+.info-icon { color: var(--exam-green); }
+.modal-backdrop { background: rgba(20, 35, 29, .56); backdrop-filter: blur(4px); }
+.modal-box { border: 1px solid var(--exam-line); border-radius: 16px; background: var(--exam-paper); }
+
+@media (max-width: 1024px) {
+    .exam-content { grid-template-columns: 1fr; }
+    .sidebar { order: -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .question-nav { grid-template-columns: repeat(8, 1fr); }
+}
+@media (max-width: 640px) {
+    .exam-container { padding: 22px 16px 38px; }
+    .exam-header { padding: 25px 22px 20px; border-radius: 14px; }
+    .exam-stats { justify-content: flex-start; }
+    .stat-item { min-width: 0; padding: 0 14px; }
+    .stat-value { font-size: 1.4rem; }
+    .sidebar { grid-template-columns: 1fr; }
+    .question-card { padding: 21px 18px; }
+    .question-text { font-size: 1.25rem; }
+    .question-nav { grid-template-columns: repeat(5, 1fr); }
 }
 </style>
 @endpush

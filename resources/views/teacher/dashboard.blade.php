@@ -18,6 +18,8 @@
     }
 
     .dashboard-wrapper {
+        width: 100%;
+        min-width: 0;
         padding: 1.5rem;
         max-width: 1400px;
         margin: 0 auto;
@@ -42,11 +44,14 @@
 
     .dashboard-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-        gap: 1rem;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        align-items: stretch;
+        gap: 1.25rem;
+        width: 100%;
     }
 
     .dashboard-card {
+        min-width: 0;
         background: var(--bg-card);
         border: 1px solid var(--border-color);
         border-radius: var(--radius-lg);
@@ -93,6 +98,9 @@
     }
 
     .card-action {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.625rem;
         margin-top: auto;
     }
 
@@ -110,6 +118,9 @@
         cursor: pointer;
         transition: all 0.2s ease;
         min-height: 40px;
+        max-width: 100%;
+        white-space: normal;
+        text-align: center;
     }
 
     .btn-card-primary {
@@ -142,6 +153,18 @@
         margin: 0.5rem 0;
     }
 
+    @media (min-width: 1500px) {
+        .dashboard-grid {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 1199.98px) {
+        .dashboard-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
     /* Responsive adjustments */
     @media (max-width: 768px) {
         .welcome-title {
@@ -150,11 +173,6 @@
 
         .welcome-subtitle {
             font-size: 0.875rem;
-        }
-
-        .dashboard-grid {
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 0.75rem;
         }
 
         .dashboard-card {
@@ -177,7 +195,7 @@
         }
     }
 
-    @media (max-width: 480px) {
+    @media (max-width: 575.98px) {
         .dashboard-grid {
             grid-template-columns: 1fr;
         }
