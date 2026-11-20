@@ -5,22 +5,22 @@
 @push('styles')
 <style>
 :root {
-    --primary: #4f46e5;
-    --primary-dark: #4338ca;
-    --secondary: #64748b;
-    --success: #10b981;
-    --warning: #f59e0b;
-    --danger: #ef4444;
-    --info: #3b82f6;
-    --purple: #8b5cf6;
-    --pink: #ec4899;
-    --teal: #14b8a6;
-    --orange: #f97316;
-    --bg-light: #f8fafc;
+    --primary: #317997;
+    --primary-dark: #286680;
+    --secondary: #5b7083;
+    --success: #397875;
+    --warning: #dce66a;
+    --danger: #b85e58;
+    --info: #63a9c5;
+    --purple: #526b87;
+    --pink: #71869b;
+    --teal: #43869a;
+    --orange: #849caf;
+    --bg-light: #f2f7fa;
     --bg-white: #ffffff;
-    --text-dark: #1e293b;
-    --text-muted: #64748b;
-    --border: #e2e8f0;
+    --text-dark: #14283f;
+    --text-muted: #5b7083;
+    --border: #d9e6ed;
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
@@ -54,10 +54,10 @@ body {
 .dashboard-header {
     margin-bottom: 2.5rem;
     padding: 2rem;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(112deg, #14283f 0%, #1d3854 72%, #317997 100%);
     border-radius: var(--radius-xl);
     color: white;
-    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 10px 30px rgba(20, 40, 63, 0.2);
     position: relative;
     overflow: hidden;
 }
@@ -139,15 +139,15 @@ body {
     opacity: 1;
 }
 
-.stat-card.primary::before { --stat-color: var(--primary); background: linear-gradient(90deg, #4f46e5, #7c3aed); }
-.stat-card.success::before { --stat-color: var(--success); background: linear-gradient(90deg, #10b981, #059669); }
-.stat-card.warning::before { --stat-color: var(--warning); background: linear-gradient(90deg, #f59e0b, #d97706); }
-.stat-card.danger::before { --stat-color: var(--danger); background: linear-gradient(90deg, #ef4444, #dc2626); }
-.stat-card.info::before { --stat-color: var(--info); background: linear-gradient(90deg, #3b82f6, #2563eb); }
-.stat-card.purple::before { --stat-color: var(--purple); background: linear-gradient(90deg, #8b5cf6, #7c3aed); }
-.stat-card.pink::before { --stat-color: var(--pink); background: linear-gradient(90deg, #ec4899, #db2777); }
-.stat-card.teal::before { --stat-color: var(--teal); background: linear-gradient(90deg, #14b8a6, #0d9488); }
-.stat-card.orange::before { --stat-color: var(--orange); background: linear-gradient(90deg, #f97316, #ea580c); }
+.stat-card.primary::before { --stat-color: var(--primary); background: linear-gradient(90deg, #317997, #63a9c5); }
+.stat-card.success::before { --stat-color: var(--success); background: linear-gradient(90deg, #397875, #70b1c2); }
+.stat-card.warning::before { --stat-color: var(--warning); background: linear-gradient(90deg, #dce66a, #eff4a1); }
+.stat-card.danger::before { --stat-color: var(--danger); background: linear-gradient(90deg, #b85e58, #d17b6e); }
+.stat-card.info::before { --stat-color: var(--info); background: linear-gradient(90deg, #63a9c5, #91cbdd); }
+.stat-card.purple::before { --stat-color: var(--purple); background: linear-gradient(90deg, #526b87, #7189a2); }
+.stat-card.pink::before { --stat-color: var(--pink); background: linear-gradient(90deg, #71869b, #94a8b8); }
+.stat-card.teal::before { --stat-color: var(--teal); background: linear-gradient(90deg, #43869a, #70b1c2); }
+.stat-card.orange::before { --stat-color: var(--orange); background: linear-gradient(90deg, #849caf, #a7bac8); }
 
 .stat-card-header {
     display: flex;
@@ -164,7 +164,7 @@ body {
     align-items: center;
     justify-content: center;
     font-size: 1.75rem;
-    background: var(--stat-bg, rgba(79, 70, 229, 0.15));
+    background: var(--stat-bg, rgba(52, 127, 157, 0.14));
     color: var(--stat-color, var(--primary));
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     transition: all 0.3s ease;
@@ -174,15 +174,15 @@ body {
     transform: scale(1.1) rotate(5deg);
 }
 
-.stat-card.primary .stat-card-icon { --stat-bg: linear-gradient(135deg, rgba(79, 70, 229, 0.15), rgba(124, 58, 237, 0.15)); --stat-color: var(--primary); }
-.stat-card.success .stat-card-icon { --stat-bg: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.15)); --stat-color: var(--success); }
-.stat-card.warning .stat-card-icon { --stat-bg: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.15)); --stat-color: var(--warning); }
-.stat-card.danger .stat-card-icon { --stat-bg: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.15)); --stat-color: var(--danger); }
-.stat-card.info .stat-card-icon { --stat-bg: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(37, 99, 235, 0.15)); --stat-color: var(--info); }
-.stat-card.purple .stat-card-icon { --stat-bg: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(124, 58, 237, 0.15)); --stat-color: var(--purple); }
-.stat-card.pink .stat-card-icon { --stat-bg: linear-gradient(135deg, rgba(236, 72, 153, 0.15), rgba(219, 39, 119, 0.15)); --stat-color: var(--pink); }
-.stat-card.teal .stat-card-icon { --stat-bg: linear-gradient(135deg, rgba(20, 184, 166, 0.15), rgba(13, 148, 136, 0.15)); --stat-color: var(--teal); }
-.stat-card.orange .stat-card-icon { --stat-bg: linear-gradient(135deg, rgba(249, 115, 22, 0.15), rgba(234, 88, 12, 0.15)); --stat-color: var(--orange); }
+.stat-card.primary .stat-card-icon { --stat-bg: linear-gradient(135deg, rgba(52, 127, 157, 0.15), rgba(99, 169, 197, 0.15)); --stat-color: var(--primary); }
+.stat-card.success .stat-card-icon { --stat-bg: linear-gradient(135deg, rgba(67, 134, 154, 0.15), rgba(112, 177, 194, 0.15)); --stat-color: var(--success); }
+.stat-card.warning .stat-card-icon { --stat-bg: linear-gradient(135deg, rgba(220, 230, 106, 0.25), rgba(239, 244, 161, 0.2)); --stat-color: #334550; }
+.stat-card.danger .stat-card-icon { --stat-bg: linear-gradient(135deg, rgba(184, 94, 88, 0.15), rgba(209, 123, 110, 0.15)); --stat-color: var(--danger); }
+.stat-card.info .stat-card-icon { --stat-bg: linear-gradient(135deg, rgba(99, 169, 197, 0.15), rgba(145, 203, 221, 0.15)); --stat-color: var(--info); }
+.stat-card.purple .stat-card-icon { --stat-bg: linear-gradient(135deg, rgba(82, 107, 135, 0.15), rgba(113, 137, 162, 0.15)); --stat-color: var(--purple); }
+.stat-card.pink .stat-card-icon { --stat-bg: linear-gradient(135deg, rgba(113, 134, 155, 0.15), rgba(148, 168, 184, 0.15)); --stat-color: var(--pink); }
+.stat-card.teal .stat-card-icon { --stat-bg: linear-gradient(135deg, rgba(67, 134, 154, 0.15), rgba(112, 177, 194, 0.15)); --stat-color: var(--teal); }
+.stat-card.orange .stat-card-icon { --stat-bg: linear-gradient(135deg, rgba(132, 156, 175, 0.15), rgba(167, 186, 200, 0.15)); --stat-color: var(--orange); }
 
 .stat-card-label {
     font-size: 0.8rem;
@@ -344,11 +344,11 @@ body {
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
 }
 
-.quick-action-card.primary::before { --action-color: var(--primary); background: linear-gradient(90deg, #4f46e5, #7c3aed); }
-.quick-action-card.success::before { --action-color: var(--success); background: linear-gradient(90deg, #10b981, #059669); }
-.quick-action-card.warning::before { --action-color: var(--warning); background: linear-gradient(90deg, #f59e0b, #d97706); }
-.quick-action-card.danger::before { --action-color: var(--danger); background: linear-gradient(90deg, #ef4444, #dc2626); }
-.quick-action-card.info::before { --action-color: var(--info); background: linear-gradient(90deg, #3b82f6, #2563eb); }
+.quick-action-card.primary::before { --action-color: var(--primary); background: linear-gradient(90deg, #317997, #63a9c5); }
+.quick-action-card.success::before { --action-color: var(--success); background: linear-gradient(90deg, #397875, #70b1c2); }
+.quick-action-card.warning::before { --action-color: var(--warning); background: linear-gradient(90deg, #dce66a, #eff4a1); }
+.quick-action-card.danger::before { --action-color: var(--danger); background: linear-gradient(90deg, #b85e58, #d17b6e); }
+.quick-action-card.info::before { --action-color: var(--info); background: linear-gradient(90deg, #63a9c5, #91cbdd); }
 
 .quick-action-icon {
     width: 48px;
@@ -358,7 +358,7 @@ body {
     align-items: center;
     justify-content: center;
     font-size: 1.5rem;
-    background: var(--action-bg, rgba(79, 70, 229, 0.1));
+    background: var(--action-bg, rgba(52, 127, 157, 0.1));
     color: var(--action-color, var(--primary));
     margin-bottom: 1rem;
     transition: all 0.3s ease;
@@ -368,11 +368,11 @@ body {
     transform: scale(1.1) rotate(5deg);
 }
 
-.quick-action-card.primary .quick-action-icon { --action-bg: linear-gradient(135deg, rgba(79, 70, 229, 0.15), rgba(124, 58, 237, 0.15)); --action-color: var(--primary); }
-.quick-action-card.success .quick-action-icon { --action-bg: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.15)); --action-color: var(--success); }
-.quick-action-card.warning .quick-action-icon { --action-bg: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.15)); --action-color: var(--warning); }
-.quick-action-card.danger .quick-action-icon { --action-bg: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.15)); --action-color: var(--danger); }
-.quick-action-card.info .quick-action-icon { --action-bg: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(37, 99, 235, 0.15)); --action-color: var(--info); }
+.quick-action-card.primary .quick-action-icon { --action-bg: linear-gradient(135deg, rgba(52, 127, 157, 0.15), rgba(99, 169, 197, 0.15)); --action-color: var(--primary); }
+.quick-action-card.success .quick-action-icon { --action-bg: linear-gradient(135deg, rgba(67, 134, 154, 0.15), rgba(112, 177, 194, 0.15)); --action-color: var(--success); }
+.quick-action-card.warning .quick-action-icon { --action-bg: linear-gradient(135deg, rgba(220, 230, 106, 0.25), rgba(239, 244, 161, 0.2)); --action-color: #334550; }
+.quick-action-card.danger .quick-action-icon { --action-bg: linear-gradient(135deg, rgba(184, 94, 88, 0.15), rgba(209, 123, 110, 0.15)); --action-color: var(--danger); }
+.quick-action-card.info .quick-action-icon { --action-bg: linear-gradient(135deg, rgba(99, 169, 197, 0.15), rgba(145, 203, 221, 0.15)); --action-color: var(--info); }
 
 .quick-action-title {
     font-size: 1rem;
@@ -428,7 +428,7 @@ body {
 }
 
 .recent-activity-item:hover {
-    background: rgba(79, 70, 229, 0.05);
+    background: rgba(52, 127, 157, 0.06);
 }
 
 .recent-activity-icon {
@@ -511,7 +511,7 @@ body {
 }
 
 .btn-success:hover {
-    background: #059669;
+    background: #286680;
 }
 
 .btn-outline {
@@ -732,11 +732,11 @@ body {
     flex-direction: column;
     justify-content: flex-end;
     background:
-        linear-gradient(110deg, rgba(23,33,28,0.96) 0%, rgba(23,33,28,0.82) 64%, rgba(22,107,77,0.55) 100%),
-        radial-gradient(circle at 86% 20%, #d7e95b 0, transparent 32%);
-    border: 1px solid rgba(255,255,255,0.08);
+        radial-gradient(circle at 88% 18%, rgba(105, 190, 218, .24), transparent 19rem),
+        linear-gradient(112deg, #14283f 0%, #1d3854 70%, #317997 100%);
+    border: 1px solid rgba(255,255,255,0.1);
     border-radius: 22px;
-    box-shadow: 0 24px 64px rgba(23,33,28,0.14);
+    box-shadow: 0 24px 64px rgba(20,40,63,0.18);
 }
 
 .dashboard-header::before {
@@ -744,7 +744,7 @@ body {
     height: 220px;
     top: -90px;
     right: 30px;
-    border: 1px solid rgba(215,233,91,0.28);
+    border: 1px solid rgba(232,239,104,0.32);
     border-radius: 50%;
     background: transparent;
 }
@@ -758,7 +758,7 @@ body {
 
 .dashboard-header p {
     max-width: 620px;
-    color: #ccd7cf;
+    color: #d3e5ee;
 }
 
 .stats-grid {
@@ -804,29 +804,147 @@ body {
     border-radius: 16px;
 }
 
+.stat-card.primary::before,
+.quick-action-card.primary::before { background: linear-gradient(90deg, #317997, #63a9c5); }
+.stat-card.success::before,
+.quick-action-card.success::before { background: linear-gradient(90deg, #397875, #70b1c2); }
+.stat-card.warning::before,
+.quick-action-card.warning::before { background: linear-gradient(90deg, #dce66a, #eff4a1); }
+.stat-card.danger::before,
+.quick-action-card.danger::before { background: linear-gradient(90deg, #b85e58, #d17b6e); }
+.stat-card.info::before,
+.quick-action-card.info::before { background: linear-gradient(90deg, #63a9c5, #91cbdd); }
+.stat-card.purple::before { background: linear-gradient(90deg, #526b87, #7189a2); }
+.stat-card.pink::before { background: linear-gradient(90deg, #71869b, #94a8b8); }
+.stat-card.teal::before { background: linear-gradient(90deg, #43869a, #70b1c2); }
+.stat-card.orange::before { background: linear-gradient(90deg, #849caf, #a7bac8); }
+
+.stat-card.primary .stat-card-icon { background: #e5f1f6; color: #286680; }
+.stat-card.success .stat-card-icon { background: #e5f0f3; color: #397383; }
+.stat-card.warning .stat-card-icon { background: #f4f6d8; color: #334550; }
+.stat-card.danger .stat-card-icon { background: #f6e9e7; color: #b85e58; }
+.stat-card.info .stat-card-icon { background: #e5f1f6; color: #317997; }
+.stat-card.purple .stat-card-icon { background: #e9eef3; color: #526b87; }
+.stat-card.pink .stat-card-icon { background: #ebf0f4; color: #71869b; }
+.stat-card.teal .stat-card-icon { background: #e5f0f3; color: #43869a; }
+.stat-card.orange .stat-card-icon { background: #eaf0f4; color: #71899c; }
+.quick-action-card.primary .quick-action-icon { background: #e5f1f6; color: #286680; }
+.quick-action-card.success .quick-action-icon { background: #e5f0f3; color: #397383; }
+.quick-action-card.warning .quick-action-icon { background: #f4f6d8; color: #334550; }
+.quick-action-card.danger .quick-action-icon { background: #f6e9e7; color: #b85e58; }
+.quick-action-card.info .quick-action-icon { background: #e5f1f6; color: #317997; }
+
+.stat-card,
+.chart-card,
+.recent-activity,
+.quick-action-card {
+    color: var(--text-dark);
+    overflow: hidden;
+}
+
+.stat-card-label {
+    color: #536c80;
+}
+
+.stat-card-subtext {
+    color: #5b7083;
+}
+
+.dashboard-header > div {
+    max-width: 100%;
+}
+
 @media (max-width: 1100px) {
     .stats-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
+    .dashboard-container {
+        min-width: 0;
+        overflow-x: clip;
+    }
+
     .dashboard-header {
-        min-height: 156px;
+        min-height: 150px;
+        margin-bottom: 18px;
         padding: 20px;
+        border-radius: 16px;
     }
 
     .stats-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 12px;
     }
 
     .stat-card {
-        min-height: 150px;
+        min-height: 142px;
+        padding: 18px;
     }
 
     .charts-grid {
         grid-template-columns: minmax(0, 1fr);
     }
+
+    .chart-card {
+        min-width: 0;
+        padding: 18px;
+    }
+
+    .chart-card-body {
+        min-width: 0;
+    }
+
+    .dashboard-header h1 {
+        font-size: clamp(2rem, 9vw, 2.8rem);
+    }
+
+    .dashboard-header p {
+        font-size: .88rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .dashboard-header {
+        min-height: 138px;
+        padding: 18px;
+    }
+
+    .stat-card {
+        min-height: 132px;
+        padding: 16px;
+    }
+
+    .stat-card-value {
+        font-size: clamp(1.55rem, 8vw, 1.9rem);
+    }
+
+    .chart-card {
+        padding: 16px;
+    }
+}
+
+body[data-theme="dark"] {
+    --text-dark: #edf6fa;
+    --text-muted: #b4c7d4;
+    --bg-light: #101d2c;
+    --bg-white: #192b3e;
+    --border: #30475b;
+    color: var(--text-dark);
+}
+
+body[data-theme="dark"] .stat-card,
+body[data-theme="dark"] .chart-card,
+body[data-theme="dark"] .recent-activity,
+body[data-theme="dark"] .quick-action-card {
+    background: #192b3e;
+    color: var(--text-dark);
+}
+
+body[data-theme="dark"] .stat-card-label,
+body[data-theme="dark"] .stat-card-subtext {
+    color: #b4c7d4;
 }
 </style>
 @endpush
@@ -841,7 +959,7 @@ body {
     <!-- Dashboard Header -->
     <div class="dashboard-header">
         <div style="position:relative;z-index:1;">
-            <div style="margin-bottom:.75rem;color:#d7e95b;font-size:.72rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;">
+            <div style="margin-bottom:.75rem;color:#e8ef68;font-size:.72rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;">
                 Institution overview
             </div>
             <h1>Analytics Dashboard</h1>
@@ -1326,11 +1444,28 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Chart defaults for professional look
-    Chart.defaults.font.family = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
-    Chart.defaults.color = '#64748b';
+    Chart.defaults.font.family = "'DM Sans', sans-serif";
+    let isDarkTheme = document.body.dataset.theme === 'dark' || localStorage.getItem('esa-theme') === 'dark';
+    Chart.defaults.color = isDarkTheme ? '#b4c7d4' : '#5b7083';
+    let chartGridColor = isDarkTheme ? 'rgba(255, 255, 255, 0.12)' : 'rgba(20, 40, 63, 0.12)';
+    const chartColors = ['#317997', '#397875', '#63a9c5', '#dce66a', '#526b87', '#71869b'];
 
-    // Color schemes
-    const primaryColors = ['#4f46e5', '#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+    document.addEventListener('esa-theme-changed', function (event) {
+        isDarkTheme = event.detail.theme === 'dark';
+        Chart.defaults.color = isDarkTheme ? '#b4c7d4' : '#5b7083';
+        chartGridColor = isDarkTheme ? 'rgba(255, 255, 255, 0.12)' : 'rgba(20, 40, 63, 0.12)';
+
+        Object.values(Chart.instances).forEach(function (chart) {
+            chart.options.color = Chart.defaults.color;
+            if (chart.options.scales) {
+                Object.values(chart.options.scales).forEach(function (scale) {
+                    if (scale.ticks) scale.ticks.color = Chart.defaults.color;
+                    if (scale.grid) scale.grid.color = chartGridColor;
+                });
+            }
+            chart.update('none');
+        });
+    });
 
     // Gradient helper
     function createGradient(ctx, color1, color2) {
@@ -1349,7 +1484,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 labels: ['Revenue', 'Expenses', 'Profit'],
                 datasets: [{
                     data: [{{ $totalRevenue }}, {{ $totalExpenses }}, {{ $netProfit }}],
-                    backgroundColor: ['#4f46e5', '#ef4444', '#10b981'],
+                    backgroundColor: ['#317997', '#b85e58', '#dce66a'],
                     borderWidth: 0,
                     borderRadius: 8
                 }]
@@ -1385,7 +1520,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 datasets: [{
                     label: 'Total Students',
                     data: studentsByBranchData.length > 0 ? studentsByBranchData.map(item => item.total) : [0],
-                    backgroundColor: createGradient(studentsByBranchCtx, '#667eea', '#764ba2'),
+                    backgroundColor: createGradient(studentsByBranchCtx, '#317997', '#91cbdd'),
                     borderWidth: 0,
                     borderRadius: 8
                 }]
@@ -1404,7 +1539,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 },
                 scales: {
-                    y: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.05)' } },
+                    y: { beginAtZero: true, grid: { color: chartGridColor } },
                     x: { grid: { display: false } }
                 }
             }
@@ -1417,7 +1552,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const feeData = {!! json_encode($feePaymentData) !!};
         const feeLabels = Object.keys(feeData).map(key => key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()));
         const feeAmounts = Object.values(feeData);
-        const feeColors = ['#4f46e5', '#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+        const feeColors = chartColors;
 
         new Chart(feesCtx, {
             type: 'bar',
@@ -1445,7 +1580,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 },
                 scales: {
-                    y: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.05)' } },
+                    y: { beginAtZero: true, grid: { color: chartGridColor } },
                     x: { grid: { display: false } }
                 }
             }
@@ -1471,7 +1606,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const courseLabels = Array.from(allCourses);
         const branchNames = Object.keys(branchGroups);
-        const colors = ['#4f46e5', '#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+        const colors = chartColors;
 
         const datasets = branchNames.map((branchName, index) => {
             const data = courseLabels.map(courseName => branchGroups[branchName][courseName] || 0);
@@ -1488,7 +1623,7 @@ document.addEventListener('DOMContentLoaded', function () {
             type: 'bar',
             data: {
                 labels: courseLabels.length > 0 ? courseLabels : ['No Data'],
-                datasets: datasets.length > 0 ? datasets : [{ label: 'No Data', data: [0], backgroundColor: '#e2e8f0' }]
+                datasets: datasets.length > 0 ? datasets : [{ label: 'No Data', data: [0], backgroundColor: '#d9e6ed' }]
             },
             options: {
                 responsive: true,
@@ -1504,7 +1639,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 },
                 scales: {
-                    y: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.05)' } },
+                    y: { beginAtZero: true, grid: { color: chartGridColor } },
                     x: { grid: { display: false } }
                 }
             }
@@ -1522,7 +1657,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 datasets: [{
                     label: 'Expenses (Rwf)',
                     data: expensesByBranchData.length > 0 ? expensesByBranchData.map(item => parseFloat(item.total)) : [0],
-                    backgroundColor: createGradient(expBranchCtx, '#ef4444', '#dc2626'),
+                    backgroundColor: createGradient(expBranchCtx, '#b85e58', '#d17b6e'),
                     borderWidth: 0,
                     borderRadius: 8
                 }]
@@ -1541,7 +1676,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 },
                 scales: {
-                    y: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.05)' } },
+                    y: { beginAtZero: true, grid: { color: chartGridColor } },
                     x: { grid: { display: false } }
                 }
             }
@@ -1557,7 +1692,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 labels: ['Students', 'Teachers', 'Staff'],
                 datasets: [{
                     data: [{{ $totalStudents ?? 0 }}, {{ $totalTeachers ?? 0 }}, {{ $totalStaff ?? 0 }}],
-                    backgroundColor: ['#4f46e5', '#10b981', '#3b82f6'],
+                    backgroundColor: ['#317997', '#526b87', '#dce66a'],
                     borderWidth: 0,
                     borderRadius: 8
                 }]

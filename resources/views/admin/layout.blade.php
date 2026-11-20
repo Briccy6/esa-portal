@@ -1,6 +1,9 @@
 @php
     $systemName = \Illuminate\Support\Facades\Cache::get('esa_system_name', 'ESA-Panel');
-    $systemLogo = \App\Helpers\LogoHelper::getSystemLogo();
+    $systemLogo = \App\Helpers\LogoHelper::getSystemLogo() ?: 'images/esa.jpg';
+    $systemLogoUrl = $systemLogo === 'images/esa.jpg'
+        ? asset($systemLogo)
+        : asset('storage/' . $systemLogo);
 @endphp
 <!DOCTYPE html>
 <html lang="en">
@@ -37,12 +40,12 @@
         :root {
             --sidebar-width: 280px;
             --sidebar-collapsed: 70px;
-            --primary-blue: #2c3e50;
-            --secondary-blue: #34495e;
-            --accent-blue: #3498db;
-            --hover-blue: #4a6741;
-            --text-light: #ecf0f1;
-            --text-muted: #bdc3c7;
+            --primary-blue: #14283f;
+            --secondary-blue: #1d3854;
+            --accent-blue: #e8ef68;
+            --hover-blue: #3a88a8;
+            --text-light: #f2f8fb;
+            --text-muted: #b7c8d4;
             --shadow: 0 2px 15px rgba(0,0,0,0.1);
         }
 
@@ -239,7 +242,7 @@
             left: 0;
             right: 0;
             height: 70px;
-            background: #2c3e50;
+            background: #14283f;
             box-shadow: var(--shadow);
             z-index: 999;
             display: flex;
@@ -1292,24 +1295,31 @@
         }
     /* ESA Panel 2026 design system */
     :root {
-        --esa-ink: #17211c;
-        --esa-muted: #6d7771;
-        --esa-green: #166b4d;
-        --esa-green-dark: #0e5038;
-        --esa-lime: #d7e95b;
-        --esa-paper: #f3f5ef;
+        --esa-ink: #14283f;
+        --esa-muted: #5b7083;
+        --esa-primary: #317997;
+        --esa-primary-dark: #286680;
+        --esa-accent: #e8ef68;
+        --esa-paper: #f2f7fa;
         --esa-card: #ffffff;
-        --esa-line: #dde3da;
-        --esa-shadow: 0 18px 50px rgba(27, 49, 38, 0.08);
+        --esa-line: #d9e6ed;
+        --esa-shadow: 0 18px 50px rgba(24, 55, 76, 0.09);
         --esa-radius: 18px;
     }
 
     body {
         font-family: "DM Sans", sans-serif !important;
         background:
-            radial-gradient(circle at 92% 8%, rgba(215, 233, 91, 0.16), transparent 18rem),
+            radial-gradient(circle at 92% 8%, rgba(110, 190, 218, 0.14), transparent 18rem),
             var(--esa-paper) !important;
         color: var(--esa-ink);
+        --bs-body-color: var(--esa-ink);
+        --bs-body-bg: var(--esa-paper);
+        --bs-emphasis-color: var(--esa-ink);
+        --bs-secondary-color: var(--esa-muted);
+        --bs-border-color: var(--esa-line);
+        --bs-table-color: var(--esa-ink);
+        color-scheme: light;
     }
 
     h1, h2, h3, .sidebar-logo {
@@ -1319,13 +1329,13 @@
 
     .top-navbar {
         height: 64px;
-        background: rgba(23, 33, 28, 0.96) !important;
+        background: rgba(20, 40, 63, 0.97) !important;
         border-bottom: 1px solid rgba(255,255,255,0.08);
         backdrop-filter: blur(18px);
     }
 
     .sidebar {
-        background: #17211c !important;
+        background: #14283f !important;
         border-right: 1px solid rgba(255,255,255,0.06);
     }
 
@@ -1339,12 +1349,12 @@
     }
 
     .sidebar-logo {
-        color: #f7f9f3;
+        color: #f2f8fb;
         font-size: 1.55rem;
     }
 
     .nav-header {
-        color: #9aaa9f;
+        color: #b7c8d4;
         font-family: "DM Sans", sans-serif;
         font-size: 0.68rem;
     }
@@ -1353,26 +1363,41 @@
         min-height: 44px;
         margin: 2px 10px;
         border-radius: 10px;
-        color: #cdd7d0;
+        color: #d8e7ef;
         transition: background 180ms ease, color 180ms ease, transform 180ms ease;
     }
 
     .nav-link:hover {
-        background: rgba(215, 233, 91, 0.10);
-        color: #eff7df;
+        background: rgba(110, 190, 218, 0.16);
+        color: #ffffff;
         transform: translateX(2px);
     }
 
     .nav-link.active {
-        background: var(--esa-lime) !important;
+        background: var(--esa-accent) !important;
         color: var(--esa-ink) !important;
         border: 0;
-        box-shadow: 0 8px 24px rgba(215, 233, 91, 0.12);
+        box-shadow: 0 8px 24px rgba(232, 239, 104, 0.12);
     }
 
     .main-content {
         background: transparent !important;
         padding-top: 64px;
+        width: auto;
+    }
+
+    .esa-school-watermark {
+        position: fixed;
+        z-index: 900;
+        top: 56%;
+        left: 58%;
+        width: min(38vw, 460px);
+        max-height: 58vh;
+        object-fit: contain;
+        transform: translate(-50%, -50%);
+        opacity: 0.045;
+        pointer-events: none;
+        user-select: none;
     }
 
     .main-content-inner {
@@ -1393,13 +1418,24 @@
     }
 
     .btn-primary {
-        background: var(--esa-green) !important;
-        border-color: var(--esa-green) !important;
+        background: var(--esa-primary) !important;
+        border-color: var(--esa-primary) !important;
     }
 
     .btn-primary:hover {
-        background: var(--esa-green-dark) !important;
-        border-color: var(--esa-green-dark) !important;
+        background: var(--esa-primary-dark) !important;
+        border-color: var(--esa-primary-dark) !important;
+    }
+
+    .btn-success {
+        background: #397875 !important;
+        border-color: #397875 !important;
+        color: #ffffff !important;
+    }
+
+    .btn-success:hover {
+        background: #2f6562 !important;
+        border-color: #2f6562 !important;
     }
 
     .form-control, .form-select {
@@ -1409,8 +1445,8 @@
     }
 
     .form-control:focus, .form-select:focus {
-        border-color: var(--esa-green);
-        box-shadow: 0 0 0 3px rgba(22, 107, 77, 0.12);
+        border-color: var(--esa-primary);
+        box-shadow: 0 0 0 3px rgba(49, 121, 151, 0.16);
     }
 
     .table-responsive {
@@ -1418,8 +1454,8 @@
     }
 
     .table thead th {
-        background: #edf1e9;
-        color: #566159;
+        background: #e7f0f5;
+        color: #405d72;
         border-bottom: 1px solid var(--esa-line);
         white-space: nowrap;
     }
@@ -1429,31 +1465,155 @@
     }
 
     .table tbody tr:hover {
-        background: #f7f9f4;
+        background: #f4f9fb;
     }
 
     [data-theme="dark"] body,
     body[data-theme="dark"] {
-        --esa-ink: #edf3ed;
-        --esa-muted: #adb8b0;
-        --esa-paper: #111815;
-        --esa-card: #19211d;
-        --esa-line: #303b35;
+        --esa-ink: #edf6fa;
+        --esa-muted: #b4c7d4;
+        --esa-primary: #76c3dd;
+        --esa-primary-dark: #91d4e9;
+        --esa-accent: #e8ef68;
+        --esa-paper: #101d2c;
+        --esa-card: #192b3e;
+        --esa-line: #30475b;
+        --bs-body-color: var(--esa-ink);
+        --bs-body-bg: var(--esa-paper);
+        --bs-emphasis-color: var(--esa-ink);
+        --bs-secondary-color: var(--esa-muted);
+        --bs-border-color: var(--esa-line);
+        --bs-table-color: var(--esa-ink);
         background: var(--esa-paper) !important;
+        color: var(--esa-ink) !important;
+        color-scheme: dark;
+    }
+
+    .main-content,
+    .main-content h1, .main-content h2, .main-content h3,
+    .main-content h4, .main-content h5, .main-content h6,
+    .main-content p, .main-content label, .main-content .form-label,
+    .main-content .text-dark, .main-content .table,
+    .main-content .table td {
+        color: var(--esa-ink);
+    }
+
+    .main-content .text-dark {
+        color: var(--esa-ink) !important;
+    }
+
+    .main-content .text-black,
+    .main-content .link-dark {
+        color: var(--esa-ink) !important;
+    }
+
+    .main-content a:not(.btn):not(.nav-link):not(.dropdown-item-custom) {
+        color: var(--esa-primary);
+    }
+
+    .main-content .text-muted,
+    .main-content .form-text {
+        color: var(--esa-muted) !important;
+    }
+
+    .main-content .form-control,
+    .main-content .form-select {
+        color: var(--esa-ink);
+        background-color: var(--esa-card);
+    }
+
+    .main-content .form-control::placeholder {
+        color: var(--esa-muted);
+        opacity: 1;
+    }
+
+    .dropdown-menu-custom {
+        background: var(--esa-card);
+        border: 1px solid var(--esa-line);
+    }
+
+    .dropdown-item-custom {
+        color: var(--esa-ink);
+    }
+
+    .dropdown-item-custom:hover {
+        background: var(--esa-paper);
+        color: var(--esa-primary);
+    }
+
+    .select2-container--default .select2-selection--single {
+        background-color: var(--esa-card);
+        border-color: var(--esa-line);
+    }
+
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        color: var(--esa-ink);
+    }
+
+    .main-content .table {
+        --bs-table-color: var(--esa-ink);
+    }
+
+    body[data-theme="dark"] .esa-school-watermark {
+        opacity: 0.07;
+        mix-blend-mode: screen;
     }
 
     body[data-theme="dark"] .card,
     body[data-theme="dark"] .chart-card,
     body[data-theme="dark"] .stat-card,
     body[data-theme="dark"] .table-card,
-    body[data-theme="dark"] .quick-action-card {
+    body[data-theme="dark"] .quick-action-card,
+    body[data-theme="dark"] .recent-activity {
         background: var(--esa-card) !important;
+    }
+
+    body[data-theme="dark"] .main-content .bg-white,
+    body[data-theme="dark"] .main-content .table-light,
+    body[data-theme="dark"] .main-content .list-group-item,
+    body[data-theme="dark"] .main-content .dropdown-menu,
+    body[data-theme="dark"] .main-content .modal-content {
+        background-color: var(--esa-card) !important;
+        border-color: var(--esa-line) !important;
+        color: var(--esa-ink) !important;
+    }
+
+    body[data-theme="dark"] .select2-dropdown {
+        background-color: var(--esa-card);
+        border-color: var(--esa-line);
+    }
+
+    body[data-theme="dark"] .select2-results__option {
+        color: var(--esa-ink);
+    }
+
+    body[data-theme="dark"] .select2-results__option--highlighted[aria-selected] {
+        background-color: var(--esa-primary);
+        color: #14283f;
+    }
+
+    body[data-theme="dark"] .swal2-popup {
+        background: var(--esa-card);
+        color: var(--esa-ink);
+    }
+
+    body[data-theme="dark"] .swal2-title,
+    body[data-theme="dark"] .swal2-html-container {
+        color: var(--esa-ink);
+    }
+
+    body[data-theme="dark"] .dropdown-item-custom {
+        color: var(--esa-ink);
     }
 
     body[data-theme="dark"] .table thead th,
     body[data-theme="dark"] .table tbody tr:hover {
-        background: #202a25;
-        color: #edf3ed;
+        background: #233950;
+        color: #edf6fa;
+    }
+
+    body[data-theme="dark"] .btn-primary {
+        color: #14283f !important;
     }
 
     .theme-toggle {
@@ -1465,32 +1625,244 @@
         color: white;
     }
 
+    .mobile-menu-toggle {
+        display: none;
+    }
+
+    .mobile-sidebar-close {
+        display: none;
+    }
+
+    body.mobile-nav-open {
+        overflow: hidden;
+    }
+
     @media (max-width: 768px) {
+        .esa-school-watermark {
+            left: 52%;
+            width: min(68vw, 340px);
+            opacity: 0.035;
+        }
+
         .main-content-inner {
             padding: 18px 14px 32px;
         }
 
         .top-navbar {
-            height: 60px;
-            padding-left: 1rem !important;
+            height: 64px;
+            gap: 8px;
+            padding: 0 12px !important;
+            padding-left: 12px !important;
         }
 
         .main-content {
             margin-left: 0 !important;
-            padding-top: 60px;
+            margin-right: 0 !important;
+            margin-top: 0 !important;
+            padding: 76px 12px 24px !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            left: 0 !important;
+        }
+
+        .sidebar.collapsed ~ .main-content,
+        .sidebar:not(.collapsed) ~ .main-content,
+        body.sidebar-collapsed .main-content {
+            margin-left: 0 !important;
+        }
+
+        .main-content-inner {
+            width: 100%;
+            max-width: none;
+            padding: 0;
+        }
+
+        .mobile-menu-toggle {
+            display: inline-grid !important;
+            position: static !important;
+            flex: 0 0 40px;
+            width: 40px;
+            height: 40px;
+            place-items: center;
+            padding: 0 !important;
+            border: 1px solid rgba(255,255,255,.15);
+            border-radius: 12px;
+            background: #244761 !important;
+            color: #fff;
+            box-shadow: none !important;
+        }
+
+        .navbar-left {
+            min-width: 0;
+            gap: 10px;
+        }
+
+        .navbar-left h5 {
+            overflow: hidden;
+            margin: 0;
+            font-size: .95rem;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .navbar-right {
+            min-width: 0;
+            gap: 6px;
+        }
+
+        .navbar-right .academic-year-switcher {
+            min-width: 0;
+            margin-right: 0 !important;
+        }
+
+        .navbar-right .academic-year-switcher .form-select {
+            width: clamp(94px, 28vw, 126px);
+            min-width: 0 !important;
+            padding: 6px 22px 6px 8px;
+            overflow: hidden;
+            font-size: .72rem;
+            text-overflow: ellipsis;
+        }
+
+        .navbar-right .theme-toggle {
+            width: 36px;
+            height: 36px;
+            flex: 0 0 36px;
+        }
+
+        .profile-btn {
+            gap: 0;
+            padding: 4px !important;
+        }
+
+        .profile-btn > span,
+        .profile-btn > .fa-chevron-down {
+            display: none;
+        }
+
+        .sidebar {
+            top: 0;
+            bottom: 0;
+            width: min(300px, calc(100vw - 56px)) !important;
+            max-width: 300px;
+            transform: translateX(-105%) !important;
+            box-shadow: 18px 0 48px rgba(8, 18, 30, .28);
+        }
+
+        .sidebar.collapsed {
+            width: min(300px, calc(100vw - 56px)) !important;
+        }
+
+        .sidebar.mobile-open,
+        .sidebar.collapsed.mobile-open {
+            width: min(300px, calc(100vw - 56px)) !important;
+            transform: translateX(0) !important;
+        }
+
+        .sidebar.mobile-open .sidebar-logo,
+        .sidebar.mobile-open.collapsed .sidebar-logo,
+        .sidebar.mobile-open .nav-header,
+        .sidebar.mobile-open.collapsed .nav-header,
+        .sidebar.mobile-open .nav-text,
+        .sidebar.mobile-open.collapsed .nav-text {
+            opacity: 1 !important;
+        }
+
+        .sidebar.mobile-open .nav-link {
+            justify-content: flex-start;
+            padding: 10px 16px !important;
+        }
+
+        .sidebar.mobile-open .nav-header {
+            padding: 10px 16px !important;
+        }
+
+        .sidebar.mobile-open .sidebar-header {
+            justify-content: space-between;
+            padding: 12px 16px;
+        }
+
+        .mobile-sidebar-close {
+            display: inline-grid !important;
+            width: 38px;
+            height: 38px;
+            place-items: center;
+            border: 1px solid rgba(255,255,255,.16);
+            border-radius: 10px;
+            background: rgba(255,255,255,.08);
+            color: #fff;
+        }
+
+        .sidebar-menu {
+            height: calc(100vh - 64px);
+            padding-bottom: 24px;
+        }
+
+        .mobile-overlay {
+            z-index: 1039;
+            background: rgba(13, 23, 36, .52);
+            backdrop-filter: blur(2px);
+        }
+
+        .mobile-overlay.active {
+            display: block !important;
+        }
+
+        .dashboard-container {
+            width: 100%;
+            max-width: 100%;
+            padding: 0 !important;
+            overflow-x: clip;
+        }
+
+        .stats-grid,
+        .charts-grid,
+        .quick-actions {
+            width: 100%;
+            min-width: 0;
+            grid-template-columns: minmax(0, 1fr) !important;
+        }
+
+        .stat-card,
+        .chart-card,
+        .quick-action-card,
+        .recent-activity {
+            width: 100%;
+            min-width: 0;
+        }
+
+        .stat-card-value {
+            overflow-wrap: anywhere;
+            font-size: clamp(1.6rem, 8vw, 2rem);
+        }
+
+        .chart-card-body {
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        .navbar-right .current-time {
+            display: none;
+        }
+    }
+
+    @media (max-width: 380px) {
+        .navbar-left h5 {
+            display: none;
+        }
+
+        .navbar-right .theme-toggle {
+            display: none;
         }
     }
     </style>
     @yield('styles')
+    @stack('styles')
     @livewireStyles
 </head>
 <body>
  @include('partials.storage-warning')
-    <!-- Mobile Menu Toggle -->
-    <button class="mobile-menu-toggle" id="mobileMenuToggle">
-        <i class="fas fa-bars"></i>
-    </button>
-    
+    <img class="esa-school-watermark" src="{{ $systemLogoUrl }}" alt="" aria-hidden="true">
     <!-- Mobile Overlay -->
     <div class="mobile-overlay" id="mobileOverlay"></div>
 
@@ -1541,6 +1913,9 @@
         </div>
     @endif
         <div class="navbar-left">
+        <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Open navigation menu" aria-controls="sidebar" aria-expanded="false">
+            <i class="fas fa-bars"></i>
+        </button>
             <button class="menu-toggle d-none d-md-block" id="menuToggle">
                 <i class="fas fa-bars"></i>
             </button>
@@ -1552,7 +1927,7 @@
             @include('partials.academic-year-switcher', [
                 'switcherClass' => 'me-3',
                 'labelClass' => 'text-white-50',
-                'selectStyle' => 'background: #34495e; color: #fff; border-color: #4a6741;',
+                'selectStyle' => 'background: #1d3854; color: #fff; border-color: #5a91aa;',
             ])
             @endif
 
@@ -1606,6 +1981,9 @@
             <h4 class="sidebar-logo">
                 {{ $systemName }}
             </h4>
+            <button type="button" class="mobile-sidebar-close" id="mobileSidebarClose" aria-label="Close navigation menu">
+                <i class="fas fa-times"></i>
+            </button>
         </div>
 
         <div class="sidebar-menu">
@@ -1954,27 +2332,40 @@
             const mobileMenuToggle = document.getElementById('mobileMenuToggle');
             const sidebar = document.querySelector('.sidebar');
             const mobileOverlay = document.getElementById('mobileOverlay');
+            const mobileSidebarClose = document.getElementById('mobileSidebarClose');
 
             if (mobileMenuToggle && sidebar && mobileOverlay) {
-                // Toggle mobile menu
+                function setMobileMenuOpen(isOpen) {
+                    sidebar.classList.toggle('mobile-open', isOpen);
+                    sidebar.classList.toggle('show', isOpen);
+                    mobileOverlay.classList.toggle('active', isOpen);
+                    document.body.classList.toggle('mobile-nav-open', isOpen);
+                    mobileMenuToggle.setAttribute('aria-expanded', String(isOpen));
+                }
+
                 mobileMenuToggle.addEventListener('click', function() {
-                    sidebar.classList.toggle('mobile-open');
-                    sidebar.classList.toggle('show');
-                    mobileOverlay.classList.toggle('active');
+                    setMobileMenuOpen(!sidebar.classList.contains('mobile-open'));
                 });
 
-                // Close mobile menu when clicking overlay
                 mobileOverlay.addEventListener('click', function() {
-                    sidebar.classList.remove('mobile-open');
-                    sidebar.classList.remove('show');
-                    mobileOverlay.classList.remove('active');
+                    setMobileMenuOpen(false);
                 });
 
-                // Close mobile menu on window resize if above tablet size
+                if (mobileSidebarClose) {
+                    mobileSidebarClose.addEventListener('click', function() {
+                        setMobileMenuOpen(false);
+                    });
+                }
+
+                document.addEventListener('keydown', function(event) {
+                    if (event.key === 'Escape' && sidebar.classList.contains('mobile-open')) {
+                        setMobileMenuOpen(false);
+                    }
+                });
+
                 window.addEventListener('resize', function() {
                     if (window.innerWidth > 768) {
-                        sidebar.classList.remove('mobile-open');
-                        mobileOverlay.classList.remove('active');
+                        setMobileMenuOpen(false);
                     }
                 });
             }
@@ -2081,12 +2472,17 @@
                         document.body.dataset.theme = 'dark';
                         button.innerHTML = '<i class="fas fa-sun"></i>';
                     }
+                    button.setAttribute('aria-pressed', String(savedTheme === 'dark'));
 
                     button.addEventListener('click', function () {
                         const dark = document.body.dataset.theme !== 'dark';
                         document.body.dataset.theme = dark ? 'dark' : 'light';
                         localStorage.setItem('esa-theme', dark ? 'dark' : 'light');
                         button.innerHTML = dark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+                        button.setAttribute('aria-pressed', String(dark));
+                        document.dispatchEvent(new CustomEvent('esa-theme-changed', {
+                            detail: { theme: dark ? 'dark' : 'light' }
+                        }));
                     });
                 }
 
@@ -2106,7 +2502,7 @@
                             icon: 'error',
                             title: 'Something went wrong',
                             text: @json(session('error')),
-                            confirmButtonColor: '#166b4d'
+                            confirmButtonColor: '#317997'
                         });
                     @endif
                     @if($errors->any())
@@ -2114,7 +2510,7 @@
                             icon: 'error',
                             title: 'Please review the form',
                             text: @json($errors->first()),
-                            confirmButtonColor: '#166b4d'
+                            confirmButtonColor: '#317997'
                         });
                     @endif
                 }
