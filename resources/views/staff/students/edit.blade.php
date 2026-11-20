@@ -1,39 +1,5 @@
 @extends('staff.partials.sidebar_sec')
 
-@php
-    $profileImageSource = function ($value) {
-        if (!$value) {
-            return null;
-        }
-
-        if (str_starts_with($value, 'data:image/')) {
-            return $value;
-        }
-
-        if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {
-            return $value;
-        }
-
-        try {
-            if (\Illuminate\Support\Facades\Storage::disk('public')->exists($value)) {
-                return asset('storage/' . $value);
-            }
-        } catch (\Exception $e) {
-            // If storage check fails, assume it's a base64 string
-        }
-
-        // Assume base64 string
-        $mimeType = str_starts_with($value, 'iVBORw0KGgo') ? 'image/png' : 'image/jpeg';
-        return 'data:' . $mimeType . ';base64,' . $value;
-    };
-
-    $passportPhotoSource = $profileImageSource($student->passport_photo ?? null);
-    $idPhotoSource = $profileImageSource($student->id_photo ?? null);
-    $senior3DocumentSource = $student->senior3_document ? (str_starts_with($student->senior3_document, 'http') ? $student->senior3_document : asset('storage/' . $student->senior3_document)) : null;
-    $senior6DocumentSource = $student->senior6_document ? (str_starts_with($student->senior6_document, 'http') ? $student->senior6_document : asset('storage/' . $student->senior6_document)) : null;
-    $otherSupportingDocumentSource = $student->other_supporting_document ? (str_starts_with($student->other_supporting_document, 'http') ? $student->other_supporting_document : asset('storage/' . $student->other_supporting_document)) : null;
-@endphp
-
 @section('content')
 <style>
     .edit-container {
@@ -295,8 +261,14 @@
                                 <input type="file" name="id_photo" id="id_photo" accept="image/*">
                             </div>
                             <div class="preview-container" id="id_photo_preview">
-                                @if($idPhotoSource)
-                                    <img src="{{ $idPhotoSource }}" class="preview-image" alt="ID Photo">
+                                @if($student->id_photo)
+                                    @if(str_starts_with($student->id_photo, 'data:'))
+                                        <img src="{{ $student->id_photo }}" class="preview-image" alt="ID Photo">
+                                    @elseif(str_starts_with($student->id_photo, 'http'))
+                                        <img src="{{ $student->id_photo }}" class="preview-image" alt="ID Photo">
+                                    @else
+                                        <img src="{{ asset('storage/' . $student->id_photo) }}" class="preview-image" alt="ID Photo">
+                                    @endif
                                     <div class="info-badge mt-1"><i class="fas fa-check-circle"></i> Current photo</div>
                                 @endif
                             </div>
@@ -312,8 +284,14 @@
                                 <input type="file" name="passport_photo" id="passport_photo" accept="image/*">
                             </div>
                             <div class="preview-container" id="passport_photo_preview">
-                                @if($passportPhotoSource)
-                                    <img src="{{ $passportPhotoSource }}" class="preview-image" alt="Passport Photo">
+                                @if($student->passport_photo)
+                                    @if(str_starts_with($student->passport_photo, 'data:'))
+                                        <img src="{{ $student->passport_photo }}" class="preview-image" alt="Passport Photo">
+                                    @elseif(str_starts_with($student->passport_photo, 'http'))
+                                        <img src="{{ $student->passport_photo }}" class="preview-image" alt="Passport Photo">
+                                    @else
+                                        <img src="{{ asset('storage/' . $student->passport_photo) }}" class="preview-image" alt="Passport Photo">
+                                    @endif
                                     <div class="info-badge mt-1"><i class="fas fa-check-circle"></i> Current photo</div>
                                 @endif
                             </div>
@@ -333,7 +311,7 @@
                                 </label>
                                 <input type="file" name="senior6_document" id="senior6_document" accept=".pdf,.jpg,.jpeg,.png">
                             </div>
-                            @if($senior6DocumentSource)
+                            @if($student->senior6_document)
                                 <div class="mt-2">
                                     <a href="{{ route('students.view_document', [$student->id, 'senior6_document']) }}" target="_blank" class="btn btn-sm btn-outline-primary">
                                         <i class="fas fa-eye me-1"></i> View Document
@@ -351,7 +329,7 @@
                                 </label>
                                 <input type="file" name="senior3_document" id="senior3_document" accept=".pdf,.jpg,.jpeg,.png">
                             </div>
-                            @if($senior3DocumentSource)
+                            @if($student->senior3_document)
                                 <div class="mt-2">
                                     <a href="{{ route('students.view_document', [$student->id, 'senior3_document']) }}" target="_blank" class="btn btn-sm btn-outline-primary">
                                         <i class="fas fa-eye me-1"></i> View Document
@@ -369,7 +347,7 @@
                                 </label>
                                 <input type="file" name="other_supporting_document" id="other_supporting_document" accept=".pdf,.jpg,.jpeg,.png">
                             </div>
-                            @if($otherSupportingDocumentSource)
+                            @if($student->other_supporting_document)
                                 <div class="mt-2">
                                     <a href="{{ route('students.view_document', [$student->id, 'other_supporting_document']) }}" target="_blank" class="btn btn-sm btn-outline-primary">
                                         <i class="fas fa-eye me-1"></i> View Document
