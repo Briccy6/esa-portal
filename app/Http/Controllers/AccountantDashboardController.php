@@ -133,9 +133,9 @@ class AccountantDashboardController extends Controller
                 $q->where(function($query) use ($academicYearId) {
                     $query->whereHas('term', function($termQuery) use ($academicYearId) {
                         $termQuery->where('academic_year_id', $academicYearId);
-                    })->orWhereBetween('expense_date', 
-                        \Carbon\Carbon::createFromDate($academicYearId - 1, 8, 1)->format('Y-m-d'),
-                        \Carbon\Carbon::createFromDate($academicYear + 1, 7, 31)->format('Y-m-d')
+                    })->orWhereBetween('expense_date',
+                        \Carbon\Carbon::createFromDate(intval($academicYearId) - 1, 8, 1)->format('Y-m-d'),
+                        \Carbon\Carbon::createFromDate(intval($academicYearId) + 1, 7, 31)->format('Y-m-d')
                     );
                 });
             })
