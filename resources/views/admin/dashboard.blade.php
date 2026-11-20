@@ -1884,104 +1884,106 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
+});
+</script>
 
-    // Payment Percentage Filter Function
-    window.filterByPaymentPercentage = function() {
-        const percentage = document.getElementById('paymentPercentage').value;
-        const branchId = document.getElementById('filterBranch').value;
-        const courseId = document.getElementById('filterCourse').value;
+<script>
+// Payment Percentage Filter Function - defined outside DOMContentLoaded for global access
+function filterByPaymentPercentage() {
+    const percentage = document.getElementById('paymentPercentage').value;
+    const branchId = document.getElementById('filterBranch').value;
+    const courseId = document.getElementById('filterCourse').value;
 
-        if (!percentage || percentage < 0 || percentage > 100) {
-            alert('Please enter a valid percentage between 0 and 100');
-            return;
-        }
+    if (!percentage || percentage < 0 || percentage > 100) {
+        alert('Please enter a valid percentage between 0 and 100');
+        return;
+    }
 
-        const resultsDiv = document.getElementById('paymentPercentageResults');
-        resultsDiv.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Loading...</p></div>';
+    const resultsDiv = document.getElementById('paymentPercentageResults');
+    resultsDiv.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Loading...</p></div>';
 
-        fetch('/admin/dashboard/filter-payment-percentage', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-            },
-            body: JSON.stringify({
-                percentage: percentage,
-                branch_id: branchId || null,
-                course_id: courseId || null
-            })
+    fetch('/admin/dashboard/filter-payment-percentage', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({
+            percentage: percentage,
+            branch_id: branchId || null,
+            course_id: courseId || null
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                if (data.students.length === 0) {
-                    resultsDiv.innerHTML = `
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle me-2"></i>
-                            No students found who have paid at least ${percentage}% of their fees.
-                        </div>
-                    `;
-                } else {
-                    let tableHtml = `
-                        <div class="alert alert-success">
-                            <i class="fas fa-check-circle me-2"></i>
-                            Found ${data.count} students who have paid at least ${percentage}% of their fees.
-                        </div>
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Name</th>
-                                        <th>Reg Number</th>
-                                        <th>Branch</th>
-                                        <th>Course</th>
-                                        <th>Paid</th>
-                                        <th>Total Fees</th>
-                                        <th>Percentage</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                    `;
-                    data.students.forEach(student => {
-                        tableHtml += `
-                            <tr>
-                                <td><strong>${student.name}</strong></td>
-                                <td>${student.reg_number}</td>
-                                <td>${student.branch}</td>
-                                <td>${student.course}</td>
-                                <td>${number_format(student.paid_amount)} RWF</td>
-                                <td>${number_format(student.total_fees)} RWF</td>
-                                <td><span class="badge bg-success">${student.payment_percentage}%</span></td>
-                            </tr>
-                        `;
-                    });
-                    tableHtml += `
-                                </tbody>
-                            </table>
-                        </div>
-                    `;
-                    resultsDiv.innerHTML = tableHtml;
-                }
-            } else {
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            if (data.students.length === 0) {
                 resultsDiv.innerHTML = `
-                    <div class="alert alert-danger">
-                        <i class="fas fa-exclamation-circle me-2"></i>
-                        Error: ${data.message || 'Failed to filter students'}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        No students found who have paid at least ${percentage}% of their fees.
                     </div>
                 `;
+            } else {
+                let tableHtml = `
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle me-2"></i>
+                        Found ${data.count} students who have paid at least ${percentage}% of their fees.
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Reg Number</th>
+                                    <th>Branch</th>
+                                    <th>Course</th>
+                                    <th>Paid</th>
+                                    <th>Total Fees</th>
+                                    <th>Percentage</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                data.students.forEach(student => {
+                    tableHtml += `
+                        <tr>
+                            <td><strong>${student.name}</strong></td>
+                            <td>${student.reg_number}</td>
+                            <td>${student.branch}</td>
+                            <td>${student.course}</td>
+                            <td>${number_format(student.paid_amount)} RWF</td>
+                            <td>${number_format(student.total_fees)} RWF</td>
+                            <td><span class="badge bg-success">${student.payment_percentage}%</span></td>
+                        </tr>
+                    `;
+                });
+                tableHtml += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                resultsDiv.innerHTML = tableHtml;
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
+        } else {
             resultsDiv.innerHTML = `
                 <div class="alert alert-danger">
                     <i class="fas fa-exclamation-circle me-2"></i>
-                    Error: Failed to fetch data. Please try again.
+                    Error: ${data.message || 'Failed to filter students'}
                 </div>
             `;
-        });
-    };
-});
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        resultsDiv.innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                Error: Failed to fetch data. Please try again.
+            </div>
+        `;
+    });
+}
 </script>
 
 @endsection
