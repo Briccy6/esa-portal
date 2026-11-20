@@ -570,10 +570,11 @@ Route::middleware(['auth:admin,staff,teacher'])->prefix('admin')->name('admin.')
     Route::delete('/blogs/documents/{document}',      [BlogController::class, 'deleteDocument'])->name('blogs.delete-document');
 });
 
+Route::get('/secretary/login', [SecretaryAuthController::class, 'showLoginForm'])->name('secretary.login.form');
+Route::post('/secretary/login', [SecretaryAuthController::class, 'login'])->name('secretary.login');
+
 // Secretary protected routes
 Route::middleware(['auth:staff'])->prefix('secretary')->name('secretary.')->group(function () {
-    Route::get('/login', [SecretaryAuthController::class, 'showLoginForm'])->name('login.form');
-    Route::post('/login', [SecretaryAuthController::class, 'login'])->name('login');
     Route::post('/logout', [SecretaryAuthController::class, 'logout'])->name('logout');
     
     Route::get('/dashboard', [SecretaryAuthController::class, 'dashboard'])->name('dashboard');
