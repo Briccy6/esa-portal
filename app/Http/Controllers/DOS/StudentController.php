@@ -9,9 +9,13 @@ use App\Models\Course;
 use App\Models\AcademicYear;
 use App\Models\Attendance;
 use App\Models\Lesson;
+use App\Models\StudentCard;
+use App\Models\StudentTransaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class StudentController extends Controller
 {
@@ -263,10 +267,98 @@ class StudentController extends Controller
     public function generateStudentCard(Student $student)
     {
         try {
-            // Generate student card logic here
+            $actor = auth('dos')->user() ?? auth('staff')->user() ?? auth('admin')->user();
+            $actorName = $actor->name ?? $actor->email ?? 'system';
+
+            $existingCard = \App\Models\StudentCard::where('student_id', $student->id)->first();
+            if ($existingCard) {
+                if (!$existingCard->verification_url || !$existingCard->qr_code) {
+                    try {
+                        $this->refreshStudentCardQr($existingCard);
+                    } catch (\Exception $e) {
+                        \Log::error('Existing student card QR refresh failed', [
+                            'student_id' => $student->id,
+                            'error' => $e->getMessage(),
+                        ]);
+
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'The existing card could not be updated with a verification QR code.',
+                        ], 500);
+                    }
+                }
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Student card already exists.',
+                ]);
+            }
+
+            $studentCardPaid = \App\Models\StudentTransaction::where('student_id', $student->id)
+                ->where('type', 'student_card')
+                ->whereIn('status', ['successful', 'paid'])
+                ->exists();
+
+            if (!$studentCardPaid) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Student must pay the Student Card fee (2,000 RWF) before generating an ID card.'
+                ]);
+            }
+
+            $passportPhotoBase64 = null;
+
+            if ($student->passport_photo) {
+                $photoValue = $student->passport_photo;
+
+                if (strlen($photoValue) < 500 && \Storage::disk('public')->exists($photoValue)) {
+                    try {
+                        $passportPhotoBase64 = base64_encode(
+                            \Storage::disk('public')->get($photoValue)
+                        );
+                    } catch (\Exception $e) {
+                        \Log::warning('Could not read passport photo from storage', [
+                            'student_id' => $student->id,
+                            'path'       => $photoValue,
+                            'error'      => $e->getMessage(),
+                        ]);
+                    }
+                } elseif (strlen($photoValue) >= 500) {
+                    $passportPhotoBase64 = $photoValue;
+                }
+            }
+
+            $studentCard = \App\Models\StudentCard::create([
+                'student_id'        => $student->id,
+                'reg_number'        => $student->reg_number,
+                'course'            => $student->course->course_name ?? '',
+                'branch'            => $student->branch->name ?? '',
+                'passport_photo'    => $passportPhotoBase64,
+                'qr_code'           => null,
+                'verification_url'  => null,
+                'academic_year'     => $student->academicYear->year ?? date('Y'),
+                'card_generated_by' => $actorName,
+                'generated_at'      => now(),
+            ]);
+
+            try {
+                $this->refreshStudentCardQr($studentCard);
+            } catch (\Exception $e) {
+                $studentCard->delete();
+                \Log::error('QR code generation failed', [
+                    'student_id' => $student->id,
+                    'error'      => $e->getMessage(),
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to generate the card verification QR code.',
+                ], 500);
+            }
+
             return response()->json([
                 'success' => true,
-                'message' => 'Student card generated successfully!'
+                'message' => 'Student card generated successfully.'
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -276,40 +368,144 @@ class StudentController extends Controller
         }
     }
 
+    private function refreshStudentCardQr(\App\Models\StudentCard $studentCard): void
+    {
+        $verificationUrl = \Illuminate\Support\Facades\URL::signedRoute(
+            'public.student-card.verify',
+            ['studentCard' => $studentCard->id]
+        );
+
+        $qrSvg = \QrCode::size(220)
+            ->margin(1)
+            ->errorCorrection('H')
+            ->encoding('UTF-8')
+            ->generate($verificationUrl);
+
+        $studentCard->forceFill([
+            'verification_url' => $verificationUrl,
+            'qr_code' => (string) $qrSvg,
+        ])->save();
+    }
+
     public function generateCardsBulk(Request $request)
     {
-        $studentIds = $request->input('students', []);
-        
-        try {
-            $students = Student::whereIn('id', $studentIds)->get();
-            
-            // Bulk card generation logic here
-            return response()->json([
-                'success' => true,
-                'message' => count($students) . ' student cards generated successfully!'
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error generating cards: ' . $e->getMessage()
-            ]);
+        $actor = auth('dos')->user() ?? auth('staff')->user() ?? auth('admin')->user();
+        $actorName = $actor->name ?? $actor->email ?? 'system';
+
+        $query = Student::with(['course', 'branch', 'academicYear']);
+
+        if ($request->filled('name')) {
+            $query->where('full_name', 'like', '%' . $request->name . '%');
         }
+        if ($request->filled('reg_number')) {
+            $query->where('reg_number', 'like', '%' . $request->reg_number . '%');
+        }
+        if ($request->filled('email')) {
+            $query->where('email', 'like', '%' . $request->email . '%');
+        }
+        if ($request->filled('telephone')) {
+            $query->where('phone', 'like', '%' . $request->telephone . '%');
+        }
+        if ($request->filled('academic_year')) {
+            $query->whereHas('academicYear', function ($q) use ($request) {
+                $q->where('year', 'like', '%' . $request->academic_year . '%');
+            });
+        }
+        if ($request->filled('course')) {
+            $query->whereHas('course', function ($q) use ($request) {
+                $q->where('course_name', 'like', '%' . $request->course . '%')
+                  ->orWhere('abbreviation', 'like', '%' . $request->course . '%');
+            });
+        }
+
+        $students  = $query->get();
+        $generated = 0;
+        $skipped   = 0;
+
+        foreach ($students as $student) {
+            if (\App\Models\StudentCard::where('student_id', $student->id)->exists()) {
+                $skipped++;
+                continue;
+            }
+
+            $hasPaid = \App\Models\StudentTransaction::where('student_id', $student->id)
+                ->where('type', 'student_card')
+                ->whereIn('status', ['successful', 'paid'])
+                ->exists();
+
+            if (!$hasPaid) {
+                $skipped++;
+                continue;
+            }
+
+            $passportPhotoBase64 = null;
+            if ($student->passport_photo) {
+                $photoValue = $student->passport_photo;
+
+                if (strlen($photoValue) < 500 && \Storage::disk('public')->exists($photoValue)) {
+                    try {
+                        $passportPhotoBase64 = base64_encode(
+                            \Storage::disk('public')->get($photoValue)
+                        );
+                    } catch (\Exception $e) {
+                        \Log::warning('Could not read passport photo from storage', [
+                            'student_id' => $student->id,
+                            'path'       => $photoValue,
+                            'error'      => $e->getMessage(),
+                        ]);
+                    }
+                } elseif (strlen($photoValue) >= 500) {
+                    $passportPhotoBase64 = $photoValue;
+                }
+            }
+
+            try {
+                $studentCard = \App\Models\StudentCard::create([
+                    'student_id'        => $student->id,
+                    'reg_number'        => $student->reg_number,
+                    'course'            => $student->course->course_name ?? '',
+                    'branch'            => $student->branch->name ?? '',
+                    'passport_photo'    => $passportPhotoBase64,
+                    'qr_code'           => null,
+                    'verification_url'  => null,
+                    'academic_year'     => $student->academicYear->year ?? date('Y'),
+                    'card_generated_by' => $actorName,
+                    'generated_at'      => now(),
+                ]);
+
+                $this->refreshStudentCardQr($studentCard);
+                $generated++;
+            } catch (\Exception $e) {
+                \Log::error('Failed to generate student card', [
+                    'student_id' => $student->id,
+                    'error'      => $e->getMessage(),
+                ]);
+                $skipped++;
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Generated {$generated} cards. Skipped {$skipped} students (no card fee paid or card already exists)."
+        ]);
     }
 
     public function verifyQRCode($qrData)
     {
         try {
-            $student = Student::where('qr_code', $qrData)->first();
-            
-            if ($student) {
+            $studentCard = \App\Models\StudentCard::where('verification_url', 'like', '%' . $qrData . '%')
+                ->orWhere('id', $qrData)
+                ->first();
+
+            if ($studentCard) {
                 return response()->json([
                     'success' => true,
-                    'student' => $student->load(['branch', 'course'])
+                    'student' => $studentCard->student->load(['branch', 'course', 'academicYear'])
                 ]);
             } else {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Student not found'
+                    'message' => 'Student card not found'
                 ]);
             }
         } catch (\Exception $e) {
