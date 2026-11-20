@@ -15,7 +15,8 @@ class Teacher extends Authenticatable
 
     protected $fillable = [
         'teacher_name', 'teacher_id_number', 'id_number', 'telephone', 'email',
-        'photo', 'branch_id', 'department', 'employment_type', 'level_of_education', 'salary', 'password'
+        'photo', 'branch_id', 'department', 'employment_type', 'level_of_education', 'salary', 'password',
+        'google_id', 'google_token', 'google_refresh_token', 'google_avatar'
     ];
 
     /**
@@ -108,5 +109,47 @@ public function academicYears()
 public function lessons()
 {
     return $this->hasMany(\App\Models\Lesson::class, 'teacher_id');
+}
+
+/**
+ * Check if teacher has linked Google account
+ */
+public function hasGoogleAccount()
+{
+    return !empty($this->google_id);
+}
+
+/**
+ * Get Google avatar URL
+ */
+public function getGoogleAvatarUrlAttribute()
+{
+    return $this->google_avatar;
+}
+
+/**
+ * Link Google account to teacher
+ */
+public function linkGoogleAccount($googleId, $token, $refreshToken = null, $avatar = null)
+{
+    $this->update([
+        'google_id' => $googleId,
+        'google_token' => $token,
+        'google_refresh_token' => $refreshToken,
+        'google_avatar' => $avatar,
+    ]);
+}
+
+/**
+ * Unlink Google account from teacher
+ */
+public function unlinkGoogleAccount()
+{
+    $this->update([
+        'google_id' => null,
+        'google_token' => null,
+        'google_refresh_token' => null,
+        'google_avatar' => null,
+    ]);
 }
 }

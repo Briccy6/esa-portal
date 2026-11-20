@@ -27,7 +27,11 @@ class User extends Authenticatable
         'academic_year_id',
         'reg_number',
         'study_mode',
-        'location'
+        'location',
+        'google_id',
+        'google_token',
+        'google_refresh_token',
+        'google_avatar'
     ];
 
     protected $hidden = [
@@ -96,5 +100,47 @@ class User extends Authenticatable
     public function getNameAttribute()
     {
         return $this->full_name;
+    }
+
+    /**
+     * Check if user has linked Google account
+     */
+    public function hasGoogleAccount()
+    {
+        return !empty($this->google_id);
+    }
+
+    /**
+     * Get Google avatar URL
+     */
+    public function getGoogleAvatarUrlAttribute()
+    {
+        return $this->google_avatar;
+    }
+
+    /**
+     * Link Google account to user
+     */
+    public function linkGoogleAccount($googleId, $token, $refreshToken = null, $avatar = null)
+    {
+        $this->update([
+            'google_id' => $googleId,
+            'google_token' => $token,
+            'google_refresh_token' => $refreshToken,
+            'google_avatar' => $avatar,
+        ]);
+    }
+
+    /**
+     * Unlink Google account from user
+     */
+    public function unlinkGoogleAccount()
+    {
+        $this->update([
+            'google_id' => null,
+            'google_token' => null,
+            'google_refresh_token' => null,
+            'google_avatar' => null,
+        ]);
     }
 }

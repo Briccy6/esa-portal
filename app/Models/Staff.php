@@ -10,7 +10,8 @@ class Staff extends Authenticatable
     use Notifiable;
 
     protected $fillable = [
-        'name', 'role', 'photo', 'qr_code', 'staff_card', 'email', 'phone', 'password', 'address'
+        'name', 'role', 'photo', 'qr_code', 'staff_card', 'email', 'phone', 'password', 'address',
+        'google_id', 'google_token', 'google_refresh_token', 'google_avatar'
     ];
 
     protected $hidden = [
@@ -38,5 +39,47 @@ class Staff extends Authenticatable
     public function isStaff()
     {
         return true;
+    }
+
+    /**
+     * Check if staff has linked Google account
+     */
+    public function hasGoogleAccount()
+    {
+        return !empty($this->google_id);
+    }
+
+    /**
+     * Get Google avatar URL
+     */
+    public function getGoogleAvatarUrlAttribute()
+    {
+        return $this->google_avatar;
+    }
+
+    /**
+     * Link Google account to staff
+     */
+    public function linkGoogleAccount($googleId, $token, $refreshToken = null, $avatar = null)
+    {
+        $this->update([
+            'google_id' => $googleId,
+            'google_token' => $token,
+            'google_refresh_token' => $refreshToken,
+            'google_avatar' => $avatar,
+        ]);
+    }
+
+    /**
+     * Unlink Google account from staff
+     */
+    public function unlinkGoogleAccount()
+    {
+        $this->update([
+            'google_id' => null,
+            'google_token' => null,
+            'google_refresh_token' => null,
+            'google_avatar' => null,
+        ]);
     }
 }

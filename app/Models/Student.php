@@ -40,6 +40,10 @@ class Student extends Authenticatable
         'is_blocked',
         'block_reason',
         'blocked_at',
+        'google_id',
+        'google_token',
+        'google_refresh_token',
+        'google_avatar',
     ];
 
     protected $casts = [
@@ -430,5 +434,47 @@ class Student extends Authenticatable
     {
         $amount = $this->getOutstandingFees();
         return 'RWF ' . number_format($amount, 2);
+    }
+
+    /**
+     * Check if student has linked Google account
+     */
+    public function hasGoogleAccount()
+    {
+        return !empty($this->google_id);
+    }
+
+    /**
+     * Get Google avatar URL
+     */
+    public function getGoogleAvatarUrlAttribute()
+    {
+        return $this->google_avatar;
+    }
+
+    /**
+     * Link Google account to student
+     */
+    public function linkGoogleAccount($googleId, $token, $refreshToken = null, $avatar = null)
+    {
+        $this->update([
+            'google_id' => $googleId,
+            'google_token' => $token,
+            'google_refresh_token' => $refreshToken,
+            'google_avatar' => $avatar,
+        ]);
+    }
+
+    /**
+     * Unlink Google account from student
+     */
+    public function unlinkGoogleAccount()
+    {
+        $this->update([
+            'google_id' => null,
+            'google_token' => null,
+            'google_refresh_token' => null,
+            'google_avatar' => null,
+        ]);
     }
 }

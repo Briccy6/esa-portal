@@ -12,7 +12,7 @@ use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\PaymentController; // corrected import (singular)
 use App\Http\Controllers\MarksController; // added for AJAX route
 use App\Http\Controllers\BranchController;
-use App\Http\Controllers\Admin\AcademicYearController; 
+use App\Http\Controllers\Admin\AcademicYearController;
 use App\Http\Controllers\Admin\ClassController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\HomeController;
@@ -20,6 +20,7 @@ use App\Http\Controllers\AdminLoginController;
 use App\Http\Controllers\StaffController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\TariffController;
 use App\Http\Controllers\StaffAuthController;
@@ -150,9 +151,13 @@ Route::get('/', function () {
     $publicAnnouncements = \App\Models\Announcement::where('audience', 'public')
         ->orderBy('created_at', 'desc')
         ->get();
-    
-    return view('welcome', compact('publicAnnouncements'));
+
+    $schoolInfo = \App\Models\SchoolInformation::getActive();
+
+    return view('welcome', compact('publicAnnouncements', 'schoolInfo'));
 })->name('welcome');
+
+Route::get('/skills', [PublicExamController::class, 'index'])->name('public.skills');
 
 // Public Exam Routes - Fully accessible without authentication
 Route::prefix('public')->name('public.')->middleware(['web'])->group(function () {
@@ -197,6 +202,10 @@ Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login']);
 Route::get('/courses/search', [CourseController::class, 'search'])->name('courses.search');
 
+// Google OAuth Routes - General Users
+Route::get('/auth/google', [GoogleAuthController::class, 'redirectToGoogle'])->name('auth.google');
+Route::get('/auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback'])->name('auth.google.callback');
+
 // API routes
 Route::prefix('api')->group(function () {
     Route::get('/academic-years', [StudentController::class, 'getAcademicYears'])->name('api.academic.years');
@@ -235,6 +244,10 @@ Route::prefix('student')->name('student.')->group(function () {
     Route::post('/login/validate-id', [StudentController::class, 'validateIdNumber'])->name('login.validateId');
     Route::get('/login/password', [StudentController::class, 'showPasswordForm'])->name('showPasswordForm');
     Route::post('/login/password', [StudentController::class, 'loginWithPassword'])->name('login.withPassword');
+
+    // Google OAuth Routes
+    Route::get('/auth/google', [GoogleAuthController::class, 'redirectToGoogle'])->name('auth.google');
+    Route::get('/auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback'])->name('auth.google.callback');
 });
 
 // Authenticated user routes
@@ -259,6 +272,10 @@ Route::prefix('admin')->group(function () {
     Route::get('/login', [AdminAuthController::class, 'showLoginForm'])->name('admin.login.form');
     Route::post('/login', [AdminAuthController::class, 'login'])->name('admin.login');
     Route::post('/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
+
+    // Google OAuth Routes
+    Route::get('/auth/google', [GoogleAuthController::class, 'redirectToGoogle'])->name('auth.google');
+    Route::get('/auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback'])->name('auth.google.callback');
 
     // Admin password reset via email code
     Route::get('/forgot-password', [\App\Http\Controllers\AdminPasswordResetController::class, 'showRequestForm'])
@@ -661,6 +678,10 @@ Route::prefix('staff')->name('staff.')->group(function () {
     Route::post('login', [StaffAuthController::class, 'login'])->name('login.submit');
     Route::post('logout', [StaffAuthController::class, 'logout'])->name('logout');
 
+    // Google OAuth Routes
+    Route::get('/auth/google', [GoogleAuthController::class, 'redirectToGoogle'])->name('auth.google');
+    Route::get('/auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback'])->name('auth.google.callback');
+
     // Staff password reset via email code
     Route::get('forgot-password', [\App\Http\Controllers\StaffPasswordResetController::class, 'showRequestForm'])
         ->name('password.request');
@@ -869,6 +890,11 @@ Route::prefix('teacher')->name('teacher.')->group(function () {
     Route::get('login', [\App\Http\Controllers\TeacherAuthController::class, 'showLoginForm'])->name('login');
     Route::post('login', [\App\Http\Controllers\TeacherAuthController::class, 'login'])->name('login.submit');
     Route::post('logout', [\App\Http\Controllers\TeacherAuthController::class, 'logout'])->name('logout');
+
+    // Google OAuth Routes
+    Route::get('/auth/google', [GoogleAuthController::class, 'redirectToGoogle'])->name('auth.google');
+    Route::get('/auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback'])->name('auth.google.callback');
+
     // Teacher password reset via email code
     Route::get('forgot-password', [\App\Http\Controllers\TeacherPasswordResetController::class, 'showRequestForm'])
         ->name('password.request');
