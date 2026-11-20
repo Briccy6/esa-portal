@@ -1,6 +1,8 @@
 @extends('staff.partials.sidebar_sec')
 
 @php
+    use Illuminate\Support\Facades\Storage;
+
     $profileImageSource = function ($value) {
         if (!$value) {
             return null;
