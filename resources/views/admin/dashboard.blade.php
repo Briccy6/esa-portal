@@ -1899,7 +1899,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const resultsDiv = document.getElementById('paymentPercentageResults');
         resultsDiv.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Loading...</p></div>';
 
-        fetch('{{ route("admin.dashboard.filter-payment-percentage") }}', {
+        fetch('/admin/dashboard/filter-payment-percentage', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
