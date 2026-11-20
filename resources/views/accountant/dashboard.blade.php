@@ -291,6 +291,34 @@
         </div>
     </div>
 
+    <!-- Students by Branch -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center py-3">
+            <h2 class="h6 fw-semibold mb-0">Students by Branch</h2>
+            <span class="text-primary"><i class="fas fa-building" aria-hidden="true"></i></span>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Branch</th>
+                            <th>Total Students</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($studentsByBranch as $item)
+                            <tr>
+                                <td><strong>{{ $item->branch_name }}</strong></td>
+                                <td><span class="badge bg-primary">{{ number_format($item->total) }}</span></td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <!-- Students by Shift in Branch -->
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center py-3">
@@ -326,6 +354,64 @@
                                 <td>{{ number_format($shifts['evening']) }}</td>
                                 <td>{{ number_format($shifts['weekend']) }}</td>
                                 <td><strong>{{ number_format(array_sum($shifts)) }}</strong></td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Students by Course in Branch -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center py-3">
+            <h2 class="h6 fw-semibold mb-0">Students by Course in Branch</h2>
+            <span class="text-success"><i class="fas fa-graduation-cap" aria-hidden="true"></i></span>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Branch</th>
+                            <th>Course</th>
+                            <th>Total Students</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($studentsByCourseInBranch as $item)
+                            <tr>
+                                <td><strong>{{ $item->branch_name }}</strong></td>
+                                <td>{{ $item->course_name }}</td>
+                                <td><span class="badge bg-success">{{ number_format($item->total) }}</span></td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Expenses by Branch -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center py-3">
+            <h2 class="h6 fw-semibold mb-0">Expenses by Branch</h2>
+            <span class="text-danger"><i class="fas fa-file-invoice-dollar" aria-hidden="true"></i></span>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Branch</th>
+                            <th>Total Expenses</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($expensesByBranch as $item)
+                            <tr>
+                                <td><strong>{{ $item->branch_name ?? 'N/A' }}</strong></td>
+                                <td><span class="text-danger fw-semibold">{{ number_format($item->total) }} RWF</span></td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -600,7 +686,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const resultsDiv = document.getElementById('paymentPercentageResults');
         resultsDiv.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Loading...</p></div>';
 
-        fetch('{{ route("staff.accountant.dashboard.filter-payment-percentage") }}', {
+        fetch('/staff/accountant/dashboard/filter-payment-percentage', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

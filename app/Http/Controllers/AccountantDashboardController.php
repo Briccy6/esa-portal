@@ -111,6 +111,39 @@ class AccountantDashboardController extends Controller
             ->when($filters['branch_id'], fn($q) => $q->where('branch_id', $filters['branch_id']))
             ->count();
 
+        // Students by Course in Branch
+        $studentsByCourseInBranch = \App\Models\Student::select(
+                'branches.name as branch_name',
+                'courses.course_name as course_name',
+                \DB::raw('count(*) as total')
+            )
+            ->join('branches', 'students.branch_id', '=', 'branches.id')
+            ->join('courses', 'students.course_id', '=', 'courses.id')
+            ->when($academicYearId, fn($q) => $q->where('academic_year_id', $academicYearId))
+            ->when($filters['branch_id'], fn($q) => $q->where('branch_id', $filters['branch_id']))
+            ->groupBy('branches.id', 'branches.name', 'courses.id', 'courses.course_name')
+            ->orderBy('branches.name')
+            ->orderBy('total', 'desc')
+            ->get();
+
+        // Expenses by Branch
+        $expensesByBranch = \App\Models\Expense::select('branches.name as branch_name', \DB::raw('sum(expenses.amount) as total'))
+            ->leftJoin('branches', 'expenses.paid_by', '=', 'branches.id')
+            ->when($academicYearId, function($q) use ($academicYearId) {
+                $q->where(function($query) use ($academicYearId) {
+                    $query->whereHas('term', function($termQuery) use ($academicYearId) {
+                        $termQuery->where('academic_year_id', $academicYearId);
+                    })->orWhereBetween('expense_date', 
+                        \Carbon\Carbon::createFromDate($academicYearId - 1, 8, 1)->format('Y-m-d'),
+                        \Carbon\Carbon::createFromDate($academicYear + 1, 7, 31)->format('Y-m-d')
+                    );
+                });
+            })
+            ->when($filters['branch_id'], fn($q) => $q->where('paid_by', $filters['branch_id']))
+            ->groupBy('branches.id', 'branches.name')
+            ->orderBy('total', 'desc')
+            ->get();
+
         return view('accountant.dashboard', compact(
             'kpiData',
             'chartData',
@@ -127,7 +160,9 @@ class AccountantDashboardController extends Controller
             'studentsByBranch',
             'profileCompletionByCourseShift',
             'fullyPaidStudents',
-            'studentsWithNoPayment'
+            'studentsWithNoPayment',
+            'studentsByCourseInBranch',
+            'expensesByBranch'
         ));
     }
 
