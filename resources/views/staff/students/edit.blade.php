@@ -1,8 +1,6 @@
 @extends('staff.partials.sidebar_sec')
 
 @php
-    use Illuminate\Support\Facades\Storage;
-
     $profileImageSource = function ($value) {
         if (!$value) {
             return null;
@@ -16,8 +14,12 @@
             return $value;
         }
 
-        if (Storage::disk('public')->exists($value)) {
-            return asset('storage/' . $value);
+        try {
+            if (\Illuminate\Support\Facades\Storage::disk('public')->exists($value)) {
+                return asset('storage/' . $value);
+            }
+        } catch (\Exception $e) {
+            // If storage check fails, assume it's a base64 string
         }
 
         // Assume base64 string
@@ -25,8 +27,8 @@
         return 'data:' . $mimeType . ';base64,' . $value;
     };
 
-    $passportPhotoSource = $profileImageSource($student->passport_photo);
-    $idPhotoSource = $profileImageSource($student->id_photo);
+    $passportPhotoSource = $profileImageSource($student->passport_photo ?? null);
+    $idPhotoSource = $profileImageSource($student->id_photo ?? null);
     $senior3DocumentSource = $student->senior3_document ? (str_starts_with($student->senior3_document, 'http') ? $student->senior3_document : asset('storage/' . $student->senior3_document)) : null;
     $senior6DocumentSource = $student->senior6_document ? (str_starts_with($student->senior6_document, 'http') ? $student->senior6_document : asset('storage/' . $student->senior6_document)) : null;
     $otherSupportingDocumentSource = $student->other_supporting_document ? (str_starts_with($student->other_supporting_document, 'http') ? $student->other_supporting_document : asset('storage/' . $student->other_supporting_document)) : null;
