@@ -626,17 +626,37 @@
                 min-width: 60px;
             }
 
-            /* Sidebar adjustments */
+            /* Sidebar adjustments - keep the original mobile styles from earlier */
             .sidebar {
                 position: fixed;
-                z-index: 1040;
-                height: 100vh;
-                transform: translateX(-100%);
-                transition: transform 0.3s ease-in-out;
+                left: -260px;
+                top: 64px;
+                height: calc(100vh - 64px);
+                z-index: 1050;
+                transform: translateX(0);
+                transition: transform 0.3s ease;
             }
 
             .sidebar.show {
-                transform: translateX(0);
+                transform: translateX(260px);
+            }
+
+            .sidebar-overlay {
+                display: none;
+                position: fixed;
+                top: 64px;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 1040;
+                opacity: 0;
+                transition: opacity 0.3s ease;
+            }
+
+            .sidebar-overlay.show {
+                display: block;
+                opacity: 1;
             }
 
             /* Main content padding on mobile */
