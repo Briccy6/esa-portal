@@ -74,6 +74,49 @@
         </div>
     </div>
 
+    {{-- Filter Section --}}
+    <div class="filter-section mb-3">
+        <form method="GET" action="{{ request()->url() }}" class="row g-2">
+            <div class="col-md-3 col-sm-6">
+                <input type="text" name="search" class="form-control form-control-sm" placeholder="Search by name..." value="{{ request('search') }}">
+            </div>
+            <div class="col-md-2 col-sm-6">
+                <select name="nesa_status" class="form-select form-select-sm">
+                    <option value="">All NESA Status</option>
+                    <option value="registered" {{ request('nesa_status') === 'registered' ? 'selected' : '' }}>Registered</option>
+                    <option value="not_registered" {{ request('nesa_status') === 'not_registered' ? 'selected' : '' }}>Not Registered</option>
+                </select>
+            </div>
+            <div class="col-md-2 col-sm-6">
+                <select name="branch_id" class="form-select form-select-sm">
+                    <option value="">All Branches</option>
+                    @if(isset($branches))
+                        @foreach($branches as $branch)
+                            <option value="{{ $branch->id }}" {{ request('branch_id') == $branch->id ? 'selected' : '' }}>{{ $branch->name }}</option>
+                        @endforeach
+                    @endif
+                </select>
+            </div>
+            <div class="col-md-2 col-sm-6">
+                <select name="registration_status" class="form-select form-select-sm">
+                    <option value="">All Registration</option>
+                    <option value="complete" {{ request('registration_status') === 'complete' ? 'selected' : '' }}>Complete</option>
+                    <option value="incomplete" {{ request('registration_status') === 'incomplete' ? 'selected' : '' }}>Incomplete</option>
+                </select>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary btn-sm flex-grow-1">
+                        <i class="fas fa-filter me-1"></i>Filter
+                    </button>
+                    <a href="{{ request()->url() }}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-times me-1"></i>Reset
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
     <div class="table-responsive">
         <table class="table table-hover align-middle">
             <thead class="table-header-custom">

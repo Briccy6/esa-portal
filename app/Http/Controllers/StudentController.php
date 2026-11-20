@@ -347,6 +347,9 @@ class StudentController extends Controller
             }
         }
 
+        if ($request->filled('search')) {
+            $students->where('full_name', 'like', '%' . $request->search . '%');
+        }
         if ($request->filled('name')) {
             $students->where('full_name', 'like', '%' . $request->name . '%');
         }
@@ -376,6 +379,37 @@ class StudentController extends Controller
             $students->where('id_number', 'like', '%' . $request->id_number . '%');
         }
 
+        // New filters for accountant dashboard
+        if ($request->filled('nesa_status')) {
+            if ($request->nesa_status === 'registered') {
+                $students->where('nesa_registered', true);
+            } elseif ($request->nesa_status === 'not_registered') {
+                $students->where('nesa_registered', false);
+            }
+        }
+
+        if ($request->filled('branch_id')) {
+            $students->where('branch_id', $request->branch_id);
+        }
+
+        if ($request->filled('registration_status')) {
+            if ($request->registration_status === 'complete') {
+                $students->where(function($q) {
+                    $q->whereNotNull('identification_type')
+                      ->whereNotNull('id_number')
+                      ->whereNotNull('id_photo')
+                      ->whereNotNull('passport_photo');
+                });
+            } elseif ($request->registration_status === 'incomplete') {
+                $students->where(function($q) {
+                    $q->whereNull('identification_type')
+                      ->orWhereNull('id_number')
+                      ->orWhereNull('id_photo')
+                      ->orWhereNull('passport_photo');
+                });
+            }
+        }
+
         $allStudents = Student::with(['branch', 'course'])
             ->whereNotIn('id', $dismissedStudentIds)
             ->orderBy('full_name', 'asc')
@@ -392,9 +426,11 @@ class StudentController extends Controller
         }
 
         if ($admin) {
-            return view('admin.students.index', compact('students', 'allStudents', 'selectedYearId'));
+            $branches = Branch::all();
+            return view('admin.students.index', compact('students', 'allStudents', 'selectedYearId', 'branches'));
         } else {
-            return view('students.index', compact('students', 'allStudents'));
+            $branches = Branch::all();
+            return view('students.index', compact('students', 'allStudents', 'branches'));
         }
     }
 
