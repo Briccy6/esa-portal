@@ -1707,7 +1707,14 @@
                             <span class="nav-text">Students</span>
                         </a>
                     </div>
-                    
+
+                    <div class="nav-item">
+                        <a href="{{ route('admin.students.StudentCards') }}" class="nav-link {{ request()->routeIs('admin.students.StudentCards') ? 'active' : '' }}">
+                            <i class="fas fa-id-card"></i>
+                            <span class="nav-text">Student Cards</span>
+                        </a>
+                    </div>
+
                     <div class="nav-item">
                         <a href="{{ route('admin.dismissed-students.index') }}" class="nav-link {{ request()->routeIs('admin.dismissed-students.*') ? 'active' : '' }}">
                             <i class="fas fa-user-times"></i>

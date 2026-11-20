@@ -309,6 +309,8 @@ Route::middleware(['auth:admin', 'admin.academic_year'])->prefix('admin')->name(
     Route::resource('students', StudentController::class);
     Route::get('/students/export', [StudentController::class, 'export'])->name('students.export');
     Route::post('/students/send-bulk-information-emails', [StudentController::class, 'sendBulkStudentInformationEmails'])->name('students.sendBulkInformationEmails');
+    Route::get('/students/cards', [StudentController::class, 'listStudentCards'])->name('students.StudentCards');
+    Route::post('/students/{student}/generate-card', [StudentController::class, 'generateStudentCard'])->name('students.generate_card');
     // NESA student endpoints removed
 
     Route::resource('academic_year', AcademicYearController::class)->except(['show']);
