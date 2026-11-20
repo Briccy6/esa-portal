@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('students', function (Blueprint $table) {
-            $table->enum('shift', ['day', 'evening', 'weekend'])->default('day')->after('branch');
+            $table->enum('shift', ['day', 'evening', 'weekend'])->default('day')->after('branch_id');
         });
     }
 
