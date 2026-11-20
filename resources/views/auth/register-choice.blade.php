@@ -1,103 +1,57 @@
-@extends('layouts.app')
+@extends('layouts.public')
 
 @section('title', 'Choose Registration Type - ' . config('app.name'))
 
 @section('content')
-<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-4xl w-full space-y-8">
-        <!-- Header -->
-        <div class="text-center">
-            <h2 class="mt-6 text-3xl font-extrabold text-gray-900">
-                Choose Your Registration Type
-            </h2>
-            <p class="mt-2 text-sm text-gray-600">
-                Select how you want to join ESA Portal
-            </p>
-        </div>
+<section class="registration-choice">
+    <div class="registration-choice__inner">
+        <header class="registration-choice__header">
+            <p class="registration-choice__eyebrow">Start your ESA journey</p>
+            <h1>Choose how you would like to join</h1>
+            <p>Select the account that best fits your needs. You can review your details before completing registration.</p>
+        </header>
 
-        <!-- Registration Options -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <!-- Student Registration -->
-            <div class="bg-white rounded-2xl shadow-lg overflow-hidden transform transition-all duration-300 hover:scale-105">
-                <div class="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6">
-                    <div class="text-center">
-                        <i class="fas fa-graduation-cap text-4xl mb-4"></i>
-                        <h3 class="text-2xl font-bold">Student Registration</h3>
-                    </div>
+        <div class="registration-choice__cards">
+            <article class="registration-choice__card">
+                <div class="registration-choice__card-head">
+                    <span class="registration-choice__icon" aria-hidden="true"><i class="fas fa-graduation-cap"></i></span>
+                    <h2>Student registration</h2>
                 </div>
-                
-                <div class="p-6">
-                    <div class="space-y-4 mb-6">
-                        <div class="flex items-start">
-                            <i class="fas fa-check-circle text-green-500 mt-1 mr-3 flex-shrink-0"></i>
-                            <span class="text-gray-700">Attend classes and courses</span>
-                        </div>
-                        <div class="flex items-start">
-                            <i class="fas fa-check-circle text-green-500 mt-1 mr-3 flex-shrink-0"></i>
-                            <span class="text-gray-700">Access course materials and resources</span>
-                        </div>
-                        <div class="flex items-start">
-                            <i class="fas fa-check-circle text-green-500 mt-1 mr-3 flex-shrink-0"></i>
-                            <span class="text-gray-700">Take exams and receive certificates</span>
-                        </div>
-                        <div class="flex items-start">
-                            <i class="fas fa-check-circle text-green-500 mt-1 mr-3 flex-shrink-0"></i>
-                            <span class="text-gray-700">Track attendance and academic progress</span>
-                        </div>
-                    </div>
-                    
-                    <a href="{{ route('students.create') }}" 
-                       class="w-full block text-center bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
-                        Register as Student
+                <div class="registration-choice__card-body">
+                    <ul>
+                        <li><i class="fas fa-check-circle" aria-hidden="true"></i><span>Join a course at one of our branches</span></li>
+                        <li><i class="fas fa-check-circle" aria-hidden="true"></i><span>Access learning materials and class resources</span></li>
+                        <li><i class="fas fa-check-circle" aria-hidden="true"></i><span>Take assessments and follow your progress</span></li>
+                        <li><i class="fas fa-check-circle" aria-hidden="true"></i><span>Keep your school learning in one place</span></li>
+                    </ul>
+                    <a class="registration-choice__action" href="{{ route('students.create') }}">
+                        Register as a student <i class="fas fa-arrow-right" aria-hidden="true"></i>
                     </a>
                 </div>
-            </div>
+            </article>
 
-            <!-- Client Registration -->
-            <div class="bg-white rounded-2xl shadow-lg overflow-hidden transform transition-all duration-300 hover:scale-105">
-                <div class="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-6">
-                    <div class="text-center">
-                        <i class="fas fa-user-tie text-4xl mb-4"></i>
-                        <h3 class="text-2xl font-bold">Client Registration</h3>
-                    </div>
+            <article class="registration-choice__card">
+                <div class="registration-choice__card-head">
+                    <span class="registration-choice__icon" aria-hidden="true"><i class="fas fa-user-tie"></i></span>
+                    <h2>Client registration</h2>
                 </div>
-                
-                <div class="p-6">
-                    <div class="space-y-4 mb-6">
-                        <div class="flex items-start">
-                            <i class="fas fa-check-circle text-green-500 mt-1 mr-3 flex-shrink-0"></i>
-                            <span class="text-gray-700">Access premium content and resources</span>
-                        </div>
-                        <div class="flex items-start">
-                            <i class="fas fa-check-circle text-green-500 mt-1 mr-3 flex-shrink-0"></i>
-                            <span class="text-gray-700">Purchase subscription plans</span>
-                        </div>
-                        <div class="flex items-start">
-                            <i class="fas fa-check-circle text-green-500 mt-1 mr-3 flex-shrink-0"></i>
-                            <span class="text-gray-700">Manage tokens and services</span>
-                        </div>
-                        <div class="flex items-start">
-                            <i class="fas fa-check-circle text-green-500 mt-1 mr-3 flex-shrink-0"></i>
-                            <span class="text-gray-700">Access system without attending classes</span>
-                        </div>
-                    </div>
-                    
-                    <a href="{{ route('client.auth.register') }}" 
-                       class="w-full block text-center bg-purple-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-purple-700 transition-colors">
-                        Register as Client
+                <div class="registration-choice__card-body">
+                    <ul>
+                        <li><i class="fas fa-check-circle" aria-hidden="true"></i><span>Explore premium resources and public assessments</span></li>
+                        <li><i class="fas fa-check-circle" aria-hidden="true"></i><span>Choose subscription plans and manage access</span></li>
+                        <li><i class="fas fa-check-circle" aria-hidden="true"></i><span>Purchase tokens for eligible practice tests</span></li>
+                        <li><i class="fas fa-check-circle" aria-hidden="true"></i><span>Use the portal without school enrollment</span></li>
+                    </ul>
+                    <a class="registration-choice__action" href="{{ route('client.auth.register') }}">
+                        Register as a client <i class="fas fa-arrow-right" aria-hidden="true"></i>
                     </a>
                 </div>
-            </div>
+            </article>
         </div>
 
-        <!-- Back to Home -->
-        <div class="text-center">
-            <a href="{{ route('welcome') }}" 
-               class="text-blue-600 hover:text-blue-800 font-medium">
-                <i class="fas fa-arrow-left mr-2"></i>
-                Back to Home
-            </a>
-        </div>
+        <a class="registration-choice__home" href="{{ route('welcome') }}">
+            <i class="fas fa-arrow-left" aria-hidden="true"></i> Back to the school homepage
+        </a>
     </div>
-</div>
+</section>
 @endsection

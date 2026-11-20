@@ -1,13 +1,13 @@
-@extends('layouts.app')
+@extends('layouts.public')
 
 @section('title', 'Client Registration - ESA Portal')
 
 @section('content')
-<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12">
+<div class="public-registration min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12">
     <div class="container mx-auto px-4 max-w-md">
         <!-- Header -->
         <div class="text-center mb-8">
-            <img src="{{ asset('images/logo.png') }}" alt="ESA Portal" class="mx-auto h-12 w-auto mb-4">
+            <img src="{{ asset('images/esa.jpg') }}" alt="ESA Portal" class="mx-auto h-12 w-auto mb-4">
             <h1 class="text-3xl font-extrabold text-gray-900 mb-2">Create Client Account</h1>
             <p class="text-gray-600">Join ESA Portal and access premium learning resources</p>
         </div>

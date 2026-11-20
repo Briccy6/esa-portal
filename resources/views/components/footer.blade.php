@@ -1,86 +1,54 @@
 @php
     $schoolInfo = \App\Models\SchoolInformation::getActive();
-    
-    // Use school info if available, otherwise fall back to cache
-    $systemName = $schoolInfo?->school_name ?? \Illuminate\Support\Facades\Cache::get('esa_system_name', 'ESA-Panel');
+    $systemName = $schoolInfo?->school_name ?? \Illuminate\Support\Facades\Cache::get('esa_system_name', 'Excellent Servant Academy');
     $systemEmail = $schoolInfo?->email ?? \Illuminate\Support\Facades\Cache::get('esa_system_email', 'info@excellentservantacademy.com');
-    $systemPhone = $schoolInfo?->phone ?? \Illuminate\Support\Facades\Cache::get('esa_system_phone', '+1 (555) 123-4567');
-    $systemAddress = $schoolInfo?->address ?? \Illuminate\Support\Facades\Cache::get('esa_system_address', '123 Education Street, Learning City');
-    $systemDescription = $schoolInfo?->mission ?? $schoolInfo?->motto ?? \Illuminate\Support\Facades\Cache::get('esa_system_description', 'Quality education and resources to help students achieve their academic goals.');
+    $systemPhone = $schoolInfo?->phone ?? \Illuminate\Support\Facades\Cache::get('esa_system_phone', '+250 788 525 247');
+    $systemAddress = $schoolInfo?->address ?? \Illuminate\Support\Facades\Cache::get('esa_system_address', 'Rwanda');
+    $systemDescription = $schoolInfo?->mission ?? $schoolInfo?->motto ?? \Illuminate\Support\Facades\Cache::get('esa_system_description', 'Learning, opportunity, and a brighter future for every student.');
+    $developerMessage = rawurlencode('Hello Nexora Rwanda, I found your developer credit on the ESA website and would like to get in touch.');
 @endphp
 
-<!-- Footer -->
-<footer class="bg-gray-800 text-white py-8 mt-16">
-    <div class="container mx-auto px-6">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <!-- About Section -->
-            <div>
-                <h3 class="text-lg font-semibold mb-4">{{ $systemName }}</h3>
-                <p class="text-gray-300 text-sm leading-relaxed">
-                    {{ $systemDescription }}
-                </p>
-            </div>
-            
-            <!-- Quick Links -->
-            <div>
-                <h4 class="text-lg font-semibold mb-4">Quick Links</h4>
-                <ul class="space-y-2 text-sm">
-                    <li><a href="{{ url('/') }}" class="text-gray-300 hover:text-white transition"><i class="fas fa-home mr-2"></i>Home</a></li>
-                    <li><a href="{{ route('public.exams.index') }}" class="text-gray-300 hover:text-white transition"><i class="fas fa-brain mr-2"></i>Test Skills</a></li>
-                    <li><a href="{{ route('public.resources.index') }}" class="text-gray-300 hover:text-white transition"><i class="fas fa-book mr-2"></i>Resources</a></li>
-                    <li><a href="{{ url('/fees') }}" class="text-gray-300 hover:text-white transition"><i class="fas fa-credit-card mr-2"></i>Fees</a></li>
-                    <li><a href="{{ url('/#quick-access') }}" class="text-gray-300 hover:text-white transition"><i class="fas fa-sign-in-alt mr-2"></i>Portals</a></li>
-                </ul>
-            </div>
-            
-            <!-- Contact Info -->
-            <div>
-                <h4 class="text-lg font-semibold mb-4">Contact Info</h4>
-                <ul class="space-y-2 text-sm text-gray-300">
-                    <li class="flex items-center">
-                        <i class="fas fa-envelope mr-2"></i>
-                        <span>{{ $systemEmail }}</span>
-                    </li>
-                    <li class="flex items-center">
-                        <i class="fas fa-phone mr-2"></i>
-                        <span>{{ $systemPhone }}</span>
-                    </li>
-                    <li class="flex items-center">
-                        <i class="fas fa-map-marker-alt mr-2"></i>
-                        <span>{{ $systemAddress }}</span>
-                    </li>
-                </ul>
-            </div>
-            
-            <!-- Follow Us -->
-            <div>
-                <h4 class="text-lg font-semibold mb-4">Follow Us</h4>
-                <div class="flex space-x-4">
-                    <a href="#" class="text-gray-300 hover:text-white transition transform hover:scale-110">
-                        <i class="fab fa-facebook-f text-xl"></i>
-                    </a>
-                    <a href="#" class="text-gray-300 hover:text-white transition transform hover:scale-110">
-                        <i class="fab fa-twitter text-xl"></i>
-                    </a>
-                    <a href="#" class="text-gray-300 hover:text-white transition transform hover:scale-110">
-                        <i class="fab fa-instagram text-xl"></i>
-                    </a>
-                    <a href="#" class="text-gray-300 hover:text-white transition transform hover:scale-110">
-                        <i class="fab fa-linkedin-in text-xl"></i>
-                    </a>
-                    <a href="#" class="text-gray-300 hover:text-white transition transform hover:scale-110">
-                        <i class="fab fa-youtube text-xl"></i>
-                    </a>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Bottom Bar -->
-        <div class="border-t border-gray-700 mt-8 pt-8">
-            <div class="flex flex-col md:flex-row justify-between items-center text-sm text-gray-400">
-                <p>&copy; {{ date('Y') }} {{ $systemName }}. All rights reserved.</p>
-                <p>Empowering education through quality learning</p>
-            </div>
-        </div>
+<footer class="site-footer">
+    <div class="site-footer__main">
+        <section class="site-footer__about">
+            <p class="site-footer__eyebrow">Excellent Servant Academy</p>
+            <h2>{{ $systemName }}</h2>
+            <p>{{ $systemDescription }}</p>
+        </section>
+
+        <nav class="site-footer__links" aria-label="Explore ESA">
+            <h3>Explore</h3>
+            <a href="{{ route('welcome') }}">Home</a>
+            <a href="{{ route('public.skills') }}">Test skills</a>
+            <a href="{{ route('public.resources.index') }}">Learning resources</a>
+            <a href="{{ route('blogs.public.index') }}">Blog &amp; news</a>
+            <a href="{{ route('fees.index') }}">Term fees</a>
+            <a href="{{ route('public.babyeyi.index') }}">Babyeyi</a>
+        </nav>
+
+        <nav class="site-footer__links" aria-label="Student and portal links">
+            <h3>Get started</h3>
+            <a href="{{ route('register.choice') }}">Registration</a>
+            <a href="{{ route('students.create') }}">Student registration</a>
+            <a href="{{ route('public.subscriptions.index') }}">Subscriptions</a>
+            <a href="{{ route('welcome') }}#quick-access">Sign in to a portal</a>
+        </nav>
+
+        <section class="site-footer__contact">
+            <h3>Contact the school</h3>
+            <a href="mailto:{{ $systemEmail }}"><i class="fas fa-envelope" aria-hidden="true"></i>{{ $systemEmail }}</a>
+            <a href="tel:{{ preg_replace('/[^0-9+]/', '', $systemPhone) }}"><i class="fas fa-phone" aria-hidden="true"></i>{{ $systemPhone }}</a>
+            <p><i class="fas fa-map-marker-alt" aria-hidden="true"></i>{{ $systemAddress }}</p>
+        </section>
+    </div>
+
+    <div class="site-footer__bottom">
+        <p>&copy; {{ date('Y') }} {{ $systemName }}. All rights reserved.</p>
+        <p class="site-footer__credit">
+            Designed &amp; developed by
+            <a href="https://wa.me/250784571544?text={{ $developerMessage }}" target="_blank" rel="noopener noreferrer">
+                Nexora Rwanda <i class="fab fa-whatsapp" aria-hidden="true"></i>
+            </a>
+        </p>
     </div>
 </footer>

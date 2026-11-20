@@ -4,7 +4,8 @@
 
 @section('content')
 <!-- ALX-style hero header -->
-<div class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white py-12 md:py-16">
+<div class="public-exams-page">
+<div class="public-exams-hero bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white py-12 md:py-16">
     <div class="container mx-auto px-4 pt-12 pb-10 md:pt-16 md:pb-14">
         <div class="grid lg:grid-cols-2 gap-10 items-center">
             <div>
@@ -65,7 +66,7 @@
 
     <!-- Subscription Banner -->
     @if($subscriptions->count() > 0)
-    <div class="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 rounded-2xl p-8 mb-8 text-white shadow-xl relative overflow-hidden">
+    <div class="bg-gradient-to-br from-emerald-800 via-teal-700 to-emerald-800 rounded-2xl p-8 mb-8 text-white shadow-xl relative overflow-hidden">
         <div class="absolute top-0 right-0 w-40 h-40 bg-white opacity-10 rounded-full -mr-20 -mt-20"></div>
         <div class="relative z-10">
             <div class="flex flex-col lg:flex-row items-center justify-between">
@@ -130,7 +131,7 @@
                          data-questions="{{ $exam->questions->count() }}">
                         
                         <!-- Exam Header -->
-                        <div class="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-6 text-white relative overflow-hidden">
+                        <div class="bg-gradient-to-br from-emerald-800 via-teal-700 to-emerald-800 p-6 text-white relative overflow-hidden">
                             <div class="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-16 -mt-16"></div>
                             <div class="relative z-10">
                                 <div class="flex items-start justify-between mb-3">
@@ -238,7 +239,7 @@
                             <!-- Action Buttons -->
                             <div class="space-y-3">
                                 <a href="{{ route('public.exams.show', $exam) }}" 
-                                   class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 text-center block font-medium shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+                                   class="w-full bg-gradient-to-r from-emerald-700 to-teal-700 text-white py-3 px-4 rounded-xl hover:from-emerald-800 hover:to-teal-800 transition-all duration-200 text-center block font-medium shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
                                     <i class="fas fa-eye mr-2"></i>
                                     View Details
                                 </a>
@@ -337,5 +338,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
     </div>
+</div>
 </div>
 @endsection

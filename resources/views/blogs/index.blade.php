@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.public')
 
 @section('title', 'Blog - Excellent Servant Academy')
 
@@ -12,8 +12,8 @@
         --rule:      #e4e6eb;
         --surface:   #f7f8fa;
         --white:     #ffffff;
-        --accent:    #1a56db;        /* single clean blue accent — no gradient */
-        --accent-lt: #e8effe;
+        --accent:    #2e6652;
+        --accent-lt: #eaf1ea;
         --featured:  #b45309;        /* amber for featured badge */
         --radius:    12px;
         --shadow-sm: 0 1px 4px rgba(0,0,0,.06);

@@ -3,11 +3,11 @@
 @section('title', 'Create Account - ESA Portal')
 
 @section('content')
-<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+<div class="public-registration min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
     <div class="max-w-md w-full space-y-8">
         <!-- Header -->
         <div class="text-center">
-            <img src="{{ asset('images/logo.png') }}" alt="ESA Portal" class="mx-auto h-12 w-auto">
+            <img src="{{ asset('images/esa.jpg') }}" alt="ESA Portal" class="mx-auto h-12 w-auto">
             <h2 class="mt-6 text-3xl font-extrabold text-gray-900">Create your account</h2>
             <p class="mt-2 text-sm text-gray-600">
                 Join thousands of learners advancing their education

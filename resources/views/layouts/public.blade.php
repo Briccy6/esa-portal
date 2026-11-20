@@ -8,7 +8,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ isset($title) ? $title : $systemName }}</title>
+    <title>@yield('title', isset($title) ? $title : $systemName)</title>
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="icon" type="image/png" href="{{ \App\Helpers\LogoHelper::getFaviconUrl() }}">
 
@@ -250,9 +250,10 @@
         }
     </style>
 
+    <link rel="stylesheet" href="{{ asset('css/public-site.css') }}">
     @stack('styles')
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body class="public-site bg-gray-50 min-h-screen">
     <!-- Public Navigation -->
     @include('components.public-navbar')
 
@@ -260,7 +261,7 @@
     @include('components.live-streaming-banner')
 
     <!-- Main Content -->
-    <main>
+    <main class="public-site-main">
         @yield('content')
     </main>
 

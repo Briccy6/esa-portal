@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.public')
 
 @section('title', 'Student Registration - ' . config('app.name'))
 
@@ -401,7 +401,7 @@
 @endpush
 
 @section('content')
-<div class="registration-container">
+<div class="registration-container public-registration">
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-lg-10 col-xl-8">

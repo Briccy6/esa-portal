@@ -1,5 +1,5 @@
 <!-- Live Streaming Banner -->
-<div x-data="liveStreamingBanner()" x-init="init()" class="relative">
+<div x-data="liveStreamingBanner()" x-init="init()" class="site-live-banner relative">
     <!-- Banner Container -->
     <div class="bg-gradient-to-r from-red-600 to-red-500 text-white shadow-lg">
         <div class="container mx-auto px-6 py-4">

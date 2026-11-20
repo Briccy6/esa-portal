@@ -156,7 +156,7 @@
 
         <!-- Pagination -->
         <div class="mt-8">
-            {{ $resources->links() }}
+            {{ $resources->appends(request()->query())->links() }}
         </div>
     @else
         <div class="text-center py-12">

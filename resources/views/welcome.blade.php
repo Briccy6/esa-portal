@@ -1,7 +1,7 @@
 @php
-    $systemName = 'ESA-Panel'; // Static value to avoid cache dependency
-    $logoUrl = asset('images/esa.jpg'); // Static logo URL
-    $systemLogo = 'images/esa.jpg'; // Static system logo
+    $systemName = $schoolInfo?->school_name ?? \Illuminate\Support\Facades\Cache::get('esa_system_name', 'Excellent Servant Academy');
+    $schoolEmail = $schoolInfo?->email ?? \Illuminate\Support\Facades\Cache::get('esa_system_email', 'info@excellentservantacademy.com');
+    $schoolPhone = $schoolInfo?->phone ?? \Illuminate\Support\Facades\Cache::get('esa_system_phone', '+250 788 525 247');
 @endphp
 <!DOCTYPE html>
 <html lang="en">
@@ -1139,8 +1139,9 @@
             to { transform: rotate(360deg); }
         }
     </style>
+    <link rel="stylesheet" href="{{ asset('css/public-site.css') }}">
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body class="public-site bg-gray-50 min-h-screen">
 
     @include('components.public-navbar')
 
@@ -1149,7 +1150,7 @@
 
     <!-- Hero Section - ALX-style split layout -->
     <section id="home" class="bg-gradient-to-br from-slate-100 via-slate-50 to-slate-100 text-slate-800 py-16 md:py-24">
-        <div class="container mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center">
+        <div class="container mx-auto px-6 grid lg:grid-cols-2 gap-12 items-start">
             <!-- Left column: messaging -->
             <div>
                 <div class="inline-flex items-center space-x-2 rounded-full bg-white/10 px-4 py-1 mb-6 backdrop-blur-sm border border-white/10">
@@ -1199,6 +1200,11 @@
 
             <!-- Right column: stacked summary cards -->
             <div class="grid sm:grid-cols-2 gap-4 lg:gap-6">
+                <div class="public-hero-photo">
+                    <img src="{{ asset('images/1.jpg') }}" alt="Students at Excellent Servant Academy" width="1600" height="1067" fetchpriority="high">
+                    <span class="public-hero-photo__caption">A community built around learning.</span>
+                </div>
+
                 <div class="bg-white text-slate-900 rounded-2xl shadow-2xl p-6 flex flex-col justify-between">
                     <div>
                         <p class="text-xs font-semibold tracking-wide text-indigo-600 uppercase mb-2">
@@ -1218,7 +1224,7 @@
 
                 <div class="bg-slate-100/70 border border-slate-300 rounded-2xl p-6 flex flex-col justify-between">
                     <div>
-                        <p class="text-xs font-semibold tracking-wide text-emerald-400 uppercase mb-2">
+                    <p class="text-xs font-semibold tracking-wide text-emerald-700 uppercase mb-2">
                             Learning hub
                         </p>
                         <h3 class="text-xl font-bold mb-2">Notes & videos</h3>
@@ -1227,7 +1233,7 @@
                         </p>
                     </div>
                     <a href="{{ route('public.resources.index') }}"
-                       class="inline-flex items-center text-sm font-semibold text-emerald-300 hover:text-emerald-200">
+                       class="inline-flex items-center text-sm font-semibold text-emerald-800 hover:text-emerald-900">
                         View resources
                         <i class="fas fa-arrow-right ml-2 text-xs"></i>
                     </a>
@@ -1235,7 +1241,7 @@
 
                 <div class="bg-slate-100/50 border border-slate-300 rounded-2xl p-6 flex flex-col justify-between">
                     <div>
-                        <p class="text-xs font-semibold tracking-wide text-purple-300 uppercase mb-2">
+                        <p class="text-xs font-semibold tracking-wide text-purple-700 uppercase mb-2">
                             Subscription plans
                         </p>
                         <h3 class="text-xl font-bold mb-2">Tokens & subscriptions</h3>
@@ -1245,12 +1251,12 @@
                     </div>
                     <div class="flex flex-wrap gap-2">
                         <a href="{{ route('public.subscriptions.index') }}"
-                           class="inline-flex items-center px-4 py-2 rounded-full bg-purple-500/20 text-xs font-semibold text-purple-300 hover:bg-purple-500/30">
+                           class="inline-flex items-center px-4 py-2 rounded-full bg-purple-100 text-xs font-semibold text-purple-800 hover:bg-purple-200">
                             View plans
                             <i class="fas fa-arrow-right ml-2 text-[10px]"></i>
                         </a>
                         <a href="{{ route('client.auth.login') }}"
-                           class="inline-flex items-center px-4 py-2 rounded-full bg-white/10 text-xs font-semibold hover:bg-white/15">
+                           class="inline-flex items-center px-4 py-2 rounded-full bg-white text-xs font-semibold text-slate-700 hover:bg-slate-200">
                             Client login
                             <i class="fas fa-sign-in-alt ml-2 text-[10px]"></i>
                         </a>
@@ -1259,7 +1265,7 @@
 
                 <div class="bg-slate-100/60 border border-slate-300 rounded-2xl p-6 flex flex-col justify-between sm:col-span-2">
                     <div>
-                        <p class="text-xs font-semibold tracking-wide text-amber-300 uppercase mb-2">
+                        <p class="text-xs font-semibold tracking-wide text-amber-800 uppercase mb-2">
                             Portals
                         </p>
                         <h3 class="text-xl font-bold mb-2">Admin, staff, teacher & student access</h3>
@@ -1269,7 +1275,7 @@
                     </div>
                     <div class="flex flex-wrap gap-2">
                         <a href="#quick-access"
-                           class="inline-flex items-center px-4 py-2 rounded-full bg-white/10 text-xs font-semibold hover:bg-white/15">
+                           class="inline-flex items-center px-4 py-2 rounded-full bg-white text-xs font-semibold text-slate-700 hover:bg-slate-200">
                             Explore portals
                             <i class="fas fa-arrow-right ml-2 text-[10px]"></i>
                         </a>
@@ -1297,6 +1303,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
                 @php
                     $featuredExams = \App\Models\Exam::where('is_public', true)
+                        ->where('is_active', true)
                         ->with(['courses', 'questions'])
                         ->take(6)
                         ->get();
@@ -1397,7 +1404,17 @@
             <!-- Featured Resources Cards -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
                 @php
-                    $featuredResources = \App\Models\Resource::with(['course', 'teacher', 'branch'])
+                    $featuredResources = \App\Models\Resource::where('is_public', true)
+                        ->where(function ($query) {
+                            $query->where('is_free', true)
+                                ->orWhereNotNull('price');
+                        })
+                        ->where(function ($query) {
+                            $query->whereNotNull('document_blob')
+                                ->orWhereNotNull('video_blob')
+                                ->orWhereNotNull('youtube_link');
+                        })
+                        ->with(['course', 'teacher', 'branch'])
                         ->take(6)
                         ->get();
                 @endphp
@@ -1601,13 +1618,31 @@
         </div>
     </section>
 
-    <!-- Placeholder sections for About and Contact -->
-    <section id="about" class="py-16 bg-bg-light">
-        <div class="container mx-auto px-6 text-center">
-            <h2 class="text-4xl font-extrabold section-heading mb-4">About <span class="text-accent-color">ESA</span></h2>
-            <p class="text-lg text-text-light max-w-3xl mx-auto">Excellent Servant Academy is committed to providing high-quality, accessible education through innovative e-learning solutions. We aim to empower students with the knowledge and skills necessary for success in a rapidly changing world.</p>
-            <p class="text-lg text-text-light max-w-3xl mx-auto mt-4">Our platform offers a rich curriculum, expert instructors, and a supportive community, ensuring a comprehensive and engaging learning experience for all.</p>
-            <a href="#" class="mt-8 inline-block btn-primary px-6 py-3 rounded-lg font-medium shadow-md">Learn More <i class="fas fa-info-circle ml-2"></i></a>
+    <section id="about" class="public-school-profile py-16">
+        <div class="container mx-auto px-6">
+            <div class="public-school-profile__panel">
+                <p class="public-school-profile__eyebrow">The school behind the portal</p>
+                <h2 class="text-4xl font-extrabold section-heading mb-4">{{ $systemName }}</h2>
+                @if($schoolInfo?->motto)
+                    <p class="text-xl font-semibold text-accent-color mb-4">{{ $schoolInfo->motto }}</p>
+                @endif
+                @if($schoolInfo?->mission)
+                    <p class="text-lg text-text-light leading-relaxed">{{ $schoolInfo->mission }}</p>
+                @else
+                    <p class="text-lg text-text-light leading-relaxed">Excellent Servant Academy is committed to providing high-quality, accessible education and helping students build the knowledge and skills they need to thrive.</p>
+                @endif
+                @if($schoolInfo?->vision)
+                    <div class="mt-6">
+                        <h3 class="font-bold section-heading text-lg mb-2">Our vision</h3>
+                        <p class="text-text-light leading-relaxed">{{ $schoolInfo->vision }}</p>
+                    </div>
+                @endif
+                @if($schoolInfo?->principal_name)
+                    <div class="public-school-profile__facts">
+                        <span><i class="fas fa-user-tie mr-2" aria-hidden="true"></i>Principal: {{ $schoolInfo->principal_name }}</span>
+                    </div>
+                @endif
+            </div>
         </div>
     </section>
 
@@ -1616,11 +1651,11 @@
             <h2 class="text-4xl font-extrabold section-heading mb-4">Get in <span class="text-accent-color">Touch</span></h2>
             <p class="text-lg text-text-light max-w-3xl mx-auto">Have questions? We're here to help. Reach out to us through the following channels:</p>
             <div class="mt-8 flex justify-center space-x-8">
-                <a href="mailto:info@esa.com" class="text-text-light hover:text-accent-color transition duration-300 flex items-center text-lg">
-                    <i class="fas fa-envelope mr-2 text-2xl"></i> info@excellentservantacademy.com
+                <a href="mailto:{{ $schoolEmail }}" class="text-text-light hover:text-accent-color transition duration-300 flex items-center text-lg">
+                    <i class="fas fa-envelope mr-2 text-2xl"></i> {{ $schoolEmail }}
                 </a>
-                <a href="tel:+250788525247" class="text-text-light hover:text-accent-color transition duration-300 flex items-center text-lg">
-                    <i class="fas fa-phone mr-2 text-2xl"></i> +250 788 525 247
+                <a href="tel:{{ preg_replace('/[^0-9+]/', '', $schoolPhone) }}" class="text-text-light hover:text-accent-color transition duration-300 flex items-center text-lg">
+                    <i class="fas fa-phone mr-2 text-2xl"></i> {{ $schoolPhone }}
                 </a>
             </div>
             <div class="mt-8">
@@ -1629,17 +1664,7 @@
         </div>
     </section>
 
-    <!-- Footer -->
-    <footer class="bg-primary-color py-8 text-white text-center">
-        <div class="container mx-auto px-6">
-            <p>&copy; {{ date('Y') }} {{ $systemName }}. All rights reserved.</p>
-            <div class="flex justify-center space-x-4 mt-4">
-                <a href="#" class="text-gray-300 hover:text-white transition duration-300"><i class="fab fa-facebook-f"></i></a>
-                <a href="#" class="text-gray-300 hover:text-white transition duration-300"><i class="fab fa-twitter"></i></a>
-                <a href="#" class="text-gray-300 hover:text-white transition duration-300"><i class="fab fa-linkedin-in"></i></a>
-            </div>
-        </div>
-    </footer>
+    @include('components.footer')
 
     <!-- Floating Notice Board -->
     <div class="notice-board" x-data="{ open: false, announcementCount: {{ $publicAnnouncements->count() }} }">
@@ -1686,7 +1711,7 @@
         let isTransitioning = false;
 
         function showSlides(n) {
-            if (isTransitioning) return;
+            if (!totalSlides || isTransitioning) return;
             isTransitioning = true;
             
             // Reset index if out of bounds
@@ -1727,6 +1752,7 @@
         }
 
         function startAutoSlide() {
+            if (!totalSlides) return;
             autoSlideInterval = setInterval(autoSlides, 6000);
         }
 
