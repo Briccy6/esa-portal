@@ -277,6 +277,48 @@ class AdminAuthController extends Controller
                 ->orderBy('total', 'desc')
                 ->get();
 
+            // Students by shift in each branch
+            $studentsByShiftInBranch = AcademicYearContext::filterStudents(
+                Student::select('branches.name as branch_name', 'shift', DB::raw('count(*) as total'))
+                    ->join('branches', 'students.branch_id', '=', 'branches.id')
+            )->groupBy('branches.id', 'branches.name', 'shift')
+                ->orderBy('branches.name')
+                ->orderBy('shift')
+                ->get();
+
+            // Students with completed profiles for each branch
+            // Profile completion criteria: has email, phone, sex, identification_type, id_number
+            $studentsWithCompletedProfileByBranch = AcademicYearContext::filterStudents(
+                Student::select('branches.name as branch_name', DB::raw('count(*) as total'))
+                    ->join('branches', 'students.branch_id', '=', 'branches.id')
+                    ->whereNotNull('email')
+                    ->whereNotNull('phone')
+                    ->whereNotNull('sex')
+                    ->whereNotNull('identification_type')
+                    ->whereNotNull('id_number')
+                    ->where('email', '!=', '')
+                    ->where('phone', '!=', '')
+                    ->where('sex', '!=', '')
+                    ->where('identification_type', '!=', '')
+                    ->where('id_number', '!=', '')
+            )->groupBy('branches.id', 'branches.name')
+                ->orderBy('total', 'desc')
+                ->get();
+
+            // Students who fully paid their fees (100% payment)
+            $fullyPaidStudents = AcademicYearContext::filterStudents(
+                Student::whereHas('transactions', function($query) {
+                    $query->where('status', 'successful');
+                })
+            )->count();
+
+            // Students who did not pay anything
+            $studentsWithNoPayment = AcademicYearContext::filterStudents(
+                Student::whereDoesntHave('transactions', function($query) {
+                    $query->where('status', 'successful');
+                })
+            )->count();
+
             // Cache the results for 1 hour
             $dashboardData = compact(
                 'selectedAcademicYear',
@@ -302,6 +344,10 @@ class AdminAuthController extends Controller
                 'studentsByCourseGender',
                 'studentsByBranch',
                 'studentsByCourseInBranch',
+                'studentsByShiftInBranch',
+                'studentsWithCompletedProfileByBranch',
+                'fullyPaidStudents',
+                'studentsWithNoPayment',
                 'registrationPaidPercent',
                 'tuitionPaidPercent',
                 'feePaymentData',
@@ -345,5 +391,88 @@ class AdminAuthController extends Controller
                 'trace' => $e->getTraceAsString()
             ]);
         }
+    }
+
+    /**
+     * Filter students by payment percentage
+     */
+    public function filterByPaymentPercentage(Request $request)
+    {
+        $percentage = $request->input('percentage', 50);
+        $branchId = $request->input('branch_id');
+        $courseId = $request->input('course_id');
+
+        $query = Student::with(['branch', 'course', 'transactions']);
+
+        // Apply academic year filter
+        $selectedAcademicYear = AcademicYearContext::selected();
+        if ($selectedAcademicYear) {
+            $query->where('academic_year_id', $selectedAcademicYear->id);
+        }
+
+        // Apply branch filter
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        }
+
+        // Apply course filter
+        if ($courseId) {
+            $query->where('course_id', $courseId);
+        }
+
+        $students = $query->get();
+
+        $filteredStudents = collect();
+
+        foreach ($students as $student) {
+            // Get the student's total fees (from course term fees)
+            $totalFees = 0;
+            if ($student->course) {
+                $currentTerm = \App\Models\Term::where('academic_year_id', $student->academic_year_id)
+                    ->where('start_date', '<=', now())
+                    ->where('end_date', '>=', now())
+                    ->first();
+
+                if ($currentTerm) {
+                    $courseTermFee = \App\Models\CourseTermFee::where('course_id', $student->course_id)
+                        ->where('term_id', $currentTerm->id)
+                        ->where('is_active', true)
+                        ->first();
+
+                    if ($courseTermFee) {
+                        $totalFees = $courseTermFee->total_fees;
+                    }
+                }
+            }
+
+            // Get total paid amount
+            $paidAmount = $student->transactions()
+                ->where('status', 'successful')
+                ->whereHas('term', fn ($q) => $q->where('academic_year_id', $student->academic_year_id))
+                ->sum('amount');
+
+            // Calculate payment percentage
+            $paymentPercentage = $totalFees > 0 ? ($paidAmount / $totalFees) * 100 : 0;
+
+            // Check if student meets the threshold
+            if ($paymentPercentage >= $percentage) {
+                $filteredStudents->push([
+                    'id' => $student->id,
+                    'name' => $student->full_name,
+                    'reg_number' => $student->reg_number,
+                    'branch' => $student->branch->name ?? 'N/A',
+                    'course' => $student->course->course_name ?? 'N/A',
+                    'paid_amount' => $paidAmount,
+                    'total_fees' => $totalFees,
+                    'payment_percentage' => round($paymentPercentage, 2),
+                ]);
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'count' => $filteredStudents->count(),
+            'students' => $filteredStudents,
+        ]);
     }
 }

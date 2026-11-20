@@ -5,22 +5,22 @@
 @push('styles')
 <style>
 :root {
-    --primary: #317997;
-    --primary-dark: #286680;
-    --secondary: #5b7083;
-    --success: #397875;
-    --warning: #dce66a;
-    --danger: #b85e58;
-    --info: #63a9c5;
-    --purple: #526b87;
-    --pink: #71869b;
-    --teal: #43869a;
-    --orange: #849caf;
-    --bg-light: #f2f7fa;
-    --bg-white: #ffffff;
-    --text-dark: #14283f;
-    --text-muted: #5b7083;
-    --border: #d9e6ed;
+    --primary: #477a57;
+    --primary-dark: #356346;
+    --secondary: #59665d;
+    --success: #477a57;
+    --warning: #b9822e;
+    --danger: #b85b52;
+    --info: #527e78;
+    --purple: #75679a;
+    --pink: #a66d72;
+    --teal: #4c8176;
+    --orange: #bd7844;
+    --bg-light: #f5f4ed;
+    --bg-white: #fffefa;
+    --text-dark: #202b24;
+    --text-muted: #647168;
+    --border: #dfe3d8;
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
@@ -54,10 +54,10 @@ body {
 .dashboard-header {
     margin-bottom: 2.5rem;
     padding: 2rem;
-    background: linear-gradient(112deg, #14283f 0%, #1d3854 72%, #317997 100%);
+    background: linear-gradient(112deg, #19382d 0%, #28513d 72%, #477a57 100%);
     border-radius: var(--radius-xl);
     color: white;
-    box-shadow: 0 10px 30px rgba(20, 40, 63, 0.2);
+    box-shadow: 0 10px 30px rgba(25, 56, 45, 0.2);
     position: relative;
     overflow: hidden;
 }
@@ -139,15 +139,15 @@ body {
     opacity: 1;
 }
 
-.stat-card.primary::before { --stat-color: var(--primary); background: linear-gradient(90deg, #317997, #63a9c5); }
-.stat-card.success::before { --stat-color: var(--success); background: linear-gradient(90deg, #397875, #70b1c2); }
-.stat-card.warning::before { --stat-color: var(--warning); background: linear-gradient(90deg, #dce66a, #eff4a1); }
-.stat-card.danger::before { --stat-color: var(--danger); background: linear-gradient(90deg, #b85e58, #d17b6e); }
-.stat-card.info::before { --stat-color: var(--info); background: linear-gradient(90deg, #63a9c5, #91cbdd); }
-.stat-card.purple::before { --stat-color: var(--purple); background: linear-gradient(90deg, #526b87, #7189a2); }
-.stat-card.pink::before { --stat-color: var(--pink); background: linear-gradient(90deg, #71869b, #94a8b8); }
-.stat-card.teal::before { --stat-color: var(--teal); background: linear-gradient(90deg, #43869a, #70b1c2); }
-.stat-card.orange::before { --stat-color: var(--orange); background: linear-gradient(90deg, #849caf, #a7bac8); }
+.stat-card.primary::before { --stat-color: var(--primary); background: linear-gradient(90deg, #477a57, #8fb68d); }
+.stat-card.success::before { --stat-color: var(--success); background: linear-gradient(90deg, #477a57, #8fb68d); }
+.stat-card.warning::before { --stat-color: var(--warning); background: linear-gradient(90deg, #b9822e, #e5b968); }
+.stat-card.danger::before { --stat-color: var(--danger); background: linear-gradient(90deg, #b85b52, #d58778); }
+.stat-card.info::before { --stat-color: var(--info); background: linear-gradient(90deg, #527e78, #8bb2a0); }
+.stat-card.purple::before { --stat-color: var(--purple); background: linear-gradient(90deg, #75679a, #a69abf); }
+.stat-card.pink::before { --stat-color: var(--pink); background: linear-gradient(90deg, #a66d72, #cc9692); }
+.stat-card.teal::before { --stat-color: var(--teal); background: linear-gradient(90deg, #4c8176, #8bb2a0); }
+.stat-card.orange::before { --stat-color: var(--orange); background: linear-gradient(90deg, #bd7844, #dfaa72); }
 
 .stat-card-header {
     display: flex;
@@ -174,15 +174,15 @@ body {
     transform: scale(1.1) rotate(5deg);
 }
 
-.stat-card.primary .stat-card-icon { --stat-bg: linear-gradient(135deg, rgba(52, 127, 157, 0.15), rgba(99, 169, 197, 0.15)); --stat-color: var(--primary); }
-.stat-card.success .stat-card-icon { --stat-bg: linear-gradient(135deg, rgba(67, 134, 154, 0.15), rgba(112, 177, 194, 0.15)); --stat-color: var(--success); }
-.stat-card.warning .stat-card-icon { --stat-bg: linear-gradient(135deg, rgba(220, 230, 106, 0.25), rgba(239, 244, 161, 0.2)); --stat-color: #334550; }
-.stat-card.danger .stat-card-icon { --stat-bg: linear-gradient(135deg, rgba(184, 94, 88, 0.15), rgba(209, 123, 110, 0.15)); --stat-color: var(--danger); }
-.stat-card.info .stat-card-icon { --stat-bg: linear-gradient(135deg, rgba(99, 169, 197, 0.15), rgba(145, 203, 221, 0.15)); --stat-color: var(--info); }
-.stat-card.purple .stat-card-icon { --stat-bg: linear-gradient(135deg, rgba(82, 107, 135, 0.15), rgba(113, 137, 162, 0.15)); --stat-color: var(--purple); }
-.stat-card.pink .stat-card-icon { --stat-bg: linear-gradient(135deg, rgba(113, 134, 155, 0.15), rgba(148, 168, 184, 0.15)); --stat-color: var(--pink); }
-.stat-card.teal .stat-card-icon { --stat-bg: linear-gradient(135deg, rgba(67, 134, 154, 0.15), rgba(112, 177, 194, 0.15)); --stat-color: var(--teal); }
-.stat-card.orange .stat-card-icon { --stat-bg: linear-gradient(135deg, rgba(132, 156, 175, 0.15), rgba(167, 186, 200, 0.15)); --stat-color: var(--orange); }
+.stat-card.primary .stat-card-icon { --stat-bg: rgba(71, 122, 87, 0.14); --stat-color: var(--primary); }
+.stat-card.success .stat-card-icon { --stat-bg: rgba(71, 122, 87, 0.14); --stat-color: var(--success); }
+.stat-card.warning .stat-card-icon { --stat-bg: rgba(229, 185, 104, 0.2); --stat-color: #8a5d1e; }
+.stat-card.danger .stat-card-icon { --stat-bg: rgba(184, 91, 82, 0.14); --stat-color: var(--danger); }
+.stat-card.info .stat-card-icon { --stat-bg: rgba(82, 126, 120, 0.14); --stat-color: var(--info); }
+.stat-card.purple .stat-card-icon { --stat-bg: rgba(117, 103, 154, 0.14); --stat-color: var(--purple); }
+.stat-card.pink .stat-card-icon { --stat-bg: rgba(166, 109, 114, 0.14); --stat-color: var(--pink); }
+.stat-card.teal .stat-card-icon { --stat-bg: rgba(76, 129, 118, 0.14); --stat-color: var(--teal); }
+.stat-card.orange .stat-card-icon { --stat-bg: rgba(189, 120, 68, 0.14); --stat-color: var(--orange); }
 
 .stat-card-label {
     font-size: 0.8rem;
@@ -316,7 +316,7 @@ body {
 }
 
 .quick-action-card {
-    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    background: linear-gradient(135deg, #fffefa 0%, #f5f4ed 100%);
     border-radius: var(--radius-xl);
     padding: 1.75rem;
     box-shadow: var(--shadow-md);
@@ -344,11 +344,11 @@ body {
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
 }
 
-.quick-action-card.primary::before { --action-color: var(--primary); background: linear-gradient(90deg, #317997, #63a9c5); }
-.quick-action-card.success::before { --action-color: var(--success); background: linear-gradient(90deg, #397875, #70b1c2); }
-.quick-action-card.warning::before { --action-color: var(--warning); background: linear-gradient(90deg, #dce66a, #eff4a1); }
-.quick-action-card.danger::before { --action-color: var(--danger); background: linear-gradient(90deg, #b85e58, #d17b6e); }
-.quick-action-card.info::before { --action-color: var(--info); background: linear-gradient(90deg, #63a9c5, #91cbdd); }
+.quick-action-card.primary::before { --action-color: var(--primary); background: linear-gradient(90deg, #477a57, #8fb68d); }
+.quick-action-card.success::before { --action-color: var(--success); background: linear-gradient(90deg, #477a57, #8fb68d); }
+.quick-action-card.warning::before { --action-color: var(--warning); background: linear-gradient(90deg, #b9822e, #e5b968); }
+.quick-action-card.danger::before { --action-color: var(--danger); background: linear-gradient(90deg, #b85b52, #d58778); }
+.quick-action-card.info::before { --action-color: var(--info); background: linear-gradient(90deg, #527e78, #8bb2a0); }
 
 .quick-action-icon {
     width: 48px;
@@ -358,7 +358,7 @@ body {
     align-items: center;
     justify-content: center;
     font-size: 1.5rem;
-    background: var(--action-bg, rgba(52, 127, 157, 0.1));
+    background: var(--action-bg, rgba(71, 122, 87, 0.14));
     color: var(--action-color, var(--primary));
     margin-bottom: 1rem;
     transition: all 0.3s ease;
@@ -368,11 +368,11 @@ body {
     transform: scale(1.1) rotate(5deg);
 }
 
-.quick-action-card.primary .quick-action-icon { --action-bg: linear-gradient(135deg, rgba(52, 127, 157, 0.15), rgba(99, 169, 197, 0.15)); --action-color: var(--primary); }
-.quick-action-card.success .quick-action-icon { --action-bg: linear-gradient(135deg, rgba(67, 134, 154, 0.15), rgba(112, 177, 194, 0.15)); --action-color: var(--success); }
-.quick-action-card.warning .quick-action-icon { --action-bg: linear-gradient(135deg, rgba(220, 230, 106, 0.25), rgba(239, 244, 161, 0.2)); --action-color: #334550; }
-.quick-action-card.danger .quick-action-icon { --action-bg: linear-gradient(135deg, rgba(184, 94, 88, 0.15), rgba(209, 123, 110, 0.15)); --action-color: var(--danger); }
-.quick-action-card.info .quick-action-icon { --action-bg: linear-gradient(135deg, rgba(99, 169, 197, 0.15), rgba(145, 203, 221, 0.15)); --action-color: var(--info); }
+.quick-action-card.primary .quick-action-icon { --action-bg: rgba(71, 122, 87, 0.14); --action-color: var(--primary); }
+.quick-action-card.success .quick-action-icon { --action-bg: rgba(71, 122, 87, 0.14); --action-color: var(--success); }
+.quick-action-card.warning .quick-action-icon { --action-bg: rgba(229, 185, 104, 0.2); --action-color: #8a5d1e; }
+.quick-action-card.danger .quick-action-icon { --action-bg: rgba(184, 91, 82, 0.14); --action-color: var(--danger); }
+.quick-action-card.info .quick-action-icon { --action-bg: rgba(82, 126, 120, 0.14); --action-color: var(--info); }
 
 .quick-action-title {
     font-size: 1rem;
@@ -393,7 +393,7 @@ body {
     padding: 1.75rem;
     box-shadow: var(--shadow-md);
     border: 1px solid var(--border);
-    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    background: linear-gradient(135deg, #fffefa 0%, #f5f4ed 100%);
 }
 
 .recent-activity-header {
@@ -428,7 +428,7 @@ body {
 }
 
 .recent-activity-item:hover {
-    background: rgba(52, 127, 157, 0.06);
+    background: rgba(71, 122, 87, 0.07);
 }
 
 .recent-activity-icon {
@@ -511,7 +511,7 @@ body {
 }
 
 .btn-success:hover {
-    background: #286680;
+    background: #356346;
 }
 
 .btn-outline {
@@ -732,11 +732,11 @@ body {
     flex-direction: column;
     justify-content: flex-end;
     background:
-        radial-gradient(circle at 88% 18%, rgba(105, 190, 218, .24), transparent 19rem),
-        linear-gradient(112deg, #14283f 0%, #1d3854 70%, #317997 100%);
+        radial-gradient(circle at 88% 18%, rgba(197, 166, 103, .22), transparent 19rem),
+        linear-gradient(112deg, #19382d 0%, #28513d 70%, #477a57 100%);
     border: 1px solid rgba(255,255,255,0.1);
     border-radius: 22px;
-    box-shadow: 0 24px 64px rgba(20,40,63,0.18);
+    box-shadow: 0 24px 64px rgba(25,56,45,0.18);
 }
 
 .dashboard-header::before {
@@ -744,7 +744,7 @@ body {
     height: 220px;
     top: -90px;
     right: 30px;
-    border: 1px solid rgba(232,239,104,0.32);
+    border: 1px solid rgba(229,185,104,0.38);
     border-radius: 50%;
     background: transparent;
 }
@@ -758,7 +758,7 @@ body {
 
 .dashboard-header p {
     max-width: 620px;
-    color: #d3e5ee;
+    color: #e2e9df;
 }
 
 .stats-grid {
@@ -768,7 +768,7 @@ body {
 
 .stat-card {
     min-height: 178px;
-    background: #fff;
+    background: #fffefa;
     border-radius: 16px;
     padding: 20px;
 }
@@ -804,35 +804,25 @@ body {
     border-radius: 16px;
 }
 
-.stat-card.primary::before,
-.quick-action-card.primary::before { background: linear-gradient(90deg, #317997, #63a9c5); }
-.stat-card.success::before,
-.quick-action-card.success::before { background: linear-gradient(90deg, #397875, #70b1c2); }
-.stat-card.warning::before,
-.quick-action-card.warning::before { background: linear-gradient(90deg, #dce66a, #eff4a1); }
-.stat-card.danger::before,
-.quick-action-card.danger::before { background: linear-gradient(90deg, #b85e58, #d17b6e); }
-.stat-card.info::before,
-.quick-action-card.info::before { background: linear-gradient(90deg, #63a9c5, #91cbdd); }
-.stat-card.purple::before { background: linear-gradient(90deg, #526b87, #7189a2); }
-.stat-card.pink::before { background: linear-gradient(90deg, #71869b, #94a8b8); }
-.stat-card.teal::before { background: linear-gradient(90deg, #43869a, #70b1c2); }
-.stat-card.orange::before { background: linear-gradient(90deg, #849caf, #a7bac8); }
+.stat-card.primary::before, .quick-action-card.primary::before { background: linear-gradient(90deg, #477a57, #8fb68d); }
+.stat-card.success::before, .quick-action-card.success::before { background: linear-gradient(90deg, #477a57, #8fb68d); }
+.stat-card.warning::before, .quick-action-card.warning::before { background: linear-gradient(90deg, #b9822e, #e5b968); }
+.stat-card.danger::before, .quick-action-card.danger::before { background: linear-gradient(90deg, #b85b52, #d58778); }
+.stat-card.info::before, .quick-action-card.info::before { background: linear-gradient(90deg, #527e78, #8bb2a0); }
+.stat-card.purple::before { background: linear-gradient(90deg, #75679a, #a69abf); }
+.stat-card.pink::before { background: linear-gradient(90deg, #a66d72, #cc9692); }
+.stat-card.teal::before { background: linear-gradient(90deg, #4c8176, #8bb2a0); }
+.stat-card.orange::before { background: linear-gradient(90deg, #bd7844, #dfaa72); }
 
-.stat-card.primary .stat-card-icon { background: #e5f1f6; color: #286680; }
-.stat-card.success .stat-card-icon { background: #e5f0f3; color: #397383; }
-.stat-card.warning .stat-card-icon { background: #f4f6d8; color: #334550; }
-.stat-card.danger .stat-card-icon { background: #f6e9e7; color: #b85e58; }
-.stat-card.info .stat-card-icon { background: #e5f1f6; color: #317997; }
-.stat-card.purple .stat-card-icon { background: #e9eef3; color: #526b87; }
-.stat-card.pink .stat-card-icon { background: #ebf0f4; color: #71869b; }
-.stat-card.teal .stat-card-icon { background: #e5f0f3; color: #43869a; }
-.stat-card.orange .stat-card-icon { background: #eaf0f4; color: #71899c; }
-.quick-action-card.primary .quick-action-icon { background: #e5f1f6; color: #286680; }
-.quick-action-card.success .quick-action-icon { background: #e5f0f3; color: #397383; }
-.quick-action-card.warning .quick-action-icon { background: #f4f6d8; color: #334550; }
-.quick-action-card.danger .quick-action-icon { background: #f6e9e7; color: #b85e58; }
-.quick-action-card.info .quick-action-icon { background: #e5f1f6; color: #317997; }
+.stat-card.primary .stat-card-icon, .quick-action-card.primary .quick-action-icon { background: rgba(71, 122, 87, 0.14); color: #356346; }
+.stat-card.success .stat-card-icon, .quick-action-card.success .quick-action-icon { background: rgba(71, 122, 87, 0.14); color: #356346; }
+.stat-card.warning .stat-card-icon, .quick-action-card.warning .quick-action-icon { background: rgba(229, 185, 104, 0.2); color: #8a5d1e; }
+.stat-card.danger .stat-card-icon, .quick-action-card.danger .quick-action-icon { background: rgba(184, 91, 82, 0.14); color: #a84c45; }
+.stat-card.info .stat-card-icon, .quick-action-card.info .quick-action-icon { background: rgba(82, 126, 120, 0.14); color: #416d67; }
+.stat-card.purple .stat-card-icon { background: rgba(117, 103, 154, 0.14); color: #675a8a; }
+.stat-card.pink .stat-card-icon { background: rgba(166, 109, 114, 0.14); color: #945e63; }
+.stat-card.teal .stat-card-icon { background: rgba(76, 129, 118, 0.14); color: #3e6e64; }
+.stat-card.orange .stat-card-icon { background: rgba(189, 120, 68, 0.14); color: #9c6036; }
 
 .stat-card,
 .chart-card,
@@ -843,11 +833,11 @@ body {
 }
 
 .stat-card-label {
-    color: #536c80;
+    color: #526258;
 }
 
 .stat-card-subtext {
-    color: #5b7083;
+    color: #647168;
 }
 
 .dashboard-header > div {
@@ -926,11 +916,11 @@ body {
 }
 
 body[data-theme="dark"] {
-    --text-dark: #edf6fa;
-    --text-muted: #b4c7d4;
-    --bg-light: #101d2c;
-    --bg-white: #192b3e;
-    --border: #30475b;
+    --text-dark: #f0f3ed;
+    --text-muted: #bdc9bd;
+    --bg-light: #121b16;
+    --bg-white: #1b2920;
+    --border: #35463a;
     color: var(--text-dark);
 }
 
@@ -938,13 +928,13 @@ body[data-theme="dark"] .stat-card,
 body[data-theme="dark"] .chart-card,
 body[data-theme="dark"] .recent-activity,
 body[data-theme="dark"] .quick-action-card {
-    background: #192b3e;
+    background: #1b2920;
     color: var(--text-dark);
 }
 
 body[data-theme="dark"] .stat-card-label,
 body[data-theme="dark"] .stat-card-subtext {
-    color: #b4c7d4;
+    color: #bdc9bd;
 }
 </style>
 @endpush
@@ -959,7 +949,7 @@ body[data-theme="dark"] .stat-card-subtext {
     <!-- Dashboard Header -->
     <div class="dashboard-header">
         <div style="position:relative;z-index:1;">
-            <div style="margin-bottom:.75rem;color:#e8ef68;font-size:.72rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;">
+            <div style="margin-bottom:.75rem;color:#f0d18b;font-size:.72rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;">
                 Institution overview
             </div>
             <h1>Analytics Dashboard</h1>
@@ -1164,6 +1154,194 @@ body[data-theme="dark"] .stat-card-subtext {
             <div class="stat-card-label">Active Subscriptions</div>
             <div class="stat-card-value">{{ \App\Models\ClientSubscription::where('is_active', true)->count() }}</div>
             <div class="stat-card-subtext">Currently active</div>
+        </div>
+    </div>
+
+    <!-- Student Statistics Cards -->
+    <div class="stats-grid">
+        <div class="stat-card success">
+            <div class="stat-card-header">
+                <div class="stat-card-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+            </div>
+            <div class="stat-card-label">Fully Paid Students</div>
+            <div class="stat-card-value">{{ number_format($fullyPaidStudents ?? 0) }}</div>
+            <div class="stat-card-subtext">Students with successful payments</div>
+        </div>
+
+        <div class="stat-card danger">
+            <div class="stat-card-header">
+                <div class="stat-card-icon">
+                    <i class="fas fa-times-circle"></i>
+                </div>
+            </div>
+            <div class="stat-card-label">No Payment Students</div>
+            <div class="stat-card-value">{{ number_format($studentsWithNoPayment ?? 0) }}</div>
+            <div class="stat-card-subtext">Students with no fee payments</div>
+        </div>
+
+        <div class="stat-card info">
+            <div class="stat-card-header">
+                <div class="stat-card-icon">
+                    <i class="fas fa-user-check"></i>
+                </div>
+            </div>
+            <div class="stat-card-label">Profile Completion</div>
+            <div class="stat-card-value">{{ number_format($studentsWithCompletedProfileByBranch->sum('total') ?? 0) }}</div>
+            <div class="stat-card-subtext">Students with complete profiles</div>
+        </div>
+
+        <div class="stat-card warning">
+            <div class="stat-card-header">
+                <div class="stat-card-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+            </div>
+            <div class="stat-card-label">Payment Analysis</div>
+            <div class="stat-card-value">Custom</div>
+            <div class="stat-card-subtext">Filter by payment percentage</div>
+        </div>
+    </div>
+
+    <!-- Students by Shift in Branch -->
+    <div class="chart-card">
+        <div class="chart-card-header">
+            <h3 class="chart-card-title">
+                <i class="fas fa-clock"></i>
+                Students by Shift in Each Branch
+            </h3>
+            <div class="chart-card-actions">
+                <button class="btn btn-outline btn-sm">Export</button>
+            </div>
+        </div>
+        <div class="chart-card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Branch</th>
+                            <th>Day</th>
+                            <th>Evening</th>
+                            <th>Weekend</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @php
+                            $shiftData = [];
+                            foreach($studentsByShiftInBranch as $item) {
+                                if (!isset($shiftData[$item->branch_name])) {
+                                    $shiftData[$item->branch_name] = ['day' => 0, 'evening' => 0, 'weekend' => 0];
+                                }
+                                $shiftData[$item->branch_name][$item->shift] = $item->total;
+                            }
+                        @endphp
+                        @foreach($shiftData as $branch => $shifts)
+                            <tr>
+                                <td><strong>{{ $branch }}</strong></td>
+                                <td>{{ number_format($shifts['day']) }}</td>
+                                <td>{{ number_format($shifts['evening']) }}</td>
+                                <td>{{ number_format($shifts['weekend']) }}</td>
+                                <td><strong>{{ number_format(array_sum($shifts)) }}</strong></td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Students with Completed Profiles by Branch -->
+    <div class="chart-card">
+        <div class="chart-card-header">
+            <h3 class="chart-card-title">
+                <i class="fas fa-user-check"></i>
+                Students with Completed Profiles by Branch
+            </h3>
+            <div class="chart-card-actions">
+                <button class="btn btn-outline btn-sm">Export</button>
+            </div>
+        </div>
+        <div class="chart-card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Branch</th>
+                            <th>Completed Profiles</th>
+                            <th>Percentage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($studentsWithCompletedProfileByBranch as $item)
+                            @php
+                                $branchTotal = $studentsByBranch->where('branch_name', $item->branch_name)->first()->total ?? 0;
+                                $percentage = $branchTotal > 0 ? round(($item->total / $branchTotal) * 100, 1) : 0;
+                            @endphp
+                            <tr>
+                                <td><strong>{{ $item->branch_name }}</strong></td>
+                                <td>{{ number_format($item->total) }}</td>
+                                <td>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ $percentage }}%;" aria-valuenow="{{ $percentage }}" aria-valuemin="0" aria-valuemax="100">{{ $percentage }}%</div>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Percentage Filter Card -->
+    <div class="chart-card">
+        <div class="chart-card-header">
+            <h3 class="chart-card-title">
+                <i class="fas fa-percentage"></i>
+                Students by Payment Percentage
+            </h3>
+            <div class="chart-card-actions">
+                <button class="btn btn-outline btn-sm" onclick="filterByPaymentPercentage()">Filter</button>
+            </div>
+        </div>
+        <div class="chart-card-body">
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label class="form-label">Payment Percentage (%)</label>
+                    <input type="number" id="paymentPercentage" class="form-control" min="0" max="100" value="50" placeholder="Enter percentage">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Branch</label>
+                    <select id="filterBranch" class="form-select">
+                        <option value="">All Branches</option>
+                        @foreach(\App\Models\Branch::all() as $branch)
+                            <option value="{{ $branch->id }}">{{ $branch->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Course</label>
+                    <select id="filterCourse" class="form-select">
+                        <option value="">All Courses</option>
+                        @foreach(\App\Models\Course::all() as $course)
+                            <option value="{{ $course->id }}">{{ $course->course_name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button class="btn btn-primary w-100" onclick="filterByPaymentPercentage()">
+                        <i class="fas fa-search me-2"></i>Search
+                    </button>
+                </div>
+            </div>
+            <div id="paymentPercentageResults">
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-info-circle fa-2x mb-2"></i>
+                    <p>Enter a percentage and click Search to see students who have paid at least that percentage of their fees.</p>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1446,14 +1624,14 @@ document.addEventListener('DOMContentLoaded', function () {
     // Chart defaults for professional look
     Chart.defaults.font.family = "'DM Sans', sans-serif";
     let isDarkTheme = document.body.dataset.theme === 'dark' || localStorage.getItem('esa-theme') === 'dark';
-    Chart.defaults.color = isDarkTheme ? '#b4c7d4' : '#5b7083';
-    let chartGridColor = isDarkTheme ? 'rgba(255, 255, 255, 0.12)' : 'rgba(20, 40, 63, 0.12)';
-    const chartColors = ['#317997', '#397875', '#63a9c5', '#dce66a', '#526b87', '#71869b'];
+    Chart.defaults.color = isDarkTheme ? '#bdc9bd' : '#647168';
+    let chartGridColor = isDarkTheme ? 'rgba(255, 255, 255, 0.12)' : 'rgba(32, 43, 36, 0.12)';
+    const chartColors = ['#477a57', '#b85b52', '#527e78', '#b9822e', '#75679a', '#a66d72'];
 
     document.addEventListener('esa-theme-changed', function (event) {
         isDarkTheme = event.detail.theme === 'dark';
-        Chart.defaults.color = isDarkTheme ? '#b4c7d4' : '#5b7083';
-        chartGridColor = isDarkTheme ? 'rgba(255, 255, 255, 0.12)' : 'rgba(20, 40, 63, 0.12)';
+        Chart.defaults.color = isDarkTheme ? '#bdc9bd' : '#647168';
+        chartGridColor = isDarkTheme ? 'rgba(255, 255, 255, 0.12)' : 'rgba(32, 43, 36, 0.12)';
 
         Object.values(Chart.instances).forEach(function (chart) {
             chart.options.color = Chart.defaults.color;
@@ -1484,7 +1662,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 labels: ['Revenue', 'Expenses', 'Profit'],
                 datasets: [{
                     data: [{{ $totalRevenue }}, {{ $totalExpenses }}, {{ $netProfit }}],
-                    backgroundColor: ['#317997', '#b85e58', '#dce66a'],
+                    backgroundColor: ['#477a57', '#b85b52', '#b9822e'],
                     borderWidth: 0,
                     borderRadius: 8
                 }]
@@ -1520,7 +1698,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 datasets: [{
                     label: 'Total Students',
                     data: studentsByBranchData.length > 0 ? studentsByBranchData.map(item => item.total) : [0],
-                    backgroundColor: createGradient(studentsByBranchCtx, '#317997', '#91cbdd'),
+                    backgroundColor: createGradient(studentsByBranchCtx, '#477a57', '#8fb68d'),
                     borderWidth: 0,
                     borderRadius: 8
                 }]
@@ -1657,7 +1835,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 datasets: [{
                     label: 'Expenses (Rwf)',
                     data: expensesByBranchData.length > 0 ? expensesByBranchData.map(item => parseFloat(item.total)) : [0],
-                    backgroundColor: createGradient(expBranchCtx, '#b85e58', '#d17b6e'),
+                    backgroundColor: createGradient(expBranchCtx, '#b85b52', '#d58778'),
                     borderWidth: 0,
                     borderRadius: 8
                 }]
@@ -1692,7 +1870,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 labels: ['Students', 'Teachers', 'Staff'],
                 datasets: [{
                     data: [{{ $totalStudents ?? 0 }}, {{ $totalTeachers ?? 0 }}, {{ $totalStaff ?? 0 }}],
-                    backgroundColor: ['#317997', '#526b87', '#dce66a'],
+                    backgroundColor: ['#477a57', '#75679a', '#b9822e'],
                     borderWidth: 0,
                     borderRadius: 8
                 }]
@@ -1706,6 +1884,103 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
+
+    // Payment Percentage Filter Function
+    window.filterByPaymentPercentage = function() {
+        const percentage = document.getElementById('paymentPercentage').value;
+        const branchId = document.getElementById('filterBranch').value;
+        const courseId = document.getElementById('filterCourse').value;
+
+        if (!percentage || percentage < 0 || percentage > 100) {
+            alert('Please enter a valid percentage between 0 and 100');
+            return;
+        }
+
+        const resultsDiv = document.getElementById('paymentPercentageResults');
+        resultsDiv.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Loading...</p></div>';
+
+        fetch('{{ route("admin.dashboard.filter-payment-percentage") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({
+                percentage: percentage,
+                branch_id: branchId || null,
+                course_id: courseId || null
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (data.students.length === 0) {
+                    resultsDiv.innerHTML = `
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            No students found who have paid at least ${percentage}% of their fees.
+                        </div>
+                    `;
+                } else {
+                    let tableHtml = `
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle me-2"></i>
+                            Found ${data.count} students who have paid at least ${percentage}% of their fees.
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Reg Number</th>
+                                        <th>Branch</th>
+                                        <th>Course</th>
+                                        <th>Paid</th>
+                                        <th>Total Fees</th>
+                                        <th>Percentage</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+                    data.students.forEach(student => {
+                        tableHtml += `
+                            <tr>
+                                <td><strong>${student.name}</strong></td>
+                                <td>${student.reg_number}</td>
+                                <td>${student.branch}</td>
+                                <td>${student.course}</td>
+                                <td>${number_format(student.paid_amount)} RWF</td>
+                                <td>${number_format(student.total_fees)} RWF</td>
+                                <td><span class="badge bg-success">${student.payment_percentage}%</span></td>
+                            </tr>
+                        `;
+                    });
+                    tableHtml += `
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                    resultsDiv.innerHTML = tableHtml;
+                }
+            } else {
+                resultsDiv.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        Error: ${data.message || 'Failed to filter students'}
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            resultsDiv.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    Error: Failed to fetch data. Please try again.
+                </div>
+            `;
+        });
+    };
 });
 </script>
 

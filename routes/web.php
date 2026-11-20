@@ -305,6 +305,7 @@ Route::middleware('auth:teacher')->prefix('teacher')->name('teacher.')->group(fu
 // Admin protected routes
 Route::middleware(['auth:admin', 'admin.academic_year'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\AdminAuthController::class, 'dashboard'])->name('dashboard');
+    Route::post('/dashboard/filter-payment-percentage', [\App\Http\Controllers\AdminAuthController::class, 'filterByPaymentPercentage'])->name('dashboard.filter-payment-percentage');
 
     Route::resource('students', StudentController::class);
     Route::get('/students/export', [StudentController::class, 'export'])->name('students.export');
