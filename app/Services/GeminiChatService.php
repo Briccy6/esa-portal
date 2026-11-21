@@ -19,7 +19,7 @@ class GeminiChatService
     }
 
     /**
-     * Generate a chat response using Gemini AI
+     * Generate a chat response using Gemini AI with OpenAI fallback
      *
      * @param string $userMessage The user's message
      * @param array $conversationHistory Previous messages for context
@@ -28,6 +28,50 @@ class GeminiChatService
      * @return array Response with status and message
      */
     public function generateResponse(string $userMessage, array $conversationHistory = [], string $language = 'en', array $userInfo = []): array
+    {
+        try {
+            // First try Gemini
+            $geminiResult = $this->tryGeminiResponse($userMessage, $conversationHistory, $language, $userInfo);
+            
+            if ($geminiResult['success']) {
+                return $geminiResult;
+            }
+
+            // If Gemini fails, try OpenAI as fallback
+            Log::info('Gemini failed, trying OpenAI fallback', ['error' => $geminiResult['error'] ?? 'Unknown']);
+            
+            $openaiService = new OpenAIChatService();
+            $openaiResult = $openaiService->generateResponse($userMessage, $conversationHistory, $language, $userInfo);
+            
+            if ($openaiResult['success']) {
+                return $openaiResult;
+            }
+
+            // Both failed, return fallback
+            return [
+                'success' => false,
+                'message' => $this->getFallbackMessage($language, $userMessage),
+                'error' => 'Both AI services unavailable',
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('Chat service error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return [
+                'success' => false,
+                'message' => $this->getFallbackMessage($language, $userMessage),
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Try to generate response with Gemini
+     */
+    protected function tryGeminiResponse(string $userMessage, array $conversationHistory, string $language, array $userInfo): array
     {
         try {
             // Build the system prompt
@@ -61,23 +105,14 @@ class GeminiChatService
                 }
             }
 
-            // All models failed, return fallback
-            Log::error('All Gemini models failed', ['last_error' => $lastError]);
             return [
                 'success' => false,
-                'message' => $this->getFallbackMessage($language, $userMessage),
                 'error' => $lastError,
             ];
 
         } catch (\Exception $e) {
-            Log::error('Gemini chat service error', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
             return [
                 'success' => false,
-                'message' => $this->getFallbackMessage($language, $userMessage),
                 'error' => $e->getMessage(),
             ];
         }
