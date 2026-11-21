@@ -1189,7 +1189,7 @@ Route::middleware('auth:teacher')->get('/api/teacher/branch/{branchId}/courses/l
             return count(array_intersect($item['courses'], $courseIds)) > 0;
         });
 
-        $lessons = $filteredLessons->map(function($item) {
+        $lessons = $filteredLessons->map(function($item) use ($branchId, $teacher) {
             return [
                 'id' => $item['lesson_id'],
                 'title' => $item['lesson'] ? ($item['lesson']->title ?? $item['lesson']->name ?? 'Lesson ' . $item['lesson_id']) : 'Lesson ' . $item['lesson_id'],
