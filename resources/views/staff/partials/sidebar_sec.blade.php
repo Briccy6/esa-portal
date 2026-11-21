@@ -366,30 +366,46 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-function loadBranches() {
+async function loadBranches() {
     const branchSelect = document.getElementById('branch_id');
+    if (!branchSelect) return;
+
     branchSelect.innerHTML = '<option value="" disabled selected>Loading branches...</option>';
-    
-    // Use the staff's assigned branches
-    fetch('/staff/api/branches')
-        .then(response => response.json())
-        .then(data => {
-            branchSelect.innerHTML = '<option value="" disabled selected>Select branch</option>';
-            if (data.branches && data.branches.length > 0) {
-                data.branches.forEach(branch => {
-                    const option = document.createElement('option');
-                    option.value = branch.id;
-                    option.textContent = branch.name;
-                    branchSelect.appendChild(option);
-                });
-            } else {
-                branchSelect.innerHTML = '<option value="" disabled selected>No branches available</option>';
-            }
-        })
-        .catch(error => {
-            console.error('Error loading branches:', error);
-            branchSelect.innerHTML = '<option value="" disabled selected>Error loading branches</option>';
+
+    try {
+        const response = await fetch(@json(route('staff.api.branches')), {
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json' }
         });
+        if (!response.ok) {
+            throw new Error(`Request failed with status ${response.status}`);
+        }
+
+        const contentType = response.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) {
+            throw new Error('The branches endpoint did not return JSON.');
+        }
+
+        const data = await response.json();
+        if (!Array.isArray(data.branches)) {
+            throw new Error('The branches response has an unexpected format.');
+        }
+
+        branchSelect.innerHTML = '<option value="" disabled selected>Select branch</option>';
+        if (data.branches.length > 0) {
+            data.branches.forEach(branch => {
+                const option = document.createElement('option');
+                option.value = branch.id;
+                option.textContent = branch.name;
+                branchSelect.appendChild(option);
+            });
+        } else {
+            branchSelect.innerHTML = '<option value="" disabled selected>No branches available</option>';
+        }
+    } catch (error) {
+        console.error('Error loading branches:', error);
+        branchSelect.innerHTML = '<option value="" disabled selected>Error loading branches</option>';
+    }
 }
 
 function loadAcademicYears() {

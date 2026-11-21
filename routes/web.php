@@ -726,7 +726,7 @@ Route::prefix('staff')->name('staff.')->group(function () {
             $staff = auth()->guard('staff')->user();
             $branches = $staff->branches()->orderBy('name')->get(['id', 'name']);
             return response()->json(['branches' => $branches]);
-        })->name('staff.api.branches');
+        })->name('api.branches');
         
         // Payment Schedule Routes
         Route::get('/payment-schedule', [PaymentScheduleController::class, 'index'])->name('accountant.payment-schedule.index');
