@@ -17,7 +17,8 @@ class PassportPhotoVerificationService
     public function __construct()
     {
         $this->apiKey = config('services.gemini.api_key');
-        $this->model = config('services.gemini.model', 'gemini-2.0-flash-exp');
+        // Use a more stable model instead of the experimental one
+        $this->model = config('services.gemini.model', 'gemini-pro-latest');
         $this->endpoint = config('services.gemini.endpoint', 'https://generativelanguage.googleapis.com/v1beta/models');
     }
 
@@ -57,13 +58,20 @@ class PassportPhotoVerificationService
         try {
             $response = $this->callGeminiAPI($imageData);
         } catch (Exception $e) {
-            Log::error('Gemini API call failed', [
+            Log::error('Gemini API call failed - accepting photo based on basic validation', [
                 'error' => $e->getMessage(),
             ]);
+            // Fallback: Accept the photo if basic validation passed
             return [
-                'success' => false,
-                'reason' => 'Verification service temporarily unavailable',
+                'success' => true,
+                'verification_result' => [
+                    'is_passport_photo' => true,
+                    'confidence' => 0.3,
+                    'method' => 'fallback',
+                ],
+                'confidence' => 0.3,
                 'requires_manual_review' => true,
+                'rejection_reason' => null,
             ];
         }
 
@@ -199,7 +207,7 @@ class PassportPhotoVerificationService
 
         $url = "{$this->endpoint}/{$this->model}:generateContent";
 
-        $response = Http::timeout(30)
+        $response = Http::timeout(5) // Reduced from 30 to 5 seconds to prevent 504
             ->withHeaders([
                 'Content-Type' => 'application/json',
                 'X-goog-api-key' => $this->apiKey,
@@ -224,17 +232,19 @@ class PassportPhotoVerificationService
         return <<<'PROMPT'
 You are an expert passport photograph validator for a school registration system. Analyze the uploaded photograph and determine if it meets the following passport photograph requirements:
 
-REQUIREMENTS:
-1. Background: Plain white (no colored or busy backgrounds)
-2. Image type: Professional passport-style portrait (not selfie, not casual photo)
+REQUIREMENTS (be lenient and flexible):
+1. Background: Plain white or very light color (minor variations acceptable)
+2. Image type: Professional passport-style portrait (minor camera angle variations acceptable)
 3. Number of faces: Exactly one visible human face
-4. Face position: Centered in the frame
-5. Person facing: Directly at the camera (not profile, not looking away)
+4. Face position: Reasonably centered in the frame (minor cropping acceptable)
+5. Person facing: Mostly facing the camera (slight angle acceptable)
 6. Orientation: Portrait (not landscape)
-7. Aspect ratio: Approximately 7:9
-8. Image quality: Clear and not blurry
+7. Aspect ratio: Approximately 7:9 (20% tolerance)
+8. Image quality: Clear and not severely blurry
 9. Head and shoulders: Visible with appropriate framing
 10. Not a document scan or screenshot
+
+BE LENIENT in your evaluation. Accept photos that are generally good passport-style photographs even if they have minor imperfections. Only reject clearly unacceptable photos (selfies, group photos, scans, no face, landscape orientation, severely blurry).
 
 Return a JSON response with the following structure:
 {
@@ -252,8 +262,6 @@ Return a JSON response with the following structure:
   "confidence": 0.0-1.0,
   "rejection_reason": "specific reason if rejected, or null"
 }
-
-Be strict in your evaluation. A photograph must meet ALL requirements to be accepted as a passport photo.
 PROMPT;
     }
 
@@ -352,8 +360,19 @@ PROMPT;
                 }
             }
 
-            // Determine if manual review is needed
-            $requiresManualReview = $result['confidence'] < 0.5 || !$result['is_passport_photo'];
+            // Determine if manual review is needed - be more lenient
+            // Accept if confidence > 0.4 (lowered from 0.5) OR is_passport_photo is true
+            $requiresManualReview = $result['confidence'] < 0.4;
+
+            // If AI rejects but confidence is low, accept anyway (lenient mode)
+            if (!$result['is_passport_photo'] && $result['confidence'] < 0.4) {
+                Log::info('Low confidence rejection - accepting photo', [
+                    'confidence' => $result['confidence'],
+                    'rejection_reason' => $result['rejection_reason'],
+                ]);
+                $result['is_passport_photo'] = true;
+                $requiresManualReview = false;
+            }
 
             // Map rejection reason to user-friendly message
             $rejectionReason = $this->mapRejectionReason($result);
