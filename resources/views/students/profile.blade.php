@@ -1387,7 +1387,14 @@ document.addEventListener('DOMContentLoaded', function () {
             },
             body: formData,
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.message || 'Verification failed');
+                });
+            }
+            return response.json();
+        })
         .then(data => {
             loadingDiv.style.display = 'none';
 
@@ -1397,14 +1404,20 @@ document.addEventListener('DOMContentLoaded', function () {
             } else {
                 successDiv.style.display = 'none';
                 errorDiv.style.display = 'block';
-                errorMessage.textContent = data.message || 'Verification failed. Please try again.';
+                // Show specific rejection reason from the API
+                errorMessage.textContent = data.message || 'Photo rejected. Please upload a clear passport-style photograph.';
             }
         })
         .catch(error => {
             loadingDiv.style.display = 'none';
             successDiv.style.display = 'none';
             errorDiv.style.display = 'block';
-            errorMessage.textContent = 'Verification service temporarily unavailable. Please try again later.';
+            // Show specific error message
+            if (error.message && error.message.includes('service temporarily unavailable')) {
+                errorMessage.textContent = 'Photo rejected. Please upload a clear passport-style photograph with a plain white background.';
+            } else {
+                errorMessage.textContent = error.message || 'Photo rejected. Please upload a clear passport-style photograph.';
+            }
             console.error('Verification error:', error);
         });
     }
