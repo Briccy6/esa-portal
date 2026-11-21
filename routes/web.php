@@ -871,8 +871,6 @@ Route::prefix('fees')->group(function() {
     Route::post('payments/store', [FeePaymentController::class, 'storePayment'])->name('payments.store');
 });
 
-Route::middleware('auth:student')->get('/student/profile', [StudentController::class, 'profile'])->name('students.profile');
-
 Route::get('/payments', [PaymentController::class, 'index']);
 Route::get('/payments/{id}', [PaymentController::class, 'show']);
 Route::post('/payments', [PaymentController::class, 'store']);
