@@ -5,7 +5,7 @@
     <div class="row">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="h3 mb-0">Generate Professional Letter</h1>
+                <h1 class="h3 mb-0">Generate Official Document</h1>
                 <a href="{{ route('to-whom.index') }}" class="btn btn-secondary">
                     <i class="fas fa-arrow-left"></i> Back to Letters
                 </a>

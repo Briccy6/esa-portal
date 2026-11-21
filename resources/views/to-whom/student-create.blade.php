@@ -5,7 +5,7 @@
     <div class="row">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="h3 mb-0">Generate Professional Letter</h1>
+                <h1 class="h3 mb-0">Generate Official Document</h1>
                 <a href="{{ route('to-whom.index') }}" class="btn btn-secondary">
                     <i class="fas fa-arrow-left"></i> Back to Letters
                 </a>
@@ -111,40 +111,42 @@
                             <h6>Letter Types:</h6>
                             <ul class="list-unstyled">
                                 @foreach($letterTypes as $value => $label)
-                                    <li class="mb-2">
-                                        <strong>{{ $label }}:</strong>
-                                        <p class="text-muted small mb-0">
-                                            @switch($value)
-                                                @case('proof_of_registration')
-                                                    Confirms your registration details and current academic programme.
-                                                    @break
-                                                @case('student_confirmation')
-                                                    Provides a concise confirmation of your identity and enrolment details.
-                                                    @break
-                                                @case('to_whom')
-                                                    A general student status letter addressed to your selected recipient.
-                                                    @break
-                                                @case('enrollment')
-                                                    Confirms your current enrollment status and student details.
-                                                    @break
-                                                @case('academic_standing')
-                                                    Verifies your academic performance and standing.
-                                                    @break
-                                                @case('financial_status')
-                                                    Certifies your financial account status.
-                                                    @break
-                                                @case('completion')
-                                                    Confirms your course/program completion.
-                                                    @break
-                                                @case('good_standing')
-                                                    Certifies your good standing with the institution.
-                                                    @break
-                                                @case('custom')
-                                                    Custom letter for specific requirements.
-                                                    @break
-                                            @endswitch
-                                        </p>
-                                    </li>
+                                    @if($value !== 'employment_confirmation')
+                                        <li class="mb-2">
+                                            <strong>{{ $label }}:</strong>
+                                            <p class="text-muted small mb-0">
+                                                @switch($value)
+                                                    @case('proof_of_registration')
+                                                        Confirms your registration details and current academic programme.
+                                                        @break
+                                                    @case('student_confirmation')
+                                                        Provides a concise confirmation of your identity and enrolment details.
+                                                        @break
+                                                    @case('to_whom')
+                                                        A general student status letter addressed to your selected recipient.
+                                                        @break
+                                                    @case('enrollment')
+                                                        Confirms your current enrollment status and student details.
+                                                        @break
+                                                    @case('academic_standing')
+                                                        Verifies your academic performance and standing.
+                                                        @break
+                                                    @case('financial_status')
+                                                        Certifies your financial account status.
+                                                        @break
+                                                    @case('completion')
+                                                        Confirms your course/program completion.
+                                                        @break
+                                                    @case('good_standing')
+                                                        Certifies your good standing with the institution.
+                                                        @break
+                                                    @case('custom')
+                                                        Custom letter for specific requirements.
+                                                        @break
+                                                @endswitch
+                                            </p>
+                                        </li>
+                                    @endif
                                 @endforeach
                             </ul>
                         </div>

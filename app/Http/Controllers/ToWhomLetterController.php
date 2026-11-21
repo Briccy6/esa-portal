@@ -182,6 +182,10 @@ class ToWhomLetterController extends Controller
         ]);
 
         $user = Auth::user();
+        if ($user->isStudent() && $recipientType !== 'student') {
+            abort(403, 'Students may only request their own documents.');
+        }
+
         $student = null;
         $recipientName = null;
         $recipientRole = null;
@@ -210,6 +214,12 @@ class ToWhomLetterController extends Controller
                 }
             } else {
                 $student = Student::with(['course', 'branch', 'academicYear'])->findOrFail($request->student_id);
+                if (method_exists($user, 'isStaff') && $user->isStaff() && method_exists($user, 'branches')) {
+                    $branchIds = $user->branches()->pluck('branch_id')->toArray();
+                    if (!in_array($student->branch_id, $branchIds)) {
+                        abort(403, 'You may only generate student documents for your assigned branches.');
+                    }
+                }
             }
             $recipientName = $student->full_name;
         }
@@ -344,6 +354,13 @@ class ToWhomLetterController extends Controller
         if ($user->isStudent()) {
             $student = Student::where('email', $user->email)->first();
             if (!$student || $letter->student_id !== $student->id) {
+                abort(403, 'Unauthorized action.');
+            }
+        } elseif (method_exists($user, 'isStaff') && $user->isStaff() && $letter->student) {
+            $branchIds = method_exists($user, 'branches')
+                ? $user->branches()->pluck('branch_id')->toArray()
+                : [];
+            if (!in_array($letter->student->branch_id, $branchIds)) {
                 abort(403, 'Unauthorized action.');
             }
         }

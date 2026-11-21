@@ -5,7 +5,7 @@
     <div class="row">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="h3 mb-0">Professional Letters</h1>
+                <h1 class="h3 mb-0">Official Documents</h1>
                 <a href="{{ route('to-whom.create') }}" class="btn btn-primary">
                     <i class="fas fa-plus"></i> Generate New Letter
                 </a>
@@ -20,7 +20,7 @@
 
             <div class="card shadow-sm">
                 <div class="card-header bg-primary text-white">
-                    <h5 class="card-title mb-0">My Professional Letters</h5>
+                    <h5 class="card-title mb-0">My Documents</h5>
                 </div>
                 <div class="card-body">
                     @if($letters->count() > 0)
