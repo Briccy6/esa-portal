@@ -720,6 +720,19 @@ Route::prefix('staff')->name('staff.')->group(function () {
 
     Route::middleware('auth:staff')->group(function () {
         Route::get('dashboard', [StaffAuthController::class, 'dashboard'])->name('dashboard');
+
+        Route::get('/students/create', [\App\Http\Controllers\StaffStudentRegistrationController::class, 'create'])
+            ->name('students.create');
+        Route::post('/students', [\App\Http\Controllers\StaffStudentRegistrationController::class, 'store'])
+            ->name('students.store');
+        Route::get('/api/student-registration/email', [\App\Http\Controllers\StaffStudentRegistrationController::class, 'checkEmail'])
+            ->name('api.student-registration.email');
+        Route::get('/api/student-registration/terms/{academicYear}', [\App\Http\Controllers\StaffStudentRegistrationController::class, 'terms'])
+            ->name('api.student-registration.terms');
+        Route::get('/api/student-registration/courses', [\App\Http\Controllers\StaffStudentRegistrationController::class, 'courses'])
+            ->name('api.student-registration.courses');
+        Route::get('/api/student-registration/fees', [\App\Http\Controllers\StaffStudentRegistrationController::class, 'fees'])
+            ->name('api.student-registration.fees');
         
         // API Routes for Staff
         Route::get('/api/branches', function() {

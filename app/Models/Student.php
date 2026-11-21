@@ -23,6 +23,7 @@ class Student extends Authenticatable
         'reg_number',
         'password',
         'academic_year_id',
+        'enrollment_term_id',
         'id_number',
         'identification_type',
         'id_photo',
@@ -145,6 +146,11 @@ class Student extends Authenticatable
     public function course()
     {
         return $this->belongsTo(Course::class);
+    }
+
+    public function enrollmentTerm()
+    {
+        return $this->belongsTo(Term::class, 'enrollment_term_id');
     }
 
     /**
