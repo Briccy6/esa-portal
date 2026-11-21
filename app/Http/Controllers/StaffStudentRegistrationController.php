@@ -159,8 +159,9 @@ class StaffStudentRegistrationController extends Controller
             'course_id' => ['required', 'exists:courses,id'],
             'enrollment_term_id' => ['required', 'exists:terms,id'],
             'shift' => ['required', Rule::in(['day', 'evening', 'weekend'])],
-            'payment_type' => ['required', Rule::in(array_keys(self::PAYMENT_FEE_FIELDS))],
-            'amount_paid' => ['required', 'numeric', 'min:1'],
+            'payments' => ['required', 'array', 'min:1'],
+            'payments.*.type' => ['required', 'string', 'distinct', Rule::in(array_keys(self::PAYMENT_FEE_FIELDS))],
+            'payments.*.amount' => ['required', 'numeric', 'min:1'],
         ]);
 
         [$academicYear, $course, $term, $feeSchedule] = $this->resolveRegistrationScope([
@@ -172,20 +173,22 @@ class StaffStudentRegistrationController extends Controller
 
         if (! $feeSchedule) {
             throw ValidationException::withMessages([
-                'payment_type' => 'No fee schedule is configured for this branch, course, and term.',
+                'payments' => 'No fee schedule is configured for this branch, course, and term.',
             ]);
         }
 
-        $feeAmount = (float) $feeSchedule->{self::PAYMENT_FEE_FIELDS[$validated['payment_type']]};
-        if ($feeAmount <= 0) {
-            throw ValidationException::withMessages([
-                'payment_type' => 'The selected fee category has no amount due.',
-            ]);
-        }
-        if ((float) $validated['amount_paid'] > $feeAmount) {
-            throw ValidationException::withMessages([
-                'amount_paid' => 'The payment cannot exceed the selected fee category total.',
-            ]);
+        foreach ($validated['payments'] as $index => $payment) {
+            $feeAmount = (float) $feeSchedule->{self::PAYMENT_FEE_FIELDS[$payment['type']]};
+            if ($feeAmount <= 0) {
+                throw ValidationException::withMessages([
+                    "payments.{$index}.type" => 'The selected fee category has no amount due.',
+                ]);
+            }
+            if ((float) $payment['amount'] > $feeAmount) {
+                throw ValidationException::withMessages([
+                    "payments.{$index}.amount" => 'The payment cannot exceed the selected fee category total.',
+                ]);
+            }
         }
 
         $staff = auth('staff')->user();
@@ -207,25 +210,32 @@ class StaffStudentRegistrationController extends Controller
 
             $student->initializeTokens(10);
 
-            StudentTransaction::create([
-                'student_id' => $student->id,
-                'term_id' => $term->id,
-                'tx_ref' => 'CASH-' . $student->id . '-' . now()->timestamp . '-' . Str::upper(Str::random(8)),
-                'type' => $validated['payment_type'],
-                'amount' => $validated['amount_paid'],
-                'currency' => 'RWF',
-                'status' => 'successful',
-                'meta' => [
-                    'method' => 'cash',
-                    'recorded_by' => $staff->name,
-                ],
-                'paid_at' => now(),
-            ]);
+            $registrationFeePaid = false;
+            foreach ($validated['payments'] as $payment) {
+                StudentTransaction::create([
+                    'student_id' => $student->id,
+                    'term_id' => $term->id,
+                    'tx_ref' => 'CASH-' . $student->id . '-' . now()->timestamp . '-' . Str::upper(Str::random(8)),
+                    'type' => $payment['type'],
+                    'amount' => $payment['amount'],
+                    'currency' => 'RWF',
+                    'status' => 'successful',
+                    'meta' => [
+                        'method' => 'cash',
+                        'recorded_by' => $staff->name,
+                    ],
+                    'paid_at' => now(),
+                ]);
 
-            if (
-                $validated['payment_type'] === 'registration_fee'
-                && (float) $validated['amount_paid'] >= (float) $feeSchedule->registration_fee
-            ) {
+                if (
+                    $payment['type'] === 'registration_fee'
+                    && (float) $payment['amount'] >= (float) $feeSchedule->registration_fee
+                ) {
+                    $registrationFeePaid = true;
+                }
+            }
+
+            if ($registrationFeePaid) {
                 $student->payed_registration_fees = true;
                 $student->save();
             }

@@ -174,6 +174,33 @@
         background: #f9fbf9;
     }
     .payment-panel h3 { margin: 0 0 1rem; font-size: 1rem; font-weight: 800; }
+    .payment-category-list { display: grid; gap: .65rem; }
+    .payment-category-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(170px, .7fr);
+        align-items: center;
+        gap: 1rem;
+        padding: .75rem .85rem;
+        border: 1px solid #dce5e1;
+        border-radius: 8px;
+        background: #fff;
+    }
+    .payment-category-choice { display: flex; align-items: flex-start; gap: .65rem; min-width: 0; cursor: pointer; }
+    .payment-category-choice input { width: 1.05rem; height: 1.05rem; flex: 0 0 auto; margin-top: .15rem; accent-color: var(--registration-green); }
+    .payment-category-choice strong, .payment-category-choice small { display: block; }
+    .payment-category-choice strong { color: #2f403c; font-size: .88rem; }
+    .payment-category-choice small { margin-top: .15rem; color: var(--registration-muted); font-size: .76rem; }
+    .payment-total {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-top: .8rem;
+        padding-top: .8rem;
+        border-top: 1px solid #dce5e1;
+        color: var(--registration-ink);
+        font-size: .9rem;
+        font-weight: 800;
+    }
     .payment-note { margin: .75rem 0 0; color: var(--registration-muted); font-size: .8rem; }
     .review-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; }
     .review-item {
@@ -196,7 +223,8 @@
         background: #fcf8ef;
         color: #5b4b2d;
     }
-    .review-payment strong { font-size: 1.05rem; }
+    .review-payment span { min-width: 0; overflow-wrap: anywhere; }
+    .review-payment strong { flex: 0 0 auto; font-size: 1.05rem; }
     @media (max-width: 700px) {
         .student-registration { margin: -1rem; padding: 1rem; }
         .registration-progress { grid-template-columns: repeat(4, minmax(0, 1fr)); }
@@ -223,6 +251,7 @@
         .fee-table td:first-child { font-weight: 700; text-align: left; }
         .fee-table td:first-child::before { content: "Fee"; color: #718078; font-size: .72rem; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
         .fee-table tfoot td { padding: .75rem .8rem; }
+        .payment-category-row { grid-template-columns: 1fr; gap: .6rem; }
         .review-grid { grid-template-columns: 1fr; }
     }
 </style>
@@ -233,7 +262,7 @@
         <header class="registration-heading">
             <div class="registration-eyebrow">Student administration / New record</div>
             <h1>Register a student</h1>
-            <p>Enter student details, confirm their placement, and record the first payment in one guided process.</p>
+            <p>Enter student details, confirm their placement, and record one or more initial payments in a guided process.</p>
         </header>
 
         @if(session('success'))
@@ -392,8 +421,8 @@
 
                     <section class="registration-step" data-step="3" hidden>
                         <div class="registration-section-heading">
-                            <h2>Fee breakdown and first payment</h2>
-                            <p>Review the amount configured for this branch, course, and term, then record the cash received today.</p>
+                            <h2>Fee breakdown and initial payments</h2>
+                            <p>Review the amounts configured for this branch, course, and term, then record today's cash payments.</p>
                         </div>
                         <div id="feeLoading" class="registration-callout" role="status">
                             <i class="fas fa-circle-info" aria-hidden="true"></i>
@@ -416,21 +445,11 @@
                             </table>
                         </div>
                         <div id="paymentFields" class="payment-panel" hidden>
-                            <h3>Cash payment received</h3>
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label class="form-label registration-label" for="payment_type">Fee being paid <span class="required">*</span></label>
-                                    <select class="form-select" id="payment_type" name="payment_type" required>
-                                        <option value="">Select fee category</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label registration-label" for="amount_paid">Amount paid (RWF) <span class="required">*</span></label>
-                                    <input class="form-control" id="amount_paid" name="amount_paid" type="number" min="1" step="1"
-                                           value="{{ old('amount_paid') }}" required placeholder="Enter amount received">
-                                </div>
-                            </div>
-                            <p class="payment-note">A partial payment is accepted. The amount cannot exceed the selected fee category's scheduled total.</p>
+                            <h3>Cash payments received</h3>
+                            <p class="payment-note mt-0 mb-3">Select one or more fee categories and enter the amount received for each. Partial payments are accepted.</p>
+                            <div id="paymentRows" class="payment-category-list"></div>
+                            <div class="payment-total"><span>Total received</span><strong id="paymentTotal">RWF 0</strong></div>
+                            <p class="payment-note">Each amount must be greater than zero and cannot exceed its fee category's scheduled total.</p>
                         </div>
                         <div class="registration-actions">
                             <button class="btn btn-registration-secondary" type="button" data-back><i class="fas fa-arrow-left me-2"></i>Back</button>
@@ -455,12 +474,12 @@
                             <div class="review-item"><span>Term and shift</span><strong id="reviewTermShift">—</strong></div>
                         </div>
                         <div class="review-payment">
-                            <span>Cash payment recorded<br><small id="reviewPaymentType">—</small></span>
+                            <span>Cash payment categories<br><small id="reviewPaymentType">—</small></span>
                             <strong id="reviewAmount">—</strong>
                         </div>
                         <div class="registration-callout">
                             <i class="fas fa-shield-halved" aria-hidden="true"></i>
-                            <span>Confirming creates the student account and records this payment as successful cash received.</span>
+                            <span>Confirming creates the student account and records each selected amount as successful cash received.</span>
                         </div>
                         <div class="registration-actions">
                             <button class="btn btn-registration-secondary" type="button" data-back><i class="fas fa-arrow-left me-2"></i>Back</button>
@@ -496,8 +515,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const feeError = document.getElementById('feeError');
     const feeBreakdown = document.getElementById('feeBreakdown');
     const paymentFields = document.getElementById('paymentFields');
-    const paymentType = form.elements.payment_type;
-    const amountPaid = form.elements.amount_paid;
+    const paymentRows = document.getElementById('paymentRows');
+    const paymentTotal = document.getElementById('paymentTotal');
     let activeStep = 1;
     let emailState = 'idle';
     let verifiedEmail = '';
@@ -509,8 +528,91 @@ document.addEventListener('DOMContentLoaded', function () {
     let feeRequestId = 0;
     let feeItems = [];
     let feesLoading = false;
+    let pendingOldPayments = @json(old('payments', []));
 
     const formatMoney = amount => new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(Number(amount || 0));
+
+    function getSelectedPayments() {
+        return Array.from(paymentRows.querySelectorAll('.payment-category-row')).flatMap(row => {
+            const checkbox = row.querySelector('.payment-category-toggle');
+            if (!checkbox.checked) return [];
+            return [{
+                type: checkbox.value,
+                label: checkbox.dataset.label,
+                amount: row.querySelector('.payment-category-amount').value
+            }];
+        });
+    }
+
+    function updatePaymentSummary() {
+        const total = getSelectedPayments().reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+        paymentTotal.textContent = `RWF ${formatMoney(total)}`;
+    }
+
+    function renderPaymentRows(items) {
+        const previousPayments = Array.isArray(pendingOldPayments)
+            ? pendingOldPayments
+            : Object.values(pendingOldPayments || {});
+        const validPreviousPayments = previousPayments.filter(payment => payment && typeof payment === 'object');
+        pendingOldPayments = [];
+        paymentRows.replaceChildren();
+
+        items.forEach((item, index) => {
+            const previousPayment = validPreviousPayments.find(payment => payment.type === item.type);
+            const row = document.createElement('div');
+            row.className = 'payment-category-row';
+
+            const choice = document.createElement('label');
+            choice.className = 'payment-category-choice';
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.name = `payments[${index}][type]`;
+            checkbox.value = item.type;
+            checkbox.checked = Boolean(previousPayment);
+            checkbox.className = 'payment-category-toggle';
+            checkbox.dataset.label = item.label;
+
+            const description = document.createElement('span');
+            const label = document.createElement('strong');
+            label.textContent = item.label;
+            const maximum = document.createElement('small');
+            maximum.textContent = `Scheduled: RWF ${formatMoney(item.amount)}`;
+            description.append(label, maximum);
+            choice.append(checkbox, description);
+
+            const amount = document.createElement('input');
+            amount.type = 'number';
+            amount.name = `payments[${index}][amount]`;
+            amount.className = 'form-control payment-category-amount';
+            amount.min = '1';
+            amount.step = '1';
+            amount.max = String(item.amount);
+            amount.required = checkbox.checked;
+            amount.disabled = !checkbox.checked;
+            amount.value = previousPayment ? previousPayment.amount : '';
+            amount.setAttribute('aria-label', `${item.label} amount paid in RWF`);
+
+            const validateAmount = () => {
+                amount.setCustomValidity(Number(amount.value || 0) > Number(item.amount)
+                    ? 'The payment cannot exceed this fee category total.'
+                    : '');
+                updatePaymentSummary();
+            };
+            checkbox.addEventListener('change', function () {
+                amount.disabled = !this.checked;
+                amount.required = this.checked;
+                if (!this.checked) amount.value = '';
+                validateAmount();
+            });
+            amount.addEventListener('input', validateAmount);
+            validateAmount();
+
+            row.append(choice, amount);
+            paymentRows.appendChild(row);
+        });
+
+        updatePaymentSummary();
+    }
 
     function setEmailStatus(message, state) {
         emailStatus.textContent = message;
@@ -604,9 +706,8 @@ document.addEventListener('DOMContentLoaded', function () {
         feeError.hidden = true;
         feeLoading.hidden = false;
         feeLoading.querySelector('span').textContent = message;
-        paymentType.innerHTML = '<option value="">Select fee category</option>';
-        amountPaid.value = '';
-        amountPaid.removeAttribute('max');
+        paymentRows.replaceChildren();
+        paymentTotal.textContent = 'RWF 0';
     }
 
     async function loadCourses() {
@@ -727,23 +828,12 @@ document.addEventListener('DOMContentLoaded', function () {
             feeBreakdown.hidden = false;
             feeLoading.hidden = true;
             paymentFields.hidden = false;
-            paymentType.innerHTML = '<option value="">Select fee category</option>';
-            feeItems.filter(item => Number(item.amount) > 0).forEach(item => {
-                const option = document.createElement('option');
-                option.value = item.type;
-                option.dataset.amount = item.amount;
-                option.textContent = `${item.label} · RWF ${formatMoney(item.amount)}`;
-                paymentType.appendChild(option);
-            });
-            if (paymentType.options.length === 1) {
+            const payableItems = feeItems.filter(item => Number(item.amount) > 0);
+            renderPaymentRows(payableItems);
+            if (payableItems.length === 0) {
                 feeError.textContent = 'The fee schedule has no payable categories. Update the schedule before recording an initial payment.';
                 feeError.hidden = false;
                 paymentFields.hidden = true;
-            }
-            const oldPaymentType = @json(old('payment_type'));
-            if (oldPaymentType && Array.from(paymentType.options).some(option => option.value === oldPaymentType)) {
-                paymentType.value = oldPaymentType;
-                updatePaymentLimit();
             }
         } catch (error) {
             if (requestId !== feeRequestId) return;
@@ -752,18 +842,6 @@ document.addEventListener('DOMContentLoaded', function () {
             feeError.hidden = false;
         } finally {
             if (requestId === feeRequestId) feesLoading = false;
-        }
-    }
-
-    function updatePaymentLimit() {
-        const option = paymentType.options[paymentType.selectedIndex];
-        const maximum = option ? Number(option.dataset.amount || 0) : 0;
-        if (maximum > 0) {
-            amountPaid.max = String(maximum);
-            amountPaid.setCustomValidity(Number(amountPaid.value || 0) > maximum ? 'The payment cannot exceed this fee category total.' : '');
-        } else {
-            amountPaid.removeAttribute('max');
-            amountPaid.setCustomValidity('');
         }
     }
 
@@ -780,8 +858,12 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('reviewBranch').textContent = selectedText(branchSelect);
         document.getElementById('reviewCourse').textContent = selectedText(courseSelect);
         document.getElementById('reviewTermShift').textContent = `${selectedText(termSelect)} · ${selectedText(form.elements.shift)}`;
-        document.getElementById('reviewPaymentType').textContent = selectedText(paymentType).split(' · ')[0];
-        document.getElementById('reviewAmount').textContent = `RWF ${formatMoney(amountPaid.value)}`;
+        const selectedPayments = getSelectedPayments();
+        const totalPaid = selectedPayments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+        document.getElementById('reviewPaymentType').textContent = selectedPayments.length
+            ? selectedPayments.map(payment => `${payment.label}: RWF ${formatMoney(payment.amount)}`).join(' · ')
+            : 'No fee categories selected';
+        document.getElementById('reviewAmount').textContent = `RWF ${formatMoney(totalPaid)}`;
     }
 
     function showStep(nextStep) {
@@ -819,6 +901,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 field.reportValidity();
                 return false;
             }
+        }
+        if (activeStep === 3 && getSelectedPayments().length === 0) {
+            currentStep.querySelector('.registration-status').textContent = 'Select at least one fee category and enter the amount received.';
+            return false;
         }
         if (activeStep === 1) {
             if (emailState !== 'available' || verifiedEmail !== email.value.trim().toLowerCase()) {
@@ -865,10 +951,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     courseSelect.addEventListener('change', loadFees);
     termSelect.addEventListener('change', loadFees);
-    paymentType.addEventListener('change', updatePaymentLimit);
-    amountPaid.addEventListener('input', updatePaymentLimit);
     form.addEventListener('submit', function (event) {
-        updatePaymentLimit();
         if (!form.checkValidity()) {
             event.preventDefault();
             const invalidField = form.querySelector(':invalid');
