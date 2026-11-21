@@ -323,6 +323,8 @@
             <select name="branch_id" id="branch_id" class="form-select" required onchange="loadAcademicYears()">
               <option value="" disabled selected>Loading branches...</option>
             </select>
+            <div id="branch-load-status" class="form-text text-muted" role="status" aria-live="polite"></div>
+            <button type="button" id="branch-load-retry" class="btn btn-link btn-sm px-0 d-none" onclick="loadBranches()">Try loading branches again</button>
           </div>
           <div class="mb-3">
             <label for="academic_year_id" class="form-label">Academic Year</label>
@@ -367,18 +369,33 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 async function loadBranches() {
-    const branchSelect = document.getElementById('branch_id');
+    const modal = document.getElementById('addStudentModal');
+    const branchSelect = modal?.querySelector('#branch_id');
+    const status = modal?.querySelector('#branch-load-status');
+    const retryButton = modal?.querySelector('#branch-load-retry');
     if (!branchSelect) return;
 
-    branchSelect.innerHTML = '<option value="" disabled selected>Loading branches...</option>';
+    const setStatus = (message, type = 'muted') => {
+        if (!status) return;
+        status.textContent = message;
+        status.className = `form-text text-${type}`;
+    };
 
+    if (retryButton) retryButton.classList.add('d-none');
+    branchSelect.disabled = true;
+    branchSelect.innerHTML = '<option value="" disabled selected>Loading branches...</option>';
+    setStatus('Loading branches...');
+
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 15000);
     try {
         const response = await fetch('/staff/api/branches', {
             credentials: 'same-origin',
             headers: {
                 'Accept': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-            }
+            },
+            signal: controller.signal
         });
         if (!response.ok) {
             throw new Error(`Request failed with status ${response.status}`);
@@ -402,12 +419,25 @@ async function loadBranches() {
                 option.textContent = branch.name;
                 branchSelect.appendChild(option);
             });
+            branchSelect.disabled = false;
+            setStatus('Choose a branch to continue.');
         } else {
-            branchSelect.innerHTML = '<option value="" disabled selected>No branches available</option>';
+            branchSelect.innerHTML = '<option value="" disabled selected>No branches are assigned</option>';
+            setStatus('No branches are assigned to your staff account.', 'warning');
         }
     } catch (error) {
         console.error('Error loading branches:', error);
-        branchSelect.innerHTML = '<option value="" disabled selected>Error loading branches</option>';
+        branchSelect.innerHTML = '<option value="" disabled selected>Branches unavailable</option>';
+        branchSelect.disabled = false;
+        setStatus(
+            error.name === 'AbortError'
+                ? 'Loading branches timed out. Check your connection and try again.'
+                : 'Unable to load branches. Please try again.',
+            'danger'
+        );
+        if (retryButton) retryButton.classList.remove('d-none');
+    } finally {
+        window.clearTimeout(timeoutId);
     }
 }
 
