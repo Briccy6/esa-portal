@@ -36,43 +36,36 @@ class GeminiChatService
             // Build conversation context
             $contents = $this->buildConversationContents($systemPrompt, $userMessage, $conversationHistory);
 
-            // Make API request
-            $url = "{$this->endpoint}/{$this->model}:generateContent?key={$this->apiKey}";
+            // Try multiple models in order of preference
+            $models = [
+                $this->model, // Primary model from config
+                'gemini-1.5-flash', // Fallback 1
+                'gemini-1.5-pro', // Fallback 2
+                'gemini-pro', // Fallback 3
+            ];
 
-            $response = Http::timeout(30)
-                ->withOptions([
-                    'verify' => env('VERIFY_SSL', true),
-                ])
-                ->post($url, [
-                    'contents' => $contents,
-                    'generationConfig' => [
-                        'temperature' => 0.7,
-                        'topK' => 40,
-                        'topP' => 0.95,
-                        'maxOutputTokens' => 2048,
-                    ],
-                ]);
-
-            if (!$response->successful()) {
-                Log::error('Gemini API error', [
-                    'status' => $response->status(),
-                    'body' => $response->body(),
-                ]);
-
-                return [
-                    'success' => false,
-                    'message' => $this->getFallbackMessage($language),
-                    'error' => 'API request failed',
-                ];
+            $lastError = null;
+            
+            foreach ($models as $model) {
+                try {
+                    $result = $this->tryGenerateResponse($contents, $model, $language);
+                    if ($result['success']) {
+                        return $result;
+                    }
+                    $lastError = $result['error'] ?? 'Unknown error';
+                } catch (\Exception $e) {
+                    $lastError = $e->getMessage();
+                    Log::warning("Gemini model {$model} failed", ['error' => $lastError]);
+                    continue;
+                }
             }
 
-            $data = $response->json();
-            $aiMessage = $data['candidates'][0]['content']['parts'][0]['text'] ?? $this->getFallbackMessage($language);
-
+            // All models failed, return fallback
+            Log::error('All Gemini models failed', ['last_error' => $lastError]);
             return [
-                'success' => true,
-                'message' => trim($aiMessage),
-                'language' => $language,
+                'success' => false,
+                'message' => $this->getFallbackMessage($language, $userMessage),
+                'error' => $lastError,
             ];
 
         } catch (\Exception $e) {
@@ -83,10 +76,69 @@ class GeminiChatService
 
             return [
                 'success' => false,
-                'message' => $this->getFallbackMessage($language),
+                'message' => $this->getFallbackMessage($language, $userMessage),
                 'error' => $e->getMessage(),
             ];
         }
+    }
+
+    /**
+     * Try to generate response with a specific model
+     */
+    protected function tryGenerateResponse(array $contents, string $model, string $language): array
+    {
+        $url = "{$this->endpoint}/{$model}:generateContent?key={$this->apiKey}";
+
+        $response = Http::timeout(30)
+            ->withOptions([
+                'verify' => env('VERIFY_SSL', true),
+            ])
+            ->post($url, [
+                'contents' => $contents,
+                'generationConfig' => [
+                    'temperature' => 0.7,
+                    'topK' => 40,
+                    'topP' => 0.95,
+                    'maxOutputTokens' => 2048,
+                ],
+            ]);
+
+        if (!$response->successful()) {
+            $errorBody = $response->body();
+            Log::warning("Gemini API error for model {$model}", [
+                'status' => $response->status(),
+                'body' => $errorBody,
+            ]);
+
+            // Check if it's a rate limit or high demand error
+            if (str_contains($errorBody, 'high demand') || str_contains($errorBody, 'UNAVAILABLE')) {
+                return [
+                    'success' => false,
+                    'error' => 'Service temporarily unavailable due to high demand',
+                ];
+            }
+
+            return [
+                'success' => false,
+                'error' => "API request failed with status {$response->status()}",
+            ];
+        }
+
+        $data = $response->json();
+        $aiMessage = $data['candidates'][0]['content']['parts'][0]['text'] ?? null;
+
+        if (!$aiMessage) {
+            return [
+                'success' => false,
+                'error' => 'No response from AI',
+            ];
+        }
+
+        return [
+            'success' => true,
+            'message' => trim($aiMessage),
+            'language' => $language,
+        ];
     }
 
     /**
@@ -180,13 +232,43 @@ class GeminiChatService
     /**
      * Get a fallback message when the API fails
      */
-    protected function getFallbackMessage(string $language): string
+    protected function getFallbackMessage(string $language, string $userMessage = ''): string
     {
+        // Try to provide a helpful response based on keywords
+        $lowerMessage = strtolower($userMessage);
+        
         if ($language === 'rw') {
-            return "Murakoze cyane kubaza. Ntabwo mbishobora guhura na we ubu wa gihe. Nyamuka wa ndikanya ugaruke maze ukanda again. Niba ari iby'ingenzi, tabara aba karitinya.";
+            // Kinyarwanda fallback responses
+            if (str_contains($lowerMessage, 'amasomo') || str_contains($lowerMessage, 'lesson')) {
+                return "Murakoze kubaza. Amateka y'amasomo arashobora kuboneka kuri sisitemu yawe. Niba ukeneye uburenganzira bwo gusoma, baza uwizeretse utangiza w'amasomo.";
+            }
+            if (str_contains($lowerMessage, 'ikizamini') || str_contains($lowerMessage, 'exam')) {
+                return "Murakoze kubaza. Ibizamini bisubira muri sisitemu yawe. Niba ukeneye amakuru y'ibizamini, baza uwizeretse utangiza w'amashuri.";
+            }
+            if (str_contains($lowerMessage, 'kwinjira') || str_contains($lowerMessage, 'login')) {
+                return "Kwinjira kuri sisitemu, kanda kuri 'Login' hejuru y'urupapuro rw'inyeredi. Ongeraho email yawe n'ijambobanga ryawe.";
+            }
+            return "Murakoze cyane kubaza. Ntabwo mbishobora guhura na we ubu. Nyamuka wa ndikanya ugaruke maze ukanda again. Niba ari iby'ingenzi, tabara aba karitinya.";
         }
 
-        return "Thank you for your message. I'm unable to respond at the moment. Please try again in a moment. If this is urgent, please contact our support staff directly.";
+        // English fallback responses
+        if (str_contains($lowerMessage, 'lesson') || str_contains($lowerMessage, 'course') || str_contains($lowerMessage, 'study')) {
+            return "Thank you for your question. Your lessons and courses are available in the system. If you need access, please contact your course instructor or administrator.";
+        }
+        if (str_contains($lowerMessage, 'exam') || str_contains($lowerMessage, 'test') || str_contains($lowerMessage, 'grade')) {
+            return "Thank you for your question. Exam schedules and results are available in the system. For specific exam inquiries, please contact your academic advisor.";
+        }
+        if (str_contains($lowerMessage, 'login') || str_contains($lowerMessage, 'password') || str_contains($lowerMessage, 'sign in')) {
+            return "To log in, click the 'Login' button at the top of the page. Enter your registered email and password. If you've forgotten your password, use the 'Forgot Password' option.";
+        }
+        if (str_contains($lowerMessage, 'register') || str_contains($lowerMessage, 'enroll') || str_contains($lowerMessage, 'admission')) {
+            return "For registration and enrollment information, please visit the admissions section or contact the admissions office directly.";
+        }
+        if (str_contains($lowerMessage, 'fee') || str_contains($lowerMessage, 'payment') || str_contains($lowerMessage, 'tuition')) {
+            return "For fee and payment inquiries, please contact the bursar's office or check the payments section in your student portal.";
+        }
+        
+        return "Thank you for your message. I'm currently experiencing high demand and may not respond immediately. Please try again in a few moments. If this is urgent, you can request human support using the button below.";
     }
 
     /**
