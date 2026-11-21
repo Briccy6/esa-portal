@@ -21,6 +21,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Register morph map for support system polymorphic relationships
+        \Illuminate\Database\Eloquent\Relations\Relation::morphMap([
+            'student' => \App\Models\Student::class,
+            'teacher' => \App\Models\Teacher::class,
+            'staff' => \App\Models\Staff::class,
+            'admin' => \App\Models\Admin::class,
+        ]);
+
         // Register mail namespace for mail components
         View::addNamespace('mail', resource_path('views/vendor/mail'));
 
