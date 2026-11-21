@@ -721,6 +721,13 @@ Route::prefix('staff')->name('staff.')->group(function () {
     Route::middleware('auth:staff')->group(function () {
         Route::get('dashboard', [StaffAuthController::class, 'dashboard'])->name('dashboard');
         
+        // API Routes for Staff
+        Route::get('/api/branches', function() {
+            $staff = auth()->guard('staff')->user();
+            $branches = $staff->branches()->orderBy('name')->get(['id', 'name']);
+            return response()->json(['branches' => $branches]);
+        })->name('staff.api.branches');
+        
         // Payment Schedule Routes
         Route::get('/payment-schedule', [PaymentScheduleController::class, 'index'])->name('accountant.payment-schedule.index');
         Route::get('/payment-schedule/course/{course}', [PaymentScheduleController::class, 'courseDetails'])->name('accountant.payment-schedule.course-details');

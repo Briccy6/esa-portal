@@ -370,16 +370,21 @@ function loadBranches() {
     const branchSelect = document.getElementById('branch_id');
     branchSelect.innerHTML = '<option value="" disabled selected>Loading branches...</option>';
     
-    fetch('/api/branches')
+    // Use the staff's assigned branches
+    fetch('/staff/api/branches')
         .then(response => response.json())
         .then(data => {
             branchSelect.innerHTML = '<option value="" disabled selected>Select branch</option>';
-            data.branches.forEach(branch => {
-                const option = document.createElement('option');
-                option.value = branch.id;
-                option.textContent = branch.name;
-                branchSelect.appendChild(option);
-            });
+            if (data.branches && data.branches.length > 0) {
+                data.branches.forEach(branch => {
+                    const option = document.createElement('option');
+                    option.value = branch.id;
+                    option.textContent = branch.name;
+                    branchSelect.appendChild(option);
+                });
+            } else {
+                branchSelect.innerHTML = '<option value="" disabled selected>No branches available</option>';
+            }
         })
         .catch(error => {
             console.error('Error loading branches:', error);
