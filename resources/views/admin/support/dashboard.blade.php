@@ -342,6 +342,11 @@
 @push('scripts')
 <script>
 let currentConversationId = null;
+const conversationUrl = '{{ route("admin.support.conversation", ['id' => '__ID__']) }}';
+const replyUrl = '{{ route("admin.support.reply", ['id' => '__ID__']) }}';
+const statusUrl = '{{ route("admin.support.status", ['id' => '__ID__']) }}';
+const assignUrl = '{{ route("admin.support.assign", ['id' => '__ID__']) }}';
+const returnToAiUrl = '{{ route("admin.support.return-to-ai", ['id' => '__ID__']) }}';
 
 // Load conversations on page load
 $(document).ready(function() {
@@ -385,7 +390,7 @@ function loadConversations() {
 // Load single conversation
 function loadConversation(id) {
     currentConversationId = id;
-    $.get(`{{ route("admin.support.conversation", ['id' => '']) }}${id}`, function(data) {
+    $.get(conversationUrl.replace('__ID__', id), function(data) {
         // Update header
         const userName = data.user_details?.name || 'Unknown';
         $('#conversation-title').text(userName);
@@ -439,7 +444,7 @@ $('#btn-send-reply').click(function() {
     const message = $('#reply-message').val().trim();
     if (!message || !currentConversationId) return;
 
-    $.post(`{{ route("admin.support.reply", ['id' => '']) }}${currentConversationId}`, {
+    $.post(replyUrl.replace('__ID__', currentConversationId), {
         message: message,
         _token: '{{ csrf_token() }}'
     }, function(data) {
@@ -453,7 +458,7 @@ $('#status-select').change(function() {
     if (!currentConversationId) return;
 
     $.ajax({
-        url: `{{ route("admin.support.status", ['id' => '']) }}${currentConversationId}`,
+        url: statusUrl.replace('__ID__', currentConversationId),
         method: 'PUT',
         data: {
             status: $(this).val(),
@@ -470,7 +475,7 @@ $('#status-select').change(function() {
 $('#btn-assign').click(function() {
     if (!currentConversationId) return;
 
-    $.post(`{{ route("admin.support.assign", ['id' => '']) }}${currentConversationId}`, {
+    $.post(assignUrl.replace('__ID__', currentConversationId), {
         agent_id: {{ auth()->guard('admin')->check() ? auth()->guard('admin')->id() : 'null' }},
         agent_type: 'admin',
         _token: '{{ csrf_token() }}'
@@ -484,7 +489,7 @@ $('#btn-assign').click(function() {
 $('#btn-return-ai').click(function() {
     if (!currentConversationId) return;
 
-    $.post(`{{ route("admin.support.return-to-ai", ['id' => '']) }}${currentConversationId}`, {
+    $.post(returnToAiUrl.replace('__ID__', currentConversationId), {
         _token: '{{ csrf_token() }}'
     }, function() {
         loadConversation(currentConversationId);
