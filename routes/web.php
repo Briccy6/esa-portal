@@ -2129,6 +2129,9 @@ Route::middleware(['auth:admin'])->prefix('admin/subscriptions')->name('subscrip
     Route::post('/extend/{studentSubscription}', [SubscriptionController::class, 'extendSubscription'])->name('extend');
 });
 
+Route::get('/to-whom/verify/{token}', [ToWhomLetterController::class, 'verify'])
+    ->name('to-whom.verify');
+
 // To Whom Letter Routes - Accessible by students, accountants, and admins
 Route::middleware(['auth:admin,staff,student'])->prefix('to-whom')->name('to-whom.')->group(function () {
     Route::get('/', [ToWhomLetterController::class, 'index'])->name('index');

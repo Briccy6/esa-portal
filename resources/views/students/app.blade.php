@@ -1005,5 +1005,70 @@
     </script>
 
     @yield('scripts')
+
+    <!-- Passport Photo Rejection Alert Modal -->
+    @if($studentUser && \Illuminate\Support\Facades\Schema::hasColumn('students', 'passport_photo_verification_status') && $studentUser->passport_photo_verification_status === 'rejected')
+    <div class="modal fade" id="passportRejectionModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-exclamation-triangle me-2"></i>Passport Photo Rejected
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning mb-3">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Important:</strong> Your passport photograph was rejected by our system.
+                    </div>
+                    
+                    <p class="mb-3">The photograph you uploaded does not meet our passport photo requirements. Please upload a <strong>real passport-style photograph</strong>, not just any image you find.</p>
+                    
+                    @if($studentUser->passport_photo_rejection_reason)
+                    <div class="alert alert-danger">
+                        <strong>Reason for rejection:</strong><br>
+                        {{ \App\Services\PassportPhotoVerificationService::getErrorMessage($studentUser->passport_photo_rejection_reason) }}
+                    </div>
+                    @endif
+                    
+                    <h6 class="fw-bold mb-2">Required Photo Standards:</h6>
+                    <ul class="small mb-3">
+                        <li>Plain white background</li>
+                        <li>Professional passport-style portrait</li>
+                        <li>Exactly one visible human face</li>
+                        <li>Face centered and looking directly at camera</li>
+                        <li>Portrait orientation (7:9 aspect ratio)</li>
+                        <li>Clear and not blurry</li>
+                        <li>Maximum 200 KB</li>
+                    </ul>
+                    
+                    <p class="text-muted small mb-0">
+                        <strong>Not accepted:</strong> Selfies, group photos, colored backgrounds, scanned documents, landscape photos, or blurry images.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <a href="{{ route('students.profile') }}" class="btn btn-primary">
+                        <i class="bi bi-upload me-1"></i>Upload New Photo
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Show rejection modal on page load
+        var rejectionModal = new bootstrap.Modal(document.getElementById('passportRejectionModal'));
+        rejectionModal.show();
+    });
+    </script>
+    @endif
+
+    <!-- ESA Live Support Chat Widget -->
+    @auth('student')
+    <x-chat-widget />
+    @endauth
 </body>
 </html>

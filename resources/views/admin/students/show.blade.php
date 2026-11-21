@@ -10,16 +10,6 @@
             <div class="text-center mb-5">
                 <h1 class="display-4 fw-bold text-primary mb-2">Student Details</h1>
                 <p class="text-muted">Complete student information and documentation</p>
-                
-                @if(auth()->guard('admin')->check())
-                <div class="mt-3">
-                    <button type="button"
-                            class="btn btn-primary"
-                            onclick="runBulkPassportCheck()">
-                        <i class="bi bi-check-circle me-1"></i>Run AI Check on All Pending Photos
-                    </button>
-                </div>
-                @endif
             </div>
 
             <!-- Main Card -->

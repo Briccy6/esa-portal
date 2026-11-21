@@ -12,6 +12,9 @@ class ToWhomLetter extends Model
 
     protected $fillable = [
         'student_id',
+        'recipient_type',
+        'recipient_name',
+        'recipient_role',
         'generated_by',
         'letter_type',
         'recipient_title',
@@ -19,6 +22,7 @@ class ToWhomLetter extends Model
         'content',
         'letter_date',
         'reference_number',
+        'verification_token',
         'is_active',
     ];
 
@@ -35,6 +39,10 @@ class ToWhomLetter extends Model
     const TYPE_GOOD_STANDING = 'good_standing';
     const TYPE_PROFESSIONAL_LETTER = 'professional_letter';
     const TYPE_CUSTOM = 'custom';
+    const TYPE_PROOF_OF_REGISTRATION = 'proof_of_registration';
+    const TYPE_STUDENT_CONFIRMATION = 'student_confirmation';
+    const TYPE_TO_WHOM = 'to_whom';
+    const TYPE_EMPLOYMENT_CONFIRMATION = 'employment_confirmation';
 
     // Recipient titles
     const RECIPIENT_TO_WHOM_IT_MAY_CONCERN = 'To Whom It May Concern';
@@ -76,12 +84,16 @@ class ToWhomLetter extends Model
     public static function getLetterTypes(): array
     {
         return [
+            self::TYPE_PROOF_OF_REGISTRATION => 'Proof of Registration',
+            self::TYPE_STUDENT_CONFIRMATION => 'Student Confirmation',
+            self::TYPE_TO_WHOM => 'To Whom It May Concern',
+            self::TYPE_EMPLOYMENT_CONFIRMATION => 'Employee Confirmation',
             self::TYPE_ENROLLMENT => 'Enrollment Verification',
             self::TYPE_ACADEMIC_STANDING => 'Academic Standing',
             self::TYPE_FINANCIAL_STATUS => 'Financial Status',
             self::TYPE_COMPLETION => 'Course Completion',
             self::TYPE_GOOD_STANDING => 'Good Standing',
-            self::TYPE_PROFESSIONAL_LETTER => 'Professional Letter with Fee Details',
+            self::TYPE_PROFESSIONAL_LETTER => 'Professional Student Letter',
             self::TYPE_CUSTOM => 'Custom Letter',
         ];
     }
@@ -122,5 +134,10 @@ class ToWhomLetter extends Model
     public function getFormattedLetterDateAttribute(): string
     {
         return $this->letter_date->format('F j, Y');
+    }
+
+    public function getSubjectNameAttribute(): string
+    {
+        return $this->recipient_name ?: $this->student?->full_name ?: 'Unknown recipient';
     }
 }

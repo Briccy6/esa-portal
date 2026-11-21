@@ -572,5 +572,10 @@
 <noscript><a href="https://www.livechat.com/chat-with/19254904/" rel="nofollow">Chat with us</a>, powered by <a href="https://www.excellentservantacademy.com" rel="noopener nofollow" target="_blank">ESA</a></noscript>
 <!-- End of LiveChat code -->
 
+<!-- ESA Live Support Chat Widget -->
+@auth('staff')
+<x-chat-widget />
+@endauth
+
 </body>
 </html> 

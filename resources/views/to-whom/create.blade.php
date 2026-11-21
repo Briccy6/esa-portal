@@ -22,6 +22,15 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
+                                    <label for="recipient_type" class="form-label">Document For <span class="text-danger">*</span></label>
+                                    <select name="recipient_type" id="recipient_type" class="form-select" required>
+                                        <option value="student">Student</option>
+                                        <option value="employee">Staff member or teacher</option>
+                                    </select>
+                                </div>
+
+                                <div id="student_fields">
+                                <div class="mb-3">
                                     <label for="student_id" class="form-label">Student <span class="text-danger">*</span></label>
                                     <input type="hidden" name="student_id" id="student_id" required>
                                     <input type="text" id="student_search" class="form-control" placeholder="Search student by name or registration number..." autocomplete="off">
@@ -32,6 +41,17 @@
                                     @error('student_id')
                                         <div class="text-danger small">{{ $message }}</div>
                                     @enderror
+                                </div>
+                                </div>
+
+                                <div id="employee_fields" class="mb-3" style="display: none;">
+                                    <label for="employee_ref" class="form-label">Staff member or teacher <span class="text-danger">*</span></label>
+                                    <select name="employee_ref" id="employee_ref" class="form-select" disabled>
+                                        <option value="">Select an employee</option>
+                                        @foreach($employees as $employee)
+                                            <option value="{{ $employee['ref'] }}">{{ $employee['name'] }} — {{ $employee['role'] }}</option>
+                                        @endforeach
+                                    </select>
                                 </div>
 
                                 <div class="mb-3">
@@ -165,7 +185,36 @@ document.addEventListener('DOMContentLoaded', function() {
     const suggestions = document.getElementById('student_suggestions');
     const selectedStudent = document.getElementById('selected_student');
     const selectedStudentText = document.getElementById('selected_student_text');
-    
+    const recipientType = document.getElementById('recipient_type');
+    const studentFields = document.getElementById('student_fields');
+    const employeeFields = document.getElementById('employee_fields');
+    const employeeSelect = document.getElementById('employee_ref');
+    const letterType = document.getElementById('letter_type');
+    const employmentOption = letterType.querySelector('option[value="employment_confirmation"]');
+
+    function updateRecipientFields() {
+        const isEmployee = recipientType.value === 'employee';
+        studentFields.style.display = isEmployee ? 'none' : '';
+        studentId.required = !isEmployee;
+        if (studentSearch) {
+            studentSearch.required = false;
+        }
+        employeeFields.style.display = isEmployee ? '' : 'none';
+        employeeSelect.disabled = !isEmployee;
+        employeeSelect.required = isEmployee;
+        if (employmentOption) {
+            employmentOption.hidden = !isEmployee;
+        }
+        if (isEmployee && letterType.value !== 'employment_confirmation') {
+            letterType.value = 'employment_confirmation';
+        } else if (!isEmployee && letterType.value === 'employment_confirmation') {
+            letterType.value = '';
+        }
+    }
+
+    recipientType.addEventListener('change', updateRecipientFields);
+    updateRecipientFields();
+
     let debounceTimer;
     
     // Handle student search autocomplete
@@ -194,13 +243,17 @@ document.addEventListener('DOMContentLoaded', function() {
                         const item = document.createElement('a');
                         item.href = '#';
                         item.className = 'list-group-item list-group-item-action';
-                        item.innerHTML = `
-                            <div class="d-flex w-100 justify-content-between">
-                                <strong>${student.full_name}</strong>
-                                <small>${student.reg_number}</small>
-                            </div>
-                            <small class="text-muted">${student.branch} • ${student.course}</small>
-                        `;
+                        const nameRow = document.createElement('div');
+                        nameRow.className = 'd-flex w-100 justify-content-between';
+                        const name = document.createElement('strong');
+                        name.textContent = student.full_name;
+                        const registration = document.createElement('small');
+                        registration.textContent = student.reg_number;
+                        const details = document.createElement('small');
+                        details.className = 'text-muted';
+                        details.textContent = `${student.branch} · ${student.course}`;
+                        nameRow.append(name, registration);
+                        item.append(nameRow, details);
                         item.addEventListener('click', function(e) {
                             e.preventDefault();
                             studentId.value = student.id;
@@ -225,53 +278,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Handle form submission
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        if (!studentId.value) {
-            alert('Please select a student');
-            return;
-        }
-        
-        const formData = new FormData(form);
-        
-        fetch(form.action, {
-            method: 'POST',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json'
-            },
-            body: formData,
-            credentials: 'same-origin'
-        })
-        .then(response => {
-            if (response.status === 422) {
-                // Outstanding fees error
-                return response.json().then(data => {
-                    if (data.error === 'Student has outstanding fees') {
-                        alert('⚠️ Cannot Generate Letter\n\n' + data.message);
-                        throw new Error('Outstanding fees');
-                    }
-                    throw new Error('Validation error');
-                });
-            }
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.text();
-        })
-        .then(html => {
-            // If successful, redirect by submitting form normally
-            form.submit();
-        })
-        .catch(error => {
-            if (error.message !== 'Outstanding fees') {
-                console.error('Error:', error);
-                alert('An error occurred. Please try again.');
-            }
-        });
-    });
 });
 </script>
 @endpush

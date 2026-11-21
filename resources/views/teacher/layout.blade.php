@@ -1712,5 +1712,11 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 <!-- LiveChat script removed due to expired license -->
+
+<!-- ESA Live Support Chat Widget -->
+@auth('teacher')
+<x-chat-widget />
+@endauth
+
 </body>
 </html>

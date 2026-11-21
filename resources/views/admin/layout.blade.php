@@ -2145,7 +2145,14 @@
                             <span class="nav-text">Announcements</span>
                         </a>
                     </div>
-                    
+
+                    <div class="nav-item">
+                        <a href="{{ route('admin.support.dashboard') }}" class="nav-link {{ request()->routeIs('admin.support.*') ? 'active' : '' }}">
+                            <i class="fas fa-headset"></i>
+                            <span class="nav-text">Live Support</span>
+                        </a>
+                    </div>
+
                     <!-- Client Management Submenu -->
                     <div class="nav-section" x-data="{ isOpen: {{ request()->routeIs('admin.clients.*') ? 'true' : 'false' }} }">
                         <div class="nav-header cursor-pointer" @click="isOpen = !isOpen">

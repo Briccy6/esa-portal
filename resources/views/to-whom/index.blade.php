@@ -44,8 +44,12 @@
                                                 <span class="badge bg-primary">{{ $letter->reference_number }}</span>
                                             </td>
                                             <td>
-                                                <strong>{{ $letter->student->full_name }}</strong><br>
-                                                <small class="text-muted">{{ $letter->student->reg_number }}</small>
+                                                <strong>{{ $letter->subject_name }}</strong><br>
+                                                @if($letter->student)
+                                                    <small class="text-muted">{{ $letter->student->reg_number }}</small>
+                                                @else
+                                                    <small class="text-muted">{{ $letter->recipient_role }}</small>
+                                                @endif
                                             </td>
                                             <td>
                                                 <span class="badge bg-info">

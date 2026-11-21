@@ -8,11 +8,14 @@ use App\Models\SchoolInformation;
 use App\Models\User;
 use App\Models\CourseTermFee;
 use App\Models\StudentTransaction;
+use App\Models\Staff;
+use App\Models\Teacher;
 use App\Models\Term;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 
@@ -60,6 +63,7 @@ class ToWhomLetterController extends Controller
     {
         $user = Auth::user();
         $students = collect();
+        $employees = collect();
         $letterTypes = ToWhomLetter::getLetterTypes();
         $recipientTitles = ToWhomLetter::getRecipientTitles();
 
@@ -82,14 +86,29 @@ class ToWhomLetterController extends Controller
                     ->orderBy('full_name')
                     ->get();
             }
-            return view('to-whom.create', compact('students', 'letterTypes', 'recipientTitles'));
         } else {
             // Admins can see all students
             $students = Student::with(['course', 'branch', 'academicYear'])
                 ->orderBy('full_name')
                 ->get();
-            return view('to-whom.create', compact('students', 'letterTypes', 'recipientTitles'));
         }
+
+        $employees = Staff::query()->orderBy('name')->get(['id', 'name', 'role'])
+            ->map(fn ($employee) => [
+                'ref' => 'staff:'.$employee->id,
+                'name' => $employee->name,
+                'role' => $employee->role,
+            ])
+            ->concat(Teacher::query()->orderBy('teacher_name')->get(['id', 'teacher_name', 'department'])
+                ->map(fn ($employee) => [
+                    'ref' => 'teacher:'.$employee->id,
+                    'name' => $employee->teacher_name,
+                    'role' => 'Teacher - '.$employee->department,
+                ]))
+            ->sortBy('name')
+            ->values();
+
+        return view('to-whom.create', compact('students', 'employees', 'letterTypes', 'recipientTitles'));
     }
 
     /**
@@ -144,20 +163,54 @@ class ToWhomLetterController extends Controller
      */
     public function store(Request $request)
     {
+        $recipientType = $request->input('recipient_type', 'student');
+        $letterTypes = ToWhomLetter::getLetterTypes();
+        if ($recipientType === 'employee') {
+            $letterTypes = [ToWhomLetter::TYPE_EMPLOYMENT_CONFIRMATION => $letterTypes[ToWhomLetter::TYPE_EMPLOYMENT_CONFIRMATION]];
+        } else {
+            unset($letterTypes[ToWhomLetter::TYPE_EMPLOYMENT_CONFIRMATION]);
+        }
+
         $request->validate([
-            'student_id' => 'required|exists:students,id',
-            'letter_type' => 'required|in:' . implode(',', array_keys(ToWhomLetter::getLetterTypes())),
+            'recipient_type' => 'required|in:student,employee',
+            'student_id' => 'required_if:recipient_type,student|nullable|exists:students,id',
+            'employee_ref' => ['required_if:recipient_type,employee', 'nullable', 'regex:/^(staff|teacher):[1-9][0-9]*$/'],
+            'letter_type' => 'required|in:' . implode(',', array_keys($letterTypes)),
             'recipient_title' => 'required|in:' . implode(',', array_keys(ToWhomLetter::getRecipientTitles())),
             'purpose' => 'required|string|max:255',
             'letter_date' => 'required|date',
         ]);
 
         $user = Auth::user();
-        // Eager load relationships to ensure course and academic year names are available
-        $student = Student::with(['course', 'branch', 'academicYear'])->findOrFail($request->student_id);
+        $student = null;
+        $recipientName = null;
+        $recipientRole = null;
+
+        if ($recipientType === 'employee') {
+            [$employeeType, $employeeId] = explode(':', $request->employee_ref, 2);
+            $employee = $employeeType === 'teacher'
+                ? Teacher::findOrFail($employeeId)
+                : Staff::findOrFail($employeeId);
+            $recipientName = $employeeType === 'teacher' ? $employee->teacher_name : $employee->name;
+            $recipientRole = $employeeType === 'teacher'
+                ? 'Teacher - '.$employee->department
+                : Str::of($employee->role)->replace('_', ' ')->title()->toString();
+        } else {
+            if ($user->isStudent()) {
+                $student = Student::with(['course', 'branch', 'academicYear'])
+                    ->where('email', $user->email)
+                    ->firstOrFail();
+                if ((int) $request->student_id !== (int) $student->id) {
+                    abort(403, 'Students may only request documents for themselves.');
+                }
+            } else {
+                $student = Student::with(['course', 'branch', 'academicYear'])->findOrFail($request->student_id);
+            }
+            $recipientName = $student->full_name;
+        }
 
         // Check for outstanding fees on financial status and good standing documents
-        if (in_array($request->letter_type, [ToWhomLetter::TYPE_FINANCIAL_STATUS, ToWhomLetter::TYPE_GOOD_STANDING])) {
+        if ($student && in_array($request->letter_type, [ToWhomLetter::TYPE_FINANCIAL_STATUS, ToWhomLetter::TYPE_GOOD_STANDING])) {
             $outstandingFees = $this->getStudentOutstandingFees($student->id);
             if ($outstandingFees > 0) {
                 return response()->json([
@@ -169,7 +222,9 @@ class ToWhomLetterController extends Controller
         }
 
         // Generate letter content based on type
-        $content = $this->generateLetterContent($request->letter_type, $student, $request->purpose);
+        $content = $recipientType === 'employee'
+            ? "This letter confirms that {$recipientName} is employed by our institution as {$recipientRole}. It is issued upon request for employment verification."
+            : $this->generateLetterContent($request->letter_type, $student, $request->purpose);
 
         // Set generated_by based on user type
         $generatedById = null;
@@ -179,8 +234,12 @@ class ToWhomLetterController extends Controller
             $generatedById = $user->id;
         }
 
+        $verificationToken = Str::random(64);
         $letter = ToWhomLetter::create([
-            'student_id' => $student->id,
+            'student_id' => $student?->id,
+            'recipient_type' => $recipientType,
+            'recipient_name' => $recipientName,
+            'recipient_role' => $recipientRole,
             'generated_by' => $generatedById,
             'letter_type' => $request->letter_type,
             'recipient_title' => $request->recipient_title,
@@ -188,6 +247,7 @@ class ToWhomLetterController extends Controller
             'content' => $content,
             'letter_date' => $request->letter_date,
             'reference_number' => ToWhomLetter::generateReferenceNumber(),
+            'verification_token' => $verificationToken,
             'is_active' => true,
         ]);
 
@@ -279,10 +339,24 @@ class ToWhomLetterController extends Controller
 
         $letter->load(['student.course', 'student.branch', 'student.academicYear', 'generator']);
         $schoolInfo = SchoolInformation::getActive();
+        $verificationUrl = route('to-whom.verify', ['token' => $letter->verification_token], true);
+        $qrCode = \QrCode::format('svg')->size(88)->margin(0)->generate($verificationUrl);
+        $letter->content = Str::limit((string) $letter->content, 650);
 
-        $pdf = PDF::loadView('to-whom.pdf', compact('letter', 'schoolInfo'));
+        $pdf = Pdf::loadView('to-whom.pdf', compact('letter', 'schoolInfo', 'verificationUrl', 'qrCode'))
+            ->setPaper('a4', 'portrait');
         
         return $pdf->download("letter-{$letter->reference_number}.pdf");
+    }
+
+    public function verify(string $token)
+    {
+        $letter = ToWhomLetter::query()
+            ->where('verification_token', $token)
+            ->where('is_active', true)
+            ->first();
+
+        return response()->view('to-whom.verify', compact('letter'), $letter ? 200 : 404);
     }
 
     /**
@@ -311,12 +385,33 @@ class ToWhomLetterController extends Controller
             case ToWhomLetter::TYPE_PROFESSIONAL_LETTER:
                 $content = $this->generateProfessionalLetterContent($student, $purpose);
                 break;
+            case ToWhomLetter::TYPE_PROOF_OF_REGISTRATION:
+                $content = $this->generateStudentDocumentContent($student, 'proof of registration');
+                break;
+            case ToWhomLetter::TYPE_STUDENT_CONFIRMATION:
+                $content = $this->generateStudentDocumentContent($student, 'student confirmation');
+                break;
+            case ToWhomLetter::TYPE_TO_WHOM:
+                $content = $this->generateStudentDocumentContent($student, 'student status');
+                break;
             default:
                 $content = $this->generateCustomContent($student, $purpose);
                 break;
         }
 
         return $content;
+    }
+
+    private function generateStudentDocumentContent($student, string $documentDescription): string
+    {
+        $courseName = $student->course?->name ?? 'Not recorded';
+        $branchName = $student->branch?->name ?? 'Not recorded';
+        $academicYear = $student->academicYear?->year ?? 'Not recorded';
+        $admissionDate = $student->created_at?->format('F j, Y') ?? 'Not recorded';
+
+        return "This document confirms {$documentDescription} for {$student->full_name} (registration number {$student->reg_number}). "
+            ."The student is registered in {$courseName} at the {$branchName} campus for academic year {$academicYear}. "
+            ."Admission date: {$admissionDate}.";
     }
 
     /**
@@ -559,158 +654,9 @@ Good Standing Certificate:
 The student has maintained satisfactory academic performance, demonstrated good conduct, and has no outstanding disciplinary or financial obligations to the institution.";
     }
 
-    /**
-     * Generate professional letter with fee details and payment history.
-     */
-    private function generateProfessionalLetterContent($student, $purpose)
+    private function generateProfessionalLetterContent($student, $purpose): string
     {
-        $courseName = 'Not Specified';
-        $branchName = 'Not Specified';
-        $academicYear = 'Not Specified';
-        
-        // Get course name with fallback
-        if ($student->course_id) {
-            if ($student->course && !empty($student->course->name)) {
-                $courseName = $student->course->name;
-            } else {
-                $courseName = "Course ID: {$student->course_id} (Name not available)";
-            }
-        }
-        
-        // Get branch name with fallback
-        if ($student->branch_id) {
-            if ($student->branch && !empty($student->branch->name)) {
-                $branchName = $student->branch->name;
-            } else {
-                $branchName = "Branch ID: {$student->branch_id} (Name not available)";
-            }
-        }
-        
-        // Get academic year with fallback
-        if ($student->academic_year_id) {
-            if ($student->academicYear && !empty($student->academicYear->year)) {
-                $academicYear = $student->academicYear->year;
-            } else {
-                $academicYear = "Academic Year ID: {$student->academic_year_id} (Name not available)";
-            }
-        }
-        
-        $enrollmentDate = $student->created_at->format('F j, Y');
-        $currentDate = Carbon::now()->format('F j, Y');
-        
-        // Start building the letter
-        $content = "This is to certify that {$student->full_name} (Registration Number: {$student->reg_number}) ";
-        $content .= "has been enrolled as a student at our institution.\n\n";
-        
-        // ENROLLMENT PROOF
-        $content .= "ENROLLMENT INFORMATION:\n";
-        $content .= "- Full Name: {$student->full_name}\n";
-        $content .= "- Registration Number: {$student->reg_number}\n";
-        $content .= "- Course: {$courseName}\n";
-        $content .= "- Branch: {$branchName}\n";
-        $content .= "- Academic Year: {$academicYear}\n";
-        $content .= "- Enrollment Date: {$enrollmentDate}\n";
-        $content .= "- Date of This Letter: {$currentDate}\n\n";
-        
-        // FEE SCHEDULE
-        $content .= "FEE STRUCTURE:\n";
-        
-        if ($student->course_id) {
-            // Get the course term fees
-            $courseTermFees = DB::table('course_term_fees')
-                ->where('course_id', $student->course_id)
-                ->where('is_active', true)
-                ->get();
-            
-            if ($courseTermFees->isNotEmpty()) {
-                foreach ($courseTermFees as $fee) {
-                    $termName = DB::table('terms')->where('id', $fee->term_id)->value('name') ?? "Term {$fee->term_id}";
-                    $content .= "\n{$termName}:\n";
-                    $content .= "  - Registration Fee: RWF " . number_format($fee->registration_fee, 2) . "\n";
-                    $content .= "  - Tuition Fee: RWF " . number_format($fee->tuition_fee, 2) . "\n";
-                    $content .= "  - Practical Fee: RWF " . number_format($fee->practical_fee, 2) . "\n";
-                    $content .= "  - Trip Fee: RWF " . number_format($fee->trip_fee, 2) . "\n";
-                    $content .= "  - Student Card Fee: RWF " . number_format($fee->student_card_fee, 2) . "\n";
-                    $totalTermFee = $fee->registration_fee + $fee->tuition_fee + $fee->practical_fee + $fee->trip_fee + $fee->student_card_fee;
-                    $content .= "  - Total: RWF " . number_format($totalTermFee, 2) . "\n";
-                }
-            }
-        }
-        
-        // PAYMENT HISTORY
-        $content .= "\n\nPAYMENT HISTORY:\n";
-        
-        $payments = DB::table('payments')
-            ->join('school_fees', 'payments.school_fee_id', '=', 'school_fees.id')
-            ->where('school_fees.student_id', $student->id)
-            ->select('payments.*', 'school_fees.term_id', 'school_fees.amount')
-            ->orderBy('payments.created_at', 'desc')
-            ->get();
-        
-        if ($payments->isNotEmpty()) {
-            $totalPaid = 0;
-            foreach ($payments as $payment) {
-                $termName = DB::table('terms')->where('id', $payment->term_id)->value('name') ?? "Term {$payment->term_id}";
-                $content .= "- {$termName}: RWF " . number_format($payment->payed, 2);
-                if ($payment->discount > 0) {
-                    $content .= " (with discount: RWF " . number_format($payment->discount, 2) . ")";
-                }
-                $content .= " - Date: " . Carbon::parse($payment->created_at)->format('F j, Y') . "\n";
-                $totalPaid += $payment->payed;
-            }
-            $content .= "\nTotal Paid: RWF " . number_format($totalPaid, 2) . "\n";
-        } else {
-            $content .= "No payments recorded yet.\n";
-        }
-        
-        // OUTSTANDING BALANCE
-        $content .= "\n\nFINANCIAL STATUS:\n";
-        
-        $totalFees = 0;
-        $totalPaid = 0;
-        
-        // Calculate total fees from course_term_fees (fees are tied to courses, not students)
-        if ($student->course) {
-            // Get current term
-            $currentTerm = Term::where('start_date', '<=', now())
-                               ->where('end_date', '>=', now())
-                               ->first();
-            
-            if ($currentTerm) {
-                $courseTermFee = CourseTermFee::where('course_id', $student->course_id)
-                                               ->where('term_id', $currentTerm->id)
-                                               ->where('is_active', true)
-                                               ->first();
-                
-                if ($courseTermFee) {
-                    $totalFees = $courseTermFee->total_fees;
-                }
-            }
-        }
-        
-        // Calculate total paid from student_transactions
-        $totalPaid = StudentTransaction::where('student_id', $student->id)
-                                        ->where('type', 'school_fee')
-                                        ->where('status', 'successful')
-                                        ->sum('amount');
-        
-        $outstandingBalance = $totalFees - $totalPaid;
-        
-        $content .= "- Total Fees Due: RWF " . number_format($totalFees, 2) . "\n";
-        $content .= "- Total Paid: RWF " . number_format($totalPaid, 2) . "\n";
-        $content .= "- Outstanding Balance: RWF " . number_format(max(0, $outstandingBalance), 2) . "\n";
-        
-        if ($outstandingBalance <= 0) {
-            $content .= "\n✓ CERTIFICATION: The student has NO OUTSTANDING FEES. All required fees have been paid in full or exceeded.\n";
-        } else {
-            $content .= "\n⚠ NOTE: The student has an outstanding balance of RWF " . number_format($outstandingBalance, 2) . ".\n";
-        }
-        
-        // CLOSING STATEMENT
-        $content .= "\n\nThis letter is issued for official purposes and certified to be accurate as per the records ";
-        $content .= "available in our institution as of " . Carbon::now()->format('F j, Y') . ".\n";
-        
-        return $content;
+        return $this->generateStudentDocumentContent($student, 'student confirmation');
     }
 
     /**
