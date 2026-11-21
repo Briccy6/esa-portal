@@ -304,8 +304,8 @@ class AccountantDashboardController extends Controller
             $paidAmount = $paymentStatus['total_paid'];
             $paymentPercentage = $paymentStatus['payment_percentage'];
 
-            // Check if student meets the threshold (less than or equal to the specified percentage for "below")
-            if ($paymentPercentage <= $percentage) {
+            // Check if student meets the threshold (at least the specified percentage)
+            if ($paymentPercentage >= $percentage) {
                 $filteredStudents->push([
                     'id' => $student->id,
                     'name' => $student->full_name,
