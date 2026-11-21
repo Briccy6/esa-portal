@@ -1211,8 +1211,9 @@ Route::middleware('auth:teacher')->get('/api/teacher/branch/{branchId}/courses/l
             'branch_id' => $branchId,
             'course_ids' => $courseIds,
             'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
         ]);
-        return response()->json(['error' => 'Failed to load lessons'], 500);
+        return response()->json(['error' => 'Failed to load lessons: ' . $e->getMessage()], 500);
     }
 });
 
@@ -1328,9 +1329,10 @@ Route::middleware('auth:teacher')->get('/api/teacher/branch/{branchId}/courses/s
             'teacher_id' => $teacher->id,
             'branch_id' => $branchId,
             'course_ids' => $courseIds,
-            'error' => $e->getMessage()
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
         ]);
-        return response()->json(['error' => 'Failed to load students'], 500);
+        return response()->json(['error' => 'Failed to load students: ' . $e->getMessage()], 500);
     }
 });
 
