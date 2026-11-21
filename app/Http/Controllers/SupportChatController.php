@@ -135,32 +135,47 @@ class SupportChatController extends Controller
             // Get user info for context
             $userInfo = $this->getUserInfo($user, $userType);
 
-            // Generate AI response
-            $aiResponse = $this->geminiService->generateResponse(
-                $request->message,
-                $history,
-                $detectedLanguage,
-                $userInfo
-            );
+            // Generate AI response with shorter timeout to prevent 504
+            try {
+                $aiResponse = $this->geminiService->generateResponse(
+                    $request->message,
+                    $history,
+                    $detectedLanguage,
+                    $userInfo
+                );
 
-            // Save AI message
-            $aiMessage = SupportMessage::create([
-                'conversation_id' => $conversation->id,
-                'sender_id' => null,
-                'sender_type' => null,
-                'sender_role' => 'ai',
-                'message_content' => $aiResponse['message'],
-                'message_type' => 'text',
-            ]);
+                // Save AI message
+                $aiMessage = SupportMessage::create([
+                    'conversation_id' => $conversation->id,
+                    'sender_id' => null,
+                    'sender_type' => null,
+                    'sender_role' => 'ai',
+                    'message_content' => $aiResponse['message'],
+                    'message_type' => 'text',
+                ]);
 
-            $conversation->updateLastMessageAt();
+                $conversation->updateLastMessageAt();
 
-            return response()->json([
-                'user_message' => $userMessage,
-                'ai_message' => $aiMessage,
-                'ai_available' => $aiResponse['success'] ?? false,
-                'conversation' => $conversation,
-            ]);
+                return response()->json([
+                    'user_message' => $userMessage,
+                    'ai_message' => $aiMessage,
+                    'ai_available' => $aiResponse['success'] ?? false,
+                    'conversation' => $conversation,
+                ]);
+            } catch (\Exception $e) {
+                // If AI fails, still return user message with error
+                Log::error('AI generation failed', ['error' => $e->getMessage()]);
+                
+                return response()->json([
+                    'user_message' => $userMessage,
+                    'ai_message' => [
+                        'message_content' => $this->getFallbackMessage($detectedLanguage),
+                        'sender_role' => 'ai',
+                    ],
+                    'ai_available' => false,
+                    'conversation' => $conversation,
+                ]);
+            }
         }
 
         // If in human mode, just acknowledge
@@ -301,5 +316,17 @@ class SupportChatController extends Controller
         }
 
         return $info;
+    }
+
+    /**
+     * Get fallback message when AI is unavailable
+     */
+    protected function getFallbackMessage(string $language): string
+    {
+        if ($language === 'rw') {
+            return "Murakoze kubaza. Ntabwo mbishobora guhura na we ubu wa gihe. Nyamuka wa ndikanya ugaruke maze ukanda again. Niba ari iby'ingenzi, tabara aba karitinya.";
+        }
+
+        return "Thank you for your message. I'm currently experiencing high demand and may not respond immediately. Please try again in a few moments. If this is urgent, you can request human support using the button below.";
     }
 }

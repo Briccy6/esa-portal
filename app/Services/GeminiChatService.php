@@ -125,7 +125,7 @@ class GeminiChatService
     {
         $url = "{$this->endpoint}/{$model}:generateContent?key={$this->apiKey}";
 
-        $response = Http::timeout(30)
+        $response = Http::timeout(5) // Reduced to 5 seconds to prevent 504 errors
             ->withOptions([
                 'verify' => env('VERIFY_SSL', true),
             ])

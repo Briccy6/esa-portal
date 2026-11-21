@@ -44,7 +44,7 @@ class OpenAIChatService
                 'content' => $userMessage,
             ];
 
-            $response = Http::timeout(30)
+            $response = Http::timeout(5) // Reduced to 5 seconds to prevent 504 errors
                 ->withHeaders([
                     'Authorization' => 'Bearer ' . $this->apiKey,
                     'Content-Type' => 'application/json',
