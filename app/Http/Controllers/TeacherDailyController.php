@@ -137,7 +137,6 @@ class TeacherDailyController extends Controller
                                 'student_id'   => $studentId,
                                 'course_id'    => $request->courses[0], // Store primary course
                                 'lesson_id'    => $request->lesson,
-                                'branch_id'    => $branchId,
                                 'date'         => $daily->date,
                                 'status'       => $status, // 'P', 'A', etc.
                                 'marked_by'    => $teacher->id,
@@ -157,7 +156,6 @@ class TeacherDailyController extends Controller
                                 'student_id'   => $student->id,
                                 'course_id'    => $request->courses[0], // Store primary course
                                 'lesson_id'    => $request->lesson,
-                                'branch_id'    => $branchId,
                                 'date'         => $daily->date,
                                 'status'       => 'P',
                                 'marked_by'    => $teacher->id,
