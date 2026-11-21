@@ -38,6 +38,15 @@
         letter-spacing: -.035em;
     }
     .registration-heading p { max-width: 620px; margin: 0; color: var(--registration-muted); }
+    .registration-draft-status {
+        margin-top: .9rem;
+        padding: .7rem .9rem;
+        border: 1px solid #d6e5dc;
+        border-radius: 8px;
+        background: #f5faf6;
+        color: #355d4c;
+        font-size: .82rem;
+    }
     .registration-card {
         overflow: hidden;
         border: 1px solid var(--registration-line);
@@ -263,6 +272,7 @@
             <div class="registration-eyebrow">Student administration / New record</div>
             <h1>Register a student</h1>
             <p>Enter student details, confirm their placement, and record one or more initial payments in a guided process.</p>
+            <div id="draftStatus" class="registration-draft-status" role="status" aria-live="polite" hidden></div>
         </header>
 
         @if(session('success'))
@@ -312,6 +322,8 @@
                 <form id="studentRegistrationForm"
                       action="{{ route('staff.students.store') }}"
                       method="POST"
+                      data-draft-key="student-registration-draft-{{ Auth::guard('staff')->id() }}"
+                      data-registration-succeeded="{{ session()->has('success') ? 'true' : 'false' }}"
                       data-email-url="{{ route('staff.api.student-registration.email') }}"
                       data-terms-url="{{ route('staff.api.student-registration.terms', ['academicYear' => '__YEAR__']) }}"
                       data-courses-url="{{ route('staff.api.student-registration.courses') }}"
@@ -358,7 +370,7 @@
                             <span>A valid, unused email address is required so the student's account can be created.</span>
                         </div>
                         <div class="registration-actions">
-                            <a class="btn btn-registration-secondary" href="{{ route('students.index') }}">Cancel</a>
+                            <a class="btn btn-registration-secondary" href="{{ route('students.index') }}" data-clear-draft>Cancel</a>
                             <span class="registration-status" aria-live="polite"></span>
                             <button class="btn btn-registration-primary" type="button" data-next>Continue <i class="fas fa-arrow-right ms-2"></i></button>
                         </div>
@@ -529,8 +541,68 @@ document.addEventListener('DOMContentLoaded', function () {
     let feeItems = [];
     let feesLoading = false;
     let pendingOldPayments = @json(old('payments', []));
+    const draftStatus = document.getElementById('draftStatus');
+    const draftKey = form.dataset.draftKey;
+    let restoredDraft = null;
+    let restoredStep = 1;
 
     const formatMoney = amount => new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(Number(amount || 0));
+
+    function setDraftStatus(message, visible) {
+        draftStatus.textContent = message;
+        draftStatus.hidden = !visible;
+    }
+
+    function clearStoredDraft() {
+        try {
+            window.sessionStorage.removeItem(draftKey);
+        } catch (error) {
+            console.error('Unable to clear the student registration draft.', error);
+        }
+    }
+
+    if (form.dataset.registrationSucceeded === 'true') {
+        clearStoredDraft();
+    } else {
+        try {
+            const storedDraft = window.sessionStorage.getItem(draftKey);
+            if (storedDraft) {
+                const parsedDraft = JSON.parse(storedDraft);
+                if (parsedDraft && parsedDraft.version === 1 && typeof parsedDraft === 'object') {
+                    restoredDraft = parsedDraft;
+                } else {
+                    clearStoredDraft();
+                }
+            }
+        } catch (error) {
+            console.error('Unable to restore the student registration draft.', error);
+            setDraftStatus('Automatic draft saving is unavailable in this browser. Refreshing may clear unsaved details.', true);
+        }
+    }
+
+    function restoreSelectValue(select, value) {
+        if (value && Array.from(select.options).some(option => option.value === String(value))) {
+            select.value = String(value);
+        }
+    }
+
+    if (restoredDraft) {
+        if (typeof restoredDraft.full_name === 'string') fullName.value = restoredDraft.full_name;
+        if (typeof restoredDraft.email === 'string') email.value = restoredDraft.email;
+        if (typeof restoredDraft.phone === 'string') form.elements.phone.value = restoredDraft.phone;
+        restoreSelectValue(form.elements.sex, restoredDraft.sex);
+        restoreSelectValue(yearSelect, restoredDraft.academic_year_id);
+        restoreSelectValue(branchSelect, restoredDraft.branch_id);
+        restoreSelectValue(form.elements.shift, restoredDraft.shift);
+        form.dataset.oldCourse = restoredDraft.course_id || form.dataset.oldCourse;
+        form.dataset.oldTerm = restoredDraft.enrollment_term_id || form.dataset.oldTerm;
+        if (Array.isArray(restoredDraft.payments)) pendingOldPayments = restoredDraft.payments;
+        const savedStep = Number(restoredDraft.step);
+        if (Number.isInteger(savedStep) && savedStep >= 1 && savedStep <= steps.length) {
+            restoredStep = savedStep;
+        }
+        setDraftStatus('Your unfinished registration was restored from this browser tab.', true);
+    }
 
     function getSelectedPayments() {
         return Array.from(paymentRows.querySelectorAll('.payment-category-row')).flatMap(row => {
@@ -542,6 +614,56 @@ document.addEventListener('DOMContentLoaded', function () {
                 amount: row.querySelector('.payment-category-amount').value
             }];
         });
+    }
+
+    function persistDraft() {
+        if (form.dataset.registrationSucceeded === 'true') {
+            clearStoredDraft();
+            setDraftStatus('', false);
+            return;
+        }
+
+        const visiblePayments = paymentRows.querySelectorAll('.payment-category-row').length > 0
+            ? getSelectedPayments().map(payment => ({ type: payment.type, amount: payment.amount }))
+            : (Array.isArray(pendingOldPayments) ? pendingOldPayments : []);
+        const draft = {
+            version: 1,
+            step: activeStep,
+            full_name: fullName.value,
+            sex: form.elements.sex.value,
+            email: email.value,
+            phone: form.elements.phone.value,
+            academic_year_id: yearSelect.value,
+            branch_id: branchSelect.value,
+            course_id: courseSelect.value || form.dataset.oldCourse || '',
+            enrollment_term_id: termSelect.value || form.dataset.oldTerm || '',
+            shift: form.elements.shift.value,
+            payments: visiblePayments
+        };
+        const hasContent = Boolean(
+            draft.full_name.trim()
+            || draft.sex
+            || draft.email.trim()
+            || draft.phone.trim()
+            || draft.academic_year_id
+            || draft.branch_id
+            || draft.course_id
+            || draft.enrollment_term_id
+            || draft.payments.length
+        );
+
+        try {
+            if (hasContent) {
+                window.sessionStorage.setItem(draftKey, JSON.stringify(draft));
+                setDraftStatus('Your unfinished registration is saved in this browser tab and will be cleared after registration or when you cancel.', true);
+            } else {
+                window.sessionStorage.removeItem(draftKey);
+                if (form.dataset.registrationSucceeded !== 'true') setDraftStatus('', false);
+            }
+        } catch (error) {
+            console.error('Unable to save the student registration draft.', error);
+            setDraftStatus('Automatic draft saving is unavailable in this browser. Refreshing may clear unsaved details.', true);
+        }
     }
 
     function updatePaymentSummary() {
@@ -682,9 +804,11 @@ document.addEventListener('DOMContentLoaded', function () {
     email.addEventListener('blur', () => {
         email.value = email.value.trim().toLowerCase();
         if (email.value && email.checkValidity()) checkEmail(false);
+        persistDraft();
     });
     fullName.addEventListener('blur', function () {
         this.value = this.value.trim().replace(/\s+/g, ' ').replace(/(^|[\s'-])([a-z])/g, (match, separator, letter) => separator + letter.toUpperCase());
+        persistDraft();
     });
 
     async function getJson(url) {
@@ -835,6 +959,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 feeError.hidden = false;
                 paymentFields.hidden = true;
             }
+            if (activeStep === 4) updateReview();
+            persistDraft();
         } catch (error) {
             if (requestId !== feeRequestId) return;
             feeLoading.hidden = true;
@@ -880,6 +1006,7 @@ document.addEventListener('DOMContentLoaded', function () {
         document.querySelector('.registration-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
         const heading = steps[activeStep - 1].querySelector('h2');
         if (heading) heading.focus({ preventScroll: true });
+        persistDraft();
     }
 
     async function canContinue() {
@@ -951,6 +1078,9 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     courseSelect.addEventListener('change', loadFees);
     termSelect.addEventListener('change', loadFees);
+    form.addEventListener('input', persistDraft);
+    form.addEventListener('change', persistDraft);
+    form.querySelector('[data-clear-draft]').addEventListener('click', clearStoredDraft);
     form.addEventListener('submit', function (event) {
         if (!form.checkValidity()) {
             event.preventDefault();
@@ -971,6 +1101,8 @@ document.addEventListener('DOMContentLoaded', function () {
         loadTerms();
         if (branchSelect.value) loadCourses();
     }
+    if (restoredDraft) showStep(restoredStep);
+    else persistDraft();
 });
 </script>
 @endpush
