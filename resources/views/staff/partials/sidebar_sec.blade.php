@@ -373,7 +373,7 @@ async function loadBranches() {
     branchSelect.innerHTML = '<option value="" disabled selected>Loading branches...</option>';
 
     try {
-        const response = await fetch(@json(route('api.branches')), {
+        const response = await fetch('/staff/api/branches', {
             credentials: 'same-origin',
             headers: { 'Accept': 'application/json' }
         });
