@@ -27,6 +27,13 @@ class Student extends Authenticatable
         'identification_type',
         'id_photo',
         'passport_photo',
+        'passport_photo_verification_status',
+        'passport_photo_verified_at',
+        'passport_photo_verification_result',
+        'passport_photo_rejection_reason',
+        'passport_photo_confidence_score',
+        'passport_photo_requires_manual_review',
+        'passport_photo_verified_by',
         'senior6_document',
         'senior3_document',
         'other_supporting_document',
@@ -53,8 +60,13 @@ class Student extends Authenticatable
         'other_supporting_document' => 'string',
         'id_photo' => 'string',
         'passport_photo' => 'string',
+        'passport_photo_verification_result' => 'array',
+        'passport_photo_verified_at' => 'datetime',
+        'passport_photo_confidence_score' => 'decimal:2',
+        'passport_photo_requires_manual_review' => 'boolean',
         'nesa_registered' => 'boolean',
         'nesa_registration_date' => 'date',
+        'shift_changed_at' => 'datetime',
         'is_blocked' => 'boolean',
         'blocked_at' => 'datetime',
     ];
@@ -251,6 +263,11 @@ class Student extends Authenticatable
     public function studentCard()
     {
         return $this->hasOne(StudentCard::class);
+    }
+
+    public function verifiedByAdmin()
+    {
+        return $this->belongsTo(\App\Models\Admin::class, 'passport_photo_verified_by');
     }
 
     public function verifiedByAdmin()

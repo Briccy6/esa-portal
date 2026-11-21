@@ -3743,7 +3743,8 @@ class StudentController extends Controller
         if ($request->filled('shift') && $request->shift !== $student->shift) {
             // Check if student has already changed their shift
             if ($student->shift_changed_at) {
-                return back()->with('error', 'You can only change your shift once. Your shift was already changed on ' . $student->shift_changed_at->format('F j, Y \a\t g:i A') . '.');
+                $changedAt = is_string($student->shift_changed_at) ? $student->shift_changed_at : $student->shift_changed_at->format('F j, Y \a\t g:i A');
+                return back()->with('error', 'You can only change your shift once. Your shift was already changed on ' . $changedAt . '.');
             }
             $student->shift = $request->shift;
             $student->shift_changed_at = now();
