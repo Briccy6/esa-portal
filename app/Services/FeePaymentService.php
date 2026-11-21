@@ -248,10 +248,23 @@ class FeePaymentService
             $courseTermFees = $feeQuery->get();
             \Log::debug('FeePaymentService: CourseTermFees fetched', [
                 'student_id' => $student->id,
+                'student_name' => $student->full_name,
                 'branch_id' => $student->branch_id,
+                'course_id' => $student->course_id,
                 'count' => $courseTermFees->count(),
                 'term_ids_checked' => !empty($termIds) ? $termIds : 'all',
                 'using_branch_fees' => $useBranchFees,
+                'fee_records' => $courseTermFees->map(function($fee) {
+                    return [
+                        'term_id' => $fee->term_id,
+                        'term_name' => $fee->term->name ?? 'N/A',
+                        'registration_fee' => $fee->registration_fee,
+                        'tuition_fee' => $fee->tuition_fee,
+                        'practical_fee' => $fee->practical_fee,
+                        'trip_fee' => $fee->trip_fee,
+                        'student_card_fee' => $fee->student_card_fee,
+                    ];
+                }),
             ]);
             
             // Sum all required fees from course_term_fees table
