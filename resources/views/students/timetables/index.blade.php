@@ -4,73 +4,168 @@
 
 @section('content')
 <style>
+    .student-timetable-page {
+        --timetable-navy: #153b63;
+        --timetable-blue: #245b91;
+        --timetable-line: #d6dee8;
+        --timetable-soft: #f3f6f9;
+        --timetable-ink: #17212b;
+    }
+
     .timetable-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: #153b63;
         color: white;
-        padding: 2rem;
-        border-radius: 1rem;
+        padding: 1.35rem 1.5rem;
+        border-radius: 0.5rem;
         margin-bottom: 2rem;
+        border-left: 6px solid #e5b84a;
+    }
+
+    .timetable-header h2 {
+        font-size: 1.75rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
     }
 
     .timetable-card {
-        border-radius: 1rem;
+        border: 1px solid var(--timetable-line);
+        border-radius: 0.5rem;
         overflow: hidden;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        box-shadow: 0 8px 24px rgba(27, 54, 79, 0.08);
         margin-bottom: 2rem;
+    }
+
+    .timetable-card .card-header {
+        background: var(--timetable-navy) !important;
+        border: 0;
+        padding: 1rem 1.25rem;
+    }
+
+    .timetable-card .card-header h5 {
+        font-size: 1.08rem;
+        font-weight: 800;
+    }
+
+    .timetable-card .card-header small {
+        color: #dfe8f2 !important;
+        line-height: 1.7;
     }
 
     .timetable-table {
         background: white;
-        border-radius: 0.5rem;
+        border-radius: 0;
         overflow: hidden;
+        margin-bottom: 0;
+        border-collapse: separate;
+        border-spacing: 0;
     }
 
     .timetable-table thead th {
-        padding: 1.25rem 1rem;
-        font-weight: 700;
-        font-size: 0.95rem;
+        padding: 0.85rem 0.75rem;
+        font-weight: 800;
+        font-size: 0.78rem;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
-        border: none;
+        letter-spacing: 0.04em;
+        border: 0;
+        border-right: 1px solid rgba(255,255,255,0.16);
         white-space: nowrap;
-        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+        background: var(--timetable-blue);
         color: white !important;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        position: sticky;
+        top: 0;
+        z-index: 2;
     }
 
     .timetable-table thead {
-        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+        background: var(--timetable-blue);
     }
 
     .timetable-table tbody td {
-        padding: 1rem;
+        padding: 0.85rem 0.75rem;
         vertical-align: middle;
-        border-bottom: 1px solid #e2e8f0;
+        border: 0;
+        border-right: 1px solid var(--timetable-line);
+        border-bottom: 1px solid var(--timetable-line);
         background: #ffffff;
+        color: var(--timetable-ink);
+        font-size: 0.91rem;
     }
 
     .timetable-table tbody tr:nth-child(even) {
-        background: #f8fafc;
+        background: var(--timetable-soft);
     }
 
     .timetable-table tbody tr:hover {
-        background: #f0f9ff;
+        background: #edf4fa;
+    }
+
+    .timetable-time {
+        min-width: 112px;
+        color: #153b63;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .timetable-day {
+        min-width: 96px;
+    }
+
+    .timetable-table .badge {
+        border-radius: 0.3rem;
+        padding: 0.38rem 0.48rem;
+        font-weight: 800;
+        font-size: 0.75rem;
+    }
+
+    .timetable-table .bg-primary {
+        background: #dceaf6 !important;
+        color: #153b63 !important;
+        border: 1px solid #bfd2e4;
+    }
+
+    .timetable-table .bg-success {
+        background: #dff1e7 !important;
+        color: #155b38 !important;
+        border: 1px solid #b9d8c7;
+    }
+
+    .timetable-table .bg-warning {
+        background: #fff1c7 !important;
+        color: #795700 !important;
+        border: 1px solid #ead58c;
+    }
+
+    .timetable-table .bg-danger {
+        background: #fde4e4 !important;
+        color: #8b2323 !important;
+        border: 1px solid #efc2c2;
+    }
+
+    .timetable-table .bg-info {
+        background: #dcecf7 !important;
+        color: #1a4f75 !important;
+        border: 1px solid #bcd4e6;
+    }
+
+    .timetable-table .bg-light {
+        background: #eef1f4 !important;
+        color: #354250 !important;
+        border: 1px solid #d4dae1;
     }
 
     .download-btn {
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        border: none;
-        color: white;
-        padding: 0.75rem 2rem;
-        border-radius: 0.5rem;
-        font-weight: 600;
-        transition: all 0.3s ease;
-        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+        background: #e5b84a;
+        border: 1px solid #e5b84a;
+        color: #17212b;
+        padding: 0.65rem 1.1rem;
+        border-radius: 0.35rem;
+        font-weight: 800;
+        transition: background 0.15s ease, border-color 0.15s ease;
     }
 
     .download-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        background: #f0cb67;
+        border-color: #f0cb67;
+        color: #17212b;
     }
 
     @media (max-width: 768px) {
@@ -131,7 +226,7 @@
     }
 </style>
 
-<div class="container py-4">
+<div class="container py-4 student-timetable-page">
     <!-- Header -->
     <div class="timetable-header">
         <h2 class="mb-1"><i class="fas fa-calendar-alt me-2"></i>My Timetables</h2>
@@ -145,7 +240,7 @@
         </div>
     @else
         @foreach($timetables as $timetable)
-            <div class="card timetable-card">
+            <div class="card timetable-card student-timetable-page">
                 <div class="card-header bg-primary text-white d-flex flex-wrap justify-content-between align-items-center">
                     <div class="mb-2 mb-md-0">
                         <h5 class="mb-1">{{ $timetable->title }}</h5>
@@ -163,7 +258,7 @@
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-bordered table-hover timetable-table">
+                        <table class="table table-bordered table-hover timetable-table" id="timetable-{{ $timetable->id }}">
                             <thead>
                                 <tr>
                                     <th>Time</th>
@@ -187,14 +282,14 @@
                                     @if(!$daySessions->isEmpty())
                                         @foreach($daySessions as $session)
                                         <tr>
-                                            <td style="font-weight: 600;">
+                                            <td class="timetable-time" style="font-weight: 800;">
                                                 @if($session->start_time && $session->end_time)
                                                     {{ \Carbon\Carbon::parse($session->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($session->end_time)->format('H:i') }}
                                                 @else
                                                     N/A
                                                 @endif
                                             </td>
-                                            <td style="font-weight: 600;">{{ $dayName }}</td>
+                                            <td class="timetable-day" style="font-weight: 800;">{{ $dayName }}</td>
                                             <td>
                                                 @foreach($session->courses as $course)
                                                     <span class="badge bg-primary">{{ $course->abbreviation ?? $course->course_name }}</span>{{ !$loop->last ? ' ' : '' }}
@@ -253,11 +348,12 @@
 
 <script>
 function downloadTimetable(timetableId) {
-    const table = document.querySelector('.card .table');
+    const table = document.getElementById('timetable-' + timetableId);
     if (!table) return;
 
     const tableClone = table.cloneNode(true);
-    const cardHeader = document.querySelector('.card-header');
+    const card = table.closest('.timetable-card');
+    const cardHeader = card ? card.querySelector('.card-header') : null;
     const timetableTitle = cardHeader ? cardHeader.querySelector('h5')?.textContent : 'Timetable';
     const branchInfo = cardHeader ? cardHeader.querySelector('small')?.textContent : '';
 
@@ -277,9 +373,9 @@ function downloadTimetable(timetableId) {
                     text-align: center;
                     margin-bottom: 30px;
                     padding: 20px;
-                    background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+                    background: #153b63;
                     color: white;
-                    border-radius: 10px;
+                    border-left: 6px solid #e5b84a;
                 }
                 .header h1 {
                     margin: 0 0 10px 0;
@@ -300,7 +396,7 @@ function downloadTimetable(timetableId) {
                     overflow: hidden;
                 }
                 th { 
-                    background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+                    background: #245b91;
                     color: white; 
                     padding: 15px 12px;
                     text-align: left;

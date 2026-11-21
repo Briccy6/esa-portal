@@ -5,11 +5,12 @@
 @section('content')
 <style>
     .timetable-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: #153b63;
         color: white;
-        padding: 2rem;
-        border-radius: 1rem;
+        padding: 1.35rem 1.5rem;
+        border-radius: 0.5rem;
         margin-bottom: 2rem;
+        border-left: 6px solid #e5b84a;
     }
 
     .timetable-table {
@@ -20,7 +21,7 @@
     }
 
     .timetable-table thead {
-        background: #667eea;
+        background: #245b91;
         color: white;
     }
 
@@ -41,18 +42,18 @@
     }
 
     .download-btn {
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        border: none;
-        color: white;
-        padding: 0.5rem 1.5rem;
-        border-radius: 0.5rem;
-        font-weight: 600;
-        transition: all 0.3s ease;
+        background: #e5b84a;
+        border: 1px solid #e5b84a;
+        color: #17212b;
+        padding: 0.55rem 1.1rem;
+        border-radius: 0.35rem;
+        font-weight: 800;
+        transition: background 0.15s ease;
     }
 
     .download-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        background: #f0cb67;
+        color: #17212b;
     }
 </style>
 
@@ -88,16 +89,16 @@
         <div class="card">
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-bordered table-hover" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; overflow: hidden;">
+                    <table class="table table-bordered table-hover timetable-table" id="timetable-detail">
                         <thead>
-                            <tr style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-                                <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Time</th>
-                                <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Day</th>
-                                <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Course</th>
-                                <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Lesson</th>
-                                <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Room</th>
-                                <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Teacher</th>
-                                <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Session type / eligibility</th>
+                            <tr>
+                                <th>Time</th>
+                                <th>Day</th>
+                                <th>Course</th>
+                                <th>Lesson</th>
+                                <th>Room</th>
+                                <th>Teacher</th>
+                                <th>Session type / eligibility</th>
                             </tr>
                         </thead>
                         <tbody style="background: white;">
