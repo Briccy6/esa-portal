@@ -206,6 +206,110 @@
         }
     }
 
+    @media (max-width: 767.98px) {
+        .timetable-card > .card-header {
+            align-items: stretch !important;
+            gap: 0.75rem;
+        }
+
+        .timetable-card > .card-header > div {
+            width: 100%;
+            margin-bottom: 0 !important;
+        }
+
+        .timetable-card .download-btn {
+            width: 100%;
+        }
+
+        .timetable-card .card-body {
+            padding: 0.75rem;
+        }
+
+        .timetable-card .table-responsive {
+            overflow: visible;
+        }
+
+        .timetable-table {
+            display: block;
+            width: 100%;
+            border: 0;
+        }
+
+        .timetable-table thead {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        .timetable-table tbody {
+            display: block;
+        }
+
+        .timetable-table tbody tr {
+            display: block;
+            margin-bottom: 0.75rem;
+            overflow: hidden;
+            border: 1px solid var(--timetable-line);
+            border-radius: 0.45rem;
+            background: #fff;
+            box-shadow: 0 2px 6px rgba(27, 54, 79, 0.06);
+        }
+
+        .timetable-table tbody tr:last-child {
+            margin-bottom: 0;
+        }
+
+        .timetable-table tbody td {
+            display: grid;
+            grid-template-columns: minmax(5.25rem, 34%) minmax(0, 1fr);
+            gap: 0.65rem;
+            align-items: start;
+            width: 100%;
+            min-width: 0;
+            padding: 0.65rem 0.75rem;
+            border: 0;
+            border-bottom: 1px solid var(--timetable-line);
+            text-align: left;
+            font-size: 0.875rem;
+        }
+
+        .timetable-table.table-bordered tbody td {
+            border: 0;
+            border-bottom: 1px solid var(--timetable-line);
+        }
+
+        .timetable-table tbody td:last-child {
+            border-bottom: 0;
+        }
+
+        .timetable-table tbody td::before {
+            content: attr(data-label);
+            color: #43566a;
+            font-size: 0.68rem;
+            font-weight: 800;
+            letter-spacing: 0.035em;
+            line-height: 1.4;
+            text-transform: uppercase;
+        }
+
+        .timetable-cell-value {
+            min-width: 0;
+            overflow-wrap: anywhere;
+        }
+
+        .timetable-table .badge {
+            max-width: 100%;
+            white-space: normal;
+            text-align: left;
+        }
+    }
+
     @media print {
         .timetable-header,
         .download-btn,
@@ -282,56 +386,72 @@
                                     @if(!$daySessions->isEmpty())
                                         @foreach($daySessions as $session)
                                         <tr>
-                                            <td class="timetable-time" style="font-weight: 800;">
-                                                @if($session->start_time && $session->end_time)
-                                                    {{ \Carbon\Carbon::parse($session->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($session->end_time)->format('H:i') }}
-                                                @else
-                                                    N/A
-                                                @endif
-                                            </td>
-                                            <td class="timetable-day" style="font-weight: 800;">{{ $dayName }}</td>
-                                            <td>
-                                                @foreach($session->courses as $course)
-                                                    <span class="badge bg-primary">{{ $course->abbreviation ?? $course->course_name }}</span>{{ !$loop->last ? ' ' : '' }}
-                                                @endforeach
-                                            </td>
-                                            <td style="font-weight: 500;">{{ $session->lesson->title ?? 'N/A' }}</td>
-                                            <td>{{ $session->classroom ?? 'N/A' }}</td>
-                                            <td>
-                                                @php
-                                                    $displayTeacher = $session->lesson->branch_teacher ?? null;
-                                                @endphp
-                                                @if($displayTeacher)
-                                                    <span class="badge bg-success">{{ $displayTeacher->teacher_name }}</span>
-                                                @else
-                                                    <span class="badge bg-warning text-dark">TBA</span>
-                                                @endif
-                                            </td>
-                                            <td>
-                                                @if($session->session_type === 'test')
-                                                    @if($session->test_eligibility['eligible'] ?? false)
-                                                        <span class="badge bg-success">Test · eligible</span>
+                                            <td class="timetable-time" data-label="Time" style="font-weight: 800;">
+                                                <span class="timetable-cell-value">
+                                                    @if($session->start_time && $session->end_time)
+                                                        {{ \Carbon\Carbon::parse($session->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($session->end_time)->format('H:i') }}
                                                     @else
-                                                        <span class="badge bg-danger">Test · not eligible</span>
-                                                        <small class="d-block mt-1 text-danger">
-                                                            {{ $session->test_eligibility['reason'] ?? 'Fee payment is below the required percentage.' }}
-                                                            Paid {{ number_format($session->test_eligibility['paid'] ?? 0, 1) }}%.
-                                                            Required {{ number_format($session->test_eligibility['minimum'] ?? 0, 1) }}%.
-                                                        </small>
-                                                        <a class="small" href="{{ route('student.payment-schedule') }}">View fees</a>
+                                                        N/A
                                                     @endif
-                                                @elseif($session->session_type === 'self_study')
-                                                    <span class="badge bg-info text-dark">Self study</span>
-                                                @else
-                                                    <span class="badge bg-light text-dark">Class</span>
-                                                @endif
+                                                </span>
                                             </td>
-                                            <td>
-                                                @if($session->notes)
-                                                    <small class="text-muted">{{ $session->notes }}</small>
-                                                @else
-                                                    <span class="text-muted">-</span>
-                                                @endif
+                                            <td class="timetable-day" data-label="Day" style="font-weight: 800;">
+                                                <span class="timetable-cell-value">{{ $dayName }}</span>
+                                            </td>
+                                            <td data-label="Course">
+                                                <span class="timetable-cell-value">
+                                                    @foreach($session->courses as $course)
+                                                        <span class="badge bg-primary">{{ $course->abbreviation ?? $course->course_name }}</span>{{ !$loop->last ? ' ' : '' }}
+                                                    @endforeach
+                                                </span>
+                                            </td>
+                                            <td data-label="Lesson / subject" style="font-weight: 500;">
+                                                <span class="timetable-cell-value">{{ $session->lesson->title ?? 'N/A' }}</span>
+                                            </td>
+                                            <td data-label="Room / location">
+                                                <span class="timetable-cell-value">{{ $session->classroom ?? 'N/A' }}</span>
+                                            </td>
+                                            <td data-label="Teacher">
+                                                <span class="timetable-cell-value">
+                                                    @php
+                                                        $displayTeacher = $session->lesson->branch_teacher ?? null;
+                                                    @endphp
+                                                    @if($displayTeacher)
+                                                        <span class="badge bg-success">{{ $displayTeacher->teacher_name }}</span>
+                                                    @else
+                                                        <span class="badge bg-warning text-dark">TBA</span>
+                                                    @endif
+                                                </span>
+                                            </td>
+                                            <td data-label="Session type / eligibility">
+                                                <span class="timetable-cell-value">
+                                                    @if($session->session_type === 'test')
+                                                        @if($session->test_eligibility['eligible'] ?? false)
+                                                            <span class="badge bg-success">Test · eligible</span>
+                                                        @else
+                                                            <span class="badge bg-danger">Test · not eligible</span>
+                                                            <small class="d-block mt-1 text-danger">
+                                                                {{ $session->test_eligibility['reason'] ?? 'Fee payment is below the required percentage.' }}
+                                                                Paid {{ number_format($session->test_eligibility['paid'] ?? 0, 1) }}%.
+                                                                Required {{ number_format($session->test_eligibility['minimum'] ?? 0, 1) }}%.
+                                                            </small>
+                                                            <a class="small" href="{{ route('student.payment-schedule') }}">View fees</a>
+                                                        @endif
+                                                    @elseif($session->session_type === 'self_study')
+                                                        <span class="badge bg-info text-dark">Self study</span>
+                                                    @else
+                                                        <span class="badge bg-light text-dark">Class</span>
+                                                    @endif
+                                                </span>
+                                            </td>
+                                            <td data-label="Notes">
+                                                <span class="timetable-cell-value">
+                                                    @if($session->notes)
+                                                        <small class="text-muted">{{ $session->notes }}</small>
+                                                    @else
+                                                        <span class="text-muted">-</span>
+                                                    @endif
+                                                </span>
                                             </td>
                                         </tr>
                                         @endforeach
