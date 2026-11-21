@@ -96,8 +96,10 @@ class GeminiChatService
     {
         $basePrompt = "You are ESA AI Assistant, a helpful support assistant for Excellent Servant Academy. ";
 
-        if ($language === 'rw' || str_contains(strtolower($userMessage ?? ''), 'kinyarwanda')) {
-            $basePrompt .= "Murakoze kubaza ibibazo. Ndi ESA AI Assistant, umufasha w'ikoranabuhanga wa Excellent Servant Academy. ";
+        if ($language === 'rw') {
+            $basePrompt .= "The user's preferred language is Kinyarwanda. Reply entirely in clear, natural Kinyarwanda unless they ask to switch languages. ";
+        } else {
+            $basePrompt .= "Reply in English unless the user writes in Kinyarwanda or asks to switch languages. ";
         }
 
         $basePrompt .= "\n\nYour role is to help students, teachers, and staff with:\n";

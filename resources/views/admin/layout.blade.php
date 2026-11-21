@@ -2617,5 +2617,9 @@
         });
         </script>
 
+        @auth('admin')
+            <x-chat-widget />
+        @endauth
+
     </body>
 </html>

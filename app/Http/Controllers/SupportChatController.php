@@ -50,7 +50,9 @@ class SupportChatController extends Controller
         }
 
         return response()->json([
-            'conversation' => $conversation->load('messages'),
+            'conversation' => $conversation->load([
+                'messages' => fn ($query) => $query->where('is_internal_note', false),
+            ]),
         ]);
     }
 
@@ -118,11 +120,16 @@ class SupportChatController extends Controller
         if ($conversation->handling_mode === 'ai') {
             // Get conversation history for context
             $history = $conversation->messages()
-                ->where('sender_role', '!=', 'agent')
+                ->whereIn('sender_role', ['user', 'ai'])
                 ->where('is_internal_note', false)
-                ->orderBy('created_at', 'asc')
+                ->where('id', '!=', $userMessage->id)
+                ->reorder()
+                ->orderByDesc('created_at')
+                ->orderByDesc('id')
                 ->take(10)
                 ->get()
+                ->reverse()
+                ->values()
                 ->toArray();
 
             // Get user info for context
@@ -151,6 +158,7 @@ class SupportChatController extends Controller
             return response()->json([
                 'user_message' => $userMessage,
                 'ai_message' => $aiMessage,
+                'ai_available' => $aiResponse['success'] ?? false,
                 'conversation' => $conversation,
             ]);
         }

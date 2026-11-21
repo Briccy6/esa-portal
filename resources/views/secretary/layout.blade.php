@@ -681,5 +681,8 @@
 @livewireScripts
 @yield('scripts')
 @stack('scripts')
+@auth('staff')
+    <x-chat-widget />
+@endauth
 </body>
 </html>
