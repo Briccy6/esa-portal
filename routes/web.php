@@ -1306,8 +1306,7 @@ Route::middleware('auth:teacher')->get('/api/teacher/branch/{branchId}/courses/s
 
         // Get students enrolled in this branch and ANY of the selected courses for the selected academic year
         $studentsQuery = \App\Models\Student::where('branch_id', $branchId)
-            ->whereIn('course_id', $courseIds)
-            ->where('status', '!=', 'inactive');
+            ->whereIn('course_id', $courseIds);
 
         if ($yearId = \App\Services\AcademicYearContext::selectedId()) {
             $studentsQuery->where('academic_year_id', $yearId);
