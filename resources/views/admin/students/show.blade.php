@@ -162,6 +162,55 @@
                                                 <span class="text-muted">No passport photo uploaded</span>
                                             @endif
                                         </div>
+                                        <!-- Verification Status -->
+                                        @if($student->passport_photo)
+                                            <div class="mt-2">
+                                                @if($student->passport_photo_verification_status === 'approved')
+                                                    <span class="badge bg-success">
+                                                        <i class="bi bi-check-circle me-1"></i>Approved
+                                                    </span>
+                                                @elseif($student->passport_photo_verification_status === 'rejected')
+                                                    <span class="badge bg-danger">
+                                                        <i class="bi bi-x-circle me-1"></i>Rejected
+                                                    </span>
+                                                    @if($student->passport_photo_rejection_reason)
+                                                        <small class="text-muted d-block mt-1">
+                                                            {{ \App\Services\PassportPhotoVerificationService::getErrorMessage($student->passport_photo_rejection_reason) }}
+                                                        </small>
+                                                    @endif
+                                                @elseif($student->passport_photo_verification_status === 'manual_review')
+                                                    <span class="badge bg-warning">
+                                                        <i class="bi bi-eye me-1"></i>Manual Review Required
+                                                    </span>
+                                                @else
+                                                    <span class="badge bg-secondary">
+                                                        <i class="bi bi-clock me-1"></i>Pending
+                                                    </span>
+                                                @endif
+
+                                                @if($student->passport_photo_confidence_score)
+                                                    <small class="text-muted d-block mt-1">
+                                                        Confidence: {{ number_format($student->passport_photo_confidence_score * 100, 1) }}%
+                                                    </small>
+                                                @endif
+
+                                                @if($student->passport_photo_verified_at)
+                                                    <small class="text-muted d-block">
+                                                        Verified: {{ $student->passport_photo_verified_at->format('M j, Y g:i A') }}
+                                                    </small>
+                                                @endif
+
+                                                <!-- Manual Override Button -->
+                                                @if(auth()->guard('admin')->check())
+                                                    <button type="button"
+                                                            class="btn btn-sm btn-outline-primary mt-2"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#passportVerificationModal">
+                                                        <i class="bi bi-pencil-square me-1"></i>Override Verification
+                                                    </button>
+                                                @endif
+                                            </div>
+                                        @endif
                                     </div>
                                 </div>
                             </div>
@@ -1108,4 +1157,62 @@ function resetPassword() {
         }
     });
 </script>
+
+<!-- Passport Photo Verification Override Modal -->
+<div class="modal fade" id="passportVerificationModal" tabindex="-1" aria-labelledby="passportVerificationModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="passportVerificationModalLabel">Override Passport Photo Verification</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted mb-3">Manually override the AI verification status for this student's passport photo.</p>
+
+                <form action="{{ route('admin.students.update-passport-verification', $student) }}" method="POST">
+                    @csrf
+                    @method('PUT')
+
+                    <div class="mb-3">
+                        <label for="verificationStatus" class="form-label">Verification Status</label>
+                        <select class="form-select" id="verificationStatus" name="verification_status" required>
+                            <option value="">Select status</option>
+                            <option value="approved" {{ $student->passport_photo_verification_status === 'approved' ? 'selected' : '' }}>Approved</option>
+                            <option value="rejected" {{ $student->passport_photo_verification_status === 'rejected' ? 'selected' : '' }}>Rejected</option>
+                            <option value="manual_review" {{ $student->passport_photo_verification_status === 'manual_review' ? 'selected' : '' }}>Manual Review</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="rejectionReason" class="form-label">Rejection Reason (if rejected)</label>
+                        <select class="form-select" id="rejectionReason" name="rejection_reason">
+                            <option value="">Select reason</option>
+                            <option value="NO_FACE">No face detected</option>
+                            <option value="MULTIPLE_FACES">Multiple faces</option>
+                            <option value="GROUP_PHOTO">Group photo</option>
+                            <option value="COLORED_BACKGROUND">Colored background</option>
+                            <option value="SELFIE">Selfie</option>
+                            <option value="DOCUMENT_SCAN">Document scan</option>
+                            <option value="BLURRY_IMAGE">Blurry image</option>
+                            <option value="NOT_FACING_CAMERA">Not facing camera</option>
+                            <option value="FACE_NOT_CENTERED">Face not centered</option>
+                            <option value="INCORRECT_ORIENTATION">Incorrect orientation</option>
+                            <option value="GENERAL_REJECTION">General rejection</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="adminNotes" class="form-label">Admin Notes</label>
+                        <textarea class="form-control" id="adminNotes" name="admin_notes" rows="3" placeholder="Add any notes about this override decision..."></textarea>
+                    </div>
+
+                    <div class="modal-footer px-0 pb-0">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Override</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection

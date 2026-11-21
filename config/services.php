@@ -54,4 +54,10 @@ return [
         'redirect_url' => env('APP_URL') . '/payment/callback',
     ],
 
+    'gemini' => [
+        'api_key' => env('GEMINI_API_KEY'),
+        'model' => env('GEMINI_MODEL', 'gemini-flash-latest'),
+        'endpoint' => 'https://generativelanguage.googleapis.com/v1beta/models',
+    ],
+
 ];

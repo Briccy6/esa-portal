@@ -788,7 +788,65 @@
                     </div>
 
                     <div class="profile-field profile-field--wide">
-                        <label for="passportPhotoInput">Profile photo / passport photo <span class="profile-required-badge">Required to complete</span></label>
+                        <label for="passportPhotoInput">Student passport photograph <span class="profile-required-badge">Required to complete</span></label>
+
+                        <!-- Accepted passport photo example -->
+                        <div class="mb-3 p-3 rounded-2" style="background: #f5f8ff; border: 1px solid #dce8ff;">
+                            <p class="mb-2 fw-bold text-primary" style="font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase;">Accepted passport photo example</p>
+                            <div class="d-flex align-items-start gap-3">
+                                <div style="width: 100px; height: 130px; background: #fff; border: 2px solid #1e40af; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                    <div style="text-align: center; color: #64748b; font-size: 0.7rem; padding: 8px;">
+                                        <i class="bi bi-person" style="font-size: 2rem; display: block; margin-bottom: 4px;"></i>
+                                        <span>Sample Portrait</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p class="mb-1 fw-semibold" style="font-size: 0.85rem; color: #1e40af;">Required appearance</p>
+                                    <p style="font-size: 0.75rem; color: #475569; margin-bottom: 8px;">One person, centered face, white background and clear portrait.</p>
+                                    <ul style="font-size: 0.7rem; color: #475569; margin: 0; padding-left: 1.2rem;">
+                                        <li>White background</li>
+                                        <li>One person only</li>
+                                        <li>Face centered</li>
+                                        <li>Looking directly at the camera</li>
+                                        <li>Clear photograph</li>
+                                        <li>Maximum 200 KB</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Photos we do not accept -->
+                        <div class="mb-3 p-3 rounded-2" style="background: #fff5f5; border: 1px solid #fed7d7;">
+                            <p class="mb-2 fw-bold text-danger" style="font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase;">Photos we do not accept</p>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <div style="width: 80px; height: 80px; background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                    <div style="text-align: center; color: #94a3b8; font-size: 0.65rem;">
+                                        <i class="bi bi-camera" style="font-size: 1.2rem; display: block;"></i>
+                                        <span>Selfies</span>
+                                    </div>
+                                </div>
+                                <div style="width: 80px; height: 80px; background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                    <div style="text-align: center; color: #94a3b8; font-size: 0.65rem;">
+                                        <i class="bi bi-palette" style="font-size: 1.2rem; display: block;"></i>
+                                        <span>Colored background</span>
+                                    </div>
+                                </div>
+                                <div style="width: 80px; height: 80px; background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                    <div style="text-align: center; color: #94a3b8; font-size: 0.65rem;">
+                                        <i class="bi bi-people" style="font-size: 1.2rem; display: block;"></i>
+                                        <span>Group photos</span>
+                                    </div>
+                                </div>
+                                <div style="width: 80px; height: 80px; background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                    <div style="text-align: center; color: #94a3b8; font-size: 0.65rem;">
+                                        <i class="bi bi-file-earmark-image" style="font-size: 1.2rem; display: block;"></i>
+                                        <span>Document scans</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Upload area -->
                         <div class="profile-upload-card">
                             <div class="profile-image-frame profile-image-frame--passport">
                                 <img id="passportPhotoPreview" data-preview-image
@@ -810,12 +868,30 @@
                                        data-error-target="passportPhotoError"
                                        data-original-status="{{ $passportPhotoSource ? 'Current photo is on file. Choose a new photo to replace it.' : 'No photo uploaded yet.' }}"
                                        data-max-bytes="204800" data-preview-kind="image">
-                                <span class="profile-field-hint">JPG, JPEG, or PNG, up to 200 KB. Your image appears here before you save.</span>
+                                <span class="profile-field-hint">JPG, JPEG, or PNG, up to 200 KB. Your image appears here before you save. <strong>AI verification required.</strong></span>
                                 <p class="profile-upload-status" id="passportPhotoName">
                                     {{ $passportPhotoSource ? 'Current photo is on file. Choose a new photo to replace it.' : 'No photo uploaded yet.' }}
                                 </p>
                                 <span class="profile-file-error" id="passportPhotoError" role="alert"></span>
                                 @error('passport_photo')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+
+                                <!-- Verification status -->
+                                <div id="passportVerificationStatus" class="mt-2" style="display: none;">
+                                    <div id="passportVerificationLoading" style="display: none;">
+                                        <div class="d-flex align-items-center gap-2" style="color: #64748b; font-size: 0.75rem;">
+                                            <div class="spinner-border spinner-border-sm" role="status"></div>
+                                            <span>Checking your passport photograph...</span>
+                                        </div>
+                                    </div>
+                                    <div id="passportVerificationSuccess" class="alert alert-success py-2 px-3" style="display: none; font-size: 0.75rem;">
+                                        <i class="bi bi-check-circle me-1"></i>
+                                        <span>Passport photograph approved! Your photograph meets Excellent Servant Academy requirements.</span>
+                                    </div>
+                                    <div id="passportVerificationError" class="alert alert-danger py-2 px-3" style="display: none; font-size: 0.75rem;">
+                                        <i class="bi bi-x-circle me-1"></i>
+                                        <span id="passportVerificationErrorMessage"></span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1232,6 +1308,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     image.src = event.target.result;
                     image.hidden = false;
                     placeholder.hidden = true;
+
+                    // Trigger AI verification for passport photo
+                    if (input.id === 'passportPhotoInput') {
+                        verifyPassportPhoto(input);
+                    }
                 };
                 reader.onerror = function () {
                     input.value = '';
@@ -1253,6 +1334,55 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     });
+
+    // Passport photo AI verification
+    function verifyPassportPhoto(input) {
+        const verificationStatus = document.getElementById('passportVerificationStatus');
+        const loadingDiv = document.getElementById('passportVerificationLoading');
+        const successDiv = document.getElementById('passportVerificationSuccess');
+        const errorDiv = document.getElementById('passportVerificationError');
+        const errorMessage = document.getElementById('passportVerificationErrorMessage');
+
+        if (!verificationStatus) return;
+
+        // Show loading state
+        verificationStatus.style.display = 'block';
+        loadingDiv.style.display = 'block';
+        successDiv.style.display = 'none';
+        errorDiv.style.display = 'none';
+
+        const formData = new FormData();
+        formData.append('passport_photo', input.files[0]);
+
+        fetch('{{ route("students.profile.verify-passport-photo") }}', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json',
+            },
+            body: formData,
+        })
+        .then(response => response.json())
+        .then(data => {
+            loadingDiv.style.display = 'none';
+
+            if (data.success) {
+                successDiv.style.display = 'block';
+                errorDiv.style.display = 'none';
+            } else {
+                successDiv.style.display = 'none';
+                errorDiv.style.display = 'block';
+                errorMessage.textContent = data.message || 'Verification failed. Please try again.';
+            }
+        })
+        .catch(error => {
+            loadingDiv.style.display = 'none';
+            successDiv.style.display = 'none';
+            errorDiv.style.display = 'block';
+            errorMessage.textContent = 'Verification service temporarily unavailable. Please try again later.';
+            console.error('Verification error:', error);
+        });
+    }
 
     function updateIdentificationFields() {
         const type = document.getElementById('identificationTypeSelect').value;

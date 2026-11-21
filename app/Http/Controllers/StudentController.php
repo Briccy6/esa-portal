@@ -37,6 +37,7 @@ use App\Models\CourseTermFee;
 use App\Models\StudentCard;
 use App\Models\Attendance;
 use App\Support\StudentPaymentTranscript;
+use App\Services\PassportPhotoVerificationService;
 
 class StudentController extends Controller
 {
@@ -3612,6 +3613,7 @@ class StudentController extends Controller
             'senior6_document'           => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:200',
             'other_supporting_document'  => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:200',
             'password'                   => 'nullable|string|min:8|confirmed',
+            'skip_passport_verification' => 'nullable|boolean',
         ]);
 
         $updatedFields = [];
@@ -3645,6 +3647,33 @@ class StudentController extends Controller
             $updatedFields[] = ($request->identification_type === 'ID') ? 'ID Image' : 'Passport Image';
         }
         if ($request->hasFile('passport_photo')) {
+            // Skip verification if flag is set (for admin override or debugging)
+            if (!$request->boolean('skip_passport_verification')) {
+                try {
+                    $service = new PassportPhotoVerificationService();
+                    $verificationResult = $service->verify($request->file('passport_photo'));
+
+                    if (!$verificationResult['success']) {
+                        return back()->with('error', PassportPhotoVerificationService::getErrorMessage($verificationResult['rejection_reason'] ?? 'GENERAL_REJECTION'))
+                                    ->withInput();
+                    }
+
+                    // Store verification results
+                    $student->passport_photo_verification_status = $verificationResult['requires_manual_review'] ? 'manual_review' : 'approved';
+                    $student->passport_photo_verified_at = now();
+                    $student->passport_photo_verification_result = $verificationResult['verification_result'] ?? null;
+                    $student->passport_photo_rejection_reason = $verificationResult['rejection_reason'] ?? null;
+                    $student->passport_photo_confidence_score = $verificationResult['confidence'] ?? null;
+                    $student->passport_photo_requires_manual_review = $verificationResult['requires_manual_review'] ?? false;
+                } catch (\Exception $e) {
+                    Log::error('Passport photo verification failed during profile update', [
+                        'error' => $e->getMessage(),
+                        'student_id' => $student->id,
+                    ]);
+                    return back()->with('error', 'Verification service temporarily unavailable. Please try again later.')->withInput();
+                }
+            }
+
             $student->passport_photo = base64_encode(file_get_contents($request->file('passport_photo')->getRealPath()));
             $updatedFields[] = 'Passport Photo';
         }
@@ -3684,6 +3713,80 @@ class StudentController extends Controller
         }
 
         return back()->with('success', 'No changes were made.');
+    }
+
+    /**
+     * Verify passport photo using AI
+     */
+    public function verifyPassportPhoto(Request $request)
+    {
+        $request->validate([
+            'passport_photo' => 'required|image|mimes:jpg,jpeg,png|max:200',
+        ]);
+
+        try {
+            $service = new PassportPhotoVerificationService();
+            $result = $service->verify($request->file('passport_photo'));
+
+            if ($result['success']) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Passport photograph approved!',
+                    'verification_result' => $result['verification_result'],
+                    'confidence' => $result['confidence'],
+                    'requires_manual_review' => $result['requires_manual_review'],
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => PassportPhotoVerificationService::getErrorMessage($result['rejection_reason'] ?? 'GENERAL_REJECTION'),
+                    'rejection_reason' => $result['rejection_reason'],
+                    'requires_manual_review' => $result['requires_manual_review'] ?? false,
+                ], 422);
+            }
+        } catch (\Exception $e) {
+            Log::error('Passport photo verification failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Verification service temporarily unavailable. Please try again later.',
+                'requires_manual_review' => true,
+            ], 500);
+        }
+    }
+
+    /**
+     * Admin: Update passport photo verification status (manual override)
+     */
+    public function updatePassportVerification(Request $request, Student $student)
+    {
+        $request->validate([
+            'verification_status' => 'required|in:approved,rejected,manual_review',
+            'rejection_reason' => 'nullable|string',
+            'admin_notes' => 'nullable|string',
+        ]);
+
+        $student->passport_photo_verification_status = $request->verification_status;
+        $student->passport_photo_rejection_reason = $request->rejection_reason;
+        $student->passport_photo_verified_at = now();
+        $student->passport_photo_verified_by = auth('admin')->id();
+        $student->passport_photo_requires_manual_review = false;
+
+        // Add admin notes to verification result if provided
+        if ($request->admin_notes) {
+            $existingResult = $student->passport_photo_verification_result ?? [];
+            $existingResult['admin_notes'] = $request->admin_notes;
+            $existingResult['admin_override'] = true;
+            $existingResult['admin_override_at'] = now()->toIso8601String();
+            $student->passport_photo_verification_result = $existingResult;
+        }
+
+        $student->save();
+
+        return back()->with('success', 'Passport photo verification status updated successfully.');
     }
 
     public function attendance(Request $request)

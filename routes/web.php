@@ -327,6 +327,7 @@ Route::middleware(['auth:admin', 'admin.academic_year'])->prefix('admin')->name(
     Route::post('/students/send-bulk-information-emails', [StudentController::class, 'sendBulkStudentInformationEmails'])->name('students.sendBulkInformationEmails');
     Route::get('/students/cards', [StudentController::class, 'listStudentCards'])->name('students.StudentCards');
     Route::post('/students/{student}/generate-card', [StudentController::class, 'generateStudentCard'])->name('students.generate_card');
+    Route::put('/students/{student}/update-passport-verification', [StudentController::class, 'updatePassportVerification'])->name('students.update-passport-verification');
     // NESA student endpoints removed
 
     Route::resource('academic_year', AcademicYearController::class)->except(['show']);
@@ -662,6 +663,7 @@ Route::post('/attendance/mark/{timetable}', [AttendanceController::class, 'mark'
 Route::middleware(['auth:student'])->group(function () {
     Route::get('/student/profile', [App\Http\Controllers\StudentController::class, 'profile'])->name('students.profile');
     Route::post('/student/profile', [App\Http\Controllers\StudentController::class, 'updateProfile'])->name('students.profile.update');
+    Route::post('/student/profile/verify-passport-photo', [App\Http\Controllers\StudentController::class, 'verifyPassportPhoto'])->name('students.profile.verify-passport-photo');
 });
 
 // Misc teacher routes
