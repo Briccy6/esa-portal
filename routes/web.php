@@ -1552,6 +1552,15 @@ Route::get('/payment/callback', [StudentController::class, 'paymentCallback'])->
 // Reset link
 Route::post('/admin/students/{student}/send-reset-link', [StudentController::class, 'sendResetLink'])->name('admin.students.sendResetLink');
 Route::get('/admin/force-logout', [\App\Http\Controllers\AdminLoginController::class, 'forceLogout'])->name('admin.forceLogout');
+
+// Temporary route to clear cache - REMOVE AFTER USE
+Route::get('/clear-cache', function () {
+    \Artisan::call('route:clear');
+    \Artisan::call('config:clear');
+    \Artisan::call('cache:clear');
+    \Artisan::call('view:clear');
+    return 'Cache cleared successfully. Remove this route after use.';
+})->name('clear.cache');
 Route::get('/teacher/force-logout', [\App\Http\Controllers\TeacherAuthController::class, 'showForceLogout'])->name('teacher.force-logout');
 Route::get('/admin/force-logout', [\App\Http\Controllers\AdminAuthController::class, 'showForceLogout'])->name('admin.force-logout');
 Route::post('/admin/logout', [\App\Http\Controllers\AdminAuthController::class, 'logout'])->name('admin.logout');
