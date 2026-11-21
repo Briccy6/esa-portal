@@ -360,19 +360,8 @@ PROMPT;
                 }
             }
 
-            // Determine if manual review is needed - be more lenient
-            // Accept if confidence > 0.4 (lowered from 0.5) OR is_passport_photo is true
-            $requiresManualReview = $result['confidence'] < 0.4;
-
-            // If AI rejects but confidence is low, accept anyway (lenient mode)
-            if (!$result['is_passport_photo'] && $result['confidence'] < 0.4) {
-                Log::info('Low confidence rejection - accepting photo', [
-                    'confidence' => $result['confidence'],
-                    'rejection_reason' => $result['rejection_reason'],
-                ]);
-                $result['is_passport_photo'] = true;
-                $requiresManualReview = false;
-            }
+            // AI handles all checks - no manual review needed
+            $requiresManualReview = false;
 
             // Map rejection reason to user-friendly message
             $rejectionReason = $this->mapRejectionReason($result);

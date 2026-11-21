@@ -3711,12 +3711,13 @@ class StudentController extends Controller
                                 ->withInput();
                 }
 
-                $student->passport_photo_verification_status = $verificationResult['requires_manual_review'] ? 'manual_review' : 'approved';
+                // AI handles all checks - no manual review needed
+                $student->passport_photo_verification_status = 'approved';
                 $student->passport_photo_verified_at = now();
                 $student->passport_photo_verification_result = $verificationResult['verification_result'] ?? null;
                 $student->passport_photo_rejection_reason = null;
                 $student->passport_photo_confidence_score = $verificationResult['confidence'] ?? null;
-                $student->passport_photo_requires_manual_review = $verificationResult['requires_manual_review'] ?? false;
+                $student->passport_photo_requires_manual_review = false;
             } catch (\Exception $e) {
                 Log::error('Passport photo verification failed during profile update', [
                     'error' => $e->getMessage(),
@@ -3780,7 +3781,8 @@ class StudentController extends Controller
             $service = new PassportPhotoVerificationService();
             $result = $service->verify($request->file('passport_photo'));
 
-            if ($result['success'] && !($result['requires_manual_review'] ?? false)) {
+            if ($result['success']) {
+                // AI handles all checks - auto-approve
                 return response()->json([
                     'success' => true,
                     'message' => 'Passport photograph approved!',
@@ -3788,20 +3790,12 @@ class StudentController extends Controller
                     'confidence' => $result['confidence'],
                     'requires_manual_review' => false,
                 ]);
-            } elseif ($result['success']) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'This photo passed AI checks but needs final manual review before it can activate your profile.',
-                    'verification_result' => $result['verification_result'],
-                    'confidence' => $result['confidence'],
-                    'requires_manual_review' => true,
-                ], 422);
             } else {
                 return response()->json([
                     'success' => false,
                     'message' => PassportPhotoVerificationService::getErrorMessage($result['rejection_reason'] ?? 'GENERAL_REJECTION'),
                     'rejection_reason' => $result['rejection_reason'],
-                    'requires_manual_review' => $result['requires_manual_review'] ?? false,
+                    'requires_manual_review' => false,
                 ], 422);
             }
         } catch (\Exception $e) {
@@ -3813,7 +3807,7 @@ class StudentController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Verification service temporarily unavailable. Please try again later.',
-                'requires_manual_review' => true,
+                'requires_manual_review' => false,
             ], 500);
         }
     }
@@ -3908,10 +3902,10 @@ class StudentController extends Controller
                     $result = $service->verify($file);
 
                     if ($result['success']) {
-                        // Approved - update verification status
+                        // Approved - update verification status (AI handles all checks)
                         $student->passport_photo_verification_status = 'approved';
                         $student->passport_photo_confidence_score = $result['confidence'] ?? null;
-                        $student->passport_photo_requires_manual_review = $result['requires_manual_review'] ?? false;
+                        $student->passport_photo_requires_manual_review = false; // No manual review needed
                         $student->passport_photo_verified_at = now();
                         $student->passport_photo_verified_by = auth('admin')->id();
                         $student->save();
@@ -3929,7 +3923,7 @@ class StudentController extends Controller
                             $student->passport_photo_verification_status = 'pending';
                             $student->passport_photo_rejection_reason = null;
                             $student->passport_photo_confidence_score = null;
-                            $student->passport_photo_requires_manual_review = false;
+                            $student->passport_photo_requires_manual_review = false; // No manual review needed
                             $student->passport_photo_verified_at = null;
                             $student->save();
 
@@ -3948,7 +3942,7 @@ class StudentController extends Controller
                             $student->passport_photo_verification_status = 'rejected';
                             $student->passport_photo_rejection_reason = $result['rejection_reason'] ?? null;
                             $student->passport_photo_confidence_score = $result['confidence'] ?? null;
-                            $student->passport_photo_requires_manual_review = $result['requires_manual_review'] ?? false;
+                            $student->passport_photo_requires_manual_review = false; // No manual review needed
                             $student->passport_photo_verified_at = now();
                             $student->passport_photo_verified_by = auth('admin')->id();
                             $student->save();
