@@ -3658,13 +3658,15 @@ class StudentController extends Controller
                                     ->withInput();
                     }
 
-                    // Store verification results
-                    $student->passport_photo_verification_status = $verificationResult['requires_manual_review'] ? 'manual_review' : 'approved';
-                    $student->passport_photo_verified_at = now();
-                    $student->passport_photo_verification_result = $verificationResult['verification_result'] ?? null;
-                    $student->passport_photo_rejection_reason = $verificationResult['rejection_reason'] ?? null;
-                    $student->passport_photo_confidence_score = $verificationResult['confidence'] ?? null;
-                    $student->passport_photo_requires_manual_review = $verificationResult['requires_manual_review'] ?? false;
+                    // Only store verification results if the database columns exist
+                    if (\Illuminate\Support\Facades\Schema::hasColumn('students', 'passport_photo_verification_status')) {
+                        $student->passport_photo_verification_status = $verificationResult['requires_manual_review'] ? 'manual_review' : 'approved';
+                        $student->passport_photo_verified_at = now();
+                        $student->passport_photo_verification_result = $verificationResult['verification_result'] ?? null;
+                        $student->passport_photo_rejection_reason = $verificationResult['rejection_reason'] ?? null;
+                        $student->passport_photo_confidence_score = $verificationResult['confidence'] ?? null;
+                        $student->passport_photo_requires_manual_review = $verificationResult['requires_manual_review'] ?? false;
+                    }
                 } catch (\Exception $e) {
                     Log::error('Passport photo verification failed during profile update', [
                         'error' => $e->getMessage(),

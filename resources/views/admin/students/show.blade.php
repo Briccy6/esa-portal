@@ -163,7 +163,7 @@
                                             @endif
                                         </div>
                                         <!-- Verification Status -->
-                                        @if($student->passport_photo)
+                                        @if($student->passport_photo && \Illuminate\Support\Facades\Schema::hasColumn('students', 'passport_photo_verification_status'))
                                             <div class="mt-2">
                                                 @if($student->passport_photo_verification_status === 'approved')
                                                     <span class="badge bg-success">

@@ -70,6 +70,33 @@ class Student extends Authenticatable
         'blocked_at' => 'datetime',
     ];
 
+    protected $appends = [
+        'passport_photo_verification_status',
+        'passport_photo_verified_at',
+        'passport_photo_verification_result',
+        'passport_photo_rejection_reason',
+        'passport_photo_confidence_score',
+        'passport_photo_requires_manual_review',
+        'passport_photo_verified_by',
+    ];
+
+    /**
+     * Dynamically access attributes that may not exist in database yet
+     */
+    public function __get($key)
+    {
+        // Try to get the attribute from the model
+        try {
+            return parent::__get($key);
+        } catch (\Exception $e) {
+            // If the column doesn't exist yet, return null
+            if (str_contains($e->getMessage(), 'Unknown column')) {
+                return null;
+            }
+            throw $e;
+        }
+    }
+
     protected $hidden = [
         'password',
     ];
