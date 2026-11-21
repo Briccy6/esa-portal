@@ -703,7 +703,6 @@ Route::prefix('staff')->name('staff.')->group(function () {
 
 
         // Student Management Routes
-        Route::post('/students/{student}/shift/update', [StudentController::class, 'updateShift'])->name('students.update-shift');
         Route::get('/students/{student}/edit', [StudentController::class, 'editByStaff'])->name('students.edit');
         Route::put('/students/{student}', [StudentController::class, 'updateByStaff'])->name('students.update');
         Route::put('/students/{student}/nesa', [StudentController::class, 'registerNesa'])->name('students.nesa');
@@ -1399,6 +1398,7 @@ Route::middleware('auth:teacher')->get('/api/teacher/branch/{branchId}/course/{c
 Route::get('/dos/dailies', [App\Http\Controllers\DosDailyController::class, 'index'])->name('dos.dailies.index');
 Route::get('/dos/dailies/{daily}', [App\Http\Controllers\DosDailyController::class, 'show'])->name('dos.dailies.show');
 Route::post('/dos/dailies/{daily}/approve', [App\Http\Controllers\DosDailyController::class, 'approve'])->name('dos.dailies.approve');
+Route::post('/dos/dailies/{daily}/status', [App\Http\Controllers\DosDailyController::class, 'updateStatus'])->middleware('auth:staff')->name('dos.dailies.status');
 Route::post('/dos/dailies/{daily}/attendance', [App\Http\Controllers\DosDailyController::class, 'updateAttendance'])->name('dos.dailies.attendance');
 Route::post('/dos/dailies/{daily}/mark-attendance', [App\Http\Controllers\DosDailyController::class, 'markAttendance'])->name('dos.dailies.mark-attendance');
 
@@ -1534,6 +1534,7 @@ Route::middleware('auth:student')->get('/student/fees/pay', function () {
 Route::middleware(['auth:staff'])->get('/staff/course-fees', [\App\Http\Controllers\StaffController::class, 'courseFees'])->name('staff.course_fees');
 
 Route::middleware(['auth:staff'])->get('/students', [\App\Http\Controllers\StudentController::class, 'index'])->name('students.index');
+Route::middleware(['auth:staff'])->post('/students/{student}/shift/update', [\App\Http\Controllers\StudentController::class, 'updateShift'])->name('students.update-shift');
 Route::middleware(['auth:staff'])->get('/students/{student}/transcript/send', [\App\Http\Controllers\StudentController::class, 'sendTranscript'])->name('students.transcript.send');
 Route::middleware(['auth:staff'])->get('/students/{student}/payments', [\App\Http\Controllers\StudentController::class, 'payments'])->name('students.payments');
 Route::middleware(['auth:staff'])->get('/students/{student}/pay', [\App\Http\Controllers\StudentController::class, 'pay'])->name('students.pay.show');
