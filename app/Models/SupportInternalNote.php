@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class SupportInternalNote extends Model
 {
+    protected $table = 'support_internal_notes';
+    
     protected $fillable = [
         'conversation_id',
         'author_id',

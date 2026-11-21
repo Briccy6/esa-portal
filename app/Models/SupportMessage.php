@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class SupportMessage extends Model
 {
+    protected $table = 'support_messages';
+    
     protected $fillable = [
         'conversation_id',
         'sender_id',
