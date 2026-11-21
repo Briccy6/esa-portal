@@ -270,11 +270,6 @@ class Student extends Authenticatable
         return $this->belongsTo(\App\Models\Admin::class, 'passport_photo_verified_by');
     }
 
-    public function verifiedByAdmin()
-    {
-        return $this->belongsTo(\App\Models\Admin::class, 'passport_photo_verified_by');
-    }
-
     public function getTokenBalanceAttribute()
     {
         return $this->token ? $this->token->balance : 0;
