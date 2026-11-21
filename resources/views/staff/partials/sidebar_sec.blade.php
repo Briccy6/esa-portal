@@ -375,7 +375,10 @@ async function loadBranches() {
     try {
         const response = await fetch('/staff/api/branches', {
             credentials: 'same-origin',
-            headers: { 'Accept': 'application/json' }
+            headers: {
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
         });
         if (!response.ok) {
             throw new Error(`Request failed with status ${response.status}`);
