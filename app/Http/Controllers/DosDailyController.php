@@ -3,6 +3,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use App\Models\TeacherDaily;
 use App\Models\Attendance;
 use App\Models\Course;
@@ -93,22 +94,26 @@ class DosDailyController extends Controller
             'status' => 'required|in:pending,approved',
         ]);
 
-        $daily->approved = $validated['status'] === 'approved';
-        $daily->save();
+        DB::transaction(function () use ($daily, $validated) {
+            $daily->approved = $validated['status'] === 'approved';
+            $daily->save();
 
-        $courseIds = collect($daily->course_ids ?? [])
-            ->push($daily->course_id)
-            ->filter()
-            ->unique();
-        $attendanceQuery = Attendance::whereIn('course_id', $courseIds)
-            ->where('lesson_id', $daily->lesson_id)
-            ->whereDate('date', $daily->date);
+            $courseIds = collect($daily->course_ids ?? [])
+                ->push($daily->course_id)
+                ->filter()
+                ->unique();
+            $attendanceQuery = Attendance::whereIn('course_id', $courseIds)
+                ->where('lesson_id', $daily->lesson_id)
+                ->whereDate('date', $daily->date);
 
-        if ($daily->branch_id) {
-            $attendanceQuery->where('branch_id', $daily->branch_id);
-        }
+            if ($daily->branch_id) {
+                $attendanceQuery->whereHas('student', function ($query) use ($daily) {
+                    $query->where('branch_id', $daily->branch_id);
+                });
+            }
 
-        $attendanceQuery->update(['approved' => $daily->approved]);
+            $attendanceQuery->update(['approved' => $daily->approved]);
+        });
 
         return back()->with('success', 'Daily report status updated to ' . $validated['status'] . '.');
     }
