@@ -27,13 +27,6 @@ class Student extends Authenticatable
         'identification_type',
         'id_photo',
         'passport_photo',
-        'passport_photo_verification_status',
-        'passport_photo_verified_at',
-        'passport_photo_verification_result',
-        'passport_photo_rejection_reason',
-        'passport_photo_confidence_score',
-        'passport_photo_requires_manual_review',
-        'passport_photo_verified_by',
         'senior6_document',
         'senior3_document',
         'other_supporting_document',
@@ -60,42 +53,11 @@ class Student extends Authenticatable
         'other_supporting_document' => 'string',
         'id_photo' => 'string',
         'passport_photo' => 'string',
-        'passport_photo_verification_result' => 'array',
-        'passport_photo_verified_at' => 'datetime',
-        'passport_photo_confidence_score' => 'decimal:2',
-        'passport_photo_requires_manual_review' => 'boolean',
         'nesa_registered' => 'boolean',
         'nesa_registration_date' => 'date',
         'is_blocked' => 'boolean',
         'blocked_at' => 'datetime',
     ];
-
-    protected $appends = [
-        'passport_photo_verification_status',
-        'passport_photo_verified_at',
-        'passport_photo_verification_result',
-        'passport_photo_rejection_reason',
-        'passport_photo_confidence_score',
-        'passport_photo_requires_manual_review',
-        'passport_photo_verified_by',
-    ];
-
-    /**
-     * Dynamically access attributes that may not exist in database yet
-     */
-    public function __get($key)
-    {
-        // Try to get the attribute from the model
-        try {
-            return parent::__get($key);
-        } catch (\Exception $e) {
-            // If the column doesn't exist yet, return null
-            if (str_contains($e->getMessage(), 'Unknown column')) {
-                return null;
-            }
-            throw $e;
-        }
-    }
 
     protected $hidden = [
         'password',
@@ -289,11 +251,6 @@ class Student extends Authenticatable
     public function studentCard()
     {
         return $this->hasOne(StudentCard::class);
-    }
-
-    public function verifiedByAdmin()
-    {
-        return $this->belongsTo(\App\Models\Admin::class, 'passport_photo_verified_by');
     }
 
     public function getTokenBalanceAttribute()

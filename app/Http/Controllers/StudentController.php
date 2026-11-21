@@ -3590,7 +3590,10 @@ class StudentController extends Controller
 
     public function profile()
     {
-        $student = auth()->user();
+        $student = auth('student')->user();
+        if (!$student) {
+            return redirect()->route('student.login')->with('error', 'Please login to access your profile.');
+        }
         return view('students.profile', compact('student'));
     }
 
