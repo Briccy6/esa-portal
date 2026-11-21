@@ -957,7 +957,7 @@
                             @if($student->shift_changed_at)
                                 <div class="alert alert-info">
                                     <i class="bi bi-info-circle me-2"></i>
-                                    Your shift is set to <strong>{{ ucfirst($student->shift ?? 'day') }}</strong>. You can only change your shift once, and you have already changed it on {{ $student->shift_changed_at ? $student->shift_changed_at->format('F j, Y \a\t g:i A') : 'a previous date' }}.
+                                    Your shift is set to <strong>{{ ucfirst($student->shift ?? 'day') }}</strong>. You can only change your shift once, and you have already changed it on {{ is_string($student->shift_changed_at) ? $student->shift_changed_at : $student->shift_changed_at->format('F j, Y \a\t g:i A') }}.
                                 </div>
                                 <input type="hidden" name="shift" value="{{ $student->shift }}">
                             @else
