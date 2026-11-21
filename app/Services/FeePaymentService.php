@@ -28,8 +28,8 @@ class FeePaymentService
     /**
      * Determine which term IDs should be considered for fee validation for a student.
      *
-     * Rule: if a student joined in Term 2 or Term 3, do not require fees for terms
-     * that ended before the student's created_at (enrollment date).
+     * Simplified version: Only use the current active term, not all terms in the academic year.
+     * This ensures all students in the same course/branch have the same total fees.
      *
      * @return int[]
      */
@@ -39,33 +39,26 @@ class FeePaymentService
             return [];
         }
 
-        $terms = Term::query()
+        // Get the current active term (the term we're currently in)
+        $currentTerm = Term::query()
             ->where('academic_year_id', $student->academic_year_id)
-            ->orderBy('start_date')
-            ->get(['id', 'start_date', 'end_date']);
+            ->where('start_date', '<=', now())
+            ->where('end_date', '>=', now())
+            ->first();
 
-        if ($terms->isEmpty()) {
+        if (! $currentTerm) {
+            // If no current term, get the most recent term
+            $currentTerm = Term::query()
+                ->where('academic_year_id', $student->academic_year_id)
+                ->orderBy('start_date', 'desc')
+                ->first();
+        }
+
+        if (! $currentTerm) {
             return [];
         }
 
-        $enrolledAt = $student->created_at ? Carbon::parse($student->created_at)->startOfDay() : null;
-
-        // Find the first term whose end_date is on/after enrollment date.
-        // If enrollment date is missing, default to the first term.
-        $firstEligibleTermIndex = 0;
-        if ($enrolledAt) {
-            $idx = $terms->search(function (Term $t) use ($enrolledAt) {
-                return Carbon::parse($t->end_date)->endOfDay()->gte($enrolledAt);
-            });
-            if ($idx !== false) {
-                $firstEligibleTermIndex = (int) $idx;
-            } else {
-                // If enrollment is after all term end dates, treat last term as eligible.
-                $firstEligibleTermIndex = max(0, $terms->count() - 1);
-            }
-        }
-
-        $eligible = $terms->slice($firstEligibleTermIndex)->pluck('id')->map(fn ($v) => (int) $v)->all();
+        $eligible = [(int) $currentTerm->id];
 
         if (is_array($requestedTermIds) && $requestedTermIds !== []) {
             $requested = array_values(array_unique(array_map('intval', $requestedTermIds)));
