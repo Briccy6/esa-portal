@@ -297,8 +297,14 @@ class AccountantDashboardController extends Controller
         $filteredStudents = collect();
 
         foreach ($students as $student) {
-            // Skip students without branch_id - they won't have fee calculations
-            if (!$student->branch_id) {
+            // Skip students without course_id or academic_year_id - they won't have fee calculations
+            if (!$student->course_id || !$student->academic_year_id) {
+                \Log::debug('Skipping student without required data', [
+                    'student_id' => $student->id,
+                    'branch_id' => $student->branch_id,
+                    'course_id' => $student->course_id,
+                    'academic_year_id' => $student->academic_year_id
+                ]);
                 continue;
             }
             
@@ -308,6 +314,16 @@ class AccountantDashboardController extends Controller
             $totalFees = $paymentStatus['required_fees'];
             $paidAmount = $paymentStatus['total_paid'];
             $paymentPercentage = $paymentStatus['payment_percentage'];
+
+            \Log::debug('Student payment status', [
+                'student_id' => $student->id,
+                'student_name' => $student->full_name,
+                'branch_id' => $student->branch_id,
+                'course_id' => $student->course_id,
+                'total_fees' => $totalFees,
+                'paid_amount' => $paidAmount,
+                'payment_percentage' => $paymentPercentage
+            ]);
 
             // Check if student meets the threshold (at least the specified percentage)
             // Also ensure they have required fees set (not 0)

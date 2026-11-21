@@ -6,6 +6,7 @@ use App\Models\Student;
 use App\Models\StudentSubscription;
 use App\Models\StudentTransaction;
 use App\Models\CourseTermBranchFee;
+use App\Models\CourseTermFee;
 use App\Models\AcademicYear;
 use App\Models\Term;
 use Carbon\Carbon;
@@ -126,7 +127,8 @@ class FeePaymentService
         
         // Get fees from course_term_branch_fees table
         // Fees are tied to the course, term, AND branch in course_term_branch_fees
-        if ($student->course_id && $student->academic_year_id && $student->branch_id) {
+        // Fall back to course_term_fees if branch-specific fees don't exist
+        if ($student->course_id && $student->academic_year_id) {
             // Apply "joined late" rule: only consider terms from the student's enrollment term onward.
             $termIds = self::eligibleTermIdsForStudent($student, $termIds);
 
@@ -149,7 +151,31 @@ class FeePaymentService
                 ->map(fn ($id) => (int) $id)
                 ->all();
             
-            // ========== FEES QUERY (from course_term_branch_fees table) ==========
+            // Check if branch-specific fees exist, fall back to course fees if not
+            $useBranchFees = false;
+            if ($student->branch_id) {
+                $branchFeeExists = CourseTermBranchFee::where('course_id', $student->course_id)
+                    ->where('branch_id', $student->branch_id)
+                    ->where('is_active', true)
+                    ->exists();
+                $useBranchFees = $branchFeeExists;
+            }
+            
+            if ($useBranchFees) {
+                \Log::debug('FeePaymentService: Using branch-specific fees', [
+                    'student_id' => $student->id,
+                    'branch_id' => $student->branch_id,
+                    'course_id' => $student->course_id
+                ]);
+            } else {
+                \Log::debug('FeePaymentService: No branch fees found, using course fees', [
+                    'student_id' => $student->id,
+                    'branch_id' => $student->branch_id,
+                    'course_id' => $student->course_id
+                ]);
+            }
+            
+            // ========== FEES QUERY (from course_term_branch_fees or course_term_fees table) ==========
             // Student card fee is a one-time fee per academic year (not per term).
             // We take it from the first term's configured fee for the academic year.
             $studentCardFeeOnce = 0;
@@ -163,29 +189,48 @@ class FeePaymentService
                 })
                 ->exists();
 
-            $firstYearFee = CourseTermBranchFee::query()
-                ->where('course_id', $student->course_id)
-                ->where('branch_id', $student->branch_id)
-                ->where('is_active', true)
-                ->whereHas('term', function ($q) use ($student) {
-                    $q->where('academic_year_id', $student->academic_year_id);
-                })
-                ->whereIn('term_id', $termIds)
-                ->with('term:id,start_date')
-                ->get()
-                ->sortBy(fn ($f) => optional($f->term)->start_date ?? '9999-12-31')
-                ->first();
+            if ($useBranchFees) {
+                $firstYearFee = CourseTermBranchFee::query()
+                    ->where('course_id', $student->course_id)
+                    ->where('branch_id', $student->branch_id)
+                    ->where('is_active', true)
+                    ->whereHas('term', function ($q) use ($student) {
+                        $q->where('academic_year_id', $student->academic_year_id);
+                    })
+                    ->whereIn('term_id', $termIds)
+                    ->with('term:id,start_date')
+                    ->get()
+                    ->sortBy(fn ($f) => optional($f->term)->start_date ?? '9999-12-31')
+                    ->first();
+            } else {
+                $firstYearFee = \App\Models\CourseTermFee::query()
+                    ->where('course_id', $student->course_id)
+                    ->where('is_active', true)
+                    ->whereHas('term', function ($q) use ($student) {
+                        $q->where('academic_year_id', $student->academic_year_id);
+                    })
+                    ->whereIn('term_id', $termIds)
+                    ->with('term:id,start_date')
+                    ->get()
+                    ->sortBy(fn ($f) => optional($f->term)->start_date ?? '9999-12-31')
+                    ->first();
+            }
 
             if ($firstYearFee) {
                 $studentCardFeeOnce = (float) ($firstYearFee->student_card_fee ?? 0);
             }
 
-            // Get all course_term_branch_fees for this student's course AND branch
-            $feeQuery = CourseTermBranchFee::where('course_id', $student->course_id)
-                                     ->where('branch_id', $student->branch_id)
-                                     ->where('is_active', true)
-                                     // Ensure deterministic "first term" selection for registration fee.
-                                     ->orderBy('term_id');
+            // Get all course_term_branch_fees or course_term_fees for this student's course (and branch if available)
+            if ($useBranchFees) {
+                $feeQuery = CourseTermBranchFee::where('course_id', $student->course_id)
+                                         ->where('branch_id', $student->branch_id)
+                                         ->where('is_active', true)
+                                         ->orderBy('term_id');
+            } else {
+                $feeQuery = \App\Models\CourseTermFee::where('course_id', $student->course_id)
+                                         ->where('is_active', true)
+                                         ->orderBy('term_id');
+            }
             
             // Filter by eligible term IDs only (already includes requested filter if provided)
             if (!empty($termIds) && is_array($termIds)) {
@@ -199,13 +244,14 @@ class FeePaymentService
                 \Log::debug('FeePaymentService: Using all terms for year', ['year_id' => $student->academic_year_id, 'student_id' => $student->id, 'branch_id' => $student->branch_id]);
             }
             
-            // Execute the query to get course_term_branch_fees records
+            // Execute the query to get fee records
             $courseTermFees = $feeQuery->get();
-            \Log::debug('FeePaymentService: CourseTermBranchFees fetched', [
+            \Log::debug('FeePaymentService: CourseTermFees fetched', [
                 'student_id' => $student->id,
                 'branch_id' => $student->branch_id,
                 'count' => $courseTermFees->count(),
                 'term_ids_checked' => !empty($termIds) ? $termIds : 'all',
+                'using_branch_fees' => $useBranchFees,
             ]);
             
             // Sum all required fees from course_term_fees table
@@ -346,11 +392,26 @@ class FeePaymentService
             'payment_status' => self::getPaymentStatus($student, $termIds)
         ];
 
-        // Get course term branch fees
-        if ($student->course_id && $student->academic_year_id && $student->branch_id) {
-            $feeQuery = CourseTermBranchFee::where('course_id', $student->course_id)
-                                     ->where('branch_id', $student->branch_id)
-                                     ->where('is_active', true);
+        // Get course term branch fees or course term fees
+        if ($student->course_id && $student->academic_year_id) {
+            // Check if branch-specific fees exist
+            $useBranchFees = false;
+            if ($student->branch_id) {
+                $branchFeeExists = CourseTermBranchFee::where('course_id', $student->course_id)
+                    ->where('branch_id', $student->branch_id)
+                    ->where('is_active', true)
+                    ->exists();
+                $useBranchFees = $branchFeeExists;
+            }
+            
+            if ($useBranchFees) {
+                $feeQuery = CourseTermBranchFee::where('course_id', $student->course_id)
+                                         ->where('branch_id', $student->branch_id)
+                                         ->where('is_active', true);
+            } else {
+                $feeQuery = CourseTermFee::where('course_id', $student->course_id)
+                                         ->where('is_active', true);
+            }
             
             if (!empty($termIds) && is_array($termIds)) {
                 $feeQuery->whereIn('term_id', $termIds);
