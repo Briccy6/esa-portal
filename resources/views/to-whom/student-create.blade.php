@@ -106,6 +106,15 @@
                                         <strong>{{ $label }}:</strong>
                                         <p class="text-muted small mb-0">
                                             @switch($value)
+                                                @case('proof_of_registration')
+                                                    Confirms your registration details and current academic programme.
+                                                    @break
+                                                @case('student_confirmation')
+                                                    Provides a concise confirmation of your identity and enrolment details.
+                                                    @break
+                                                @case('to_whom')
+                                                    A general student status letter addressed to your selected recipient.
+                                                    @break
                                                 @case('enrollment')
                                                     Confirms your current enrollment status and student details.
                                                     @break
@@ -149,10 +158,3 @@
 </div>
 @endsection
 
-@push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Let the browser submit once so one click creates exactly one document.
-});
-</script>
-@endpush

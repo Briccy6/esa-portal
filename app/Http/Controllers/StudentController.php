@@ -3847,9 +3847,10 @@ class StudentController extends Controller
         }
 
         try {
-            // Get all students with pending passport photos
+            // Get all students with pending passport photos (limit to 10 at a time to avoid timeout)
             $pendingStudents = Student::where('passport_photo_verification_status', 'pending')
                 ->whereNotNull('passport_photo')
+                ->limit(10)
                 ->get();
 
             if ($pendingStudents->isEmpty()) {
@@ -3858,6 +3859,7 @@ class StudentController extends Controller
                     'message' => 'No pending passport photos to verify.',
                     'processed' => 0,
                     'rejected' => 0,
+                    'remaining' => 0,
                 ]);
             }
 
@@ -3865,6 +3867,9 @@ class StudentController extends Controller
             $processed = 0;
             $rejected = 0;
             $rejectedStudents = [];
+
+            // Increase PHP execution time limit
+            set_time_limit(300); // 5 minutes
 
             foreach ($pendingStudents as $student) {
                 try {
@@ -3921,11 +3926,22 @@ class StudentController extends Controller
                 }
             }
 
+            // Check if there are more pending photos
+            $remainingPending = Student::where('passport_photo_verification_status', 'pending')
+                ->whereNotNull('passport_photo')
+                ->count();
+
+            $message = "Verified {$processed} passport photos. {$rejected} rejected.";
+            if ($remainingPending > 0) {
+                $message .= " {$remainingPending} photos still pending. Click the button again to continue.";
+            }
+
             return response()->json([
                 'success' => true,
-                'message' => "Verified {$processed} passport photos. {$rejected} rejected.",
+                'message' => $message,
                 'processed' => $processed,
                 'rejected' => $rejected,
+                'remaining' => $remainingPending,
                 'rejected_students' => $rejectedStudents,
             ]);
 

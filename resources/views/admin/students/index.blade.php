@@ -1719,6 +1719,17 @@ function runBulkPassportCheck() {
     btn.disabled = true;
     btn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Checking...';
 
+<script>
+function runBulkPassportCheck() {
+    if (!confirm('This will run AI verification on up to 10 pending passport photos at a time. Continue?')) {
+        return;
+    }
+
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Checking...';
+
     fetch('/admin/students/bulk-verify-passport-photos', {
         method: 'POST',
         headers: {
@@ -1740,6 +1751,13 @@ function runBulkPassportCheck() {
                     message += '• ' + student.name + ' (' + student.email + ')\n  Reason: ' + student.rejection_reason + '\n\n';
                 });
                 alert(message);
+            }
+            
+            if (data.remaining > 0) {
+                if (confirm('There are ' + data.remaining + ' more pending photos. Click OK to continue checking.')) {
+                    runBulkPassportCheck();
+                    return;
+                }
             }
             
             location.reload();

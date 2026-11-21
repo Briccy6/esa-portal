@@ -67,5 +67,8 @@ class Kernel extends HttpKernel
         
         // Debug middleware
         'debug.student.auth' => \App\Http\Middleware\DebugStudentAuth::class,
+
+        // Support chat access middleware
+        'support.access' => \App\Http\Middleware\SupportAccess::class,
     ];
 }

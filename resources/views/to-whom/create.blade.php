@@ -52,6 +52,9 @@
                                             <option value="{{ $employee['ref'] }}">{{ $employee['name'] }} — {{ $employee['role'] }}</option>
                                         @endforeach
                                     </select>
+                                    @error('employee_ref')
+                                        <div class="text-danger small">{{ $message }}</div>
+                                    @enderror
                                 </div>
 
                                 <div class="mb-3">
@@ -133,6 +136,18 @@
                                         <strong>{{ $label }}:</strong>
                                         <p class="text-muted small mb-0">
                                             @switch($value)
+                                                @case('proof_of_registration')
+                                                    Confirms the student's registration details and current academic programme.
+                                                    @break
+                                                @case('student_confirmation')
+                                                    Provides a concise confirmation of the student's identity and enrolment details.
+                                                    @break
+                                                @case('to_whom')
+                                                    A general student status letter addressed to the selected recipient.
+                                                    @break
+                                                @case('employment_confirmation')
+                                                    Confirms the selected staff member's or teacher's position at the academy.
+                                                    @break
                                                 @case('enrollment')
                                                     Confirms current enrollment status and student details.
                                                     @break

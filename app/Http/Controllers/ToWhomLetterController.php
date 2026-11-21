@@ -192,9 +192,14 @@ class ToWhomLetterController extends Controller
                 ? Teacher::findOrFail($employeeId)
                 : Staff::findOrFail($employeeId);
             $recipientName = $employeeType === 'teacher' ? $employee->teacher_name : $employee->name;
-            $recipientRole = $employeeType === 'teacher'
-                ? 'Teacher - '.$employee->department
-                : Str::of($employee->role)->replace('_', ' ')->title()->toString();
+            if ($employeeType === 'teacher') {
+                $recipientRole = 'Teacher - '.$employee->department;
+            } else {
+                $staffRole = Str::of($employee->role)->replace('_', ' ')->trim()->lower()->toString();
+                $recipientRole = in_array($staffRole, ['it', 'information technology'])
+                    ? 'IT'
+                    : Str::of($staffRole)->title()->toString();
+            }
         } else {
             if ($user->isStudent()) {
                 $student = Student::with(['course', 'branch', 'academicYear'])
@@ -213,11 +218,17 @@ class ToWhomLetterController extends Controller
         if ($student && in_array($request->letter_type, [ToWhomLetter::TYPE_FINANCIAL_STATUS, ToWhomLetter::TYPE_GOOD_STANDING])) {
             $outstandingFees = $this->getStudentOutstandingFees($student->id);
             if ($outstandingFees > 0) {
-                return response()->json([
+                $error = [
                     'error' => 'Student has outstanding fees',
                     'message' => "This student has outstanding fees of RWF " . number_format($outstandingFees, 2) . ". All fees must be paid before generating a {$request->letter_type} document.",
                     'outstanding_amount' => $outstandingFees
-                ], 422);
+                ];
+
+                if ($request->expectsJson()) {
+                    return response()->json($error, 422);
+                }
+
+                return back()->withErrors(['student_id' => $error['message']])->withInput();
             }
         }
 

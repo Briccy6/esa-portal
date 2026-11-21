@@ -60,6 +60,8 @@ use App\Http\Controllers\ReportCardController;
 use App\Http\Controllers\PublicExamController;
 use App\Http\Controllers\PopulateLessonBranchCourseController;
 use App\Http\Controllers\PaymentScheduleController;
+use App\Http\Controllers\SupportChatController;
+use App\Http\Controllers\SupportDashboardController;
 use Illuminate\Http\Request;
 
 Route::domain('elearning.excellentservantacademy.com')
@@ -559,7 +561,7 @@ Route::middleware(['auth:admin', 'admin.academic_year'])->prefix('admin')->name(
     })->name('chat.test');
 
     // ESA Live Support Routes
-    Route::prefix('support')->name('support.')->group(function () {
+    Route::prefix('support')->name('support.')->middleware('support.access')->group(function () {
         Route::get('/', [SupportDashboardController::class, 'index'])->name('dashboard');
         Route::get('/conversations', [SupportDashboardController::class, 'getConversations'])->name('conversations');
         Route::get('/conversations/{id}', [SupportDashboardController::class, 'getConversation'])->name('conversation');

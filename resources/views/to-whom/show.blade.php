@@ -123,13 +123,24 @@
                                     <td>{{ $letter->reference_number }}</td>
                                 </tr>
                                 <tr>
-                                    <td><strong>Student:</strong></td>
-                                    <td>{{ $letter->student->full_name }} ({{ $letter->student->reg_number }})</td>
+                                    <td><strong>{{ $letter->recipient_type === 'employee' ? 'Employee:' : 'Student:' }}</strong></td>
+                                    <td>
+                                        {{ $letter->subject_name }}
+                                        @if($letter->student) ({{ $letter->student->reg_number }}) @endif
+                                    </td>
                                 </tr>
-                                <tr>
-                                    <td><strong>Course:</strong></td>
-                                    <td>{{ $letter->student->course->course_name ?? 'N/A' }}</td>
-                                </tr>
+                                @if($letter->recipient_role)
+                                    <tr>
+                                        <td><strong>Position:</strong></td>
+                                        <td>{{ $letter->recipient_role }}</td>
+                                    </tr>
+                                @endif
+                                @if($letter->student)
+                                    <tr>
+                                        <td><strong>Course:</strong></td>
+                                        <td>{{ $letter->student->course->course_name ?? $letter->student->course->name ?? 'N/A' }}</td>
+                                    </tr>
+                                @endif
                                 <tr>
                                     <td><strong>Letter Type:</strong></td>
                                     <td>{{ \App\Models\ToWhomLetter::getLetterTypes()[$letter->letter_type] ?? $letter->letter_type }}</td>
