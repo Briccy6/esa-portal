@@ -2,15 +2,45 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use App\Models\TeacherDaily;
 use App\Models\Attendance;
+use App\Models\Course;
 
 class DosDailyController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $dailies = TeacherDaily::orderByDesc('date')->paginate(20);
-        return view('staff.dailies.index', compact('dailies'));
+        $validated = $request->validate([
+            'status' => 'nullable|in:pending,approved',
+        ]);
+
+        $query = TeacherDaily::with(['teacher', 'course', 'lesson', 'unit'])
+            ->orderByDesc('date')
+            ->orderByDesc('id');
+
+        if (($validated['status'] ?? null) === 'approved') {
+            $query->where('approved', true);
+        } elseif (($validated['status'] ?? null) === 'pending') {
+            $query->where('approved', false);
+        }
+
+        $dailies = $query->paginate(20)->withQueryString();
+        $courseIds = $dailies->getCollection()
+            ->flatMap(function (TeacherDaily $daily) {
+                return array_merge((array) $daily->course_ids, [$daily->course_id]);
+            })
+            ->filter()
+            ->unique()
+            ->values();
+        $courseNamesById = Course::whereIn('id', $courseIds)->pluck('course_name', 'id');
+        $stats = TeacherDaily::query()
+            ->selectRaw('COUNT(*) as total')
+            ->selectRaw('SUM(CASE WHEN approved = 1 THEN 1 ELSE 0 END) as approved')
+            ->selectRaw('SUM(CASE WHEN approved = 0 THEN 1 ELSE 0 END) as pending')
+            ->first();
+
+        return view('staff.dailies.index', compact('dailies', 'courseNamesById', 'stats'));
     }
 
     public function show(TeacherDaily $daily)
@@ -49,16 +79,38 @@ class DosDailyController extends Controller
 
     public function approve(TeacherDaily $daily)
     {
-        // Only approve attendance records, not the daily record itself
-        // (teacher_dailies table doesn't have 'approved' column)
-        
-        // Approve all related attendance records
-        Attendance::where('course_id', $daily->course_id)
-            ->where('lesson_id', $daily->lesson_id)
-            ->where('date', $daily->date)
-            ->update(['approved' => true]);
+        $request = request();
+        $request->merge(['status' => 'approved']);
 
-        return redirect()->route('dos.dailies.index')->with('success', 'Attendance approved successfully!');
+        return $this->updateStatus($request, $daily);
+    }
+
+    public function updateStatus(Request $request, TeacherDaily $daily)
+    {
+        abort_unless(Auth::guard('staff')->check(), 403);
+
+        $validated = $request->validate([
+            'status' => 'required|in:pending,approved',
+        ]);
+
+        $daily->approved = $validated['status'] === 'approved';
+        $daily->save();
+
+        $courseIds = collect($daily->course_ids ?? [])
+            ->push($daily->course_id)
+            ->filter()
+            ->unique();
+        $attendanceQuery = Attendance::whereIn('course_id', $courseIds)
+            ->where('lesson_id', $daily->lesson_id)
+            ->whereDate('date', $daily->date);
+
+        if ($daily->branch_id) {
+            $attendanceQuery->where('branch_id', $daily->branch_id);
+        }
+
+        $attendanceQuery->update(['approved' => $daily->approved]);
+
+        return back()->with('success', 'Daily report status updated to ' . $validated['status'] . '.');
     }
 
     public function approveAttendance(Request $request, TeacherDaily $daily)
