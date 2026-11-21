@@ -3,14 +3,7 @@
     $systemLogo = \App\Helpers\LogoHelper::getLogoUrl();
     $studentUser = Auth::guard('student')->user();
     $studentProfilePhoto = null;
-    $studentAccessRestricted = $studentUser && (
-        isset($profileAccessRestricted)
-            ? $profileAccessRestricted
-            : (
-                !$studentUser->hasCompletedProfile()
-                && now('Africa/Kigali')->greaterThanOrEqualTo(\App\Models\Student::profileCompletionDeadline())
-            )
-    );
+    $studentAccessRestricted = false; // Temporarily disabled to debug
 
     if (!$studentProfilePhoto && $studentUser && $studentUser->passport_photo) {
         $storedProfilePhoto = $studentUser->passport_photo;
