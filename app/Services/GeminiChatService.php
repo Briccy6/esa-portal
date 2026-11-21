@@ -39,9 +39,10 @@ class GeminiChatService
             // Try multiple models in order of preference
             $models = [
                 $this->model, // Primary model from config
-                'gemini-1.5-flash', // Fallback 1
-                'gemini-1.5-pro', // Fallback 2
-                'gemini-pro', // Fallback 3
+                'gemini-flash-latest', // Fallback 1
+                'gemini-pro-latest', // Fallback 2
+                'gemini-1.5-flash', // Fallback 3
+                'gemini-1.5-pro', // Fallback 4
             ];
 
             $lastError = null;
