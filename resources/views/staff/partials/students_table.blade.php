@@ -984,7 +984,7 @@
                                     </h5>
                                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                                 </div>
-                                <form action="/students/{{ $student->id }}/update-shift" method="POST">
+                                <form action="/students/{{ $student->id }}/shift/update" method="POST">
                                     @csrf
                                     <div class="modal-body">
                                         <div class="alert alert-info">
