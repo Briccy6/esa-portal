@@ -47,7 +47,7 @@ class SupportConversation extends Model
      */
     public function messages(): HasMany
     {
-        return $this->hasMany(SupportMessage::class)->orderBy('created_at');
+        return $this->hasMany(SupportMessage::class, 'conversation_id')->orderBy('created_at');
     }
 
     /**
@@ -55,7 +55,7 @@ class SupportConversation extends Model
      */
     public function internalNotes(): HasMany
     {
-        return $this->hasMany(SupportInternalNote::class)->orderBy('created_at');
+        return $this->hasMany(SupportInternalNote::class, 'conversation_id')->orderBy('created_at');
     }
 
     /**
@@ -63,7 +63,7 @@ class SupportConversation extends Model
      */
     public function latestMessage()
     {
-        return $this->hasOne(SupportMessage::class)->latest();
+        return $this->hasOne(SupportMessage::class, 'conversation_id')->latest();
     }
 
     /**

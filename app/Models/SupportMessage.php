@@ -29,7 +29,7 @@ class SupportMessage extends Model
      */
     public function conversation(): BelongsTo
     {
-        return $this->belongsTo(SupportConversation::class);
+        return $this->belongsTo(SupportConversation::class, 'conversation_id');
     }
 
     /**
