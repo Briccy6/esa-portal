@@ -357,36 +357,14 @@ class AccountantDashboardController extends Controller
 
         $students = $query->get();
 
-        // Calculate fees for each student
-        $studentsWithFees = $students->map(function($student) use ($academicYearId) {
-            // Get total fees from course term fees
-            $totalFees = 0;
-            if ($student->course) {
-                $currentTerm = \App\Models\Term::where('academic_year_id', $student->academic_year_id)
-                    ->where('start_date', '<=', now())
-                    ->where('end_date', '>=', now())
-                    ->first();
-
-                if ($currentTerm) {
-                    $courseTermFee = \App\Models\CourseTermFee::where('course_id', $student->course_id)
-                        ->where('term_id', $currentTerm->id)
-                        ->where('is_active', true)
-                        ->first();
-
-                    if ($courseTermFee) {
-                        $totalFees = $courseTermFee->total_fees;
-                    }
-                }
-            }
-
-            // Get total paid amount
-            $paidAmount = $student->transactions()
-                ->where('status', 'successful')
-                ->whereHas('term', fn ($q) => $q->where('academic_year_id', $student->academic_year_id))
-                ->sum('amount');
-
-            // Calculate remaining amount
-            $remainingAmount = $totalFees - $paidAmount;
+        // Calculate fees for each student using FeePaymentService
+        $studentsWithFees = $students->map(function($student) {
+            // Use FeePaymentService to get accurate payment status
+            $paymentStatus = \App\Services\FeePaymentService::getPaymentStatus($student);
+            
+            $totalFees = $paymentStatus['required_fees'];
+            $paidAmount = $paymentStatus['total_paid'];
+            $remainingAmount = $paymentStatus['outstanding'];
 
             return [
                 'id' => $student->id,
