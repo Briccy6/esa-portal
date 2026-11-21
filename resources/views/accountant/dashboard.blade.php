@@ -348,10 +348,10 @@
         </div>
     </div>
 
-    <!-- Students Below Payment Percentage -->
+    <!-- Students At Least Payment Percentage -->
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center py-3">
-            <h2 class="h6 fw-semibold mb-0">Students Below Payment Percentage</h2>
+            <h2 class="h6 fw-semibold mb-0">Students At Least Payment Percentage</h2>
             <div class="d-flex gap-2">
                 <input type="number" id="belowPercentageInput" class="form-control form-control-sm" placeholder="%" value="50" min="0" max="100" style="width: 80px;">
                 <select id="belowPercentageBranchFilter" class="form-select form-select-sm" style="width: 200px;">
@@ -865,14 +865,14 @@ function loadStudentsBelowPercentage() {
                 tableDiv.innerHTML = `
                     <div class="alert alert-info">
                         <i class="fas fa-info-circle me-2"></i>
-                        No students found who paid below ${percentage}%.
+                        No students found who paid at least ${percentage}%.
                     </div>
                 `;
             } else {
                 let tableHtml = `
                     <div class="alert alert-success">
                         <i class="fas fa-check-circle me-2"></i>
-                        Found ${data.count} students who paid below ${percentage}%.
+                        Found ${data.count} students who paid at least ${percentage}%.
                     </div>
                     <div class="table-responsive">
                         <table class="table table-hover" id="studentsBelowTable">
