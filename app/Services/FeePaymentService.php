@@ -5,7 +5,7 @@ namespace App\Services;
 use App\Models\Student;
 use App\Models\StudentSubscription;
 use App\Models\StudentTransaction;
-use App\Models\CourseTermFee;
+use App\Models\CourseTermBranchFee;
 use App\Models\AcademicYear;
 use App\Models\Term;
 use Carbon\Carbon;
@@ -124,9 +124,9 @@ class FeePaymentService
             ];
         }
         
-        // Get fees from course_term_fees table
-        // Fees are tied to the course in course_term_fees, not individual students
-        if ($student->course_id && $student->academic_year_id) {
+        // Get fees from course_term_branch_fees table
+        // Fees are tied to the course, term, AND branch in course_term_branch_fees
+        if ($student->course_id && $student->academic_year_id && $student->branch_id) {
             // Apply "joined late" rule: only consider terms from the student's enrollment term onward.
             $termIds = self::eligibleTermIdsForStudent($student, $termIds);
 
@@ -149,7 +149,7 @@ class FeePaymentService
                 ->map(fn ($id) => (int) $id)
                 ->all();
             
-            // ========== FEES QUERY (from course_term_fees table) ==========
+            // ========== FEES QUERY (from course_term_branch_fees table) ==========
             // Student card fee is a one-time fee per academic year (not per term).
             // We take it from the first term's configured fee for the academic year.
             $studentCardFeeOnce = 0;
@@ -163,8 +163,9 @@ class FeePaymentService
                 })
                 ->exists();
 
-            $firstYearFee = CourseTermFee::query()
+            $firstYearFee = CourseTermBranchFee::query()
                 ->where('course_id', $student->course_id)
+                ->where('branch_id', $student->branch_id)
                 ->where('is_active', true)
                 ->whereHas('term', function ($q) use ($student) {
                     $q->where('academic_year_id', $student->academic_year_id);
@@ -179,8 +180,9 @@ class FeePaymentService
                 $studentCardFeeOnce = (float) ($firstYearFee->student_card_fee ?? 0);
             }
 
-            // Get all course_term_fees for this student's course
-            $feeQuery = CourseTermFee::where('course_id', $student->course_id)
+            // Get all course_term_branch_fees for this student's course AND branch
+            $feeQuery = CourseTermBranchFee::where('course_id', $student->course_id)
+                                     ->where('branch_id', $student->branch_id)
                                      ->where('is_active', true)
                                      // Ensure deterministic "first term" selection for registration fee.
                                      ->orderBy('term_id');
@@ -188,19 +190,20 @@ class FeePaymentService
             // Filter by eligible term IDs only (already includes requested filter if provided)
             if (!empty($termIds) && is_array($termIds)) {
                 $feeQuery->whereIn('term_id', $termIds);
-                \Log::debug('FeePaymentService: Filtering by term_ids', ['term_ids' => $termIds, 'student_id' => $student->id]);
+                \Log::debug('FeePaymentService: Filtering by term_ids', ['term_ids' => $termIds, 'student_id' => $student->id, 'branch_id' => $student->branch_id]);
             } else {
                 // Otherwise, get all fees for this academic year
                 $feeQuery->whereHas('term', function ($query) use ($student) {
                     $query->where('academic_year_id', $student->academic_year_id);
                 });
-                \Log::debug('FeePaymentService: Using all terms for year', ['year_id' => $student->academic_year_id, 'student_id' => $student->id]);
+                \Log::debug('FeePaymentService: Using all terms for year', ['year_id' => $student->academic_year_id, 'student_id' => $student->id, 'branch_id' => $student->branch_id]);
             }
             
-            // Execute the query to get course_term_fees records
+            // Execute the query to get course_term_branch_fees records
             $courseTermFees = $feeQuery->get();
-            \Log::debug('FeePaymentService: CourseTermFees fetched', [
+            \Log::debug('FeePaymentService: CourseTermBranchFees fetched', [
                 'student_id' => $student->id,
+                'branch_id' => $student->branch_id,
                 'count' => $courseTermFees->count(),
                 'term_ids_checked' => !empty($termIds) ? $termIds : 'all',
             ]);
@@ -343,9 +346,10 @@ class FeePaymentService
             'payment_status' => self::getPaymentStatus($student, $termIds)
         ];
 
-        // Get course term fees
-        if ($student->course_id && $student->academic_year_id) {
-            $feeQuery = CourseTermFee::where('course_id', $student->course_id)
+        // Get course term branch fees
+        if ($student->course_id && $student->academic_year_id && $student->branch_id) {
+            $feeQuery = CourseTermBranchFee::where('course_id', $student->course_id)
+                                     ->where('branch_id', $student->branch_id)
                                      ->where('is_active', true);
             
             if (!empty($termIds) && is_array($termIds)) {
