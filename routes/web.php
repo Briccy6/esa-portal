@@ -705,6 +705,7 @@ Route::prefix('staff')->name('staff.')->group(function () {
         // Student Management Routes
         Route::get('/students/{student}/edit', [StudentController::class, 'editByStaff'])->name('students.edit');
         Route::put('/students/{student}', [StudentController::class, 'updateByStaff'])->name('students.update');
+        Route::post('/students/{student}/update-shift', [StudentController::class, 'updateShift'])->name('students.update-shift');
         Route::put('/students/{student}/nesa', [StudentController::class, 'registerNesa'])->name('students.nesa');
         Route::post('/students/{student}/update-nesa-status', [StudentController::class, 'updateNesaStatus'])->name('students.update-nesa-status');
         Route::post('/students/{student}/send-nesa-email', [StudentController::class, 'sendNesaStatusEmail'])->name('students.send-nesa-email');

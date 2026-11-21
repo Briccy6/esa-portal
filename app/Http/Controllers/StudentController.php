@@ -981,6 +981,45 @@ class StudentController extends Controller
         return view('staff.students.edit', compact('student', 'branches', 'courses', 'academicYears'));
     }
 
+    /**
+     * Update student shift (for accountants/staff)
+     */
+    public function updateShift(Request $request, Student $student)
+    {
+        if (!auth()->guard('staff')->check()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $request->validate([
+            'shift' => 'required|in:day,evening,weekend',
+        ], [
+            'shift.required' => 'Shift is required',
+            'shift.in' => 'Shift must be day, evening, or weekend',
+        ]);
+
+        try {
+            $oldShift = $student->shift;
+            $student->shift = $request->shift;
+            $student->save();
+
+            Log::info('Student shift updated by staff', [
+                'student_id' => $student->id,
+                'student_name' => $student->full_name,
+                'old_shift' => $oldShift,
+                'new_shift' => $request->shift,
+                'updated_by' => auth('staff')->user()->email ?? 'staff',
+            ]);
+
+            return redirect()->back()->with('success', "Student shift updated from {$oldShift} to {$request->shift} successfully.");
+        } catch (\Exception $e) {
+            Log::error('Failed to update student shift', [
+                'error' => $e->getMessage(),
+                'student_id' => $student->id,
+            ]);
+            return redirect()->back()->with('error', 'Failed to update shift. Please try again.');
+        }
+    }
+
     public function updateByStaff(Request $request, Student $student)
     {
         if (!auth()->guard('staff')->check()) {

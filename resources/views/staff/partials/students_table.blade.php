@@ -984,9 +984,8 @@
                                     </h5>
                                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                                 </div>
-                                <form action="{{ route('staff.students.update', $student) }}" method="POST">
+                                <form action="{{ route('students.update-shift', $student) }}" method="POST">
                                     @csrf
-                                    @method('PUT')
                                     <div class="modal-body">
                                         <div class="alert alert-info">
                                             <i class="fas fa-info-circle me-2"></i>
