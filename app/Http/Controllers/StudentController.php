@@ -3590,11 +3590,16 @@ class StudentController extends Controller
 
     public function profile()
     {
-        $student = auth('student')->user();
-        if (!$student) {
-            return redirect()->route('student.login')->with('error', 'Please login to access your profile.');
+        try {
+            $student = auth('student')->user();
+            if (!$student) {
+                return redirect()->route('student.login')->with('error', 'Please login to access your profile.');
+            }
+            return view('students.profile', compact('student'));
+        } catch (\Exception $e) {
+            \Log::error('Profile page error: ' . $e->getMessage());
+            return back()->with('error', 'Unable to load profile. Please try again.');
         }
-        return view('students.profile', compact('student'));
     }
 
     public function updateProfile(Request $request)
