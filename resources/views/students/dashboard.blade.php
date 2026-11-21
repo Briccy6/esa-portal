@@ -1314,6 +1314,34 @@
                             <i class="bi bi-calendar3 me-2"></i>Go to Timetables
                         </a>
                     </div>
+                    @if(isset($scheduledTests) && $scheduledTests->isNotEmpty())
+                        <div class="border-top px-3 pt-3 pb-2">
+                            <h5 class="mb-3"><i class="bi bi-shield-check me-2"></i>Scheduled tests &amp; fee eligibility</h5>
+                            <div class="list-group">
+                                @foreach($scheduledTests as $testSession)
+                                    <div class="list-group-item d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                        <div>
+                                            <strong>{{ $testSession->lesson->title ?? 'Scheduled test' }}</strong>
+                                            <div class="small text-muted">
+                                                {{ $testSession->timetable_title }} · {{ $testSession->term_name }} ·
+                                                {{ ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][$testSession->day_of_week] ?? 'Day to be confirmed' }} ·
+                                                {{ \Carbon\Carbon::parse($testSession->start_time)->format('H:i') }}–{{ \Carbon\Carbon::parse($testSession->end_time)->format('H:i') }}
+                                            </div>
+                                        </div>
+                                        @if($testSession->test_eligibility['eligible'])
+                                            <span class="badge bg-success">Eligible · {{ number_format($testSession->test_eligibility['paid'], 1) }}% paid</span>
+                                        @else
+                                            <div class="text-end">
+                                                <span class="badge bg-danger">Not eligible · {{ number_format($testSession->test_eligibility['paid'], 1) }}% paid</span>
+                                                <div class="small text-danger mt-1">{{ $testSession->test_eligibility['reason'] }} Required: {{ number_format($testSession->test_eligibility['minimum'], 1) }}%.</div>
+                                                <a class="small" href="{{ route('student.payment-schedule') }}">View fees and pay the remaining balance</a>
+                                            </div>
+                                        @endif
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>

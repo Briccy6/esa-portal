@@ -85,7 +85,7 @@
                         @if($timetable->status === 'draft')
                             <form action="{{ route('dos.timetable.publish', $timetable->id) }}" method="POST" class="ms-auto">
                                 @csrf
-                                <button type="submit" class="card-action card-action-edit" onclick="return confirm('Publish this timetable?');"><i class="bi bi-send me-1"></i>Publish</button>
+                                <button type="submit" class="card-action card-action-edit" onclick="return confirm('Run the approval checks and publish this timetable?');"><i class="bi bi-check2-circle me-1"></i>Approve &amp; publish</button>
                             </form>
                             <form action="{{ route('dos.timetable.destroy', $timetable->id) }}" method="POST">
                                 @csrf

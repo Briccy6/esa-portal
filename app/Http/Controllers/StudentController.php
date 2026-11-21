@@ -41,99 +41,74 @@ use App\Services\PassportPhotoVerificationService;
 
 class StudentController extends Controller
 {
+    protected function applyStudentTimetableScope($timetable, Student $student): void
+    {
+        $sessions = $timetable->sessions
+            ->filter(fn ($session) => $student->course_id
+                && $session->courses->contains('id', $student->course_id))
+            ->values();
+
+        $assignments = DB::table('lesson_branch_course')
+            ->where('branch_id', $student->branch_id)
+            ->where('course_id', $student->course_id)
+            ->whereIn('lesson_id', $sessions->pluck('lesson_id')->unique())
+            ->whereNotNull('teacher_id')
+            ->get(['lesson_id', 'teacher_id'])
+            ->keyBy('lesson_id');
+        $teachers = \App\Models\Teacher::whereIn('id', $assignments->pluck('teacher_id')->unique())
+            ->get()
+            ->keyBy('id');
+        $paymentStatus = null;
+
+        foreach ($sessions as $session) {
+            $session->session_type = $session->mark_as_test && $session->session_type === 'class'
+                ? 'test'
+                : ($session->session_type ?: 'class');
+            $assignment = $assignments->get($session->lesson_id);
+            if ($session->lesson) {
+                $session->lesson->branch_teacher = $assignment
+                    ? $teachers->get($assignment->teacher_id)
+                    : null;
+            }
+
+            if ($session->session_type === 'test') {
+                $paymentStatus ??= \App\Services\FeePaymentService::getPaymentStatus(
+                    $student,
+                    $timetable->term_id ? [(int) $timetable->term_id] : null
+                );
+                $requiredPercentage = (float) ($session->minimum_paid_percentage ?? 0);
+                $paidPercentage = min(100, max(0, (float) $paymentStatus['payment_percentage']));
+                $session->test_eligibility = [
+                    'eligible' => $paidPercentage >= $requiredPercentage,
+                    'minimum' => $requiredPercentage,
+                    'paid' => $paidPercentage,
+                    'reason' => $paidPercentage >= $requiredPercentage
+                        ? null
+                        : 'Your term fee payments are below the required percentage.',
+                ];
+            }
+        }
+
+        $timetable->setRelation('sessions', $sessions);
+    }
+
     public function timetables()
     {
         $student = auth('student')->user();
 
-        $timetables = \App\Models\Timetable::published()
+        $timetables = Timetable::published()
             ->where('branch_id', $student->branch_id)
             ->where('academic_year_id', $student->academic_year_id)
-            ->where(function($query) {
-                $query->whereNull('valid_from')
-                      ->orWhereNull('valid_until')
-                      ->orWhere(function($q) {
-                          $q->whereDate('valid_from', '<=', now())
-                            ->whereDate('valid_until', '>=', now());
-                      });
-            })
-            ->with(['branch', 'academicYear', 'term', 'sessions.lesson.teacher', 'sessions.lesson.teachers', 'sessions.courses'])
+            ->whereHas('sessions.courses', fn ($query) => $query->where('courses.id', $student->course_id))
+            ->whereDate('valid_from', '<=', now())
+            ->whereDate('valid_until', '>=', now())
+            ->with(['branch', 'academicYear', 'term', 'sessions.lesson.teacher', 'sessions.courses'])
             ->get();
 
-        // Filter sessions to only show those for the student's course
         foreach ($timetables as $timetable) {
-            $filteredSessions = $timetable->sessions->filter(function($session) use ($student) {
-                // Check if any of the session's courses match the student's course
-                // OR if the session has no courses (show all sessions if course filtering is disabled)
-                if ($session->courses->isEmpty()) {
-                    return true; // Show sessions with no course assigned
-                }
-                $hasMatchingCourse = $session->courses->contains('id', $student->course_id);
-                
-                // Log for debugging
-                if (!$hasMatchingCourse) {
-                    \Log::info('Session filtered out - no matching course', [
-                        'session_id' => $session->id,
-                        'session_courses' => $session->courses->pluck('id')->toArray(),
-                        'student_course_id' => $student->course_id,
-                    ]);
-                }
-                
-                return $hasMatchingCourse;
-            });
-            
-            // If all sessions were filtered out, show a warning and show all sessions for this timetable
-            if ($filteredSessions->isEmpty() && !$timetable->sessions->isEmpty()) {
-                \Log::warning('All sessions filtered out for timetable, showing all as fallback', [
-                    'timetable_id' => $timetable->id,
-                    'student_course_id' => $student->course_id,
-                    'session_count' => $timetable->sessions->count(),
-                ]);
-                $timetable->sessions = $timetable->sessions; // Show all sessions as fallback
-            } else {
-                $timetable->sessions = $filteredSessions;
-            }
-            
-            // For each session, get the branch-specific teacher if available
-            foreach ($timetable->sessions as $session) {
-                if ($session->lesson) {
-                    // First try to get branch-specific teacher from lesson_branch_course pivot
-                    $branchAssignment = \DB::table('lesson_branch_course')
-                        ->where('lesson_id', $session->lesson->id)
-                        ->where('branch_id', $student->branch_id)
-                        ->where('course_id', $student->course_id)
-                        ->whereNotNull('teacher_id')
-                        ->first();
-
-                    if ($branchAssignment && $branchAssignment->teacher_id) {
-                        $branchTeacher = \App\Models\Teacher::find($branchAssignment->teacher_id);
-                        if ($branchTeacher) {
-                            $session->lesson->branch_teacher = $branchTeacher;
-                        }
-                    } else {
-                        // Try to get teacher from lesson_branch_course without course restriction
-                        $branchAssignmentAnyCourse = \DB::table('lesson_branch_course')
-                            ->where('lesson_id', $session->lesson->id)
-                            ->where('branch_id', $student->branch_id)
-                            ->whereNotNull('teacher_id')
-                            ->first();
-
-                        if ($branchAssignmentAnyCourse && $branchAssignmentAnyCourse->teacher_id) {
-                            $branchTeacher = \App\Models\Teacher::find($branchAssignmentAnyCourse->teacher_id);
-                            if ($branchTeacher) {
-                                $session->lesson->branch_teacher = $branchTeacher;
-                            }
-                        } else {
-                            // Fallback to direct lesson teacher if no branch-specific assignment
-                            if ($session->lesson->teacher) {
-                                $session->lesson->branch_teacher = $session->lesson->teacher;
-                            }
-                        }
-                    }
-                }
-            }
+            $this->applyStudentTimetableScope($timetable, $student);
         }
 
-        // Log for debugging
         \Log::info('Student timetables loaded', [
             'student_id' => $student->id,
             'student_course_id' => $student->course_id,
@@ -149,16 +124,18 @@ class StudentController extends Controller
     {
         $student = auth('student')->user();
 
-        if ($timetable->branch_id !== $student->branch_id) {
+        if ((int) $timetable->branch_id !== (int) $student->branch_id
+            || (int) $timetable->academic_year_id !== (int) $student->academic_year_id
+            || $timetable->status !== 'published'
+            || ! $timetable->valid_from || ! $timetable->valid_until
+            || ! now()->between($timetable->valid_from->startOfDay(), $timetable->valid_until->endOfDay())) {
             abort(403, 'You are not authorized to view this timetable.');
         }
 
         $timetable->load(['branch', 'academicYear', 'term', 'sessions.lesson.teacher', 'sessions.courses']);
-
-        // Filter sessions to only show those for the student's course
-        $studentSessions = $timetable->sessions->filter(function ($session) use ($student) {
-            return $session->courses->contains('id', $student->course_id);
-        })->values();
+        $this->applyStudentTimetableScope($timetable, $student);
+        abort_if($timetable->sessions->isEmpty(), 404);
+        $studentSessions = $timetable->sessions;
 
         return view('students.timetables.show', compact('timetable', 'studentSessions'));
     }
@@ -2146,6 +2123,32 @@ class StudentController extends Controller
         $subscriptions = \App\Models\Subscription::active()->orderBy('price')->get();
         $activeSubscription = $student->activeSubscription;
 
+        $scheduledTests = collect();
+        if ($student->branch_id && $student->course_id && $student->academic_year_id) {
+            $testTimetables = Timetable::published()
+                ->where('branch_id', $student->branch_id)
+                ->where('academic_year_id', $student->academic_year_id)
+                ->whereDate('valid_from', '<=', now())
+                ->whereDate('valid_until', '>=', now())
+                ->whereHas('sessions', function ($query) use ($student) {
+                    $query->where(function ($sessionQuery) {
+                        $sessionQuery->where('session_type', 'test')
+                            ->orWhere('mark_as_test', true);
+                    })->whereHas('courses', fn ($courseQuery) => $courseQuery->where('courses.id', $student->course_id));
+                })
+                ->with(['sessions.lesson', 'sessions.courses', 'branch', 'academicYear', 'term'])
+                ->get();
+
+            foreach ($testTimetables as $testTimetable) {
+                $this->applyStudentTimetableScope($testTimetable, $student);
+                foreach ($testTimetable->sessions->where('session_type', 'test') as $session) {
+                    $session->timetable_title = $testTimetable->title;
+                    $session->term_name = $testTimetable->term->name ?? 'Current term';
+                    $scheduledTests->push($session);
+                }
+            }
+        }
+
         return view('students.dashboard', compact(
             'student',
             'approvedAttendances',
@@ -2172,6 +2175,7 @@ class StudentController extends Controller
             'liveClass',
             'announcements',
             'exams',
+            'scheduledTests',
             'subscriptions',
             'activeSubscription',
             'profileMissingFields',

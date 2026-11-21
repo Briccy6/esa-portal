@@ -97,6 +97,7 @@
                                 <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Lesson</th>
                                 <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Room</th>
                                 <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Teacher</th>
+                                <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Session type / eligibility</th>
                             </tr>
                         </thead>
                         <tbody style="background: white;">
@@ -120,10 +121,25 @@
                                         <td>{{ $session->lesson->title ?? 'N/A' }}</td>
                                         <td>{{ $session->classroom ?? '' }}</td>
                                         <td>
-                                            @if($session->lesson->teacher)
-                                                <span class="badge bg-success text-white">{{ $session->lesson->teacher->teacher_name }}</span>
+                                            @if($session->lesson->branch_teacher)
+                                                <span class="badge bg-success text-white">{{ $session->lesson->branch_teacher->teacher_name }}</span>
                                             @else
                                                 <span class="badge bg-warning text-dark">TBA</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if($session->session_type === 'test')
+                                                @if($session->test_eligibility['eligible'] ?? false)
+                                                    <span class="badge bg-success">Eligible</span>
+                                                @else
+                                                    <span class="badge bg-danger">Not eligible</span>
+                                                    <small class="d-block text-danger">{{ $session->test_eligibility['reason'] ?? 'Fee payment is below the required percentage.' }} Paid {{ number_format($session->test_eligibility['paid'] ?? 0, 1) }}%. Required {{ number_format($session->test_eligibility['minimum'] ?? 0, 1) }}%.</small>
+                                                    <a class="small" href="{{ route('student.payment-schedule') }}">View fees</a>
+                                                @endif
+                                            @elseif($session->session_type === 'self_study')
+                                                <span class="badge bg-info text-dark">Self study</span>
+                                            @else
+                                                <span class="badge bg-light text-dark">Class</span>
                                             @endif
                                         </td>
                                     </tr>

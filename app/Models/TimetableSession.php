@@ -20,10 +20,13 @@ class TimetableSession extends Model
         'classroom',
         'notes',
         'mark_as_test',
+        'session_type',
+        'minimum_paid_percentage',
     ];
 
     protected $casts = [
         'mark_as_test' => 'boolean',
+        'minimum_paid_percentage' => 'decimal:2',
     ];
 
     public function timetable()

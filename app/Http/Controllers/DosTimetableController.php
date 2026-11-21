@@ -51,105 +51,64 @@ class DosTimetableController extends Controller
     {
         $this->authorizeDos();
 
+        $request->validate([
+            'branch_id' => ['required', 'integer', Rule::in($this->getAllowedBranchIds())],
+        ]);
         $branchId = (int) $request->get('branch_id');
-        if (! $branchId) {
-            return response()->json([], 200);
-        }
 
-        $courseIds = LessonBranchCourse::where('branch_id', $branchId)->pluck('course_id')->unique()->toArray();
-
-        // Fallback: if no lesson assignments, try branch_course pivot
-        if (empty($courseIds)) {
-            try {
-                if (\Schema::hasTable('branch_course')) {
-                    $courseIds = \Illuminate\Support\Facades\DB::table('branch_course')
-                        ->where('branch_id', $branchId)
-                        ->pluck('course_id')
-                        ->unique()
-                        ->toArray();
-                }
-            } catch (\Throwable $e) {
-                // ignore DB pivot errors
-            }
-        }
-
-        // If still no courses, return all courses as fallback
-        if (empty($courseIds)) {
-            $courses = Course::orderBy('course_name')->get(['id', 'course_name', 'abbreviation']);
-        } else {
-            $courses = Course::whereIn('id', $courseIds)->orderBy('course_name')->get(['id', 'course_name', 'abbreviation']);
-        }
-        
-        // Add teacher information to courses
-        $courses = $courses->map(function($course) use ($branchId) {
-            // Get teachers specifically assigned to this course in this branch
-            $teacherIds = \DB::table('lesson_branch_course')
-                ->where('branch_id', $branchId)
-                ->where('course_id', $course->id)
-                ->whereNotNull('teacher_id')
-                ->distinct()
-                ->pluck('teacher_id');
-
-            $teacherNames = [];
-            if (!empty($teacherIds)) {
-                $teachers = \App\Models\Teacher::whereIn('id', $teacherIds)
-                    ->whereNotNull('teacher_name')
-                    ->pluck('teacher_name')
-                    ->unique();
-                $teacherNames = $teachers->toArray();
-            }
-
-            $teacherString = !empty($teacherNames) ? implode(', ', $teacherNames) : 'No teacher assigned';
-
-            return (object)[
-                'id' => $course->id,
-                'course_name' => $course->course_name,
-                'abbreviation' => $course->abbreviation,
-                'teacher_name' => $teacherString,
-            ];
-        });
-
-        return response()->json($courses);
+        return response()->json(
+            Course::whereIn('id', LessonBranchCourse::where('branch_id', $branchId)
+                ->pluck('course_id')->unique())
+                ->orderBy('course_name')
+                ->get(['id', 'course_name', 'abbreviation'])
+        );
     }
 
     public function branchLessons(Request $request)
     {
         $this->authorizeDos();
 
+        $request->validate([
+            'branch_id' => ['required', 'integer', Rule::in($this->getAllowedBranchIds())],
+            'academic_year_id' => 'required|exists:academic_years,id',
+        ]);
         $branchId = (int) $request->get('branch_id');
-        if (! $branchId) {
-            return response()->json([], 200);
+
+        return response()->json($this->getBranchLessonOptions(
+            $branchId,
+            (int) $request->academic_year_id
+        ));
+    }
+
+    protected function getBranchLessonOptions(int $branchId, ?int $academicYearId = null): array
+    {
+        if ($branchId <= 0 || ! $academicYearId) {
+            return [];
         }
 
-        $lessonAssignments = $this->getLessonAssignments($branchId);
+        return $this->getLessonAssignments($branchId)
+            ->when($academicYearId, fn ($assignments) => $assignments->filter(
+                fn ($assignment) => ! $assignment->lesson?->academic_year_id
+                    || (int) $assignment->lesson->academic_year_id === $academicYearId
+            ))
+            ->filter(fn ($assignment) => $assignment->lesson && $assignment->course)
+            ->groupBy('lesson_id')
+            ->map(function ($assignments) {
+                $first = $assignments->first();
 
-        // Group lessons by lesson_id to avoid duplicates
-        $groupedLessons = $lessonAssignments->groupBy('lesson_id')->map(function ($assignments) {
-            $first = $assignments->first();
-            $courseNames = $assignments->pluck('course.course_name')->unique()->implode(', ');
-            $courseAbbreviations = $assignments->pluck('course.abbreviation')->unique()->implode(', ');
-            
-            // Get teacher names for each course
-            $courseTeacherMap = [];
-            foreach ($assignments as $assignment) {
-                $teacherName = $assignment->teacher ? $assignment->teacher->teacher_name : 'Unassigned';
-                $courseTeacherMap[$assignment->course_id] = $teacherName;
-            }
-            
-            return [
-                'lesson_id' => $first->lesson_id,
-                'lesson_title' => $first->lesson->title ?? 'Untitled lesson',
-                'course_id' => $first->course_id,
-                'course_name' => $first->course->course_name ?? 'Course',
-                'course_abbreviation' => $first->course->abbreviation ?? $first->course->course_name ?? 'Course',
-                'all_course_ids' => $assignments->pluck('course_id')->unique()->toArray(),
-                'course_names' => $courseNames,
-                'course_abbreviations' => $courseAbbreviations,
-                'course_teacher_map' => $courseTeacherMap,
-            ];
-        })->values();
-
-        return response()->json($groupedLessons);
+                return [
+                    'lesson_id' => (int) $first->lesson_id,
+                    'lesson_title' => $first->lesson->title ?: 'Untitled lesson',
+                    'courses' => $assignments->unique('course_id')->map(fn ($assignment) => [
+                        'id' => (int) $assignment->course_id,
+                        'name' => $assignment->course->course_name,
+                        'abbreviation' => $assignment->course->abbreviation,
+                        'teacher_name' => $assignment->teacher?->teacher_name,
+                    ])->values()->all(),
+                ];
+            })
+            ->values()
+            ->all();
     }
 
     protected function getLessonAssignments(int $branchId)
@@ -174,16 +133,51 @@ class DosTimetableController extends Controller
     {
         $courseIds = array_filter(array_map('intval', $sessionData['course_ids'] ?? []));
         $available = $this->getCourseIdsForLesson($branchId, $lesson->id);
-        $selected = array_values(array_intersect($courseIds, $available));
-        
-        if (empty($selected)) {
-            // Fallback to lesson's primary course if no course selected
-            if ($lesson->course_id) {
-                $selected = [$lesson->course_id];
+        return array_values(array_unique(array_intersect($courseIds, $available)));
+    }
+
+    protected function validateScheduleScope(Request $request, ?Timetable $timetable = null): void
+    {
+        $term = Term::whereKey($request->term_id)
+            ->where('academic_year_id', $request->academic_year_id)
+            ->first();
+
+        if (! $term) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'term_id' => 'Choose a term that belongs to the selected academic year.',
+            ]);
+        }
+
+        if (Carbon::parse($request->valid_from)->lt(Carbon::parse($term->start_date))
+            || Carbon::parse($request->valid_until)->gt(Carbon::parse($term->end_date))) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'valid_from' => 'The timetable validity dates must fall within the selected term.',
+            ]);
+        }
+
+        foreach ($request->sessions as $index => $sessionData) {
+            $lesson = Lesson::find($sessionData['lesson_id']);
+            $courseIds = array_values(array_unique(array_map('intval', $sessionData['course_ids'] ?? [])));
+            $availableCourseIds = $lesson
+                ? $this->getCourseIdsForLesson((int) $request->branch_id, $lesson->id)
+                : [];
+
+            if (! $lesson
+                || ($lesson->academic_year_id && (int) $lesson->academic_year_id !== (int) $request->academic_year_id)
+                || ! $courseIds
+                || array_diff($courseIds, $availableCourseIds)) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    "sessions.{$index}.lesson_id" => 'Choose a lesson and one or more courses assigned to that lesson in the selected branch and academic year.',
+                ]);
+            }
+
+            if ($timetable && !empty($sessionData['session_id'])
+                && ! $timetable->sessions()->whereKey($sessionData['session_id'])->exists()) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    "sessions.{$index}.session_id" => 'A session does not belong to this timetable.',
+                ]);
             }
         }
-        
-        return array_unique($selected);
     }
 
     protected function collectCourseIdsFromSession(TimetableSession $session): array
@@ -222,7 +216,8 @@ class DosTimetableController extends Controller
         return Timetable::published()
             ->where('branch_id', $timetable->branch_id)
             ->where('id', '!=', $timetable->id)
-            ->whereDate('valid_until', '>=', now())
+            ->whereDate('valid_from', '<=', $timetable->valid_until)
+            ->whereDate('valid_until', '>=', $timetable->valid_from)
             ->first();
     }
 
@@ -232,7 +227,35 @@ class DosTimetableController extends Controller
         $duplicateRooms = [];
         $duplicateTeachers = [];
 
-        $sessions = $timetable->sessions()->with('lesson.teacher')->get();
+        $timetable->loadMissing('term');
+        $sessions = $timetable->sessions()->with(['lesson.teacher', 'courses'])->get();
+        if ($sessions->isEmpty()) {
+            $issues[] = 'Add at least one session before approving this timetable.';
+        }
+
+        if (! $timetable->term
+            || (int) $timetable->term->academic_year_id !== (int) $timetable->academic_year_id
+            || ! $timetable->valid_from
+            || ! $timetable->valid_until
+            || Carbon::parse($timetable->valid_from)->lt(Carbon::parse($timetable->term->start_date ?? '1900-01-01'))
+            || Carbon::parse($timetable->valid_until)->gt(Carbon::parse($timetable->term->end_date ?? '1900-01-01'))) {
+            $issues[] = 'Choose a term and validity dates that belong to the same academic year and fit within that term.';
+        }
+
+        foreach ($sessions as $session) {
+            $courseIds = $session->courses->pluck('id')->map(fn ($id) => (int) $id)->all();
+            $availableCourseIds = $this->getCourseIdsForLesson((int) $timetable->branch_id, (int) $session->lesson_id);
+            if (! $courseIds || array_diff($courseIds, $availableCourseIds)) {
+                $lessonTitle = $session->lesson->title ?? 'this lesson';
+                $issues[] = "Choose only courses assigned to lesson '{$lessonTitle}' in this branch.";
+            }
+        }
+
+        $branchTeacherIds = \DB::table('lesson_branch_course')
+            ->where('branch_id', $timetable->branch_id)
+            ->whereIn('lesson_id', $sessions->pluck('lesson_id')->unique())
+            ->get(['lesson_id', 'course_id', 'teacher_id'])
+            ->groupBy('lesson_id');
 
         foreach ($sessions as $index => $session) {
             foreach ($sessions->slice($index + 1) as $other) {
@@ -245,11 +268,18 @@ class DosTimetableController extends Controller
                         }
                     }
 
-                    $sessionTeacher = $session->lesson->teacher_id ?? null;
-                    $otherTeacher = $other->lesson->teacher_id ?? null;
-                    if ($sessionTeacher && $otherTeacher && $sessionTeacher === $otherTeacher) {
-                        $teacherName = $session->lesson->teacher->teacher_name ?? 'Assigned teacher';
-                        $key = $sessionTeacher . ':' . $session->day_of_week . ':' . min($session->id, $other->id) . ':' . max($session->id, $other->id);
+                    $teachersFor = function (TimetableSession $item) use ($branchTeacherIds) {
+                        $courseIds = $item->courses->pluck('id')->map(fn ($id) => (int) $id);
+                        return collect($branchTeacherIds->get($item->lesson_id, []))
+                            ->whereIn('course_id', $courseIds)
+                            ->pluck('teacher_id')
+                            ->filter()
+                            ->unique();
+                    };
+                    $sharedTeachers = $teachersFor($session)->intersect($teachersFor($other));
+                    foreach ($sharedTeachers as $teacherId) {
+                        $teacherName = \App\Models\Teacher::whereKey($teacherId)->value('teacher_name') ?: 'Assigned teacher';
+                        $key = $teacherId . ':' . $session->day_of_week . ':' . min($session->id, $other->id) . ':' . max($session->id, $other->id);
                         if (!isset($duplicateTeachers[$key])) {
                             $duplicateTeachers[$key] = true;
                             $issues[] = "Teacher {$teacherName} is scheduled for overlapping sessions on {$this->formatDay($session->day_of_week)} between {$session->start_time}–{$session->end_time} and {$other->start_time}–{$other->end_time}.";
@@ -323,105 +353,13 @@ class DosTimetableController extends Controller
         $selectedAcademicYearId = session()->getOldInput('academic_year_id') ?: ($academicYears->first()->id ?? null);
         $selectedAcademicYearId = $selectedAcademicYearId ?: ($academicYears->first()->id ?? null);
 
-        $terms = Term::where('academic_year_id', $selectedAcademicYearId)
+        $terms = Term::whereIn('academic_year_id', $academicYears->pluck('id'))
             ->orderBy('start_date')
             ->get();
 
         $activeTerm = $this->getActiveTermForAcademicYear($selectedAcademicYearId);
-
-        $lessonAssignments = $this->getLessonAssignments($branchId);
-        $courseIds = $lessonAssignments->pluck('course_id')->unique();
-        $teacherIds = $lessonAssignments->pluck('teacher_id')->unique();
-
-        // Group lesson assignments by lesson_id to avoid duplicates in dropdown
-        $groupedLessons = $lessonAssignments->groupBy('lesson_id')->map(function ($assignments) use ($branchId) {
-            $first = $assignments->first();
-            $courseNames = $assignments->pluck('course.course_name')->unique()->implode(', ');
-            
-            // Get teacher names for each course in this lesson
-            $courseTeacherMap = [];
-            foreach ($assignments as $assignment) {
-                $teacherName = $assignment->teacher ? $assignment->teacher->teacher_name : 'Unassigned';
-                $courseTeacherMap[$assignment->course_id] = $teacherName;
-            }
-            
-            return (object)[
-                'lesson_id' => $first->lesson_id,
-                'lesson' => $first->lesson,
-                'course_id' => $first->course_id,
-                'course' => $first->course,
-                'teacher_id' => $first->teacher_id,
-                'teacher' => $first->teacher,
-                'all_course_ids' => $assignments->pluck('course_id')->unique()->toArray(),
-                'course_names' => $courseNames,
-                'course_teacher_map' => $courseTeacherMap,
-            ];
-        })->values();
-
-        // Get courses with teacher information using lesson_branch_course
-        $coursesWithTeachers = Course::whereIn('id', $courseIds)
-            ->get()
-            ->map(function($course) use ($branchId) {
-                // Get teachers for this course in this branch via lesson_branch_course
-                $teacherIds = \DB::table('lesson_branch_course')
-                    ->where('branch_id', $branchId)
-                    ->where('course_id', $course->id)
-                    ->distinct()
-                    ->pluck('teacher_id');
-                
-                $teachers = \App\Models\Teacher::whereIn('id', $teacherIds)
-                    ->pluck('teacher_name')
-                    ->unique()
-                    ->implode(', ');
-                
-                return (object)[
-                    'id' => $course->id,
-                    'course_name' => $course->course_name,
-                    'abbreviation' => $course->abbreviation,
-                    'teacher_name' => $teachers,
-                ];
-            });
-
-        // Fallback: if no lesson assignments exist for the branch, try branch_course pivot
-        if ($courseIds->isEmpty()) {
-            try {
-                if (\Schema::hasTable('branch_course')) {
-                    $fromPivot = \Illuminate\Support\Facades\DB::table('branch_course')
-                        ->where('branch_id', $branchId)
-                        ->pluck('course_id')
-                        ->unique();
-                    $courseIds = $fromPivot->values();
-                }
-            } catch (\Throwable $e) {
-                // ignore DB pivot errors
-            }
-        }
-
-        // If still no courses, get all courses as fallback
-        if ($courseIds->isEmpty()) {
-            $courses = Course::orderBy('course_name')->get();
-        } else {
-            $courses = Course::whereIn('id', $courseIds)->orderBy('course_name')->get();
-        }
-
-        // If no lesson assignments, get all lessons as fallback for the dropdown
-        if ($lessonAssignments->isEmpty()) {
-            $lessonAssignments = \App\Models\Lesson::with(['course', 'teacher'])
-                ->where('academic_year_id', $selectedAcademicYearId)
-                ->get()
-                ->map(function($lesson) {
-                    return (object)[
-                        'lesson_id' => $lesson->id,
-                        'lesson' => $lesson,
-                        'course_id' => $lesson->course_id,
-                        'course' => $lesson->course,
-                        'teacher_id' => $lesson->teacher_id,
-                        'teacher' => $lesson->teacher,
-                    ];
-                });
-        }
-
-        $teachers = \App\Models\Teacher::whereIn('id', $teacherIds)->get();
+        $selectedTermId = session()->getOldInput('term_id') ?: $activeTerm?->id;
+        $branchLessonsData = $this->getBranchLessonOptions((int) $branchId, (int) $selectedAcademicYearId);
 
         return view('staff.timetable.create', compact(
             'branches',
@@ -430,11 +368,8 @@ class DosTimetableController extends Controller
             'selectedAcademicYearId',
             'activeTerm',
             'terms',
-            'lessonAssignments',
-            'groupedLessons',
-            'courses',
-            'coursesWithTeachers',
-            'teachers'
+            'branchLessonsData',
+            'selectedTermId'
         ));
     }
 
@@ -480,14 +415,11 @@ class DosTimetableController extends Controller
 
         $allowedBranchIds = $this->getAllowedBranchIds();
 
-        $activeTerm = $this->getActiveTermForAcademicYear($request->academic_year_id);
-        $termRules = $activeTerm ? ['nullable', 'exists:terms,id'] : ['required', 'exists:terms,id'];
-
         $request->validate([
             'title' => 'required|string|max:255',
             'branch_id' => ['required', Rule::in($allowedBranchIds)],
             'academic_year_id' => 'required|exists:academic_years,id',
-            'term_id' => $termRules,
+            'term_id' => 'required|exists:terms,id',
             'valid_from' => 'required|date',
             'valid_until' => 'required|date|after_or_equal:valid_from',
             'sessions' => 'required|array|min:1',
@@ -497,16 +429,14 @@ class DosTimetableController extends Controller
             'sessions.*.end_time' => 'required|date_format:H:i',
             'sessions.*.classroom' => 'nullable|string|max:100',
             'sessions.*.notes' => 'nullable|string|max:500',
-            'sessions.*.course_ids' => 'nullable|array',
-            'sessions.*.course_ids.*' => 'nullable|exists:courses,id',
-            'sessions.*.mark_as_test' => 'nullable|boolean',
+            'sessions.*.course_ids' => 'required|array|min:1',
+            'sessions.*.course_ids.*' => 'required|exists:courses,id',
+            'sessions.*.session_type' => ['required', Rule::in(['class', 'test', 'self_study'])],
+            'sessions.*.minimum_paid_percentage' => 'nullable|numeric|min:0|max:100',
         ]);
 
-        $termId = $activeTerm ? $activeTerm->id : $request->term_id;
-
-        if (!$termId) {
-            return redirect()->back()->withErrors(['term_id' => 'Please select a term for the selected academic year.'])->withInput();
-        }
+        $this->validateScheduleScope($request);
+        $termId = (int) $request->term_id;
 
         foreach ($request->sessions as $index => $sessionData) {
             $start = Carbon::createFromFormat('H:i', $sessionData['start_time']);
@@ -541,7 +471,11 @@ class DosTimetableController extends Controller
                 'end_time' => $sessionData['end_time'],
                 'classroom' => $sessionData['classroom'] ?? null,
                 'notes' => $sessionData['notes'] ?? null,
-                'mark_as_test' => !empty($sessionData['mark_as_test']),
+                'mark_as_test' => ($sessionData['session_type'] ?? 'class') === 'test',
+                'session_type' => $sessionData['session_type'],
+                'minimum_paid_percentage' => $sessionData['session_type'] === 'test'
+                    ? ($sessionData['minimum_paid_percentage'] ?? 0)
+                    : 0,
             ]);
 
             $courseIds = $this->getSessionCourseIdsFromInput($sessionData, $request->branch_id, $lesson);
@@ -614,104 +548,13 @@ class DosTimetableController extends Controller
         $selectedAcademicYearId = session()->getOldInput('academic_year_id') ?: $timetable->academic_year_id;
         $selectedAcademicYearId = $selectedAcademicYearId ?: $timetable->academic_year_id;
 
-        $lessonAssignments = $this->getLessonAssignments($branchId);
-        $courseIds = $lessonAssignments->pluck('course_id')->unique();
-        $teacherIds = $lessonAssignments->pluck('teacher_id')->unique();
-
-        // Group lesson assignments by lesson_id to avoid duplicates in dropdown
-        $groupedLessons = $lessonAssignments->groupBy('lesson_id')->map(function ($assignments) use ($branchId) {
-            $first = $assignments->first();
-            $courseNames = $assignments->pluck('course.course_name')->unique()->implode(', ');
-            
-            // Get teacher names for each course in this lesson
-            $courseTeacherMap = [];
-            foreach ($assignments as $assignment) {
-                $teacherName = $assignment->teacher ? $assignment->teacher->teacher_name : 'Unassigned';
-                $courseTeacherMap[$assignment->course_id] = $teacherName;
-            }
-            
-            return (object)[
-                'lesson_id' => $first->lesson_id,
-                'lesson' => $first->lesson,
-                'course_id' => $first->course_id,
-                'course' => $first->course,
-                'teacher_id' => $first->teacher_id,
-                'teacher' => $first->teacher,
-                'all_course_ids' => $assignments->pluck('course_id')->unique()->toArray(),
-                'course_names' => $courseNames,
-                'course_teacher_map' => $courseTeacherMap,
-            ];
-        })->values();
-
-        // Get courses with teacher information using lesson_branch_course
-        $coursesWithTeachers = Course::whereIn('id', $courseIds)
-            ->get()
-            ->map(function($course) use ($branchId) {
-                // Get teachers for this course in this branch via lesson_branch_course
-                $teacherIds = \DB::table('lesson_branch_course')
-                    ->where('branch_id', $branchId)
-                    ->where('course_id', $course->id)
-                    ->distinct()
-                    ->pluck('teacher_id');
-                
-                $teachers = \App\Models\Teacher::whereIn('id', $teacherIds)
-                    ->pluck('teacher_name')
-                    ->unique()
-                    ->implode(', ');
-                
-                return (object)[
-                    'id' => $course->id,
-                    'course_name' => $course->course_name,
-                    'abbreviation' => $course->abbreviation,
-                    'teacher_name' => $teachers,
-                ];
-            });
-
-        if ($courseIds->isEmpty()) {
-            try {
-                if (\Schema::hasTable('branch_course')) {
-                    $fromPivot = \Illuminate\Support\Facades\DB::table('branch_course')
-                        ->where('branch_id', $branchId)
-                        ->pluck('course_id')
-                        ->unique();
-                    $courseIds = $fromPivot->values();
-                }
-            } catch (\Throwable $e) {
-                // ignore
-            }
-        }
-
-        // If still no courses, get all courses as fallback
-        if ($courseIds->isEmpty()) {
-            $courses = Course::orderBy('course_name')->get();
-        } else {
-            $courses = Course::whereIn('id', $courseIds)->orderBy('course_name')->get();
-        }
-
-        // If no lesson assignments, get all lessons as fallback for the dropdown
-        if ($lessonAssignments->isEmpty()) {
-            $lessonAssignments = \App\Models\Lesson::with(['course', 'teacher'])
-                ->where('academic_year_id', $selectedAcademicYearId)
-                ->get()
-                ->map(function($lesson) {
-                    return (object)[
-                        'lesson_id' => $lesson->id,
-                        'lesson' => $lesson,
-                        'course_id' => $lesson->course_id,
-                        'course' => $lesson->course,
-                        'teacher_id' => $lesson->teacher_id,
-                        'teacher' => $lesson->teacher,
-                    ];
-                });
-        }
-
-        $teachers = \App\Models\Teacher::whereIn('id', $teacherIds)->get();
-
-        $terms = Term::where('academic_year_id', $selectedAcademicYearId)
+        $terms = Term::whereIn('academic_year_id', $academicYears->pluck('id'))
             ->orderBy('start_date')
             ->get();
 
         $activeTerm = $this->getActiveTermForAcademicYear($selectedAcademicYearId);
+        $selectedTermId = session()->getOldInput('term_id') ?: ($timetable->term_id ?: $activeTerm?->id);
+        $branchLessonsData = $this->getBranchLessonOptions($branchId, (int) $selectedAcademicYearId);
 
         $timetable->load(['sessions.lesson.teacher', 'sessions.courses', 'term']);
 
@@ -723,11 +566,8 @@ class DosTimetableController extends Controller
             'selectedAcademicYearId',
             'activeTerm',
             'terms',
-            'lessonAssignments',
-            'groupedLessons',
-            'courses',
-            'coursesWithTeachers',
-            'teachers'
+            'branchLessonsData',
+            'selectedTermId'
         ));
     }
 
@@ -784,14 +624,11 @@ class DosTimetableController extends Controller
         // Normalize session times submitted from the UI
         $this->normalizeSessionTimes($request);
 
-        $activeTerm = $this->getActiveTermForAcademicYear($request->academic_year_id);
-        $termRules = $activeTerm ? ['nullable', 'exists:terms,id'] : ['required', 'exists:terms,id'];
-
         $request->validate([
             'title' => 'required|string|max:255',
             'branch_id' => ['required', Rule::in($this->getAllowedBranchIds())],
             'academic_year_id' => 'required|exists:academic_years,id',
-            'term_id' => $termRules,
+            'term_id' => 'required|exists:terms,id',
             'valid_from' => 'required|date',
             'valid_until' => 'required|date|after_or_equal:valid_from',
             'sessions' => 'required|array|min:1',
@@ -801,17 +638,15 @@ class DosTimetableController extends Controller
             'sessions.*.end_time' => 'required|date_format:H:i',
             'sessions.*.classroom' => 'nullable|string|max:100',
             'sessions.*.notes' => 'nullable|string|max:500',
-            'sessions.*.course_ids' => 'nullable|array',
-            'sessions.*.course_ids.*' => 'nullable|exists:courses,id',
-            'sessions.*.mark_as_test' => 'nullable|boolean',
+            'sessions.*.course_ids' => 'required|array|min:1',
+            'sessions.*.course_ids.*' => 'required|exists:courses,id',
+            'sessions.*.session_type' => ['required', Rule::in(['class', 'test', 'self_study'])],
+            'sessions.*.minimum_paid_percentage' => 'nullable|numeric|min:0|max:100',
             'sessions.*.session_id' => 'nullable|integer|exists:timetable_sessions,id',
         ]);
 
-        $termId = $activeTerm ? $activeTerm->id : $request->term_id;
-
-        if (!$termId) {
-            return redirect()->back()->withErrors(['term_id' => 'Please select a term for the selected academic year.'])->withInput();
-        }
+        $this->validateScheduleScope($request, $timetable);
+        $termId = (int) $request->term_id;
 
         foreach ($request->sessions as $index => $sessionData) {
             $start = Carbon::createFromFormat('H:i', $sessionData['start_time']);
@@ -824,12 +659,6 @@ class DosTimetableController extends Controller
         $notifications = [];
         $existingSessions = $timetable->sessions()->with(['courses', 'lesson'])->get()->keyBy('id');
         $processedIds = [];
-
-        $termId = $activeTerm ? $activeTerm->id : $request->term_id;
-
-        if (!$termId) {
-            return redirect()->back()->withErrors(['term_id' => 'Please select a term for the selected academic year.'])->withInput();
-        }
 
         $timetable->update([
             'title' => $request->title,
@@ -862,7 +691,11 @@ class DosTimetableController extends Controller
                     'end_time' => $sessionData['end_time'],
                     'classroom' => $sessionData['classroom'] ?? null,
                     'notes' => $sessionData['notes'] ?? null,
-                    'mark_as_test' => !empty($sessionData['mark_as_test']),
+                    'mark_as_test' => ($sessionData['session_type'] ?? 'class') === 'test',
+                    'session_type' => $sessionData['session_type'],
+                    'minimum_paid_percentage' => $sessionData['session_type'] === 'test'
+                        ? ($sessionData['minimum_paid_percentage'] ?? 0)
+                        : 0,
                 ]);
 
                 $courseIds = $this->getSessionCourseIdsFromInput($sessionData, $request->branch_id, $lesson);
@@ -876,7 +709,11 @@ class DosTimetableController extends Controller
                     'end_time' => $sessionData['end_time'],
                     'classroom' => $sessionData['classroom'] ?? null,
                     'notes' => $sessionData['notes'] ?? null,
-                    'mark_as_test' => !empty($sessionData['mark_as_test']),
+                    'mark_as_test' => ($sessionData['session_type'] ?? 'class') === 'test',
+                    'session_type' => $sessionData['session_type'],
+                    'minimum_paid_percentage' => $sessionData['session_type'] === 'test'
+                        ? ($sessionData['minimum_paid_percentage'] ?? 0)
+                        : 0,
                 ]);
 
                 $processedIds[] = $session->id;
@@ -935,46 +772,19 @@ class DosTimetableController extends Controller
         $this->authorizeDos();
         abort_unless(in_array($timetable->branch_id, $this->getAllowedBranchIds()), 403);
 
-        \Log::info('Publishing timetable', [
-            'timetable_id' => $timetable->id,
-            'current_status' => $timetable->status,
-        ]);
+        if ($timetable->status !== 'draft') {
+            return redirect()->route('dos.timetable.edit', $timetable)
+                ->with('error', 'Only draft timetables can be approved.');
+        }
 
-        // Skip validation temporarily to allow publishing
-        // $issues = $this->getPublishedOverlapIssues($timetable);
-        // \Log::info('Validation issues', [
-        //     'timetable_id' => $timetable->id,
-        //     'issues' => $issues,
-        // ]);
-        // if (!empty($issues)) {
-        //     \Log::warning('Timetable validation failed', [
-        //         'timetable_id' => $timetable->id,
-        //         'issues' => $issues,
-        //     ]);
-        //     return redirect()->back()->withErrors(['publish' => 'The timetable cannot be published until validation issues are resolved: ' . implode(' ', $issues)])->with('validation_errors', $issues);
-        // }
+        $issues = $this->getPublishedOverlapIssues($timetable);
+        if ($issues) {
+            return redirect()->route('dos.timetable.edit', $timetable)
+                ->with('validation_errors', $issues)
+                ->with('error', 'Review the schedule conflicts before approving this timetable.');
+        }
 
-        // Force direct database update
-        $affected = \DB::table('timetables')
-            ->where('id', $timetable->id)
-            ->update(['status' => 'published']);
-        
-        \Log::info('Direct database update result', [
-            'timetable_id' => $timetable->id,
-            'affected_rows' => $affected,
-        ]);
-        
-        // Clear cache to ensure status change is reflected
-        \Cache::forget("timetable_{$timetable->id}");
-        \Cache::flush();
-        
-        // Refresh the model from database
-        $timetable->refresh();
-        
-        \Log::info('Timetable status after publish', [
-            'timetable_id' => $timetable->id,
-            'status' => $timetable->status,
-        ]);
+        $timetable->update(['status' => 'published']);
 
         $courseIds = $timetable->sessions()->with('lesson')->get()->flatMap(function ($session) {
             return $this->collectCourseIdsFromSession($session);
