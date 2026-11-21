@@ -297,6 +297,11 @@ class AccountantDashboardController extends Controller
         $filteredStudents = collect();
 
         foreach ($students as $student) {
+            // Skip students without branch_id - they won't have fee calculations
+            if (!$student->branch_id) {
+                continue;
+            }
+            
             // Use FeePaymentService to get accurate payment status
             $paymentStatus = \App\Services\FeePaymentService::getPaymentStatus($student);
             
@@ -305,7 +310,8 @@ class AccountantDashboardController extends Controller
             $paymentPercentage = $paymentStatus['payment_percentage'];
 
             // Check if student meets the threshold (at least the specified percentage)
-            if ($paymentPercentage >= $percentage) {
+            // Also ensure they have required fees set (not 0)
+            if ($paymentPercentage >= $percentage && $totalFees > 0) {
                 $filteredStudents->push([
                     'id' => $student->id,
                     'name' => $student->full_name,
@@ -359,6 +365,11 @@ class AccountantDashboardController extends Controller
 
         // Calculate fees for each student using FeePaymentService
         $studentsWithFees = $students->map(function($student) {
+            // Skip students without branch_id - they won't have fee calculations
+            if (!$student->branch_id) {
+                return null;
+            }
+            
             // Use FeePaymentService to get accurate payment status
             $paymentStatus = \App\Services\FeePaymentService::getPaymentStatus($student);
             
@@ -379,7 +390,7 @@ class AccountantDashboardController extends Controller
                 'paid_amount' => $paidAmount,
                 'remaining_amount' => $remainingAmount,
             ];
-        });
+        })->filter(); // Remove null values
 
         return response()->json([
             'success' => true,
