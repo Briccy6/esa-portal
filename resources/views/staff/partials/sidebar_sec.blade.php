@@ -310,34 +310,30 @@
             </select>
           </div>
           <div class="mb-3">
+            <label for="shift" class="form-label">Shift</label>
+            <select name="shift" id="shift" class="form-select" required>
+              <option value="" disabled selected>Select shift</option>
+              <option value="day">Day</option>
+              <option value="evening">Evening</option>
+              <option value="weekend">Weekend</option>
+            </select>
+          </div>
+          <div class="mb-3">
             <label for="branch_id" class="form-label">Branch</label>
-            <select name="branch_id" id="branch_id" class="form-select" required>
-              <option value="" disabled selected>Select branch</option>
-              @foreach($branches ?? [] as $branch)
-                <option value="{{ $branch->id }}">{{ $branch->name }}</option>
-              @endforeach
+            <select name="branch_id" id="branch_id" class="form-select" required onchange="loadAcademicYears()">
+              <option value="" disabled selected>Loading branches...</option>
             </select>
           </div>
           <div class="mb-3">
             <label for="academic_year_id" class="form-label">Academic Year</label>
-            <select name="academic_year_id" id="academic_year_id" class="form-select" required>
-              <option value="" disabled selected>Select academic year</option>
-              @if(isset($academicYears) && $academicYears->isNotEmpty())
-                @foreach($academicYears as $year)
-                  <option value="{{ $year->id }}">{{ $year->year }}</option>
-                @endforeach
-              @else
-                <option value="" disabled>No academic years available</option>
-              @endif
+            <select name="academic_year_id" id="academic_year_id" class="form-select" required onchange="loadCourses()">
+              <option value="" disabled selected>Select branch first</option>
             </select>
           </div>
           <div class="mb-3">
             <label for="course_id" class="form-label">Course</label>
             <select name="course_id" id="course_id" class="form-select" required>
-              <option value="" disabled selected>Select course</option>
-              @foreach($courses ?? [] as $course)
-                <option value="{{ $course->id }}">{{ $course->course_name }}</option>
-              @endforeach
+              <option value="" disabled selected>Select academic year first</option>
             </select>
           </div>
           <div class="mb-3">
@@ -358,6 +354,99 @@
     </form>
   </div>
 </div>
+
+<script>
+// Load branches when modal opens
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('addStudentModal');
+    if (modal) {
+        modal.addEventListener('show.bs.modal', function() {
+            loadBranches();
+        });
+    }
+});
+
+function loadBranches() {
+    const branchSelect = document.getElementById('branch_id');
+    branchSelect.innerHTML = '<option value="" disabled selected>Loading branches...</option>';
+    
+    fetch('/api/branches')
+        .then(response => response.json())
+        .then(data => {
+            branchSelect.innerHTML = '<option value="" disabled selected>Select branch</option>';
+            data.branches.forEach(branch => {
+                const option = document.createElement('option');
+                option.value = branch.id;
+                option.textContent = branch.name;
+                branchSelect.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Error loading branches:', error);
+            branchSelect.innerHTML = '<option value="" disabled selected>Error loading branches</option>';
+        });
+}
+
+function loadAcademicYears() {
+    const branchId = document.getElementById('branch_id').value;
+    const academicYearSelect = document.getElementById('academic_year_id');
+    const courseSelect = document.getElementById('course_id');
+    
+    academicYearSelect.innerHTML = '<option value="" disabled selected>Loading...</option>';
+    courseSelect.innerHTML = '<option value="" disabled selected>Select academic year first</option>';
+    
+    if (!branchId) {
+        academicYearSelect.innerHTML = '<option value="" disabled selected>Select branch first</option>';
+        return;
+    }
+    
+    fetch(`/get-academic-years/${branchId}`)
+        .then(response => response.json())
+        .then(data => {
+            academicYearSelect.innerHTML = '<option value="" disabled selected>Select academic year</option>';
+            data.academic_years.forEach(year => {
+                const option = document.createElement('option');
+                option.value = year.id;
+                option.textContent = year.year;
+                academicYearSelect.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Error loading academic years:', error);
+            academicYearSelect.innerHTML = '<option value="" disabled selected>Error loading years</option>';
+        });
+}
+
+function loadCourses() {
+    const branchId = document.getElementById('branch_id').value;
+    const academicYearId = document.getElementById('academic_year_id').value;
+    const courseSelect = document.getElementById('course_id');
+    
+    courseSelect.innerHTML = '<option value="" disabled selected>Loading...</option>';
+    
+    if (!branchId || !academicYearId) {
+        courseSelect.innerHTML = '<option value="" disabled selected>Select branch and year first</option>';
+        return;
+    }
+    
+    fetch(`/get-courses/${branchId}/${academicYearId}`)
+        .then(response => response.json())
+        .then(data => {
+            courseSelect.innerHTML = '<option value="" disabled selected>Select course</option>';
+            data.courses.forEach(course => {
+                const option = document.createElement('option');
+                option.value = course.id;
+                option.textContent = course.course_name;
+                courseSelect.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Error loading courses:', error);
+            courseSelect.innerHTML = '<option value="" disabled selected>Error loading courses</option>';
+        });
+}
+</script>
+
 <!-- Expense Modal -->
 <div class="modal fade" id="addExpenseModal" tabindex="-1" aria-labelledby="addExpenseModalLabel" aria-hidden="true">
   <div class="modal-dialog">
