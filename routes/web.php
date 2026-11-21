@@ -1182,10 +1182,11 @@ Route::middleware('auth:teacher')->get('/api/teacher/branch/{branchId}/courses/l
                 ];
             });
 
-        // Only include lessons that are assigned to ALL selected courses
-        $requiredCourseCount = count($courseIds);
-        $filteredLessons = $lessonAssignments->filter(function($item) use ($requiredCourseCount) {
-            return $item['course_count'] >= $requiredCourseCount;
+        // Include lessons that are assigned to ANY of the selected courses
+        // This allows teachers to see lessons for combined classes where students from multiple courses learn together
+        $filteredLessons = $lessonAssignments->filter(function($item) use ($courseIds) {
+            // Check if this lesson is assigned to at least one of the selected courses
+            return count(array_intersect($item['courses'], $courseIds)) > 0;
         });
 
         $lessons = $filteredLessons->map(function($item) {
@@ -1201,7 +1202,7 @@ Route::middleware('auth:teacher')->get('/api/teacher/branch/{branchId}/courses/l
         \Log::info('Lessons retrieved (multiple courses)', [
             'total_assignments' => $lessonAssignments->count(),
             'filtered_count' => $lessons->count(),
-            'required_course_count' => $requiredCourseCount
+            'selected_course_count' => count($courseIds)
         ]);
 
         return response()->json($lessons);

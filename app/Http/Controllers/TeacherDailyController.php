@@ -56,7 +56,7 @@ class TeacherDailyController extends Controller
                 return back()->with('error', 'Selected lesson not found. Please try again.');
             }
 
-            // Validate that the lesson is associated with all selected courses via lesson_branch_course pivot table
+            // Validate that the lesson is associated with at least one of the selected courses via lesson_branch_course pivot table
             $lessonCourseIds = $lesson->courses()->pluck('courses.id')->toArray();
 
             \Log::info('Lesson course associations', [
@@ -65,6 +65,8 @@ class TeacherDailyController extends Controller
                 'selected_courses' => $request->courses,
             ]);
 
+            // Check if lesson is associated with at least one selected course
+            $hasMatchingCourse = false;
             foreach ($request->courses as $courseId) {
                 $course = Course::find($courseId);
                 if (!$course) {
@@ -73,14 +75,18 @@ class TeacherDailyController extends Controller
                 }
 
                 // Verify the lesson is associated with this course via the pivot table
-                if (!in_array($courseId, $lessonCourseIds)) {
-                    \Log::error('Lesson not associated with course', [
-                        'lesson_id' => $lesson->id,
-                        'course_id' => $courseId,
-                        'lesson_course_ids' => $lessonCourseIds,
-                    ]);
-                    return back()->with('error', 'Lesson does not belong to one of the selected courses. All courses must have the same lesson.');
+                if (in_array($courseId, $lessonCourseIds)) {
+                    $hasMatchingCourse = true;
                 }
+            }
+
+            if (!$hasMatchingCourse) {
+                \Log::error('Lesson not associated with any selected course', [
+                    'lesson_id' => $lesson->id,
+                    'selected_courses' => $request->courses,
+                    'lesson_course_ids' => $lessonCourseIds,
+                ]);
+                return back()->with('error', 'Lesson does not belong to any of the selected courses. Please select a lesson that is assigned to at least one of your courses.');
             }
 
             \Log::info('Creating TeacherDaily record', [
