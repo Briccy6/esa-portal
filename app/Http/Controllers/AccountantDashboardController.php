@@ -297,55 +297,27 @@ class AccountantDashboardController extends Controller
         $filteredStudents = collect();
 
         foreach ($students as $student) {
-            // Get total paid amount for this academic year
-            $paidAmount = $student->transactions()
-                ->where('status', 'successful')
-                ->whereHas('term', fn ($q) => $q->where('academic_year_id', $student->academic_year_id))
-                ->sum('amount');
+            // Use FeePaymentService to get accurate payment status
+            $paymentStatus = \App\Services\FeePaymentService::getPaymentStatus($student);
+            
+            $totalFees = $paymentStatus['required_fees'];
+            $paidAmount = $paymentStatus['total_paid'];
+            $paymentPercentage = $paymentStatus['payment_percentage'];
 
-            // Get the student's total fees (from course term fees)
-            $totalFees = 0;
-            if ($student->course) {
-                $currentTerm = \App\Models\Term::where('academic_year_id', $student->academic_year_id)
-                    ->where('start_date', '<=', now())
-                    ->where('end_date', '>=', now())
-                    ->first();
-
-                if ($currentTerm) {
-                    $courseTermFee = \App\Models\CourseTermFee::where('course_id', $student->course_id)
-                        ->where('term_id', $currentTerm->id)
-                        ->where('is_active', true)
-                        ->first();
-
-                    if ($courseTermFee) {
-                        $totalFees = $courseTermFee->total_fees;
-                    }
-                }
-            }
-
-            // Calculate payment percentage
-            // If totalFees is 0 but student has made payments, consider it as 100% (no expected fee set)
-            // If totalFees is 0 and no payments, percentage is 0
-            if ($totalFees > 0) {
-                $paymentPercentage = ($paidAmount / $totalFees) * 100;
-            } elseif ($paidAmount > 0) {
-                // Student has made payments but no expected fee is set - assume they've paid what they owe
-                $paymentPercentage = 100;
-                $totalFees = $paidAmount; // Set total fees to paid amount for display
-            } else {
-                $paymentPercentage = 0;
-            }
-
-            // Check if student meets the threshold (greater than or equal to the specified percentage)
-            if ($paymentPercentage >= $percentage) {
+            // Check if student meets the threshold (less than or equal to the specified percentage for "below")
+            if ($paymentPercentage <= $percentage) {
                 $filteredStudents->push([
                     'id' => $student->id,
                     'name' => $student->full_name,
                     'reg_number' => $student->reg_number,
+                    'email' => $student->email,
+                    'phone' => $student->phone,
                     'branch' => $student->branch->name ?? 'N/A',
                     'course' => $student->course->course_name ?? 'N/A',
+                    'shift' => $student->shift ?? 'N/A',
                     'paid_amount' => $paidAmount,
                     'total_fees' => $totalFees,
+                    'remaining' => max(0, $totalFees - $paidAmount),
                     'payment_percentage' => round($paymentPercentage, 2),
                 ]);
             }

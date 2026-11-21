@@ -908,7 +908,7 @@ function loadStudentsBelowPercentage() {
                             <td><span class="badge bg-info">${student.shift || 'N/A'}</span></td>
                             <td class="text-end">${number_format(student.total_fees)}</td>
                             <td class="text-end text-success">${number_format(student.paid_amount)}</td>
-                            <td class="text-end text-danger fw-semibold">${number_format(student.remaining_amount)}</td>
+                            <td class="text-end text-danger fw-semibold">${number_format(student.remaining)}</td>
                             <td class="text-end">${student.payment_percentage}%</td>
                             <td>${isBlocked ? '<span class="badge bg-danger">Blocked</span>' : '<span class="badge bg-success">Active</span>'}</td>
                             <td class="text-end">
