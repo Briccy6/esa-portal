@@ -561,7 +561,7 @@ Route::middleware(['auth:admin', 'admin.academic_year'])->prefix('admin')->name(
     })->name('chat.test');
 
     // ESA Live Support Routes
-    Route::prefix('support')->name('support.')->middleware('support.access')->group(function () {
+    Route::prefix('support')->name('support.')->middleware([\App\Http\Middleware\SupportAccess::class])->group(function () {
         Route::get('/', [SupportDashboardController::class, 'index'])->name('dashboard');
         Route::get('/conversations', [SupportDashboardController::class, 'getConversations'])->name('conversations');
         Route::get('/conversations/{id}', [SupportDashboardController::class, 'getConversation'])->name('conversation');
