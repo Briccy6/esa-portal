@@ -1472,7 +1472,7 @@ class StudentController extends Controller
             'academic_year_id'           => 'required|exists:academic_years,id',
             'branch_id'                  => 'required|exists:branches,id',
             'course_id'                  => 'required|exists:courses,id',
-            'passport_photo'             => 'nullable|file|max:200',
+            'passport_photo'             => 'nullable|file|mimes:jpg,jpeg,png|max:2048',
             'id_photo'                   => 'nullable|file|max:200',
             'education_level'            => 'required|in:s6,s3,other',
             'senior6_document'           => 'nullable|file|max:200',
@@ -3647,7 +3647,7 @@ class StudentController extends Controller
 
     public function updateProfile(Request $request)
     {
-        $student = auth()->user();
+        $student = auth('student')->user();
 
         $request->validate([
             'full_name'                  => 'nullable|string|max:255',
@@ -3657,14 +3657,13 @@ class StudentController extends Controller
             'identification_type'        => 'nullable|in:ID,Passport',
             'id_number'                  => 'nullable|string|max:50',
             'id_photo'                   => 'nullable|image|mimes:jpg,jpeg,png|max:200',
-            'passport_photo'             => 'nullable|image|mimes:jpg,jpeg,png|max:200',
+            'passport_photo'             => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
             'education_level'            => 'nullable|string|max:50',
             'shift'                      => 'nullable|in:day,evening,weekend',
             'senior3_document'           => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:200',
             'senior6_document'           => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:200',
             'other_supporting_document'  => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:200',
             'password'                   => 'nullable|string|min:8|confirmed',
-            'skip_passport_verification' => 'nullable|boolean',
         ]);
 
         $updatedFields = [];
@@ -3698,31 +3697,32 @@ class StudentController extends Controller
             $updatedFields[] = ($request->identification_type === 'ID') ? 'ID Image' : 'Passport Image';
         }
         if ($request->hasFile('passport_photo')) {
-            // Skip verification if flag is set (for admin override or debugging)
-            if (!$request->boolean('skip_passport_verification')) {
-                try {
-                    $service = new PassportPhotoVerificationService();
-                    $verificationResult = $service->verify($request->file('passport_photo'));
+            try {
+                $service = new PassportPhotoVerificationService();
+                $verificationResult = $service->verify($request->file('passport_photo'));
 
-                    if (!$verificationResult['success']) {
-                        return back()->with('error', PassportPhotoVerificationService::getErrorMessage($verificationResult['rejection_reason'] ?? 'GENERAL_REJECTION'))
-                                    ->withInput();
-                    }
+                if (!$verificationResult['success']) {
+                    $student->passport_photo_verification_status = 'rejected';
+                    $student->passport_photo_rejection_reason = $verificationResult['rejection_reason'] ?? 'GENERAL_REJECTION';
+                    $student->passport_photo_requires_manual_review = false;
+                    $student->save();
 
-                    // Store verification results
-                    $student->passport_photo_verification_status = $verificationResult['requires_manual_review'] ? 'manual_review' : 'approved';
-                    $student->passport_photo_verified_at = now();
-                    $student->passport_photo_verification_result = $verificationResult['verification_result'] ?? null;
-                    $student->passport_photo_rejection_reason = $verificationResult['rejection_reason'] ?? null;
-                    $student->passport_photo_confidence_score = $verificationResult['confidence'] ?? null;
-                    $student->passport_photo_requires_manual_review = $verificationResult['requires_manual_review'] ?? false;
-                } catch (\Exception $e) {
-                    Log::error('Passport photo verification failed during profile update', [
-                        'error' => $e->getMessage(),
-                        'student_id' => $student->id,
-                    ]);
-                    return back()->with('error', 'Verification service temporarily unavailable. Please try again later.')->withInput();
+                    return back()->with('error', PassportPhotoVerificationService::getErrorMessage($verificationResult['rejection_reason'] ?? 'GENERAL_REJECTION'))
+                                ->withInput();
                 }
+
+                $student->passport_photo_verification_status = $verificationResult['requires_manual_review'] ? 'manual_review' : 'approved';
+                $student->passport_photo_verified_at = now();
+                $student->passport_photo_verification_result = $verificationResult['verification_result'] ?? null;
+                $student->passport_photo_rejection_reason = null;
+                $student->passport_photo_confidence_score = $verificationResult['confidence'] ?? null;
+                $student->passport_photo_requires_manual_review = $verificationResult['requires_manual_review'] ?? false;
+            } catch (\Exception $e) {
+                Log::error('Passport photo verification failed during profile update', [
+                    'error' => $e->getMessage(),
+                    'student_id' => $student->id,
+                ]);
+                return back()->with('error', 'Verification service temporarily unavailable. Please try again later.')->withInput();
             }
 
             $student->passport_photo = base64_encode(file_get_contents($request->file('passport_photo')->getRealPath()));
@@ -3773,21 +3773,29 @@ class StudentController extends Controller
     public function verifyPassportPhoto(Request $request)
     {
         $request->validate([
-            'passport_photo' => 'required|image|mimes:jpg,jpeg,png|max:200',
+            'passport_photo' => 'required|image|mimes:jpg,jpeg,png|max:2048',
         ]);
 
         try {
             $service = new PassportPhotoVerificationService();
             $result = $service->verify($request->file('passport_photo'));
 
-            if ($result['success']) {
+            if ($result['success'] && !($result['requires_manual_review'] ?? false)) {
                 return response()->json([
                     'success' => true,
                     'message' => 'Passport photograph approved!',
                     'verification_result' => $result['verification_result'],
                     'confidence' => $result['confidence'],
-                    'requires_manual_review' => $result['requires_manual_review'],
+                    'requires_manual_review' => false,
                 ]);
+            } elseif ($result['success']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This photo passed AI checks but needs final manual review before it can activate your profile.',
+                    'verification_result' => $result['verification_result'],
+                    'confidence' => $result['confidence'],
+                    'requires_manual_review' => true,
+                ], 422);
             } else {
                 return response()->json([
                     'success' => false,

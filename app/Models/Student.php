@@ -99,6 +99,14 @@ class Student extends Authenticatable
             }
         }
 
+        if (
+            filled($this->passport_photo)
+            && $this->passport_photo_verification_status !== 'approved'
+            && !in_array('Profile photo', $missingFields, true)
+        ) {
+            $missingFields[] = 'Verified profile photo';
+        }
+
         return $missingFields;
     }
 

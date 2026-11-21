@@ -502,6 +502,70 @@
         font-weight: 650;
     }
 
+    .passport-verification-status {
+        display: grid;
+        gap: .45rem;
+        margin-top: .55rem;
+    }
+
+    .passport-verification-status [data-verification-loading],
+    .passport-verification-status [data-verification-success],
+    .passport-verification-status [data-verification-error] {
+        padding: .65rem .75rem;
+        border-radius: 10px;
+        font-size: .75rem;
+        font-weight: 750;
+    }
+
+    .passport-verification-status [data-verification-loading] {
+        border: 1px solid #cfdbea;
+        background: #f4f8fc;
+        color: #536783;
+    }
+
+    .passport-verification-status [data-verification-success] {
+        border: 1px solid #abd5bd;
+        background: #edf8f1;
+        color: #217a46;
+    }
+
+    .passport-verification-status [data-verification-error] {
+        border: 1px solid #f0bdb8;
+        background: #fff1ef;
+        color: #b42318;
+    }
+
+    .passport-verification-status {
+        display: grid;
+        gap: .45rem;
+        margin-top: .55rem;
+    }
+
+    .passport-verification-status [data-verification-state] {
+        padding: .65rem .75rem;
+        border-radius: 10px;
+        font-size: .75rem;
+        font-weight: 750;
+    }
+
+    .passport-verification-status [data-verification-loading] {
+        border: 1px solid #cfdbea;
+        background: #f4f8fc;
+        color: #536783;
+    }
+
+    .passport-verification-status [data-verification-success] {
+        border: 1px solid #abd5bd;
+        background: #edf8f1;
+        color: #217a46;
+    }
+
+    .passport-verification-status [data-verification-error] {
+        border: 1px solid #f0bdb8;
+        background: #fff1ef;
+        color: #b42318;
+    }
+
     .profile-conditional[hidden] {
         display: none !important;
     }
@@ -809,12 +873,49 @@
                                        data-name-target="passportPhotoName"
                                        data-error-target="passportPhotoError"
                                        data-original-status="{{ $passportPhotoSource ? 'Current photo is on file. Choose a new photo to replace it.' : 'No photo uploaded yet.' }}"
-                                       data-max-bytes="204800" data-preview-kind="image">
-                                <span class="profile-field-hint">JPG, JPEG, or PNG, up to 200 KB. Your image appears here before you save.</span>
+                                       data-max-bytes="2097152" data-max-label="2 MB" data-preview-kind="image">
+                                <span class="profile-field-hint">JPG, JPEG, or PNG, up to 2 MB. Camera-captured photos are accepted.</span>
                                 <p class="profile-upload-status" id="passportPhotoName">
                                     {{ $passportPhotoSource ? 'Current photo is on file. Choose a new photo to replace it.' : 'No photo uploaded yet.' }}
                                 </p>
                                 <span class="profile-file-error" id="passportPhotoError" role="alert"></span>
+                                <div class="passport-verification-status" id="passportVerificationStatus" style="display:none;" aria-live="polite">
+                                    <div id="passportVerificationLoading" data-verification-loading style="display:none;">Checking your passport photo with AI...</div>
+                                    <div id="passportVerificationSuccess" data-verification-success style="display:none;">
+                                        Approved. Save the profile to complete this step.
+                                    </div>
+                                    <div id="passportVerificationError" data-verification-error style="display:none;">
+                                        <span id="passportVerificationErrorMessage">The photo was not approved.</span>
+                                    </div>
+                                </div>
+                                @if($student->passport_photo)
+                                    @if($student->passport_photo_verification_status === 'approved')
+                                        <div class="passport-verification-status">
+                                            <div data-verification-success>Verified and approved.</div>
+                                        </div>
+                                    @elseif($student->passport_photo_verification_status === 'manual_review')
+                                        <div class="passport-verification-status">
+                                            <div data-verification-error>Submitted for manual review. Access is limited until approval.</div>
+                                        </div>
+                                    @elseif($student->passport_photo_verification_status === 'rejected')
+                                        <div class="passport-verification-status">
+                                            <div data-verification-error>Photo rejected. Upload a clearer passport-style photo.</div>
+                                        </div>
+                                    @else
+                                        <div class="passport-verification-status">
+                                            <div data-verification-loading>Verification pending. Upload and save a passport photo to verify it.</div>
+                                        </div>
+                                    @endif
+                                @endif
+                                <div class="passport-verification-status" id="passportVerificationStatus" style="display:none;" aria-live="polite">
+                                    <div data-verification-loading style="display:none;">Checking your passport photo with AI...</div>
+                                    <div data-verification-success style="display:none;">
+                                        Approved. Save the profile to complete this step.
+                                    </div>
+                                    <div data-verification-error style="display:none;">
+                                        <span id="passportVerificationErrorMessage">The photo was not approved.</span>
+                                    </div>
+                                </div>
                                 @error('passport_photo')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                             </div>
                         </div>
@@ -1211,7 +1312,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const maxBytes = Number(input.dataset.maxBytes || 204800);
             if (file.size > maxBytes) {
                 input.value = '';
-                restoreFilePreview(input, 'File must be 200 KB or smaller.');
+                restoreFilePreview(input, 'File must be ' + (input.dataset.maxLabel || '200 KB') + ' or smaller.');
                 return;
             }
 

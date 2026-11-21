@@ -76,8 +76,8 @@ class PassportPhotoVerificationService
      */
     protected function preValidateImage($file): array
     {
-        // Check file size (200 KB max)
-        if ($file->getSize() > 204800) {
+        // Accept camera-captured passport photos up to 2 MB.
+        if ($file->getSize() > 2 * 1024 * 1024) {
             return [
                 'valid' => false,
                 'reason' => 'FILE_TOO_LARGE',
@@ -365,18 +365,6 @@ PROMPT;
                 'requires_manual_review' => $requiresManualReview,
             ]);
 
-            // TEMPORARY: Allow if confidence is reasonable (for testing)
-            if (!$result['is_passport_photo'] && $result['confidence'] > 0.6) {
-                Log::info('Accepting photo despite rejection due to confidence > 0.6');
-                return [
-                    'success' => true,
-                    'verification_result' => $result,
-                    'confidence' => $result['confidence'],
-                    'requires_manual_review' => true,
-                    'rejection_reason' => null,
-                ];
-            }
-
             return [
                 'success' => $result['is_passport_photo'],
                 'verification_result' => $result,
@@ -456,7 +444,7 @@ PROMPT;
     public static function getErrorMessage(string $reason): string
     {
         $messages = [
-            'FILE_TOO_LARGE' => 'Your photograph exceeds the maximum allowed size of 200 KB.',
+            'FILE_TOO_LARGE' => 'Your photograph exceeds the maximum allowed size of 2 MB.',
             'INVALID_FILE_TYPE' => 'Only JPG, JPEG and PNG photographs are accepted.',
             'IMAGE_TOO_SMALL' => 'Your photograph is too small. Minimum resolution is 300 × 385 pixels.',
             'INCORRECT_ASPECT_RATIO' => 'Your photograph has an incorrect aspect ratio. It should be approximately 7:9.',

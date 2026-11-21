@@ -29,7 +29,7 @@
                 <li>Portrait orientation</li>
                 <li>Approximately 7:9 aspect ratio</li>
                 <li>Minimum resolution 300 × 385 pixels</li>
-                <li>Maximum file size 200 KB</li>
+                <li>Maximum file size 2 MB</li>
                 <li>Accepted formats: JPG, JPEG, PNG</li>
                 <li>Clear and not blurry</li>
             </ul>

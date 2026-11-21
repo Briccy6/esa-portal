@@ -1042,7 +1042,7 @@
                         <li>Face centered and looking directly at camera</li>
                         <li>Portrait orientation (7:9 aspect ratio)</li>
                         <li>Clear and not blurry</li>
-                        <li>Maximum 200 KB</li>
+                        <li>Maximum file size: 2 MB</li>
                     </ul>
                     
                     <p class="text-muted small mb-0">
