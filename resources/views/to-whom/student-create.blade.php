@@ -16,6 +16,15 @@
                     <h5 class="card-title mb-0">Letter Details</h5>
                 </div>
                 <div class="card-body">
+                    @if($errors->any())
+                        <div class="alert alert-danger" role="alert">
+                            <ul class="mb-0">
+                                @foreach($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
                     <form action="{{ route('to-whom.store') }}" method="POST">
                         @csrf
                         <input type="hidden" name="recipient_type" value="student" />

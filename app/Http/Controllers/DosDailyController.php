@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\TeacherDaily;
 use App\Models\Attendance;
 use App\Models\Course;
+use App\Models\Student;
 
 class DosDailyController extends Controller
 {
@@ -46,36 +47,123 @@ class DosDailyController extends Controller
 
     public function show(TeacherDaily $daily)
     {
-        $attendances = Attendance::where('course_id', $daily->course_id)
+        $daily->load(['teacher', 'course', 'lesson', 'unit', 'branch']);
+        $courseIds = collect($daily->course_ids ?? [])
+            ->push($daily->course_id)
+            ->filter()
+            ->unique()
+            ->values();
+        $courses = Course::whereIn('id', $courseIds)
+            ->orderBy('course_name')
+            ->get();
+        $students = Student::whereIn('course_id', $courseIds)
+            ->when($daily->branch_id, function ($query) use ($daily) {
+                $query->where('branch_id', $daily->branch_id);
+            })
+            ->orderBy('full_name')
+            ->get();
+
+        $attendanceQuery = Attendance::whereIn('course_id', $courseIds)
             ->where('lesson_id', $daily->lesson_id)
-            ->where('date', $daily->date)
-            ->with('student')
-            ->get()
-            ->sortBy(function($attendance) {
-                return $attendance->student->full_name ?? '';
+            ->whereDate('date', $daily->date)
+            ->with('student');
+
+        if ($daily->branch_id) {
+            $attendanceQuery->whereHas('student', function ($query) use ($daily) {
+                $query->where('branch_id', $daily->branch_id);
             });
+        }
 
-        // Debug: Log attendance count
-        \Log::info("Found {$attendances->count()} attendance records for daily {$daily->id}");
+        $attendances = $attendanceQuery->get()->keyBy('student_id');
+        $studentsById = $students->keyBy('id');
+        foreach ($attendances as $attendance) {
+            if ($attendance->student) {
+                $studentsById->put($attendance->student->id, $attendance->student);
+            }
+        }
+        $students = $studentsById->values()->sortBy('full_name')->values();
+        $courseNamesById = $courses->pluck('course_name', 'id');
 
-        return view('staff.dailies.show', compact('daily', 'attendances'));
+        return view('staff.dailies.show', compact(
+            'daily',
+            'courses',
+            'courseNamesById',
+            'students',
+            'attendances'
+        ));
     }
 
     public function updateAttendance(Request $request, TeacherDaily $daily)
     {
-        // Check if attendance data exists
-        if (!$request->has('attendance') || is_null($request->attendance)) {
-            return back()->with('error', 'No attendance data provided to update.');
+        abort_unless(Auth::guard('staff')->check(), 403);
+
+        $validated = $request->validate([
+            'attendance' => 'required|array',
+            'attendance.*' => 'nullable|in:P,A,AR,L',
+        ]);
+        $attendanceUpdates = collect($validated['attendance'])
+            ->filter(function ($status) {
+                return $status !== null && $status !== '';
+            });
+
+        if ($attendanceUpdates->isEmpty()) {
+            return back()->with('error', 'Select an attendance status for at least one student.');
         }
 
-        foreach ($request->attendance as $attendanceId => $status) {
-            $attendance = Attendance::find($attendanceId);
-            if ($attendance) {
+        $courseIds = collect($daily->course_ids ?? [])
+            ->push($daily->course_id)
+            ->filter()
+            ->unique()
+            ->values();
+        $students = Student::whereIn('id', $attendanceUpdates->keys())
+            ->whereIn('course_id', $courseIds)
+            ->when($daily->branch_id, function ($query) use ($daily) {
+                $query->where('branch_id', $daily->branch_id);
+            })
+            ->get()
+            ->keyBy('id');
+
+        if ($students->count() !== $attendanceUpdates->count()) {
+            return back()->with('error', 'One or more selected students are not assigned to this daily report.');
+        }
+
+        DB::transaction(function () use ($daily, $courseIds, $students, $attendanceUpdates) {
+            $existingAttendancesQuery = Attendance::whereIn('student_id', $attendanceUpdates->keys())
+                ->whereIn('course_id', $courseIds)
+                ->where('lesson_id', $daily->lesson_id)
+                ->whereDate('date', $daily->date);
+
+            if ($daily->branch_id) {
+                $existingAttendancesQuery->whereHas('student', function ($query) use ($daily) {
+                    $query->where('branch_id', $daily->branch_id);
+                });
+            }
+
+            $existingAttendances = $existingAttendancesQuery->get()->keyBy('student_id');
+
+            foreach ($attendanceUpdates as $studentId => $status) {
+                $student = $students->get($studentId);
+                $attendance = $existingAttendances->get($studentId);
+
+                if (!$attendance) {
+                    $attendance = new Attendance([
+                        'student_id' => $student->id,
+                        'course_id' => $courseIds->contains($student->course_id)
+                            ? $student->course_id
+                            : $daily->course_id,
+                        'lesson_id' => $daily->lesson_id,
+                        'date' => $daily->date,
+                        'approved' => (bool) $daily->approved,
+                    ]);
+                }
+
                 $attendance->status = $status;
+                $attendance->marked_at = now();
                 $attendance->save();
             }
-        }
-        return back()->with('success', 'Attendance updated!');
+        });
+
+        return back()->with('success', 'Attendance saved for ' . $attendanceUpdates->count() . ' student(s).');
     }
 
     public function approve(TeacherDaily $daily)
@@ -136,46 +224,11 @@ class DosDailyController extends Controller
 
     public function markAttendance(Request $request, TeacherDaily $daily)
     {
-        // Validate attendance data
         $request->validate([
             'attendance' => 'required|array',
             'attendance.*' => 'required|in:P,A,AR,L',
         ]);
 
-        // Get all students for this course
-        $courseStudents = \App\Models\Student::where('course_id', $daily->course_id)->get();
-
-        // Create attendance records for each student
-        foreach ($courseStudents as $student) {
-            $status = $request->attendance[$student->id] ?? 'P'; // Default to Present if not specified
-            
-            // Check if attendance record already exists
-            $existingAttendance = Attendance::where('student_id', $student->id)
-                ->where('course_id', $daily->course_id)
-                ->where('lesson_id', $daily->lesson_id)
-                ->where('date', $daily->date)
-                ->first();
-
-            if ($existingAttendance) {
-                // Update existing record (don't set marked_by to avoid foreign key issue)
-                $existingAttendance->status = $status;
-                $existingAttendance->marked_at = now();
-                $existingAttendance->save();
-            } else {
-                // Create new record (don't set marked_by to avoid foreign key issue)
-                Attendance::create([
-                    'student_id' => $student->id,
-                    'course_id' => $daily->course_id,
-                    'lesson_id' => $daily->lesson_id,
-                    'date' => $daily->date,
-                    'status' => $status,
-                    'marked_at' => now(),
-                    'approved' => false,
-                ]);
-            }
-        }
-
-        return redirect()->route('dos.dailies.show', $daily->id)
-            ->with('success', 'Attendance marked successfully! ' . $courseStudents->count() . ' students processed.');
+        return $this->updateAttendance($request, $daily);
     }
 }

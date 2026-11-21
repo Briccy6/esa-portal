@@ -3867,6 +3867,7 @@ class StudentController extends Controller
             $processed = 0;
             $rejected = 0;
             $rejectedStudents = [];
+            $autoDeleted = 0;
 
             // Increase PHP execution time limit
             set_time_limit(300); // 5 minutes
@@ -3894,26 +3895,56 @@ class StudentController extends Controller
                     // Verify the photo
                     $result = $service->verify($file);
 
-                    // Update student record
-                    $student->passport_photo_verification_status = $result['success'] ? 'approved' : 'rejected';
-                    $student->passport_photo_rejection_reason = $result['rejection_reason'] ?? null;
-                    $student->passport_photo_confidence_score = $result['confidence'] ?? null;
-                    $student->passport_photo_requires_manual_review = $result['requires_manual_review'] ?? false;
-                    $student->passport_photo_verified_at = now();
-                    $student->passport_photo_verified_by = auth('admin')->id();
-                    $student->save();
+                    if ($result['success']) {
+                        // Approved - update verification status
+                        $student->passport_photo_verification_status = 'approved';
+                        $student->passport_photo_confidence_score = $result['confidence'] ?? null;
+                        $student->passport_photo_requires_manual_review = $result['requires_manual_review'] ?? false;
+                        $student->passport_photo_verified_at = now();
+                        $student->passport_photo_verified_by = auth('admin')->id();
+                        $student->save();
+                    } else {
+                        // Rejected - send email, delete photo, and reset status
+                        try {
+                            // Send rejection email
+                            \Mail::to($student->email)->send(new \App\Mail\PassportPhotoRejectionMail(
+                                $student->full_name,
+                                $result['rejection_reason']
+                            ));
+
+                            // Delete the passport photo and reset status
+                            $student->passport_photo = null;
+                            $student->passport_photo_verification_status = 'pending';
+                            $student->passport_photo_rejection_reason = null;
+                            $student->passport_photo_confidence_score = null;
+                            $student->passport_photo_requires_manual_review = false;
+                            $student->passport_photo_verified_at = null;
+                            $student->save();
+
+                            $autoDeleted++;
+                            $rejectedStudents[] = [
+                                'id' => $student->id,
+                                'name' => $student->full_name,
+                                'email' => $student->email,
+                                'rejection_reason' => $result['rejection_reason'],
+                            ];
+                        } catch (\Exception $e) {
+                            Log::error('Failed to send rejection email for student ' . $student->id, [
+                                'error' => $e->getMessage(),
+                            ]);
+                            // Still mark as rejected even if email fails
+                            $student->passport_photo_verification_status = 'rejected';
+                            $student->passport_photo_rejection_reason = $result['rejection_reason'] ?? null;
+                            $student->passport_photo_confidence_score = $result['confidence'] ?? null;
+                            $student->passport_photo_requires_manual_review = $result['requires_manual_review'] ?? false;
+                            $student->passport_photo_verified_at = now();
+                            $student->passport_photo_verified_by = auth('admin')->id();
+                            $student->save();
+                        }
+                    }
 
                     $processed++;
-
-                    if (!$result['success']) {
-                        $rejected++;
-                        $rejectedStudents[] = [
-                            'id' => $student->id,
-                            'name' => $student->full_name,
-                            'email' => $student->email,
-                            'rejection_reason' => $result['rejection_reason'],
-                        ];
-                    }
+                    $rejected++;
 
                     // Clean up temp file
                     unlink($tempFile);
@@ -3931,7 +3962,7 @@ class StudentController extends Controller
                 ->whereNotNull('passport_photo')
                 ->count();
 
-            $message = "Verified {$processed} passport photos. {$rejected} rejected.";
+            $message = "Verified {$processed} passport photos. {$rejected} rejected ({$autoDeleted} emails sent & photos deleted).";
             if ($remainingPending > 0) {
                 $message .= " {$remainingPending} photos still pending. Click the button again to continue.";
             }
@@ -3941,6 +3972,7 @@ class StudentController extends Controller
                 'message' => $message,
                 'processed' => $processed,
                 'rejected' => $rejected,
+                'auto_deleted' => $autoDeleted,
                 'remaining' => $remainingPending,
                 'rejected_students' => $rejectedStudents,
             ]);

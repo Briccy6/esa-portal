@@ -282,7 +282,7 @@ class ToWhomLetterController extends Controller
         } else if (method_exists($user, 'isStaff') && $user->isStaff()) {
             // Staff can only delete letters for students in their assigned branches
             $branchIds = $user->branches()->pluck('branch_id')->toArray();
-            if (!in_array($letter->student->branch_id, $branchIds)) {
+            if ($letter->student && !in_array($letter->student->branch_id, $branchIds)) {
                 abort(403, 'Unauthorized');
             }
         }
@@ -315,7 +315,7 @@ class ToWhomLetterController extends Controller
         } else if (method_exists($user, 'isStaff') && $user->isStaff()) {
             // Staff can view letters for students in their assigned branches
             $branchIds = $user->branches()->pluck('branch_id')->toArray();
-            if (!in_array($letter->student->branch_id, $branchIds)) {
+            if ($letter->student && !in_array($letter->student->branch_id, $branchIds)) {
                 abort(403, 'Unauthorized');
             }
             $canDelete = true;
