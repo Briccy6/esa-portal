@@ -2,6 +2,32 @@
 
 @section('content')
 <style>
+    .container.py-4 { max-width: 1500px; }
+    .select2-container--default .select2-selection--multiple {
+        min-height: 46px; border: 2px solid #e2e8f0; border-radius: .65rem; padding: 4px 8px;
+    }
+    .select2-container--default.select2-container--focus .select2-selection--multiple,
+    .select2-container--default.select2-container--open .select2-selection--multiple {
+        border-color: #1d4ed8; box-shadow: 0 0 0 3px rgba(29,78,216,.1);
+    }
+    .select2-container--default .select2-selection--multiple .select2-selection__choice {
+        margin-top: 5px; border: 0; border-radius: 999px; padding: 3px 8px 3px 6px; color: #17243a; background: #dbeafe;
+    }
+    .select2-container--default .select2-selection--multiple .select2-selection__choice__remove { color: #1d4ed8; margin-right: 4px; }
+    .select2-dropdown { border: 1px solid #dbe2ea; border-radius: 10px; overflow: hidden; box-shadow: 0 12px 30px rgba(15,23,42,.14); }
+    .select2-results__option { padding: 8px 10px; }
+    .select2-container--default .select2-results__option--highlighted[aria-selected] { background: #17243a; }
+    @media (max-width: 767.98px) {
+        .timetable-create-container { padding: 1.25rem; }
+        .form-section-header, .form-section-body { padding: 1rem; }
+        .form-section-header { align-items: stretch !important; gap: .75rem; }
+        .form-section-header > button { width: 100%; }
+        .session-row [class*="col-md-"] { width: 100%; }
+        .stats-card { margin-bottom: .25rem; }
+        .submit-actions { flex-direction: column; align-items: stretch !important; gap: 1rem; }
+        .submit-actions > div:last-child { display: grid; grid-template-columns: 1fr 1fr; }
+        .submit-actions .btn { width: 100%; margin: 0 !important; }
+    }
     .timetable-create-container {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         padding: 2rem;
@@ -417,7 +443,7 @@
         <!-- Submit Section -->
         <div class="form-section-card">
             <div class="form-section-body">
-                <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex justify-content-between align-items-center submit-actions">
                     <div>
                         <p class="text-muted mb-0">
                             <i class="fas fa-info-circle me-1"></i>

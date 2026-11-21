@@ -495,4 +495,22 @@ class Student extends Authenticatable
             'google_avatar' => null,
         ]);
     }
+
+    /**
+     * Support chat relationships
+     */
+    public function supportConversations()
+    {
+        return $this->morphMany(\App\Models\SupportConversation::class, 'user');
+    }
+
+    public function supportMessages()
+    {
+        return $this->morphMany(\App\Models\SupportMessage::class, 'sender');
+    }
+
+    public function supportInternalNotes()
+    {
+        return $this->morphMany(\App\Models\SupportInternalNote::class, 'author');
+    }
 }

@@ -3837,6 +3837,165 @@ class StudentController extends Controller
         return back()->with('success', 'Passport photo verification status updated successfully.');
     }
 
+    /**
+     * Admin: Bulk verify all pending passport photos using AI
+     */
+    public function bulkVerifyPassportPhotos(Request $request)
+    {
+        if (!auth('admin')->check()) {
+            abort(403, 'Unauthorized');
+        }
+
+        try {
+            // Get all students with pending passport photos
+            $pendingStudents = Student::where('passport_photo_verification_status', 'pending')
+                ->whereNotNull('passport_photo')
+                ->get();
+
+            if ($pendingStudents->isEmpty()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'No pending passport photos to verify.',
+                    'processed' => 0,
+                    'rejected' => 0,
+                ]);
+            }
+
+            $service = new PassportPhotoVerificationService();
+            $processed = 0;
+            $rejected = 0;
+            $rejectedStudents = [];
+
+            foreach ($pendingStudents as $student) {
+                try {
+                    // Create a temporary file from base64
+                    $imageData = base64_decode($student->passport_photo);
+                    if (!$imageData) {
+                        continue;
+                    }
+
+                    $tempFile = tempnam(sys_get_temp_dir(), 'passport_');
+                    file_put_contents($tempFile, $imageData);
+
+                    // Create UploadedFile object
+                    $file = new \Illuminate\Http\UploadedFile(
+                        $tempFile,
+                        'passport_photo.jpg',
+                        'image/jpeg',
+                        null,
+                        true
+                    );
+
+                    // Verify the photo
+                    $result = $service->verify($file);
+
+                    // Update student record
+                    $student->passport_photo_verification_status = $result['success'] ? 'approved' : 'rejected';
+                    $student->passport_photo_rejection_reason = $result['rejection_reason'] ?? null;
+                    $student->passport_photo_confidence_score = $result['confidence'] ?? null;
+                    $student->passport_photo_requires_manual_review = $result['requires_manual_review'] ?? false;
+                    $student->passport_photo_verified_at = now();
+                    $student->passport_photo_verified_by = auth('admin')->id();
+                    $student->save();
+
+                    $processed++;
+
+                    if (!$result['success']) {
+                        $rejected++;
+                        $rejectedStudents[] = [
+                            'id' => $student->id,
+                            'name' => $student->full_name,
+                            'email' => $student->email,
+                            'rejection_reason' => $result['rejection_reason'],
+                        ];
+                    }
+
+                    // Clean up temp file
+                    unlink($tempFile);
+
+                } catch (\Exception $e) {
+                    Log::error('Failed to verify passport photo for student ' . $student->id, [
+                        'error' => $e->getMessage(),
+                    ]);
+                    continue;
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => "Verified {$processed} passport photos. {$rejected} rejected.",
+                'processed' => $processed,
+                'rejected' => $rejected,
+                'rejected_students' => $rejectedStudents,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Bulk passport photo verification failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Verification failed: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Admin: Send passport photo rejection email and delete photo
+     */
+    public function sendPassportRejectionEmail(Request $request, Student $student)
+    {
+        if (!auth('admin')->check()) {
+            abort(403, 'Unauthorized');
+        }
+
+        $request->validate([
+            'rejection_reason' => 'required|string',
+        ]);
+
+        try {
+            // Send email to student
+            \Mail::to($student->email)->send(new \App\Mail\PassportPhotoRejectionMail(
+                $student->full_name,
+                $request->rejection_reason
+            ));
+
+            // Delete the passport photo from database
+            $student->passport_photo = null;
+            $student->passport_photo_verification_status = 'pending';
+            $student->passport_photo_rejection_reason = null;
+            $student->passport_photo_verified_at = null;
+            $student->passport_photo_confidence_score = null;
+            $student->passport_photo_requires_manual_review = false;
+            $student->save();
+
+            Log::info('Passport photo rejection email sent and photo deleted', [
+                'student_id' => $student->id,
+                'student_name' => $student->full_name,
+                'email' => $student->email,
+                'rejection_reason' => $request->rejection_reason,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Rejection email sent and passport photo deleted.',
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to send passport rejection email', [
+                'error' => $e->getMessage(),
+                'student_id' => $student->id,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to send rejection email: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function attendance(Request $request)
     {
         if (auth()->guard('student')->check()) {

@@ -10,6 +10,16 @@
             <div class="text-center mb-5">
                 <h1 class="display-4 fw-bold text-primary mb-2">Student Details</h1>
                 <p class="text-muted">Complete student information and documentation</p>
+                
+                @if(auth()->guard('admin')->check())
+                <div class="mt-3">
+                    <button type="button"
+                            class="btn btn-primary"
+                            onclick="runBulkPassportCheck()">
+                        <i class="bi bi-check-circle me-1"></i>Run AI Check on All Pending Photos
+                    </button>
+                </div>
+                @endif
             </div>
 
             <!-- Main Card -->
@@ -177,6 +187,13 @@
                                                         <small class="text-muted d-block mt-1">
                                                             {{ \App\Services\PassportPhotoVerificationService::getErrorMessage($student->passport_photo_rejection_reason) }}
                                                         </small>
+                                                    @endif
+                                                    @if($student->passport_photo)
+                                                        <button type="button"
+                                                                class="btn btn-sm btn-outline-danger mt-2"
+                                                                onclick="sendRejectionEmail({{ $student->id }}, '{{ $student->passport_photo_rejection_reason }}')">
+                                                            <i class="bi bi-envelope me-1"></i>Send Rejection Email & Delete Photo
+                                                        </button>
                                                     @endif
                                                 @elseif($student->passport_photo_verification_status === 'manual_review')
                                                     <span class="badge bg-warning">
@@ -1216,3 +1233,79 @@ function resetPassword() {
     </div>
 </div>
 @endsection
+<script>
+function runBulkPassportCheck() {
+    if (!confirm('This will run AI verification on all pending passport photos. Continue?')) {
+        return;
+    }
+
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Checking...';
+
+    fetch('/admin/students/bulk-verify-passport-photos', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+
+        if (data.success) {
+            alert(data.message);
+            
+            if (data.rejected_students && data.rejected_students.length > 0) {
+                let message = 'The following students had their passport photos rejected:\n\n';
+                data.rejected_students.forEach(student => {
+                    message += '• ' + student.name + ' (' + student.email + ')\n  Reason: ' + student.rejection_reason + '\n\n';
+                });
+                alert(message);
+            }
+            
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+        alert('Error: ' + error.message);
+    });
+}
+
+function sendRejectionEmail(studentId, rejectionReason) {
+    if (!confirm('This will send a rejection email to the student and delete their passport photo. Continue?')) {
+        return;
+    }
+
+    fetch('/admin/students/' + studentId + '/send-passport-rejection-email', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({
+            rejection_reason: rejectionReason
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error.message);
+    });
+}
+</script>
+

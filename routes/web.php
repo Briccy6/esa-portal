@@ -328,6 +328,8 @@ Route::middleware(['auth:admin', 'admin.academic_year'])->prefix('admin')->name(
     Route::get('/students/cards', [StudentController::class, 'listStudentCards'])->name('students.StudentCards');
     Route::post('/students/{student}/generate-card', [StudentController::class, 'generateStudentCard'])->name('students.generate_card');
     Route::put('/students/{student}/update-passport-verification', [StudentController::class, 'updatePassportVerification'])->name('students.update-passport-verification');
+    Route::post('/students/bulk-verify-passport-photos', [StudentController::class, 'bulkVerifyPassportPhotos'])->name('students.bulk-verify-passport-photos');
+    Route::post('/students/{student}/send-passport-rejection-email', [StudentController::class, 'sendPassportRejectionEmail'])->name('students.send-passport-rejection-email');
     // NESA student endpoints removed
 
     Route::resource('academic_year', AcademicYearController::class)->except(['show']);
@@ -556,11 +558,33 @@ Route::middleware(['auth:admin', 'admin.academic_year'])->prefix('admin')->name(
         return view('admin.profile.test');
     })->name('chat.test');
 
+    // ESA Live Support Routes
+    Route::prefix('support')->name('support.')->group(function () {
+        Route::get('/', [SupportDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/conversations', [SupportDashboardController::class, 'getConversations'])->name('conversations');
+        Route::get('/conversations/{id}', [SupportDashboardController::class, 'getConversation'])->name('conversation');
+        Route::post('/conversations/{id}/assign', [SupportDashboardController::class, 'assignAgent'])->name('assign');
+        Route::post('/conversations/{id}/reply', [SupportDashboardController::class, 'reply'])->name('reply');
+        Route::put('/conversations/{id}/status', [SupportDashboardController::class, 'updateStatus'])->name('status');
+        Route::post('/conversations/{id}/return-to-ai', [SupportDashboardController::class, 'returnToAi'])->name('return-to-ai');
+        Route::post('/conversations/{id}/notes', [SupportDashboardController::class, 'addInternalNote'])->name('notes');
+        Route::get('/analytics', [SupportDashboardController::class, 'getAnalytics'])->name('analytics');
+    });
+
     // Dismissed Students Routes
     Route::get('dismissed-students', [\App\Http\Controllers\DismissedStudentController::class, 'index'])->name('dismissed-students.index');
     Route::get('dismissed-students/{dismissedStudent}', [\App\Http\Controllers\DismissedStudentController::class, 'show'])->name('dismissed-students.show');
     Route::post('dismissed-students/{dismissedStudent}/restore', [\App\Http\Controllers\DismissedStudentController::class, 'restore'])->name('dismissed-students.restore');
 
+});
+
+// ============================================================
+// ESA Live Support Chat Widget Routes (Authenticated Users)
+Route::middleware(['auth:student,teacher,staff,admin'])->prefix('api/chat')->name('api.chat.')->group(function () {
+    Route::get('/conversation', [SupportChatController::class, 'getConversation'])->name('conversation');
+    Route::post('/message', [SupportChatController::class, 'sendMessage'])->name('message');
+    Route::get('/history', [SupportChatController::class, 'getHistory'])->name('history');
+    Route::post('/request-human', [SupportChatController::class, 'requestHumanSupport'])->name('request-human');
 });
 
 // ============================================================
@@ -1552,15 +1576,6 @@ Route::get('/payment/callback', [StudentController::class, 'paymentCallback'])->
 // Reset link
 Route::post('/admin/students/{student}/send-reset-link', [StudentController::class, 'sendResetLink'])->name('admin.students.sendResetLink');
 Route::get('/admin/force-logout', [\App\Http\Controllers\AdminLoginController::class, 'forceLogout'])->name('admin.forceLogout');
-
-// Temporary route to clear cache - REMOVE AFTER USE
-Route::get('/clear-cache', function () {
-    \Artisan::call('route:clear');
-    \Artisan::call('config:clear');
-    \Artisan::call('cache:clear');
-    \Artisan::call('view:clear');
-    return 'Cache cleared successfully. Remove this route after use.';
-})->name('clear.cache');
 Route::get('/teacher/force-logout', [\App\Http\Controllers\TeacherAuthController::class, 'showForceLogout'])->name('teacher.force-logout');
 Route::get('/admin/force-logout', [\App\Http\Controllers\AdminAuthController::class, 'showForceLogout'])->name('admin.force-logout');
 Route::post('/admin/logout', [\App\Http\Controllers\AdminAuthController::class, 'logout'])->name('admin.logout');

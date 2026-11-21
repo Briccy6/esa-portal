@@ -1,8 +1,26 @@
 @extends('dos.layout')
 
 @section('content')
-<div class="container mt-4">
-    <h2>Edit Weekly Timetable</h2>
+<style>
+    .edit-timetable-page { max-width: 1500px; margin: 0 auto; padding: 1.5rem 0 3rem; }
+    .edit-timetable-hero { padding: 1.25rem 1.5rem; margin-bottom: 1.25rem; color: #fff; border-radius: 16px; background: #17243a; }
+    .edit-timetable-hero h2 { margin: 0; font-size: clamp(1.35rem, 3vw, 2rem); font-weight: 800; }
+    .edit-timetable-page .form-control, .edit-timetable-page .form-select { border: 2px solid #e2e8f0; border-radius: .65rem; }
+    .edit-timetable-page .session-row { border: 1px solid #dde4ed; border-radius: 12px; background: #fff; box-shadow: 0 6px 18px rgba(15,23,42,.05); }
+    .select2-container--default .select2-selection--multiple { min-height: 46px; border: 2px solid #e2e8f0; border-radius: .65rem; padding: 4px 8px; }
+    .select2-container--default.select2-container--focus .select2-selection--multiple { border-color: #1d4ed8; box-shadow: 0 0 0 3px rgba(29,78,216,.1); }
+    .select2-container--default .select2-selection--multiple .select2-selection__choice { margin-top: 5px; border: 0; border-radius: 999px; background: #dbeafe; }
+    @media (max-width: 767.98px) {
+        .edit-timetable-page { padding-top: .5rem; }
+        .edit-timetable-hero { padding: 1rem; }
+        .edit-timetable-page [class*="col-md-"] { width: 100%; }
+        .edit-timetable-page .session-row .card-body { padding: 1rem; }
+    }
+</style>
+<div class="edit-timetable-page">
+<div class="edit-timetable-hero">
+    <h2><i class="bi bi-calendar2-check me-2"></i>Edit weekly timetable</h2>
+</div>
 
     @if(session('success'))
         <div class="alert alert-success">{{ session('success') }}</div>
@@ -435,4 +453,5 @@
         });
     });
 </script>
+</div>
 @endsection
