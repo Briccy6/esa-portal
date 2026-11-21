@@ -723,8 +723,16 @@ Route::prefix('staff')->name('staff.')->group(function () {
         
         // API Routes for Staff
         Route::get('/api/branches', function() {
-            $staff = auth()->guard('staff')->user();
-            $branches = $staff->branches()->orderBy('name')->get(['id', 'name']);
+            $staff = auth('staff')->user();
+            if (!$staff) {
+                return response()->json(['message' => 'Unauthenticated.'], 401);
+            }
+
+            $branches = $staff->branches()
+                ->select('branches.id', 'branches.name')
+                ->orderBy('branches.name')
+                ->get();
+
             return response()->json(['branches' => $branches]);
         })->name('api.branches');
         
