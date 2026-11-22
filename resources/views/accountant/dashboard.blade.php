@@ -1130,4 +1130,81 @@ function filterByPaymentPercentage() {
     });
 }
 </script>
+
+<script>
+// Load pending teacher payments for accountant
+async function loadPendingTeacherPayments() {
+    try {
+        const response = await fetch('{{ route('staff.accountant.teacher-payments.pending') }}');
+        const payments = await response.json();
+
+        if (payments && payments.length > 0) {
+            showPendingPaymentsNotification(payments);
+        }
+    } catch (error) {
+        console.error('Error loading pending teacher payments:', error);
+    }
+}
+
+function showPendingPaymentsNotification(payments) {
+    const modalHtml = `
+        <div class="modal fade" id="pending-payments-modal" tabindex="-1" data-bs-backdrop="static">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title">
+                            <i class="fas fa-money-bill-wave me-2"></i> Pending Teacher Payments
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            You have ${payments.length} approved teacher payment${payments.length !== 1 ? 's' : ''} to process.
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Teacher</th>
+                                        <th>Telephone</th>
+                                        <th>Work Date</th>
+                                        <th>Hours</th>
+                                        <th>Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${payments.map(payment => `
+                                        <tr>
+                                            <td>${payment.teacher?.teacher_name || 'N/A'}</td>
+                                            <td>${payment.teacher?.telephone || 'N/A'}</td>
+                                            <td>${payment.work_date}</td>
+                                            <td>${payment.teacherDaily?.hours_studied || 0} hours</td>
+                                            <td class="fw-semibold">${number_format(payment.calculated_amount)} RWF</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <a href="{{ route('staff.accountant.teacher-payments.index') }}" class="btn btn-primary">
+                            <i class="fas fa-hand-holding-usd me-1"></i> Process Payments
+                        </a>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    const modal = new bootstrap.Modal(document.getElementById('pending-payments-modal'));
+    modal.show();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadPendingTeacherPayments();
+});
+</script>
 @endpush

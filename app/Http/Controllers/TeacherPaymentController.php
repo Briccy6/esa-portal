@@ -83,4 +83,15 @@ class TeacherPaymentController extends Controller
 
         return response()->json($dailies);
     }
+
+    /**
+     * Get pending payments for accountant (for accountant dashboard popup)
+     */
+    public function getPendingPaymentsForAccountant()
+    {
+        $staff = Auth::guard('staff')->user();
+        $payments = $this->paymentService->getPendingPaymentsForAccountant($staff);
+
+        return response()->json($payments);
+    }
 }

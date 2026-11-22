@@ -840,6 +840,7 @@ Route::prefix('staff')->name('staff.')->group(function () {
                 Route::get('/', [\App\Http\Controllers\TeacherPaymentController::class, 'index'])->name('index');
                 Route::get('/{id}', [\App\Http\Controllers\TeacherPaymentController::class, 'show'])->name('show');
                 Route::post('/{id}/record', [\App\Http\Controllers\TeacherPaymentController::class, 'recordPayment'])->name('record');
+                Route::get('/pending', [\App\Http\Controllers\TeacherPaymentController::class, 'getPendingPaymentsForAccountant'])->name('pending');
             });
         });
 

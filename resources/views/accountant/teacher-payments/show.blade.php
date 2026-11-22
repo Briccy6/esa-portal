@@ -134,6 +134,10 @@
                 <div class="info-value">{{ $payment->teacher->teacher_name }}</div>
             </div>
             <div class="info-item">
+                <div class="info-label">Telephone</div>
+                <div class="info-value">{{ $payment->teacher->telephone ?? 'N/A' }}</div>
+            </div>
+            <div class="info-item">
                 <div class="info-label">Payment Period</div>
                 <div class="info-value">{{ ucfirst($payment->teacher->payment_period ?? 'monthly') }}</div>
             </div>
