@@ -254,6 +254,29 @@ class StudentController extends Controller
                         $lesson->branch_teacher = $branchTeacher;
                     }
                 }
+
+                $lesson->units = \App\Models\LessonUnit::with('term')
+                    ->where('lesson_id', $lesson->id)
+                    ->where(function ($query) use ($student) {
+                        $query->whereHas('term', fn ($termQuery) =>
+                            $termQuery->where('academic_year_id', $student->academic_year_id)
+                        )->orWhereNull('term_id');
+                    })
+                    ->orderBy('id')
+                    ->get();
+
+                foreach ($lesson->units as $unit) {
+                    $studiedRecord = \App\Models\TeacherDaily::with('teacher')
+                        ->where('lesson_id', $lesson->id)
+                        ->where('unit_id', $unit->id)
+                        ->where('course_id', $course->id)
+                        ->where('branch_id', $student->branch_id)
+                        ->orderByDesc('date')
+                        ->orderByDesc('id')
+                        ->first();
+
+                    $unit->studied_record = $studiedRecord;
+                }
             }
         }
 

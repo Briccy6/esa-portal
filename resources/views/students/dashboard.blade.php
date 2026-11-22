@@ -2235,6 +2235,18 @@ function showPaymentModal(button) {
 
 document.addEventListener('DOMContentLoaded', function () {
 
+    // Load optional fees popup
+    fetch('{{ route('student.optional-fees.pending') }}')
+        .then(response => response.json())
+        .then(data => {
+            if (data.pending && data.fees && data.fees.length > 0) {
+                showOptionalFeesModal(data.fees);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading optional fees:', error);
+        });
+
     document.querySelectorAll('.pay-fee-btn').forEach(function(btn) {
         btn.addEventListener('click', function(e) {
             e.preventDefault();
@@ -2585,6 +2597,101 @@ function startCountdown(initialData) {
 
     updateCountdownDisplay();
     countdownInterval = setInterval(updateCountdownDisplay, 1000);
+}
+
+function showOptionalFeesModal(fees) {
+    const modalHtml = `
+        <div class="modal fade" id="optionalFeesModal" tabindex="-1" data-bs-backdrop="static">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header ${fees.some(f => f.mandatory) ? 'bg-warning' : 'bg-info'} text-white">
+                        <h5 class="modal-title">
+                            <i class="bi bi-${fees.some(f => f.mandatory) ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
+                            ${fees.some(f => f.mandatory) ? 'Mandatory Fee Notification' : 'Optional Fees Available'}
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        ${fees.some(f => f.mandatory) ? `
+                            <div class="alert alert-warning">
+                                <i class="bi bi-info-circle me-2"></i>
+                                You have mandatory fees that have been added to your account.
+                            </div>
+                        ` : `
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle me-2"></i>
+                                You have optional fees available. Please review and accept or decline them.
+                            </div>
+                        `}
+                        <div class="list-group">
+                            ${fees.map(fee => `
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="mb-1">${fee.name}</h6>
+                                            <p class="mb-1 text-muted small">Amount: <strong>RWF ${number_format(fee.amount, 2)}</strong></p>
+                                            ${fee.due_date ? `<p class="mb-0 text-muted small">Due: ${fee.due_date}</p>` : ''}
+                                            ${fee.mandatory ? `
+                                                <span class="badge bg-warning text-dark mt-2">Mandatory</span>
+                                            ` : ''}
+                                        </div>
+                                        ${!fee.mandatory ? `
+                                            <div class="btn-group">
+                                                <button type="button" class="btn btn-sm btn-success" onclick="respondToFee(${fee.fee_id}, '${fee.type}', 'accepted')">
+                                                    <i class="bi bi-check-circle me-1"></i> Accept
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-danger" onclick="respondToFee(${fee.fee_id}, '${fee.type}', 'declined')">
+                                                    <i class="bi bi-x-circle me-1"></i> Decline
+                                                </button>
+                                            </div>
+                                        ` : `
+                                            <span class="text-success"><i class="bi bi-check-circle me-1"></i> Added to balance</span>
+                                        `}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle me-1"></i> Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    const modal = new bootstrap.Modal(document.getElementById('optionalFeesModal'));
+    modal.show();
+}
+
+function respondToFee(feeId, feeType, response) {
+    fetch('{{ route('student.optional-fees.respond') }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({
+            course_term_branch_fee_id: feeId,
+            fee_type: feeType,
+            response: response
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error.message);
+    });
 }
 
 document.addEventListener('DOMContentLoaded', function() {
