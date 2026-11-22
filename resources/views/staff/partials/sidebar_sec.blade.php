@@ -199,7 +199,7 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('staff.timetables.*') ? 'active' : '' }}" href="{{ route('staff.timetables.index') }}">
+                        <a class="nav-link {{ request()->routeIs('staff.accountant.timetables.index') ? 'active' : '' }}" href="{{ route('staff.accountant.timetables.index') }}">
                             <span class="nav-icon"><i class="fas fa-calendar-alt"></i></span>
                             <span class="nav-text">Timetables</span>
                         </a>

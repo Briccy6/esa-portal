@@ -578,6 +578,39 @@
                         </div>
                     @endif
 
+                    @if(session('locked'))
+                        <div class="login-alert" role="alert">
+                            <i class="fas fa-lock" aria-hidden="true"></i>
+                            <div>
+                                <strong>Account Locked</strong>
+                                <div class="mt-1">Your account has been locked. Please contact the finance office or IT staff for assistance.</div>
+                                @if(session('lock_reason'))
+                                    <div class="mt-1"><strong>Reason:</strong> {{ session('lock_reason') }}</div>
+                                @endif
+                                @if(session('lock_details'))
+                                    <div class="mt-1">
+                                        @if(is_array(session('lock_details')))
+                                            @if(isset(session('lock_details')['current_percentage']))
+                                                <div>Current Payment: {{ round(session('lock_details')['current_percentage'], 2) }}%</div>
+                                                <div>Required: {{ session('lock_details')['required_percentage'] }}%</div>
+                                            @endif
+                                        @endif
+                                    </div>
+                                @endif
+                                @if(session('conditions'))
+                                    <div class="mt-2">
+                                        <strong>Conditions:</strong>
+                                        <ul class="mb-0 mt-1">
+                                            @foreach(session('conditions') as $condition)
+                                            <li>{{ $condition['message'] }}</li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    @endif
+
                     @if(session('auth_debug'))
                         <div class="login-alert alert-info" role="status">
                             <i class="fas fa-circle-info" aria-hidden="true"></i>

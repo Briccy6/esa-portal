@@ -15,12 +15,15 @@ class TimetableSession extends Model
         'timetable_id',
         'lesson_id',
         'day_of_week',
+        'shift',
         'start_time',
         'end_time',
         'classroom',
         'notes',
+        'reserve_text',
         'mark_as_test',
         'session_type',
+        'activity_type',
         'minimum_paid_percentage',
     ];
 

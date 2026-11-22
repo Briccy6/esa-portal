@@ -43,9 +43,12 @@ class StudentController extends Controller
 {
     protected function applyStudentTimetableScope($timetable, Student $student): void
     {
+        $studentShift = $student->shift ?? 'morning';
+        
         $sessions = $timetable->sessions
             ->filter(fn ($session) => $student->course_id
-                && $session->courses->contains('id', $student->course_id))
+                && $session->courses->contains('id', $student->course_id)
+                && $session->shift === $studentShift)
             ->values();
 
         $assignments = DB::table('lesson_branch_course')
@@ -99,7 +102,10 @@ class StudentController extends Controller
         $timetables = Timetable::published()
             ->where('branch_id', $student->branch_id)
             ->where('academic_year_id', $student->academic_year_id)
-            ->whereHas('sessions.courses', fn ($query) => $query->where('courses.id', $student->course_id))
+            ->whereHas('sessions', function ($query) use ($student) {
+                $query->whereHas('courses', fn ($q) => $q->where('courses.id', $student->course_id))
+                    ->where('shift', $student->shift ?? 'morning');
+            })
             ->whereDate('valid_from', '<=', now())
             ->whereDate('valid_until', '>=', now())
             ->with(['branch', 'academicYear', 'term', 'sessions.lesson.teacher', 'sessions.courses'])
@@ -113,6 +119,7 @@ class StudentController extends Controller
             'student_id' => $student->id,
             'student_course_id' => $student->course_id,
             'student_branch_id' => $student->branch_id,
+            'student_shift' => $student->shift,
             'timetables_count' => $timetables->count(),
             'total_sessions' => $timetables->sum(function($t) { return $t->sessions->count(); }),
         ]);
@@ -134,6 +141,13 @@ class StudentController extends Controller
 
         $timetable->load(['branch', 'academicYear', 'term', 'sessions.lesson.teacher', 'sessions.courses']);
         $this->applyStudentTimetableScope($timetable, $student);
+        
+        // Filter sessions by student's shift
+        $studentShift = $student->shift ?? 'morning';
+        $timetable->sessions = $timetable->sessions->filter(function ($session) use ($studentShift) {
+            return $session->shift === $studentShift;
+        });
+        
         abort_if($timetable->sessions->isEmpty(), 404);
         $studentSessions = $timetable->sessions;
 
@@ -1734,6 +1748,31 @@ class StudentController extends Controller
                 return back()->withInput()->with('error', 'Invalid or expired code.');
             }
 
+            // Check if account is locked
+            $lockingService = new \App\Services\AccountLockingService();
+            if ($lockingService->isUserLocked('student', $student->id)) {
+                $lockDetails = $lockingService->getLockDetails('student', $student->id);
+                return back()->withInput()->with([
+                    'locked' => true,
+                    'lock_reason' => $lockDetails->lock_reason,
+                    'lock_details' => $lockDetails->lock_details,
+                    'error' => 'Your account has been locked. Please contact the finance office or IT staff for assistance.'
+                ]);
+            }
+
+            // Check payment percentage conditions
+            $conditions = $lockingService->checkStudentConditions($student);
+            if ($conditions['status'] === 'issues_found') {
+                $hasLocks = collect($conditions['issues'])->contains('lock_active', true);
+                if ($hasLocks) {
+                    return back()->withInput()->with([
+                        'locked' => true,
+                        'conditions' => $conditions['issues'],
+                        'error' => 'Your account has been locked due to payment requirements. Please contact the finance office.'
+                    ]);
+                }
+            }
+
             Auth::guard('student')->login($student);
             $record->delete();
 
@@ -1768,6 +1807,31 @@ class StudentController extends Controller
 
         if (!Hash::check($request->password, $student->password)) {
             return back()->withInput()->with('error', 'Invalid credentials.');
+        }
+
+        // Check if account is locked
+        $lockingService = new \App\Services\AccountLockingService();
+        if ($lockingService->isUserLocked('student', $student->id)) {
+            $lockDetails = $lockingService->getLockDetails('student', $student->id);
+            return back()->withInput()->with([
+                'locked' => true,
+                'lock_reason' => $lockDetails->lock_reason,
+                'lock_details' => $lockDetails->lock_details,
+                'error' => 'Your account has been locked. Please contact the finance office or IT staff for assistance.'
+            ]);
+        }
+
+        // Check payment percentage conditions
+        $conditions = $lockingService->checkStudentConditions($student);
+        if ($conditions['status'] === 'issues_found') {
+            $hasLocks = collect($conditions['issues'])->contains('lock_active', true);
+            if ($hasLocks) {
+                return back()->withInput()->with([
+                    'locked' => true,
+                    'conditions' => $conditions['issues'],
+                    'error' => 'Your account has been locked due to payment requirements. Please contact the finance office.'
+                ]);
+            }
         }
 
         $this->cleanupExistingSessions($student, 'student');

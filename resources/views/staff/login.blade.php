@@ -63,6 +63,107 @@
             <i class="fa-solid fa-arrow-right-to-bracket" aria-hidden="true"></i>Sign in
         </button>
     </form>
+
+    <!-- Account Lock Popup -->
+    @if(session('locked'))
+    <div class="modal fade show" id="lockModal" tabindex="-1" style="display: block; background-color: rgba(0,0,0,0.5);" aria-modal="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-lock me-2"></i>Account Locked
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" onclick="window.location.href='{{ route('staff.login') }}'"></button>
+                </div>
+                <div class="modal-body">
+                    @if(session('lock_reason'))
+                    <div class="alert alert-danger">
+                        <strong>Reason:</strong> {{ session('lock_reason') }}
+                    </div>
+                    @endif
+
+                    @if(session('lock_details'))
+                    <div class="alert alert-info">
+                        <strong>Details:</strong>
+                        @if(is_array(session('lock_details')))
+                            @if(isset(session('lock_details')['current_percentage']))
+                                <p>Current Payment: {{ round(session('lock_details')['current_percentage'], 2) }}%</p>
+                                <p>Required: {{ session('lock_details')['required_percentage'] }}%</p>
+                            @elseif(isset(session('lock_details')['days_without_expense']))
+                                <p>Days without recording expenses: {{ session('lock_details')['days_without_expense'] }}</p>
+                                <p>Required limit: {{ session('lock_details')['required_days'] }} days</p>
+                            @endif
+                        @endif
+                    </div>
+                    @endif
+
+                    @if(session('conditions'))
+                    <div class="alert alert-warning">
+                        <strong>Conditions:</strong>
+                        <ul class="mb-0 mt-2">
+                            @foreach(session('conditions') as $condition)
+                            <li>{{ $condition['message'] }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                    @endif
+
+                    <div class="alert alert-primary">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Please contact IT staff for assistance.</strong>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="window.location.href='{{ route('staff.login') }}'">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    <!-- Conditions Warning Popup -->
+    @if(session('conditions') && !session('locked'))
+    <div class="modal fade show" id="conditionsModal" tabindex="-1" style="display: block; background-color: rgba(0,0,0,0.5);" aria-modal="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Action Required
+                    </h5>
+                    <button type="button" class="btn-close" onclick="document.getElementById('conditionsModal').style.display='none'"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3">Please review the following conditions:</p>
+                    <ul class="list-group mb-3">
+                        @foreach(session('conditions') as $condition)
+                        <li class="list-group-item {{ $condition['lock_active'] ?? false ? 'list-group-item-danger' : 'list-group-item-warning' }}">
+                            <strong>{{ $condition['type'] ?? 'Condition' }}</strong>: {{ $condition['message'] }}
+                            @if(isset($condition['action_required']))
+                            <br><small class="text-muted">Action: {{ $condition['action_required'] }}</small>
+                            @endif
+                        </li>
+                        @endforeach
+                    </ul>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Please address these issues to avoid account locking. Contact IT staff if you need assistance.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" onclick="document.getElementById('conditionsModal').style.display='none'">I Understand</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    <!-- Flash Alert for Conditions (non-modal) -->
+    @if(session('warning'))
+    <div class="alert alert-warning mt-3" role="alert">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        {{ session('warning') }}
+    </div>
+    @endif
 @endsection
 
 @section('portal-links')

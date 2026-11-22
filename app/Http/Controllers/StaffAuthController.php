@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Services\AcademicYearContext;
+use App\Services\AccountLockingService;
 
 class StaffAuthController extends Controller
 {
@@ -34,12 +35,43 @@ class StaffAuthController extends Controller
                 'staff_id' => $staff->id
             ]);
 
-            if ($role === 'DOS') {
-                return redirect()->route('staff.dashboard.dos')->with('success', 'Welcome, DOS!');
-            } elseif ($role === 'Accountant') {
+            // Check if account is locked
+            $lockingService = new AccountLockingService();
+            if ($lockingService->isUserLocked('staff', $staff->id)) {
+                $lockDetails = $lockingService->getLockDetails('staff', $staff->id);
+                Auth::guard('staff')->logout();
+                return back()->with([
+                    'locked' => true,
+                    'lock_reason' => $lockDetails->lock_reason,
+                    'lock_details' => $lockDetails->lock_details,
+                    'message' => 'Your account has been locked. Please contact IT staff for assistance.'
+                ]);
+            }
+
+            // Check conditions for specific roles
+            if ($role === 'Accountant') {
+                $conditions = $lockingService->checkAccountantConditions($staff);
+                if ($conditions['status'] === 'issues_found') {
+                    $hasLocks = collect($conditions['issues'])->contains('lock_active', true);
+                    if ($hasLocks) {
+                        Auth::guard('staff')->logout();
+                        return back()->with([
+                            'locked' => true,
+                            'conditions' => $conditions['issues'],
+                            'message' => 'Your account has been locked due to unmet conditions. Please contact IT staff.'
+                        ]);
+                    }
+                    return redirect()->route('staff.accountant.dashboard')
+                        ->with('conditions', $conditions['issues'])
+                        ->with('warning', 'Please review the following conditions:');
+                }
                 return redirect()->route('staff.accountant.dashboard')->with('success', 'Welcome, Accountant!');
+            } elseif ($role === 'DOS') {
+                return redirect()->route('staff.dashboard.dos')->with('success', 'Welcome, DOS!');
             } elseif ($role === 'SEC' || $role === 'Secretary') {
                 return redirect()->route('secretary.dashboard')->with('success', 'Welcome, Secretary!');
+            } elseif ($role === 'IT') {
+                return redirect()->route('staff.it.dashboard')->with('success', 'Welcome, IT!');
             } else {
                 Auth::guard('staff')->logout();
                 return back()->withErrors(['email' => 'Unauthorized role: ' . $role]);
@@ -171,6 +203,11 @@ class StaffAuthController extends Controller
         if ($role === 'SEC' || $role === 'Secretary') {
             // Redirect to secretary dashboard route
             return redirect()->route('secretary.dashboard');
+        }
+
+        if ($role === 'IT') {
+            // Redirect to IT dashboard route
+            return redirect()->route('staff.it.dashboard');
         }
 
         abort(403, 'Unauthorized action. Role: ' . $role);

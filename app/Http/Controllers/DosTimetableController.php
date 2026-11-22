@@ -421,19 +421,30 @@ class DosTimetableController extends Controller
             'academic_year_id' => 'required|exists:academic_years,id',
             'term_id' => 'required|exists:terms,id',
             'valid_from' => 'required|date',
-            'valid_until' => 'required|date|after_or_equal:valid_from',
+            'valid_until' => 'required|date',
             'sessions' => 'required|array|min:1',
-            'sessions.*.lesson_id' => 'required|exists:lessons,id',
+            'sessions.*.lesson_id' => 'nullable|exists:lessons,id',
             'sessions.*.day_of_week' => ['required', Rule::in(['0','1','2','3','4','5','6'])],
+            'sessions.*.shift' => ['required', Rule::in(['morning', 'afternoon', 'evening'])],
             'sessions.*.start_time' => 'required|date_format:H:i',
             'sessions.*.end_time' => 'required|date_format:H:i',
             'sessions.*.classroom' => 'nullable|string|max:100',
             'sessions.*.notes' => 'nullable|string|max:500',
-            'sessions.*.course_ids' => 'required|array|min:1',
-            'sessions.*.course_ids.*' => 'required|exists:courses,id',
-            'sessions.*.session_type' => ['required', Rule::in(['class', 'test', 'self_study'])],
+            'sessions.*.course_ids' => 'nullable|array',
+            'sessions.*.course_ids.*' => 'nullable|exists:courses,id',
+            'sessions.*.activity_type' => ['required', Rule::in(['lesson', 'self_study', 'group_work', 'reserve'])],
+            'sessions.*.reserve_text' => 'nullable|string|max:500',
+            'sessions.*.session_type' => ['nullable', Rule::in(['class', 'test'])],
             'sessions.*.minimum_paid_percentage' => 'nullable|numeric|min:0|max:100',
         ]);
+
+        // Custom date validation
+        $validFrom = Carbon::parse($request->valid_from);
+        $validUntil = Carbon::parse($request->valid_until);
+
+        if ($validUntil->lt($validFrom)) {
+            return redirect()->back()->withErrors(['valid_until' => 'End date must be on or after start date.'])->withInput();
+        }
 
         $this->validateScheduleScope($request);
         $termId = (int) $request->term_id;
@@ -458,22 +469,22 @@ class DosTimetableController extends Controller
         ]);
 
         foreach ($request->sessions as $sessionData) {
-            $lesson = Lesson::find($sessionData['lesson_id']);
-            if (!$lesson) {
-                continue;
-            }
+            $lesson = isset($sessionData['lesson_id']) ? Lesson::find($sessionData['lesson_id']) : null;
 
             $session = TimetableSession::create([
                 'timetable_id' => $timetable->id,
-                'lesson_id' => $lesson->id,
+                'lesson_id' => $lesson ? $lesson->id : null,
                 'day_of_week' => (int) $sessionData['day_of_week'],
+                'shift' => $sessionData['shift'] ?? 'morning',
                 'start_time' => $sessionData['start_time'],
                 'end_time' => $sessionData['end_time'],
                 'classroom' => $sessionData['classroom'] ?? null,
                 'notes' => $sessionData['notes'] ?? null,
+                'reserve_text' => $sessionData['activity_type'] === 'reserve' ? ($sessionData['reserve_text'] ?? '') : null,
                 'mark_as_test' => ($sessionData['session_type'] ?? 'class') === 'test',
-                'session_type' => $sessionData['session_type'],
-                'minimum_paid_percentage' => $sessionData['session_type'] === 'test'
+                'session_type' => $sessionData['session_type'] ?? 'class',
+                'activity_type' => $sessionData['activity_type'] ?? 'lesson',
+                'minimum_paid_percentage' => ($sessionData['session_type'] ?? 'class') === 'test'
                     ? ($sessionData['minimum_paid_percentage'] ?? 0)
                     : 0,
             ]);
@@ -506,11 +517,10 @@ class DosTimetableController extends Controller
         $this->authorizeDos();
         abort_unless(in_array($timetable->branch_id, $this->getAllowedBranchIds()), 403);
 
-        if ($timetable->status !== 'draft') {
-            return redirect()->route('dos.timetable.index')
-                ->with('error', 'Only draft timetables can be deleted.');
-        }
+        // Delete sessions first
+        $timetable->sessions()->delete();
 
+        // Delete the timetable
         $timetable->delete();
 
         return redirect()->route('dos.timetable.index')
@@ -630,20 +640,31 @@ class DosTimetableController extends Controller
             'academic_year_id' => 'required|exists:academic_years,id',
             'term_id' => 'required|exists:terms,id',
             'valid_from' => 'required|date',
-            'valid_until' => 'required|date|after_or_equal:valid_from',
+            'valid_until' => 'required|date',
             'sessions' => 'required|array|min:1',
-            'sessions.*.lesson_id' => 'required|exists:lessons,id',
+            'sessions.*.lesson_id' => 'nullable|exists:lessons,id',
             'sessions.*.day_of_week' => ['required', Rule::in(['0','1','2','3','4','5','6'])],
+            'sessions.*.shift' => ['required', Rule::in(['morning', 'afternoon', 'evening'])],
             'sessions.*.start_time' => 'required|date_format:H:i',
             'sessions.*.end_time' => 'required|date_format:H:i',
             'sessions.*.classroom' => 'nullable|string|max:100',
             'sessions.*.notes' => 'nullable|string|max:500',
-            'sessions.*.course_ids' => 'required|array|min:1',
-            'sessions.*.course_ids.*' => 'required|exists:courses,id',
-            'sessions.*.session_type' => ['required', Rule::in(['class', 'test', 'self_study'])],
+            'sessions.*.course_ids' => 'nullable|array',
+            'sessions.*.course_ids.*' => 'nullable|exists:courses,id',
+            'sessions.*.activity_type' => ['required', Rule::in(['lesson', 'self_study', 'group_work', 'reserve'])],
+            'sessions.*.reserve_text' => 'nullable|string|max:500',
+            'sessions.*.session_type' => ['nullable', Rule::in(['class', 'test'])],
             'sessions.*.minimum_paid_percentage' => 'nullable|numeric|min:0|max:100',
             'sessions.*.session_id' => 'nullable|integer|exists:timetable_sessions,id',
         ]);
+
+        // Custom date validation
+        $validFrom = Carbon::parse($request->valid_from);
+        $validUntil = Carbon::parse($request->valid_until);
+
+        if ($validUntil->lt($validFrom)) {
+            return redirect()->back()->withErrors(['valid_until' => 'End date must be on or after start date.'])->withInput();
+        }
 
         $this->validateScheduleScope($request, $timetable);
         $termId = (int) $request->term_id;
@@ -671,10 +692,7 @@ class DosTimetableController extends Controller
         ]);
 
         foreach ($request->sessions as $sessionData) {
-            $lesson = Lesson::find($sessionData['lesson_id']);
-            if (!$lesson) {
-                continue;
-            }
+            $lesson = isset($sessionData['lesson_id']) ? Lesson::find($sessionData['lesson_id']) : null;
 
             if (!empty($sessionData['session_id']) && $existingSessions->has($sessionData['session_id'])) {
                 $session = $existingSessions->get($sessionData['session_id']);
@@ -685,15 +703,18 @@ class DosTimetableController extends Controller
                 }
 
                 $session->update([
-                    'lesson_id' => $lesson->id,
+                    'lesson_id' => $lesson ? $lesson->id : null,
                     'day_of_week' => (int) $sessionData['day_of_week'],
+                    'shift' => $sessionData['shift'] ?? 'morning',
                     'start_time' => $sessionData['start_time'],
                     'end_time' => $sessionData['end_time'],
                     'classroom' => $sessionData['classroom'] ?? null,
                     'notes' => $sessionData['notes'] ?? null,
+                    'reserve_text' => ($sessionData['activity_type'] ?? 'lesson') === 'reserve' ? ($sessionData['reserve_text'] ?? '') : null,
                     'mark_as_test' => ($sessionData['session_type'] ?? 'class') === 'test',
-                    'session_type' => $sessionData['session_type'],
-                    'minimum_paid_percentage' => $sessionData['session_type'] === 'test'
+                    'session_type' => $sessionData['session_type'] ?? 'class',
+                    'activity_type' => $sessionData['activity_type'] ?? 'lesson',
+                    'minimum_paid_percentage' => ($sessionData['session_type'] ?? 'class') === 'test'
                         ? ($sessionData['minimum_paid_percentage'] ?? 0)
                         : 0,
                 ]);
@@ -703,15 +724,18 @@ class DosTimetableController extends Controller
             } else {
                 $session = TimetableSession::create([
                     'timetable_id' => $timetable->id,
-                    'lesson_id' => $lesson->id,
+                    'lesson_id' => $lesson ? $lesson->id : null,
                     'day_of_week' => (int) $sessionData['day_of_week'],
+                    'shift' => $sessionData['shift'] ?? 'morning',
                     'start_time' => $sessionData['start_time'],
                     'end_time' => $sessionData['end_time'],
                     'classroom' => $sessionData['classroom'] ?? null,
                     'notes' => $sessionData['notes'] ?? null,
+                    'reserve_text' => ($sessionData['activity_type'] ?? 'lesson') === 'reserve' ? ($sessionData['reserve_text'] ?? '') : null,
                     'mark_as_test' => ($sessionData['session_type'] ?? 'class') === 'test',
-                    'session_type' => $sessionData['session_type'],
-                    'minimum_paid_percentage' => $sessionData['session_type'] === 'test'
+                    'session_type' => $sessionData['session_type'] ?? 'class',
+                    'activity_type' => $sessionData['activity_type'] ?? 'lesson',
+                    'minimum_paid_percentage' => ($sessionData['session_type'] ?? 'class') === 'test'
                         ? ($sessionData['minimum_paid_percentage'] ?? 0)
                         : 0,
                 ]);

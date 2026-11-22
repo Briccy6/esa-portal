@@ -811,6 +811,7 @@ Route::prefix('staff')->name('staff.')->group(function () {
             Route::get('/receipts', [AccountantDashboardController::class, 'receipts'])->name('receipts.index');
             Route::get('/receipts/{transaction}', [AccountantDashboardController::class, 'receiptShow'])->name('receipts.show');
             Route::get('/receipts/{transaction}/print', [AccountantDashboardController::class, 'receiptPrint'])->name('receipts.print');
+            Route::get('/timetables', [\App\Http\Controllers\AccountantTimetableController::class, 'index'])->name('timetables.index');
         });
 
         Route::middleware(['role:accountant,admin'])->prefix('accounting')->name('accounting.')->group(function () {
@@ -822,7 +823,24 @@ Route::prefix('staff')->name('staff.')->group(function () {
             Route::get('/export/balance-sheet', [\App\Http\Controllers\AccountingController::class, 'exportBalanceSheet'])->name('export.balance-sheet');
             Route::get('/export/trial-balance', [\App\Http\Controllers\AccountingController::class, 'exportTrialBalance'])->name('export.trial-balance');
         });
-        
+
+        // IT Dashboard Routes
+        Route::middleware(['role:it,admin'])->prefix('it')->name('it.')->group(function () {
+            Route::get('/dashboard', [\App\Http\Controllers\ITDashboardController::class, 'index'])->name('dashboard');
+            Route::post('/download-nesa', [\App\Http\Controllers\ITDashboardController::class, 'downloadNesaDocuments'])->name('download-nesa');
+
+            // Account Locking Settings
+            Route::prefix('account-locking')->name('account-locking.')->group(function () {
+                Route::get('/settings', [\App\Http\Controllers\AccountLockingSettingsController::class, 'index'])->name('settings');
+                Route::post('/', [\App\Http\Controllers\AccountLockingSettingsController::class, 'store'])->name('store');
+                Route::put('/{id}', [\App\Http\Controllers\AccountLockingSettingsController::class, 'update'])->name('update');
+                Route::delete('/{id}', [\App\Http\Controllers\AccountLockingSettingsController::class, 'destroy'])->name('destroy');
+                Route::post('/unlock', [\App\Http\Controllers\AccountLockingSettingsController::class, 'unlockAccount'])->name('unlock');
+                Route::post('/unlock-by-id/{id}', [\App\Http\Controllers\AccountLockingSettingsController::class, 'unlockById'])->name('unlock-by-id');
+                Route::get('/settings/{role}', [\App\Http\Controllers\AccountLockingSettingsController::class, 'getRoleSettings'])->name('role-settings');
+            });
+        });
+
         // Staff Profile
         Route::get('profile', function () {
             $staff = auth()->guard('staff')->user();

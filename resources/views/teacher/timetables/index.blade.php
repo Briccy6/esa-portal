@@ -92,9 +92,17 @@
                     <div>
                         <h5 class="mb-1">{{ $timetable->title }}</h5>
                         <small class="opacity-75">
-                            Branch: {{ $timetable->branch->name ?? 'N/A' }} | 
-                            Academic Year: {{ $timetable->academicYear->year ?? 'N/A' }} | 
+                            Branch: {{ $timetable->branch->name ?? 'N/A' }} |
+                            Academic Year: {{ $timetable->academicYear->year ?? 'N/A' }} |
                             Term: {{ $timetable->term->name ?? 'N/A' }}
+                        </small>
+                        <br>
+                        <small class="opacity-75">
+                            <i class="fas fa-calendar-alt me-1"></i>
+                            Valid from: {{ $timetable->valid_from ? \Carbon\Carbon::parse($timetable->valid_from)->format('d M Y') : 'N/A' }}
+                            @if($timetable->valid_until)
+                                to {{ \Carbon\Carbon::parse($timetable->valid_until)->format('d M Y') }}
+                            @endif
                         </small>
                     </div>
                     <div>

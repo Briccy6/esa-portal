@@ -285,6 +285,14 @@
                                         </select>
                                     </div>
                                     <div class="col-6 col-sm-3 col-lg-2">
+                                        <label class="form-label" for="shift-{{ $index }}">Shift</label>
+                                        <select class="form-select" id="shift-{{ $index }}" name="sessions[{{ $index }}][shift]" required>
+                                            <option value="morning" @selected(old("sessions.{$index}.shift", $sessionData['shift'] ?? 'morning') === 'morning')">Morning</option>
+                                            <option value="afternoon" @selected(old("sessions.{$index}.shift", $sessionData['shift'] ?? 'morning') === 'afternoon')">Afternoon</option>
+                                            <option value="evening" @selected(old("sessions.{$index}.shift", $sessionData['shift'] ?? 'morning') === 'evening')">Evening</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-6 col-sm-3 col-lg-2">
                                         <label class="form-label" for="start-{{ $index }}">Starts</label>
                                         <input type="time" class="form-control" id="start-{{ $index }}" name="sessions[{{ $index }}][start_time]" value="{{ old("sessions.{$index}.start_time", isset($sessionData['start_time']) ? substr($sessionData['start_time'], 0, 5) : '') }}" required>
                                     </div>
@@ -298,11 +306,23 @@
                                         <div class="teacher-preview" data-teacher-preview>Select a lesson to see its assigned teacher.</div>
                                     </div>
                                     <div class="col-12 col-md-6">
-                                        <label class="form-label" for="type-{{ $index }}">Session type</label>
-                                        <select class="form-select session-type" id="type-{{ $index }}" name="sessions[{{ $index }}][session_type]" required>
-                                            <option value="class" @selected(old("sessions.{$index}.session_type", $rowType) === 'class')>Class</option>
-                                            <option value="test" @selected(old("sessions.{$index}.session_type", $rowType) === 'test')>Test / exam</option>
-                                            <option value="self_study" @selected(old("sessions.{$index}.session_type", $rowType) === 'self_study')>Self study</option>
+                                        <label class="form-label" for="activity-{{ $index }}">Activity Type</label>
+                                        <select class="form-select activity-type" id="activity-{{ $index }}" name="sessions[{{ $index }}][activity_type]" required>
+                                            <option value="lesson" @selected(old("sessions.{$index}.activity_type", $sessionData['activity_type'] ?? 'lesson') === 'lesson')">Lesson</option>
+                                            <option value="self_study" @selected(old("sessions.{$index}.activity_type", $sessionData['activity_type'] ?? 'lesson') === 'self_study')">Self Study</option>
+                                            <option value="group_work" @selected(old("sessions.{$index}.activity_type", $sessionData['activity_type'] ?? 'lesson') === 'group_work')">Group Work</option>
+                                            <option value="reserve" @selected(old("sessions.{$index}.activity_type", $sessionData['activity_type'] ?? 'lesson') === 'reserve')">Reserve (No Class)</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-12 col-md-6 activity-type-panel" data-activity-type-panel style="display: none;">
+                                        <label class="form-label" for="reserve-text-{{ $index }}">Reserve Instructions</label>
+                                        <textarea class="form-control" id="reserve-text-{{ $index }}" name="sessions[{{ $index }}][reserve_text]" rows="2" placeholder="What students should do during this reserved time...">{{ old("sessions.{$index}.reserve_text", $sessionData['reserve_text'] ?? '') }}</textarea>
+                                    </div>
+                                    <div class="col-12 col-md-6 lesson-panel" data-lesson-panel>
+                                        <label class="form-label" for="type-{{ $index }}">Session Type</label>
+                                        <select class="form-select session-type" id="type-{{ $index }}" name="sessions[{{ $index }}][session_type]">
+                                            <option value="class" @selected(old("sessions.{$index}.session_type", $rowType) === 'class')">Class</option>
+                                            <option value="test" @selected(old("sessions.{$index}.session_type", $rowType) === 'test')">Test / exam</option>
                                         </select>
                                     </div>
                                     <div class="col-12 col-md-6">
@@ -374,10 +394,22 @@
             <div class="col-12 col-sm-6 col-lg-3"><label class="form-label" for="day-__INDEX__">Day</label><select class="form-select" id="day-__INDEX__" name="sessions[__INDEX__][day_of_week]" required>
                 <option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option><option value="0">Sunday</option>
             </select></div>
+            <div class="col-6 col-sm-3 col-lg-2"><label class="form-label" for="shift-__INDEX__">Shift</label><select class="form-select" id="shift-__INDEX__" name="sessions[__INDEX__][shift]" required>
+                <option value="morning">Morning</option>
+                <option value="afternoon">Afternoon</option>
+                <option value="evening">Evening</option>
+            </select></div>
             <div class="col-6 col-sm-3 col-lg-2"><label class="form-label" for="start-__INDEX__">Starts</label><input type="time" class="form-control" id="start-__INDEX__" name="sessions[__INDEX__][start_time]" required></div>
             <div class="col-6 col-sm-3 col-lg-2"><label class="form-label" for="end-__INDEX__">Ends</label><input type="time" class="form-control" id="end-__INDEX__" name="sessions[__INDEX__][end_time]" required></div>
             <div class="col-12 col-md-6"><label class="form-label">Courses learning together</label><div class="course-picker" data-course-picker></div><div class="teacher-preview" data-teacher-preview>Select a lesson to see its assigned teacher.</div></div>
-            <div class="col-12 col-md-6"><label class="form-label" for="type-__INDEX__">Session type</label><select class="form-select session-type" id="type-__INDEX__" name="sessions[__INDEX__][session_type]" required><option value="class">Class</option><option value="test">Test / exam</option><option value="self_study">Self study</option></select></div>
+            <div class="col-12 col-md-6"><label class="form-label" for="activity-__INDEX__">Activity Type</label><select class="form-select activity-type" id="activity-__INDEX__" name="sessions[__INDEX__][activity_type]" required>
+                <option value="lesson">Lesson</option>
+                <option value="self_study">Self Study</option>
+                <option value="group_work">Group Work</option>
+                <option value="reserve">Reserve (No Class)</option>
+            </select></div>
+            <div class="col-12 col-md-6 activity-type-panel" data-activity-type-panel style="display: none;"><label class="form-label" for="reserve-text-__INDEX__">Reserve Instructions</label><textarea class="form-control" id="reserve-text-__INDEX__" name="sessions[__INDEX__][reserve_text]" rows="2" placeholder="What students should do..."></textarea></div>
+            <div class="col-12 col-md-6 lesson-panel" data-lesson-panel><label class="form-label" for="type-__INDEX__">Session Type</label><select class="form-select session-type" id="type-__INDEX__" name="sessions[__INDEX__][session_type]"><option value="class">Class</option><option value="test">Test / exam</option></select></div>
             <div class="col-12 col-md-6"><label class="form-label" for="room-__INDEX__">Room / location</label><input class="form-control" id="room-__INDEX__" name="sessions[__INDEX__][classroom]" placeholder="Optional"></div>
             <div class="col-12 col-md-6"><label class="form-label" for="notes-__INDEX__">Student instructions</label><input class="form-control" id="notes-__INDEX__" name="sessions[__INDEX__][notes]" placeholder="Optional details"></div>
             <div class="col-12 eligibility-panel" data-eligibility-panel><label class="form-label" for="eligibility-__INDEX__">Minimum fee percentage paid</label><div class="input-group"><input type="number" min="0" max="100" step="0.01" class="form-control" id="eligibility-__INDEX__" name="sessions[__INDEX__][minimum_paid_percentage]" value="0"><span class="input-group-text">%</span></div><small class="builder-hint">Students below this threshold will see why they are not eligible and how to become eligible.</small></div>
@@ -477,9 +509,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function syncSession(row) {
-        const type = row.querySelector('.session-type').value;
-        row.querySelector('[data-eligibility-panel]').classList.toggle('is-visible', type === 'test');
-        row.querySelector('.session-kind-pill').textContent = type === 'self_study' ? 'Self study' : (type === 'test' ? 'Test / exam' : 'Class');
+        const activityType = row.querySelector('.activity-type').value;
+        const sessionType = row.querySelector('.session-type')?.value || 'class';
+        
+        // Show/hide reserve text panel
+        const reservePanel = row.querySelector('[data-activity-type-panel]');
+        const lessonPanel = row.querySelector('[data-lesson-panel]');
+        
+        if (activityType === 'reserve') {
+            reservePanel.style.display = 'block';
+            lessonPanel.style.display = 'none';
+        } else {
+            reservePanel.style.display = 'none';
+            lessonPanel.style.display = activityType === 'lesson' ? 'block' : 'none';
+        }
+        
+        // Show/hide eligibility panel for tests
+        row.querySelector('[data-eligibility-panel]').classList.toggle('is-visible', sessionType === 'test');
+        
+        // Update session kind pill
+        const kindLabels = {
+            'lesson': 'Lesson',
+            'self_study': 'Self Study',
+            'group_work': 'Group Work',
+            'reserve': 'Reserve'
+        };
+        row.querySelector('.session-kind-pill').textContent = kindLabels[activityType] || 'Class';
     }
 
     function renumber() {
@@ -508,7 +563,8 @@ document.addEventListener('DOMContentLoaded', () => {
             row.dataset.selectedCourses = '';
             renderCourses(row, []);
         });
-        row.querySelector('.session-type').addEventListener('change', () => syncSession(row));
+        row.querySelector('.activity-type')?.addEventListener('change', () => syncSession(row));
+        row.querySelector('.session-type')?.addEventListener('change', () => syncSession(row));
         row.querySelector('.remove-session').addEventListener('click', () => {
             row.remove();
             renumber();

@@ -427,6 +427,14 @@
                                 Dashboard
                             </a>
                         </li>
+                        @if(auth('staff')->user()->role === 'IT')
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('staff.it.*') ? 'active' : '' }}" href="{{ route('staff.it.dashboard') }}">
+                                <i class="fas fa-laptop-code me-2"></i>
+                                IT Dashboard
+                            </a>
+                        </li>
+                        @endif
                         <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('staff.students.*') ? 'active' : '' }}" href="{{ route('staff.students.index') }}">
                                 <i class="fas fa-user-graduate me-2"></i>
