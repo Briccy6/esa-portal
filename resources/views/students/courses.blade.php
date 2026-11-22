@@ -59,6 +59,9 @@
                     $initials = $teacher
                         ? collect(preg_split('/\s+/', trim($teacher->teacher_name)))->take(2)->map(fn ($word) => strtoupper(substr($word, 0, 1)))->implode('')
                         : 'T';
+                    $teacherPhotoUrl = $teacher
+                        ? ($teacher->google_avatar ?: $teacher->photo_url)
+                        : null;
                 @endphp
                 <article class="lesson-card"
                          data-search="{{ strtolower(($lesson->title ?? '') . ' ' . ($teacher?->teacher_name ?? '') . ' ' . ($course->course_name ?? '')) }}">
@@ -70,9 +73,9 @@
                     <div class="lesson-title-block">
                         <h2>{{ $lesson->title }}</h2>
                         <div class="teacher-row">
-                            @if($teacher && ($teacher->photo || $teacher->google_avatar))
+                            @if($teacherPhotoUrl)
                                 <span class="teacher-avatar-img">
-                                    <img src="{{ $teacher->google_avatar ?? $teacher->photo_url }}" alt="{{ $teacher->teacher_name }}">
+                                    <img src="{{ $teacherPhotoUrl }}" alt="{{ $teacher->teacher_name }}">
                                 </span>
                             @else
                                 <span class="teacher-avatar">{{ $initials }}</span>
@@ -116,9 +119,9 @@
                             <div class="modal-body lesson-modal-body">
                                 <div class="lesson-overview">
                                     <div class="overview-instructor">
-                                        @if($teacher && ($teacher->photo || $teacher->google_avatar))
+                                        @if($teacherPhotoUrl)
                                             <span class="teacher-avatar-img large">
-                                                <img src="{{ $teacher->google_avatar ?? $teacher->photo_url }}" alt="{{ $teacher->teacher_name }}">
+                                                <img src="{{ $teacherPhotoUrl }}" alt="{{ $teacher->teacher_name }}">
                                             </span>
                                         @else
                                             <span class="teacher-avatar large">{{ $initials }}</span>
@@ -451,6 +454,29 @@
 .teacher-avatar-img img {
     width: 100%;
     height: 100%;
+    object-fit: cover;
+}
+
+.teacher-avatar-img.large {
+    width: 48px;
+    height: 48px;
+}
+
+.teacher-avatar-img {
+    width: 38px;
+    height: 38px;
+    display: block;
+    flex-shrink: 0;
+    overflow: hidden;
+    border: 2px solid #edf1f6;
+    border-radius: 50%;
+    background: #edf1f6;
+}
+
+.teacher-avatar-img img {
+    width: 100%;
+    height: 100%;
+    display: block;
     object-fit: cover;
 }
 

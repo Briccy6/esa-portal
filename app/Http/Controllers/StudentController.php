@@ -255,13 +255,11 @@ class StudentController extends Controller
                     }
                 }
 
+                // Units belong to the lesson itself.  Do not filter them out merely
+                // because a unit's term label differs in another academic year.
                 $lesson->units = \App\Models\LessonUnit::with('term')
                     ->where('lesson_id', $lesson->id)
-                    ->where(function ($query) use ($student) {
-                        $query->whereHas('term', fn ($termQuery) =>
-                            $termQuery->where('academic_year_id', $student->academic_year_id)
-                        )->orWhereNull('term_id');
-                    })
+                    ->orderBy('term_id')
                     ->orderBy('id')
                     ->get();
 
