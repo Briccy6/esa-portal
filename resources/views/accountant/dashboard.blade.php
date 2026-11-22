@@ -9,6 +9,7 @@
     .accountant-dashboard .kpi-card { transition: transform .2s ease, box-shadow .2s ease; }
     .accountant-dashboard .kpi-card:hover { transform: translateY(-3px); box-shadow: 0 10px 24px rgba(15, 23, 42, .1); }
     .accountant-dashboard .chart-wrap { position: relative; height: clamp(250px, 34vh, 360px); }
+    .accountant-dashboard .optional-fee-chart-wrap { position: relative; height: clamp(280px, 42vh, 460px); }
     .accountant-dashboard .chart-empty { position: absolute; inset: 0; display: grid; place-items: center; color: #64748b; text-align: center; padding: 1rem; }
     .accountant-dashboard .dashboard-watermark {
         position: fixed;
@@ -285,6 +286,26 @@
                     <span class="text-danger"><i class="fas fa-chart-pie" aria-hidden="true"></i></span>
                 </div>
                 <div class="card-body"><div class="chart-wrap"><canvas id="expenseChart" aria-label="Expense categories chart"></canvas><div class="chart-empty d-none" id="expenseChartEmpty">No expense data is available for this selection.</div></div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2 py-3">
+            <div>
+                <h2 class="h6 fw-semibold mb-1">Optional fee decisions by course</h2>
+                <p class="text-muted small mb-0">Accepted and declined student responses for the selected year and branch.</p>
+            </div>
+            <a href="{{ route('staff.accountant.optional-fees.responses') }}" class="btn btn-sm btn-outline-primary">
+                Review student responses <i class="fas fa-arrow-right ms-1" aria-hidden="true"></i>
+            </a>
+        </div>
+        <div class="card-body">
+            <div class="optional-fee-chart-wrap">
+                <canvas id="optionalFeeResponsesChart" aria-label="Optional fee decisions by course" role="img"></canvas>
+                <div class="chart-empty {{ $optionalFeeResponseSummary->isEmpty() ? '' : 'd-none' }}" id="optionalFeeResponsesEmpty">
+                    No optional fee responses are available for these filters.
+                </div>
             </div>
         </div>
     </div>
@@ -797,6 +818,52 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
+    let optionalFeeResponseCourseIds = {{ \Illuminate\Support\Js::from($optionalFeeResponseSummary->pluck('course_id')->values()) }};
+    const optionalFeeResponseChart = new Chart(document.getElementById('optionalFeeResponsesChart'), {
+        type: 'bar',
+        data: {
+            labels: {{ \Illuminate\Support\Js::from($optionalFeeResponseSummary->pluck('course_name')->values()) }},
+            datasets: [
+                { label: 'Accepted', data: {{ \Illuminate\Support\Js::from($optionalFeeResponseSummary->pluck('accepted')->values()) }}, backgroundColor: '#16803a', borderRadius: 4 },
+                { label: 'Declined', data: {{ \Illuminate\Support\Js::from($optionalFeeResponseSummary->pluck('declined')->values()) }}, backgroundColor: '#c2413b', borderRadius: 4 },
+                { label: 'Pending', data: {{ \Illuminate\Support\Js::from($optionalFeeResponseSummary->pluck('pending')->values()) }}, backgroundColor: '#d49b29', borderRadius: 4 },
+                { label: 'Assigned', data: {{ \Illuminate\Support\Js::from($optionalFeeResponseSummary->pluck('assigned')->values()) }}, backgroundColor: '#5479a8', borderRadius: 4 }
+            ]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { intersect: false, mode: 'index' },
+            plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 16 } } },
+            scales: {
+                x: { stacked: true, beginAtZero: true, ticks: { precision: 0 }, grid: { color: 'rgba(100, 116, 139, .12)' } },
+                y: { stacked: true, grid: { display: false } }
+            },
+            onClick: function (event, elements) {
+                if (elements.length) {
+                    const courseId = optionalFeeResponseCourseIds[elements[0].index];
+                    const reviewUrl = new URL({{ \Illuminate\Support\Js::from(route('staff.accountant.optional-fees.responses', array_filter([
+                        'academic_year_id' => $filters['academic_year_id'] ?? null,
+                        'branch_id' => $filters['branch_id'] ?? null,
+                    ]))) }}, window.location.origin);
+                    reviewUrl.searchParams.set('course_id', courseId);
+                    window.location.href = reviewUrl.toString();
+                }
+            }
+        }
+    });
+
+    function updateOptionalFeeChartEmptyState() {
+        const hasValues = optionalFeeResponseChart.data.datasets.some(dataset =>
+            dataset.data.some(value => Number(value) > 0)
+        );
+        optionalFeeResponseChart.canvas.classList.toggle('d-none', !hasValues);
+        document.getElementById('optionalFeeResponsesEmpty').classList.toggle('d-none', hasValues);
+    }
+
+    updateOptionalFeeChartEmptyState();
+
     function updateChartEmptyState(chart, emptyState) {
         const hasValues = chart.data.datasets[0].data.some(value => Number(value) > 0);
         chart.canvas.classList.toggle('d-none', !hasValues);
@@ -823,9 +890,10 @@ document.addEventListener('DOMContentLoaded', function () {
         const query = new URLSearchParams(new FormData(filterForm)).toString();
 
         try {
-            const [kpis, charts] = await Promise.all([
+            const [kpis, charts, optionalFeeResponses] = await Promise.all([
                 getJson('{{ route('staff.accountant.kpi-data') }}?' + query),
-                getJson('{{ route('staff.accountant.chart-data') }}?' + query)
+                getJson('{{ route('staff.accountant.chart-data') }}?' + query),
+                getJson('{{ route('staff.accountant.optional-fee-response-data') }}?' + query)
             ]);
 
             ['total_fees_expected', 'fees_collected', 'outstanding_balance', 'total_expenses'].forEach(function (key) {
@@ -841,8 +909,16 @@ document.addEventListener('DOMContentLoaded', function () {
             expenseChart.data.labels = charts.expenses_by_category.labels || [];
             expenseChart.data.datasets[0].data = charts.expenses_by_category.amounts || [];
             expenseChart.update();
+            optionalFeeResponseChart.data.labels = optionalFeeResponses.map(item => item.course_name);
+            optionalFeeResponseCourseIds = optionalFeeResponses.map(item => item.course_id);
+            optionalFeeResponseChart.data.datasets[0].data = optionalFeeResponses.map(item => Number(item.accepted));
+            optionalFeeResponseChart.data.datasets[1].data = optionalFeeResponses.map(item => Number(item.declined));
+            optionalFeeResponseChart.data.datasets[2].data = optionalFeeResponses.map(item => Number(item.pending));
+            optionalFeeResponseChart.data.datasets[3].data = optionalFeeResponses.map(item => Number(item.assigned));
+            optionalFeeResponseChart.update();
             updateChartEmptyState(revenueChart, document.getElementById('revenueChartEmpty'));
             updateChartEmptyState(expenseChart, document.getElementById('expenseChartEmpty'));
+            updateOptionalFeeChartEmptyState();
             window.history.replaceState({}, '', filterForm.action + (query ? '?' + query : ''));
         } catch (error) {
             errorBox.textContent = error.message || 'Dashboard data could not be refreshed. Please try again.';

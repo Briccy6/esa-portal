@@ -1453,6 +1453,24 @@ body[data-theme="dark"] .stat-card-subtext {
                 </div>
             </div>
 
+            <div class="chart-card full-width">
+                <div class="chart-card-header">
+                    <h3 class="chart-card-title">
+                        <i class="fas fa-check-double"></i>
+                        Optional Fee Decisions by Course
+                    </h3>
+                    <div class="chart-card-actions">
+                        <a href="{{ route('admin.optional-fees.responses') }}" class="btn btn-outline btn-sm">Review student responses</a>
+                    </div>
+                </div>
+                <div class="chart-card-body">
+                    <canvas id="optionalFeeResponsesChart" aria-label="Accepted, declined, pending, and assigned optional fee responses by course" role="img"></canvas>
+                    @if(($optionalFeeResponseSummary ?? collect())->isEmpty())
+                        <p class="text-muted text-center small mt-2 mb-0">No optional fee responses are available for this academic year.</p>
+                    @endif
+                </div>
+            </div>
+
             <!-- Expenses by Branch -->
             <div class="chart-card">
                 <div class="chart-card-header">
@@ -1619,6 +1637,45 @@ document.addEventListener('DOMContentLoaded', function () {
     if (typeof Chart === 'undefined') {
         console.error('Chart.js is not loaded!');
         return;
+    }
+
+    const optionalFeeResponsesCanvas = document.getElementById('optionalFeeResponsesChart');
+    if (optionalFeeResponsesCanvas) {
+        const optionalFeeResponseSummary = {{ \Illuminate\Support\Js::from($optionalFeeResponseSummary ?? []) }};
+        const optionalFeeCourseIds = optionalFeeResponseSummary.map(item => item.course_id);
+        new Chart(optionalFeeResponsesCanvas, {
+            type: 'bar',
+            data: {
+                labels: optionalFeeResponseSummary.map(item => item.course_name),
+                datasets: [
+                    { label: 'Accepted', data: optionalFeeResponseSummary.map(item => Number(item.accepted)), backgroundColor: '#477a57', borderRadius: 4 },
+                    { label: 'Declined', data: optionalFeeResponseSummary.map(item => Number(item.declined)), backgroundColor: '#b85b52', borderRadius: 4 },
+                    { label: 'Pending', data: optionalFeeResponseSummary.map(item => Number(item.pending)), backgroundColor: '#b9822e', borderRadius: 4 },
+                    { label: 'Assigned', data: optionalFeeResponseSummary.map(item => Number(item.assigned)), backgroundColor: '#527e78', borderRadius: 4 }
+                ]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { intersect: false, mode: 'index' },
+                plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 16 } } },
+                scales: {
+                    x: { stacked: true, beginAtZero: true, ticks: { precision: 0 }, grid: { color: chartGridColor } },
+                    y: { stacked: true, grid: { display: false } }
+                },
+                onClick: function (event, elements) {
+                    if (elements.length) {
+                        const courseId = optionalFeeCourseIds[elements[0].index];
+                        const reviewUrl = new URL({{ \Illuminate\Support\Js::from(route('admin.optional-fees.responses', array_filter([
+                            'academic_year_id' => $academicYearId ?? null,
+                        ]))) }}, window.location.origin);
+                        reviewUrl.searchParams.set('course_id', courseId);
+                        window.location.href = reviewUrl.toString();
+                    }
+                }
+            }
+        });
     }
 
     // Chart defaults for professional look

@@ -340,6 +340,8 @@ Route::middleware('auth:teacher')->prefix('teacher')->name('teacher.')->group(fu
 Route::middleware(['auth:admin', 'admin.academic_year'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\AdminAuthController::class, 'dashboard'])->name('dashboard');
     Route::post('/dashboard/filter-payment-percentage', [\App\Http\Controllers\AdminAuthController::class, 'filterByPaymentPercentage'])->name('dashboard.filter-payment-percentage');
+    Route::get('/optional-fees/responses', [\App\Http\Controllers\OptionalFeeController::class, 'adminResponseReview'])->name('optional-fees.responses');
+    Route::patch('/optional-fees/responses/{id}', [\App\Http\Controllers\OptionalFeeController::class, 'updateAdminResponse'])->name('optional-fees.responses.update');
 
     Route::resource('students', StudentController::class);
     Route::get('/students/export', [StudentController::class, 'export'])->name('students.export');
@@ -817,6 +819,7 @@ Route::prefix('staff')->name('staff.')->group(function () {
             Route::post('/block-student', [AccountantDashboardController::class, 'blockStudent'])->name('block-student');
             Route::post('/unblock-student', [AccountantDashboardController::class, 'unblockStudent'])->name('unblock-student');
             Route::get('/chart-data', [AccountantDashboardController::class, 'chartData'])->name('chart-data');
+            Route::get('/optional-fee-response-data', [AccountantDashboardController::class, 'optionalFeeResponseData'])->name('optional-fee-response-data');
             Route::get('/kpi-data', [AccountantDashboardController::class, 'kpiData'])->name('kpi-data');
             Route::get('/expenses', [ExpenseController::class, 'index'])->name('expenses.index');
             Route::get('/expenses/create', [ExpenseController::class, 'create'])->name('expenses.create');
@@ -836,6 +839,8 @@ Route::prefix('staff')->name('staff.')->group(function () {
                 Route::post('/{id}/delete', [\App\Http\Controllers\OptionalFeeController::class, 'destroy'])->name('destroy');
                 Route::get('/report', [\App\Http\Controllers\OptionalFeeController::class, 'report'])->name('report');
                 Route::get('/export', [\App\Http\Controllers\OptionalFeeController::class, 'exportReport'])->name('export');
+                Route::get('/responses', [\App\Http\Controllers\OptionalFeeController::class, 'responseReview'])->name('responses');
+                Route::patch('/responses/{id}', [\App\Http\Controllers\OptionalFeeController::class, 'updateResponse'])->name('responses.update');
             });
             Route::prefix('teacher-payments')->name('teacher-payments.')->group(function () {
                 Route::get('/', [\App\Http\Controllers\TeacherPaymentController::class, 'index'])->name('index');

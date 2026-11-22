@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\CourseTermBranchFee;
 use App\Models\StudentOptionalFeeResponse;
 use App\Models\Student;
+use App\Models\Branch;
+use App\Models\Course;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -266,6 +268,157 @@ class OptionalFeeController extends Controller
         $courses = \App\Models\Course::orderBy('course_name')->get();
 
         return view('accountant.optional_fees.report', compact('responses', 'branches', 'courses', 'stats'));
+    }
+
+    public function responseReview(Request $request)
+    {
+        return $this->showResponseReview($request, false);
+    }
+
+    public function adminResponseReview(Request $request)
+    {
+        return $this->showResponseReview($request, true);
+    }
+
+    private function showResponseReview(Request $request, bool $isAdmin)
+    {
+        $branchIds = $this->authorizedBranchIds($isAdmin);
+        $filters = $request->validate([
+            'fee_type' => 'nullable|in:practical,trip',
+            'response' => 'nullable|in:accepted,declined,pending',
+            'branch_id' => 'nullable|integer|exists:branches,id',
+            'course_id' => 'nullable|integer|exists:courses,id',
+            'academic_year_id' => 'nullable|integer|exists:academic_years,id',
+        ]);
+
+        $query = StudentOptionalFeeResponse::with([
+            'student.course',
+            'student.branch',
+            'student.academicYear',
+            'courseTermBranchFee.course',
+            'courseTermBranchFee.term',
+        ])
+            ->whereHas('student', fn ($studentQuery) => $studentQuery->whereIn('branch_id', $branchIds))
+            ->whereHas('courseTermBranchFee', function ($feeQuery) use ($branchIds) {
+                $feeQuery->whereIn('branch_id', $branchIds)
+                    ->where(function ($optionalFees) {
+                        $optionalFees
+                            ->where(function ($practical) {
+                                $practical->where('student_optional_fee_responses.fee_type', 'practical')
+                                    ->where('is_practical_mandatory', false)
+                                    ->where('practical_fee', '>', 0);
+                            })
+                            ->orWhere(function ($trip) {
+                                $trip->where('student_optional_fee_responses.fee_type', 'trip')
+                                    ->where('is_trip_mandatory', false)
+                                    ->where('trip_fee', '>', 0);
+                            });
+                    });
+            });
+
+        if (!empty($filters['fee_type'])) {
+            $query->where('fee_type', $filters['fee_type']);
+        }
+        if (!empty($filters['response'])) {
+            $query->where('response', $filters['response']);
+        }
+        if (!empty($filters['branch_id'])) {
+            $query->whereHas('courseTermBranchFee', fn ($feeQuery) => $feeQuery->where('branch_id', $filters['branch_id']));
+        }
+        if (!empty($filters['course_id'])) {
+            $query->whereHas('courseTermBranchFee', fn ($feeQuery) => $feeQuery->where('course_id', $filters['course_id']));
+        }
+        if (!empty($filters['academic_year_id'])) {
+            $query->whereHas('courseTermBranchFee.term', fn ($termQuery) => $termQuery->where('academic_year_id', $filters['academic_year_id']));
+        }
+
+        $responses = $query->latest('responded_at')->paginate(30)->withQueryString();
+        $branches = Branch::whereIn('id', $branchIds)->orderBy('name')->get();
+        $courseIds = CourseTermBranchFee::whereIn('branch_id', $branchIds)
+            ->whereHas('responses')
+            ->pluck('course_id')
+            ->unique();
+        $courses = Course::whereIn('id', $courseIds)->orderBy('course_name')->get();
+        $academicYears = \App\Models\AcademicYear::orderByDesc('starting_date')->get();
+
+        return view('accountant.optional_fees.review', compact(
+            'responses',
+            'branches',
+            'courses',
+            'academicYears',
+            'isAdmin'
+        ));
+    }
+
+    public function updateResponse(Request $request, $id)
+    {
+        return $this->saveReviewedResponse($request, $id, false);
+    }
+
+    public function updateAdminResponse(Request $request, $id)
+    {
+        return $this->saveReviewedResponse($request, $id, true);
+    }
+
+    private function saveReviewedResponse(Request $request, $id, bool $isAdmin)
+    {
+        $validated = $request->validate([
+            'response' => 'required|in:accepted,declined',
+        ]);
+        $branchIds = $this->authorizedBranchIds($isAdmin);
+
+        $response = StudentOptionalFeeResponse::with(['student', 'courseTermBranchFee.term'])
+            ->whereHas('student', fn ($studentQuery) => $studentQuery->whereIn('branch_id', $branchIds))
+            ->whereHas('courseTermBranchFee', fn ($feeQuery) => $feeQuery->whereIn('branch_id', $branchIds))
+            ->findOrFail($id);
+
+        $fee = $response->courseTermBranchFee;
+        $student = $response->student;
+        abort_unless($fee->is_active, 422, 'Inactive fee responses are available for history only.');
+        abort_unless(
+            (int) $student->course_id === (int) $fee->course_id
+                && (int) $student->branch_id === (int) $fee->branch_id
+                && (int) $student->academic_year_id === (int) $fee->term->academic_year_id,
+            422,
+            'This student response does not match the fee course, branch, and academic year.'
+        );
+
+        $feeAmount = $response->fee_type === 'practical' ? $fee->practical_fee : $fee->trip_fee;
+        $isMandatory = $response->fee_type === 'practical'
+            ? $fee->is_practical_mandatory
+            : $fee->is_trip_mandatory;
+        abort_unless((float) $feeAmount > 0 && !$isMandatory, 422, 'Only configured optional fees can be reviewed.');
+
+        $actor = $isAdmin ? Auth::guard('admin')->user() : Auth::guard('staff')->user();
+        $actorName = $actor->name ?? $actor->email ?? ($isAdmin ? 'admin' : 'accountant');
+        $notes = trim((string) $response->notes);
+        $wasAssigned = str_starts_with($notes, 'Assigned by accountant:');
+        if ($wasAssigned && $validated['response'] !== 'accepted') {
+            $notes = 'Previous assignment: ' . $notes;
+        }
+        $notes = trim($notes . ($notes === '' ? '' : "\n")
+            . 'Reviewed by ' . ($isAdmin ? 'admin' : 'accountant') . ' (' . $actorName . ') on '
+            . now()->format('Y-m-d H:i') . '; decision: ' . $validated['response'] . '.');
+
+        $response->update([
+            'response' => $validated['response'],
+            'responded_at' => now(),
+            'notes' => $notes,
+        ]);
+
+        return back()->with('success', 'Student fee response updated successfully.');
+    }
+
+    private function authorizedBranchIds(bool $isAdmin): array
+    {
+        if ($isAdmin) {
+            return Branch::query()->pluck('id')->map(fn ($id) => (int) $id)->all();
+        }
+
+        $staff = Auth::guard('staff')->user();
+        $branchIds = $staff->branches->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+        return $branchIds ?: Branch::query()->pluck('id')->map(fn ($id) => (int) $id)->all();
     }
 
     /**

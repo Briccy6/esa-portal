@@ -439,6 +439,26 @@
     font-weight: 800;
 }
 
+.teacher-avatar-img {
+    width: 38px;
+    height: 38px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--course-navy);
+}
+
+.teacher-avatar-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.teacher-avatar-img.large {
+    width: 48px;
+    height: 48px;
+}
+
 .teacher-avatar.large {
     width: 48px;
     height: 48px;

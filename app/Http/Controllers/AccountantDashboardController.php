@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\AccountantDashboardService;
+use App\Services\OptionalFeeResponseAnalytics;
 use Illuminate\Http\Request;
 use App\Services\AcademicYearContext;
 
@@ -144,6 +145,17 @@ class AccountantDashboardController extends Controller
             ->orderBy('total', 'desc')
             ->get();
 
+        $dashboardBranchIds = $branches->pluck('id')->map(fn ($id) => (int) $id)->all();
+        if ($dashboardBranchIds === []) {
+            $dashboardBranchIds = \App\Models\Branch::query()->pluck('id')->map(fn ($id) => (int) $id)->all();
+        }
+
+        $optionalFeeResponseSummary = app(OptionalFeeResponseAnalytics::class)->byCourse(
+            !empty($filters['academic_year_id']) ? (int) $filters['academic_year_id'] : null,
+            $dashboardBranchIds,
+            $filters['branch_id'] ? (int) $filters['branch_id'] : null
+        );
+
         return view('accountant.dashboard', compact(
             'kpiData',
             'chartData',
@@ -162,7 +174,8 @@ class AccountantDashboardController extends Controller
             'fullyPaidStudents',
             'studentsWithNoPayment',
             'studentsByCourseInBranch',
-            'expensesByBranch'
+            'expensesByBranch',
+            'optionalFeeResponseSummary'
         ));
     }
 
@@ -184,6 +197,28 @@ class AccountantDashboardController extends Controller
         $data = $service->getChartData();
 
         return response()->json($data);
+    }
+
+    public function optionalFeeResponseData(Request $request)
+    {
+        $staff = auth()->guard('staff')->user();
+        $branchIds = $staff->branches->pluck('id')->map(fn ($id) => (int) $id)->all();
+        if ($branchIds === []) {
+            $branchIds = \App\Models\Branch::query()->pluck('id')->map(fn ($id) => (int) $id)->all();
+        }
+
+        $filters = $request->validate([
+            'academic_year_id' => 'nullable|integer|exists:academic_years,id',
+            'branch_id' => 'nullable|integer',
+        ]);
+
+        $summary = app(OptionalFeeResponseAnalytics::class)->byCourse(
+            !empty($filters['academic_year_id']) ? (int) $filters['academic_year_id'] : null,
+            $branchIds,
+            !empty($filters['branch_id']) ? (int) $filters['branch_id'] : null
+        );
+
+        return response()->json($summary);
     }
 
     /**

@@ -232,6 +232,9 @@
             <p>Review practical and trip fees by branch, course, and term. Open a fee to update settings or assign it to eligible students.</p>
         </div>
         <div class="optional-fees-hero__actions">
+            <a href="{{ route('staff.accountant.optional-fees.responses') }}" class="optional-fees-hero__button optional-fees-hero__button--primary">
+                <i class="fa-solid fa-user-check" aria-hidden="true"></i>Review student decisions
+            </a>
             <a href="{{ route('staff.accountant.optional-fees.report') }}" class="optional-fees-hero__button optional-fees-hero__button--primary">
                 <i class="fa-solid fa-chart-column" aria-hidden="true"></i>View student responses
             </a>

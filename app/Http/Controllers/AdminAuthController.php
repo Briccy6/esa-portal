@@ -19,6 +19,7 @@ use App\Models\Client;
 use App\Models\ClientTransaction;
 use App\Models\ClientSubscription;
 use App\Services\AcademicYearContext;
+use App\Services\OptionalFeeResponseAnalytics;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -62,6 +63,10 @@ class AdminAuthController extends Controller
         try {
             $selectedAcademicYear = AcademicYearContext::selected();
             $academicYearId = $selectedAcademicYear?->id;
+            $optionalFeeResponseSummary = app(OptionalFeeResponseAnalytics::class)->byCourse(
+                $academicYearId ? (int) $academicYearId : null,
+                \App\Models\Branch::query()->pluck('id')->map(fn ($id) => (int) $id)->all()
+            );
 
             // Basic counts (fast queries)
             $totalStudents = AcademicYearContext::filterStudents(Student::query())->count();
@@ -374,7 +379,8 @@ class AdminAuthController extends Controller
                 'nesaRegistered',
                 'nesaNotRegistered',
                 'approvedStudents',
-                'notApprovedStudents'
+                'notApprovedStudents',
+                'optionalFeeResponseSummary'
             );
             
             return view('admin.dashboard', $dashboardData);
