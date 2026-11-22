@@ -59,9 +59,21 @@
                     $initials = $teacher
                         ? collect(preg_split('/\s+/', trim($teacher->teacher_name)))->take(2)->map(fn ($word) => strtoupper(substr($word, 0, 1)))->implode('')
                         : 'T';
-                    $teacherPhotoUrl = $teacher
-                        ? ($teacher->google_avatar ?: $teacher->photo_url)
-                        : null;
+                    $teacherPhotoUrl = null;
+                    if ($teacher) {
+                        if ($teacher->photo) {
+                            $teacherPhoto = trim((string) $teacher->photo);
+                            if (str_starts_with($teacherPhoto, 'data:image')) {
+                                $teacherPhotoUrl = $teacherPhoto;
+                            } elseif (str_starts_with($teacherPhoto, 'base64,')) {
+                                $teacherPhotoUrl = 'data:image/jpeg;base64,' . substr($teacherPhoto, 7);
+                            } else {
+                                $teacherPhotoUrl = 'data:image/jpeg;base64,' . $teacherPhoto;
+                            }
+                        } elseif ($teacher->google_avatar) {
+                            $teacherPhotoUrl = $teacher->google_avatar;
+                        }
+                    }
                 @endphp
                 <article class="lesson-card"
                          data-search="{{ strtolower(($lesson->title ?? '') . ' ' . ($teacher?->teacher_name ?? '') . ' ' . ($course->course_name ?? '')) }}">
@@ -75,7 +87,8 @@
                         <div class="teacher-row">
                             @if($teacherPhotoUrl)
                                 <span class="teacher-avatar-img">
-                                    <img src="{{ $teacherPhotoUrl }}" alt="{{ $teacher->teacher_name }}">
+                                    <span class="teacher-avatar-fallback">{{ $initials }}</span>
+                                    <img src="{{ $teacherPhotoUrl }}" alt="{{ $teacher->teacher_name }}" onerror="this.style.display='none'">
                                 </span>
                             @else
                                 <span class="teacher-avatar">{{ $initials }}</span>
@@ -121,7 +134,8 @@
                                     <div class="overview-instructor">
                                         @if($teacherPhotoUrl)
                                             <span class="teacher-avatar-img large">
-                                                <img src="{{ $teacherPhotoUrl }}" alt="{{ $teacher->teacher_name }}">
+                                                <span class="teacher-avatar-fallback">{{ $initials }}</span>
+                                                <img src="{{ $teacherPhotoUrl }}" alt="{{ $teacher->teacher_name }}" onerror="this.style.display='none'">
                                             </span>
                                         @else
                                             <span class="teacher-avatar large">{{ $initials }}</span>
@@ -465,8 +479,10 @@
 .teacher-avatar-img {
     width: 38px;
     height: 38px;
-    display: block;
+    display: grid;
     flex-shrink: 0;
+    position: relative;
+    place-items: center;
     overflow: hidden;
     border: 2px solid #edf1f6;
     border-radius: 50%;
@@ -477,7 +493,20 @@
     width: 100%;
     height: 100%;
     display: block;
+    position: relative;
+    z-index: 1;
     object-fit: cover;
+}
+
+.teacher-avatar-fallback {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: var(--course-navy);
+    color: #fff;
+    font-size: .72rem;
+    font-weight: 800;
 }
 
 .teacher-avatar-img.large {
