@@ -408,13 +408,9 @@
                                             </td>
                                             <td data-label="Course">
                                                 <span class="timetable-cell-value">
-                                                    @if($session->activity_type === 'lesson' && $session->lesson)
-                                                        @foreach($session->courses as $course)
-                                                            <span class="badge bg-primary">{{ $course->abbreviation ?? $course->course_name }}</span>{{ !$loop->last ? ' ' : '' }}
-                                                        @endforeach
-                                                    @else
-                                                        <span class="text-muted">-</span>
-                                                    @endif
+                                                    @foreach($session->courses as $course)
+                                                        <span class="badge bg-primary">{{ $course->abbreviation ?? $course->course_name }}</span>{{ !$loop->last ? ' ' : '' }}
+                                                    @endforeach
                                                 </span>
                                             </td>
                                             <td data-label="Lesson / subject" style="font-weight: 500;">

@@ -137,13 +137,9 @@
                                             <td style="font-weight: 500;">{{ $session->start_time ?? '' }} - {{ $session->end_time ?? '' }}</td>
                                             <td style="font-weight: 500;">{{ $dayName }}</td>
                                             <td>
-                                                @if($session->activity_type === 'lesson' && $session->lesson)
-                                                    @foreach($session->courses as $course)
-                                                        <span class="badge bg-info text-white">{{ $course->course_name }}</span>{{ !$loop->last ? ' ' : '' }}
-                                                    @endforeach
-                                                @else
-                                                    <span class="text-muted">-</span>
-                                                @endif
+                                                @foreach($session->courses as $course)
+                                                    <span class="badge bg-info text-white">{{ $course->course_name }}</span>{{ !$loop->last ? ' ' : '' }}
+                                                @endforeach
                                             </td>
                                             <td>
                                                 @if($session->activity_type === 'lesson' && $session->lesson)

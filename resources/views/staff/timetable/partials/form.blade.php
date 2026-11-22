@@ -497,20 +497,42 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderCourses(row, selectedIds = []) {
+        const activityType = row.querySelector('.activity-type').value;
         const lesson = lessonData.find(item => String(item.lesson_id) === row.querySelector('.lesson-select').value);
         const picker = row.querySelector('[data-course-picker]');
         const preview = row.querySelector('[data-teacher-preview]');
         const searchInput = row.querySelector('.course-search');
         picker.replaceChildren();
-        if (!lesson) {
-            preview.textContent = 'Select a lesson to see its assigned teacher.';
+        
+        // For non-lesson activities, show all branch courses
+        // For lesson activities, show courses assigned to the lesson
+        if (activityType === 'lesson' && !lesson) {
+            preview.textContent = 'Select a lesson to see its assigned courses.';
             row.dataset.selectedCourses = '';
             if (searchInput) searchInput.style.display = 'none';
             return;
         }
+        
         if (searchInput) searchInput.style.display = 'block';
         const selected = selectedIds.map(String);
-        lesson.courses.forEach(course => {
+        
+        let coursesToShow = [];
+        if (activityType === 'lesson' && lesson) {
+            coursesToShow = lesson.courses;
+        } else {
+            // For non-lesson activities, collect all unique courses from all lessons
+            const allCourses = new Map();
+            lessonData.forEach(item => {
+                item.courses.forEach(course => {
+                    if (!allCourses.has(course.id)) {
+                        allCourses.set(course.id, course);
+                    }
+                });
+            });
+            coursesToShow = Array.from(allCourses.values());
+        }
+        
+        coursesToShow.forEach(course => {
             const label = document.createElement('label');
             label.className = 'course-option';
             label.dataset.courseName = (course.abbreviation || course.name).toLowerCase();
@@ -524,7 +546,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const name = document.createElement('strong');
             name.textContent = course.abbreviation || course.name;
             const teacher = document.createElement('small');
-            teacher.textContent = course.teacher_name ? `Teacher: ${course.teacher_name}` : 'Teacher: not assigned';
+            if (activityType === 'lesson' && lesson) {
+                teacher.textContent = course.teacher_name ? `Teacher: ${course.teacher_name}` : 'Teacher: not assigned';
+            } else {
+                teacher.textContent = '';
+            }
             copy.append(name, teacher);
             label.append(checkbox, copy);
             picker.append(label);
@@ -546,15 +572,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateTeacherPreview(row) {
+        const activityType = row.querySelector('.activity-type').value;
         const selected = Array.from(row.querySelectorAll('[data-course-picker] input:checked'));
         const details = selected.map(input => {
             const course = lessonData.find(item => String(item.lesson_id) === row.querySelector('.lesson-select').value)
                 ?.courses.find(item => String(item.id) === input.value);
             return course ? `${course.abbreviation || course.name}: ${course.teacher_name || 'not assigned'}` : '';
         }).filter(Boolean);
-        row.querySelector('[data-teacher-preview]').textContent = details.length
-            ? `Assigned teacher${details.length > 1 ? 's' : ''} · ${details.join(' · ')}`
-            : 'Choose one or more courses to study together.';
+        
+        if (activityType === 'lesson') {
+            row.querySelector('[data-teacher-preview]').textContent = details.length
+                ? `Assigned teacher${details.length > 1 ? 's' : ''} · ${details.join(' · ')}`
+                : 'Choose one or more courses to study together.';
+        } else {
+            const courseNames = selected.map(input => {
+                const course = Array.from(lessonData).flatMap(item => item.courses)
+                    .find(item => String(item.id) === input.value);
+                return course ? (course.abbreviation || course.name) : '';
+            }).filter(Boolean);
+            row.querySelector('[data-teacher-preview]').textContent = courseNames.length
+                ? `Selected course${courseNames.length > 1 ? 's' : ''} · ${courseNames.join(' · ')}`
+                : 'Choose one or more courses for this session.';
+        }
         row.dataset.selectedCourses = selected.map(input => input.value).join(',');
     }
 
@@ -566,7 +605,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const reservePanel = row.querySelector('[data-activity-type-panel]');
         const lessonPanel = row.querySelector('[data-lesson-panel]');
         const lessonSelect = row.querySelector('.lesson-select');
-        const coursePicker = row.querySelector('[data-course-picker]');
         const teacherPreview = row.querySelector('[data-teacher-preview]');
         
         if (activityType === 'reserve') {
@@ -574,18 +612,16 @@ document.addEventListener('DOMContentLoaded', () => {
             lessonPanel.style.display = 'none';
             lessonSelect.disabled = true;
             lessonSelect.required = false;
-            coursePicker.style.opacity = '0.5';
-            coursePicker.style.pointerEvents = 'none';
-            teacherPreview.textContent = 'Lesson selection is disabled for reserve sessions.';
+            teacherPreview.textContent = 'Select courses below for this reserve session.';
         } else {
             reservePanel.style.display = 'none';
             lessonPanel.style.display = activityType === 'lesson' ? 'block' : 'none';
             lessonSelect.disabled = false;
-            lessonSelect.required = true;
-            coursePicker.style.opacity = '1';
-            coursePicker.style.pointerEvents = 'auto';
-            if (row.querySelector('.lesson-select').value) {
+            lessonSelect.required = activityType === 'lesson';
+            if (activityType === 'lesson' && row.querySelector('.lesson-select').value) {
                 teacherPreview.textContent = 'Select a lesson to see its assigned teacher.';
+            } else {
+                teacherPreview.textContent = 'Select courses below for this session.';
             }
         }
         
@@ -628,7 +664,11 @@ document.addEventListener('DOMContentLoaded', () => {
             row.dataset.selectedCourses = '';
             renderCourses(row, []);
         });
-        row.querySelector('.activity-type')?.addEventListener('change', () => syncSession(row));
+        row.querySelector('.activity-type')?.addEventListener('change', () => {
+            syncSession(row);
+            // Re-render courses when activity type changes to show all courses for non-lesson activities
+            renderCourses(row, row.dataset.selectedCourses ? row.dataset.selectedCourses.split(',') : []);
+        });
         row.querySelector('.session-type')?.addEventListener('change', () => syncSession(row));
         row.querySelector('.remove-session').addEventListener('click', () => {
             row.remove();
@@ -772,15 +812,10 @@ document.addEventListener('DOMContentLoaded', () => {
     updateTermOptions(false);
     document.getElementById('timetable-form').addEventListener('submit', event => {
         const missingCourses = Array.from(container.querySelectorAll('.session-card'))
-            .some(row => {
-                const activityType = row.querySelector('.activity-type').value;
-                // Only require courses for lesson activities
-                if (activityType !== 'lesson') return false;
-                return !row.querySelector('[data-course-picker] input:checked');
-            });
+            .some(row => !row.querySelector('[data-course-picker] input:checked'));
         if (missingCourses) {
             event.preventDefault();
-            lessonMessage.textContent = 'Choose at least one branch-assigned course for every lesson session.';
+            lessonMessage.textContent = 'Choose at least one course for every session.';
             lessonMessage.style.display = 'block';
             lessonMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }

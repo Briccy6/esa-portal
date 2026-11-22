@@ -129,9 +129,20 @@ class DosTimetableController extends Controller
             ->toArray();
     }
 
-    protected function getSessionCourseIdsFromInput(array $sessionData, int $branchId, Lesson $lesson): array
+    protected function getSessionCourseIdsFromInput(array $sessionData, int $branchId, ?Lesson $lesson): array
     {
         $courseIds = array_filter(array_map('intval', $sessionData['course_ids'] ?? []));
+        
+        // For non-lesson activities, allow any course from the branch
+        if (!$lesson || !isset($sessionData['activity_type']) || $sessionData['activity_type'] !== 'lesson') {
+            $available = Course::whereIn('id', LessonBranchCourse::where('branch_id', $branchId)
+                ->pluck('course_id')->unique())
+                ->pluck('id')
+                ->toArray();
+            return array_values(array_unique(array_intersect($courseIds, $available)));
+        }
+        
+        // For lesson activities, only allow courses assigned to the lesson
         $available = $this->getCourseIdsForLesson($branchId, $lesson->id);
         return array_values(array_unique(array_intersect($courseIds, $available)));
     }
@@ -158,17 +169,34 @@ class DosTimetableController extends Controller
         foreach ($request->sessions as $index => $sessionData) {
             $lesson = Lesson::find($sessionData['lesson_id']);
             $courseIds = array_values(array_unique(array_map('intval', $sessionData['course_ids'] ?? [])));
-            $availableCourseIds = $lesson
-                ? $this->getCourseIdsForLesson((int) $request->branch_id, $lesson->id)
-                : [];
+            $activityType = $sessionData['activity_type'] ?? 'lesson';
+            
+            // For lesson activities, validate lesson and course assignment
+            if ($activityType === 'lesson') {
+                $availableCourseIds = $lesson
+                    ? $this->getCourseIdsForLesson((int) $request->branch_id, $lesson->id)
+                    : [];
 
-            if (! $lesson
-                || ($lesson->academic_year_id && (int) $lesson->academic_year_id !== (int) $request->academic_year_id)
-                || ! $courseIds
-                || array_diff($courseIds, $availableCourseIds)) {
-                throw \Illuminate\Validation\ValidationException::withMessages([
-                    "sessions.{$index}.lesson_id" => 'Choose a lesson and one or more courses assigned to that lesson in the selected branch and academic year.',
-                ]);
+                if (! $lesson
+                    || ($lesson->academic_year_id && (int) $lesson->academic_year_id !== (int) $request->academic_year_id)
+                    || ! $courseIds
+                    || array_diff($courseIds, $availableCourseIds)) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        "sessions.{$index}.lesson_id" => 'Choose a lesson and one or more courses assigned to that lesson in the selected branch and academic year.',
+                    ]);
+                }
+            } else {
+                // For non-lesson activities, only validate that courses exist in the branch
+                $availableCourseIds = Course::whereIn('id', LessonBranchCourse::where('branch_id', (int) $request->branch_id)
+                    ->pluck('course_id')->unique())
+                    ->pluck('id')
+                    ->toArray();
+                
+                if (! $courseIds || array_diff($courseIds, $availableCourseIds)) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        "sessions.{$index}.course_ids" => 'Choose one or more courses available in the selected branch.',
+                    ]);
+                }
             }
 
             if ($timetable && !empty($sessionData['session_id'])
@@ -430,8 +458,8 @@ class DosTimetableController extends Controller
             'sessions.*.end_time' => 'required|date_format:H:i',
             'sessions.*.classroom' => 'nullable|string|max:100',
             'sessions.*.notes' => 'nullable|string|max:500',
-            'sessions.*.course_ids' => 'nullable|array',
-            'sessions.*.course_ids.*' => 'nullable|exists:courses,id',
+            'sessions.*.course_ids' => 'required|array|min:1',
+            'sessions.*.course_ids.*' => 'required|exists:courses,id',
             'sessions.*.activity_type' => ['required', Rule::in(['lesson', 'self_study', 'group_work', 'reserve'])],
             'sessions.*.reserve_text' => 'nullable|string|max:500',
             'sessions.*.session_type' => ['nullable', Rule::in(['class', 'test'])],
@@ -649,8 +677,8 @@ class DosTimetableController extends Controller
             'sessions.*.end_time' => 'required|date_format:H:i',
             'sessions.*.classroom' => 'nullable|string|max:100',
             'sessions.*.notes' => 'nullable|string|max:500',
-            'sessions.*.course_ids' => 'nullable|array',
-            'sessions.*.course_ids.*' => 'nullable|exists:courses,id',
+            'sessions.*.course_ids' => 'required|array|min:1',
+            'sessions.*.course_ids.*' => 'required|exists:courses,id',
             'sessions.*.activity_type' => ['required', Rule::in(['lesson', 'self_study', 'group_work', 'reserve'])],
             'sessions.*.reserve_text' => 'nullable|string|max:500',
             'sessions.*.session_type' => ['nullable', Rule::in(['class', 'test'])],
