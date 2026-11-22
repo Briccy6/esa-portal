@@ -205,6 +205,12 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('staff.accountant.optional-fees.*') ? 'active' : '' }}" href="{{ route('staff.accountant.optional-fees.index') }}">
+                            <span class="nav-icon"><i class="fas fa-money-bill-wave"></i></span>
+                            <span class="nav-text">Optional Fees</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('to-whom.*') ? 'active' : '' }}" href="{{ route('to-whom.index') }}">
                             <span class="nav-icon"><i class="fas fa-file-alt"></i></span>
                             <span class="nav-text">Official Documents</span>

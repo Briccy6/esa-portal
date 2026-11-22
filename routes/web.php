@@ -812,6 +812,12 @@ Route::prefix('staff')->name('staff.')->group(function () {
             Route::get('/receipts/{transaction}', [AccountantDashboardController::class, 'receiptShow'])->name('receipts.show');
             Route::get('/receipts/{transaction}/print', [AccountantDashboardController::class, 'receiptPrint'])->name('receipts.print');
             Route::get('/timetables', [\App\Http\Controllers\AccountantTimetableController::class, 'index'])->name('timetables.index');
+            Route::prefix('optional-fees')->name('optional-fees.')->group(function () {
+                Route::get('/', [\App\Http\Controllers\OptionalFeeController::class, 'index'])->name('index');
+                Route::put('/{id}', [\App\Http\Controllers\OptionalFeeController::class, 'update'])->name('update');
+                Route::get('/report', [\App\Http\Controllers\OptionalFeeController::class, 'report'])->name('report');
+                Route::get('/export', [\App\Http\Controllers\OptionalFeeController::class, 'exportReport'])->name('export');
+            });
         });
 
         Route::middleware(['role:accountant,admin'])->prefix('accounting')->name('accounting.')->group(function () {
@@ -1560,6 +1566,10 @@ Route::post('/students/send-verification-code', [StudentController::class, 'send
 Route::post('/students/verify-email-code', [StudentController::class, 'verifyEmailCode'])->name('students.verifyEmailCode');
 
 Route::middleware('auth:student')->get('/student/dashboard', [StudentController::class, 'dashboard'])->name('student.dashboard');
+Route::middleware('auth:student')->prefix('student/optional-fees')->name('student.optional-fees.')->group(function () {
+    Route::get('/pending', [\App\Http\Controllers\OptionalFeeController::class, 'getPendingFees'])->name('pending');
+    Route::post('/respond', [\App\Http\Controllers\OptionalFeeController::class, 'respond'])->name('respond');
+});
 // Student report-card routes are defined below in the grouped `student` prefix
 // (using `StudentReportCardController`). The older standalone routes were
 // duplicated and caused named route collisions during route:cache.

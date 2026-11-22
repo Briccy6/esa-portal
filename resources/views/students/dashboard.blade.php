@@ -1067,6 +1067,29 @@
                             </div>
                         @endif
                     </div>
+    @endif
+
+    <!-- Optional Fees Modal -->
+    <div class="modal fade" id="optionalFeesModal" tabindex="-1" aria-labelledby="optionalFeesTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title" id="optionalFeesTitle">
+                        <i class="fas fa-info-circle me-2"></i>Optional Activities
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3">You have optional activities available. Please indicate whether you would like to participate:</p>
+                    <div id="optionalFeesList"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Decide Later</button>
+                    <button type="button" class="btn btn-primary" id="submitOptionalFees">Submit Responses</button>
+                </div>
+            </div>
+        </div>
+    </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-light" data-bs-dismiss="modal">Remind me later</button>
                         <a href="{{ route('students.profile') }}" class="btn btn-primary">
@@ -1113,6 +1136,82 @@
 
                 updateCountdown();
                 window.setInterval(updateCountdown, 1000);
+
+                // Check for optional fees
+                fetch('{{ route('student.optional-fees.pending') }}')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.pending && data.fees && data.fees.length > 0) {
+                            const modal = document.getElementById('optionalFeesModal');
+                            const feesList = document.getElementById('optionalFeesList');
+                            
+                            data.fees.forEach(fee => {
+                                const feeHtml = `
+                                    <div class="card mb-3" data-fee-type="${fee.type}" data-fee-id="${data.fee_id}">
+                                        <div class="card-body">
+                                            <h6 class="mb-2">${fee.name}</h6>
+                                            <p class="mb-2">Amount: ${fee.amount} RWF</p>
+                                            ${fee.due_date ? `<small class="text-muted">Due: ${fee.due_date}</small>` : ''}
+                                            <div class="mt-3">
+                                                <label class="form-label">Your response:</label>
+                                                <select class="form-select fee-response">
+                                                    <option value="pending" ${fee.current_response === 'pending' ? 'selected' : ''}>Decide later</option>
+                                                    <option value="accepted" ${fee.current_response === 'accepted' ? 'selected' : ''}>I will participate</option>
+                                                    <option value="declined" ${fee.current_response === 'declined' ? 'selected' : ''}>I will not participate</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+                                feesList.innerHTML += feeHtml;
+                            });
+
+                            if (modal && window.bootstrap && window.bootstrap.Modal) {
+                                window.bootstrap.Modal.getOrCreateInstance(modal).show();
+                            }
+                        }
+                    });
+
+                // Handle optional fees submission
+                document.getElementById('submitOptionalFees').addEventListener('click', function() {
+                    const feeCards = document.querySelectorAll('#optionalFeesList .card');
+                    const responses = [];
+
+                    feeCards.forEach(card => {
+                        const feeType = card.dataset.feeType;
+                        const feeId = card.dataset.feeId;
+                        const response = card.querySelector('.fee-response').value;
+
+                        if (response !== 'pending') {
+                            responses.push({
+                                course_term_branch_fee_id: feeId,
+                                fee_type: feeType,
+                                response: response
+                            });
+                        }
+                    });
+
+                    if (responses.length > 0) {
+                        responses.forEach(resp => {
+                            fetch('{{ route('student.optional-fees.respond') }}', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                                },
+                                body: JSON.stringify(resp)
+                            });
+                        });
+
+                        const modal = document.getElementById('optionalFeesModal');
+                        if (modal && window.bootstrap && window.bootstrap.Modal) {
+                            window.bootstrap.Modal.getInstance(modal).hide();
+                        }
+
+                        // Show success message
+                        alert('Your responses have been recorded. Thank you!');
+                    }
+                });
             });
         </script>
     @endif
