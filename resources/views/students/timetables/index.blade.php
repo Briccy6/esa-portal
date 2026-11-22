@@ -421,7 +421,11 @@
                                                     @elseif($session->activity_type === 'self_study')
                                                         Self Study
                                                     @elseif($session->activity_type === 'group_work')
-                                                        Group Work
+                                                        @if($session->lesson)
+                                                            {{ $session->lesson->title }} <span class="text-muted">(Group Work)</span>
+                                                        @else
+                                                            Group Work
+                                                        @endif
                                                     @elseif($session->activity_type === 'reserve')
                                                         @if($session->reserve_text)
                                                             {{ $session->reserve_text }}
