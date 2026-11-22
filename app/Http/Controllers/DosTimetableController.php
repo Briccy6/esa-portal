@@ -736,6 +736,12 @@ class DosTimetableController extends Controller
     {
         $notifications = [];
         $oldCourseIds = $this->collectCourseIdsFromSession($oldSession);
+        
+        // Reserve activities don't have lesson_id
+        if (!isset($newSessionData['lesson_id'])) {
+            return $notifications;
+        }
+        
         $lesson = Lesson::find($newSessionData['lesson_id']);
         if (!$lesson) {
             return $notifications;
