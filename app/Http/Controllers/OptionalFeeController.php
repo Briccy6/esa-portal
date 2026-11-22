@@ -8,6 +8,7 @@ use App\Models\Student;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class OptionalFeeController extends Controller
 {
@@ -127,17 +128,28 @@ class OptionalFeeController extends Controller
         ]);
 
         $fee = CourseTermBranchFee::findOrFail($id);
-        $fee->update([
+        
+        $updateData = [
             'practical_fee' => $request->practical_fee ?? 0,
             'trip_fee' => $request->trip_fee ?? 0,
             'is_practical_mandatory' => $request->is_practical_mandatory ?? false,
             'is_trip_mandatory' => $request->is_trip_mandatory ?? false,
             'practical_due_date' => $request->practical_due_date,
             'trip_due_date' => $request->trip_due_date,
-            'notify_students' => $request->notify_students ?? false,
-            'valid_from' => $request->valid_from,
-            'valid_until' => $request->valid_until,
-        ]);
+        ];
+
+        // Only update these columns if they exist in the database
+        if (Schema::hasColumn('course_term_branch_fees', 'notify_students')) {
+            $updateData['notify_students'] = $request->notify_students ?? false;
+        }
+        if (Schema::hasColumn('course_term_branch_fees', 'valid_from')) {
+            $updateData['valid_from'] = $request->valid_from;
+        }
+        if (Schema::hasColumn('course_term_branch_fees', 'valid_until')) {
+            $updateData['valid_until'] = $request->valid_until;
+        }
+
+        $fee->update($updateData);
 
         return back()->with('success', 'Fee settings updated successfully.');
     }
