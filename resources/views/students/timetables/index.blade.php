@@ -408,47 +408,79 @@
                                             </td>
                                             <td data-label="Course">
                                                 <span class="timetable-cell-value">
-                                                    @foreach($session->courses as $course)
-                                                        <span class="badge bg-primary">{{ $course->abbreviation ?? $course->course_name }}</span>{{ !$loop->last ? ' ' : '' }}
-                                                    @endforeach
+                                                    @if($session->activity_type === 'lesson' && $session->lesson)
+                                                        @foreach($session->courses as $course)
+                                                            <span class="badge bg-primary">{{ $course->abbreviation ?? $course->course_name }}</span>{{ !$loop->last ? ' ' : '' }}
+                                                        @endforeach
+                                                    @else
+                                                        <span class="text-muted">-</span>
+                                                    @endif
                                                 </span>
                                             </td>
                                             <td data-label="Lesson / subject" style="font-weight: 500;">
-                                                <span class="timetable-cell-value">{{ $session->lesson->title ?? 'N/A' }}</span>
+                                                <span class="timetable-cell-value">
+                                                    @if($session->activity_type === 'lesson' && $session->lesson)
+                                                        {{ $session->lesson->title }}
+                                                    @elseif($session->activity_type === 'self_study')
+                                                        Self Study
+                                                    @elseif($session->activity_type === 'group_work')
+                                                        Group Work
+                                                    @elseif($session->activity_type === 'reserve')
+                                                        @if($session->reserve_text)
+                                                            {{ $session->reserve_text }}
+                                                        @else
+                                                            Reserve Time
+                                                        @endif
+                                                    @else
+                                                        N/A
+                                                    @endif
+                                                </span>
                                             </td>
                                             <td data-label="Room / location">
                                                 <span class="timetable-cell-value">{{ $session->classroom ?? 'N/A' }}</span>
                                             </td>
                                             <td data-label="Teacher">
                                                 <span class="timetable-cell-value">
-                                                    @php
-                                                        $displayTeacher = $session->lesson->branch_teacher ?? null;
-                                                    @endphp
-                                                    @if($displayTeacher)
-                                                        <span class="badge bg-success">{{ $displayTeacher->teacher_name }}</span>
+                                                    @if($session->activity_type === 'lesson' && $session->lesson)
+                                                        @php
+                                                            $displayTeacher = $session->lesson->branch_teacher ?? null;
+                                                        @endphp
+                                                        @if($displayTeacher)
+                                                            <span class="badge bg-success">{{ $displayTeacher->teacher_name }}</span>
+                                                        @else
+                                                            <span class="badge bg-warning text-dark">TBA</span>
+                                                        @endif
                                                     @else
-                                                        <span class="badge bg-warning text-dark">TBA</span>
+                                                        <span class="text-muted">-</span>
                                                     @endif
                                                 </span>
                                             </td>
                                             <td data-label="Session type / eligibility">
                                                 <span class="timetable-cell-value">
-                                                    @if($session->session_type === 'test')
-                                                        @if($session->test_eligibility['eligible'] ?? false)
-                                                            <span class="badge bg-success">Test · eligible</span>
+                                                    @if($session->activity_type === 'lesson')
+                                                        @if($session->session_type === 'test')
+                                                            @if($session->test_eligibility['eligible'] ?? false)
+                                                                <span class="badge bg-success">Test · eligible</span>
+                                                            @else
+                                                                <span class="badge bg-danger">Test · not eligible</span>
+                                                                <small class="d-block mt-1 text-danger">
+                                                                    {{ $session->test_eligibility['reason'] ?? 'Fee payment is below the required percentage.' }}
+                                                                    Paid {{ number_format($session->test_eligibility['paid'] ?? 0, 1) }}%.
+                                                                    Required {{ number_format($session->test_eligibility['minimum'] ?? 0, 1) }}%.
+                                                                </small>
+                                                                <a class="small" href="{{ route('student.payment-schedule') }}">View fees</a>
+                                                            @endif
                                                         @else
-                                                            <span class="badge bg-danger">Test · not eligible</span>
-                                                            <small class="d-block mt-1 text-danger">
-                                                                {{ $session->test_eligibility['reason'] ?? 'Fee payment is below the required percentage.' }}
-                                                                Paid {{ number_format($session->test_eligibility['paid'] ?? 0, 1) }}%.
-                                                                Required {{ number_format($session->test_eligibility['minimum'] ?? 0, 1) }}%.
-                                                            </small>
-                                                            <a class="small" href="{{ route('student.payment-schedule') }}">View fees</a>
+                                                            <span class="badge bg-light text-dark">Class</span>
                                                         @endif
-                                                    @elseif($session->session_type === 'self_study')
-                                                        <span class="badge bg-info text-dark">Self study</span>
+                                                    @elseif($session->activity_type === 'self_study')
+                                                        <span class="badge bg-info text-dark">Self Study</span>
+                                                    @elseif($session->activity_type === 'group_work')
+                                                        <span class="badge bg-warning text-dark">Group Work</span>
+                                                    @elseif($session->activity_type === 'reserve')
+                                                        <span class="badge bg-secondary">Reserve</span>
                                                     @else
-                                                        <span class="badge bg-light text-dark">Class</span>
+                                                        <span class="badge bg-light text-dark">{{ ucfirst($session->activity_type ?? 'N/A') }}</span>
                                                     @endif
                                                 </span>
                                             </td>

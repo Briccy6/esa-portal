@@ -137,11 +137,31 @@
                                             <td style="font-weight: 500;">{{ $session->start_time ?? '' }} - {{ $session->end_time ?? '' }}</td>
                                             <td style="font-weight: 500;">{{ $dayName }}</td>
                                             <td>
-                                                @foreach($session->courses as $course)
-                                                    <span class="badge bg-info text-white">{{ $course->course_name }}</span>{{ !$loop->last ? ' ' : '' }}
-                                                @endforeach
+                                                @if($session->activity_type === 'lesson' && $session->lesson)
+                                                    @foreach($session->courses as $course)
+                                                        <span class="badge bg-info text-white">{{ $course->course_name }}</span>{{ !$loop->last ? ' ' : '' }}
+                                                    @endforeach
+                                                @else
+                                                    <span class="text-muted">-</span>
+                                                @endif
                                             </td>
-                                            <td>{{ $session->lesson->title ?? 'N/A' }}</td>
+                                            <td>
+                                                @if($session->activity_type === 'lesson' && $session->lesson)
+                                                    {{ $session->lesson->title }}
+                                                @elseif($session->activity_type === 'self_study')
+                                                    Self Study
+                                                @elseif($session->activity_type === 'group_work')
+                                                    Group Work
+                                                @elseif($session->activity_type === 'reserve')
+                                                    @if($session->reserve_text)
+                                                        {{ $session->reserve_text }}
+                                                    @else
+                                                        Reserve Time
+                                                    @endif
+                                                @else
+                                                    N/A
+                                                @endif
+                                            </td>
                                             <td>{{ $session->classroom ?? '' }}</td>
                                             <td>
                                                 <span class="badge bg-{{ $session->shift === 'morning' ? 'success' : ($session->shift === 'afternoon' ? 'warning' : 'secondary') }} text-white">

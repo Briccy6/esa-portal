@@ -138,22 +138,46 @@
                                             <td style="font-weight: 500;">{{ $session->start_time ?? '' }} - {{ $session->end_time ?? '' }}</td>
                                             <td style="font-weight: 500;">{{ $dayName }}</td>
                                             <td>
-                                                @foreach($session->courses as $course)
-                                                    <span class="badge bg-info text-white">{{ $course->course_name }}</span>{{ !$loop->last ? ' ' : '' }}
-                                                @endforeach
+                                                @if($session->activity_type === 'lesson' && $session->lesson)
+                                                    @foreach($session->courses as $course)
+                                                        <span class="badge bg-info text-white">{{ $course->course_name }}</span>{{ !$loop->last ? ' ' : '' }}
+                                                    @endforeach
+                                                @else
+                                                    <span class="text-muted">-</span>
+                                                @endif
                                             </td>
-                                            <td>{{ $session->lesson->title ?? 'N/A' }}</td>
+                                            <td>
+                                                @if($session->activity_type === 'lesson' && $session->lesson)
+                                                    {{ $session->lesson->title }}
+                                                @elseif($session->activity_type === 'self_study')
+                                                    Self Study
+                                                @elseif($session->activity_type === 'group_work')
+                                                    Group Work
+                                                @elseif($session->activity_type === 'reserve')
+                                                    @if($session->reserve_text)
+                                                        {{ $session->reserve_text }}
+                                                    @else
+                                                        Reserve Time
+                                                    @endif
+                                                @else
+                                                    N/A
+                                                @endif
+                                            </td>
                                             <td>{{ $session->classroom ?? '' }}</td>
                                             <td>
-                                                @php
-                                                    $teacherName = 'TBA';
-                                                    if ($session->lesson->teacher) {
-                                                        $teacherName = $session->lesson->teacher->teacher_name;
-                                                    } elseif ($session->lesson->teachers->isNotEmpty()) {
-                                                        $teacherName = $session->lesson->teachers->first()->teacher_name;
-                                                    }
-                                                @endphp
-                                                <span class="badge @if($teacherName !== 'TBA') bg-success text-white @else bg-warning text-dark @endif">{{ $teacherName }}</span>
+                                                @if($session->activity_type === 'lesson' && $session->lesson)
+                                                    @php
+                                                        $teacherName = 'TBA';
+                                                        if ($session->lesson->teacher) {
+                                                            $teacherName = $session->lesson->teacher->teacher_name;
+                                                        } elseif ($session->lesson->teachers->isNotEmpty()) {
+                                                            $teacherName = $session->lesson->teachers->first()->teacher_name;
+                                                        }
+                                                    @endphp
+                                                    <span class="badge @if($teacherName !== 'TBA') bg-success text-white @else bg-warning text-dark @endif">{{ $teacherName }}</span>
+                                                @else
+                                                    <span class="text-muted">-</span>
+                                                @endif
                                             </td>
                                         </tr>
                                         @endforeach
