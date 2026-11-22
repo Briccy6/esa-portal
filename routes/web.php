@@ -1029,6 +1029,18 @@ Route::middleware('auth:teacher')->prefix('teacher')->name('teacher.')->group(fu
     Route::post('marks/confirm-upload', [\App\Http\Controllers\Teacher\MarksController::class, 'confirmUpload'])->name('marks.confirm-upload');
 });
 
+// Lesson Units
+Route::middleware('auth:teacher')->prefix('teacher')->name('teacher.')->group(function () {
+    Route::get('lesson-units', [\App\Http\Controllers\Teacher\LessonUnitController::class, 'index'])->name('lesson-units.index');
+    Route::get('lesson-units/lesson/{lessonId}', [\App\Http\Controllers\Teacher\LessonUnitController::class, 'showLessonUnits'])->name('lesson-units.show');
+    Route::post('lesson-units', [\App\Http\Controllers\Teacher\LessonUnitController::class, 'store'])->name('lesson-units.store');
+    Route::put('lesson-units/{id}', [\App\Http\Controllers\Teacher\LessonUnitController::class, 'update'])->name('lesson-units.update');
+    Route::delete('lesson-units/{id}', [\App\Http\Controllers\Teacher\LessonUnitController::class, 'destroy'])->name('lesson-units.destroy');
+    Route::get('lesson-units/{id}/download', [\App\Http\Controllers\Teacher\LessonUnitController::class, 'downloadFile'])->name('lesson-units.download');
+    Route::post('lesson-units/import', [\App\Http\Controllers\Teacher\LessonUnitController::class, 'importCSV'])->name('lesson-units.import');
+    Route::get('lesson-units/export/{lessonId}', [\App\Http\Controllers\Teacher\LessonUnitController::class, 'exportCSV'])->name('lesson-units.export');
+});
+
 // Teacher marks recording helper: fetch existing marks for a context (to prefill inputs)
 Route::middleware('auth:teacher')->get('/api/teacher/marks/existing', function (\Illuminate\Http\Request $request) {
     $teacher = auth('teacher')->user();

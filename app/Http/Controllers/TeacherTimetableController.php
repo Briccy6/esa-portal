@@ -93,7 +93,7 @@ class TeacherTimetableController extends Controller
             ->whereHas('sessions', function($query) use ($allLessonIds) {
                 $query->whereIn('lesson_id', $allLessonIds);
             })
-            ->with(['branch', 'academicYear', 'term', 'sessions.lesson.teacher', 'sessions.lesson.teachers', 'sessions.courses'])
+            ->with(['branch', 'academicYear', 'term', 'sessions.lesson.teacher', 'sessions.lesson.teachers', 'sessions.courses', 'sessions.shifts'])
             ->get();
 
         // Filter sessions to only show those with the teacher's assigned lessons
@@ -157,7 +157,7 @@ class TeacherTimetableController extends Controller
         // Merge both sources
         $allLessonIds = array_unique(array_merge($assignedLessonIds, $directLessonIds));
 
-        $timetable->load(['branch', 'academicYear', 'term', 'sessions.lesson.teacher', 'sessions.lesson.teachers', 'sessions.courses']);
+        $timetable->load(['branch', 'academicYear', 'term', 'sessions.lesson.teacher', 'sessions.lesson.teachers', 'sessions.courses', 'sessions.shifts']);
 
         // Filter sessions to only show those with the teacher's assigned lessons
         $teacherSessions = $timetable->sessions->filter(function ($session) use ($allLessonIds) {

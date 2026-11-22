@@ -295,6 +295,20 @@
             </div>
         </div>
 
+        <!-- Lesson Units Card -->
+        <div class="dashboard-card">
+            <div class="card-icon">
+                <i class="bi bi-book-half"></i>
+            </div>
+            <h3 class="card-title">Lesson Units</h3>
+            <p class="card-description">Upload and manage lesson units for your courses.</p>
+            <div class="card-action">
+                <a href="{{ route('teacher.lesson-units.index') }}" class="btn-card btn-card-primary">
+                    <i class="bi bi-folder-open"></i> Manage Units
+                </a>
+            </div>
+        </div>
+
         <!-- Timetables Card -->
         <div class="dashboard-card">
             <div class="card-icon">

@@ -1,249 +1,283 @@
 @extends('teacher.layout')
 
 @section('content')
+@php
+    $sessionTotal = $timetables->sum(fn ($timetable) => $timetable->sessions->count());
+@endphp
+
 <style>
-    .timetable-header {
-        background: #1e40af;
-        color: white;
-        padding: 1.5rem;
-        border-radius: 12px;
-        margin-bottom: 1.5rem;
+    .teacher-timetable-page {
+        --tt-ink: #17243b;
+        --tt-muted: #748094;
+        --tt-accent: #d26c4f;
+        max-width: 1480px;
+        margin: 0 auto;
+        color: var(--tt-ink);
     }
-
-    .timetable-header h2 {
-        font-size: 1.5rem;
-        font-weight: 700;
-        margin-bottom: 0.25rem;
-    }
-
-    .timetable-header p {
-        opacity: 0.9;
-        margin-bottom: 0;
-        font-size: 0.95rem;
-    }
-
-    .timetable-table {
-        background: white;
-        border-radius: 12px;
+    .teacher-timetable-hero {
+        position: relative;
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 2rem;
         overflow: hidden;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-        border: 1px solid #e2e8f0;
+        padding: clamp(1.5rem, 4vw, 2.6rem);
+        margin-bottom: 1.6rem;
+        border: 1px solid rgba(255,255,255,.12);
+        border-radius: 22px;
+        background:
+            radial-gradient(circle at 82% 18%, rgba(210,108,79,.23), transparent 24%),
+            radial-gradient(circle at 96% 95%, rgba(72,137,148,.22), transparent 35%),
+            linear-gradient(125deg, #14233a 0%, #1b3851 68%, #22545b 120%);
+        color: #fff;
+        box-shadow: 0 18px 38px rgba(23,36,59,.16);
     }
-
-    .timetable-table thead {
-        background: #1e40af;
-        color: white;
-        display: table-header-group !important;
-        visibility: visible !important;
+    .teacher-timetable-hero::after {
+        position: absolute;
+        top: -90px;
+        right: 16%;
+        width: 250px;
+        height: 250px;
+        border: 1px solid rgba(255,255,255,.09);
+        border-radius: 50%;
+        box-shadow: 0 0 0 28px rgba(255,255,255,.025), 0 0 0 58px rgba(255,255,255,.02);
+        content: "";
+        pointer-events: none;
     }
-
-    .timetable-table th {
-        padding: 0.875rem 1rem;
-        font-weight: 600;
-        border: none;
-        color: white !important;
-        visibility: visible !important;
-        font-size: 0.875rem;
+    .teacher-timetable-hero__copy, .teacher-timetable-hero__stats { position: relative; z-index: 1; }
+    .teacher-timetable-hero__eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: .55rem;
+        margin-bottom: .85rem;
+        color: #efb69f;
+        font-size: .69rem;
+        font-weight: 800;
+        letter-spacing: .16em;
+        text-transform: uppercase;
     }
-
-    .timetable-table td {
-        padding: 0.875rem 1rem;
-        vertical-align: middle;
-        border-bottom: 1px solid #e2e8f0;
+    .teacher-timetable-hero__eyebrow::before {
+        width: 22px;
+        height: 1px;
+        background: currentColor;
+        content: "";
     }
-
-    .timetable-table tbody tr:hover {
-        background: #f8fafc;
+    .teacher-timetable-hero h1 {
+        margin: 0;
+        color: #fff;
+        font-size: clamp(1.7rem, 4vw, 2.55rem);
+        font-weight: 750;
+        letter-spacing: -.045em;
+        line-height: 1.08;
     }
-
-    .download-btn {
-        background: #1e40af;
-        border: none;
-        color: white;
-        padding: 0.5rem 1rem;
-        border-radius: 8px;
-        font-weight: 500;
-        font-size: 0.875rem;
-        transition: all 0.2s ease;
+    .teacher-timetable-hero p {
+        max-width: 560px;
+        margin: .75rem 0 0;
+        color: rgba(242,246,250,.76);
+        font-size: .94rem;
+        line-height: 1.65;
     }
-
-    .download-btn:hover {
-        background: #1e3a8a;
+    .teacher-timetable-hero__stats { display: flex; gap: .7rem; }
+    .teacher-timetable-stat {
+        min-width: 128px;
+        padding: .85rem 1rem;
+        border: 1px solid rgba(255,255,255,.14);
+        border-radius: 13px;
+        background: rgba(255,255,255,.075);
+        backdrop-filter: blur(8px);
+    }
+    .teacher-timetable-stat strong {
+        display: block;
+        color: #fff;
+        font-size: 1.45rem;
+        font-weight: 800;
+        font-variant-numeric: tabular-nums;
+        line-height: 1.1;
+    }
+    .teacher-timetable-stat span {
+        display: block;
+        margin-top: .35rem;
+        color: rgba(242,246,250,.69);
+        font-size: .7rem;
+        font-weight: 700;
+        letter-spacing: .04em;
+    }
+    .teacher-timetable-board {
+        overflow: hidden;
+        margin-bottom: 1.35rem;
+        border: 1px solid #e6e9ee;
+        border-radius: 20px;
+        background: #fff;
+        box-shadow: 0 8px 26px rgba(23,36,59,.055);
+    }
+    .teacher-timetable-board__top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 1.25rem 1.35rem;
+        border-bottom: 1px solid #edf0f3;
+        background: linear-gradient(100deg, #fff 0%, #fbfaf8 100%);
+    }
+    .teacher-timetable-board__eyebrow {
+        display: block;
+        margin-bottom: .3rem;
+        color: var(--tt-accent);
+        font-size: .65rem;
+        font-weight: 800;
+        letter-spacing: .13em;
+        text-transform: uppercase;
+    }
+    .teacher-timetable-board__title {
+        margin: 0;
+        color: var(--tt-ink);
+        font-size: 1.15rem;
+        font-weight: 800;
+        letter-spacing: -.02em;
+    }
+    .teacher-timetable-download {
+        display: inline-flex;
+        min-height: 42px;
+        align-items: center;
+        justify-content: center;
+        gap: .55rem;
+        padding: .65rem .95rem;
+        border: 1px solid #bc5b41;
+        border-radius: 10px;
+        background: #c96348;
+        color: #fff;
+        font-size: .78rem;
+        font-weight: 800;
+        transition: background .18s ease, box-shadow .18s ease, transform .18s ease;
+    }
+    .teacher-timetable-download:hover {
         transform: translateY(-1px);
+        border-color: #a94e37;
+        background: #a94e37;
+        color: #fff;
+        box-shadow: 0 7px 16px rgba(169,78,55,.2);
+    }
+    .teacher-timetable-board__meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .55rem .7rem;
+        padding: .9rem 1.35rem;
+        border-bottom: 1px solid #edf0f3;
+        background: #fbfcfd;
+    }
+    .teacher-timetable-meta {
+        display: inline-flex;
+        align-items: center;
+        gap: .42rem;
+        padding: .36rem .62rem;
+        border: 1px solid #e8ebef;
+        border-radius: 7px;
+        background: #fff;
+        color: #667287;
+        font-size: .7rem;
+        font-weight: 650;
+    }
+    .teacher-timetable-meta i { color: #a45b48; }
+    .teacher-timetable-empty {
+        display: grid;
+        min-height: 260px;
+        place-items: center;
+        padding: 2rem 1rem;
+        border: 1px solid #e6e9ee;
+        border-radius: 20px;
+        background: #fff;
+        text-align: center;
+        box-shadow: 0 8px 26px rgba(23,36,59,.045);
+    }
+    .teacher-timetable-empty__icon {
+        display: grid;
+        width: 56px;
+        height: 56px;
+        place-items: center;
+        margin: 0 auto .9rem;
+        border: 1px solid #f0dfd8;
+        border-radius: 17px;
+        background: #fff6f1;
+        color: var(--tt-accent);
+        font-size: 1.2rem;
+    }
+    .teacher-timetable-empty h2 { margin: 0; color: var(--tt-ink); font-size: 1.12rem; font-weight: 800; }
+    .teacher-timetable-empty p { max-width: 420px; margin: .45rem auto 0; color: var(--tt-muted); font-size: .84rem; }
+    @media (max-width: 767.98px) {
+        .teacher-timetable-hero { align-items: flex-start; flex-direction: column; gap: 1.25rem; }
+        .teacher-timetable-hero__stats { width: 100%; }
+        .teacher-timetable-stat { flex: 1; min-width: 0; }
+        .teacher-timetable-board__top { align-items: flex-start; }
+    }
+    @media (max-width: 520px) {
+        .teacher-timetable-page { padding-right: .25rem; padding-left: .25rem; }
+        .teacher-timetable-hero { padding: 1.3rem; border-radius: 17px; }
+        .teacher-timetable-hero__stats { gap: .5rem; }
+        .teacher-timetable-stat { padding: .7rem; }
+        .teacher-timetable-stat strong { font-size: 1.2rem; }
+        .teacher-timetable-board { border-radius: 15px; }
+        .teacher-timetable-board__top { flex-direction: column; padding: 1rem; }
+        .teacher-timetable-download { width: 100%; }
+        .teacher-timetable-board__meta { padding: .75rem 1rem; }
     }
 </style>
 
-<div class="container py-4">
-    <!-- Header -->
-    <div class="timetable-header">
-        <h2 class="mb-1"><i class="fas fa-calendar-alt me-2"></i>My Timetables</h2>
-        <p class="mb-0 opacity-75">View timetables for your assigned lessons</p>
-    </div>
+<main class="container-fluid py-4 teacher-timetable-page">
+    <header class="teacher-timetable-hero">
+        <div class="teacher-timetable-hero__copy">
+            <span class="teacher-timetable-hero__eyebrow">Teacher workspace · Weekly planner</span>
+            <h1>My teaching timetable</h1>
+            <p>Your assigned lessons, organized into a clear weekly agenda. Review class times, courses, rooms, and session notes at a glance.</p>
+        </div>
+        <div class="teacher-timetable-hero__stats" aria-label="Timetable summary">
+            <div class="teacher-timetable-stat">
+                <strong>{{ $timetables->count() }}</strong>
+                <span>Active schedules</span>
+            </div>
+            <div class="teacher-timetable-stat">
+                <strong>{{ $sessionTotal }}</strong>
+                <span>Assigned sessions</span>
+            </div>
+        </div>
+    </header>
 
     @if($timetables->isEmpty())
-        <div class="alert alert-info">
-            <i class="fas fa-info-circle me-2"></i>
-            No active timetables were found for your assigned classes.
-        </div>
+        <section class="teacher-timetable-empty">
+            <div>
+                <span class="teacher-timetable-empty__icon"><i class="fa-regular fa-calendar-xmark" aria-hidden="true"></i></span>
+                <h2>No active timetable yet</h2>
+                <p>Published schedules for your assigned lessons will appear here once they are active.</p>
+            </div>
+        </section>
     @else
         @foreach($timetables as $timetable)
-            <div class="card mb-4">
-                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <section class="teacher-timetable-board" aria-labelledby="timetable-title-{{ $timetable->id }}">
+                <header class="teacher-timetable-board__top">
                     <div>
-                        <h5 class="mb-1">{{ $timetable->title }}</h5>
-                        <small class="opacity-75">
-                            Branch: {{ $timetable->branch->name ?? 'N/A' }} |
-                            Academic Year: {{ $timetable->academicYear->year ?? 'N/A' }} |
-                            Term: {{ $timetable->term->name ?? 'N/A' }}
-                        </small>
-                        <br>
-                        <small class="opacity-75">
-                            <i class="fas fa-calendar-alt me-1"></i>
-                            Valid from: {{ $timetable->valid_from ? \Carbon\Carbon::parse($timetable->valid_from)->format('d M Y') : 'N/A' }}
-                            @if($timetable->valid_until)
-                                to {{ \Carbon\Carbon::parse($timetable->valid_until)->format('d M Y') }}
-                            @endif
-                        </small>
+                        <span class="teacher-timetable-board__eyebrow">Your weekly schedule</span>
+                        <h2 id="timetable-title-{{ $timetable->id }}" class="teacher-timetable-board__title">{{ $timetable->title }}</h2>
                     </div>
-                    <div>
-                        <button onclick="downloadTimetable({{ $timetable->id }})" class="download-btn">
-                            <i class="fas fa-download me-1"></i>Download
-                        </button>
-                    </div>
+                    <button
+                        type="button"
+                        class="teacher-timetable-download"
+                        onclick="downloadTimetable({{ $timetable->id }})"
+                        aria-label="Download {{ $timetable->title }} timetable"
+                    >
+                        <i class="fa-solid fa-arrow-down-to-line" aria-hidden="true"></i>
+                        Download timetable
+                    </button>
+                </header>
+                <div class="teacher-timetable-board__meta">
+                    <span class="teacher-timetable-meta"><i class="fa-solid fa-location-dot" aria-hidden="true"></i>{{ $timetable->branch->name ?? 'Branch not specified' }}</span>
+                    <span class="teacher-timetable-meta"><i class="fa-solid fa-graduation-cap" aria-hidden="true"></i>{{ $timetable->academicYear->year ?? 'Academic year not specified' }}</span>
+                    <span class="teacher-timetable-meta"><i class="fa-solid fa-book-open" aria-hidden="true"></i>{{ $timetable->term->name ?? 'Term not specified' }}</span>
+                    <span class="teacher-timetable-meta"><i class="fa-regular fa-calendar" aria-hidden="true"></i>
+                        {{ $timetable->valid_from?->format('d M Y') ?? 'N/A' }} – {{ $timetable->valid_until?->format('d M Y') ?? 'N/A' }}
+                    </span>
                 </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table id="timetable-{{ $timetable->id }}" class="table table-bordered table-hover" style="background: white;">
-                            <thead>
-                                <tr style="background: #1e40af; color: white;">
-                                    <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Time</th>
-                                    <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Day</th>
-                                    <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Course</th>
-                                    <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Lesson</th>
-                                    <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Room</th>
-                                    <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Teacher</th>
-                                    <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Shift</th>
-                                </tr>
-                            </thead>
-                            <tbody style="background: white;">
-                                @php
-                                    $days = [1 => 'Monday', 2 => 'Tuesday', 3 => 'Wednesday', 4 => 'Thursday', 5 => 'Friday', 6 => 'Saturday', 0 => 'Sunday'];
-                                @endphp
-                                @foreach($days as $dayNum => $dayName)
-                                    @php
-                                        $daySessions = $timetable->sessions->where('day_of_week', $dayNum)->sortBy('start_time');
-                                    @endphp
-                                    @if(!$daySessions->isEmpty())
-                                        @foreach($daySessions as $session)
-                                        <tr style="transition: all 0.3s ease;">
-                                            <td style="font-weight: 500;">
-                                                @forelse($session->shifts as $shift)
-                                                    <div>{{ ucfirst($shift->shift) }}:
-                                                        {{ $shift->start_time ? \Carbon\Carbon::parse($shift->start_time)->format('H:i') : ($session->start_time ?? '') }}
-                                                        -
-                                                        {{ $shift->end_time ? \Carbon\Carbon::parse($shift->end_time)->format('H:i') : ($session->end_time ?? '') }}
-                                                    </div>
-                                                @empty
-                                                    {{ $session->start_time ?? '' }} - {{ $session->end_time ?? '' }}
-                                                @endforelse
-                                            </td>
-                                            <td style="font-weight: 500;">{{ $dayName }}</td>
-                                            <td>
-                                                @foreach($session->courses as $course)
-                                                    <span class="badge bg-info text-white">{{ $course->course_name }}</span>{{ !$loop->last ? ' ' : '' }}
-                                                @endforeach
-                                            </td>
-                                            <td>
-                                                @if($session->activity_type === 'lesson' && $session->lesson)
-                                                    {{ $session->lesson->title }}
-                                                @elseif($session->activity_type === 'self_study')
-                                                    Self Study
-                                                @elseif($session->activity_type === 'group_work')
-                                                    Group Work
-                                                @elseif($session->activity_type === 'reserve')
-                                                    @if($session->reserve_text)
-                                                        {{ $session->reserve_text }}
-                                                    @else
-                                                        Reserve Time
-                                                    @endif
-                                                @else
-                                                    N/A
-                                                @endif
-                                            </td>
-                                            <td>{{ $session->classroom ?? '' }}</td>
-                                            <td>
-                                                @if($session->activity_type === 'lesson' && $session->lesson)
-                                                    @php
-                                                        $teacherName = 'TBA';
-                                                        if ($session->lesson->teacher) {
-                                                            $teacherName = $session->lesson->teacher->teacher_name;
-                                                        } elseif ($session->lesson->teachers->isNotEmpty()) {
-                                                            $teacherName = $session->lesson->teachers->first()->teacher_name;
-                                                        }
-                                                    @endphp
-                                                    <span class="badge @if($teacherName !== 'TBA') bg-success text-white @else bg-warning text-dark @endif">{{ $teacherName }}</span>
-                                                @else
-                                                    <span class="text-muted">-</span>
-                                                @endif
-                                            </td>
-                                            <td>
-                                                @if($session->shifts && $session->shifts->count() > 0)
-                                                    @foreach($session->shifts as $shift)
-                                                        <span class="badge bg-{{ $shift->shift === 'day' ? 'success' : ($shift->shift === 'evening' ? 'warning' : 'secondary') }} text-white">{{ ucfirst($shift->shift) }}</span>{{ !$loop->last ? ' ' : '' }}
-                                                    @endforeach
-                                                @else
-                                                    <span class="text-muted">-</span>
-                                                @endif
-                                            </td>
-                                        </tr>
-                                        @endforeach
-                                    @endif
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
+                @include('teacher.timetables._weekly-agenda', ['sessions' => $timetable->sessions])
+            </section>
         @endforeach
     @endif
-</div>
-
-<script>
-function downloadTimetable(timetableId) {
-    const table = document.getElementById('timetable-' + timetableId);
-    if (!table) return;
-
-    const tableClone = table.cloneNode(true);
-    
-    // Create a clean HTML for the timetable
-    const html = `
-        <html>
-        <head>
-            <title>Timetable</title>
-            <style>
-                body { font-family: Arial, sans-serif; padding: 20px; }
-                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-                th { background-color: #667eea; color: white; }
-                tr:nth-child(even) { background-color: #f9f9f9; }
-            </style>
-        </head>
-        <body>
-            <h2>Teaching Timetable</h2>
-            ${tableClone.outerHTML}
-        </body>
-        </html>
-    `;
-
-    const blob = new Blob([html], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'timetable.html';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-}
-</script>
+</main>
 @endsection

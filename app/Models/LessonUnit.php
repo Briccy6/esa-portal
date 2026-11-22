@@ -15,6 +15,7 @@ class LessonUnit extends Model
     'unit_name',
     'hours',
     'course_level',
+    'file_path',
 ];
 
 
