@@ -2590,7 +2590,143 @@ function startCountdown(initialData) {
 document.addEventListener('DOMContentLoaded', function() {
     updateReportCardStatus();
     setInterval(updateReportCardStatus, 30000);
+
+    // Load notifications on page load
+    loadNotifications();
 });
+
+// Notification System
+async function loadNotifications() {
+    try {
+        const response = await fetch('{{ route('student.notifications.index') }}');
+        const data = await response.json();
+
+        if (data.announcements && data.announcements.length > 0) {
+            showAnnouncementNotifications(data.announcements);
+        }
+
+        if (data.mandatory_fees && data.mandatory_fees.length > 0) {
+            showMandatoryFeeNotifications(data.mandatory_fees);
+        }
+    } catch (error) {
+        console.error('Error loading notifications:', error);
+    }
+}
+
+function showAnnouncementNotifications(announcements) {
+    announcements.forEach(announcement => {
+        const modalHtml = `
+            <div class="modal fade announcement-modal" id="announcement-modal-${announcement.id}" tabindex="-1" data-bs-backdrop="static">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header bg-primary text-white">
+                            <h5 class="modal-title">
+                                <i class="bi bi-megaphone me-2"></i> ${announcement.title}
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="announcement-content mb-3">
+                                ${announcement.content}
+                            </div>
+                            <div class="text-muted small">
+                                <i class="bi bi-clock me-1"></i> ${announcement.created_at}
+                                ${announcement.sender ? `<span class="ms-3"><i class="bi bi-person me-1"></i> ${announcement.sender}</span>` : ''}
+                            </div>
+                            ${announcement.attachment ? `
+                                <div class="mt-3">
+                                    <a href="${announcement.attachment}" target="_blank" class="btn btn-outline-primary btn-sm">
+                                        <i class="bi bi-paperclip me-1"></i> View Attachment
+                                    </a>
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" onclick="markAnnouncementAsRead(${announcement.id})">
+                                <i class="bi bi-check-circle me-1"></i> Mark as Read
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        const modal = new bootstrap.Modal(document.getElementById(`announcement-modal-${announcement.id}`));
+        modal.show();
+    });
+}
+
+function showMandatoryFeeNotifications(fees) {
+    fees.forEach(fee => {
+        const modalHtml = `
+            <div class="modal fade fee-modal" id="fee-modal-${fee.id}" tabindex="-1" data-bs-backdrop="static">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header bg-warning">
+                            <h5 class="modal-title">
+                                <i class="bi bi-exclamation-triangle me-2"></i> Mandatory ${fee.fee_type === 'practical' ? 'Practical' : 'Trip'} Fee
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="alert alert-warning">
+                                <i class="bi bi-info-circle me-2"></i>
+                                You have a mandatory ${fee.fee_type === 'practical' ? 'practical' : 'trip'} fee to pay.
+                            </div>
+                            <div class="mb-3">
+                                <strong>Course:</strong> ${fee.course_name}
+                            </div>
+                            <div class="mb-3">
+                                <strong>Term:</strong> ${fee.term_name}
+                            </div>
+                            <div class="mb-3">
+                                <strong>Amount:</strong> RWF ${fee.amount.toLocaleString()}
+                            </div>
+                            ${fee.due_date ? `
+                                <div class="mb-3">
+                                    <strong>Due Date:</strong> ${fee.due_date}
+                                </div>
+                            ` : ''}
+                            <div class="text-muted small">
+                                Please contact the finance department to arrange payment.
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                <i class="bi bi-x-circle me-1"></i> Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        const modal = new bootstrap.Modal(document.getElementById(`fee-modal-${fee.id}`));
+        modal.show();
+    });
+}
+
+async function markAnnouncementAsRead(announcementId) {
+    try {
+        const response = await fetch('{{ route('student.notifications.mark-read') }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify({ announcement_id: announcementId })
+        });
+
+        if (response.ok) {
+            const modal = bootstrap.Modal.getInstance(document.getElementById(`announcement-modal-${announcementId}`));
+            modal.hide();
+        }
+    } catch (error) {
+        console.error('Error marking announcement as read:', error);
+    }
+}
 </script>
 @endif
 @endsection

@@ -16,4 +16,12 @@ class Announcement extends Model
         'attachment',
         'sender',
     ];
+
+    /**
+     * Get the reads for this announcement
+     */
+    public function reads()
+    {
+        return $this->hasMany(StudentAnnouncementRead::class);
+    }
 }

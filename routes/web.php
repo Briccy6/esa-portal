@@ -98,6 +98,13 @@ Route::prefix('student')->name('student.')->middleware(['auth:student'])->group(
     Route::get('/payment/failed', [\App\Http\Controllers\FlutterwaveController::class, 'paymentFailed'])->name('payment.failed');
 });
 
+// Student Notifications
+Route::prefix('student')->name('student.')->middleware(['auth:student'])->group(function() {
+    Route::get('/notifications', [\App\Http\Controllers\StudentNotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/mark-read', [\App\Http\Controllers\StudentNotificationController::class, 'markAsRead'])->name('notifications.mark-read');
+    Route::post('/notifications/mark-all-read', [\App\Http\Controllers\StudentNotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
+});
+
 Route::prefix('timetable')->name('timetable.')->group(function () {
     Route::get('/', [TimetableController::class, 'index'])->name('index');
     Route::get('/courses-by-branch', [TimetableController::class, 'getCoursesByBranch'])->name('courses.by-branch');
