@@ -135,6 +135,13 @@
     .approval-panel p { margin: .2rem 0 0; color: var(--muted); font-size: .82rem; }
     .approval-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
     #lesson-load-message { display: none; margin-bottom: .8rem; }
+    .duplicate-shifts-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1050; }
+    .duplicate-shifts-modal.show { display: flex; }
+    .duplicate-shifts-content { background: white; padding: 2rem; border-radius: 12px; max-width: 400px; width: 100%; }
+    .duplicate-shifts-content h5 { margin-bottom: 1rem; }
+    .duplicate-shifts-options { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.5rem; }
+    .duplicate-shifts-options label { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; }
+    .duplicate-shifts-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
     @media (max-width: 700px) {
         .schedule-builder { padding-top: .35rem; }
         .builder-hero { align-items: flex-start; flex-direction: column; }
@@ -248,7 +255,10 @@
                 <div id="lesson-load-message" class="alert alert-danger" role="status"></div>
                 <div class="sessions-heading">
                     <div><h2>Build the week</h2><small class="text-muted"><span id="session-count">{{ count($oldSessionRows) }}</span> sessions</small></div>
-                    <button class="btn btn-outline-success" type="button" id="add-session"><i class="bi bi-plus-lg me-1"></i>Add a session</button>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-primary" type="button" id="duplicate-session"><i class="bi bi-copy me-1"></i>Duplicate to Shifts</button>
+                        <button class="btn btn-outline-success" type="button" id="add-session"><i class="bi bi-plus-lg me-1"></i>Add a session</button>
+                    </div>
                 </div>
                 <div id="sessions-container">
                     @foreach($oldSessionRows as $index => $sessionData)
@@ -302,6 +312,7 @@
                                     </div>
                                     <div class="col-12 col-md-6">
                                         <label class="form-label">Courses learning together</label>
+                                        <input type="text" class="form-control mb-2 course-search" placeholder="Search courses..." style="min-height: 38px;">
                                         <div class="course-picker" data-course-picker></div>
                                         <div class="teacher-preview" data-teacher-preview>Select a lesson to see its assigned teacher.</div>
                                     </div>
@@ -382,6 +393,29 @@
     @endif
 </div>
 
+<!-- Duplicate Shifts Modal -->
+<div class="duplicate-shifts-modal" id="duplicateShiftsModal">
+    <div class="duplicate-shifts-content">
+        <h5>Duplicate Session to Multiple Shifts</h5>
+        <p class="text-muted mb-3">Select which shifts to duplicate this session to:</p>
+        <div class="duplicate-shifts-options">
+            <label>
+                <input type="checkbox" value="morning" checked> Morning
+            </label>
+            <label>
+                <input type="checkbox" value="afternoon" checked> Afternoon
+            </label>
+            <label>
+                <input type="checkbox" value="evening" checked> Evening
+            </label>
+        </div>
+        <div class="duplicate-shifts-actions">
+            <button class="btn btn-secondary" type="button" id="cancelDuplicate">Cancel</button>
+            <button class="btn btn-primary" type="button" id="confirmDuplicate">Duplicate</button>
+        </div>
+    </div>
+</div>
+
 <template id="session-template">
     <article class="session-card" data-index="__INDEX__" data-selected-courses="">
         <div class="session-card-head">
@@ -401,7 +435,7 @@
             </select></div>
             <div class="col-6 col-sm-3 col-lg-2"><label class="form-label" for="start-__INDEX__">Starts</label><input type="time" class="form-control" id="start-__INDEX__" name="sessions[__INDEX__][start_time]" required></div>
             <div class="col-6 col-sm-3 col-lg-2"><label class="form-label" for="end-__INDEX__">Ends</label><input type="time" class="form-control" id="end-__INDEX__" name="sessions[__INDEX__][end_time]" required></div>
-            <div class="col-12 col-md-6"><label class="form-label">Courses learning together</label><div class="course-picker" data-course-picker></div><div class="teacher-preview" data-teacher-preview>Select a lesson to see its assigned teacher.</div></div>
+            <div class="col-12 col-md-6"><label class="form-label">Courses learning together</label><input type="text" class="form-control mb-2 course-search" placeholder="Search courses..." style="min-height: 38px;"><div class="course-picker" data-course-picker></div><div class="teacher-preview" data-teacher-preview>Select a lesson to see its assigned teacher.</div></div>
             <div class="col-12 col-md-6"><label class="form-label" for="activity-__INDEX__">Activity Type</label><select class="form-select activity-type" id="activity-__INDEX__" name="sessions[__INDEX__][activity_type]" required>
                 <option value="lesson">Lesson</option>
                 <option value="self_study">Self Study</option>
@@ -466,16 +500,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const lesson = lessonData.find(item => String(item.lesson_id) === row.querySelector('.lesson-select').value);
         const picker = row.querySelector('[data-course-picker]');
         const preview = row.querySelector('[data-teacher-preview]');
+        const searchInput = row.querySelector('.course-search');
         picker.replaceChildren();
         if (!lesson) {
             preview.textContent = 'Select a lesson to see its assigned teacher.';
             row.dataset.selectedCourses = '';
+            if (searchInput) searchInput.style.display = 'none';
             return;
         }
+        if (searchInput) searchInput.style.display = 'block';
         const selected = selectedIds.map(String);
         lesson.courses.forEach(course => {
             const label = document.createElement('label');
             label.className = 'course-option';
+            label.dataset.courseName = (course.abbreviation || course.name).toLowerCase();
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
             checkbox.name = `sessions[${row.dataset.index}][course_ids][]`;
@@ -493,6 +531,18 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         updateTeacherPreview(row);
         picker.onchange = () => updateTeacherPreview(row);
+
+        // Add course search functionality
+        if (searchInput) {
+            searchInput.value = '';
+            searchInput.oninput = function() {
+                const value = this.value.toLowerCase();
+                Array.from(picker.querySelectorAll('.course-option')).forEach(option => {
+                    const courseName = option.dataset.courseName || '';
+                    option.style.display = courseName.includes(value) ? 'flex' : 'none';
+                });
+            };
+        }
     }
 
     function updateTeacherPreview(row) {
@@ -515,13 +565,28 @@ document.addEventListener('DOMContentLoaded', () => {
         // Show/hide reserve text panel
         const reservePanel = row.querySelector('[data-activity-type-panel]');
         const lessonPanel = row.querySelector('[data-lesson-panel]');
+        const lessonSelect = row.querySelector('.lesson-select');
+        const coursePicker = row.querySelector('[data-course-picker]');
+        const teacherPreview = row.querySelector('[data-teacher-preview]');
         
         if (activityType === 'reserve') {
             reservePanel.style.display = 'block';
             lessonPanel.style.display = 'none';
+            lessonSelect.disabled = true;
+            lessonSelect.required = false;
+            coursePicker.style.opacity = '0.5';
+            coursePicker.style.pointerEvents = 'none';
+            teacherPreview.textContent = 'Lesson selection is disabled for reserve sessions.';
         } else {
             reservePanel.style.display = 'none';
             lessonPanel.style.display = activityType === 'lesson' ? 'block' : 'none';
+            lessonSelect.disabled = false;
+            lessonSelect.required = true;
+            coursePicker.style.opacity = '1';
+            coursePicker.style.pointerEvents = 'auto';
+            if (row.querySelector('.lesson-select').value) {
+                teacherPreview.textContent = 'Select a lesson to see its assigned teacher.';
+            }
         }
         
         // Show/hide eligibility panel for tests
@@ -572,6 +637,19 @@ document.addEventListener('DOMContentLoaded', () => {
         syncSession(row);
     }
 
+    // Make lesson select searchable
+    function makeLessonSearchable(select) {
+        select.addEventListener('input', function() {
+            const value = this.value.toLowerCase();
+            Array.from(this.options).forEach(option => {
+                if (option.value) {
+                    const text = option.textContent.toLowerCase();
+                    option.hidden = !text.includes(value);
+                }
+            });
+        });
+    }
+
     async function reloadBranchLessons() {
         lessonMessage.style.display = 'none';
         if (!branchSelect.value || !yearSelect.value) {
@@ -604,6 +682,7 @@ document.addEventListener('DOMContentLoaded', () => {
     container.querySelectorAll('.session-card').forEach(row => {
         bindRow(row);
         refreshLessonSelect(row);
+        makeLessonSearchable(row.querySelector('.lesson-select'));
     });
 
     document.getElementById('add-session').addEventListener('click', () => {
@@ -613,7 +692,75 @@ document.addEventListener('DOMContentLoaded', () => {
         const row = container.lastElementChild;
         bindRow(row);
         refreshLessonSelect(row, false);
+        makeLessonSearchable(row.querySelector('.lesson-select'));
         renumber();
+    });
+
+    // Duplicate session to multiple shifts
+    let currentSessionToDuplicate = null;
+    const duplicateModal = document.getElementById('duplicateShiftsModal');
+    const cancelDuplicateBtn = document.getElementById('cancelDuplicate');
+    const confirmDuplicateBtn = document.getElementById('confirmDuplicate');
+
+    document.getElementById('duplicate-session').addEventListener('click', () => {
+        const rows = container.querySelectorAll('.session-card');
+        if (rows.length === 0) {
+            alert('Please add a session first before duplicating.');
+            return;
+        }
+        currentSessionToDuplicate = rows[rows.length - 1];
+        duplicateModal.classList.add('show');
+    });
+
+    cancelDuplicateBtn.addEventListener('click', () => {
+        duplicateModal.classList.remove('show');
+        currentSessionToDuplicate = null;
+    });
+
+    confirmDuplicateBtn.addEventListener('click', () => {
+        if (!currentSessionToDuplicate) return;
+
+        const selectedShifts = Array.from(duplicateModal.querySelectorAll('.duplicate-shifts-options input:checked'))
+            .map(input => input.value);
+
+        const currentShift = currentSessionToDuplicate.querySelector('.form-select[name$="[shift]"]').value;
+
+        selectedShifts.forEach(shift => {
+            if (shift === currentShift) return; // Skip current shift
+
+            const index = container.querySelectorAll('.session-card').length;
+            const html = template.replace(/__INDEX__/g, index).replace(/__NUMBER__/g, index + 1);
+            container.insertAdjacentHTML('beforeend', html);
+            const newRow = container.lastElementChild;
+
+            // Copy all values from source session
+            newRow.querySelector('.lesson-select').value = currentSessionToDuplicate.querySelector('.lesson-select').value;
+            newRow.querySelector('.form-select[name$="[day_of_week]"]').value = currentSessionToDuplicate.querySelector('.form-select[name$="[day_of_week]"]').value;
+            newRow.querySelector('.form-select[name$="[shift]"]').value = shift;
+            newRow.querySelector('input[name$="[start_time]"]').value = currentSessionToDuplicate.querySelector('input[name$="[start_time]"]').value;
+            newRow.querySelector('input[name$="[end_time]"]').value = currentSessionToDuplicate.querySelector('input[name$="[end_time]"]').value;
+            newRow.querySelector('.activity-type').value = currentSessionToDuplicate.querySelector('.activity-type').value;
+            newRow.querySelector('.session-type').value = currentSessionToDuplicate.querySelector('.session-type').value;
+            newRow.querySelector('input[name$="[classroom]"]').value = currentSessionToDuplicate.querySelector('input[name$="[classroom]"]').value;
+            newRow.querySelector('input[name$="[notes]"]').value = currentSessionToDuplicate.querySelector('input[name$="[notes]"]').value;
+            newRow.querySelector('textarea[name$="[reserve_text]"]').value = currentSessionToDuplicate.querySelector('textarea[name$="[reserve_text]"]').value;
+            newRow.querySelector('input[name$="[minimum_paid_percentage]"]').value = currentSessionToDuplicate.querySelector('input[name$="[minimum_paid_percentage]"]').value;
+
+            // Copy course selections
+            const selectedCourses = Array.from(currentSessionToDuplicate.querySelectorAll('[data-course-picker] input:checked'))
+                .map(input => input.value);
+            newRow.dataset.selectedCourses = selectedCourses.join(',');
+
+            bindRow(newRow);
+            refreshLessonSelect(newRow, false);
+            makeLessonSearchable(newRow.querySelector('.lesson-select'));
+            renderCourses(newRow, selectedCourses);
+            syncSession(newRow);
+        });
+
+        renumber();
+        duplicateModal.classList.remove('show');
+        currentSessionToDuplicate = null;
     });
 
     branchSelect.addEventListener('change', reloadBranchLessons);
@@ -625,10 +772,15 @@ document.addEventListener('DOMContentLoaded', () => {
     updateTermOptions(false);
     document.getElementById('timetable-form').addEventListener('submit', event => {
         const missingCourses = Array.from(container.querySelectorAll('.session-card'))
-            .some(row => !row.querySelector('[data-course-picker] input:checked'));
+            .some(row => {
+                const activityType = row.querySelector('.activity-type').value;
+                // Only require courses for lesson activities
+                if (activityType !== 'lesson') return false;
+                return !row.querySelector('[data-course-picker] input:checked');
+            });
         if (missingCourses) {
             event.preventDefault();
-            lessonMessage.textContent = 'Choose at least one branch-assigned course for every session.';
+            lessonMessage.textContent = 'Choose at least one branch-assigned course for every lesson session.';
             lessonMessage.style.display = 'block';
             lessonMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
