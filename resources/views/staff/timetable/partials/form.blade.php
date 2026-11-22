@@ -1080,8 +1080,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const missingCourses = Array.from(container.querySelectorAll('.session-card'))
             .some(row => row.querySelector('.activity-type').value !== 'group_work'
                 && !row.querySelector('[data-course-picker] input:checked'));
+        
         const missingShiftTimes = Array.from(container.querySelectorAll('.session-card'))
-            .some(row => !row.querySelector('.shift-checkbox:checked'));
+            .some(row => {
+                const checkedShifts = Array.from(row.querySelectorAll('.shift-checkbox:checked'));
+                if (checkedShifts.length === 0) return true;
+                
+                // Check if each checked shift has both start and end times
+                for (const checkbox of checkedShifts) {
+                    const shift = checkbox.value;
+                    const startTime = row.querySelector(`[name*="[shift_times][${shift}][start_time]"]`)?.value;
+                    const endTime = row.querySelector(`[name*="[shift_times][${shift}][end_time]"]`)?.value;
+                    if (!startTime || !endTime) return true;
+                }
+                return false;
+            });
+        
         if (missingCourses || missingShiftTimes) {
             event.preventDefault();
             lessonMessage.textContent = missingShiftTimes

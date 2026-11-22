@@ -1147,7 +1147,7 @@
                             
                             data.fees.forEach(fee => {
                                 const feeHtml = `
-                                    <div class="card mb-3" data-fee-type="${fee.type}" data-fee-id="${data.fee_id}">
+                                    <div class="card mb-3" data-fee-type="${fee.type}" data-fee-id="${fee.fee_id}">
                                         <div class="card-body">
                                             <h6 class="mb-2">${fee.name}</h6>
                                             <p class="mb-2">Amount: ${fee.amount} RWF</p>

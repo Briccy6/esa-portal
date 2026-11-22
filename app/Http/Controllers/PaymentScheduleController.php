@@ -7,6 +7,7 @@ use App\Models\Student;
 use App\Models\StudentTransaction;
 use App\Models\CourseTermFee;
 use App\Models\Term;
+use App\Support\OptionalFeeBilling;
 use Illuminate\Http\Request;
 
 class PaymentScheduleController extends Controller
@@ -160,7 +161,7 @@ class PaymentScheduleController extends Controller
 
         // Get all terms with transactions for this student
         $termsWithTransactions = $student->transactions
-            ->where('status', 'successful')
+            ->whereIn('status', ['successful', 'paid', 'completed'])
             ->whereNotNull('term_id')
             ->pluck('term_id')
             ->unique()
@@ -174,7 +175,7 @@ class PaymentScheduleController extends Controller
         foreach ($allTerms as $term) {
             $transactions = $student->transactions
                 ->where('term_id', $term->id)
-                ->where('status', 'successful')
+                ->whereIn('status', ['successful', 'paid', 'completed'])
                 ->sortByDesc('paid_at')
                 ->values();
 
@@ -187,7 +188,12 @@ class PaymentScheduleController extends Controller
                 ->where('is_active', 1)
                 ->first();
 
-            $totalRequired = $termFee ? ($termFee->registration_fee + $termFee->tuition_fee + $termFee->practical_fee + $termFee->trip_fee + $termFee->student_card_fee) : 0;
+            $optionalAmounts = $termFee
+                ? OptionalFeeBilling::payableAmounts($student, $termFee)
+                : ['practical' => 0.0, 'trip' => 0.0];
+            $totalRequired = $termFee
+                ? ($termFee->registration_fee + $termFee->tuition_fee + $optionalAmounts['practical'] + $optionalAmounts['trip'] + $termFee->student_card_fee)
+                : 0;
             $remaining = max(0, $totalRequired - $totalPaid);
 
             $paymentHistory[] = [
@@ -208,8 +214,8 @@ class PaymentScheduleController extends Controller
                 'fee_breakdown' => [
                     'registration' => ['required' => $termFee->registration_fee ?? 0, 'paid' => $transactions->where('type', 'registration')->sum('amount')],
                     'tuition' => ['required' => $termFee->tuition_fee ?? 0, 'paid' => $transactions->where('type', 'school_fee')->sum('amount')],
-                    'practical' => ['required' => $termFee->practical_fee ?? 0, 'paid' => $transactions->where('type', 'practical_fee')->sum('amount')],
-                    'trip' => ['required' => $termFee->trip_fee ?? 0, 'paid' => $transactions->where('type', 'trip_fee')->sum('amount')],
+                    'practical' => ['required' => $optionalAmounts['practical'], 'paid' => $transactions->where('type', 'practical_fee')->sum('amount')],
+                    'trip' => ['required' => $optionalAmounts['trip'], 'paid' => $transactions->where('type', 'trip_fee')->sum('amount')],
                     'student_card' => ['required' => $termFee->student_card_fee ?? 0, 'paid' => $transactions->where('type', 'student_card')->sum('amount')],
                 ],
             ];

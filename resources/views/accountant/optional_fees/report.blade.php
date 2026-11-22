@@ -132,11 +132,12 @@
     <div class="row g-3 mb-4">
         @foreach([
             ['key' => 'total', 'label' => 'Total Responses', 'icon' => 'fa-list-check', 'class' => ''],
-            ['key' => 'accepted', 'label' => 'Accepted', 'icon' => 'fa-circle-check', 'class' => 'accepted'],
+            ['key' => 'accepted', 'label' => 'Accepted by students', 'icon' => 'fa-circle-check', 'class' => 'accepted'],
+            ['key' => 'assigned', 'label' => 'Assigned by accountant', 'icon' => 'fa-user-check', 'class' => ''],
             ['key' => 'declined', 'label' => 'Declined', 'icon' => 'fa-circle-xmark', 'class' => 'declined'],
             ['key' => 'pending', 'label' => 'Pending', 'icon' => 'fa-clock', 'class' => 'pending'],
         ] as $stat)
-            <div class="col-6 col-xl-3">
+            <div class="col-6 col-xl">
                 <div class="stat-card {{ $stat['class'] }} d-flex align-items-center gap-3">
                     <div class="stat-icon flex-shrink-0"><i class="fas {{ $stat['icon'] }}" aria-hidden="true"></i></div>
                     <div>
@@ -181,8 +182,9 @@
                                     @endif
                                 </td>
                                 <td>
-                                    <span class="badge {{ $response->response === 'accepted' ? 'accepted-badge' : ($response->response === 'declined' ? 'declined-badge' : 'pending-badge') }}">
-                                        {{ ucfirst($response->response) }}
+                                    @php($assignedByAccountant = str_starts_with((string) $response->notes, 'Assigned by accountant:'))
+                                    <span class="badge {{ $assignedByAccountant ? 'accepted-badge' : ($response->response === 'accepted' ? 'accepted-badge' : ($response->response === 'declined' ? 'declined-badge' : 'pending-badge')) }}">
+                                        {{ $assignedByAccountant ? 'Assigned' : ucfirst($response->response) }}
                                     </span>
                                 </td>
                                 <td>{{ $response->responded_at ? $response->responded_at->format('Y-m-d H:i') : 'N/A' }}</td>

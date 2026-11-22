@@ -37,6 +37,7 @@ use App\Models\CourseTermFee;
 use App\Models\StudentCard;
 use App\Models\Attendance;
 use App\Support\StudentPaymentTranscript;
+use App\Support\OptionalFeeBilling;
 use App\Services\PassportPhotoVerificationService;
 
 class StudentController extends Controller
@@ -1979,6 +1980,11 @@ class StudentController extends Controller
                 $practicalFee = floatval($termFees->practical_fee ?? 0);
                 $tripFeeAmount = floatval($termFees->trip_fee ?? 0);
                 $termStudentCardFee = floatval($termFees->student_card_fee ?? $studentCardFee);
+                if ($termFees instanceof \App\Models\CourseTermBranchFee) {
+                    $payableOptionalAmounts = OptionalFeeBilling::payableAmounts($student, $termFees);
+                    $practicalFee = $payableOptionalAmounts['practical'];
+                    $tripFeeAmount = $payableOptionalAmounts['trip'];
+                }
 
                 // Apply discount to discountable fees
                 $discountableFees = $tripFeeAmount + $tuitionFee + $practicalFee;
@@ -2272,9 +2278,12 @@ class StudentController extends Controller
             return redirect()->route('student.dashboard')->with('error', 'No course is assigned to your account.');
         }
 
-        $term = Term::where('academic_year_id', $student->academic_year_id)
-            ->orderBy('start_date', 'asc')
-            ->first();
+        $term = $course->getActiveTermForAcademicYear($student->academic_year_id);
+        if (!$term) {
+            $term = Term::where('academic_year_id', $student->academic_year_id)
+                ->orderBy('start_date', 'asc')
+                ->first();
+        }
 
         $termFees = null;
         if ($term) {
@@ -2289,6 +2298,11 @@ class StudentController extends Controller
         $tuitionFee      = floatval($termFees->tuition_fee ?? 0);
         $tripFee         = floatval($termFees->trip_fee ?? 0);
         $practicalFee    = floatval($termFees->practical_fee ?? 0);
+        if ($termFees instanceof \App\Models\CourseTermBranchFee) {
+            $payableOptionalAmounts = OptionalFeeBilling::payableAmounts($student, $termFees);
+            $practicalFee = $payableOptionalAmounts['practical'];
+            $tripFee = $payableOptionalAmounts['trip'];
+        }
         $studentCardFee  = floatval($termFees->student_card_fee ?? 2000);
         $discount        = floatval($student->discount ?? 0);
 
@@ -2376,6 +2390,24 @@ class StudentController extends Controller
 
             $amount = floatval($request->pay_amount);
             $feeType = $request->fee_type;
+            if (in_array($feeType, ['practical_fee', 'trip_fee'], true) && $request->filled('term_id')) {
+                $branchFee = \App\Models\CourseTermBranchFee::query()
+                    ->where('course_id', $student->course_id)
+                    ->where('branch_id', $student->branch_id)
+                    ->where('term_id', $request->term_id)
+                    ->where('is_active', true)
+                    ->first();
+
+                if ($branchFee) {
+                    $optionalType = $feeType === 'practical_fee' ? 'practical' : 'trip';
+                    if (OptionalFeeBilling::amount($student, $branchFee, $optionalType) <= 0) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'This optional fee must be accepted or assigned before payment.',
+                        ], 422);
+                    }
+                }
+            }
 
             // Map fee types to proper names
             $feeTypeNames = [
@@ -2558,6 +2590,11 @@ class StudentController extends Controller
             $tripFee         = floatval($termFees->trip_fee ?? 0);
             $schoolFee       = floatval($termFees->tuition_fee ?? 0);
             $practicalFee    = floatval($termFees->practical_fee ?? 0);
+            if ($termFees instanceof \App\Models\CourseTermBranchFee) {
+                $payableOptionalAmounts = OptionalFeeBilling::payableAmounts($student, $termFees);
+                $practicalFee = $payableOptionalAmounts['practical'];
+                $tripFee = $payableOptionalAmounts['trip'];
+            }
             $studentCardFee  = floatval($termFees->student_card_fee ?? 2000);
             $discount        = floatval($student->discount ?? 0);
 
@@ -4969,18 +5006,27 @@ class StudentController extends Controller
                 continue; // Skip terms with no fee configuration
             }
 
+            $practicalFee = (float) ($branchFee->practical_fee ?? 0);
+            $tripFee = (float) ($branchFee->trip_fee ?? 0);
+            if ($branchFee instanceof \App\Models\CourseTermBranchFee) {
+                $payableOptionalAmounts = OptionalFeeBilling::payableAmounts($student, $branchFee);
+                $practicalFee = $payableOptionalAmounts['practical'];
+                $tripFee = $payableOptionalAmounts['trip'];
+            }
+
             $transactions = $student->transactions()
                 ->where('term_id', $term->id)
                 ->orderBy('paid_at', 'desc')
                 ->get();
 
-            $totalPaid = $transactions->where('status', 'successful')->sum('amount');
+            $paidTransactions = $transactions->whereIn('status', ['successful', 'paid', 'completed']);
+            $totalPaid = $paidTransactions->sum('amount');
 
             // Calculate total required fees
             $totalRequired = ($branchFee->registration_fee ?? 0) +
                            ($branchFee->tuition_fee ?? 0) +
-                           ($branchFee->practical_fee ?? 0) +
-                           ($branchFee->trip_fee ?? 0) +
+                           $practicalFee +
+                           $tripFee +
                            ($branchFee->student_card_fee ?? 0);
 
             $paymentSchedule[] = [
@@ -4995,24 +5041,24 @@ class StudentController extends Controller
                 'fee_breakdown' => [
                     'registration' => [
                         'required' => $branchFee->registration_fee ?? 0,
-                        'paid' => $transactions->where('type', 'registration')->where('status', 'successful')->sum('amount') +
-                                  $transactions->where('type', 'registration_fee')->where('status', 'successful')->sum('amount'),
+                        'paid' => $paidTransactions->where('type', 'registration')->sum('amount') +
+                                  $paidTransactions->where('type', 'registration_fee')->sum('amount'),
                     ],
                     'tuition' => [
                         'required' => $branchFee->tuition_fee ?? 0,
-                        'paid' => $transactions->where('type', 'school_fee')->where('status', 'successful')->sum('amount'),
+                        'paid' => $paidTransactions->where('type', 'school_fee')->sum('amount'),
                     ],
                     'practical' => [
-                        'required' => $branchFee->practical_fee ?? 0,
-                        'paid' => $transactions->where('type', 'practical_fee')->where('status', 'successful')->sum('amount'),
+                        'required' => $practicalFee,
+                        'paid' => $paidTransactions->where('type', 'practical_fee')->sum('amount'),
                     ],
                     'trip' => [
-                        'required' => $branchFee->trip_fee ?? 0,
-                        'paid' => $transactions->where('type', 'trip_fee')->where('status', 'successful')->sum('amount'),
+                        'required' => $tripFee,
+                        'paid' => $paidTransactions->where('type', 'trip_fee')->sum('amount'),
                     ],
                     'student_card' => [
                         'required' => $branchFee->student_card_fee ?? 0,
-                        'paid' => $transactions->where('type', 'student_card')->where('status', 'successful')->sum('amount'),
+                        'paid' => $paidTransactions->where('type', 'student_card')->sum('amount'),
                     ],
                 ],
             ];

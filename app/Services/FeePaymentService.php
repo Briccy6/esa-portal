@@ -9,6 +9,7 @@ use App\Models\CourseTermBranchFee;
 use App\Models\CourseTermFee;
 use App\Models\AcademicYear;
 use App\Models\Term;
+use App\Support\OptionalFeeBilling;
 use Carbon\Carbon;
 
 class FeePaymentService
@@ -272,12 +273,17 @@ class FeePaymentService
                     $registrationFee = ($fee->registration_fee ?? 0);
                 }
                 
-                // Add all other fees for each term
-                $otherFeesTotal += ($fee->tuition_fee ?? 0) 
-                                 + ($fee->practical_fee ?? 0) 
-                                 + ($fee->trip_fee ?? 0) 
-                                 // student_card_fee is handled once per academic year below
-                                 ;
+                $optionalAmounts = $fee instanceof CourseTermBranchFee
+                    ? OptionalFeeBilling::payableAmounts($student, $fee)
+                    : [
+                        'practical' => (float) ($fee->practical_fee ?? 0),
+                        'trip' => (float) ($fee->trip_fee ?? 0),
+                    ];
+
+                // Add all other fees for each term; student-card is handled once per academic year below.
+                $otherFeesTotal += (float) ($fee->tuition_fee ?? 0)
+                    + $optionalAmounts['practical']
+                    + $optionalAmounts['trip'];
             }
             
             // Registration is once per academic year; exclude from required if already paid (any term in year or NULL term_id).

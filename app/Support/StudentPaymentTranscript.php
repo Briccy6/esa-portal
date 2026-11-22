@@ -5,7 +5,9 @@ namespace App\Support;
 use App\Models\SchoolInformation;
 use App\Models\Student;
 use App\Models\StudentTransaction;
+use App\Models\CourseTermBranchFee;
 use App\Models\Term;
+use App\Support\OptionalFeeBilling;
 
 class StudentPaymentTranscript
 {
@@ -48,6 +50,20 @@ class StudentPaymentTranscript
         $tuition        = $termFees->tuition_fee ?? 0;
         $practical      = $termFees->practical_fee ?? 0;
         $trip           = $termFees->trip_fee ?? 0;
+        if ($course && $term && $student->branch_id) {
+            $branchFee = CourseTermBranchFee::query()
+                ->where('course_id', $course->id)
+                ->where('branch_id', $student->branch_id)
+                ->where('term_id', $term->id)
+                ->where('is_active', true)
+                ->first();
+
+            if ($branchFee) {
+                $payableAmounts = OptionalFeeBilling::payableAmounts($student, $branchFee);
+                $practical = $payableAmounts['practical'];
+                $trip = $payableAmounts['trip'];
+            }
+        }
         $discountPct    = (float) ($student->discount ?? 0);
 
         $discountable = $tuition + $practical + $trip;
@@ -172,6 +188,20 @@ class StudentPaymentTranscript
         $tuition        = $termFees->tuition_fee ?? 0;
         $practical      = $termFees->practical_fee ?? 0;
         $trip           = $termFees->trip_fee ?? 0;
+        if ($course && $term && $student->branch_id) {
+            $branchFee = CourseTermBranchFee::query()
+                ->where('course_id', $course->id)
+                ->where('branch_id', $student->branch_id)
+                ->where('term_id', $term->id)
+                ->where('is_active', true)
+                ->first();
+
+            if ($branchFee) {
+                $payableAmounts = OptionalFeeBilling::payableAmounts($student, $branchFee);
+                $practical = $payableAmounts['practical'];
+                $trip = $payableAmounts['trip'];
+            }
+        }
         $discountPct    = (float) ($student->discount ?? 0);
 
         $discountable = $tuition + $practical + $trip;

@@ -11,6 +11,7 @@
     .optional-fees-page .page-copy { color: var(--of-muted); }
     .optional-fees-page .hero-actions .btn { min-height: 42px; display: inline-flex; align-items: center; border-radius: 9px; }
     .fee-card {
+        display: block;
         border: 1px solid var(--of-border);
         border-radius: 14px;
         margin-bottom: 1.25rem;
@@ -20,13 +21,24 @@
     }
     .fee-card .fee-header {
         display: flex;
+        list-style: none;
         justify-content: space-between;
         align-items: center;
         gap: 1rem;
         padding: 1.15rem 1.35rem;
         border-bottom: 1px solid var(--of-border);
         background: linear-gradient(135deg, #fbfdff 0%, #f7faff 100%);
+        cursor: pointer;
     }
+    .fee-card .fee-header::-webkit-details-marker { display: none; }
+    .fee-card .fee-header::after {
+        content: "Show settings";
+        flex: 0 0 auto;
+        color: #2457a7;
+        font-size: .8rem;
+        font-weight: 700;
+    }
+    .fee-card[open] .fee-header::after { content: "Hide settings"; }
     .fee-card .fee-title { color: var(--of-ink); font-size: 1rem; font-weight: 750; }
     .fee-card .fee-meta { color: var(--of-muted); font-size: .82rem; }
     .fee-card .fee-form { padding: 1.25rem 1.35rem 1.35rem; }
@@ -50,7 +62,6 @@
         align-items: end;
     }
     .fee-card .fee-option + .fee-option { margin-top: .85rem; }
-    .fee-card .fee-amount { font-size: 1.05rem; font-weight: 800; color: #0f766e; }
     .fee-card .fee-option-name { color: #344054; font-weight: 700; }
     .fee-card .mandatory-badge, .fee-card .optional-badge {
         display: inline-flex; align-items: center; gap: .35rem;
@@ -81,7 +92,7 @@
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
         <div>
             <h1 class="h3 fw-bold page-heading mb-1">Optional Fees Management</h1>
-            <p class="page-copy mb-0">Configure practice and trip fees for each branch, course, and term.</p>
+            <p class="page-copy mb-0">Configure practical and trip fees for each branch, course, and term.</p>
         </div>
         <div class="hero-actions">
             <a href="{{ route('staff.accountant.optional-fees.report') }}" class="btn btn-primary">
@@ -96,6 +107,11 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     @endif
+    @if($errors->any())
+        <div class="alert alert-danger" role="alert">
+            {{ $errors->first() }}
+        </div>
+    @endif
 
     @if($fees->isEmpty())
         <div class="alert alert-info">
@@ -104,8 +120,8 @@
         </div>
     @else
         @foreach($fees as $fee)
-            <div class="fee-card">
-                <div class="fee-header">
+            <details class="fee-card">
+                <summary class="fee-header">
                     <div>
                         <h2 class="fee-title mb-1">{{ $fee->course->course_name ?? 'N/A' }}</h2>
                         <div class="fee-meta">
@@ -114,8 +130,7 @@
                             <span>{{ $fee->term->name ?? 'N/A' }}</span>
                         </div>
                     </div>
-                </div>
-
+                </summary>
                 <form class="fee-form" method="POST" action="{{ route('staff.accountant.optional-fees.update', $fee->id) }}">
                     @csrf
                     @method('PUT')
@@ -174,8 +189,7 @@
                         <h3 class="section-title">Optional Fee Classification</h3>
                         <div class="fee-option">
                             <div>
-                                <span class="fee-option-name d-block mb-1">Practical fee</span>
-                                <span class="fee-amount">{{ number_format($fee->practical_fee ?? 0, 2) }} RWF</span>
+                                <span class="fee-option-name d-block">Practical fee</span>
                             </div>
                             <div>
                                 <label class="form-label" for="practical_due_date_{{ $fee->id }}">Due date</label>
@@ -201,8 +215,7 @@
 
                         <div class="fee-option">
                             <div>
-                                <span class="fee-option-name d-block mb-1">Trip fee</span>
-                                <span class="fee-amount">{{ number_format($fee->trip_fee ?? 0, 2) }} RWF</span>
+                                <span class="fee-option-name d-block">Trip fee</span>
                             </div>
                             <div>
                                 <label class="form-label" for="trip_due_date_{{ $fee->id }}">Due date</label>
@@ -233,7 +246,47 @@
                         </button>
                     </div>
                 </form>
-            </div>
+
+                @if($fee->assignable_students->isNotEmpty() && ((($fee->practical_fee ?? 0) > 0 && !$fee->is_practical_mandatory) || (($fee->trip_fee ?? 0) > 0 && !$fee->is_trip_mandatory)))
+                    <form class="fee-form pt-0" method="POST" action="{{ route('staff.accountant.optional-fees.assign', $fee->id) }}">
+                        @csrf
+                        <div class="setting-section">
+                            <h3 class="section-title">Assign fees to a student</h3>
+                            <div class="row g-3 align-items-end">
+                                <div class="col-lg-6">
+                                    <label class="form-label" for="student_{{ $fee->id }}">Student</label>
+                                    <select class="form-control" id="student_{{ $fee->id }}" name="student_id" required>
+                                        <option value="">Choose a student</option>
+                                        @foreach($fee->assignable_students as $student)
+                                            <option value="{{ $student->id }}">{{ $student->full_name }} - {{ $student->reg_number }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-lg-4">
+                                    <div class="d-flex flex-wrap gap-3">
+                                        @if(($fee->practical_fee ?? 0) > 0 && !$fee->is_practical_mandatory)
+                                            <label class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="fee_types[]" value="practical">
+                                                <span class="form-check-label">Practical - {{ number_format($fee->practical_fee, 2) }} RWF</span>
+                                            </label>
+                                        @endif
+                                        @if(($fee->trip_fee ?? 0) > 0 && !$fee->is_trip_mandatory)
+                                            <label class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="fee_types[]" value="trip">
+                                                <span class="form-check-label">Trip - {{ number_format($fee->trip_fee, 2) }} RWF</span>
+                                            </label>
+                                        @endif
+                                    </div>
+                                </div>
+                                <div class="col-lg-2">
+                                    <button type="submit" class="btn btn-outline-primary w-100">Assign</button>
+                                </div>
+                            </div>
+                            <p class="small text-muted mb-0 mt-2">Assigned fees are immediately added to the student's payment balance.</p>
+                        </div>
+                    </form>
+                @endif
+            </details>
         @endforeach
     @endif
 </div>

@@ -39,12 +39,11 @@
             @endphp
             @foreach($fees as $fee)
                 @php
-                    $paid = \App\Models\StudentTransaction::where('student_id', $student->id)
-                        ->where('type', $fee['type'])
-                        ->where('status', 'successful')
-                        ->sum('amount');
+                    $paidType = $fee['type'] === 'registration_fee' ? 'registration' : $fee['type'];
+                    $paid = \App\Support\StudentPaymentTranscript::paidSumForType($student->id, $paidType);
                     $remaining = max(0, $fee['amount'] - $paid);
                 @endphp
+                @if($fee['amount'] > 0)
                 <tr>
                     <td>{{ $fee['label'] }}</td>
                     <td>{{ number_format($fee['amount']) }} RWF</td>
@@ -76,6 +75,7 @@
                         @endif
                     </td>
                 </tr>
+                @endif
             @endforeach
         </tbody>
     </table>

@@ -7,6 +7,7 @@ use App\Models\StudentOptionalFeeResponse;
 use App\Models\Student;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class OptionalFeeController extends Controller
 {
@@ -29,7 +30,83 @@ class OptionalFeeController extends Controller
             ->orderBy('course_id')
             ->get();
 
+        $students = Student::query()
+            ->whereIn('course_id', $fees->pluck('course_id')->unique())
+            ->whereIn('branch_id', $fees->pluck('branch_id')->unique())
+            ->whereIn('academic_year_id', $fees->pluck('term.academic_year_id')->filter()->unique())
+            ->orderBy('full_name')
+            ->get(['id', 'full_name', 'reg_number', 'course_id', 'branch_id', 'academic_year_id']);
+
+        foreach ($fees as $fee) {
+            $fee->setAttribute('assignable_students', $students->filter(function ($student) use ($fee) {
+                return (int) $student->course_id === (int) $fee->course_id
+                    && (int) $student->branch_id === (int) $fee->branch_id
+                    && (int) $student->academic_year_id === (int) $fee->term->academic_year_id;
+            })->values());
+        }
+
         return view('accountant.optional_fees.index', compact('fees'));
+    }
+
+    /**
+     * Assign selected optional fees to a student as payable balances.
+     */
+    public function assign(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'student_id' => 'required|exists:students,id',
+            'fee_types' => 'required|array|min:1',
+            'fee_types.*' => 'required|in:practical,trip',
+        ]);
+
+        $staff = Auth::guard('staff')->user();
+        $branchIds = $staff->branches->pluck('id')->toArray();
+        if (empty($branchIds)) {
+            $branchIds = \App\Models\Branch::pluck('id')->toArray();
+        }
+
+        $fee = CourseTermBranchFee::with('term')
+            ->whereIn('branch_id', $branchIds)
+            ->where('is_active', true)
+            ->findOrFail($id);
+        $student = Student::findOrFail($validated['student_id']);
+
+        abort_unless(
+            (int) $student->course_id === (int) $fee->course_id
+                && (int) $student->branch_id === (int) $fee->branch_id
+                && (int) $student->academic_year_id === (int) $fee->term->academic_year_id,
+            422,
+            'Select a student enrolled in this course, branch, and academic year.'
+        );
+
+        $actorName = $staff->name ?? $staff->email ?? 'accountant';
+        DB::transaction(function () use ($validated, $student, $fee, $actorName) {
+            foreach (array_unique($validated['fee_types']) as $feeType) {
+                $amount = $feeType === 'practical' ? $fee->practical_fee : $fee->trip_fee;
+                $mandatory = $feeType === 'practical'
+                    ? $fee->is_practical_mandatory
+                    : $fee->is_trip_mandatory;
+
+                if ((float) $amount <= 0 || $mandatory) {
+                    abort(422, 'Only configured optional fees can be assigned.');
+                }
+
+                StudentOptionalFeeResponse::updateOrCreate(
+                    [
+                        'student_id' => $student->id,
+                        'course_term_branch_fee_id' => $fee->id,
+                        'fee_type' => $feeType,
+                    ],
+                    [
+                        'response' => 'accepted',
+                        'responded_at' => now(),
+                        'notes' => 'Assigned by accountant: ' . $actorName,
+                    ]
+                );
+            }
+        });
+
+        return back()->with('success', "Selected optional fee(s) assigned and added to the student's balance.");
     }
 
     /**
@@ -104,7 +181,13 @@ class OptionalFeeController extends Controller
 
         $stats = [
             'total' => (clone $query)->count(),
-            'accepted' => (clone $query)->where('response', 'accepted')->count(),
+            'accepted' => (clone $query)->where('response', 'accepted')
+                ->where(function ($q) {
+                    $q->whereNull('notes')
+                        ->orWhere('notes', 'not like', 'Assigned by accountant:%');
+                })
+                ->count(),
+            'assigned' => (clone $query)->where('notes', 'like', 'Assigned by accountant:%')->count(),
             'declined' => (clone $query)->where('response', 'declined')->count(),
             'pending' => (clone $query)->where('response', 'pending')->count(),
         ];
@@ -178,7 +261,9 @@ class OptionalFeeController extends Controller
                     $response->student->course->course_name ?? 'N/A',
                     ucfirst($response->fee_type),
                     $amount,
-                    ucfirst($response->response),
+                    str_starts_with((string) $response->notes, 'Assigned by accountant:')
+                        ? 'Assigned'
+                        : ucfirst($response->response),
                     $response->responded_at ? $response->responded_at->format('Y-m-d H:i') : 'N/A',
                     $response->notes ?? '',
                 ]);
@@ -203,11 +288,25 @@ class OptionalFeeController extends Controller
         ]);
 
         $student = Auth::guard('student')->user();
-        $fee = CourseTermBranchFee::findOrFail($request->course_term_branch_fee_id);
+        $fee = CourseTermBranchFee::with('term')->findOrFail($request->course_term_branch_fee_id);
 
         // Check if student belongs to this course and branch
-        if ($student->course_id != $fee->course_id || $student->branch_id != $fee->branch_id) {
-            return back()->with('error', 'You are not authorized to respond to this fee.');
+        if (
+            (int) $student->course_id !== (int) $fee->course_id
+            || (int) $student->branch_id !== (int) $fee->branch_id
+            || (int) $student->academic_year_id !== (int) $fee->term->academic_year_id
+        ) {
+            return response()->json(['success' => false, 'message' => 'You are not authorized to respond to this fee.'], 403);
+        }
+
+        $existingResponse = StudentOptionalFeeResponse::query()
+            ->where('student_id', $student->id)
+            ->where('course_term_branch_fee_id', $fee->id)
+            ->where('fee_type', $request->fee_type)
+            ->first();
+
+        if ($existingResponse && str_starts_with((string) $existingResponse->notes, 'Assigned by accountant:')) {
+            return response()->json(['success' => false, 'message' => 'This fee was assigned by the accountant and cannot be changed here.'], 409);
         }
 
         // Create or update response
@@ -224,7 +323,7 @@ class OptionalFeeController extends Controller
             ]
         );
 
-        return back()->with('success', 'Your response has been recorded.');
+        return response()->json(['success' => true, 'message' => 'Your response has been recorded.']);
     }
 
     /**
@@ -235,12 +334,12 @@ class OptionalFeeController extends Controller
         $student = Auth::guard('student')->user();
         $today = now()->toDateString();
 
-        $fee = CourseTermBranchFee::with(['course', 'branch', 'term'])
+        $fees = CourseTermBranchFee::with(['course', 'branch', 'term'])
             ->where('course_id', $student->course_id)
             ->where('branch_id', $student->branch_id)
             ->where('is_active', true)
             ->where('notify_students', true)
-            ->whereHas('term', function($q) {
+            ->whereHas('term', function($q) use ($student) {
                 $q->where('academic_year_id', $student->academic_year_id);
             })
             ->where(function($q) use ($today) {
@@ -255,52 +354,51 @@ class OptionalFeeController extends Controller
                 $q->where('practical_fee', '>', 0)->where('is_practical_mandatory', false)
                   ->orWhere('trip_fee', '>', 0)->where('is_trip_mandatory', false);
             })
-            ->first();
+            ->orderBy('term_id')
+            ->get();
 
-        if (!$fee) {
+        if ($fees->isEmpty()) {
             return response()->json(['pending' => false]);
         }
 
         $pendingFees = [];
+        $responses = StudentOptionalFeeResponse::query()
+            ->where('student_id', $student->id)
+            ->whereIn('course_term_branch_fee_id', $fees->pluck('id'))
+            ->get()
+            ->keyBy(function ($response) {
+                return $response->course_term_branch_fee_id . ':' . $response->fee_type;
+            });
 
-        if ($fee->practical_fee > 0 && !$fee->is_practical_mandatory) {
-            $existingResponse = StudentOptionalFeeResponse::where('student_id', $student->id)
-                ->where('course_term_branch_fee_id', $fee->id)
-                ->where('fee_type', 'practical')
-                ->first();
+        foreach ($fees as $fee) {
+            foreach (['practical', 'trip'] as $feeType) {
+                $amount = $feeType === 'practical' ? $fee->practical_fee : $fee->trip_fee;
+                $mandatory = $feeType === 'practical'
+                    ? $fee->is_practical_mandatory
+                    : $fee->is_trip_mandatory;
+                $dueDate = $feeType === 'practical' ? $fee->practical_due_date : $fee->trip_due_date;
+                $response = $responses->get($fee->id . ':' . $feeType);
 
-            if (!$existingResponse || $existingResponse->response === 'pending') {
-                $pendingFees[] = [
-                    'type' => 'practical',
-                    'name' => 'Practical Fee',
-                    'amount' => $fee->practical_fee,
-                    'due_date' => $fee->practical_due_date ? $fee->practical_due_date->format('d M Y') : null,
-                    'current_response' => $existingResponse?->response ?? 'pending',
-                ];
-            }
-        }
+                if ((float) $amount <= 0 || $mandatory || ($dueDate && $dueDate->lt(today()))) {
+                    continue;
+                }
 
-        if ($fee->trip_fee > 0 && !$fee->is_trip_mandatory) {
-            $existingResponse = StudentOptionalFeeResponse::where('student_id', $student->id)
-                ->where('course_term_branch_fee_id', $fee->id)
-                ->where('fee_type', 'trip')
-                ->first();
-
-            if (!$existingResponse || $existingResponse->response === 'pending') {
-                $pendingFees[] = [
-                    'type' => 'trip',
-                    'name' => 'Trip Fee',
-                    'amount' => $fee->trip_fee,
-                    'due_date' => $fee->trip_due_date ? $fee->trip_due_date->format('d M Y') : null,
-                    'current_response' => $existingResponse?->response ?? 'pending',
-                ];
+                if (!$response || $response->response === 'pending') {
+                    $pendingFees[] = [
+                        'fee_id' => $fee->id,
+                        'type' => $feeType,
+                        'name' => $feeType === 'practical' ? 'Practical Fee' : 'Trip Fee',
+                        'amount' => $amount,
+                        'due_date' => $dueDate ? $dueDate->format('d M Y') : null,
+                        'current_response' => $response?->response ?? 'pending',
+                    ];
+                }
             }
         }
 
         return response()->json([
             'pending' => !empty($pendingFees),
             'fees' => $pendingFees,
-            'fee_id' => $fee->id,
         ]);
     }
 }
