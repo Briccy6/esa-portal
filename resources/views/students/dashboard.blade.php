@@ -1078,27 +1078,6 @@
         </div>
     @endif
 
-    <!-- Optional Fees Modal -->
-    <div class="modal fade" id="optionalFeesModal" tabindex="-1" aria-labelledby="optionalFeesTitle" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header bg-warning">
-                    <h5 class="modal-title" id="optionalFeesTitle">
-                        <i class="fas fa-info-circle me-2"></i>Optional Activities
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p class="mb-3">You have optional activities available. Please indicate whether you would like to participate:</p>
-                    <div id="optionalFeesList"></div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Decide Later</button>
-                    <button type="button" class="btn btn-primary" id="submitOptionalFees">Submit Responses</button>
-                </div>
-            </div>
-        </div>
-    </div>
         <script>
             document.addEventListener('DOMContentLoaded', function () {
                 var reminderModal = document.getElementById('profileReminderModal');
@@ -1136,82 +1115,6 @@
 
                 updateCountdown();
                 window.setInterval(updateCountdown, 1000);
-
-                // Check for optional fees
-                fetch('{{ route('student.optional-fees.pending') }}')
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.pending && data.fees && data.fees.length > 0) {
-                            const modal = document.getElementById('optionalFeesModal');
-                            const feesList = document.getElementById('optionalFeesList');
-                            
-                            data.fees.forEach(fee => {
-                                const feeHtml = `
-                                    <div class="card mb-3" data-fee-type="${fee.type}" data-fee-id="${fee.fee_id}">
-                                        <div class="card-body">
-                                            <h6 class="mb-2">${fee.name}</h6>
-                                            <p class="mb-2">Amount: ${fee.amount} RWF</p>
-                                            ${fee.due_date ? `<small class="text-muted">Due: ${fee.due_date}</small>` : ''}
-                                            <div class="mt-3">
-                                                <label class="form-label">Your response:</label>
-                                                <select class="form-select fee-response">
-                                                    <option value="pending" ${fee.current_response === 'pending' ? 'selected' : ''}>Decide later</option>
-                                                    <option value="accepted" ${fee.current_response === 'accepted' ? 'selected' : ''}>I will participate</option>
-                                                    <option value="declined" ${fee.current_response === 'declined' ? 'selected' : ''}>I will not participate</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                    </div>
-                                `;
-                                feesList.innerHTML += feeHtml;
-                            });
-
-                            if (modal && window.bootstrap && window.bootstrap.Modal) {
-                                window.bootstrap.Modal.getOrCreateInstance(modal).show();
-                            }
-                        }
-                    });
-
-                // Handle optional fees submission
-                document.getElementById('submitOptionalFees').addEventListener('click', function() {
-                    const feeCards = document.querySelectorAll('#optionalFeesList .card');
-                    const responses = [];
-
-                    feeCards.forEach(card => {
-                        const feeType = card.dataset.feeType;
-                        const feeId = card.dataset.feeId;
-                        const response = card.querySelector('.fee-response').value;
-
-                        if (response !== 'pending') {
-                            responses.push({
-                                course_term_branch_fee_id: feeId,
-                                fee_type: feeType,
-                                response: response
-                            });
-                        }
-                    });
-
-                    if (responses.length > 0) {
-                        responses.forEach(resp => {
-                            fetch('{{ route('student.optional-fees.respond') }}', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                                },
-                                body: JSON.stringify(resp)
-                            });
-                        });
-
-                        const modal = document.getElementById('optionalFeesModal');
-                        if (modal && window.bootstrap && window.bootstrap.Modal) {
-                            window.bootstrap.Modal.getInstance(modal).hide();
-                        }
-
-                        // Show success message
-                        alert('Your responses have been recorded. Thank you!');
-                    }
-                });
             });
         </script>
     @endif
@@ -2600,62 +2503,213 @@ function startCountdown(initialData) {
 }
 
 function showOptionalFeesModal(fees) {
+    if (!Array.isArray(fees) || fees.length === 0 || document.getElementById('optionalFeesModal')) {
+        return;
+    }
+
+    const hasMandatory = fees.some(fee => fee.mandatory);
+    const hasOptional = fees.some(fee => !fee.mandatory);
+    const formatAmount = amount => Number(amount || 0).toLocaleString(undefined, {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+    });
+
     const modalHtml = `
-        <div class="modal fade" id="optionalFeesModal" tabindex="-1" data-bs-backdrop="static">
-            <div class="modal-dialog modal-lg">
+        <style>
+            @keyframes esaFeeBackdrop { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes esaFeeEnter { from { opacity: 0; transform: translateY(18px) scale(.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
+            @keyframes esaFeeCard { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+            #optionalFeesModal.fee-modal-professional.show .modal-backdrop { animation: esaFeeBackdrop .25s ease-out; }
+            #optionalFeesModal .modal-dialog { animation: esaFeeEnter .38s cubic-bezier(.22,1,.36,1); }
+            .fee-modal-professional .modal-content {
+                overflow: hidden;
+                border: 0;
+                border-radius: 22px;
+                box-shadow: 0 28px 80px rgba(15, 35, 70, .28);
+            }
+            .fee-modal-professional .fee-modal-header {
+                min-height: 118px;
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                padding: 24px 28px;
+                border: 0;
+                background: ${hasMandatory ? 'linear-gradient(135deg, #172a4a 0%, #263e63 100%)' : 'linear-gradient(135deg, #12345a 0%, #1d5f86 100%)'};
+                color: #fff;
+            }
+            .fee-modal-professional .fee-modal-icon {
+                width: 54px;
+                height: 54px;
+                display: grid;
+                flex: 0 0 54px;
+                place-items: center;
+                border: 1px solid rgba(255,255,255,.18);
+                border-radius: 16px;
+                background: rgba(255,255,255,.12);
+                color: ${hasMandatory ? '#ffd166' : '#87dff3'};
+                font-size: 1.35rem;
+            }
+            .fee-modal-professional .fee-modal-header p {
+                margin: 0 0 4px;
+                color: rgba(255,255,255,.66);
+                font-size: .68rem;
+                font-weight: 800;
+                letter-spacing: .14em;
+                text-transform: uppercase;
+            }
+            .fee-modal-professional .fee-modal-header h5 {
+                margin: 0;
+                font-family: Georgia, 'Times New Roman', serif;
+                font-size: 1.48rem;
+            }
+            .fee-modal-professional .btn-close { filter: invert(1); opacity: .78; }
+            .fee-modal-professional .modal-body {
+                padding: 22px 28px 10px;
+                background: #f7f9fc;
+            }
+            .fee-modal-professional .fee-introduction {
+                margin: 0 0 16px;
+                color: #667085;
+                font-size: .86rem;
+                line-height: 1.55;
+            }
+            .fee-modal-professional .fee-item {
+                display: grid;
+                grid-template-columns: 42px minmax(0, 1fr) auto;
+                align-items: center;
+                gap: 14px;
+                margin-bottom: 10px;
+                padding: 16px;
+                border: 1px solid #e5eaf1;
+                border-radius: 14px;
+                background: #fff;
+                animation: esaFeeCard .42s ease-out backwards;
+            }
+            .fee-modal-professional .fee-item:nth-child(2) { animation-delay: .06s; }
+            .fee-modal-professional .fee-item:nth-child(3) { animation-delay: .12s; }
+            .fee-item-icon {
+                width: 42px;
+                height: 42px;
+                display: grid;
+                place-items: center;
+                border-radius: 12px;
+                background: #edf4ff;
+                color: #315f9a;
+            }
+            .fee-item.is-mandatory .fee-item-icon {
+                background: #fff4d6;
+                color: #9a6a11;
+            }
+            .fee-item-name {
+                display: block;
+                color: #1d2939;
+                font-size: .92rem;
+                font-weight: 800;
+            }
+            .fee-item-amount {
+                display: block;
+                margin-top: 3px;
+                color: #344054;
+                font-family: Georgia, 'Times New Roman', serif;
+                font-size: 1.05rem;
+                font-weight: 700;
+            }
+            .fee-item-meta {
+                display: block;
+                margin-top: 3px;
+                color: #98a2b3;
+                font-size: .72rem;
+            }
+            .fee-status {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 7px 9px;
+                border-radius: 999px;
+                background: #fff3cd;
+                color: #805b13;
+                font-size: .68rem;
+                font-weight: 800;
+                white-space: nowrap;
+            }
+            .fee-actions {
+                display: flex;
+                gap: 7px;
+            }
+            .fee-action {
+                min-width: 94px;
+                border: 0;
+                border-radius: 9px;
+                padding: 9px 12px;
+                font-size: .76rem;
+                font-weight: 800;
+                transition: transform .16s ease, box-shadow .16s ease;
+            }
+            .fee-action:hover { transform: translateY(-2px); }
+            .fee-action.approve { background: #158765; color: #fff; box-shadow: 0 6px 14px rgba(21,135,101,.18); }
+            .fee-action.reject { background: #fff0f0; color: #b42318; }
+            .fee-modal-professional .modal-footer {
+                justify-content: space-between;
+                padding: 12px 28px 22px;
+                border: 0;
+                background: #f7f9fc;
+            }
+            .fee-modal-professional .fee-footer-note {
+                color: #98a2b3;
+                font-size: .72rem;
+            }
+            @media (max-width: 575.98px) {
+                .fee-modal-professional .modal-dialog { margin: .75rem; }
+                .fee-modal-professional .fee-modal-header { min-height: 104px; padding: 20px; }
+                .fee-modal-professional .modal-body { padding: 18px 16px 8px; }
+                .fee-modal-professional .fee-item { grid-template-columns: 38px minmax(0,1fr); }
+                .fee-item-icon { width: 38px; height: 38px; }
+                .fee-actions, .fee-status { grid-column: 2; }
+                .fee-action { flex: 1; }
+                .fee-modal-professional .modal-footer { padding: 12px 16px 18px; }
+            }
+        </style>
+        <div class="modal fade fee-modal-professional" id="optionalFeesModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
                 <div class="modal-content">
-                    <div class="modal-header ${fees.some(f => f.mandatory) ? 'bg-warning' : 'bg-info'} text-white">
-                        <h5 class="modal-title">
-                            <i class="bi bi-${fees.some(f => f.mandatory) ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
-                            ${fees.some(f => f.mandatory) ? 'Mandatory Fee Notification' : 'Optional Fees Available'}
-                        </h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <div class="modal-header fee-modal-header">
+                        <div class="fee-modal-icon"><i class="bi ${hasMandatory ? 'bi-exclamation-triangle-fill' : 'bi-receipt-cutoff'}"></i></div>
+                        <div>
+                            <p>Account notification</p>
+                            <h5>${hasMandatory ? 'Mandatory fee notice' : 'Optional fee approval'}</h5>
+                        </div>
+                        ${hasMandatory ? '' : '<button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>'}
                     </div>
                     <div class="modal-body">
-                        ${fees.some(f => f.mandatory) ? `
-                            <div class="alert alert-warning">
-                                <i class="bi bi-info-circle me-2"></i>
-                                You have mandatory fees that have been added to your account.
-                            </div>
-                        ` : `
-                            <div class="alert alert-info">
-                                <i class="bi bi-info-circle me-2"></i>
-                                You have optional fees available. Please review and accept or decline them.
-                            </div>
-                        `}
-                        <div class="list-group">
-                            ${fees.map(fee => `
-                                <div class="list-group-item">
-                                    <div class="d-flex justify-content-between align-items-start">
-                                        <div>
-                                            <h6 class="mb-1">${fee.name}</h6>
-                                            <p class="mb-1 text-muted small">Amount: <strong>RWF ${number_format(fee.amount, 2)}</strong></p>
-                                            ${fee.due_date ? `<p class="mb-0 text-muted small">Due: ${fee.due_date}</p>` : ''}
-                                            ${fee.mandatory ? `
-                                                <span class="badge bg-warning text-dark mt-2">Mandatory</span>
-                                            ` : ''}
-                                        </div>
-                                        ${!fee.mandatory ? `
-                                            <div class="btn-group">
-                                                <button type="button" class="btn btn-sm btn-success" onclick="respondToFee(${fee.fee_id}, '${fee.type}', 'accepted')">
-                                                    <i class="bi bi-check-circle me-1"></i> Accept
-                                                </button>
-                                                <button type="button" class="btn btn-sm btn-danger" onclick="respondToFee(${fee.fee_id}, '${fee.type}', 'declined')">
-                                                    <i class="bi bi-x-circle me-1"></i> Decline
-                                                </button>
-                                            </div>
-                                        ` : `
-                                            <span class="text-success"><i class="bi bi-check-circle me-1"></i> Added to balance</span>
-                                        `}
-                                    </div>
+                        <p class="fee-introduction">${hasMandatory
+                            ? 'These mandatory fees have been added to your account. No approval is required; please arrange payment before the due date.'
+                            : 'Please review the optional fee below. Approve it to add it to your balance, or reject it if you do not need this activity.'}</p>
+                        ${fees.map(fee => `
+                            <div class="fee-item ${fee.mandatory ? 'is-mandatory' : ''}">
+                                <div class="fee-item-icon"><i class="bi ${fee.type === 'trip' ? 'bi-bus-front' : 'bi-flask'}"></i></div>
+                                <div>
+                                    <span class="fee-item-name">${fee.name}</span>
+                                    <span class="fee-item-amount">RWF ${formatAmount(fee.amount)}</span>
+                                    ${fee.due_date ? `<span class="fee-item-meta">Due ${fee.due_date}</span>` : ''}
                                 </div>
-                            `).join('')}
-                        </div>
+                                ${fee.mandatory
+                                    ? `<span class="fee-status"><i class="bi bi-lock-fill"></i> Mandatory</span>`
+                                    : `<div class="fee-actions">
+                                        <button type="button" class="fee-action approve" onclick="respondToFee(${fee.fee_id}, '${fee.type}', 'accepted', this)">
+                                            <i class="bi bi-check2-circle me-1"></i>Approve
+                                        </button>
+                                        <button type="button" class="fee-action reject" onclick="respondToFee(${fee.fee_id}, '${fee.type}', 'declined', this)">
+                                            <i class="bi bi-x-circle me-1"></i>Reject
+                                        </button>
+                                    </div>`}
+                            </div>
+                        `).join('')}
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                            <i class="bi bi-x-circle me-1"></i> Close
-                        </button>
+                        <span class="fee-footer-note"><i class="bi bi-shield-check me-1"></i> ESA student account</span>
+                        ${hasMandatory
+                            ? `<button type="button" class="btn btn-primary px-4" data-bs-dismiss="modal">I understand</button>`
+                            : `<button type="button" class="btn btn-light px-3" data-bs-dismiss="modal">Decide later</button>`}
                     </div>
                 </div>
             </div>
@@ -2663,11 +2717,16 @@ function showOptionalFeesModal(fees) {
     `;
 
     document.body.insertAdjacentHTML('beforeend', modalHtml);
-    const modal = new bootstrap.Modal(document.getElementById('optionalFeesModal'));
+    const modalElement = document.getElementById('optionalFeesModal');
+    const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
     modal.show();
 }
 
-function respondToFee(feeId, feeType, response) {
+function respondToFee(feeId, feeType, response, button) {
+    const actionGroup = button?.closest('.fee-actions');
+    if (actionGroup) actionGroup.querySelectorAll('button').forEach(item => item.disabled = true);
+    if (button) button.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving';
+
     fetch('{{ route('student.optional-fees.respond') }}', {
         method: 'POST',
         headers: {
@@ -2683,14 +2742,21 @@ function respondToFee(feeId, feeType, response) {
     .then(r => r.json())
     .then(data => {
         if (data.success) {
-            alert(data.message);
-            location.reload();
+            const modalElement = document.getElementById('optionalFeesModal');
+            const modal = bootstrap.Modal.getInstance(modalElement);
+            if (modal) modal.hide();
+            setTimeout(() => window.location.reload(), 260);
         } else {
             alert('Error: ' + data.message);
+            if (actionGroup) actionGroup.querySelectorAll('button').forEach(item => item.disabled = false);
+            if (button) button.innerHTML = response === 'accepted'
+                ? '<i class="bi bi-check2-circle me-1"></i>Approve'
+                : '<i class="bi bi-x-circle me-1"></i>Reject';
         }
     })
     .catch(error => {
         alert('Error: ' + error.message);
+        if (actionGroup) actionGroup.querySelectorAll('button').forEach(item => item.disabled = false);
     });
 }
 
@@ -2710,10 +2776,6 @@ async function loadNotifications() {
 
         if (data.announcements && data.announcements.length > 0) {
             showAnnouncementNotifications(data.announcements);
-        }
-
-        if (data.mandatory_fees && data.mandatory_fees.length > 0) {
-            showMandatoryFeeNotifications(data.mandatory_fees);
         }
     } catch (error) {
         console.error('Error loading notifications:', error);
