@@ -313,7 +313,7 @@
                             </div>
                             @if($student->senior6_document)
                                 <div class="mt-2">
-                                    <a href="{{ route('students.view_document', [$student->id, 'senior6_document']) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                    <a href="{{ route('staff.students.view_document', [$student->id, 'senior6_document']) }}" target="_blank" class="btn btn-sm btn-outline-primary">
                                         <i class="fas fa-eye me-1"></i> View Document
                                     </a>
                                 </div>
@@ -331,7 +331,7 @@
                             </div>
                             @if($student->senior3_document)
                                 <div class="mt-2">
-                                    <a href="{{ route('students.view_document', [$student->id, 'senior3_document']) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                    <a href="{{ route('staff.students.view_document', [$student->id, 'senior3_document']) }}" target="_blank" class="btn btn-sm btn-outline-primary">
                                         <i class="fas fa-eye me-1"></i> View Document
                                     </a>
                                 </div>
@@ -349,7 +349,7 @@
                             </div>
                             @if($student->other_supporting_document)
                                 <div class="mt-2">
-                                    <a href="{{ route('students.view_document', [$student->id, 'other_supporting_document']) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                    <a href="{{ route('staff.students.view_document', [$student->id, 'other_supporting_document']) }}" target="_blank" class="btn btn-sm btn-outline-primary">
                                         <i class="fas fa-eye me-1"></i> View Document
                                     </a>
                                 </div>
