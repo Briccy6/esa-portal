@@ -333,7 +333,9 @@
                 {{ Auth::guard('teacher')->user()->salary ?? 'N/A' }}
             </div>
             <div class="salary-value" id="salaryHidden">******</div>
-            <p class="card-description">View your salary information and request advances.</p>
+            <p class="card-description">
+                Payment Period: <strong>{{ ucfirst(Auth::guard('teacher')->user()->payment_period ?? 'monthly') }}</strong>
+            </p>
             <div class="card-action">
                 <button class="btn-card btn-card-outline" id="showSalaryBtn">
                     <i class="bi bi-eye"></i> Show Salary
@@ -385,8 +387,12 @@ async function loadPendingPayments() {
         
         document.getElementById('pendingPaymentsAmount').textContent = 'RWF ' + pendingAmount.toLocaleString();
         
+        // Update card description with period info
+        const paymentPeriod = '{{ Auth::guard('teacher')->user()->payment_period ?? 'monthly' }}';
+        const periodText = paymentPeriod === 'hourly' ? 'Earned but unpaid (hourly)' : 'Approved but unpaid';
+        
         document.getElementById('showPaymentsBtn').addEventListener('click', function() {
-            alert(`Total Amount: RWF ${totalAmount.toLocaleString()}\nPaid: RWF ${paidAmount.toLocaleString()}\nRemaining: RWF ${pendingAmount.toLocaleString()}\nPending Records: ${count}`);
+            alert(`Payment Period: ${paymentPeriod}\nTotal Earned: RWF ${totalAmount.toLocaleString()}\nPaid: RWF ${paidAmount.toLocaleString()}\nRemaining Balance: RWF ${pendingAmount.toLocaleString()}\nPending Records: ${count}`);
         });
     } catch (error) {
         console.error('Error loading pending payments:', error);
