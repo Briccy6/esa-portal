@@ -936,7 +936,7 @@ function showUnreviewedDailiesNotification(dailies) {
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <a href="{{ route('staff.dashboard_dos') }}" class="btn btn-primary">
+                        <a href="{{ route('staff.dashboard.dos') }}" class="btn btn-primary">
                             <i class="bi bi-check-circle me-1"></i> Review Now
                         </a>
                     </div>
