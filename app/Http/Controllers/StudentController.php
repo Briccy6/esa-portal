@@ -60,7 +60,7 @@ class StudentController extends Controller
             }
 
             $matchesShift = $session->shifts->isNotEmpty()
-                ? $session->shifts->contains('shift', $matchingShifts)
+                ? $session->shifts->whereIn('shift', $matchingShifts)->isNotEmpty()
                 : in_array($session->shift, $matchingShifts);
 
             return $matchesCourse && $matchesShift;
