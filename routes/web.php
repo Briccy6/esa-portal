@@ -1518,6 +1518,9 @@ Route::middleware('auth:teacher')->get('/api/teacher/branch/{branchId}/course/{c
 
 Route::get('/dos/dailies', [App\Http\Controllers\DosDailyController::class, 'index'])->name('dos.dailies.index');
 Route::get('/dos/dailies/{daily}', [App\Http\Controllers\DosDailyController::class, 'show'])->name('dos.dailies.show');
+Route::delete('/dos/dailies/{daily}', [App\Http\Controllers\DosDailyController::class, 'destroy'])
+    ->middleware(['auth:staff', 'role:dos,admin'])
+    ->name('dos.dailies.destroy');
 Route::post('/dos/dailies/{daily}/approve', [App\Http\Controllers\DosDailyController::class, 'approve'])->name('dos.dailies.approve');
 Route::post('/dos/dailies/{daily}/status', [App\Http\Controllers\DosDailyController::class, 'updateStatus'])->middleware('auth:staff')->name('dos.dailies.status');
 Route::post('/dos/dailies/{daily}/attendance', [App\Http\Controllers\DosDailyController::class, 'updateAttendance'])->name('dos.dailies.attendance');

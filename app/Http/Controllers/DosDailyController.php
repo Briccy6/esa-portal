@@ -8,6 +8,7 @@ use App\Models\TeacherDaily;
 use App\Models\Attendance;
 use App\Models\Course;
 use App\Models\Student;
+use App\Models\TeacherDailyPayment;
 
 class DosDailyController extends Controller
 {
@@ -243,5 +244,65 @@ class DosDailyController extends Controller
         ]);
 
         return $this->updateAttendance($request, $daily);
+    }
+
+    public function destroy(TeacherDaily $daily)
+    {
+        $deleted = DB::transaction(function () use ($daily) {
+            $daily = TeacherDaily::query()
+                ->whereKey($daily->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $courseIds = collect($daily->course_ids ?? [])
+                ->push($daily->course_id)
+                ->filter()
+                ->unique()
+                ->values();
+
+            $paymentsDeleted = TeacherDailyPayment::where('teacher_daily_id', $daily->id)->delete();
+
+            $attendanceQuery = Attendance::whereDate('date', $daily->date)
+                ->where('lesson_id', $daily->lesson_id)
+                ->whereIn('course_id', $courseIds);
+
+            if ($daily->branch_id) {
+                $attendanceQuery->whereHas('student', function ($query) use ($daily) {
+                    $query->where('branch_id', $daily->branch_id);
+                });
+            }
+
+            $attendanceDeleted = $attendanceQuery->delete();
+            $dailyId = $daily->id;
+            $daily->delete();
+
+            return [
+                'daily_id' => $dailyId,
+                'payments' => $paymentsDeleted,
+                'attendance' => $attendanceDeleted,
+            ];
+        });
+
+        \Log::info('Teacher daily and related records deleted by DOS', [
+            'daily_id' => $deleted['daily_id'],
+            'payment_records_deleted' => $deleted['payments'],
+            'attendance_records_deleted' => $deleted['attendance'],
+            'staff_id' => Auth::guard('staff')->id(),
+        ]);
+
+        $message = 'Daily report deleted with '
+            . $deleted['payments'] . ' teacher payment record(s) and '
+            . $deleted['attendance'] . ' attendance record(s).';
+
+        if (request()->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'deleted_payment_records' => $deleted['payments'],
+                'deleted_attendance_records' => $deleted['attendance'],
+            ]);
+        }
+
+        return back()->with('success', $message);
     }
 }

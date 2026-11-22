@@ -160,9 +160,19 @@
                                 </div>
                             </td>
                             <td data-label="Report details" class="daily-action-cell">
-                                <a href="{{ route('dos.dailies.show', $daily->id) }}" class="daily-view-link">
-                                    Review <i class="bi bi-arrow-up-right"></i>
-                                </a>
+                                <div class="daily-action-actions">
+                                    <a href="{{ route('dos.dailies.show', $daily->id) }}" class="daily-view-link">
+                                        Review <i class="bi bi-arrow-up-right"></i>
+                                    </a>
+                                    <form method="POST" action="{{ route('dos.dailies.destroy', $daily->id) }}"
+                                        onsubmit="return confirm('Permanently delete this daily report, its teacher payment record, and attendance entries for its lesson and courses at this branch? This cannot be undone.');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="daily-delete-button" aria-label="Delete daily report {{ $daily->id }}" title="Delete report and related attendance/payment">
+                                            <i class="bi bi-trash3" aria-hidden="true"></i>
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                     @empty
@@ -521,6 +531,20 @@
 
     .daily-save-button:hover { transform: translateY(-1px); background: var(--daily-accent); color: #fff; }
     .daily-action-cell { text-align: right; white-space: nowrap; }
+    .daily-action-actions { display: inline-flex; align-items: center; justify-content: flex-end; gap: 12px; }
+    .daily-delete-button {
+        display: grid;
+        width: 34px;
+        height: 34px;
+        place-items: center;
+        border: 1px solid #f0d7d4;
+        border-radius: 9px;
+        background: #fff7f6;
+        color: #b54740;
+        transition: background .15s ease, color .15s ease, border-color .15s ease;
+    }
+    .daily-delete-button:hover { border-color: #b54740; background: #b54740; color: #fff; }
+    .daily-delete-button:focus-visible { outline: 3px solid rgba(181, 71, 64, .22); outline-offset: 2px; }
 
     .daily-view-link {
         display: inline-flex;
