@@ -833,6 +833,7 @@ Route::prefix('staff')->name('staff.')->group(function () {
                 Route::get('/', [\App\Http\Controllers\OptionalFeeController::class, 'index'])->name('index');
                 Route::put('/{id}', [\App\Http\Controllers\OptionalFeeController::class, 'update'])->name('update');
                 Route::post('/{id}/assign', [\App\Http\Controllers\OptionalFeeController::class, 'assign'])->name('assign');
+                Route::post('/{id}/delete', [\App\Http\Controllers\OptionalFeeController::class, 'destroy'])->name('destroy');
                 Route::get('/report', [\App\Http\Controllers\OptionalFeeController::class, 'report'])->name('report');
                 Route::get('/export', [\App\Http\Controllers\OptionalFeeController::class, 'exportReport'])->name('export');
             });

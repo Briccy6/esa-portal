@@ -25,6 +25,9 @@ class OptionalFeeController extends Controller
         }
 
         $fees = CourseTermBranchFee::with(['course', 'branch', 'term'])
+            ->withCount([
+                'responses as accepted_responses_count' => fn ($query) => $query->where('response', 'accepted'),
+            ])
             ->whereIn('branch_id', $branchIds)
             ->where('is_active', true)
             ->orderBy('term_id')
@@ -127,8 +130,14 @@ class OptionalFeeController extends Controller
             'valid_until' => 'nullable|date|after_or_equal:valid_from',
         ]);
 
-        $fee = CourseTermBranchFee::findOrFail($id);
-        
+        $staff = Auth::guard('staff')->user();
+        $branchIds = $staff->branches->pluck('id')->toArray();
+        if (empty($branchIds)) {
+            $branchIds = \App\Models\Branch::pluck('id')->toArray();
+        }
+
+        $fee = CourseTermBranchFee::whereIn('branch_id', $branchIds)->findOrFail($id);
+
         $updateData = [
             'practical_fee' => $request->practical_fee ?? 0,
             'trip_fee' => $request->trip_fee ?? 0,
@@ -152,6 +161,53 @@ class OptionalFeeController extends Controller
         $fee->update($updateData);
 
         return back()->with('success', 'Fee settings updated successfully.');
+    }
+
+    /**
+     * Deactivate a fee configuration when it has no payable student responses.
+     */
+    public function destroy($id)
+    {
+        $staff = Auth::guard('staff')->user();
+        $branchIds = $staff->branches->pluck('id')->toArray();
+
+        if (empty($branchIds)) {
+            $branchIds = \App\Models\Branch::pluck('id')->toArray();
+        }
+
+        $fee = CourseTermBranchFee::whereIn('branch_id', $branchIds)
+            ->where('is_active', true)
+            ->findOrFail($id);
+
+        $acceptedResponses = StudentOptionalFeeResponse::where('course_term_branch_fee_id', $fee->id)
+            ->where('response', 'accepted')
+            ->count();
+
+        if ($acceptedResponses > 0) {
+            $message = 'This fee has been accepted or assigned to students and cannot be deleted without removing a payable balance. Turn off student notifications or update the fee settings instead.';
+
+            if (request()->expectsJson()) {
+                return response()->json(['success' => false, 'message' => $message], 422);
+            }
+
+            return back()->withErrors(['fee' => $message]);
+        }
+
+        DB::transaction(function () use ($fee) {
+            $fee->update([
+                'is_active' => false,
+                'notify_students' => false,
+            ]);
+        });
+
+        if (request()->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Optional fee configuration deactivated. Student response history was preserved.'
+            ]);
+        }
+
+        return back()->with('success', 'Optional fee configuration deactivated. Student response history was preserved.');
     }
 
     /**
@@ -363,8 +419,9 @@ class OptionalFeeController extends Controller
                   ->orWhere('valid_until', '>=', $today);
             })
             ->where(function($q) {
-                $q->where('practical_fee', '>', 0)->where('is_practical_mandatory', false)
-                  ->orWhere('trip_fee', '>', 0)->where('is_trip_mandatory', false);
+                // Include both optional and mandatory fees with notify_students enabled
+                $q->where('practical_fee', '>', 0)
+                  ->orWhere('trip_fee', '>', 0);
             })
             ->orderBy('term_id')
             ->get();
@@ -391,17 +448,30 @@ class OptionalFeeController extends Controller
                 $dueDate = $feeType === 'practical' ? $fee->practical_due_date : $fee->trip_due_date;
                 $response = $responses->get($fee->id . ':' . $feeType);
 
-                if ((float) $amount <= 0 || $mandatory || ($dueDate && $dueDate->lt(today()))) {
+                if ((float) $amount <= 0) {
                     continue;
                 }
 
-                if (!$response || $response->response === 'pending') {
+                // For mandatory fees, always show notification (regardless of response)
+                // For optional fees, only show if not yet responded
+                if ($mandatory) {
                     $pendingFees[] = [
                         'fee_id' => $fee->id,
                         'type' => $feeType,
                         'name' => $feeType === 'practical' ? 'Practical Fee' : 'Trip Fee',
                         'amount' => $amount,
                         'due_date' => $dueDate ? $dueDate->format('d M Y') : null,
+                        'mandatory' => true,
+                        'message' => "A mandatory {$feeType} fee of " . number_format($amount, 2) . " RWF has been added to your account.",
+                    ];
+                } elseif (!$response || $response->response === 'pending') {
+                    $pendingFees[] = [
+                        'fee_id' => $fee->id,
+                        'type' => $feeType,
+                        'name' => $feeType === 'practical' ? 'Practical Fee' : 'Trip Fee',
+                        'amount' => $amount,
+                        'due_date' => $dueDate ? $dueDate->format('d M Y') : null,
+                        'mandatory' => false,
                         'current_response' => $response?->response ?? 'pending',
                     ];
                 }
