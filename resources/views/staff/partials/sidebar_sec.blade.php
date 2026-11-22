@@ -214,6 +214,7 @@
                         <a class="nav-link {{ request()->routeIs('staff.accountant.teacher-payments.*') ? 'active' : '' }}" href="{{ route('staff.accountant.teacher-payments.index') }}">
                             <span class="nav-icon"><i class="fas fa-chalkboard-teacher"></i></span>
                             <span class="nav-text">Teacher Payments</span>
+                            <span class="badge bg-danger ms-auto" id="pending-payments-badge" style="display: none;">0</span>
                         </a>
                     </li>
                     <li class="nav-item">
@@ -411,6 +412,25 @@
             }
         });
     });
+
+    // Update pending payments badge
+    async function updatePendingPaymentsBadge() {
+        try {
+            const response = await fetch('{{ route('staff.accountant.teacher-payments.pending') }}');
+            const payments = await response.json();
+
+            const badge = document.getElementById('pending-payments-badge');
+            if (badge && payments.length > 0) {
+                badge.textContent = payments.length;
+                badge.style.display = 'inline-block';
+            }
+        } catch (error) {
+            console.error('Error updating badge:', error);
+        }
+    }
+
+    // Load badge on page load
+    updatePendingPaymentsBadge();
 </script>
 @stack('scripts')
 </body>

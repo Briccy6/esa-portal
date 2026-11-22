@@ -9,9 +9,16 @@ use App\Models\Attendance;
 use App\Models\Branch;
 use App\Models\Course;
 use App\Models\Teacher;
+use App\Services\TeacherPaymentService;
 
 class DosTeacherDailyController extends Controller
 {
+    protected $paymentService;
+
+    public function __construct(TeacherPaymentService $paymentService)
+    {
+        $this->paymentService = $paymentService;
+    }
     /**
      * Display all teacher daily activities for DOS approval
      */
@@ -122,6 +129,15 @@ class DosTeacherDailyController extends Controller
                 'approved_by' => $daily->approved_by,
             ]);
 
+            // Create payment record for approved daily
+            $approver = Auth::guard('staff')->user();
+            $this->paymentService->approvePayment($daily, $approver);
+
+            \Log::info('Payment record created for approved daily', [
+                'daily_id' => $id,
+                'teacher_id' => $daily->teacher_id,
+            ]);
+
             // Also approve related attendance records
             $attendanceUpdated = Attendance::where('date', $daily->date)
                 ->where('course_id', $daily->course_id)
@@ -211,6 +227,13 @@ class DosTeacherDailyController extends Controller
                 'approved_by' => $staffId,
                 'approved_at' => $now,
             ]);
+
+            // Create payment records for approved dailies
+            $approver = Auth::guard('staff')->user();
+            $dailies = TeacherDaily::whereIn('id', $ids)->get();
+            foreach ($dailies as $daily) {
+                $this->paymentService->approvePayment($daily, $approver);
+            }
 
             // Also approve related attendance records
             foreach ($ids as $id) {
