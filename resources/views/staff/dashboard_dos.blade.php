@@ -881,5 +881,77 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     @endforeach
 });
+
+// Load unreviewed teacher dailies notifications
+async function loadUnreviewedDailies() {
+    try {
+        const response = await fetch('{{ route('staff.unreviewed-dailies') }}');
+        const dailies = await response.json();
+
+        if (dailies && dailies.length > 0) {
+            showUnreviewedDailiesNotification(dailies);
+        }
+    } catch (error) {
+        console.error('Error loading unreviewed dailies:', error);
+    }
+}
+
+function showUnreviewedDailiesNotification(dailies) {
+    const modalHtml = `
+        <div class="modal fade" id="unreviewed-dailies-modal" tabindex="-1" data-bs-backdrop="static">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-warning">
+                        <h5 class="modal-title">
+                            <i class="bi bi-exclamation-triangle me-2"></i> Unreviewed Teacher Dailies
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-warning">
+                            <i class="bi bi-info-circle me-2"></i>
+                            You have ${dailies.length} unreviewed teacher daily record${dailies.length !== 1 ? 's' : ''} to review.
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Teacher</th>
+                                        <th>Course</th>
+                                        <th>Date</th>
+                                        <th>Hours</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${dailies.map(daily => `
+                                        <tr>
+                                            <td>${daily.teacher?.teacher_name || 'N/A'}</td>
+                                            <td>${daily.course?.course_name || 'N/A'}</td>
+                                            <td>${daily.date}</td>
+                                            <td>${daily.hours_studied || 0} hours</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <a href="{{ route('staff.dashboard_dos') }}" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-1"></i> Review Now
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    const modal = new bootstrap.Modal(document.getElementById('unreviewed-dailies-modal'));
+    modal.show();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadUnreviewedDailies();
+});
 </script>
 @endsection

@@ -343,6 +343,21 @@
                 </button>
             </div>
         </div>
+
+        <!-- Pending Payments Card -->
+        <div class="dashboard-card">
+            <div class="card-icon">
+                <i class="bi bi-wallet2"></i>
+            </div>
+            <h3 class="card-title">Pending Payments</h3>
+            <div class="salary-value" id="pendingPaymentsAmount">Loading...</div>
+            <p class="card-description">View your pending payments from approved work.</p>
+            <div class="card-action">
+                <button class="btn-card btn-card-outline" id="showPaymentsBtn">
+                    <i class="bi bi-eye"></i> Show Details
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -352,8 +367,35 @@ document.getElementById('showSalaryBtn').addEventListener('click', function() {
     document.getElementById('salaryHidden').style.display = 'none';
     this.style.display = 'none';
 });
+
 function requestAdvance() {
     alert('Advance request feature coming soon!');
 }
+
+// Load pending payments
+async function loadPendingPayments() {
+    try {
+        const response = await fetch('{{ route('teacher.payments.index') }}');
+        const data = await response.json();
+        
+        const pendingAmount = data.remaining || 0;
+        const totalAmount = data.total_amount || 0;
+        const paidAmount = data.total_paid || 0;
+        const count = data.count || 0;
+        
+        document.getElementById('pendingPaymentsAmount').textContent = 'RWF ' + pendingAmount.toLocaleString();
+        
+        document.getElementById('showPaymentsBtn').addEventListener('click', function() {
+            alert(`Total Amount: RWF ${totalAmount.toLocaleString()}\nPaid: RWF ${paidAmount.toLocaleString()}\nRemaining: RWF ${pendingAmount.toLocaleString()}\nPending Records: ${count}`);
+        });
+    } catch (error) {
+        console.error('Error loading pending payments:', error);
+        document.getElementById('pendingPaymentsAmount').textContent = 'RWF 0';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadPendingPayments();
+});
 </script>
 @endsection

@@ -854,4 +854,61 @@
         }
     }
 </style>
+
+<script>
+// Load pending teacher payments notifications
+async function loadPendingPayments() {
+    try {
+        const response = await fetch('{{ route('staff.accountant.teacher-payments.index') }}');
+        const html = await response.text();
+        
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const emptyState = doc.querySelector('.empty-state');
+        
+        if (!emptyState) {
+            showPendingPaymentsNotification();
+        }
+    } catch (error) {
+        console.error('Error loading pending payments:', error);
+    }
+}
+
+function showPendingPaymentsNotification() {
+    const modalHtml = `
+        <div class="modal fade" id="pending-payments-modal" tabindex="-1" data-bs-backdrop="static">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title">
+                            <i class="bi bi-cash-coin me-2"></i> Pending Teacher Payments
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-success">
+                            <i class="bi bi-info-circle me-2"></i>
+                            You have approved teacher payments waiting to be processed.
+                        </div>
+                        <p>These payments have been approved by the DOS and are ready for payment processing.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <a href="{{ route('staff.accountant.teacher-payments.index') }}" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-1"></i> View Payments
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    const modal = new bootstrap.Modal(document.getElementById('pending-payments-modal'));
+    modal.show();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadPendingPayments();
+});
+</script>
 @endsection
