@@ -1067,6 +1067,15 @@
                             </div>
                         @endif
                     </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Remind me later</button>
+                        <a href="{{ route('students.profile') }}" class="btn btn-primary">
+                            <i class="bi bi-pencil-square me-1" aria-hidden="true"></i>Complete profile
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
     @endif
 
     <!-- Optional Fees Modal -->
@@ -1090,15 +1099,6 @@
             </div>
         </div>
     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Remind me later</button>
-                        <a href="{{ route('students.profile') }}" class="btn btn-primary">
-                            <i class="bi bi-pencil-square me-1" aria-hidden="true"></i>Complete profile
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
         <script>
             document.addEventListener('DOMContentLoaded', function () {
                 var reminderModal = document.getElementById('profileReminderModal');

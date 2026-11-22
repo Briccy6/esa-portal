@@ -1863,13 +1863,23 @@ class StudentController extends Controller
         $showProfileReminder = count($profileMissingFields) > 0
             && now('Africa/Kigali')->lt($profileDeadline);
 
+        // Initialize attendance variables to avoid undefined variable errors
+        $approvedAttendances = collect();
+        $totalDays = 0;
+        $attendedDays = 0;
+        $attendancePercent = 0;
+
         if ($profileAccessRestricted) {
             return view('students.dashboard', compact(
                 'student',
                 'profileMissingFields',
                 'profileDeadline',
                 'showProfileReminder',
-                'profileAccessRestricted'
+                'profileAccessRestricted',
+                'approvedAttendances',
+                'totalDays',
+                'attendedDays',
+                'attendancePercent'
             ));
         }
 

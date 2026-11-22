@@ -246,6 +246,7 @@
         /* Sidebar */
         .sidebar {
             width: 260px;
+            flex: 0 0 260px;
             min-height: calc(100vh - 64px);
             background: var(--sidebar-bg);
             box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
@@ -342,12 +343,15 @@
         /* Main Content */
         .main-content {
             flex: 1;
+            min-width: 0;
             padding: 1.5rem;
             background: var(--bg-light);
             min-height: calc(100vh - 64px);
         }
 
         .content-wrapper {
+            width: 100%;
+            min-width: 0;
             background: var(--bg-white);
             border-radius: 12px;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
