@@ -478,6 +478,9 @@
                                                     @else
                                                         <span class="badge bg-light text-dark">{{ ucfirst($session->activity_type ?? 'N/A') }}</span>
                                                     @endif
+                                                    @if($session->shift)
+                                                        <span class="badge bg-primary ms-1">{{ ucfirst($session->shift) }}</span>
+                                                    @endif
                                                 </span>
                                             </td>
                                             <td data-label="Notes">

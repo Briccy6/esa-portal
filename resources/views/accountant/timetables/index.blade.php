@@ -160,7 +160,7 @@
                                             </td>
                                             <td>{{ $session->classroom ?? '' }}</td>
                                             <td>
-                                                <span class="badge bg-{{ $session->shift === 'morning' ? 'success' : ($session->shift === 'afternoon' ? 'warning' : 'secondary') }} text-white">
+                                                <span class="badge bg-{{ $session->shift === 'day' ? 'success' : ($session->shift === 'evening' ? 'warning' : 'secondary') }} text-white">
                                                     {{ ucfirst($session->shift ?? 'N/A') }}
                                                 </span>
                                             </td>
