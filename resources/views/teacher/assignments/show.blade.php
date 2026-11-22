@@ -22,7 +22,7 @@
                 <div class="assignment-grade-note">{{ $assignment->lesson->title }} &middot; {{ $assignment->branch->name }} &middot; {{ $assignment->term->name }}</div>
                 <div class="assignment-grade-note mt-2">{{ $assignment->marks_out_of }} marks &middot; {{ ucfirst(str_replace('_', ' ', $assignment->submission_method)) }} &middot; Due {{ $assignment->due_at->format('M j, Y g:i A') }}</div>
             </div>
-            <a href="{{ route('teacher.assignments.edit-deadline', $assignment) }}" class="btn btn-outline-light"><i class="bi bi-clock-history me-1"></i> Edit deadline</a>
+            <a href="{{ route('teacher.assignments.configure', $assignment) }}" class="btn btn-outline-light"><i class="bi bi-gear me-1"></i> Configure assignment</a>
         </div>
         @if($assignment->description)<p class="mb-0 mt-3">{{ $assignment->description }}</p>@endif
     </header>
@@ -49,7 +49,10 @@
                             <td data-label="Submission">
                                 @if($assignment->submission_method === 'system')
                                     @if($submission)
-                                        <a href="{{ route('teacher.assignments.submission.download', [$assignment, $submission]) }}" class="link-success">{{ $submission->original_file_name }}</a>
+                                        <a href="{{ route('teacher.assignments.submission.download', [$assignment, $submission]) }}" class="btn btn-sm btn-outline-success">
+                                            <i class="bi bi-download me-1"></i>Download for review
+                                        </a>
+                                        <div class="small text-muted mt-1">{{ $submission->original_file_name }}</div>
                                         <div class="small text-muted">{{ $submission->submitted_at->format('M j g:i A') }}</div>
                                     @elseif($assignment->due_at->isPast())
                                         <span class="badge text-bg-danger">Not submitted &middot; 0</span>

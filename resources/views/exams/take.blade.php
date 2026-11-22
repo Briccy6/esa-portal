@@ -371,8 +371,12 @@ document.addEventListener('keydown', function(e) {
 
 // --- Cheating detection: Tab switch or blur = immediate disqualify ---
 function disqualify() {
-    // Redirect immediately without alert to avoid blocking
-    window.location.replace("{{ route('student.exams.disqualified', $exam->id) }}");
+    // Immediately redirect without any blocking alert
+    window.location.href = "{{ route('student.exams.disqualified', $exam->id) }}";
+    // Also try replace as backup
+    setTimeout(function() {
+        window.location.replace("{{ route('student.exams.disqualified', $exam->id) }}");
+    }, 100);
 }
 window.onblur = disqualify;
 document.addEventListener('visibilitychange', function() {

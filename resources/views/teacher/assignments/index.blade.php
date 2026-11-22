@@ -56,10 +56,14 @@
                                 <span class="assignment-sub">{{ $assignment->submissions_count }} submitted &middot; {{ $assignment->marks_count }} marked</span>
                             </td>
                             <td data-label="Actions" class="text-md-end">
-                                <a href="{{ route('teacher.assignments.show', $assignment) }}" class="btn btn-sm btn-outline-success">Manage marks</a>
-                                <a href="{{ route('teacher.assignments.edit-deadline', $assignment) }}" class="btn btn-sm btn-outline-secondary" aria-label="Edit deadline for {{ $assignment->title }}">
-                                    <i class="bi bi-clock-history"></i>
-                                </a>
+                                <div class="d-flex flex-wrap justify-content-md-end gap-2">
+                                    <a href="{{ route('teacher.assignments.show', $assignment) }}" class="btn btn-sm btn-outline-success">
+                                        <i class="bi bi-folder2-open me-1"></i>Review submissions
+                                    </a>
+                                    <a href="{{ route('teacher.assignments.configure', $assignment) }}" class="btn btn-sm btn-outline-secondary" aria-label="Configure {{ $assignment->title }}">
+                                        <i class="bi bi-gear me-1"></i>Configure
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                     @empty

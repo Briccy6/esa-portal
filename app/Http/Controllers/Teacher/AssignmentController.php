@@ -146,6 +146,69 @@ class AssignmentController extends Controller
             ->with('success', 'Submission deadline updated.');
     }
 
+    public function configure(LessonAssignment $assignment)
+    {
+        $assignment = $this->teacherAssignment($assignment);
+
+        return view('teacher.assignments.configure', compact('assignment'));
+    }
+
+    public function updateConfiguration(Request $request, LessonAssignment $assignment)
+    {
+        $assignment = $this->teacherAssignment($assignment);
+        $validated = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:10000'],
+            'submission_method' => ['required', 'in:system,paper,in_class'],
+            'allowed_file_types' => ['required_if:submission_method,system', 'array', 'min:1'],
+            'allowed_file_types.*' => ['required', 'in:'.implode(',', self::ALLOWED_FILE_TYPES)],
+            'due_at' => ['required', 'date'],
+            'marks_out_of' => ['required', 'integer', 'min:1', 'max:10000'],
+        ]);
+
+        if (
+            $validated['submission_method'] !== $assignment->submission_method
+            && ($assignment->submissions()->exists() || $assignment->marks()->exists())
+        ) {
+            throw ValidationException::withMessages([
+                'submission_method' => 'The submission method cannot be changed after students have submitted work or marks have been recorded.',
+            ]);
+        }
+
+        if ($assignment->marks()->max('value') > $validated['marks_out_of']) {
+            throw ValidationException::withMessages([
+                'marks_out_of' => 'The maximum cannot be lower than a mark already recorded for this assignment.',
+            ]);
+        }
+
+        $studentIds = $assignment->marks()->pluck('student_id');
+        $assignment->update([
+            'title' => $validated['title'],
+            'description' => $validated['description'] ?? null,
+            'submission_method' => $validated['submission_method'],
+            'allowed_file_types' => $validated['submission_method'] === 'system'
+                ? array_values(array_unique($validated['allowed_file_types']))
+                : null,
+            'due_at' => $validated['due_at'],
+            'marks_out_of' => $validated['marks_out_of'],
+        ]);
+        $assignment->marks()->update(['marks_out_of' => $assignment->marks_out_of]);
+
+        if ($assignment->due_at->isFuture()) {
+            $assignment->marks()
+                ->where('status', 'missing')
+                ->whereNotIn('student_id', $assignment->submissions()->select('student_id'))
+                ->delete();
+        }
+
+        foreach (Student::whereIn('id', $studentIds)->get() as $student) {
+            app(AssignmentReportCardRefresher::class)->refresh($assignment, $student);
+        }
+
+        return redirect()->route('teacher.assignments.show', $assignment)
+            ->with('success', 'Assignment settings updated.');
+    }
+
     public function show(LessonAssignment $assignment)
     {
         $assignment = $this->teacherAssignment($assignment);

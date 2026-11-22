@@ -115,7 +115,7 @@ class FlutterwaveController extends Controller
                 'amount'          => $registrationFee,
                 'currency'        => 'RWF',
                 'redirect_url'    => route('students.flutterwave.callback'),
-                // Use card/bank transfer only to avoid mobile money OTP screens for non-MOMO numbers
+                // Use payment methods supported for RWF transactions.
                 'payment_options' => 'card,mobilemoneyrwanda',
                 'meta'            => [
                     'course_id' => $course->id,

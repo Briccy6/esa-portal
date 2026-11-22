@@ -348,6 +348,8 @@ Route::middleware('auth:teacher')->prefix('teacher/assignments')->name('teacher.
     Route::post('/', [\App\Http\Controllers\Teacher\AssignmentController::class, 'store'])->name('store');
     Route::get('/{assignment}/edit-deadline', [\App\Http\Controllers\Teacher\AssignmentController::class, 'editDeadline'])->name('edit-deadline');
     Route::put('/{assignment}/deadline', [\App\Http\Controllers\Teacher\AssignmentController::class, 'updateDeadline'])->name('deadline.update');
+    Route::get('/{assignment}/configure', [\App\Http\Controllers\Teacher\AssignmentController::class, 'configure'])->name('configure');
+    Route::put('/{assignment}/configure', [\App\Http\Controllers\Teacher\AssignmentController::class, 'updateConfiguration'])->name('configuration.update');
     Route::get('/{assignment}', [\App\Http\Controllers\Teacher\AssignmentController::class, 'show'])->name('show');
     Route::put('/{assignment}/marks', [\App\Http\Controllers\Teacher\AssignmentController::class, 'saveMarks'])->name('marks.save');
     Route::get('/{assignment}/submissions/{submission}/download', [\App\Http\Controllers\Teacher\AssignmentController::class, 'downloadSubmission'])->name('submission.download');

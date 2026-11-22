@@ -144,6 +144,22 @@
             font-size: 1.1rem;
         }
 
+        .sidebar-header .sidebar-caption {
+            display: block;
+            margin-top: 0.35rem;
+            color: var(--text-secondary);
+            font-size: 0.82rem;
+        }
+
+        .sidebar-section-label {
+            padding: 1rem 1.5rem 0.35rem;
+            color: #8491a2;
+            font-size: 0.68rem;
+            font-weight: 800;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
         .sidebar .nav-link {
             color: var(--text-secondary);
             font-weight: 500;
@@ -194,6 +210,66 @@
             margin-left: auto;
             font-size: 0.75rem;
             padding: 0.25rem 0.5rem;
+        }
+
+        .sidebar .nav-link.assignment-nav-link,
+        .offcanvas .nav-link.assignment-nav-link {
+            color: #38564a;
+        }
+
+        .sidebar .nav-link.assignment-nav-link:hover,
+        .sidebar .nav-link.assignment-nav-link.active {
+            background: #eaf3ed;
+            color: #1d5b3b;
+        }
+
+        .sidebar .nav-link.assignment-nav-link.active,
+        .offcanvas .nav-link.assignment-nav-link.active {
+            box-shadow: inset 3px 0 #34724b;
+        }
+
+        .sidebar .nav-link.assignment-create-link,
+        .offcanvas .nav-link.assignment-create-link {
+            display: flex;
+            align-items: center;
+            margin: 0.35rem 1rem 0.75rem;
+            padding: 0.8rem 1.1rem;
+            border-radius: 0.75rem;
+            font-weight: 650;
+            text-decoration: none;
+            transition: background 0.2s ease, transform 0.2s ease;
+            margin-top: 0.15rem;
+            color: #fff;
+            background: #245c40;
+            box-shadow: 0 5px 12px rgb(36 92 64 / 0.18);
+        }
+
+        .sidebar .nav-link.assignment-create-link:hover,
+        .sidebar .nav-link.assignment-create-link.active,
+        .offcanvas .nav-link.assignment-create-link:hover,
+        .offcanvas .nav-link.assignment-create-link.active {
+            color: #fff;
+            background: #194b33;
+        }
+
+        .sidebar .nav-link.assignment-create-link.active::before {
+            background: #e6bd69;
+        }
+
+        .offcanvas .nav-link.assignment-nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin: 0.25rem 1rem;
+            padding: 0.8rem 1.1rem;
+            border-radius: 0.75rem;
+            text-decoration: none;
+        }
+
+        .offcanvas .nav-link.assignment-nav-link i,
+        .offcanvas .nav-link.assignment-create-link i {
+            width: 20px;
+            text-align: center;
         }
 
         /* Color-coded nav links */
@@ -691,17 +767,19 @@
     <!-- Enhanced Sidebar (Desktop) -->
     <nav class="sidebar d-none d-lg-block">
         <div class="sidebar-header">
-            <h4><i class="bi bi-speedometer2 me-2"></i>Dashboard</h4>
+            <h4><i class="bi bi-mortarboard me-2"></i>Teacher workspace</h4>
+            <span class="sidebar-caption">{{ Auth::guard('teacher')->user()->teacher_name ?? 'Teaching and learning' }}</span>
         </div>
         <ul class="nav flex-column">
+            <li class="sidebar-section-label">Overview</li>
             <li class="nav-item">
                 <a href="{{ route('teacher.dashboard') }}" class="nav-link {{ request()->routeIs('teacher.dashboard') ? 'active' : '' }}">
                     <i class="bi bi-house-door"></i>
                     <span>Dashboard</span>
-                    <span class="badge bg-primary ms-auto">Home</span>
                 </a>
             </li>
-            
+
+            <li class="sidebar-section-label">Teaching</li>
             <li class="nav-item">
                 <a href="#" class="nav-link text-warning" data-bs-toggle="modal" data-bs-target="#classDailyModal">
                     <i class="bi bi-journal-text"></i>
@@ -736,13 +814,22 @@
                     <span>Marks</span>
                 </a>
             </li>
+
+            <li class="sidebar-section-label">Assignments</li>
             <li class="nav-item">
-                <a href="{{ route('teacher.assignments.index') }}" class="nav-link text-warning {{ request()->routeIs('teacher.assignments.*') ? 'active' : '' }}">
+                <a href="{{ route('teacher.assignments.index') }}" class="nav-link assignment-nav-link {{ request()->routeIs('teacher.assignments.index', 'teacher.assignments.show', 'teacher.assignments.edit-deadline', 'teacher.assignments.configure') ? 'active' : '' }}">
                     <i class="bi bi-journal-check"></i>
-                    <span>Assignments</span>
+                    <span>Review submissions</span>
                 </a>
             </li>
-            
+            <li class="nav-item">
+                <a href="{{ route('teacher.assignments.create') }}" class="nav-link assignment-create-link {{ request()->routeIs('teacher.assignments.create') ? 'active' : '' }}">
+                    <i class="bi bi-plus-circle"></i>
+                    <span>Create assignment</span>
+                </a>
+            </li>
+
+            <li class="sidebar-section-label">Resources &amp; schedule</li>
             <li class="nav-item">
                 <a href="{{ route('teacher.resources.create') }}" class="nav-link text-secondary">
                     <i class="bi bi-upload"></i>
@@ -775,13 +862,15 @@
         </div>
         <div class="offcanvas-body p-0">
             <ul class="nav flex-column py-3">
+                <li class="sidebar-section-label">Overview</li>
                 <li class="nav-item">
                     <a href="{{ route('teacher.dashboard') }}" class="nav-link {{ request()->routeIs('teacher.dashboard') ? 'active' : '' }}">
                         <i class="bi bi-house-door"></i>
                         <span>Dashboard</span>
                     </a>
                 </li>
-                
+
+                <li class="sidebar-section-label">Teaching</li>
                 <li class="nav-item">
                     <a href="#" class="nav-link text-warning" data-bs-toggle="modal" data-bs-target="#classDailyModal">
                         <i class="bi bi-journal-text"></i>
@@ -816,13 +905,22 @@
                         <span>Marks</span>
                     </a>
                 </li>
+
+                <li class="sidebar-section-label">Assignments</li>
                 <li class="nav-item">
-                    <a href="{{ route('teacher.assignments.index') }}" class="nav-link text-warning {{ request()->routeIs('teacher.assignments.*') ? 'active' : '' }}">
+                    <a href="{{ route('teacher.assignments.index') }}" class="nav-link assignment-nav-link {{ request()->routeIs('teacher.assignments.index', 'teacher.assignments.show', 'teacher.assignments.edit-deadline', 'teacher.assignments.configure') ? 'active' : '' }}">
                         <i class="bi bi-journal-check"></i>
-                        <span>Assignments</span>
+                        <span>Review submissions</span>
                     </a>
                 </li>
-                
+                <li class="nav-item">
+                    <a href="{{ route('teacher.assignments.create') }}" class="nav-link assignment-create-link {{ request()->routeIs('teacher.assignments.create') ? 'active' : '' }}">
+                        <i class="bi bi-plus-circle"></i>
+                        <span>Create assignment</span>
+                    </a>
+                </li>
+
+                <li class="sidebar-section-label">Resources &amp; schedule</li>
                 <li class="nav-item">
                     <a href="{{ route('teacher.resources.create') }}" class="nav-link text-secondary">
                         <i class="bi bi-upload"></i>
