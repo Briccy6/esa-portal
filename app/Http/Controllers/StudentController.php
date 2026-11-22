@@ -108,19 +108,25 @@ class StudentController extends Controller
     {
         $student = auth('student')->user();
 
+        // Treat 'day' shift as equivalent to 'morning'
+        $studentShift = $student->shift ?? 'day';
+        $matchingShifts = [$studentShift];
+        if ($studentShift === 'day') {
+            $matchingShifts[] = 'morning';
+        }
+
         $timetables = Timetable::published()
             ->where('branch_id', $student->branch_id)
             ->where('academic_year_id', $student->academic_year_id)
-            ->whereHas('sessions', function ($query) use ($student) {
-                $studentShift = $student->shift ?? 'day';
+            ->whereHas('sessions', function ($query) use ($student, $matchingShifts) {
                 $query->where(function ($courses) use ($student) {
                     $courses->whereHas('courses', fn ($q) => $q->where('courses.id', $student->course_id))
                         ->orWhere(function ($groupWork) {
                             $groupWork->where('activity_type', 'group_work')->whereDoesntHave('courses');
                         });
-                })->where(function ($shifts) use ($studentShift) {
-                    $shifts->where('shift', $studentShift)
-                        ->orWhereHas('shifts', fn ($q) => $q->where('shift', $studentShift));
+                })->where(function ($shifts) use ($matchingShifts) {
+                    $shifts->whereIn('shift', $matchingShifts)
+                        ->orWhereHas('shifts', fn ($q) => $q->whereIn('shift', $matchingShifts));
                 });
             })
             ->whereDate('valid_from', '<=', now())
@@ -137,6 +143,7 @@ class StudentController extends Controller
             'student_course_id' => $student->course_id,
             'student_branch_id' => $student->branch_id,
             'student_shift' => $student->shift,
+            'matching_shifts' => $matchingShifts,
             'timetables_count' => $timetables->count(),
             'total_sessions' => $timetables->sum(function($t) { return $t->sessions->count(); }),
         ]);
