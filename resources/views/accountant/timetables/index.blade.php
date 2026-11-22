@@ -248,6 +248,7 @@
                                 @endphp
                                 @foreach($days as $dayNum => $dayName)
                                     @php($daySessions = $timetable->sessions->where('day_of_week', $dayNum)->sortBy('start_time'))
+                                    @endphp
                                     @if($daySessions->isEmpty())
                                         <tr class="empty-day">
                                             <td colspan="9"><strong>{{ $dayName }}</strong> - No sessions scheduled</td>
