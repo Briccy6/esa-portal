@@ -163,26 +163,34 @@ class DosTimetableController extends Controller
 
     protected function validateShiftTimes(Request $request): void
     {
+        $errors = [];
+        $dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        
         foreach ($request->sessions as $index => $sessionData) {
+            $dayOfWeek = $sessionData['day_of_week'] ?? 0;
+            $dayName = $dayNames[$dayOfWeek] ?? "Day {$dayOfWeek}";
+            
             foreach ($sessionData['shifts'] as $shift) {
                 $times = $sessionData['shift_times'][$shift] ?? [];
                 $startTime = $times['start_time'] ?? null;
                 $endTime = $times['end_time'] ?? null;
 
                 if (!$startTime || !$endTime) {
-                    throw \Illuminate\Validation\ValidationException::withMessages([
-                        "sessions.{$index}.shift_times.{$shift}.start_time" => "Add both start and end times for the {$shift} shift.",
-                    ]);
-                }
-
-                $start = Carbon::createFromFormat('H:i', $startTime);
-                $end = Carbon::createFromFormat('H:i', $endTime);
-                if (!$end->gt($start)) {
-                    throw \Illuminate\Validation\ValidationException::withMessages([
-                        "sessions.{$index}.shift_times.{$shift}.end_time" => "The {$shift} shift end time must be after its start time.",
-                    ]);
+                    $errors["sessions.{$index}.shift_times.{$shift}.start_time"] = 
+                        "Add both start and end times for the {$shift} shift on {$dayName}.";
+                } else {
+                    $start = Carbon::createFromFormat('H:i', $startTime);
+                    $end = Carbon::createFromFormat('H:i', $endTime);
+                    if (!$end->gt($start)) {
+                        $errors["sessions.{$index}.shift_times.{$shift}.end_time"] = 
+                            "The {$shift} shift end time ({$endTime}) must be after its start time ({$startTime}) on {$dayName}.";
+                    }
                 }
             }
+        }
+        
+        if (!empty($errors)) {
+            throw \Illuminate\Validation\ValidationException::withMessages($errors);
         }
     }
 
