@@ -289,19 +289,63 @@
                                     <div class="col-6 col-sm-3 col-lg-2">
                                         <label class="form-label">Shifts</label>
                                         <div class="mt-2">
-                                            <div class="form-check">
+                                            <div class="form-check mb-2">
                                                 <input class="form-check-input shift-checkbox" type="checkbox" id="shift-day-{{ $index }}" name="sessions[{{ $index }}][shifts][]" value="day" @in_array('day', old("sessions.{$index}.shifts", isset($sessionData['shifts']) ? $sessionData['shifts'] : [$sessionData['shift'] ?? 'day'])) checked>
                                                 <label class="form-check-label" for="shift-day-{{ $index }}">Day</label>
                                             </div>
-                                            <div class="form-check">
+                                            <div class="shift-times-container" id="shift-times-day-{{ $index }}" style="display: none; margin-left: 1.5rem; border-left: 2px solid #e2e8f0; padding-left: 1rem;">
+                                                <div class="row g-2">
+                                                    <div class="col-6">
+                                                        <label class="form-label small">Start</label>
+                                                        <input type="time" class="form-control form-control-sm" name="sessions[{{ $index }}][shift_times][day][start_time]" value="{{ old("sessions.{$index}.shift_times.day.start_time", isset($sessionData['shift_times']['day']['start_time']) ? substr($sessionData['shift_times']['day']['start_time'], 0, 5) : '') }}">
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <label class="form-label small">End</label>
+                                                        <input type="time" class="form-control form-control-sm" name="sessions[{{ $index }}][shift_times][day][end_time]" value="{{ old("sessions.{$index}.shift_times.day.end_time", isset($sessionData['shift_times']['day']['end_time']) ? substr($sessionData['shift_times']['day']['end_time'], 0, 5) : '') }}">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="form-check mb-2">
                                                 <input class="form-check-input shift-checkbox" type="checkbox" id="shift-evening-{{ $index }}" name="sessions[{{ $index }}][shifts][]" value="evening" @in_array('evening', old("sessions.{$index}.shifts", isset($sessionData['shifts']) ? $sessionData['shifts'] : []))>
                                                 <label class="form-check-label" for="shift-evening-{{ $index }}">Evening</label>
                                             </div>
-                                            <div class="form-check">
+                                            <div class="shift-times-container" id="shift-times-evening-{{ $index }}" style="display: none; margin-left: 1.5rem; border-left: 2px solid #e2e8f0; padding-left: 1rem;">
+                                                <div class="row g-2">
+                                                    <div class="col-6">
+                                                        <label class="form-label small">Start</label>
+                                                        <input type="time" class="form-control form-control-sm" name="sessions[{{ $index }}][shift_times][evening][start_time]" value="{{ old("sessions.{$index}.shift_times.evening.start_time", isset($sessionData['shift_times']['evening']['start_time']) ? substr($sessionData['shift_times']['evening']['start_time'], 0, 5) : '') }}">
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <label class="form-label small">End</label>
+                                                        <input type="time" class="form-control form-control-sm" name="sessions[{{ $index }}][shift_times][evening][end_time]" value="{{ old("sessions.{$index}.shift_times.evening.end_time", isset($sessionData['shift_times']['evening']['end_time']) ? substr($sessionData['shift_times']['evening']['end_time'], 0, 5) : '') }}">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="form-check mb-2">
                                                 <input class="form-check-input shift-checkbox" type="checkbox" id="shift-weekend-{{ $index }}" name="sessions[{{ $index }}][shifts][]" value="weekend" @in_array('weekend', old("sessions.{$index}.shifts", isset($sessionData['shifts']) ? $sessionData['shifts'] : []))>
                                                 <label class="form-check-label" for="shift-weekend-{{ $index }}">Weekend</label>
                                             </div>
+                                            <div class="shift-times-container" id="shift-times-weekend-{{ $index }}" style="display: none; margin-left: 1.5rem; border-left: 2px solid #e2e8f0; padding-left: 1rem;">
+                                                <div class="row g-2">
+                                                    <div class="col-6">
+                                                        <label class="form-label small">Start</label>
+                                                        <input type="time" class="form-control form-control-sm" name="sessions[{{ $index }}][shift_times][weekend][start_time]" value="{{ old("sessions.{$index}.shift_times.weekend.start_time", isset($sessionData['shift_times']['weekend']['start_time']) ? substr($sessionData['shift_times']['weekend']['start_time'], 0, 5) : '') }}">
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <label class="form-label small">End</label>
+                                                        <input type="time" class="form-control form-control-sm" name="sessions[{{ $index }}][shift_times][weekend][end_time]" value="{{ old("sessions.{$index}.shift_times.weekend.end_time", isset($sessionData['shift_times']['weekend']['end_time']) ? substr($sessionData['shift_times']['weekend']['end_time'], 0, 5) : '') }}">
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
+                                    </div>
+                                    <div class="col-6 col-sm-3 col-lg-2">
+                                        <label class="form-label" for="start-{{ $index }}">Starts</label>
+                                        <input type="time" class="form-control" id="start-{{ $index }}" name="sessions[{{ $index }}][start_time]" value="{{ old("sessions.{$index}.start_time", isset($sessionData['start_time']) ? substr($sessionData['start_time'], 0, 5) : '') }}" required>
+                                    </div>
+                                    <div class="col-6 col-sm-3 col-lg-2">
+                                        <label class="form-label" for="end-{{ $index }}">Ends</label>
+                                        <input type="time" class="form-control" id="end-{{ $index }}" name="sessions[{{ $index }}][end_time]" value="{{ old("sessions.{$index}.end_time", isset($sessionData['end_time']) ? substr($sessionData['end_time'], 0, 5) : '') }}" required>
                                     </div>
                                     <div class="col-6 col-sm-3 col-lg-2">
                                         <label class="form-label" for="start-{{ $index }}">Starts</label>
@@ -407,7 +451,29 @@
                 <option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option><option value="0">Sunday</option>
             </select></div>
             <div class="col-12 col-lg-5"><label class="form-label" for="lesson-__INDEX__">Lesson</label><input type="text" class="form-control lesson-search" id="lesson-search-__INDEX__" placeholder="Type to search lessons..." autocomplete="off"><div class="lesson-dropdown" id="lesson-dropdown-__INDEX__" style="display: none; position: absolute; z-index: 1000; background: white; border: 1px solid #cedbd3; border-radius: 10px; max-height: 200px; overflow-y: auto; width: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.15);"></div><input type="hidden" class="lesson-id-hidden" id="lesson-__INDEX__" name="sessions[__INDEX__][lesson_id]"><div class="lesson-preview mt-1 text-muted small" id="lesson-preview-__INDEX__"></div></div>
-            <div class="col-6 col-sm-3 col-lg-2"><label class="form-label">Shifts</label>
+            <div class="col-6 col-sm-3 col-lg-2"><label class="form-label">Shifts</label><div class="mt-2">
+                <div class="form-check mb-2"><input class="form-check-input shift-checkbox" type="checkbox" id="shift-day-__INDEX__" name="sessions[__INDEX__][shifts][]" value="day" checked><label class="form-check-label" for="shift-day-__INDEX__">Day</label></div>
+                <div class="shift-times-container" id="shift-times-day-__INDEX__" style="display: block; margin-left: 1.5rem; border-left: 2px solid #e2e8f0; padding-left: 1rem;">
+                    <div class="row g-2">
+                        <div class="col-6"><label class="form-label small">Start</label><input type="time" class="form-control form-control-sm" name="sessions[__INDEX__][shift_times][day][start_time]"></div>
+                        <div class="col-6"><label class="form-label small">End</label><input type="time" class="form-control form-control-sm" name="sessions[__INDEX__][shift_times][day][end_time]"></div>
+                    </div>
+                </div>
+                <div class="form-check mb-2"><input class="form-check-input shift-checkbox" type="checkbox" id="shift-evening-__INDEX__" name="sessions[__INDEX__][shifts][]" value="evening"><label class="form-check-label" for="shift-evening-__INDEX__">Evening</label></div>
+                <div class="shift-times-container" id="shift-times-evening-__INDEX__" style="display: none; margin-left: 1.5rem; border-left: 2px solid #e2e8f0; padding-left: 1rem;">
+                    <div class="row g-2">
+                        <div class="col-6"><label class="form-label small">Start</label><input type="time" class="form-control form-control-sm" name="sessions[__INDEX__][shift_times][evening][start_time]"></div>
+                        <div class="col-6"><label class="form-label small">End</label><input type="time" class="form-control form-control-sm" name="sessions[__INDEX__][shift_times][evening][end_time]"></div>
+                    </div>
+                </div>
+                <div class="form-check mb-2"><input class="form-check-input shift-checkbox" type="checkbox" id="shift-weekend-__INDEX__" name="sessions[__INDEX__][shifts][]" value="weekend"><label class="form-check-label" for="shift-weekend-__INDEX__">Weekend</label></div>
+                <div class="shift-times-container" id="shift-times-weekend-__INDEX__" style="display: none; margin-left: 1.5rem; border-left: 2px solid #e2e8f0; padding-left: 1rem;">
+                    <div class="row g-2">
+                        <div class="col-6"><label class="form-label small">Start</label><input type="time" class="form-control form-control-sm" name="sessions[__INDEX__][shift_times][weekend][start_time]"></div>
+                        <div class="col-6"><label class="form-label small">End</label><input type="time" class="form-control form-control-sm" name="sessions[__INDEX__][shift_times][weekend][end_time]"></div>
+                    </div>
+                </div>
+            </div></div>
                 <div class="mt-2">
                     <div class="form-check"><input class="form-check-input shift-checkbox" type="checkbox" id="shift-day-__INDEX__" name="sessions[__INDEX__][shifts][]" value="day" checked><label class="form-check-label" for="shift-day-__INDEX__">Day</label></div>
                     <div class="form-check"><input class="form-check-input shift-checkbox" type="checkbox" id="shift-evening-__INDEX__" name="sessions[__INDEX__][shifts][]" value="evening"><label class="form-check-label" for="shift-evening-__INDEX__">Evening</label></div>
@@ -600,7 +666,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderCourses(row, selectedIds = []) {
         const activityType = row.querySelector('.activity-type').value;
-        const lesson = lessonData.find(item => String(item.lesson_id) === row.querySelector('.lesson-select').value);
+        const lessonId = row.querySelector('.lesson-id-hidden').value;
+        const lesson = lessonData.find(item => String(item.lesson_id) === lessonId);
         const picker = row.querySelector('[data-course-picker]');
         const preview = row.querySelector('[data-teacher-preview]');
         const searchInput = row.querySelector('.course-search');
@@ -822,6 +889,27 @@ document.addEventListener('DOMContentLoaded', () => {
             renderCourses(row, row.dataset.selectedCourses ? row.dataset.selectedCourses.split(',') : []);
         });
         row.querySelector('.session-type')?.addEventListener('change', () => syncSession(row));
+        
+        // Handle shift checkbox changes to show/hide time fields
+        row.querySelectorAll('.shift-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const shift = this.value;
+                const timeContainer = document.getElementById(`shift-times-${shift}-${row.dataset.index}`);
+                if (timeContainer) {
+                    timeContainer.style.display = this.checked ? 'block' : 'none';
+                }
+            });
+        });
+        
+        // Initialize shift time visibility
+        row.querySelectorAll('.shift-checkbox:checked').forEach(checkbox => {
+            const shift = checkbox.value;
+            const timeContainer = document.getElementById(`shift-times-${shift}-${row.dataset.index}`);
+            if (timeContainer) {
+                timeContainer.style.display = 'block';
+            }
+        });
+        
         row.querySelector('.remove-session').addEventListener('click', () => {
             row.remove();
             renumber();

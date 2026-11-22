@@ -12,6 +12,8 @@ class SessionShift extends Model
     protected $fillable = [
         'timetable_session_id',
         'shift',
+        'start_time',
+        'end_time',
     ];
 
     /**
