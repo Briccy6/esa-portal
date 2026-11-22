@@ -55,7 +55,7 @@ class LessonUnitController extends Controller
         $validator = Validator::make($request->all(), [
             'lesson_id' => 'required|exists:lessons,id',
             'unit_name' => 'required|string|max:255',
-            'hours' => 'required|integer|min:1',
+            'hours' => 'nullable|integer|min:1',
             'file' => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx,txt,csv|max:10240',
         ]);
 
@@ -84,7 +84,7 @@ class LessonUnitController extends Controller
         LessonUnit::create([
             'lesson_id' => $request->lesson_id,
             'unit_name' => $request->unit_name,
-            'hours' => $request->hours,
+            'hours' => $request->hours ?? 3,
             'file_path' => $filePath,
         ]);
 
@@ -230,6 +230,25 @@ class LessonUnitController extends Controller
 
         $lesson = Lesson::findOrFail($lessonId);
 
-        return Excel::download(new LessonUnitsExport($lessonId), 'lesson_units_' . $lesson->title . '.csv');
+        // Sanitize filename by removing special characters
+        $sanitizedTitle = preg_replace('/[^a-zA-Z0-9\s\-_]/', '', $lesson->title);
+        $sanitizedTitle = trim(str_replace(' ', '_', $sanitizedTitle));
+
+        return Excel::download(new LessonUnitsExport($lessonId), 'lesson_units_' . $sanitizedTitle . '.csv');
+    }
+
+    public function downloadTemplate()
+    {
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="lesson_units_template.csv"',
+        ];
+
+        $csvContent = "Unit Name,Hours,File Path\n";
+        $csvContent .= "\"Introduction to Physics\",2,\n";
+        $csvContent .= "\"Newton's Laws\",3,\n";
+        $csvContent .= "\"Lab Exercises\",1,\"path/to/file.pdf\"\n";
+
+        return response($csvContent, 200, $headers);
     }
 }

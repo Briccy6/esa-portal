@@ -1061,6 +1061,7 @@ Route::middleware('auth:teacher')->prefix('teacher')->name('teacher.')->group(fu
     Route::get('lesson-units/{id}/download', [\App\Http\Controllers\Teacher\LessonUnitController::class, 'downloadFile'])->name('lesson-units.download');
     Route::post('lesson-units/import', [\App\Http\Controllers\Teacher\LessonUnitController::class, 'importCSV'])->name('lesson-units.import');
     Route::get('lesson-units/export/{lessonId}', [\App\Http\Controllers\Teacher\LessonUnitController::class, 'exportCSV'])->name('lesson-units.export');
+    Route::get('lesson-units/template', [\App\Http\Controllers\Teacher\LessonUnitController::class, 'downloadTemplate'])->name('lesson-units.template');
 });
 
 // Teacher marks recording helper: fetch existing marks for a context (to prefill inputs)
@@ -1974,6 +1975,7 @@ Route::middleware(['web', 'auth:admin,staff,teacher'])->prefix('exams')->name('e
     Route::get('{exam}/questions/create', [\App\Http\Controllers\ExamQuestionController::class, 'create'])->name('questions.create');
     Route::post('{exam}/questions', [\App\Http\Controllers\ExamQuestionController::class, 'store'])->name('questions.store');
     Route::post('{exam}/questions/import', [\App\Http\Controllers\ExamQuestionController::class, 'import'])->name('questions.import');
+    Route::get('questions/template', [\App\Http\Controllers\ExamQuestionController::class, 'downloadTemplate'])->name('questions.template');
     Route::post('{exam}/import-from-banks', [\App\Http\Controllers\ExamController::class, 'importFromBanks'])->name('import-from-banks');
     
     });

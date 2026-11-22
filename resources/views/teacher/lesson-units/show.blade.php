@@ -211,7 +211,7 @@
             
             <div class="form-group">
                 <label class="form-label">Hours</label>
-                <input type="number" name="hours" class="form-control" required min="1" placeholder="e.g., 2">
+                <input type="number" name="hours" class="form-control" min="1" value="3" placeholder="e.g., 2">
             </div>
             
             <div class="form-group">
@@ -291,9 +291,12 @@
             <a href="{{ route('teacher.lesson-units.export', $lesson->id) }}" class="btn btn-outline">
                 <i class="bi bi-download"></i> Export CSV
             </a>
+            <a href="{{ route('teacher.lesson-units.template') }}" class="btn btn-outline">
+                <i class="bi bi-file-earmark-spreadsheet"></i> Download Template
+            </a>
         </div>
         <small class="text-muted d-block mt-2">
-            CSV format: unit_name, hours, file_path (optional). Example: "Introduction to Physics", 2, "path/to/file.pdf"
+            CSV format: unit_name, hours, file_path (optional). Use "Download Template" for a sample file. Example: "Introduction to Physics", 2, "path/to/file.pdf"
         </small>
     </div>
 </div>
