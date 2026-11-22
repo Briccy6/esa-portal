@@ -77,4 +77,9 @@ class TeacherDaily extends Model
     {
         return $this->belongsTo(\App\Models\Staff::class, 'rejected_by');
     }
+
+    public function payment()
+    {
+        return $this->hasOne(TeacherDailyPayment::class);
+    }
 }
