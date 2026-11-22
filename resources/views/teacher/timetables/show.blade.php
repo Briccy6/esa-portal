@@ -112,7 +112,17 @@
                                 @if(!$daySessions->isEmpty())
                                     @foreach($daySessions as $session)
                                     <tr style="transition: all 0.3s ease;">
-                                        <td style="font-weight: 500;">{{ $session->start_time ?? '' }} - {{ $session->end_time ?? '' }}</td>
+                                        <td style="font-weight: 500;">
+                                            @forelse($session->shifts as $shift)
+                                                <div>{{ ucfirst($shift->shift) }}:
+                                                    {{ $shift->start_time ? \Carbon\Carbon::parse($shift->start_time)->format('H:i') : ($session->start_time ?? '') }}
+                                                    -
+                                                    {{ $shift->end_time ? \Carbon\Carbon::parse($shift->end_time)->format('H:i') : ($session->end_time ?? '') }}
+                                                </div>
+                                            @empty
+                                                {{ $session->start_time ?? '' }} - {{ $session->end_time ?? '' }}
+                                            @endforelse
+                                        </td>
                                         <td style="font-weight: 500;">{{ $dayName }}</td>
                                         <td>
                                             @foreach($session->courses as $course)

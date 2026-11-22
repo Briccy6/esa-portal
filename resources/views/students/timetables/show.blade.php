@@ -227,9 +227,14 @@
                                 @endphp
                                 @if(!$daySessions->isEmpty())
                                     @foreach($daySessions as $session)
+                                    @php $studentShift = auth('student')->user()->shift ?? 'day'; $shiftTime = $session->shifts->firstWhere('shift', $studentShift); @endphp
                                     <tr style="transition: all 0.3s ease;">
                                         <td data-label="Time" style="font-weight: 800;">
-                                            <span class="timetable-cell-value">{{ $session->start_time ?? '' }} - {{ $session->end_time ?? '' }}</span>
+                                            <span class="timetable-cell-value">
+                                                {{ ($shiftTime?->start_time ?: $session->start_time) ? \Carbon\Carbon::parse($shiftTime?->start_time ?: $session->start_time)->format('H:i') : '' }}
+                                                -
+                                                {{ ($shiftTime?->end_time ?: $session->end_time) ? \Carbon\Carbon::parse($shiftTime?->end_time ?: $session->end_time)->format('H:i') : '' }}
+                                            </span>
                                         </td>
                                         <td data-label="Day" style="font-weight: 800;">
                                             <span class="timetable-cell-value">{{ $dayName }}</span>
@@ -249,7 +254,7 @@
                                         </td>
                                         <td data-label="Teacher">
                                             <span class="timetable-cell-value">
-                                                @if($session->lesson->branch_teacher)
+                                                @if($session->lesson && $session->lesson->branch_teacher)
                                                     <span class="badge bg-success text-white">{{ $session->lesson->branch_teacher->teacher_name }}</span>
                                                 @else
                                                     <span class="badge bg-warning text-dark">TBA</span>

@@ -393,11 +393,12 @@
                                     @endphp
                                     @if(!$daySessions->isEmpty())
                                         @foreach($daySessions as $session)
+                                        @php $studentShift = auth('student')->user()->shift ?? 'day'; $shiftTime = $session->shifts->firstWhere('shift', $studentShift); @endphp
                                         <tr>
                                             <td class="timetable-time" data-label="Time" style="font-weight: 800;">
                                                 <span class="timetable-cell-value">
-                                                    @if($session->start_time && $session->end_time)
-                                                        {{ \Carbon\Carbon::parse($session->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($session->end_time)->format('H:i') }}
+                                                    @if(($shiftTime?->start_time || $session->start_time) && ($shiftTime?->end_time || $session->end_time))
+                                                        {{ \Carbon\Carbon::parse($shiftTime?->start_time ?: $session->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($shiftTime?->end_time ?: $session->end_time)->format('H:i') }}
                                                     @else
                                                         N/A
                                                     @endif
@@ -478,10 +479,8 @@
                                                     @else
                                                         <span class="badge bg-light text-dark">{{ ucfirst($session->activity_type ?? 'N/A') }}</span>
                                                     @endif
-                                                    @if($session->shifts && $session->shifts->count() > 0)
-                                                        @foreach($session->shifts as $shift)
-                                                            <span class="badge bg-{{ $shift->shift === 'day' ? 'success' : ($shift->shift === 'evening' ? 'warning' : 'secondary') }} ms-1">{{ ucfirst($shift->shift) }}</span>
-                                                        @endforeach
+                                                    @if($shiftTime)
+                                                        <span class="badge bg-{{ $shiftTime->shift === 'day' ? 'success' : ($shiftTime->shift === 'evening' ? 'warning' : 'secondary') }} ms-1">{{ ucfirst($shiftTime->shift) }}</span>
                                                     @endif
                                                 </span>
                                             </td>

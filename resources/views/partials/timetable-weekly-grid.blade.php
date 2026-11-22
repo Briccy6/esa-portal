@@ -72,7 +72,13 @@
                 <div class="session-card">
                     <strong>{{ $session->lesson->title ?? 'Untitled Lesson' }}</strong>
                     <div class="session-meta">
-                        <div><strong>Time:</strong> {{ \Carbon\Carbon::parse($session->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($session->end_time)->format('H:i') }}</div>
+                        <div><strong>Time:</strong>
+                            @forelse($session->shifts as $shift)
+                                <span>{{ ucfirst($shift->shift) }} {{ $shift->start_time ? \Carbon\Carbon::parse($shift->start_time)->format('H:i') : \Carbon\Carbon::parse($session->start_time)->format('H:i') }}-{{ $shift->end_time ? \Carbon\Carbon::parse($shift->end_time)->format('H:i') : \Carbon\Carbon::parse($session->end_time)->format('H:i') }}</span>{{ !$loop->last ? ', ' : '' }}
+                            @empty
+                                {{ \Carbon\Carbon::parse($session->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($session->end_time)->format('H:i') }}
+                            @endforelse
+                        </div>
                         <div><strong>Room:</strong> {{ $session->classroom ?: 'TBA' }}</div>
                         <div><strong>Teacher:</strong> {{ $session->lesson->teacher->teacher_name ?? 'TBA' }}</div>
                         <div><strong>Courses:</strong>

@@ -43,13 +43,21 @@ class StudentController extends Controller
 {
     protected function applyStudentTimetableScope($timetable, Student $student): void
     {
-        $studentShift = $student->shift ?? 'morning';
-        
-        $sessions = $timetable->sessions
-            ->filter(fn ($session) => $student->course_id
-                && $session->courses->contains('id', $student->course_id)
-                && $session->shift === $studentShift)
-            ->values();
+        $studentShift = $student->shift ?? 'day';
+
+        $sessions = $timetable->sessions->filter(function ($session) use ($student, $studentShift) {
+            $matchesCourse = $student->course_id
+                && $session->courses->contains('id', $student->course_id);
+            if (!$matchesCourse && $session->activity_type === 'group_work' && $session->courses->isEmpty()) {
+                $matchesCourse = true;
+            }
+
+            $matchesShift = $session->shifts->isNotEmpty()
+                ? $session->shifts->contains('shift', $studentShift)
+                : $session->shift === $studentShift;
+
+            return $matchesCourse && $matchesShift;
+        })->values();
 
         $assignments = DB::table('lesson_branch_course')
             ->where('branch_id', $student->branch_id)
@@ -103,12 +111,20 @@ class StudentController extends Controller
             ->where('branch_id', $student->branch_id)
             ->where('academic_year_id', $student->academic_year_id)
             ->whereHas('sessions', function ($query) use ($student) {
-                $query->whereHas('courses', fn ($q) => $q->where('courses.id', $student->course_id))
-                    ->where('shift', $student->shift ?? 'morning');
+                $studentShift = $student->shift ?? 'day';
+                $query->where(function ($courses) use ($student) {
+                    $courses->whereHas('courses', fn ($q) => $q->where('courses.id', $student->course_id))
+                        ->orWhere(function ($groupWork) {
+                            $groupWork->where('activity_type', 'group_work')->whereDoesntHave('courses');
+                        });
+                })->where(function ($shifts) use ($studentShift) {
+                    $shifts->where('shift', $studentShift)
+                        ->orWhereHas('shifts', fn ($q) => $q->where('shift', $studentShift));
+                });
             })
             ->whereDate('valid_from', '<=', now())
             ->whereDate('valid_until', '>=', now())
-            ->with(['branch', 'academicYear', 'term', 'sessions.lesson.teacher', 'sessions.courses'])
+            ->with(['branch', 'academicYear', 'term', 'sessions.lesson.teacher', 'sessions.courses', 'sessions.shifts'])
             ->get();
 
         foreach ($timetables as $timetable) {
@@ -139,15 +155,9 @@ class StudentController extends Controller
             abort(403, 'You are not authorized to view this timetable.');
         }
 
-        $timetable->load(['branch', 'academicYear', 'term', 'sessions.lesson.teacher', 'sessions.courses']);
+        $timetable->load(['branch', 'academicYear', 'term', 'sessions.lesson.teacher', 'sessions.courses', 'sessions.shifts']);
         $this->applyStudentTimetableScope($timetable, $student);
-        
-        // Filter sessions by student's shift
-        $studentShift = $student->shift ?? 'morning';
-        $timetable->sessions = $timetable->sessions->filter(function ($session) use ($studentShift) {
-            return $session->shift === $studentShift;
-        });
-        
+
         abort_if($timetable->sessions->isEmpty(), 404);
         $studentSessions = $timetable->sessions;
 

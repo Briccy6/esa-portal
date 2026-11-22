@@ -133,8 +133,12 @@ class DosTimetableController extends Controller
     protected function getSessionCourseIdsFromInput(array $sessionData, int $branchId, ?Lesson $lesson): array
     {
         $courseIds = array_filter(array_map('intval', $sessionData['course_ids'] ?? []));
-        
-        // For non-lesson activities, allow any course from the branch
+
+        if ($lesson && in_array($sessionData['activity_type'] ?? 'lesson', ['lesson', 'group_work'], true)) {
+            $available = $this->getCourseIdsForLesson($branchId, $lesson->id);
+            return array_values(array_unique(array_intersect($courseIds, $available)));
+        }
+
         if (!$lesson || !isset($sessionData['activity_type']) || $sessionData['activity_type'] !== 'lesson') {
             $available = Course::whereIn('id', LessonBranchCourse::where('branch_id', $branchId)
                 ->pluck('course_id')->unique())
@@ -143,9 +147,58 @@ class DosTimetableController extends Controller
             return array_values(array_unique(array_intersect($courseIds, $available)));
         }
         
-        // For lesson activities, only allow courses assigned to the lesson
-        $available = $this->getCourseIdsForLesson($branchId, $lesson->id);
-        return array_values(array_unique(array_intersect($courseIds, $available)));
+        return [];
+    }
+
+    protected function getPrimaryShiftTimes(array $sessionData): array
+    {
+        $shift = $sessionData['shifts'][0] ?? null;
+        $times = $shift ? ($sessionData['shift_times'][$shift] ?? []) : [];
+
+        return [
+            'start_time' => $times['start_time'] ?? null,
+            'end_time' => $times['end_time'] ?? null,
+        ];
+    }
+
+    protected function validateShiftTimes(Request $request): void
+    {
+        foreach ($request->sessions as $index => $sessionData) {
+            foreach ($sessionData['shifts'] as $shift) {
+                $times = $sessionData['shift_times'][$shift] ?? [];
+                $startTime = $times['start_time'] ?? null;
+                $endTime = $times['end_time'] ?? null;
+
+                if (!$startTime || !$endTime) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        "sessions.{$index}.shift_times.{$shift}.start_time" => "Add both start and end times for the {$shift} shift.",
+                    ]);
+                }
+
+                $start = Carbon::createFromFormat('H:i', $startTime);
+                $end = Carbon::createFromFormat('H:i', $endTime);
+                if (!$end->gt($start)) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        "sessions.{$index}.shift_times.{$shift}.end_time" => "The {$shift} shift end time must be after its start time.",
+                    ]);
+                }
+            }
+        }
+    }
+
+    protected function saveSessionShifts(TimetableSession $session, array $sessionData): void
+    {
+        $session->shifts()->delete();
+
+        foreach ($sessionData['shifts'] as $shift) {
+            $times = $sessionData['shift_times'][$shift];
+            SessionShift::create([
+                'timetable_session_id' => $session->id,
+                'shift' => $shift,
+                'start_time' => $times['start_time'],
+                'end_time' => $times['end_time'],
+            ]);
+        }
     }
 
     protected function validateScheduleScope(Request $request, ?Timetable $timetable = null): void
@@ -168,11 +221,10 @@ class DosTimetableController extends Controller
         }
 
         foreach ($request->sessions as $index => $sessionData) {
-            $lesson = Lesson::find($sessionData['lesson_id']);
+            $lesson = !empty($sessionData['lesson_id']) ? Lesson::find($sessionData['lesson_id']) : null;
             $courseIds = array_values(array_unique(array_map('intval', $sessionData['course_ids'] ?? [])));
             $activityType = $sessionData['activity_type'] ?? 'lesson';
-            
-            // For lesson activities, validate lesson and course assignment
+
             if ($activityType === 'lesson') {
                 $availableCourseIds = $lesson
                     ? $this->getCourseIdsForLesson((int) $request->branch_id, $lesson->id)
@@ -186,8 +238,27 @@ class DosTimetableController extends Controller
                         "sessions.{$index}.lesson_id" => 'Choose a lesson and one or more courses assigned to that lesson in the selected branch and academic year.',
                     ]);
                 }
+            } elseif ($activityType === 'group_work') {
+                if ($lesson) {
+                    $availableCourseIds = $this->getCourseIdsForLesson((int) $request->branch_id, $lesson->id);
+                    if (($lesson->academic_year_id && (int) $lesson->academic_year_id !== (int) $request->academic_year_id)
+                        || array_diff($courseIds, $availableCourseIds)) {
+                        throw \Illuminate\Validation\ValidationException::withMessages([
+                            "sessions.{$index}.course_ids" => 'For group work, choose only courses assigned to the selected lesson.',
+                        ]);
+                    }
+                } elseif ($courseIds) {
+                    $availableCourseIds = Course::whereIn('id', LessonBranchCourse::where('branch_id', (int) $request->branch_id)
+                        ->pluck('course_id')->unique())
+                        ->pluck('id')
+                        ->toArray();
+                    if (array_diff($courseIds, $availableCourseIds)) {
+                        throw \Illuminate\Validation\ValidationException::withMessages([
+                            "sessions.{$index}.course_ids" => 'Choose only courses available in the selected branch.',
+                        ]);
+                    }
+                }
             } else {
-                // For non-lesson activities, only validate that courses exist in the branch
                 $availableCourseIds = Course::whereIn('id', LessonBranchCourse::where('branch_id', (int) $request->branch_id)
                     ->pluck('course_id')->unique())
                     ->pluck('id')
@@ -212,7 +283,7 @@ class DosTimetableController extends Controller
     protected function collectCourseIdsFromSession(TimetableSession $session): array
     {
         $pivotCourses = $session->courses()->pluck('courses.id')->map(fn($id) => (int) $id)->toArray();
-        return $pivotCourses ?: [$session->lesson->course_id];
+        return $pivotCourses ?: ($session->lesson?->course_id ? [(int) $session->lesson->course_id] : []);
     }
 
     protected function getActiveTermForAcademicYear($academicYearId): ?Term
@@ -273,10 +344,25 @@ class DosTimetableController extends Controller
 
         foreach ($sessions as $session) {
             $courseIds = $session->courses->pluck('id')->map(fn ($id) => (int) $id)->all();
-            $availableCourseIds = $this->getCourseIdsForLesson((int) $timetable->branch_id, (int) $session->lesson_id);
-            if (! $courseIds || array_diff($courseIds, $availableCourseIds)) {
-                $lessonTitle = $session->lesson->title ?? 'this lesson';
-                $issues[] = "Choose only courses assigned to lesson '{$lessonTitle}' in this branch.";
+            if ($session->activity_type === 'lesson') {
+                $availableCourseIds = $session->lesson_id
+                    ? $this->getCourseIdsForLesson((int) $timetable->branch_id, (int) $session->lesson_id)
+                    : [];
+                if (!$courseIds || array_diff($courseIds, $availableCourseIds)) {
+                    $lessonTitle = $session->lesson->title ?? 'this lesson';
+                    $issues[] = "Choose only courses assigned to lesson '{$lessonTitle}' in this branch.";
+                }
+            } elseif ($session->activity_type === 'group_work' && $session->lesson_id && $courseIds) {
+                $availableCourseIds = $this->getCourseIdsForLesson((int) $timetable->branch_id, (int) $session->lesson_id);
+                if (array_diff($courseIds, $availableCourseIds)) {
+                    $issues[] = 'Group-work courses must be assigned to the selected lesson.';
+                }
+            } elseif ($session->activity_type !== 'group_work' && $courseIds) {
+                $availableCourseIds = LessonBranchCourse::where('branch_id', $timetable->branch_id)
+                    ->pluck('course_id')->unique()->map(fn ($id) => (int) $id)->all();
+                if (array_diff($courseIds, $availableCourseIds)) {
+                    $issues[] = 'Choose only courses assigned to this branch.';
+                }
             }
         }
 
@@ -288,7 +374,7 @@ class DosTimetableController extends Controller
 
         foreach ($sessions as $index => $session) {
             foreach ($sessions->slice($index + 1) as $other) {
-                if ($session->conflictsWith($other)) {
+                if ($this->sessionsOverlap($session, $other)) {
                     if ($session->classroom && $other->classroom && $session->classroom === $other->classroom) {
                         $key = $session->classroom . ':' . $session->day_of_week . ':' . min($session->id, $other->id) . ':' . max($session->id, $other->id);
                         if (!isset($duplicateRooms[$key])) {
@@ -336,6 +422,35 @@ class DosTimetableController extends Controller
             6 => 'Saturday',
             default => 'Sunday',
         };
+    }
+
+    protected function sessionsOverlap(TimetableSession $first, TimetableSession $second): bool
+    {
+        if ($first->day_of_week !== $second->day_of_week) {
+            return false;
+        }
+
+        $getRanges = function (TimetableSession $session) {
+            $shifts = $session->shifts;
+            if ($shifts->isEmpty()) {
+                return [[Carbon::parse($session->start_time), Carbon::parse($session->end_time)]];
+            }
+
+            return $shifts->map(fn ($shift) => [
+                Carbon::parse($shift->start_time ?: $session->start_time),
+                Carbon::parse($shift->end_time ?: $session->end_time),
+            ])->all();
+        };
+
+        foreach ($getRanges($first) as [$firstStart, $firstEnd]) {
+            foreach ($getRanges($second) as [$secondStart, $secondEnd]) {
+                if ($firstStart->lt($secondEnd) && $firstEnd->gt($secondStart)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     public function create(Request $request)
@@ -430,6 +545,14 @@ class DosTimetableController extends Controller
                         }
                     }
                 }
+                foreach (($session['shift_times'] ?? []) as $shift => $times) {
+                    foreach (['start_time', 'end_time'] as $field) {
+                        if (!empty($times[$field]) && preg_match('/^\d{1,2}:\d{2}$/', trim($times[$field]))) {
+                            [$hour, $minute] = explode(':', trim($times[$field]));
+                            $data['sessions'][$i]['shift_times'][$shift][$field] = str_pad($hour, 2, '0', STR_PAD_LEFT) . ':' . $minute;
+                        }
+                    }
+                }
             }
             $request->merge($data);
         }
@@ -456,17 +579,19 @@ class DosTimetableController extends Controller
             'sessions.*.day_of_week' => ['required', Rule::in(['0','1','2','3','4','5','6'])],
             'sessions.*.shifts' => 'required|array|min:1',
             'sessions.*.shifts.*' => ['required', Rule::in(['day', 'evening', 'weekend'])],
-            'sessions.*.start_time' => 'required|date_format:H:i',
-            'sessions.*.end_time' => 'required|date_format:H:i|after:sessions.*.start_time',
+            'sessions.*.shift_times' => 'required|array',
+            'sessions.*.shift_times.*.start_time' => 'nullable|date_format:H:i',
+            'sessions.*.shift_times.*.end_time' => 'nullable|date_format:H:i',
             'sessions.*.classroom' => 'nullable|string|max:100',
             'sessions.*.notes' => 'nullable|string|max:500',
-            'sessions.*.course_ids' => 'required|array|min:1',
+            'sessions.*.course_ids' => 'nullable|array',
             'sessions.*.course_ids.*' => 'required|exists:courses,id',
             'sessions.*.activity_type' => ['required', Rule::in(['lesson', 'self_study', 'group_work', 'reserve'])],
             'sessions.*.reserve_text' => 'nullable|string|max:500',
             'sessions.*.session_type' => ['nullable', Rule::in(['class', 'test'])],
             'sessions.*.minimum_paid_percentage' => 'nullable|numeric|min:0|max:100',
         ]);
+        $this->validateShiftTimes($request);
 
         // Custom date validation
         $validFrom = Carbon::parse($request->valid_from);
@@ -478,14 +603,6 @@ class DosTimetableController extends Controller
 
         $this->validateScheduleScope($request);
         $termId = (int) $request->term_id;
-
-        foreach ($request->sessions as $index => $sessionData) {
-            $start = Carbon::createFromFormat('H:i', $sessionData['start_time']);
-            $end = Carbon::createFromFormat('H:i', $sessionData['end_time']);
-            if (!$end->gt($start)) {
-                return redirect()->back()->withErrors(["sessions.{$index}.end_time" => 'End time must be after start time.'])->withInput();
-            }
-        }
 
         $timetable = Timetable::create([
             'title' => $request->title,
@@ -499,15 +616,16 @@ class DosTimetableController extends Controller
         ]);
 
         foreach ($request->sessions as $sessionData) {
-            $lesson = isset($sessionData['lesson_id']) ? Lesson::find($sessionData['lesson_id']) : null;
+            $lesson = !empty($sessionData['lesson_id']) ? Lesson::find($sessionData['lesson_id']) : null;
+            $primaryTimes = $this->getPrimaryShiftTimes($sessionData);
 
             $session = TimetableSession::create([
                 'timetable_id' => $timetable->id,
                 'lesson_id' => $lesson ? $lesson->id : null,
                 'day_of_week' => (int) $sessionData['day_of_week'],
                 'shift' => $sessionData['shifts'][0] ?? 'day', // Store first shift as primary
-                'start_time' => $sessionData['start_time'],
-                'end_time' => $sessionData['end_time'],
+                'start_time' => $primaryTimes['start_time'],
+                'end_time' => $primaryTimes['end_time'],
                 'classroom' => $sessionData['classroom'] ?? null,
                 'notes' => $sessionData['notes'] ?? null,
                 'reserve_text' => $sessionData['activity_type'] === 'reserve' ? ($sessionData['reserve_text'] ?? '') : null,
@@ -524,17 +642,12 @@ class DosTimetableController extends Controller
                 $session->courses()->sync($courseIds);
             }
 
-            // Save shifts (without specific times)
-            foreach ($sessionData['shifts'] ?? [] as $shift) {
-                SessionShift::create([
-                    'timetable_session_id' => $session->id,
-                    'shift' => $shift,
-                ]);
-            }
+            $this->saveSessionShifts($session, $sessionData);
         }
 
         return redirect()->route('dos.timetable.edit', $timetable->id)
-            ->with('success', 'Weekly timetable saved as draft. Please validate and publish when ready.');
+            ->with('success', 'Weekly timetable saved as draft. Please validate and publish when ready.')
+            ->with('clear_timetable_draft', true);
     }
 
     public function index()
@@ -604,7 +717,7 @@ class DosTimetableController extends Controller
         $selectedTermId = session()->getOldInput('term_id') ?: ($timetable->term_id ?: $activeTerm?->id);
         $branchLessonsData = $this->getBranchLessonOptions($branchId, (int) $selectedAcademicYearId);
 
-        $timetable->load(['sessions.lesson.teacher', 'sessions.courses', 'term']);
+        $timetable->load(['sessions.lesson.teacher', 'sessions.courses', 'sessions.shifts', 'term']);
 
         return view('staff.timetable.edit', compact(
             'timetable',
@@ -684,11 +797,12 @@ class DosTimetableController extends Controller
             'sessions.*.day_of_week' => ['required', Rule::in(['0','1','2','3','4','5','6'])],
             'sessions.*.shifts' => 'required|array|min:1',
             'sessions.*.shifts.*' => ['required', Rule::in(['day', 'evening', 'weekend'])],
-            'sessions.*.start_time' => 'required|date_format:H:i',
-            'sessions.*.end_time' => 'required|date_format:H:i|after:sessions.*.start_time',
+            'sessions.*.shift_times' => 'required|array',
+            'sessions.*.shift_times.*.start_time' => 'nullable|date_format:H:i',
+            'sessions.*.shift_times.*.end_time' => 'nullable|date_format:H:i',
             'sessions.*.classroom' => 'nullable|string|max:100',
             'sessions.*.notes' => 'nullable|string|max:500',
-            'sessions.*.course_ids' => 'required|array|min:1',
+            'sessions.*.course_ids' => 'nullable|array',
             'sessions.*.course_ids.*' => 'required|exists:courses,id',
             'sessions.*.activity_type' => ['required', Rule::in(['lesson', 'self_study', 'group_work', 'reserve'])],
             'sessions.*.reserve_text' => 'nullable|string|max:500',
@@ -696,6 +810,7 @@ class DosTimetableController extends Controller
             'sessions.*.minimum_paid_percentage' => 'nullable|numeric|min:0|max:100',
             'sessions.*.session_id' => 'nullable|integer|exists:timetable_sessions,id',
         ]);
+        $this->validateShiftTimes($request);
 
         // Custom date validation
         $validFrom = Carbon::parse($request->valid_from);
@@ -707,14 +822,6 @@ class DosTimetableController extends Controller
 
         $this->validateScheduleScope($request, $timetable);
         $termId = (int) $request->term_id;
-
-        foreach ($request->sessions as $index => $sessionData) {
-            $start = Carbon::createFromFormat('H:i', $sessionData['start_time']);
-            $end = Carbon::createFromFormat('H:i', $sessionData['end_time']);
-            if (!$end->gt($start)) {
-                return redirect()->back()->withErrors(["sessions.{$index}.end_time" => 'End time must be after start time.'])->withInput();
-            }
-        }
 
         $notifications = [];
         $existingSessions = $timetable->sessions()->with(['courses', 'lesson'])->get()->keyBy('id');
@@ -732,6 +839,7 @@ class DosTimetableController extends Controller
 
         foreach ($request->sessions as $sessionData) {
             $lesson = isset($sessionData['lesson_id']) ? Lesson::find($sessionData['lesson_id']) : null;
+            $primaryTimes = $this->getPrimaryShiftTimes($sessionData);
 
             if (!empty($sessionData['session_id']) && $existingSessions->has($sessionData['session_id'])) {
                 $session = $existingSessions->get($sessionData['session_id']);
@@ -745,8 +853,8 @@ class DosTimetableController extends Controller
                     'lesson_id' => $lesson ? $lesson->id : null,
                     'day_of_week' => (int) $sessionData['day_of_week'],
                     'shift' => $sessionData['shifts'][0] ?? 'day', // Store first shift as primary
-                    'start_time' => $sessionData['start_time'],
-                    'end_time' => $sessionData['end_time'],
+                    'start_time' => $primaryTimes['start_time'],
+                    'end_time' => $primaryTimes['end_time'],
                     'classroom' => $sessionData['classroom'] ?? null,
                     'notes' => $sessionData['notes'] ?? null,
                     'reserve_text' => ($sessionData['activity_type'] ?? 'lesson') === 'reserve' ? ($sessionData['reserve_text'] ?? '') : null,
@@ -761,22 +869,15 @@ class DosTimetableController extends Controller
                 $courseIds = $this->getSessionCourseIdsFromInput($sessionData, $request->branch_id, $lesson);
                 $session->courses()->sync($courseIds);
 
-                // Update shifts (without specific times)
-                $session->shifts()->delete();
-                foreach ($sessionData['shifts'] ?? [] as $shift) {
-                    SessionShift::create([
-                        'timetable_session_id' => $session->id,
-                        'shift' => $shift,
-                    ]);
-                }
+                $this->saveSessionShifts($session, $sessionData);
             } else {
                 $session = TimetableSession::create([
                     'timetable_id' => $timetable->id,
                     'lesson_id' => $lesson ? $lesson->id : null,
                     'day_of_week' => (int) $sessionData['day_of_week'],
                     'shift' => $sessionData['shifts'][0] ?? 'day',
-                    'start_time' => $sessionData['start_time'],
-                    'end_time' => $sessionData['end_time'],
+                    'start_time' => $primaryTimes['start_time'],
+                    'end_time' => $primaryTimes['end_time'],
                     'classroom' => $sessionData['classroom'] ?? null,
                     'notes' => $sessionData['notes'] ?? null,
                     'reserve_text' => ($sessionData['activity_type'] ?? 'lesson') === 'reserve' ? ($sessionData['reserve_text'] ?? '') : null,
@@ -792,20 +893,16 @@ class DosTimetableController extends Controller
                 $courseIds = $this->getSessionCourseIdsFromInput($sessionData, $request->branch_id, $lesson);
                 $session->courses()->sync($courseIds);
 
-                // Save shifts (without specific times)
-                foreach ($sessionData['shifts'] ?? [] as $shift) {
-                    SessionShift::create([
-                        'timetable_session_id' => $session->id,
-                        'shift' => $shift,
-                    ]);
-                }
+                $this->saveSessionShifts($session, $sessionData);
 
                 if ($timetable->status === 'published' && !empty($courseIds)) {
+                    $activityLabel = ucfirst(str_replace('_', ' ', $sessionData['activity_type'] ?? 'session'));
+                    $lessonLabel = $lesson?->title ?? $activityLabel;
                     $notifications[] = [
                         'course_ids' => $courseIds,
                         'summary' => 'New timetable session added',
                         'details' => [
-                            "A new session for lesson '{$lesson->title}' was added on {$this->formatDay((int) $sessionData['day_of_week'])} from {$sessionData['start_time']} to {$sessionData['end_time']}.",
+                            "A new {$activityLabel} session for '{$lessonLabel}' was added on {$this->formatDay((int) $sessionData['day_of_week'])} from {$primaryTimes['start_time']} to {$primaryTimes['end_time']}.",
                         ],
                     ];
                 }
