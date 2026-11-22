@@ -82,14 +82,75 @@
                     @csrf
                     @method('PUT')
 
-                    <!-- Practical Fee -->
-                    @if($fee->practical_fee > 0)
+                    <!-- Fee Amounts -->
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h6 class="mb-3">Fee Amounts</h6>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Practical Fee (RWF)</label>
+                                    <input type="number" step="0.01" min="0" class="form-control"
+                                           name="practical_fee"
+                                           value="{{ $fee->practical_fee ?? 0 }}">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Trip Fee (RWF)</label>
+                                    <input type="number" step="0.01" min="0" class="form-control"
+                                           name="trip_fee"
+                                           value="{{ $fee->trip_fee ?? 0 }}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Fee Validity -->
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h6 class="mb-3">Fee Validity Period</h6>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Valid From</label>
+                                    <input type="date" class="form-control"
+                                           name="valid_from"
+                                           value="{{ $fee->valid_from ? $fee->valid_from->format('Y-m-d') : '' }}">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Valid Until</label>
+                                    <input type="date" class="form-control"
+                                           name="valid_until"
+                                           value="{{ $fee->valid_until ? $fee->valid_until->format('Y-m-d') : '' }}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Student Notification -->
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox"
+                                       id="notify_students_{{ $fee->id }}"
+                                       name="notify_students"
+                                       value="1"
+                                       {{ $fee->notify_students ? 'checked' : '' }}>
+                                <label class="form-check-label" for="notify_students_{{ $fee->id }}">
+                                    <strong>Notify Students</strong>
+                                    <div class="small text-muted">
+                                        Students in this branch and course will see a popup to accept/decline these fees when they log in
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Practical Fee Settings -->
+                    @if($fee->practical_fee > 0 || old('practical_fee'))
                     <div class="card mb-3">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <div>
-                                    <h6 class="mb-0">Practical Fee</h6>
-                                    <span class="fee-amount">{{ number_format($fee->practical_fee, 2) }} RWF</span>
+                                    <h6 class="mb-0">Practical Fee Settings</h6>
+                                    <span class="fee-amount">{{ number_format($fee->practical_fee ?? 0, 2) }} RWF</span>
                                 </div>
                                 @if($fee->is_practical_mandatory)
                                     <span class="mandatory-badge">Mandatory</span>
@@ -101,9 +162,9 @@
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" 
-                                               id="is_practical_mandatory_{{ $fee->id }}" 
-                                               name="is_practical_mandatory" 
+                                        <input class="form-check-input" type="checkbox"
+                                               id="is_practical_mandatory_{{ $fee->id }}"
+                                               name="is_practical_mandatory"
                                                value="1"
                                                {{ $fee->is_practical_mandatory ? 'checked' : '' }}>
                                         <label class="form-check-label" for="is_practical_mandatory_{{ $fee->id }}">
@@ -113,8 +174,8 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label small">Due Date</label>
-                                    <input type="date" class="form-control form-control-sm" 
-                                           name="practical_due_date" 
+                                    <input type="date" class="form-control form-control-sm"
+                                           name="practical_due_date"
                                            value="{{ $fee->practical_due_date ? $fee->practical_due_date->format('Y-m-d') : '' }}">
                                 </div>
                             </div>
@@ -122,14 +183,14 @@
                     </div>
                     @endif
 
-                    <!-- Trip Fee -->
-                    @if($fee->trip_fee > 0)
+                    <!-- Trip Fee Settings -->
+                    @if($fee->trip_fee > 0 || old('trip_fee'))
                     <div class="card mb-3">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <div>
-                                    <h6 class="mb-0">Trip Fee</h6>
-                                    <span class="fee-amount">{{ number_format($fee->trip_fee, 2) }} RWF</span>
+                                    <h6 class="mb-0">Trip Fee Settings</h6>
+                                    <span class="fee-amount">{{ number_format($fee->trip_fee ?? 0, 2) }} RWF</span>
                                 </div>
                                 @if($fee->is_trip_mandatory)
                                     <span class="mandatory-badge">Mandatory</span>
@@ -141,9 +202,9 @@
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" 
-                                               id="is_trip_mandatory_{{ $fee->id }}" 
-                                               name="is_trip_mandatory" 
+                                        <input class="form-check-input" type="checkbox"
+                                               id="is_trip_mandatory_{{ $fee->id }}"
+                                               name="is_trip_mandatory"
                                                value="1"
                                                {{ $fee->is_trip_mandatory ? 'checked' : '' }}>
                                         <label class="form-check-label" for="is_trip_mandatory_{{ $fee->id }}">
@@ -153,8 +214,8 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label small">Due Date</label>
-                                    <input type="date" class="form-control form-control-sm" 
-                                           name="trip_due_date" 
+                                    <input type="date" class="form-control form-control-sm"
+                                           name="trip_due_date"
                                            value="{{ $fee->trip_due_date ? $fee->trip_due_date->format('Y-m-d') : '' }}">
                                 </div>
                             </div>

@@ -38,18 +38,28 @@ class OptionalFeeController extends Controller
     public function update(Request $request, $id)
     {
         $request->validate([
+            'practical_fee' => 'nullable|numeric|min:0',
+            'trip_fee' => 'nullable|numeric|min:0',
             'is_practical_mandatory' => 'boolean',
             'is_trip_mandatory' => 'boolean',
             'practical_due_date' => 'nullable|date',
             'trip_due_date' => 'nullable|date',
+            'notify_students' => 'boolean',
+            'valid_from' => 'nullable|date',
+            'valid_until' => 'nullable|date|after_or_equal:valid_from',
         ]);
 
         $fee = CourseTermBranchFee::findOrFail($id);
         $fee->update([
+            'practical_fee' => $request->practical_fee ?? 0,
+            'trip_fee' => $request->trip_fee ?? 0,
             'is_practical_mandatory' => $request->is_practical_mandatory ?? false,
             'is_trip_mandatory' => $request->is_trip_mandatory ?? false,
             'practical_due_date' => $request->practical_due_date,
             'trip_due_date' => $request->trip_due_date,
+            'notify_students' => $request->notify_students ?? false,
+            'valid_from' => $request->valid_from,
+            'valid_until' => $request->valid_until,
         ]);
 
         return back()->with('success', 'Fee settings updated successfully.');
@@ -216,13 +226,23 @@ class OptionalFeeController extends Controller
     public function getPendingFees()
     {
         $student = Auth::guard('student')->user();
+        $today = now()->toDateString();
 
         $fee = CourseTermBranchFee::with(['course', 'branch', 'term'])
             ->where('course_id', $student->course_id)
             ->where('branch_id', $student->branch_id)
             ->where('is_active', true)
+            ->where('notify_students', true)
             ->whereHas('term', function($q) {
                 $q->where('academic_year_id', $student->academic_year_id);
+            })
+            ->where(function($q) use ($today) {
+                $q->whereNull('valid_from')
+                  ->orWhere('valid_from', '<=', $today);
+            })
+            ->where(function($q) use ($today) {
+                $q->whereNull('valid_until')
+                  ->orWhere('valid_until', '>=', $today);
             })
             ->where(function($q) {
                 $q->where('practical_fee', '>', 0)->where('is_practical_mandatory', false)

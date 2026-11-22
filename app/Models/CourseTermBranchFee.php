@@ -11,7 +11,8 @@ class CourseTermBranchFee extends Model
     protected $fillable = [
         'course_id', 'term_id', 'branch_id',
         'registration_fee', 'tuition_fee', 'practical_fee', 'trip_fee', 'student_card_fee', 'is_active',
-        'is_practical_mandatory', 'is_trip_mandatory', 'practical_due_date', 'trip_due_date'
+        'is_practical_mandatory', 'is_trip_mandatory', 'practical_due_date', 'trip_due_date',
+        'notify_students', 'valid_from', 'valid_until'
     ];
 
     protected $casts = [
@@ -25,6 +26,9 @@ class CourseTermBranchFee extends Model
         'is_trip_mandatory' => 'boolean',
         'practical_due_date' => 'date',
         'trip_due_date' => 'date',
+        'notify_students' => 'boolean',
+        'valid_from' => 'date',
+        'valid_until' => 'date',
     ];
 
     public function course()
