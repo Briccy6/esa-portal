@@ -102,12 +102,19 @@ class OptionalFeeController extends Controller
             });
         }
 
-        $responses = $query->latest('responded_at')->paginate(50);
+        $stats = [
+            'total' => (clone $query)->count(),
+            'accepted' => (clone $query)->where('response', 'accepted')->count(),
+            'declined' => (clone $query)->where('response', 'declined')->count(),
+            'pending' => (clone $query)->where('response', 'pending')->count(),
+        ];
+
+        $responses = $query->latest('responded_at')->paginate(50)->withQueryString();
 
         $branches = \App\Models\Branch::whereIn('id', $branchIds)->orderBy('name')->get();
         $courses = \App\Models\Course::orderBy('course_name')->get();
 
-        return view('accountant.optional_fees.report', compact('responses', 'branches', 'courses'));
+        return view('accountant.optional_fees.report', compact('responses', 'branches', 'courses', 'stats'));
     }
 
     /**
