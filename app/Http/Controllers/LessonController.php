@@ -601,10 +601,17 @@ public function createDetails(Request $request, $lessonId)
                 \Log::warning('Could not delete attendance: ' . $e->getMessage());
             }
             
-            // 8. Delete teacher dailies
+            // 8. Delete teacher dailies and their payment records
             try {
+                $dailies = TeacherDaily::where('lesson_id', $lessonId)->get();
+                foreach ($dailies as $daily) {
+                    // Delete payment record if exists
+                    if ($daily->payment) {
+                        $daily->payment->delete();
+                    }
+                }
                 $dailiesDeleted = TeacherDaily::where('lesson_id', $lessonId)->delete();
-                \Log::info('Deleted ' . $dailiesDeleted . ' teacher dailies');
+                \Log::info('Deleted ' . $dailiesDeleted . ' teacher dailies with their payment records');
             } catch (\Exception $e) {
                 \Log::warning('Could not delete teacher dailies: ' . $e->getMessage());
             }
