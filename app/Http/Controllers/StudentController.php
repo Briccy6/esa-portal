@@ -1863,11 +1863,34 @@ class StudentController extends Controller
         $showProfileReminder = count($profileMissingFields) > 0
             && now('Africa/Kigali')->lt($profileDeadline);
 
-        // Initialize attendance variables to avoid undefined variable errors
+        // Initialize all variables to avoid undefined variable errors
         $approvedAttendances = collect();
         $totalDays = 0;
         $attendedDays = 0;
         $attendancePercent = 0;
+        $registrationFee = 0;
+        $tripFee = 0;
+        $tuitionFee = 0;
+        $practicalFee = 0;
+        $discount = 0;
+        $studentCardFee = 0;
+        $discountAmount = 0;
+        $totalFees = 0;
+        $paidRegistration = 0;
+        $paidTrip = 0;
+        $paidTuition = 0;
+        $paidPractical = 0;
+        $paidStudentCard = 0;
+        $totalPaid = 0;
+        $outstanding = 0;
+        $termFeesData = [];
+        $resources = collect();
+        $liveClass = null;
+        $announcements = collect();
+        $exams = collect();
+        $scheduledTests = collect();
+        $subscriptions = collect();
+        $activeSubscription = null;
 
         if ($profileAccessRestricted) {
             return view('students.dashboard', compact(
@@ -1879,7 +1902,30 @@ class StudentController extends Controller
                 'approvedAttendances',
                 'totalDays',
                 'attendedDays',
-                'attendancePercent'
+                'attendancePercent',
+                'registrationFee',
+                'tripFee',
+                'tuitionFee',
+                'practicalFee',
+                'discount',
+                'studentCardFee',
+                'discountAmount',
+                'totalFees',
+                'paidRegistration',
+                'paidTrip',
+                'paidTuition',
+                'paidPractical',
+                'paidStudentCard',
+                'totalPaid',
+                'outstanding',
+                'termFeesData',
+                'resources',
+                'liveClass',
+                'announcements',
+                'exams',
+                'scheduledTests',
+                'subscriptions',
+                'activeSubscription'
             ));
         }
 
