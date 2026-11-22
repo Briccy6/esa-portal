@@ -430,7 +430,117 @@ document.addEventListener('DOMContentLoaded', () => {
     const container = document.getElementById('sessions-container');
     const template = document.getElementById('session-template').innerHTML;
     const lessonMessage = document.getElementById('lesson-load-message');
+    const form = document.getElementById('timetable-form');
     let lessonData = @json($branchLessonsData);
+
+    // Save form data to localStorage
+    function saveFormData() {
+        const formData = {
+            title: document.getElementById('title').value,
+            branch_id: document.getElementById('branch_id').value,
+            academic_year_id: document.getElementById('academic_year_id').value,
+            term_id: document.getElementById('term_id').value,
+            valid_from: document.getElementById('valid_from').value,
+            valid_until: document.getElementById('valid_until').value,
+            sessions: []
+        };
+
+        container.querySelectorAll('.session-card').forEach(row => {
+            const sessionData = {
+                lesson_id: row.querySelector('.lesson-id-hidden')?.value || '',
+                day_of_week: row.querySelector('select[name$="[day_of_week]"]')?.value || '',
+                shift: row.querySelector('select[name$="[shift]"]')?.value || '',
+                start_time: row.querySelector('input[name$="[start_time]"]')?.value || '',
+                end_time: row.querySelector('input[name$="[end_time]"]')?.value || '',
+                classroom: row.querySelector('input[name$="[classroom]"]')?.value || '',
+                notes: row.querySelector('input[name$="[notes]"]')?.value || '',
+                activity_type: row.querySelector('.activity-type')?.value || '',
+                reserve_text: row.querySelector('textarea[name$="[reserve_text]"]')?.value || '',
+                session_type: row.querySelector('.session-type')?.value || '',
+                minimum_paid_percentage: row.querySelector('input[name$="[minimum_paid_percentage]"]')?.value || '',
+                course_ids: Array.from(row.querySelectorAll('[data-course-picker] input:checked')).map(input => input.value),
+                lesson_title: row.querySelector('.lesson-search')?.value || ''
+            };
+            formData.sessions.push(sessionData);
+        });
+
+        localStorage.setItem('timetableFormData', JSON.stringify(formData));
+    }
+
+    // Load form data from localStorage
+    function loadFormData() {
+        const saved = localStorage.getItem('timetableFormData');
+        if (!saved) return;
+
+        try {
+            const formData = JSON.parse(saved);
+            
+            // Only load if there's no existing data (form is fresh)
+            if (document.getElementById('title').value || container.querySelectorAll('.session-card').length > 0) {
+                return;
+            }
+
+            document.getElementById('title').value = formData.title || '';
+            document.getElementById('branch_id').value = formData.branch_id || '';
+            document.getElementById('academic_year_id').value = formData.academic_year_id || '';
+            document.getElementById('term_id').value = formData.term_id || '';
+            document.getElementById('valid_from').value = formData.valid_from || '';
+            document.getElementById('valid_until').value = formData.valid_until || '';
+
+            // Load sessions
+            if (formData.sessions && formData.sessions.length > 0) {
+                container.innerHTML = '';
+                formData.sessions.forEach((sessionData, index) => {
+                    const html = template.replace(/__INDEX__/g, index).replace(/__NUMBER__/g, index + 1);
+                    container.insertAdjacentHTML('beforeend', html);
+                    const row = container.lastElementChild;
+
+                    row.querySelector('.lesson-id-hidden').value = sessionData.lesson_id || '';
+                    row.querySelector('.lesson-search').value = sessionData.lesson_title || '';
+                    if (sessionData.lesson_title) {
+                        row.querySelector('.lesson-preview').textContent = `Selected: ${sessionData.lesson_title}`;
+                    }
+                    row.querySelector('select[name$="[day_of_week]"]').value = sessionData.day_of_week || '';
+                    row.querySelector('select[name$="[shift]"]').value = sessionData.shift || '';
+                    row.querySelector('input[name$="[start_time]"]').value = sessionData.start_time || '';
+                    row.querySelector('input[name$="[end_time]"]').value = sessionData.end_time || '';
+                    row.querySelector('input[name$="[classroom]"]').value = sessionData.classroom || '';
+                    row.querySelector('input[name$="[notes]"]').value = sessionData.notes || '';
+                    row.querySelector('.activity-type').value = sessionData.activity_type || 'lesson';
+                    row.querySelector('textarea[name$="[reserve_text]"]').value = sessionData.reserve_text || '';
+                    row.querySelector('.session-type').value = sessionData.session_type || 'class';
+                    row.querySelector('input[name$="[minimum_paid_percentage]"]').value = sessionData.minimum_paid_percentage || '0';
+                    
+                    row.dataset.lessonId = sessionData.lesson_id || '';
+                    row.dataset.selectedCourses = sessionData.course_ids ? sessionData.course_ids.join(',') : '';
+
+                    bindRow(row);
+                    refreshLessonSelect(row, false);
+                    renderCourses(row, sessionData.course_ids || []);
+                    syncSession(row);
+                });
+                renumber();
+            }
+
+            // Clear saved data after loading
+            localStorage.removeItem('timetableFormData');
+        } catch (e) {
+            console.error('Error loading saved form data:', e);
+            localStorage.removeItem('timetableFormData');
+        }
+    }
+
+    // Auto-save on form changes
+    form.addEventListener('input', () => {
+        saveFormData();
+    });
+
+    form.addEventListener('change', () => {
+        saveFormData();
+    });
+
+    // Load saved data on page load
+    loadFormData();
 
     function updateTermOptions(setDates) {
         const year = yearSelect.value;
@@ -593,21 +703,22 @@ document.addEventListener('DOMContentLoaded', () => {
         // Show/hide reserve text panel
         const reservePanel = row.querySelector('[data-activity-type-panel]');
         const lessonPanel = row.querySelector('[data-lesson-panel]');
-        const lessonSelect = row.querySelector('.lesson-select');
+        const lessonSearch = row.querySelector('.lesson-search');
+        const lessonHidden = row.querySelector('.lesson-id-hidden');
         const teacherPreview = row.querySelector('[data-teacher-preview]');
         
         if (activityType === 'reserve') {
             reservePanel.style.display = 'block';
             lessonPanel.style.display = 'none';
-            lessonSelect.disabled = true;
-            lessonSelect.required = false;
+            if (lessonSearch) lessonSearch.disabled = true;
+            if (lessonHidden) lessonHidden.required = false;
             teacherPreview.textContent = 'Select courses below for this reserve session.';
         } else {
             reservePanel.style.display = 'none';
             lessonPanel.style.display = activityType === 'lesson' ? 'block' : 'none';
-            lessonSelect.disabled = false;
-            lessonSelect.required = activityType === 'lesson';
-            if (activityType === 'lesson' && row.querySelector('.lesson-select').value) {
+            if (lessonSearch) lessonSearch.disabled = false;
+            if (lessonHidden) lessonHidden.required = activityType === 'lesson';
+            if (activityType === 'lesson' && lessonHidden && lessonHidden.value) {
                 teacherPreview.textContent = 'Select a lesson to see its assigned teacher.';
             } else {
                 teacherPreview.textContent = 'Select courses below for this session.';
@@ -653,20 +764,25 @@ document.addEventListener('DOMContentLoaded', () => {
         const dataList = row.querySelector('datalist');
         const preview = row.querySelector('.lesson-preview');
         
+        if (!searchInput || !hiddenInput || !dataList) return;
+        
         // Handle lesson selection from datalist
         searchInput.addEventListener('input', function() {
             const value = this.value;
             const matchingLesson = lessonData.find(l => l.lesson_title === value);
             if (matchingLesson) {
                 hiddenInput.value = matchingLesson.lesson_id;
-                preview.textContent = `ID: ${matchingLesson.lesson_id}`;
+                preview.textContent = `Selected: ${matchingLesson.lesson_title}`;
                 row.dataset.lessonId = matchingLesson.lesson_id;
                 row.dataset.selectedCourses = '';
                 renderCourses(row, []);
             } else {
-                hiddenInput.value = '';
-                preview.textContent = '';
-                row.dataset.lessonId = '';
+                // Only clear if the input is empty
+                if (!value) {
+                    hiddenInput.value = '';
+                    preview.textContent = '';
+                    row.dataset.lessonId = '';
+                }
             }
         });
         
@@ -676,7 +792,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const matchingLesson = lessonData.find(l => l.lesson_title === value);
             if (matchingLesson) {
                 hiddenInput.value = matchingLesson.lesson_id;
-                preview.textContent = `ID: ${matchingLesson.lesson_id}`;
+                preview.textContent = `Selected: ${matchingLesson.lesson_title}`;
                 row.dataset.lessonId = matchingLesson.lesson_id;
                 row.dataset.selectedCourses = '';
                 renderCourses(row, []);
@@ -756,6 +872,8 @@ document.addEventListener('DOMContentLoaded', () => {
             lessonMessage.style.display = 'block';
             lessonMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
+        // Clear saved data on successful submit
+        localStorage.removeItem('timetableFormData');
     });
 });
 </script>
