@@ -456,11 +456,9 @@ class DosTimetableController extends Controller
             'sessions.*.day_of_week' => ['required', Rule::in(['0','1','2','3','4','5','6'])],
             'sessions.*.shifts' => 'required|array|min:1',
             'sessions.*.shifts.*' => ['required', Rule::in(['day', 'evening', 'weekend'])],
-            'sessions.*.shift_times' => 'nullable|array',
-            'sessions.*.shift_times.*.start_time' => 'nullable|date_format:H:i',
-            'sessions.*.shift_times.*.end_time' => 'nullable|date_format:H:i|after:shift_times.*.start_time',
-            'sessions.*.start_time' => 'required|date_format:H:i',
-            'sessions.*.end_time' => 'required|date_format:H:i',
+            'sessions.*.shift_times' => 'required|array',
+            'sessions.*.shift_times.*.start_time' => 'required|date_format:H:i',
+            'sessions.*.shift_times.*.end_time' => 'required|date_format:H:i|after:shift_times.*.start_time',
             'sessions.*.classroom' => 'nullable|string|max:100',
             'sessions.*.notes' => 'nullable|string|max:500',
             'sessions.*.course_ids' => 'required|array|min:1',
@@ -509,8 +507,8 @@ class DosTimetableController extends Controller
                 'lesson_id' => $lesson ? $lesson->id : null,
                 'day_of_week' => (int) $sessionData['day_of_week'],
                 'shift' => $sessionData['shifts'][0] ?? 'day', // Store first shift as primary
-                'start_time' => $sessionData['start_time'],
-                'end_time' => $sessionData['end_time'],
+                'start_time' => null,
+                'end_time' => null,
                 'classroom' => $sessionData['classroom'] ?? null,
                 'notes' => $sessionData['notes'] ?? null,
                 'reserve_text' => $sessionData['activity_type'] === 'reserve' ? ($sessionData['reserve_text'] ?? '') : null,
@@ -644,12 +642,12 @@ class DosTimetableController extends Controller
             ];
         }
 
-        if ($oldSession->start_time !== $newSessionData['start_time'] || $oldSession->end_time !== $newSessionData['end_time'] || $oldSession->classroom !== ($newSessionData['classroom'] ?? null)) {
+        if ($oldSession->classroom !== ($newSessionData['classroom'] ?? null)) {
             $notifications[] = [
                 'course_ids' => $oldCourseIds,
-                'summary' => 'Timetable session time or room changed',
+                'summary' => 'Timetable session room changed',
                 'details' => [
-                    "A session for lesson '{$lesson->title}' was rescheduled from {$oldSession->start_time}-{$oldSession->end_time} in room {$oldSession->classroom} to {$newSessionData['start_time']}-{$newSessionData['end_time']} in room " . ($newSessionData['classroom'] ?? 'TBA') . ".",
+                    "A session for lesson '{$lesson->title}' was moved from room {$oldSession->classroom} to room " . ($newSessionData['classroom'] ?? 'TBA') . ".",
                 ],
             ];
         }
@@ -689,11 +687,9 @@ class DosTimetableController extends Controller
             'sessions.*.day_of_week' => ['required', Rule::in(['0','1','2','3','4','5','6'])],
             'sessions.*.shifts' => 'required|array|min:1',
             'sessions.*.shifts.*' => ['required', Rule::in(['day', 'evening', 'weekend'])],
-            'sessions.*.shift_times' => 'nullable|array',
-            'sessions.*.shift_times.*.start_time' => 'nullable|date_format:H:i',
-            'sessions.*.shift_times.*.end_time' => 'nullable|date_format:H:i|after:shift_times.*.start_time',
-            'sessions.*.start_time' => 'required|date_format:H:i',
-            'sessions.*.end_time' => 'required|date_format:H:i',
+            'sessions.*.shift_times' => 'required|array',
+            'sessions.*.shift_times.*.start_time' => 'required|date_format:H:i',
+            'sessions.*.shift_times.*.end_time' => 'required|date_format:H:i|after:shift_times.*.start_time',
             'sessions.*.classroom' => 'nullable|string|max:100',
             'sessions.*.notes' => 'nullable|string|max:500',
             'sessions.*.course_ids' => 'required|array|min:1',
@@ -715,14 +711,6 @@ class DosTimetableController extends Controller
 
         $this->validateScheduleScope($request, $timetable);
         $termId = (int) $request->term_id;
-
-        foreach ($request->sessions as $index => $sessionData) {
-            $start = Carbon::createFromFormat('H:i', $sessionData['start_time']);
-            $end = Carbon::createFromFormat('H:i', $sessionData['end_time']);
-            if (!$end->gt($start)) {
-                return redirect()->back()->withErrors(["sessions.{$index}.end_time" => 'End time must be after start time.'])->withInput();
-            }
-        }
 
         $notifications = [];
         $existingSessions = $timetable->sessions()->with(['courses', 'lesson'])->get()->keyBy('id');
@@ -753,8 +741,8 @@ class DosTimetableController extends Controller
                     'lesson_id' => $lesson ? $lesson->id : null,
                     'day_of_week' => (int) $sessionData['day_of_week'],
                     'shift' => $sessionData['shifts'][0] ?? 'day', // Store first shift as primary
-                    'start_time' => $sessionData['start_time'],
-                    'end_time' => $sessionData['end_time'],
+                    'start_time' => null,
+                    'end_time' => null,
                     'classroom' => $sessionData['classroom'] ?? null,
                     'notes' => $sessionData['notes'] ?? null,
                     'reserve_text' => ($sessionData['activity_type'] ?? 'lesson') === 'reserve' ? ($sessionData['reserve_text'] ?? '') : null,
@@ -785,8 +773,8 @@ class DosTimetableController extends Controller
                     'lesson_id' => $lesson ? $lesson->id : null,
                     'day_of_week' => (int) $sessionData['day_of_week'],
                     'shift' => $sessionData['shifts'][0] ?? 'day',
-                    'start_time' => $sessionData['start_time'],
-                    'end_time' => $sessionData['end_time'],
+                    'start_time' => null,
+                    'end_time' => null,
                     'classroom' => $sessionData['classroom'] ?? null,
                     'notes' => $sessionData['notes'] ?? null,
                     'reserve_text' => ($sessionData['activity_type'] ?? 'lesson') === 'reserve' ? ($sessionData['reserve_text'] ?? '') : null,
@@ -802,11 +790,13 @@ class DosTimetableController extends Controller
                 $courseIds = $this->getSessionCourseIdsFromInput($sessionData, $request->branch_id, $lesson);
                 $session->courses()->sync($courseIds);
 
-                // Save shifts
+                // Save shifts with their specific times
                 foreach ($sessionData['shifts'] ?? [] as $shift) {
                     SessionShift::create([
                         'timetable_session_id' => $session->id,
                         'shift' => $shift,
+                        'start_time' => $sessionData['shift_times'][$shift]['start_time'] ?? null,
+                        'end_time' => $sessionData['shift_times'][$shift]['end_time'] ?? null,
                     ]);
                 }
 
@@ -815,7 +805,7 @@ class DosTimetableController extends Controller
                         'course_ids' => $courseIds,
                         'summary' => 'New timetable session added',
                         'details' => [
-                            "A new session for lesson '{$lesson->title}' was added on {$this->formatDay((int) $sessionData['day_of_week'])} from {$sessionData['start_time']} to {$sessionData['end_time']}.",
+                            "A new session for lesson '{$lesson->title}' was added on {$this->formatDay((int) $sessionData['day_of_week'])}.",
                         ],
                     ];
                 }

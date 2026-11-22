@@ -6,6 +6,13 @@
             $row = $session->toArray();
             $row['course_ids'] = $session->courses->pluck('id')->all();
             $row['shifts'] = $session->shifts->pluck('shift')->all();
+            $row['lesson_title'] = $session->lesson->title ?? '';
+            $row['shift_times'] = $session->shifts->mapWithKeys(function ($shift) {
+                return [$shift->shift => [
+                    'start_time' => $shift->start_time ? substr($shift->start_time, 0, 5) : '',
+                    'end_time' => $shift->end_time ? substr($shift->end_time, 0, 5) : '',
+                ]];
+            })->toArray();
             return $row;
         })->all();
     }
@@ -273,10 +280,10 @@
                                 <div class="row g-3">
                                     <div class="col-12 col-lg-5">
                                         <label class="form-label" for="lesson-{{ $index }}">Lesson</label>
-                                        <input type="text" class="form-control lesson-search" id="lesson-search-{{ $index }}" placeholder="Type to search lessons..." autocomplete="off">
+                                        <input type="text" class="form-control lesson-search" id="lesson-search-{{ $index }}" placeholder="Type to search lessons..." autocomplete="off" value="{{ old("sessions.{$index}.lesson_title", $sessionData['lesson_title'] ?? '') }}">
                                         <div class="lesson-dropdown" id="lesson-dropdown-{{ $index }}" style="display: none; position: absolute; z-index: 1000; background: white; border: 1px solid #cedbd3; border-radius: 10px; max-height: 200px; overflow-y: auto; width: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.15);"></div>
                                         <input type="hidden" class="lesson-id-hidden" id="lesson-{{ $index }}" name="sessions[{{ $index }}][lesson_id]" value="{{ old("sessions.{$index}.lesson_id", $sessionData['lesson_id'] ?? '') }}">
-                                        <div class="lesson-preview mt-1 text-muted small" id="lesson-preview-{{ $index }}"></div>
+                                        <div class="lesson-preview mt-1 text-muted small" id="lesson-preview-{{ $index }}">{{ old("sessions.{$index}.lesson_title", $sessionData['lesson_title'] ?? '') ? 'Selected: ' . old("sessions.{$index}.lesson_title", $sessionData['lesson_title'] ?? '') : '' }}</div>
                                     </div>
                                     <div class="col-12 col-sm-6 col-lg-3">
                                         <label class="form-label" for="day-{{ $index }}">Day</label>
@@ -293,7 +300,7 @@
                                                 <input class="form-check-input shift-checkbox" type="checkbox" id="shift-day-{{ $index }}" name="sessions[{{ $index }}][shifts][]" value="day" @in_array('day', old("sessions.{$index}.shifts", isset($sessionData['shifts']) ? $sessionData['shifts'] : [$sessionData['shift'] ?? 'day'])) checked>
                                                 <label class="form-check-label" for="shift-day-{{ $index }}">Day</label>
                                             </div>
-                                            <div class="shift-times-container" id="shift-times-day-{{ $index }}" style="display: none; margin-left: 1.5rem; border-left: 2px solid #e2e8f0; padding-left: 1rem;">
+                                            <div class="shift-times-container" id="shift-times-day-{{ $index }}" style="display: block; margin-left: 1.5rem; border-left: 2px solid #e2e8f0; padding-left: 1rem;">
                                                 <div class="row g-2">
                                                     <div class="col-6">
                                                         <label class="form-label small">Start</label>
@@ -338,14 +345,6 @@
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                    <div class="col-6 col-sm-3 col-lg-2">
-                                        <label class="form-label" for="start-{{ $index }}">Starts</label>
-                                        <input type="time" class="form-control" id="start-{{ $index }}" name="sessions[{{ $index }}][start_time]" value="{{ old("sessions.{$index}.start_time", isset($sessionData['start_time']) ? substr($sessionData['start_time'], 0, 5) : '') }}" required>
-                                    </div>
-                                    <div class="col-6 col-sm-3 col-lg-2">
-                                        <label class="form-label" for="end-{{ $index }}">Ends</label>
-                                        <input type="time" class="form-control" id="end-{{ $index }}" name="sessions[{{ $index }}][end_time]" value="{{ old("sessions.{$index}.end_time", isset($sessionData['end_time']) ? substr($sessionData['end_time'], 0, 5) : '') }}" required>
                                     </div>
                                     <div class="col-6 col-sm-3 col-lg-2">
                                         <label class="form-label" for="start-{{ $index }}">Starts</label>
@@ -836,6 +835,15 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (!searchInput || !hiddenInput || !dropdown) return;
         
+        // Initialize lesson if already selected (from old data)
+        if (hiddenInput.value && searchInput.value) {
+            row.dataset.lessonId = hiddenInput.value;
+            const lesson = lessonData.find(l => String(l.lesson_id) === hiddenInput.value);
+            if (lesson) {
+                row.dataset.selectedCourses = lesson.courses.map(c => c.id).join(',');
+            }
+        }
+        
         // Show dropdown on input
         searchInput.addEventListener('input', function() {
             const value = this.value.toLowerCase();
@@ -949,6 +957,12 @@ document.addEventListener('DOMContentLoaded', () => {
     container.querySelectorAll('.session-card').forEach(row => {
         bindRow(row);
         refreshLessonSelect(row);
+        // Initialize courses for existing sessions
+        const lessonId = row.querySelector('.lesson-id-hidden').value;
+        const selectedCourses = row.dataset.selectedCourses ? row.dataset.selectedCourses.split(',') : [];
+        if (lessonId && selectedCourses.length > 0) {
+            renderCourses(row, selectedCourses);
+        }
     });
 
     document.getElementById('add-session').addEventListener('click', () => {
