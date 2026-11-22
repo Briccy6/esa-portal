@@ -45,8 +45,14 @@ class StudentController extends Controller
     protected function applyStudentTimetableScope($timetable, Student $student): void
     {
         $studentShift = $student->shift ?? 'day';
+        
+        // Treat 'day' shift as equivalent to 'morning'
+        $matchingShifts = [$studentShift];
+        if ($studentShift === 'day') {
+            $matchingShifts[] = 'morning';
+        }
 
-        $sessions = $timetable->sessions->filter(function ($session) use ($student, $studentShift) {
+        $sessions = $timetable->sessions->filter(function ($session) use ($student, $matchingShifts) {
             $matchesCourse = $student->course_id
                 && $session->courses->contains('id', $student->course_id);
             if (!$matchesCourse && $session->activity_type === 'group_work' && $session->courses->isEmpty()) {
@@ -54,8 +60,8 @@ class StudentController extends Controller
             }
 
             $matchesShift = $session->shifts->isNotEmpty()
-                ? $session->shifts->contains('shift', $studentShift)
-                : $session->shift === $studentShift;
+                ? $session->shifts->contains('shift', $matchingShifts)
+                : in_array($session->shift, $matchingShifts);
 
             return $matchesCourse && $matchesShift;
         })->values();
