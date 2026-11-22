@@ -168,6 +168,7 @@
 </style>
 @endpush
 
+@section('content')
 <div class="container-fluid py-4 accountant-timetable-page">
     <div class="timetable-header">
         <div>
