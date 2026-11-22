@@ -4,144 +4,169 @@
 
 @include('accountant.partials.theme')
 
-@section('content')
+@push('styles')
 <style>
-    .accountant-timetable-page { --tt-ink: #172033; --tt-muted: #667085; --tt-line: #e5eaf2; }
+    .accountant-timetable-page {
+        --tt-primary: #0f766e;
+        --tt-primary-dark: #115e59;
+        --tt-line: #e2e8f0;
+        --tt-surface: #ffffff;
+        --tt-muted: #64748b;
+        font-family: 'Poppins', sans-serif;
+        background: #f8fafc;
+    }
     .timetable-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 1.25rem;
-        padding: clamp(1.1rem, 3vw, 1.75rem);
-        margin-bottom: 1.25rem;
-        border-radius: 16px;
-        color: #fff;
-        background: linear-gradient(115deg, #163c9a, #2563eb 72%, #0e7490);
-        box-shadow: 0 12px 30px rgba(30, 64, 175, .18);
-    }
-    .timetable-header h2 { font-size: clamp(1.25rem, 2.2vw, 1.65rem); font-weight: 800; margin: 0 0 .3rem; }
-    .timetable-header p { color: rgba(255,255,255,.82); margin: 0; font-size: .92rem; }
-    .filter-panel, .timetable-card {
-        border: 1px solid var(--tt-line);
-        border-radius: 14px;
-        background: #fff;
-        box-shadow: 0 5px 20px rgba(15, 23, 42, .045);
-    }
-    .filter-panel { padding: 1rem; margin-bottom: 1.25rem; }
-    .filter-panel .form-label { color: #344054; font-size: .78rem; font-weight: 750; margin-bottom: .4rem; }
-    .filter-panel .form-select { min-height: 44px; border-color: #d7dfeb; border-radius: 9px; }
-    .filter-panel .form-select:focus { border-color: #3b82f6; box-shadow: 0 0 0 .2rem rgba(59,130,246,.13); }
-    .filter-panel .btn { min-height: 44px; border-radius: 9px; font-weight: 700; }
-    .timetable-card { margin-bottom: 1.25rem; overflow: hidden; }
-    .timetable-card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        gap: 1rem;
-        padding: 1rem 1.15rem;
-        color: #fff;
-        background: #1747b0;
-    }
-    .timetable-card-header h3 { font-size: 1rem; font-weight: 800; margin: 0 0 .35rem; }
-    .timetable-meta { display: flex; flex-wrap: wrap; gap: .35rem 1rem; color: rgba(255,255,255,.84); font-size: .78rem; }
-    .download-btn {
-        flex: 0 0 auto;
-        border: 1px solid rgba(255,255,255,.3);
-        border-radius: 9px;
-        background: rgba(7, 28, 87, .34);
+        background: linear-gradient(135deg, var(--tt-primary) 0%, var(--tt-primary-dark) 100%);
         color: white;
-        padding: .55rem .8rem;
-        font-weight: 700;
-        font-size: .82rem;
-    }
-    .download-btn:hover { background: rgba(7, 28, 87, .58); color: #fff; }
-    .timetable-card-body { padding: 1rem; }
-    .timetable-table-wrap { overflow-x: auto; }
-    .timetable-table { width: 100%; min-width: 1050px; margin: 0; vertical-align: middle; }
-    .timetable-table thead th {
-        padding: .72rem .8rem;
-        border-color: var(--tt-line);
-        background: #f3f6fb;
-        color: #475467;
-        font-size: .7rem;
-        font-weight: 800;
-        letter-spacing: .045em;
-        text-transform: uppercase;
-        white-space: nowrap;
-    }
-    .timetable-table td { padding: .78rem .8rem; border-color: var(--tt-line); color: #344054; font-size: .83rem; }
-    .timetable-table tbody tr:hover { background: #f8fbff; }
-    .timetable-table .day-cell { color: #1d4ed8; font-weight: 800; white-space: nowrap; }
-    .timetable-table .time-cell { min-width: 145px; color: #172033; font-weight: 750; }
-    .timetable-table .course-badges { display: flex; flex-wrap: wrap; gap: .3rem; min-width: 130px; }
-    .timetable-table .course-badges .badge { white-space: normal; text-align: left; }
-    .timetable-table .shift-line { display: block; white-space: nowrap; }
-    .timetable-table .shift-line + .shift-line { margin-top: .22rem; }
-    .timetable-table .notes-cell { min-width: 160px; max-width: 240px; overflow-wrap: anywhere; }
-    .timetable-table .empty-day td { padding: .65rem .8rem; background: #fbfcfe; color: #98a2b3; font-style: italic; }
-    .week-count {
-        display: inline-flex;
+        padding: 1.5rem 2rem;
+        border-radius: 16px;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 16px rgba(15, 118, 110, .12);
+        display: flex;
+        justify-content: space-between;
         align-items: center;
-        gap: .4rem;
-        padding: .38rem .65rem;
-        border-radius: 999px;
-        background: rgba(255,255,255,.14);
-        color: #fff;
-        font-size: .75rem;
-        font-weight: 750;
+        flex-wrap: wrap;
+        gap: 1rem;
     }
-    @media (max-width: 767.98px) {
-        .timetable-header { align-items: flex-start; flex-direction: column; }
-        .timetable-card-header { flex-direction: column; }
-        .download-btn { width: 100%; }
-        .timetable-card-body { padding: .75rem; }
-        .timetable-table-wrap { overflow: visible; }
-        .timetable-table { display: block; min-width: 0; }
-        .timetable-table thead { display: none; }
-        .timetable-table tbody { display: grid; gap: .75rem; }
-        .timetable-table tbody tr:not(.empty-day) {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            overflow: hidden;
-            border: 1px solid var(--tt-line);
-            border-radius: 12px;
-            background: #fff;
-            box-shadow: 0 2px 8px rgba(15,23,42,.035);
-        }
-        .timetable-table tbody tr:not(.empty-day) td {
-            display: block;
-            min-width: 0;
-            padding: .65rem;
-            border: 0;
-            border-bottom: 1px solid #eef1f6;
-            overflow-wrap: anywhere;
-        }
-        .timetable-table tbody tr:not(.empty-day) td::before {
-            display: block;
-            margin-bottom: .25rem;
-            color: var(--tt-muted);
-            content: attr(data-label);
-            font-size: .64rem;
-            font-weight: 800;
-            letter-spacing: .05em;
-            text-transform: uppercase;
-        }
-        .timetable-table tbody tr:not(.empty-day) td:first-child,
-        .timetable-table tbody tr:not(.empty-day) td:last-child,
-        .timetable-table tbody tr:not(.empty-day) .notes-cell { grid-column: 1 / -1; }
-        .timetable-table .time-cell { min-width: 0; background: #f8faff; }
-        .timetable-table .notes-cell { max-width: none; }
-        .timetable-table .empty-day { display: block; }
-        .timetable-table .empty-day td { display: block; border: 1px solid var(--tt-line); border-radius: 10px; }
+    .timetable-header h2 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin: 0;
     }
-    @media (max-width: 420px) {
-        .filter-panel { padding: .8rem; }
-        .timetable-table tbody tr:not(.empty-day) { grid-template-columns: 1fr; }
-        .timetable-table tbody tr:not(.empty-day) td:first-child,
-        .timetable-table tbody tr:not(.empty-day) td:last-child,
-        .timetable-table tbody tr:not(.empty-day) .notes-cell { grid-column: auto; }
+    .timetable-header p {
+        margin: 0;
+        opacity: .9;
+        font-size: .95rem;
+    }
+    .week-count {
+        background: rgba(255, 255, 255, .2);
+        padding: .5rem 1rem;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: .9rem;
+    }
+    .filter-panel {
+        background: white;
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, .05);
+        margin-bottom: 2rem;
+    }
+    .timetable-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, .08);
+        margin-bottom: 2rem;
+        overflow: hidden;
+    }
+    .timetable-card-header {
+        background: linear-gradient(135deg, var(--tt-primary) 0%, var(--tt-primary-dark) 100%);
+        color: white;
+        padding: 1.25rem 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    .timetable-card-header h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+    .timetable-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        font-size: .85rem;
+        opacity: .9;
+    }
+    .timetable-meta span {
+        display: flex;
+        align-items: center;
+        gap: .25rem;
+    }
+    .download-btn {
+        background: rgba(255, 255, 255, .2);
+        border: 1px solid rgba(255, 255, 255, .3);
+        color: white;
+        padding: .5rem 1rem;
+        border-radius: 8px;
+        font-weight: 500;
+        font-size: .875rem;
+        transition: all .2s ease;
+    }
+    .download-btn:hover {
+        background: rgba(255, 255, 255, .3);
+        transform: translateY(-1px);
+    }
+    .timetable-card-body {
+        padding: 0;
+    }
+    .timetable-table-wrap {
+        overflow-x: auto;
+    }
+    .timetable-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        margin: 0;
+    }
+    .timetable-table thead th {
+        background: var(--tt-primary);
+        color: white;
+        font-weight: 600;
+        padding: 1rem;
+        text-align: left;
+        border-bottom: 2px solid var(--tt-primary-dark);
+        font-size: .875rem;
+    }
+    .timetable-table tbody td {
+        padding: 1rem;
+        border-bottom: 1px solid var(--tt-line);
+        vertical-align: middle;
+        font-size: .9rem;
+    }
+    .timetable-table tbody tr:hover {
+        background: #f8fafc;
+    }
+    .time-cell {
+        font-weight: 700;
+        background: #f0fdf4;
+        min-width: 120px;
+    }
+    .shift-line {
+        display: block;
+        margin-bottom: .25rem;
+    }
+    .shift-line:last-child {
+        margin-bottom: 0;
+    }
+    .course-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .25rem;
+    }
+    .notes-cell {
+        max-width: 200px;
+        font-size: .85rem;
+        color: var(--tt-muted);
+    }
+    @media (max-width: 768px) {
+        .timetable-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .timetable-table {
+            font-size: .8rem;
+        }
+        .timetable-table thead th,
+        .timetable-table tbody td {
+            padding: .75rem .5rem;
+        }
     }
 </style>
+@endpush
 
 <div class="container-fluid py-4 accountant-timetable-page">
     <div class="timetable-header">
@@ -244,10 +269,12 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @php($days = [1 => 'Monday', 2 => 'Tuesday', 3 => 'Wednesday', 4 => 'Thursday', 5 => 'Friday', 6 => 'Saturday', 0 => 'Sunday'])
+                                @php
+                                    $days = [1 => 'Monday', 2 => 'Tuesday', 3 => 'Wednesday', 4 => 'Thursday', 5 => 'Friday', 6 => 'Saturday', 0 => 'Sunday'];
                                 @endphp
                                 @foreach($days as $dayNum => $dayName)
-                                    @php($daySessions = $timetable->sessions->where('day_of_week', $dayNum)->sortBy('start_time'))
+                                    @php
+                                        $daySessions = $timetable->sessions->where('day_of_week', $dayNum)->sortBy('start_time');
                                     @endphp
                                     @if($daySessions->isEmpty())
                                         <tr class="empty-day">
@@ -389,19 +416,17 @@ function downloadTimetable(timetableId) {
     const html = `
         <html>
         <head>
-            <meta charset="utf-8">
-            <title>${escapeHtml(title)}</title>
+            <title>Timetable</title>
             <style>
                 body { font-family: Arial, sans-serif; padding: 20px; }
                 table { width: 100%; border-collapse: collapse; margin-top: 20px; }
                 th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-                th { background-color: #1747b0; color: white; }
+                th { background-color: #667eea; color: white; }
                 tr:nth-child(even) { background-color: #f9f9f9; }
             </style>
         </head>
         <body>
-            <h2>${escapeHtml(title)}</h2>
-            <p>${escapeHtml(metadata)}</p>
+            <h2>Timetable</h2>
             ${tableClone.outerHTML}
         </body>
         </html>
@@ -411,7 +436,7 @@ function downloadTimetable(timetableId) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${title.replace(/[^a-z0-9-_]+/gi, '-').replace(/^-|-$/g, '') || 'timetable'}.html`;
+    a.download = 'timetable.html';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
