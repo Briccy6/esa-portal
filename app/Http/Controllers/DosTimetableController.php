@@ -578,7 +578,7 @@ class DosTimetableController extends Controller
             'sessions.*.lesson_id' => 'nullable|exists:lessons,id',
             'sessions.*.day_of_week' => ['required', Rule::in(['0','1','2','3','4','5','6'])],
             'sessions.*.shifts' => 'required|array|min:1',
-            'sessions.*.shifts.*' => ['required', Rule::in(['day', 'evening', 'weekend'])],
+            'sessions.*.shifts.*' => ['required', Rule::in(['morning', 'afternoon', 'evening'])],
             'sessions.*.shift_times' => 'required|array',
             'sessions.*.shift_times.*.start_time' => 'required|date_format:H:i',
             'sessions.*.shift_times.*.end_time' => 'required|date_format:H:i|after:shift_times.*.start_time',
@@ -623,7 +623,7 @@ class DosTimetableController extends Controller
                 'timetable_id' => $timetable->id,
                 'lesson_id' => $lesson ? $lesson->id : null,
                 'day_of_week' => (int) $sessionData['day_of_week'],
-                'shift' => $sessionData['shifts'][0] ?? 'day', // Store first shift as primary
+                'shift' => $sessionData['shifts'][0] ?? 'morning', // Store first shift as primary
                 'start_time' => $primaryTimes['start_time'],
                 'end_time' => $primaryTimes['end_time'],
                 'classroom' => $sessionData['classroom'] ?? null,
@@ -796,7 +796,7 @@ class DosTimetableController extends Controller
             'sessions.*.lesson_id' => 'nullable|exists:lessons,id',
             'sessions.*.day_of_week' => ['required', Rule::in(['0','1','2','3','4','5','6'])],
             'sessions.*.shifts' => 'required|array|min:1',
-            'sessions.*.shifts.*' => ['required', Rule::in(['day', 'evening', 'weekend'])],
+            'sessions.*.shifts.*' => ['required', Rule::in(['morning', 'afternoon', 'evening'])],
             'sessions.*.shift_times' => 'required|array',
             'sessions.*.shift_times.*.start_time' => 'required|date_format:H:i',
             'sessions.*.shift_times.*.end_time' => 'required|date_format:H:i|after:shift_times.*.start_time',
@@ -852,7 +852,7 @@ class DosTimetableController extends Controller
                 $session->update([
                     'lesson_id' => $lesson ? $lesson->id : null,
                     'day_of_week' => (int) $sessionData['day_of_week'],
-                    'shift' => $sessionData['shifts'][0] ?? 'day', // Store first shift as primary
+                    'shift' => $sessionData['shifts'][0] ?? 'morning', // Store first shift as primary
                     'start_time' => $primaryTimes['start_time'],
                     'end_time' => $primaryTimes['end_time'],
                     'classroom' => $sessionData['classroom'] ?? null,

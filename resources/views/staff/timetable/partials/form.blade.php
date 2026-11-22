@@ -378,7 +378,7 @@
                                     <div class="col-12 col-lg-8">
                                         <label class="form-label d-block">Shifts</label>
                                         <div class="shift-options">
-                                            @foreach(['day' => 'Day', 'evening' => 'Evening', 'weekend' => 'Weekend'] as $shift => $shiftLabel)
+                                            @foreach(['morning' => 'Morning', 'afternoon' => 'Afternoon', 'evening' => 'Evening'] as $shift => $shiftLabel)
                                                 <label class="shift-choice" for="shift-{{ $shift }}-{{ $index }}">
                                                     <input class="shift-checkbox" type="checkbox" id="shift-{{ $shift }}-{{ $index }}" name="sessions[{{ $index }}][shifts][]" value="{{ $shift }}" @checked(in_array($shift, $rowShifts, true))>
                                                     <span>{{ $shiftLabel }}</span>
@@ -387,7 +387,7 @@
                                         </div>
                                         <small class="builder-hint">Select one or more shifts. Only selected shifts need times.</small>
                                     </div>
-                                    @foreach(['day' => 'Day shift', 'evening' => 'Evening shift', 'weekend' => 'Weekend shift'] as $shift => $shiftLabel)
+                                    @foreach(['morning' => 'Morning shift', 'afternoon' => 'Afternoon shift', 'evening' => 'Evening shift'] as $shift => $shiftLabel)
                                         <div class="col-12 shift-time-column">
                                             <div class="shift-time-panel" data-shift-time="{{ $shift }}">
                                                 <div class="shift-time-title">{{ $shiftLabel }} time</div>
@@ -510,23 +510,23 @@
                 <div class="col-12 col-lg-8">
                     <label class="form-label d-block">Shifts</label>
                     <div class="shift-options">
-                        <label class="shift-choice" for="shift-day-__INDEX__"><input class="shift-checkbox" type="checkbox" id="shift-day-__INDEX__" name="sessions[__INDEX__][shifts][]" value="day" checked><span>Day</span></label>
+                        <label class="shift-choice" for="shift-morning-__INDEX__"><input class="shift-checkbox" type="checkbox" id="shift-morning-__INDEX__" name="sessions[__INDEX__][shifts][]" value="morning" checked><span>Morning</span></label>
+                        <label class="shift-choice" for="shift-afternoon-__INDEX__"><input class="shift-checkbox" type="checkbox" id="shift-afternoon-__INDEX__" name="sessions[__INDEX__][shifts][]" value="afternoon"><span>Afternoon</span></label>
                         <label class="shift-choice" for="shift-evening-__INDEX__"><input class="shift-checkbox" type="checkbox" id="shift-evening-__INDEX__" name="sessions[__INDEX__][shifts][]" value="evening"><span>Evening</span></label>
-                        <label class="shift-choice" for="shift-weekend-__INDEX__"><input class="shift-checkbox" type="checkbox" id="shift-weekend-__INDEX__" name="sessions[__INDEX__][shifts][]" value="weekend"><span>Weekend</span></label>
                     </div>
                     <small class="builder-hint">Only the shifts you select will ask for times.</small>
                 </div>
-                <div class="col-12 shift-time-column"><div class="shift-time-panel" data-shift-time="day"><div class="shift-time-title">Day shift time</div><div class="row g-3">
-                    <div class="col-6"><label class="form-label" for="day-start-__INDEX__">Starts</label><input type="time" class="form-control shift-time-input" id="day-start-__INDEX__" name="sessions[__INDEX__][shift_times][day][start_time]" data-time-kind="start"></div>
-                    <div class="col-6"><label class="form-label" for="day-end-__INDEX__">Ends</label><input type="time" class="form-control shift-time-input" id="day-end-__INDEX__" name="sessions[__INDEX__][shift_times][day][end_time]" data-time-kind="end"></div>
+                <div class="col-12 shift-time-column"><div class="shift-time-panel" data-shift-time="morning"><div class="shift-time-title">Morning shift time</div><div class="row g-3">
+                    <div class="col-6"><label class="form-label" for="morning-start-__INDEX__">Starts</label><input type="time" class="form-control shift-time-input" id="morning-start-__INDEX__" name="sessions[__INDEX__][shift_times][morning][start_time]" data-time-kind="start"></div>
+                    <div class="col-6"><label class="form-label" for="morning-end-__INDEX__">Ends</label><input type="time" class="form-control shift-time-input" id="morning-end-__INDEX__" name="sessions[__INDEX__][shift_times][morning][end_time]" data-time-kind="end"></div>
+                </div></div></div>
+                <div class="col-12 shift-time-column"><div class="shift-time-panel" data-shift-time="afternoon"><div class="shift-time-title">Afternoon shift time</div><div class="row g-3">
+                    <div class="col-6"><label class="form-label" for="afternoon-start-__INDEX__">Starts</label><input type="time" class="form-control shift-time-input" id="afternoon-start-__INDEX__" name="sessions[__INDEX__][shift_times][afternoon][start_time]" data-time-kind="start"></div>
+                    <div class="col-6"><label class="form-label" for="afternoon-end-__INDEX__">Ends</label><input type="time" class="form-control shift-time-input" id="afternoon-end-__INDEX__" name="sessions[__INDEX__][shift_times][afternoon][end_time]" data-time-kind="end"></div>
                 </div></div></div>
                 <div class="col-12 shift-time-column"><div class="shift-time-panel" data-shift-time="evening"><div class="shift-time-title">Evening shift time</div><div class="row g-3">
                     <div class="col-6"><label class="form-label" for="evening-start-__INDEX__">Starts</label><input type="time" class="form-control shift-time-input" id="evening-start-__INDEX__" name="sessions[__INDEX__][shift_times][evening][start_time]" data-time-kind="start"></div>
                     <div class="col-6"><label class="form-label" for="evening-end-__INDEX__">Ends</label><input type="time" class="form-control shift-time-input" id="evening-end-__INDEX__" name="sessions[__INDEX__][shift_times][evening][end_time]" data-time-kind="end"></div>
-                </div></div></div>
-                <div class="col-12 shift-time-column"><div class="shift-time-panel" data-shift-time="weekend"><div class="shift-time-title">Weekend shift time</div><div class="row g-3">
-                    <div class="col-6"><label class="form-label" for="weekend-start-__INDEX__">Starts</label><input type="time" class="form-control shift-time-input" id="weekend-start-__INDEX__" name="sessions[__INDEX__][shift_times][weekend][start_time]" data-time-kind="start"></div>
-                    <div class="col-6"><label class="form-label" for="weekend-end-__INDEX__">Ends</label><input type="time" class="form-control shift-time-input" id="weekend-end-__INDEX__" name="sessions[__INDEX__][shift_times][weekend][end_time]" data-time-kind="end"></div>
                 </div></div></div>
                 <div class="col-12 col-lg-6 course-panel">
                     <label class="form-label">Courses for this session</label><input type="search" class="form-control mb-2 course-search" placeholder="Filter courses...">
