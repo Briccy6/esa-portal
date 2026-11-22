@@ -478,8 +478,10 @@
                                                     @else
                                                         <span class="badge bg-light text-dark">{{ ucfirst($session->activity_type ?? 'N/A') }}</span>
                                                     @endif
-                                                    @if($session->shift)
-                                                        <span class="badge bg-primary ms-1">{{ ucfirst($session->shift) }}</span>
+                                                    @if($session->shifts && $session->shifts->count() > 0)
+                                                        @foreach($session->shifts as $shift)
+                                                            <span class="badge bg-{{ $shift->shift === 'day' ? 'success' : ($shift->shift === 'evening' ? 'warning' : 'secondary') }} ms-1">{{ ucfirst($shift->shift) }}</span>
+                                                        @endforeach
                                                     @endif
                                                 </span>
                                             </td>

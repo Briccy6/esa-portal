@@ -122,6 +122,7 @@
                                     <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Lesson</th>
                                     <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Room</th>
                                     <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Teacher</th>
+                                    <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Shift</th>
                                 </tr>
                             </thead>
                             <tbody style="background: white;">
@@ -171,6 +172,15 @@
                                                         }
                                                     @endphp
                                                     <span class="badge @if($teacherName !== 'TBA') bg-success text-white @else bg-warning text-dark @endif">{{ $teacherName }}</span>
+                                                @else
+                                                    <span class="text-muted">-</span>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                @if($session->shifts && $session->shifts->count() > 0)
+                                                    @foreach($session->shifts as $shift)
+                                                        <span class="badge bg-{{ $shift->shift === 'day' ? 'success' : ($shift->shift === 'evening' ? 'warning' : 'secondary') }} text-white">{{ ucfirst($shift->shift) }}</span>{{ !$loop->last ? ' ' : '' }}
+                                                    @endforeach
                                                 @else
                                                     <span class="text-muted">-</span>
                                                 @endif

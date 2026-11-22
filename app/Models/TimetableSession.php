@@ -48,6 +48,11 @@ class TimetableSession extends Model
             ->withTimestamps();
     }
 
+    public function shifts()
+    {
+        return $this->hasMany(SessionShift::class);
+    }
+
     protected function parseTime($value)
     {
         if ($value instanceof Carbon) {

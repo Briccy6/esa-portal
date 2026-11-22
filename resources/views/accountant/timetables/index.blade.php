@@ -120,6 +120,7 @@
                                     <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Course</th>
                                     <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Lesson</th>
                                     <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Room</th>
+                                    <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Teacher</th>
                                     <th style="color: white; border: 1px solid rgba(255,255,255,0.2);">Shift</th>
                                 </tr>
                             </thead>
@@ -160,9 +161,28 @@
                                             </td>
                                             <td>{{ $session->classroom ?? '' }}</td>
                                             <td>
-                                                <span class="badge bg-{{ $session->shift === 'day' ? 'success' : ($session->shift === 'evening' ? 'warning' : 'secondary') }} text-white">
-                                                    {{ ucfirst($session->shift ?? 'N/A') }}
-                                                </span>
+                                                @if($session->activity_type === 'lesson' && $session->lesson)
+                                                    @php
+                                                        $teacherName = 'TBA';
+                                                        if ($session->lesson->teacher) {
+                                                            $teacherName = $session->lesson->teacher->teacher_name;
+                                                        } elseif ($session->lesson->teachers->isNotEmpty()) {
+                                                            $teacherName = $session->lesson->teachers->first()->teacher_name;
+                                                        }
+                                                    @endphp
+                                                    <span class="badge @if($teacherName !== 'TBA') bg-success text-white @else bg-warning text-dark @endif">{{ $teacherName }}</span>
+                                                @else
+                                                    <span class="text-muted">-</span>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                @if($session->shifts && $session->shifts->count() > 0)
+                                                    @foreach($session->shifts as $shift)
+                                                        <span class="badge bg-{{ $shift->shift === 'day' ? 'success' : ($shift->shift === 'evening' ? 'warning' : 'secondary') }} text-white">{{ ucfirst($shift->shift) }}</span>{{ !$loop->last ? ' ' : '' }}
+                                                    @endforeach
+                                                @else
+                                                    <span class="text-muted">-</span>
+                                                @endif
                                             </td>
                                         </tr>
                                         @endforeach

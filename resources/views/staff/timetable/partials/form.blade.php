@@ -5,6 +5,7 @@
         $oldSessionRows = $currentTimetable->sessions->map(function ($session) {
             $row = $session->toArray();
             $row['course_ids'] = $session->courses->pluck('id')->all();
+            $row['shifts'] = $session->shifts->pluck('shift')->all();
             return $row;
         })->all();
     }
@@ -286,12 +287,21 @@
                                         </select>
                                     </div>
                                     <div class="col-6 col-sm-3 col-lg-2">
-                                        <label class="form-label" for="shift-{{ $index }}">Shift</label>
-                                        <select class="form-select" id="shift-{{ $index }}" name="sessions[{{ $index }}][shift]" required>
-                                            <option value="day" @selected(old("sessions.{$index}.shift", $sessionData['shift'] ?? 'day') === 'day')">Day</option>
-                                            <option value="evening" @selected(old("sessions.{$index}.shift", $sessionData['shift'] ?? 'day') === 'evening')">Evening</option>
-                                            <option value="weekend" @selected(old("sessions.{$index}.shift", $sessionData['shift'] ?? 'day') === 'weekend')">Weekend</option>
-                                        </select>
+                                        <label class="form-label">Shifts</label>
+                                        <div class="mt-2">
+                                            <div class="form-check">
+                                                <input class="form-check-input shift-checkbox" type="checkbox" id="shift-day-{{ $index }}" name="sessions[{{ $index }}][shifts][]" value="day" @in_array('day', old("sessions.{$index}.shifts", isset($sessionData['shifts']) ? $sessionData['shifts'] : [$sessionData['shift'] ?? 'day'])) checked>
+                                                <label class="form-check-label" for="shift-day-{{ $index }}">Day</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input shift-checkbox" type="checkbox" id="shift-evening-{{ $index }}" name="sessions[{{ $index }}][shifts][]" value="evening" @in_array('evening', old("sessions.{$index}.shifts", isset($sessionData['shifts']) ? $sessionData['shifts'] : []))>
+                                                <label class="form-check-label" for="shift-evening-{{ $index }}">Evening</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input shift-checkbox" type="checkbox" id="shift-weekend-{{ $index }}" name="sessions[{{ $index }}][shifts][]" value="weekend" @in_array('weekend', old("sessions.{$index}.shifts", isset($sessionData['shifts']) ? $sessionData['shifts'] : []))>
+                                                <label class="form-check-label" for="shift-weekend-{{ $index }}">Weekend</label>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div class="col-6 col-sm-3 col-lg-2">
                                         <label class="form-label" for="start-{{ $index }}">Starts</label>
@@ -397,11 +407,13 @@
                 <option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option><option value="0">Sunday</option>
             </select></div>
             <div class="col-12 col-lg-5"><label class="form-label" for="lesson-__INDEX__">Lesson</label><input type="text" class="form-control lesson-search" id="lesson-search-__INDEX__" placeholder="Type to search lessons..." autocomplete="off"><div class="lesson-dropdown" id="lesson-dropdown-__INDEX__" style="display: none; position: absolute; z-index: 1000; background: white; border: 1px solid #cedbd3; border-radius: 10px; max-height: 200px; overflow-y: auto; width: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.15);"></div><input type="hidden" class="lesson-id-hidden" id="lesson-__INDEX__" name="sessions[__INDEX__][lesson_id]"><div class="lesson-preview mt-1 text-muted small" id="lesson-preview-__INDEX__"></div></div>
-            <div class="col-6 col-sm-3 col-lg-2"><label class="form-label" for="shift-__INDEX__">Shift</label><select class="form-select" id="shift-__INDEX__" name="sessions[__INDEX__][shift]" required>
-                <option value="day">Day</option>
-                <option value="evening">Evening</option>
-                <option value="weekend">Weekend</option>
-            </select></div>
+            <div class="col-6 col-sm-3 col-lg-2"><label class="form-label">Shifts</label>
+                <div class="mt-2">
+                    <div class="form-check"><input class="form-check-input shift-checkbox" type="checkbox" id="shift-day-__INDEX__" name="sessions[__INDEX__][shifts][]" value="day" checked><label class="form-check-label" for="shift-day-__INDEX__">Day</label></div>
+                    <div class="form-check"><input class="form-check-input shift-checkbox" type="checkbox" id="shift-evening-__INDEX__" name="sessions[__INDEX__][shifts][]" value="evening"><label class="form-check-label" for="shift-evening-__INDEX__">Evening</label></div>
+                    <div class="form-check"><input class="form-check-input shift-checkbox" type="checkbox" id="shift-weekend-__INDEX__" name="sessions[__INDEX__][shifts][]" value="weekend"><label class="form-check-label" for="shift-weekend-__INDEX__">Weekend</label></div>
+                </div>
+            </div>
             <div class="col-6 col-sm-3 col-lg-2"><label class="form-label" for="start-__INDEX__">Starts</label><input type="time" class="form-control" id="start-__INDEX__" name="sessions[__INDEX__][start_time]" required></div>
             <div class="col-6 col-sm-3 col-lg-2"><label class="form-label" for="end-__INDEX__">Ends</label><input type="time" class="form-control" id="end-__INDEX__" name="sessions[__INDEX__][end_time]" required></div>
             <div class="col-12 col-md-6"><label class="form-label">Courses learning together</label><input type="text" class="form-control mb-2 course-search" placeholder="Search courses..." style="min-height: 38px;"><div class="course-picker" data-course-picker></div><div class="teacher-preview" data-teacher-preview>Select a lesson to see its assigned teacher.</div></div>
