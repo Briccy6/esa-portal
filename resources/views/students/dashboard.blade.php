@@ -27,7 +27,7 @@
 
     /* Welcome Section */
     .welcome-header {
-        margin-bottom: 1.5rem;
+        margin-bottom: 1rem;
     }
 
     .welcome-title {
