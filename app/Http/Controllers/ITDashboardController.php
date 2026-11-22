@@ -6,12 +6,17 @@ use App\Models\Student;
 use App\Models\DismissedStudent;
 use App\Models\Branch;
 use App\Models\AcademicYear;
+use App\Models\AccountLockStatus;
+use App\Models\Admin;
+use App\Models\Teacher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Services\AcademicYearContext;
 use ZipArchive;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Carbon\Carbon;
 
 class ITDashboardController extends Controller
 {
@@ -116,6 +121,124 @@ class ITDashboardController extends Controller
             'profile_incomplete' => $incompleteProfileCount,
         ];
 
+        $activeSince = now()->subMinutes(15);
+        $activityRoles = [
+            'student' => [
+                'label' => 'Students',
+                'model' => Student::class,
+                'name' => 'full_name',
+            ],
+            'staff' => [
+                'label' => 'Staff',
+                'model' => \App\Models\Staff::class,
+                'name' => 'name',
+            ],
+            'teacher' => [
+                'label' => 'Teachers',
+                'model' => Teacher::class,
+                'name' => 'teacher_name',
+            ],
+            'admin' => [
+                'label' => 'Administrators',
+                'model' => Admin::class,
+                'name' => null,
+            ],
+        ];
+
+        $activityGroups = [];
+        foreach ($activityRoles as $guard => $role) {
+            $model = $role['model'];
+            $latestActivities = DB::table('user_activity_statuses')
+                ->where('guard', $guard)
+                ->select('user_id', 'last_active_at')
+                ->orderByDesc('last_active_at')
+                ->limit(6)
+                ->get();
+
+            $accounts = $model::whereIn('id', $latestActivities->pluck('user_id'))
+                ->get()
+                ->keyBy('id');
+
+            $people = $latestActivities->map(function ($activity) use ($accounts, $role, $activeSince) {
+                $account = $accounts->get($activity->user_id);
+                if (!$account) {
+                    return null;
+                }
+
+                $lastActiveAt = Carbon::parse($activity->last_active_at);
+                $name = $role['name']
+                    ? $account->{$role['name']}
+                    : trim(($account->first_name ?? '') . ' ' . ($account->last_name ?? ''));
+
+                return [
+                    'name' => $name ?: 'Unnamed account',
+                    'email' => $account->email ?? null,
+                    'last_active_at' => $lastActiveAt,
+                    'is_active' => $lastActiveAt->greaterThanOrEqualTo($activeSince),
+                ];
+            })->filter()->values();
+
+            $activityGroups[$guard] = [
+                'label' => $role['label'],
+                'total' => $model::count(),
+                'active' => DB::table('user_activity_statuses')
+                    ->where('guard', $guard)
+                    ->where('last_active_at', '>=', $activeSince)
+                    ->count(),
+                'people' => $people,
+            ];
+        }
+
+        $popularPages = DB::table('user_activity_events')
+            ->where('activity_date', '>=', now()->subDays(29)->toDateString())
+            ->select('route_name')
+            ->selectRaw('SUM(visits) as visits')
+            ->groupBy('route_name')
+            ->orderByDesc('visits')
+            ->limit(8)
+            ->get()
+            ->map(function ($page) {
+                $page->label = Str::of($page->route_name)
+                    ->replace(['.', '_', '-'], ' ')
+                    ->title()
+                    ->toString();
+
+                return $page;
+            });
+
+        $activityDates = collect(range(6, 0))->map(
+            fn ($daysAgo) => now()->subDays($daysAgo)->toDateString()
+        );
+        $activityChartLabels = $activityDates->map(
+            fn ($date) => Carbon::parse($date)->format('M j')
+        )->values();
+        $dailyActivity = DB::table('user_activity_events')
+            ->whereBetween('activity_date', [$activityDates->first(), $activityDates->last()])
+            ->select('activity_date', 'guard')
+            ->selectRaw('COUNT(DISTINCT user_id) as users')
+            ->groupBy('activity_date', 'guard')
+            ->get()
+            ->keyBy(fn ($row) => $row->activity_date . ':' . $row->guard);
+
+        $activityChartDatasets = collect($activityRoles)->map(function ($role, $guard) use ($activityDates, $dailyActivity) {
+            return [
+                'label' => $role['label'],
+                'data' => $activityDates->map(
+                    fn ($date) => (int) ($dailyActivity->get($date . ':' . $guard)->users ?? 0)
+                )->values(),
+            ];
+        })->values();
+
+        $lockedAccounts = AccountLockStatus::locked()
+            ->latest('locked_at')
+            ->limit(20)
+            ->get()
+            ->map(function ($lockStatus) {
+                $lockStatus->account = $lockStatus->getUser();
+
+                return $lockStatus;
+            });
+
         return view('staff.it_dashboard', compact(
             'stats',
             'blockedStudentsList',
@@ -124,7 +247,13 @@ class ITDashboardController extends Controller
             'completedProfileStudents',
             'academicYears',
             'branches',
-            'selectedAcademicYear'
+            'selectedAcademicYear',
+            'activityGroups',
+            'popularPages',
+            'activityDates',
+            'activityChartLabels',
+            'activityChartDatasets',
+            'lockedAccounts'
         ));
     }
 

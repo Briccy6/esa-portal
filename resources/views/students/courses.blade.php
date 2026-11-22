@@ -164,9 +164,14 @@
                                         @foreach($lesson->units as $unitIndex => $unit)
                                             @php
                                                 $studied = $unit->studied_record;
+                                                $unitAttendance = $unit->attendance_record;
+                                                $attendanceStatus = strtoupper((string) ($unitAttendance->status ?? ''));
+                                                $unitAbsent = in_array($attendanceStatus, ['A', 'ABSENT', 'AR'], true);
+                                                $unitPresent = in_array($attendanceStatus, ['P', 'PRESENT'], true);
+                                                $unitLate = in_array($attendanceStatus, ['L', 'LATE'], true);
                                                 $unitModalTerm = $unit->term?->name ?? $unit->term?->title ?? 'Current term';
                                             @endphp
-                                            <div class="unit-row {{ $studied ? 'is-done' : '' }}">
+                                            <div class="unit-row {{ $studied ? 'is-done' : '' }} {{ $studied && $unitAbsent ? 'is-done-while-absent' : '' }}">
                                                 <div class="unit-index">
                                                     @if($studied)
                                                         <i class="bi bi-check-lg"></i>
@@ -185,6 +190,19 @@
                                                 @if($studied)
                                                     <div class="done-block">
                                                         <span class="done-badge"><i class="bi bi-check-circle-fill"></i> Done</span>
+                                                        @if($unitAbsent)
+                                                            <span class="unit-attendance-badge is-absent" title="This unit was covered while you were absent">
+                                                                <i class="bi bi-person-x-fill"></i> Covered while absent
+                                                            </span>
+                                                        @elseif($unitLate)
+                                                            <span class="unit-attendance-badge is-late"><i class="bi bi-clock-history"></i> Attended late</span>
+                                                        @elseif($unitPresent)
+                                                            <span class="unit-attendance-badge is-present"><i class="bi bi-person-check-fill"></i> Present</span>
+                                                        @elseif($unitAttendance)
+                                                            <span class="unit-attendance-badge is-other">{{ ucfirst(strtolower($unitAttendance->status)) }}</span>
+                                                        @else
+                                                            <span class="unit-attendance-badge is-unrecorded"><i class="bi bi-dash-circle"></i> Attendance not recorded</span>
+                                                        @endif
                                                         @if($studied->date)
                                                             <small>{{ \Carbon\Carbon::parse($studied->date)->format('M d, Y') }}</small>
                                                         @endif
@@ -688,6 +706,10 @@
     background: linear-gradient(90deg, #f4fbf8 0%, #fff 55%);
 }
 
+.unit-row.is-done-while-absent {
+    background: linear-gradient(90deg, #fff8eb 0%, #fff 58%);
+}
+
 .unit-index {
     width: 38px;
     height: 38px;
@@ -728,6 +750,32 @@
 .done-block {
     min-width: 86px;
     text-align: right;
+}
+
+.unit-attendance-badge {
+    display: block;
+    margin-top: 6px;
+    color: #788394;
+    font-size: .64rem;
+    font-weight: 750;
+    white-space: nowrap;
+}
+
+.unit-attendance-badge.is-absent {
+    color: #b45309;
+}
+
+.unit-attendance-badge.is-late {
+    color: #9a6700;
+}
+
+.unit-attendance-badge.is-present {
+    color: #16885e;
+}
+
+.unit-attendance-badge.is-unrecorded,
+.unit-attendance-badge.is-other {
+    color: #7e8795;
 }
 
 .done-badge,
@@ -830,6 +878,7 @@
         min-width: 0;
         text-align: left;
     }
+    .unit-attendance-badge { white-space: normal; }
 }
 </style>
 

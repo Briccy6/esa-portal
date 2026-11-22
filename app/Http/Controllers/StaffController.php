@@ -90,7 +90,7 @@ class StaffController extends Controller
 
     public function create()
     {
-        $roles = ['DOS', 'Accountant', 'Secretary', 'IT'];
+        $roles = ['DOS', 'Accountant', 'Secretary', 'Teacher', 'IT'];
         $branches = \App\Models\Branch::all();
         return view('admin.staff.create', compact('roles', 'branches'));
     }
@@ -147,7 +147,7 @@ class StaffController extends Controller
 
     public function edit(Staff $staff)
     {
-        $roles = ['DOS', 'Accountant', 'Secretary', 'Teacher'];
+        $roles = ['DOS', 'Accountant', 'Secretary', 'Teacher', 'IT'];
         $branches = \App\Models\Branch::all(); // Add this line
         return view('admin.staff.edit', compact('staff', 'roles', 'branches')); // Add 'branches'
     }
@@ -156,7 +156,7 @@ class StaffController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'role' => 'required|in:DOS,Accountant,Secretary,Teacher',
+            'role' => 'required|in:DOS,Accountant,Secretary,Teacher,IT',
             'photo' => 'nullable|image|max:2048',
             'password' => 'nullable|string|min:6|confirmed',
         ]);

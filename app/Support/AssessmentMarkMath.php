@@ -6,7 +6,7 @@ use Illuminate\Support\Collection;
 
 /**
  * Shared rules for TVET-style report cards:
- * - Multiple tests: pool to one score out of 100 as sum(marks) / sum(max) * 100.
+ * - Tests and assignments: pool to one score out of 100 as sum(marks) / sum(max) * 100.
  * - Exam rows: each row is already on its own scale; convert to % then average rows (exams are not pooled like tests).
  * - Lesson total: (test% + exam%) / 2 when both exist; otherwise the non-zero part.
  */

@@ -23,6 +23,8 @@ class Student extends Authenticatable
         'reg_number',
         'password',
         'academic_year_id',
+        'education_level',
+        'payed_registration_fees',
         'enrollment_term_id',
         'id_number',
         'identification_type',

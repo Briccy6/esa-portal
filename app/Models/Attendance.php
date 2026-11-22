@@ -33,6 +33,11 @@ class Attendance extends Model
         return $this->belongsTo(Student::class);
     }
 
+    public function markedBy()
+    {
+        return $this->belongsTo(User::class, 'marked_by');
+    }
+
     public function timetable()
     {
         return $this->belongsTo(Timetable::class);

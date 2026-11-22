@@ -251,6 +251,9 @@ body { background: var(--surface-2); padding: 2.5rem 0 4rem; }
 
                         <div class="d-flex justify-content-between align-items-center mt-4 flex-wrap gap-2">
                             <div class="d-flex gap-2 flex-wrap">
+                                <a href="{{ route('teacher.assignments.index') }}" class="btn btn-outline-warning">
+                                    <i class="bi bi-journal-check me-2"></i>Assignments &amp; Marks
+                                </a>
                                 <a href="{{ route('teacher.marks.view') }}" class="btn btn-outline-info">
                                     <i class="bi bi-eye me-2"></i>View Recorded Marks
                                 </a>

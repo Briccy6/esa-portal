@@ -166,6 +166,12 @@ Route::middleware('auth:student')->get('/student/exams/{exam}/disqualified', [\A
 Route::middleware('auth:student')->get('/student/exams/{exam}/marks', [\App\Http\Controllers\StudentController::class, 'studentExams'])
     ->name('student.exams.marks');
 
+Route::middleware('auth:student')->prefix('student/assignments')->name('student.assignments.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Student\AssignmentController::class, 'index'])->name('index');
+    Route::post('/{assignment}/submit', [\App\Http\Controllers\Student\AssignmentController::class, 'submit'])->name('submit');
+    Route::get('/{assignment}/submission', [\App\Http\Controllers\Student\AssignmentController::class, 'downloadSubmission'])->name('submission.download');
+});
+
 Route::get('/', function () {
     $publicAnnouncements = \App\Models\Announcement::where('audience', 'public')
         ->orderBy('created_at', 'desc')
@@ -334,6 +340,17 @@ Route::middleware('auth:teacher')->prefix('teacher')->name('teacher.')->group(fu
     Route::get('live-classes/{liveClass}/requests', [\App\Http\Controllers\TeacherLiveClassController::class, 'manageRequests'])->name('live-classes.requests');
     Route::post('live-classes/{liveClass}/requests/{requestId}/approve', [\App\Http\Controllers\TeacherLiveClassController::class, 'approveRequest'])->name('live-classes.requests.approve');
     Route::post('live-classes/{liveClass}/requests/{requestId}/reject', [\App\Http\Controllers\TeacherLiveClassController::class, 'rejectRequest'])->name('live-classes.requests.reject');
+});
+
+Route::middleware('auth:teacher')->prefix('teacher/assignments')->name('teacher.assignments.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Teacher\AssignmentController::class, 'index'])->name('index');
+    Route::get('/create', [\App\Http\Controllers\Teacher\AssignmentController::class, 'create'])->name('create');
+    Route::post('/', [\App\Http\Controllers\Teacher\AssignmentController::class, 'store'])->name('store');
+    Route::get('/{assignment}/edit-deadline', [\App\Http\Controllers\Teacher\AssignmentController::class, 'editDeadline'])->name('edit-deadline');
+    Route::put('/{assignment}/deadline', [\App\Http\Controllers\Teacher\AssignmentController::class, 'updateDeadline'])->name('deadline.update');
+    Route::get('/{assignment}', [\App\Http\Controllers\Teacher\AssignmentController::class, 'show'])->name('show');
+    Route::put('/{assignment}/marks', [\App\Http\Controllers\Teacher\AssignmentController::class, 'saveMarks'])->name('marks.save');
+    Route::get('/{assignment}/submissions/{submission}/download', [\App\Http\Controllers\Teacher\AssignmentController::class, 'downloadSubmission'])->name('submission.download');
 });
 
 // Admin protected routes
@@ -1675,6 +1692,7 @@ Route::get('/students/create', [\App\Http\Controllers\StudentController::class, 
 
 Route::get('/courses/registration-fee', [StudentController::class, 'getRegistrationFee'])->name('courses.registration_fee');
 Route::post('/students/flutterwave/initialize', [\App\Http\Controllers\FlutterwaveController::class, 'initializePayment'])->name('students.flutterwave.initialize');
+Route::get('/students/flutterwave/callback', [\App\Http\Controllers\FlutterwaveController::class, 'handleCallback'])->name('students.flutterwave.callback');
 Route::get('/payment/callback', [StudentController::class, 'paymentCallback'])->name('students.registration.callback');
 
 // Reset link

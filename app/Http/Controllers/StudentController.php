@@ -274,6 +274,14 @@ class StudentController extends Controller
                         ->first();
 
                     $unit->studied_record = $studiedRecord;
+                    $unit->attendance_record = $studiedRecord
+                        ? \App\Models\Attendance::query()
+                            ->where('student_id', $student->id)
+                            ->where('lesson_id', $lesson->id)
+                            ->whereDate('date', $studiedRecord->date)
+                            ->orderByDesc('id')
+                            ->first()
+                        : null;
                 }
             }
         }
@@ -1969,10 +1977,42 @@ class StudentController extends Controller
         $student->initializeTokens();
 
         $attendanceRecords = $student->attendances()
-            ->with(['lesson.teacher'])
+            ->with(['lesson.teacher', 'markedBy'])
             ->orderByDesc('marked_at')
             ->orderByDesc('id')
             ->get();
+
+        $attendanceLessonIds = $attendanceRecords->pluck('lesson_id')->filter()->unique()->values();
+        $attendanceDates = $attendanceRecords->pluck('date')
+            ->filter()
+            ->map(fn ($date) => $date->format('Y-m-d'))
+            ->unique()
+            ->values();
+
+        $teacherDailyRecords = collect();
+        if ($attendanceLessonIds->isNotEmpty() && $attendanceDates->isNotEmpty()) {
+            $teacherDailyRecords = \App\Models\TeacherDaily::with('teacher')
+                ->where('branch_id', $student->branch_id)
+                ->whereIn('lesson_id', $attendanceLessonIds)
+                ->whereIn('date', $attendanceDates)
+                ->where(function ($query) use ($student) {
+                    $courseId = (int) $student->course_id;
+                    $query->where('course_id', $courseId)
+                        ->orWhereJsonContains('course_ids', $courseId)
+                        ->orWhereJsonContains('course_ids', (string) $courseId);
+                })
+                ->orderByDesc('id')
+                ->get()
+                ->groupBy(fn ($daily) => $daily->lesson_id . ':' . $daily->date->format('Y-m-d'));
+        }
+
+        foreach ($attendanceRecords as $attendance) {
+            $dailyKey = $attendance->lesson_id . ':' . $attendance->date->format('Y-m-d');
+            $dailyTeacher = $teacherDailyRecords->get($dailyKey)?->first()?->teacher;
+            $attendance->marker_name = $attendance->markedBy?->full_name
+                ?: $dailyTeacher?->teacher_name;
+        }
+
         $approvedAttendances = $attendanceRecords
             ->where('approved', true)
             ->values();

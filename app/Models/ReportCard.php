@@ -253,7 +253,7 @@ class ReportCard extends Model
                 student_id,
                 AVG(
                     CASE
-                        WHEN assessment_type = 'test' THEN
+                        WHEN assessment_type IN ('test', 'assignment') THEN
                             CASE
                                 WHEN marks_out_of IS NOT NULL AND marks_out_of > 0
                                     THEN (value / marks_out_of) * 100

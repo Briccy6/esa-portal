@@ -6,7 +6,11 @@
 @include('partials.academic-year-banner')
 
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-4 border-bottom">
-    <h1 class="h2 fw-bold text-gray-800">IT Dashboard</h1>
+    <div>
+        <div class="text-uppercase small fw-semibold text-primary mb-1">Technology operations</div>
+        <h1 class="h2 fw-bold text-gray-800 mb-1">IT Dashboard</h1>
+        <p class="text-muted mb-0">A live view of platform usage, account activity, and access health.</p>
+    </div>
     <div class="btn-toolbar mb-2 mb-md-0">
         <div class="btn-group me-2">
             <a href="{{ route('staff.it.account-locking.settings') }}" class="btn btn-sm btn-outline-warning">
@@ -20,6 +24,109 @@
         </div>
     </div>
 </div>
+
+<section class="it-overview mb-4" aria-labelledby="usage-heading">
+    <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-3">
+        <div>
+            <div class="it-eyebrow">Platform pulse</div>
+            <h2 class="h4 mb-1" id="usage-heading">Usage &amp; account activity</h2>
+            <p class="mb-0 text-muted">Active means a successful portal request in the last 15 minutes. Page analytics show the last 30 days.</p>
+        </div>
+        <span class="it-live-indicator"><span></span> Activity tracking enabled</span>
+    </div>
+
+    <div class="row g-3 mb-4">
+        @foreach($activityGroups as $group)
+            <div class="col-6 col-xl-3">
+                <article class="it-audience-card h-100">
+                    <div class="d-flex justify-content-between align-items-start gap-2">
+                        <span class="it-audience-label">{{ $group['label'] }}</span>
+                        <span class="it-audience-icon"><i class="fas fa-{{ $loop->iteration === 1 ? 'user-graduate' : ($loop->iteration === 2 ? 'users' : ($loop->iteration === 3 ? 'chalkboard-teacher' : 'user-shield')) }}"></i></span>
+                    </div>
+                    <div class="it-audience-count">{{ number_format($group['active']) }}</div>
+                    <div class="it-audience-caption">active now <span>of {{ number_format($group['total']) }}</span></div>
+                </article>
+            </div>
+        @endforeach
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-xl-7">
+            <div class="it-panel h-100">
+                <div class="it-panel-heading">
+                    <div>
+                        <h3 class="h6 mb-1">Daily active accounts</h3>
+                        <p class="text-muted small mb-0">Unique accounts visiting each day · last 7 days</p>
+                    </div>
+                    <span class="it-panel-icon"><i class="fas fa-chart-line"></i></span>
+                </div>
+                <div class="it-chart-wrap"><canvas id="activityTrendChart" aria-label="Daily active accounts by user type"></canvas></div>
+            </div>
+        </div>
+        <div class="col-12 col-xl-5">
+            <div class="it-panel h-100">
+                <div class="it-panel-heading">
+                    <div>
+                        <h3 class="h6 mb-1">Most visited pages</h3>
+                        <p class="text-muted small mb-0">Page visits · last 30 days</p>
+                    </div>
+                    <span class="it-panel-icon"><i class="fas fa-chart-bar"></i></span>
+                </div>
+                <div class="it-chart-wrap"><canvas id="popularPagesChart" aria-label="Most visited pages"></canvas></div>
+                @if($popularPages->isEmpty())
+                    <div class="it-chart-empty">Page analytics will appear as users browse the portal.</div>
+                @endif
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        @foreach($activityGroups as $group)
+            <div class="col-12 col-xl-6">
+                <div class="it-panel h-100">
+                    <div class="it-panel-heading">
+                        <div>
+                            <h3 class="h6 mb-1">{{ $group['label'] }} activity</h3>
+                            <p class="text-muted small mb-0">Most recently active accounts</p>
+                        </div>
+                        <span class="it-panel-icon"><i class="fas fa-clock"></i></span>
+                    </div>
+                    @if($group['people']->isEmpty())
+                        <div class="it-chart-empty">No recorded activity yet.</div>
+                    @else
+                        <div class="table-responsive">
+                            <table class="table it-activity-table align-middle mb-0">
+                                <thead>
+                                    <tr><th>Account</th><th>Last active</th><th>Status</th></tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($group['people'] as $person)
+                                        <tr>
+                                            <td>
+                                                <div class="fw-semibold">{{ $person['name'] }}</div>
+                                                @if($person['email'])
+                                                    <small class="text-muted">{{ $person['email'] }}</small>
+                                                @endif
+                                            </td>
+                                            <td class="text-nowrap" title="{{ $person['last_active_at']->format('Y-m-d H:i:s') }}">
+                                                {{ $person['last_active_at']->diffForHumans() }}
+                                            </td>
+                                            <td>
+                                                <span class="it-status {{ $person['is_active'] ? 'it-status-active' : 'it-status-idle' }}">
+                                                    {{ $person['is_active'] ? 'Active' : 'Away' }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        @endforeach
+    </div>
+</section>
 
 <!-- Filters -->
 <div class="card mb-4">
@@ -193,13 +300,6 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @php
-                                $lockedAccounts = \App\Models\AccountLockStatus::with('userable')
-                                    ->where('is_locked', true)
-                                    ->latest('locked_at')
-                                    ->limit(10)
-                                    ->get();
-                            @endphp
                             @if($lockedAccounts->isEmpty())
                                 <tr>
                                     <td colspan="7" class="text-center text-muted py-4">
@@ -213,16 +313,16 @@
                                         <td>{{ ucfirst($lockStatus->user_type) }}</td>
                                         <td>{{ $lockStatus->user_id }}</td>
                                         <td>
-                                            @php
-                                                $user = $lockStatus->getUser();
-                                            @endphp
+                                            @php($user = $lockStatus->account)
                                             @if($user)
                                                 @if($lockStatus->user_type === 'student')
                                                     {{ $user->full_name ?? 'N/A' }}
                                                 @elseif($lockStatus->user_type === 'staff')
                                                     {{ $user->name ?? 'N/A' }}
+                                                @elseif($lockStatus->user_type === 'teacher')
+                                                    {{ $user->teacher_name ?? 'N/A' }}
                                                 @else
-                                                    {{ $user->email ?? 'N/A' }}
+                                                    {{ trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? '')) ?: ($user->email ?? 'N/A') }}
                                                 @endif
                                             @else
                                                 <span class="text-muted">User not found</span>
@@ -553,6 +653,179 @@
 </div>
 
 <style>
+    .it-overview {
+        padding: clamp(1rem, 2.4vw, 1.75rem);
+        border: 1px solid #dfe7ef;
+        border-radius: 18px;
+        background:
+            radial-gradient(ellipse at 92% 0%, rgba(35, 122, 162, .09), transparent 34%),
+            linear-gradient(145deg, #f8fbfd 0%, #f2f6fa 100%);
+    }
+
+    .it-eyebrow {
+        color: #26749a;
+        font-size: .68rem;
+        font-weight: 800;
+        letter-spacing: .13em;
+        text-transform: uppercase;
+        margin-bottom: .35rem;
+    }
+
+    .it-live-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: .5rem;
+        padding: .48rem .75rem;
+        border: 1px solid #d8e8df;
+        border-radius: 999px;
+        background: rgba(255,255,255,.82);
+        color: #476254;
+        font-size: .78rem;
+        font-weight: 600;
+    }
+
+    .it-live-indicator span {
+        width: .5rem;
+        height: .5rem;
+        border-radius: 50%;
+        background: #20a36b;
+        box-shadow: 0 0 0 4px rgba(32,163,107,.12);
+    }
+
+    .it-audience-card,
+    .it-panel {
+        border: 1px solid #e3eaf0;
+        border-radius: 14px;
+        background: #fff;
+        box-shadow: 0 8px 26px rgba(31, 51, 72, .045);
+    }
+
+    .it-audience-card {
+        padding: 1rem 1.1rem;
+        min-height: 132px;
+    }
+
+    .it-audience-label {
+        color: #687789;
+        font-size: .76rem;
+        font-weight: 700;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+    }
+
+    .it-audience-icon,
+    .it-panel-icon {
+        display: inline-flex;
+        width: 2rem;
+        height: 2rem;
+        align-items: center;
+        justify-content: center;
+        border-radius: 9px;
+        background: #edf5f8;
+        color: #26749a;
+    }
+
+    .it-audience-count {
+        margin-top: .55rem;
+        color: #183044;
+        font-size: 1.8rem;
+        font-weight: 750;
+        line-height: 1.1;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .it-audience-caption {
+        margin-top: .3rem;
+        color: #27835e;
+        font-size: .78rem;
+        font-weight: 700;
+    }
+
+    .it-audience-caption span {
+        color: #8995a2;
+        font-weight: 500;
+    }
+
+    .it-panel {
+        padding: 1.1rem 1.15rem;
+    }
+
+    .it-panel-heading {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: .8rem;
+    }
+
+    .it-panel-heading h3 {
+        color: #21384a;
+        font-weight: 700;
+    }
+
+    .it-chart-wrap {
+        position: relative;
+        height: 250px;
+        min-width: 0;
+    }
+
+    .it-chart-empty {
+        padding: .75rem 0 0;
+        color: #8190a0;
+        font-size: .85rem;
+    }
+
+    .it-activity-table {
+        font-size: .84rem;
+    }
+
+    .it-activity-table thead th {
+        color: #8794a2;
+        font-size: .68rem;
+        font-weight: 700;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+    }
+
+    .it-activity-table > :not(caption) > * > * {
+        padding: .65rem .5rem;
+        border-bottom-color: #edf1f4;
+    }
+
+    .it-status {
+        display: inline-flex;
+        align-items: center;
+        padding: .24rem .55rem;
+        border-radius: 999px;
+        font-size: .7rem;
+        font-weight: 700;
+    }
+
+    .it-status-active {
+        background: #e8f6ef;
+        color: #17804f;
+    }
+
+    .it-status-idle {
+        background: #f0f2f4;
+        color: #697887;
+    }
+
+    @media (max-width: 575.98px) {
+        .it-audience-card {
+            padding: .85rem;
+            min-height: 124px;
+        }
+
+        .it-audience-count {
+            font-size: 1.55rem;
+        }
+
+        .it-chart-wrap {
+            height: 220px;
+        }
+    }
+
     .stat-card {
         background: white;
         border-radius: 12px;
@@ -657,8 +930,70 @@
     }
 </style>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        const activityCanvas = document.getElementById('activityTrendChart');
+        if (activityCanvas && window.Chart) {
+            const activityDatasets = @json($activityChartDatasets);
+            const activityColors = ['#247ba0', '#39a982', '#e3a23b', '#8168a8'];
+
+            new Chart(activityCanvas, {
+                type: 'line',
+                data: {
+                    labels: @json($activityChartLabels),
+                    datasets: activityDatasets.map((dataset, index) => ({
+                        ...dataset,
+                        borderColor: activityColors[index],
+                        backgroundColor: activityColors[index] + '20',
+                        pointBackgroundColor: activityColors[index],
+                        pointRadius: 3,
+                        pointHoverRadius: 5,
+                        borderWidth: 2,
+                        tension: 0.35,
+                        fill: false
+                    }))
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    interaction: { intersect: false, mode: 'index' },
+                    plugins: {
+                        legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 7, padding: 16 } }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: '#edf1f4' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        const pagesCanvas = document.getElementById('popularPagesChart');
+        if (pagesCanvas && window.Chart) {
+            new Chart(pagesCanvas, {
+                type: 'bar',
+                data: {
+                    labels: @json($popularPages->pluck('label')->values()),
+                    datasets: [{
+                        label: 'Visits',
+                        data: @json($popularPages->pluck('visits')->values()),
+                        backgroundColor: '#378baa',
+                        borderRadius: 5,
+                        maxBarThickness: 22
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: '#edf1f4' } },
+                        y: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
         const studentCategory = document.getElementById('student_category');
         const studentSelection = document.getElementById('student_selection');
         const selectAllStudents = document.getElementById('selectAllStudents');

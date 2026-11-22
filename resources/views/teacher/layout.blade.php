@@ -736,6 +736,12 @@
                     <span>Marks</span>
                 </a>
             </li>
+            <li class="nav-item">
+                <a href="{{ route('teacher.assignments.index') }}" class="nav-link text-warning {{ request()->routeIs('teacher.assignments.*') ? 'active' : '' }}">
+                    <i class="bi bi-journal-check"></i>
+                    <span>Assignments</span>
+                </a>
+            </li>
             
             <li class="nav-item">
                 <a href="{{ route('teacher.resources.create') }}" class="nav-link text-secondary">
@@ -808,6 +814,12 @@
                     <a href="{{ route('teacher.marks.index') }}" class="nav-link text-success">
                         <i class="bi bi-clipboard-check"></i>
                         <span>Marks</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ route('teacher.assignments.index') }}" class="nav-link text-warning {{ request()->routeIs('teacher.assignments.*') ? 'active' : '' }}">
+                        <i class="bi bi-journal-check"></i>
+                        <span>Assignments</span>
                     </a>
                 </li>
                 

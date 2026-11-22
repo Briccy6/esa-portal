@@ -819,6 +819,12 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a href="{{ route('student.assignments.index') }}" class="nav-link {{ request()->routeIs('student.assignments.*') ? 'active' : '' }}">
+                                <i class="bi bi-journal-check"></i>
+                                Assignments
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a href="{{ route('student.report-cards.index') }}" class="nav-link {{ request()->routeIs('student.report-cards.*') ? 'active' : '' }}">
                                 <i class="bi bi-file-earmark-text"></i>
                                 Report Cards

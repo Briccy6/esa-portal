@@ -1612,7 +1612,7 @@ class ReportCardController extends Controller
             $allMarks = Mark::where('student_id', $reportCard->student_id)
                 ->where('lesson_id', $lesson->id)
                 ->where('term_id', $reportCard->term_id)
-                ->with('exam')
+                ->with(['exam', 'assignment'])
                 ->get();
 
             \Log::info('Found marks for lesson: ' . json_encode([
@@ -1630,7 +1630,7 @@ class ReportCardController extends Controller
 
             // Separate exam marks and test marks
             $examMarks = $allMarks->where('assessment_type', 'exam');
-            $testMarks = $allMarks->where('assessment_type', 'test');
+            $testMarks = $allMarks->whereIn('assessment_type', ['test', 'assignment']);
 
             // Exam: each row is on its own scale (typically /100); convert to % per row then average — avoids false 100% from sum/sum quirks
             $examMark = AssessmentMarkMath::aggregatedExamPercentFromMarks($examMarks);
@@ -1665,6 +1665,9 @@ class ReportCardController extends Controller
                     
                     // Create a meaningful test name
                     $testName = 'Test ' . ($index + 1);
+                    if ($mark->assignment && $mark->assignment->title) {
+                        $testName = $mark->assignment->title;
+                    }
                     if ($mark->test_date) {
                         $testName .= ' (' . date('M j', strtotime($mark->test_date)) . ')';
                     }

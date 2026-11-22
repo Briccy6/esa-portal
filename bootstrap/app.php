@@ -25,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\SetAdminAcademicYear::class,
             \App\Http\Middleware\RestrictIncompleteStudentProfile::class,
             \App\Http\Middleware\CheckStudentBlockStatus::class,
+            \App\Http\Middleware\TrackUserActivity::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

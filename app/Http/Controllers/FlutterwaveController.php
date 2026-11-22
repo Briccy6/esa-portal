@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
 
 class FlutterwaveController extends Controller
 {
@@ -41,33 +42,55 @@ class FlutterwaveController extends Controller
                 'email'                     => 'required|email|unique:students,email',
                 'phone'                     => 'required|string',
                 'full_name'                 => 'required|string',
+                'sex'                       => 'required|in:Male,Female,Other',
+                'identification_type'       => 'required|in:ID,Passport',
+                'identification_number'     => 'required|string|max:100',
                 'course_id'                 => 'required|exists:courses,id',
                 'branch_id'                 => 'required|exists:branches,id',
+                'academic_year_id'          => 'required|exists:academic_years,id',
                 'fee_type'                  => 'required|string',
                 'total_fee'                 => 'required|numeric|min:1',
                 'term'                      => 'nullable|string',
                 'password'                  => 'required|string|min:6',
+                'education_level'           => 'required|in:s6,s3,other',
                 'senior6_document'          => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
                 'senior3_document'          => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
                 'other_supporting_document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
-                'id_photo'                  => 'nullable|file|mimes:jpg,jpeg,png|max:2048',
+                'id_photo'                  => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
                 'passport_photo'            => 'required|file|mimes:jpg,jpeg,png|max:2048',
             ]);
 
             $course = Course::findOrFail($request->course_id);
+            $registrationFee = (float) $course->getRegistrationFeeForBranchAndAcademicYear(
+                $request->branch_id,
+                $request->academic_year_id
+            );
+
+            if ($registrationFee < 1) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'No registration fee is configured for this course, branch, and academic year.',
+                ], 422);
+            }
+
             $txRef  = 'REG_' . time() . '_' . Str::random(10);
 
             $studentData = [
                 'full_name'   => $request->full_name,
+                'sex'         => $request->sex,
                 'email'       => $request->email,
                 'phone'       => $request->phone,
                 'branch_id'   => $request->branch_id,
                 'course_id'   => $request->course_id,
+                'academic_year_id' => $request->academic_year_id,
+                'identification_type' => $request->identification_type,
+                'id_number'   => $request->identification_number,
+                'education_level' => $request->education_level,
                 'password'    => bcrypt($request->password),
                 'fee_type'    => $request->fee_type,
-                'total_fee'   => $request->total_fee,
+                'total_fee'   => $registrationFee,
                 'term'        => $request->term,
-                'amount_paid' => $request->amount,
+                'amount_paid' => $registrationFee,
             ];
 
             $documentPaths = [];
@@ -89,11 +112,11 @@ class FlutterwaveController extends Controller
 
             $paymentData = [
                 'tx_ref'          => $txRef,
-                'amount'          => $request->amount,
+                'amount'          => $registrationFee,
                 'currency'        => 'RWF',
-                'redirect_url'    => route('students.registration.callback'),
+                'redirect_url'    => route('students.flutterwave.callback'),
                 // Use card/bank transfer only to avoid mobile money OTP screens for non-MOMO numbers
-                'payment_options' => 'card,banktransfer',
+                'payment_options' => 'card,mobilemoneyrwanda',
                 'meta'            => [
                     'course_id' => $course->id,
                 ],
@@ -110,9 +133,6 @@ class FlutterwaveController extends Controller
             ];
 
             $response = Http::timeout(30)
-                ->withOptions([
-                    'verify' => false, // Disable SSL verification for local development
-                ])
                 ->withHeaders([
                     'Authorization' => 'Bearer ' . $this->secretKey,
                     'Content-Type'  => 'application/json',
@@ -139,14 +159,18 @@ class FlutterwaveController extends Controller
                 }
             }
 
+            $gatewayMessage = $response->json('message');
             Log::error('Flutterwave payment initialization failed', [
-                'response'    => $response->json(),
+                'tx_ref'      => $txRef,
+                'gateway_message' => $gatewayMessage,
                 'status_code' => $response->status(),
             ]);
 
             return response()->json([
                 'status'  => 'error',
-                'message' => 'Failed to initialize payment. Please try again.',
+                'message' => $gatewayMessage
+                    ? 'Flutterwave could not start this payment: ' . $gatewayMessage
+                    : 'Failed to initialize payment. Please try again.',
             ], 400);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -179,9 +203,12 @@ class FlutterwaveController extends Controller
         try {
             $txRef         = $request->query('tx_ref');
             $transactionId = $request->query('transaction_id');
+            $failureRoute = $request->routeIs('students.flutterwave.callback')
+                ? 'students.create'
+                : 'student.dashboard';
 
             if (!$txRef || !$transactionId) {
-                return redirect()->route('student.dashboard')
+                return redirect()->route($failureRoute)
                     ->with('error', 'Invalid callback parameters');
             }
 
@@ -200,7 +227,21 @@ class FlutterwaveController extends Controller
                         if ($studentData) {
                             $student = $this->createStudentRecord($studentData, $txRef);
                             $this->recordPaymentInTranscripts($student, $studentData, $transactionData);
+                            $this->recordRegistrationTransaction($student, $studentData, $txRef, $transactionId);
                             cache()->forget("student_data_{$txRef}");
+                            Auth::guard('student')->login($student);
+
+                            return redirect()->route('student.dashboard')
+                                ->with('success', 'Registration completed successfully!');
+                        }
+
+                        $existingRegistration = StudentTransaction::with('student')
+                            ->where('tx_ref', $txRef)
+                            ->where('status', 'paid')
+                            ->first();
+
+                        if ($existingRegistration && $existingRegistration->student) {
+                            Auth::guard('student')->login($existingRegistration->student);
 
                             return redirect()->route('student.dashboard')
                                 ->with('success', 'Registration completed successfully!');
@@ -246,7 +287,7 @@ class FlutterwaveController extends Controller
                 }
             }
 
-            return redirect()->route('student.dashboard')
+            return redirect()->route($failureRoute)
                 ->with('error', 'Payment verification failed. Contact support if money was deducted.');
 
         } catch (\Exception $e) {
@@ -254,7 +295,9 @@ class FlutterwaveController extends Controller
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            return redirect()->route('student.dashboard')
+            return redirect()->route(
+                $request->routeIs('students.flutterwave.callback') ? 'students.create' : 'student.dashboard'
+            )
                 ->with('error', 'An error occurred while processing your payment');
         }
     }
@@ -266,9 +309,6 @@ class FlutterwaveController extends Controller
     {
         try {
             $response = Http::timeout(30)
-                ->withOptions([
-                    'verify' => false, // Disable SSL verification for local development
-                ])
                 ->withHeaders([
                     'Authorization' => 'Bearer ' . $this->secretKey,
                     'Content-Type'  => 'application/json',
@@ -341,6 +381,12 @@ class FlutterwaveController extends Controller
                     if ($studentData) {
                         $student = $this->createStudentRecord($studentData, $txRef);
                         $this->recordPaymentInTranscripts($student, $studentData, $payload['data']);
+                        $this->recordRegistrationTransaction(
+                            $student,
+                            $studentData,
+                            $txRef,
+                            $payload['data']['id'] ?? null
+                        );
                         cache()->forget("student_data_{$txRef}");
                     }
                 }
@@ -469,7 +515,7 @@ class FlutterwaveController extends Controller
                 'amount'          => $validated['amount'],
                 'currency'        => 'RWF',
                 'redirect_url'    => route('student.payment.callback'),
-                'payment_options' => 'card,banktransfer,ussd,mobilemoneyruanda',
+                'payment_options' => 'card,mobilemoneyrwanda',
                 'meta'            => [
                     'student_id'         => $student->id,
                     'fee_type'           => $validated['fee_type'],
@@ -488,9 +534,6 @@ class FlutterwaveController extends Controller
             ];
 
             $response = Http::timeout(30)
-                ->withOptions([
-                    'verify' => false, // Disable SSL verification for local development
-                ])
                 ->withHeaders([
                     'Authorization' => 'Bearer ' . $this->secretKey,
                     'Content-Type'  => 'application/json',
@@ -498,9 +541,10 @@ class FlutterwaveController extends Controller
                 ->post($this->baseUrl . '/payments', $flutterwaveData);
 
             Log::info('addPayment: Flutterwave API request', [
-                'request_data' => $flutterwaveData,
+                'tx_ref' => $txRef,
                 'status_code' => $response->status(),
-                'response_body' => $response->body(),
+                'gateway_status' => $response->json('status'),
+                'gateway_message' => $response->json('message'),
             ]);
 
             // ── 7. Handle API response ─────────────────────────────────────────
@@ -515,7 +559,12 @@ class FlutterwaveController extends Controller
                     ]);
                 }
 
-                Log::error('addPayment: Flutterwave body not success', ['response' => $responseData]);
+                Log::error('addPayment: Flutterwave body not success', [
+                    'tx_ref' => $txRef,
+                    'gateway_message' => $responseData['message'] ?? null,
+                ]);
+                StudentTransaction::where('tx_ref', $txRef)->update(['status' => 'failed']);
+                cache()->forget("additional_payment_{$txRef}");
 
                 return response()->json([
                     'status'  => 'error',
@@ -524,13 +573,18 @@ class FlutterwaveController extends Controller
             }
 
             Log::error('addPayment: Flutterwave HTTP error', [
+                'tx_ref'      => $txRef,
                 'status_code' => $response->status(),
-                'body'        => $response->body(),
+                'gateway_message' => $response->json('message'),
             ]);
+            StudentTransaction::where('tx_ref', $txRef)->update(['status' => 'failed']);
+            cache()->forget("additional_payment_{$txRef}");
 
             return response()->json([
                 'status'  => 'error',
-                'message' => 'Payment gateway error (HTTP ' . $response->status() . '). Please try again.',
+                'message' => $response->json('message')
+                    ? 'Flutterwave could not start this payment: ' . $response->json('message')
+                    : 'Payment gateway error (HTTP ' . $response->status() . '). Please try again.',
             ], 400);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -540,6 +594,11 @@ class FlutterwaveController extends Controller
             ], 422);
 
         } catch (\Exception $e) {
+            if (isset($txRef)) {
+                StudentTransaction::where('tx_ref', $txRef)->update(['status' => 'failed']);
+                cache()->forget("additional_payment_{$txRef}");
+            }
+
             Log::error('addPayment: exception', [
                 'message' => $e->getMessage(),
                 'file'    => $e->getFile(),
@@ -676,9 +735,6 @@ class FlutterwaveController extends Controller
             $refundData = ['amount' => $request->amount ?? null];
 
             $response = Http::timeout(30)
-                ->withOptions([
-                    'verify' => false, // Disable SSL verification for local development
-                ])
                 ->withHeaders([
                     'Authorization' => 'Bearer ' . $this->secretKey,
                     'Content-Type'  => 'application/json',
@@ -721,18 +777,26 @@ class FlutterwaveController extends Controller
 
             $student = Student::create([
                 'full_name'                 => $studentData['full_name'],
+                'sex'                       => $studentData['sex'],
                 'email'                     => $studentData['email'],
                 'phone'                     => $studentData['phone'],
                 'branch_id'                 => $studentData['branch_id'],
                 'course_id'                 => $studentData['course_id'],
+                'academic_year_id'          => $studentData['academic_year_id'],
                 'reg_number'                => $regNumber,
                 'password'                  => $studentData['password'],
+                'identification_type'       => $studentData['identification_type'],
+                'id_number'                 => $studentData['id_number'],
+                'education_level'           => $studentData['education_level'],
                 'senior6_document'          => $permanentPaths['senior6_document'] ?? null,
                 'senior3_document'          => $permanentPaths['senior3_document'] ?? null,
                 'other_supporting_document' => $permanentPaths['other_supporting_document'] ?? null,
                 'id_photo'                  => $permanentPaths['id_photo'] ?? null,
                 'passport_photo'            => $permanentPaths['passport_photo'] ?? null,
+                'payed_registration_fees'   => true,
             ]);
+
+            $student->initializeTokens(10);
 
             return $student;
 
@@ -991,9 +1055,23 @@ class FlutterwaveController extends Controller
 
         } catch (\Exception $e) {
             Log::error('Error recording payment in transcripts: ' . $e->getMessage(), [
-                'student_id'       => $student->id,
-                'transaction_data' => $transactionData,
+                'student_id' => $student->id,
+                'tx_ref' => $transactionData['tx_ref'] ?? null,
             ]);
         }
+    }
+
+    private function recordRegistrationTransaction($student, $studentData, $txRef, $transactionId)
+    {
+        StudentTransaction::firstOrCreate(['tx_ref' => $txRef], [
+            'student_id'     => $student->id,
+            'transaction_id' => $transactionId,
+            'type'           => 'registration_fee',
+            'amount'         => $studentData['amount_paid'],
+            'currency'       => 'RWF',
+            'status'         => 'paid',
+            'meta'           => ['method' => 'flutterwave'],
+            'paid_at'        => now(),
+        ]);
     }
 }

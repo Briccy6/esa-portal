@@ -87,13 +87,11 @@
                                     required
                                     style="border-color: #dee2e6; transition: all 0.3s ease;">
                                 <option value="">-- Select a position --</option>
-                                <option value="DOS">Director of Studies (DOS)</option>
-                                <option value="Accountant">Accountant & Secretary</option>
-                              
-                                {{-- <option value="Administrator">Administrator</option> --}}
-                                {{-- <option value="Teacher">Teacher</option> --}}
-                                {{-- <option value="Librarian">Librarian</option> --}}
-                                {{-- <option value="IT Support">IT Support</option> --}}
+                                @foreach($roles as $role)
+                                    <option value="{{ $role }}" {{ old('role') === $role ? 'selected' : '' }}>
+                                        {{ $role === 'DOS' ? 'Director of Studies (DOS)' : ($role === 'Accountant' ? 'Accountant' : ($role === 'IT' ? 'IT Support' : $role)) }}
+                                    </option>
+                                @endforeach
                             </select>
                             <div class="invalid-feedback">
                                 Please select a position.

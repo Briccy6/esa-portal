@@ -11,6 +11,7 @@ class Mark extends Model
         'course_id',
         'branch_id',
         'lesson_id',
+        'assignment_id',
         'term_id',
         'exam_id',
         'value',
@@ -52,6 +53,11 @@ class Mark extends Model
         return $this->belongsTo(\App\Models\Lesson::class);
     }
 
+    public function assignment()
+    {
+        return $this->belongsTo(\App\Models\LessonAssignment::class, 'assignment_id');
+    }
+
     public function term()
     {
         return $this->belongsTo(\App\Models\Term::class);
@@ -76,7 +82,7 @@ class Mark extends Model
     // Accessor for normalized marks (always out of 100)
     public function getNormalizedValueAttribute()
     {
-        if ($this->assessment_type === 'test' && $this->marks_out_of > 0) {
+        if (in_array($this->assessment_type, ['test', 'assignment'], true) && $this->marks_out_of > 0) {
             return round(($this->value / $this->marks_out_of) * 100, 2);
         }
         return $this->value; // Exams are already out of 100

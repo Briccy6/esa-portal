@@ -25,6 +25,247 @@
         --radius-lg: 12px;
     }
 
+    .attendance-overview {
+        position: relative;
+        overflow: hidden;
+        margin: 0 0 1.5rem;
+        padding: 1.5rem;
+        border-radius: 18px;
+        background: linear-gradient(120deg, #10243d 0%, #173b60 66%, #1c5474 100%);
+        color: #fff;
+        box-shadow: 0 15px 34px rgba(16, 36, 61, .16);
+        animation: attendanceRise .55s cubic-bezier(.22, 1, .36, 1) both;
+    }
+
+    .attendance-overview::after {
+        position: absolute;
+        top: -95px;
+        right: 20%;
+        width: 220px;
+        height: 220px;
+        border: 1px solid rgba(255,255,255,.1);
+        border-radius: 50%;
+        content: "";
+        pointer-events: none;
+    }
+
+    .attendance-main {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        padding-bottom: 20px;
+    }
+
+    .attendance-copy { min-width: 0; }
+    .attendance-eyebrow {
+        margin: 0 0 .45rem;
+        color: #8ed8ee;
+        font-size: .68rem;
+        font-weight: 800;
+        letter-spacing: .14em;
+        text-transform: uppercase;
+    }
+
+    .attendance-title {
+        margin: 0;
+        color: #fff;
+        font-family: Georgia, 'Times New Roman', serif;
+        font-size: clamp(1.35rem, 3vw, 1.8rem);
+    }
+
+    .attendance-description {
+        max-width: 480px;
+        margin: .45rem 0 1rem;
+        color: #c3d2e1;
+        font-size: .84rem;
+    }
+
+    .attendance-open-button {
+        display: inline-flex;
+        align-items: center;
+        gap: .55rem;
+        min-height: 42px;
+        padding: .65rem .95rem;
+        border: 1px solid rgba(255,255,255,.24);
+        border-radius: 10px;
+        background: rgba(255,255,255,.1);
+        color: #fff;
+        font-size: .78rem;
+        font-weight: 750;
+        transition: background .2s ease, transform .2s ease;
+    }
+
+    .attendance-open-button:hover {
+        transform: translateY(-2px);
+        background: rgba(255,255,255,.18);
+        color: #fff;
+    }
+
+    .attendance-meter {
+        display: grid;
+        width: 112px;
+        height: 112px;
+        flex: 0 0 112px;
+        place-items: center;
+        border-radius: 50%;
+        background: conic-gradient(#67d0c0 var(--attendance-value), rgba(255,255,255,.16) 0);
+        box-shadow: 0 0 0 8px rgba(255,255,255,.04);
+        animation: attendanceMeter .85s .15s ease-out both;
+    }
+
+    .attendance-meter-inner {
+        display: grid;
+        width: 92px;
+        height: 92px;
+        align-content: center;
+        justify-items: center;
+        border-radius: 50%;
+        background: #173b60;
+    }
+
+    .attendance-meter strong { font-size: 1.35rem; line-height: 1.1; }
+    .attendance-meter span { margin-top: 4px; color: #c3d2e1; font-size: .65rem; }
+
+    .attendance-stats {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .attendance-stat {
+        min-width: 0;
+        padding: .75rem .85rem;
+        border: 1px solid rgba(255,255,255,.12);
+        border-radius: 11px;
+        background: rgba(255,255,255,.07);
+        animation: attendanceRise .45s ease-out both;
+    }
+
+    .attendance-stat:nth-child(2) { animation-delay: .06s; }
+    .attendance-stat:nth-child(3) { animation-delay: .12s; }
+    .attendance-stat:nth-child(4) { animation-delay: .18s; }
+    .attendance-stat span,
+    .attendance-stat strong { display: block; }
+    .attendance-stat span { overflow: hidden; color: #c3d2e1; font-size: .68rem; text-overflow: ellipsis; white-space: nowrap; }
+    .attendance-stat strong { margin-top: .2rem; color: #fff; font-size: 1.1rem; }
+
+    .attendance-modal-content {
+        overflow: hidden;
+        border: 0;
+        border-radius: 18px;
+        box-shadow: 0 24px 70px rgba(15, 23, 42, .24);
+    }
+
+    .attendance-modal-header {
+        padding: 1.15rem 1.35rem;
+        border: 0;
+        background: #132b47;
+        color: #fff;
+    }
+
+    .attendance-modal-header .modal-title {
+        font-family: Georgia, 'Times New Roman', serif;
+        font-size: 1.35rem;
+    }
+
+    .attendance-modal-header .btn-close { filter: invert(1); }
+    .attendance-modal-content .modal-body { padding: 1.15rem; background: #f7f9fc; }
+    .attendance-modal-note {
+        margin: 0 0 1rem;
+        padding: .75rem .85rem;
+        border: 1px solid #dce8f5;
+        border-radius: 10px;
+        background: #eff6fd;
+        color: #49627c;
+        font-size: .78rem;
+        line-height: 1.5;
+    }
+
+    .attendance-records { display: grid; gap: .7rem; }
+    .attendance-record {
+        display: grid;
+        grid-template-columns: 76px minmax(0, 1fr) auto;
+        align-items: center;
+        gap: .85rem;
+        padding: .85rem;
+        border: 1px solid #e5eaf1;
+        border-radius: 12px;
+        background: #fff;
+        animation: attendanceRise .4s ease-out both;
+    }
+
+    .attendance-record:nth-child(2) { animation-delay: .04s; }
+    .attendance-record:nth-child(3) { animation-delay: .08s; }
+    .attendance-record:nth-child(4) { animation-delay: .12s; }
+    .attendance-date {
+        display: grid;
+        min-height: 58px;
+        align-content: center;
+        justify-items: center;
+        border-radius: 10px;
+        background: #eff4fa;
+        color: #334e6b;
+        font-size: .68rem;
+        font-weight: 800;
+        text-align: center;
+    }
+
+    .attendance-date i { margin-bottom: 3px; color: #4774a3; font-size: 1rem; }
+    .attendance-record-copy { min-width: 0; }
+    .attendance-record-copy strong {
+        display: block;
+        overflow-wrap: anywhere;
+        color: #1d2939;
+        font-size: .84rem;
+    }
+    .attendance-record-copy small { color: #7d8795; font-size: .7rem; }
+    .attendance-record-state { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+    .attendance-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: .28rem .5rem;
+        border-radius: 999px;
+        font-size: .64rem;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+    .attendance-pill.present,
+    .attendance-pill.approved { background: #dcf5e9; color: #16885e; }
+    .attendance-pill.late,
+    .attendance-pill.pending { background: #fff3d6; color: #93670c; }
+    .attendance-pill.absent { background: #feeeee; color: #b42318; }
+    .attendance-pill.other { background: #eef1f5; color: #667085; }
+    .attendance-record-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 5px; }
+    .attendance-record-actions .btn { font-size: .69rem; }
+    .attendance-empty {
+        padding: 2rem 1rem;
+        border: 1px dashed #d4dde8;
+        border-radius: 12px;
+        color: #748093;
+        text-align: center;
+    }
+    .attendance-empty i { display: block; margin-bottom: .45rem; color: #9aa8b9; font-size: 1.6rem; }
+
+    @keyframes attendanceRise {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes attendanceMeter {
+        from { transform: scale(.85); opacity: .4; }
+        to { transform: scale(1); opacity: 1; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .attendance-overview, .attendance-meter, .attendance-stat, .attendance-record { animation: none; }
+        .attendance-open-button { transition: none; }
+    }
+
     /* Welcome Section */
     .welcome-header {
         margin-bottom: 1rem;
@@ -811,16 +1052,257 @@
     }
 
     /* Payment Modal */
+    .payment-modal-dialog {
+        max-width: 470px;
+    }
+
+    .modal.fade .payment-modal-dialog {
+        transform: translateY(18px) scale(.985);
+        transition: transform .28s cubic-bezier(.2, .75, .25, 1);
+    }
+
+    .modal.show .payment-modal-dialog {
+        transform: translateY(0) scale(1);
+    }
+
     .payment-modal {
-        border: none;
-        border-radius: var(--radius-lg);
-        box-shadow: var(--shadow-lg);
+        overflow: hidden;
+        border: 1px solid rgba(18, 38, 63, .08);
+        border-radius: 20px;
+        background: #fff;
+        box-shadow: 0 28px 80px rgba(13, 30, 52, .28);
+        animation: paymentModalIn .38s cubic-bezier(.2, .75, .25, 1) both;
+    }
+
+    .payment-modal__header {
+        display: flex;
+        align-items: center;
+        gap: .9rem;
+        padding: 1.15rem 1.35rem;
+        border: 0;
+        background: linear-gradient(118deg, #10243d, #174d63);
+        color: #fff;
+    }
+
+    .payment-modal__icon {
+        display: grid;
+        width: 42px;
+        height: 42px;
+        flex: 0 0 42px;
+        place-items: center;
+        border: 1px solid rgba(255, 255, 255, .22);
+        border-radius: 13px;
+        background: rgba(255, 255, 255, .12);
+        color: #b7eee0;
+        font-size: 1.1rem;
+    }
+
+    .payment-modal__heading {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .payment-modal__eyebrow {
+        display: block;
+        margin-bottom: .12rem;
+        color: #a4d8d2;
+        font-size: .64rem;
+        font-weight: 800;
+        letter-spacing: .13em;
+        text-transform: uppercase;
+    }
+
+    .payment-modal__header .modal-title {
+        margin: 0;
+        color: #fff;
+        font-size: 1.08rem;
+        font-weight: 750;
+        letter-spacing: -.02em;
+    }
+
+    .payment-modal__header .btn-close {
+        filter: invert(1);
+        opacity: .75;
+    }
+
+    .payment-modal__header .btn-close:hover {
+        opacity: 1;
+    }
+
+    .payment-modal__body {
+        padding: 1.3rem 1.35rem 1.15rem;
+        background: #f7f9fb;
+    }
+
+    .payment-modal__summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .5rem;
+        margin-bottom: 1.2rem;
+    }
+
+    .payment-modal__summary span {
+        display: inline-flex;
+        align-items: center;
+        min-height: 28px;
+        padding: .3rem .6rem;
+        border: 1px solid #e3eaf0;
+        border-radius: 999px;
+        background: #fff;
+        color: #536478;
+        font-size: .7rem;
+        font-weight: 650;
+    }
+
+    .payment-modal__summary span::before {
+        width: 6px;
+        height: 6px;
+        margin-right: .4rem;
+        border-radius: 50%;
+        background: #3a9d8f;
+        content: "";
+    }
+
+    @keyframes paymentModalIn {
+        from { opacity: .7; }
+        to { opacity: 1; }
+    }
+
+    .payment-modal__amount-label {
+        display: block;
+        margin-bottom: .5rem;
+        color: #25364b;
+        font-size: .8rem;
+        font-weight: 750;
+    }
+
+    .payment-modal__amount-wrap {
+        position: relative;
+    }
+
+    .payment-modal__amount-wrap .form-control {
+        min-height: 52px;
+        padding: .7rem 4.2rem .7rem .95rem;
+        border: 1px solid #d6e0e8;
+        border-radius: 12px;
+        background: #fff;
+        color: #142a40;
+        font-size: 1.16rem;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        box-shadow: 0 2px 6px rgba(18, 38, 63, .035);
+        transition: border-color .2s ease, box-shadow .2s ease;
+    }
+
+    .payment-modal__amount-wrap .form-control:focus {
+        border-color: #3a9d8f;
+        box-shadow: 0 0 0 4px rgba(58, 157, 143, .14);
+    }
+
+    .payment-modal__currency {
+        position: absolute;
+        top: 50%;
+        right: .9rem;
+        color: #718094;
+        font-size: .72rem;
+        font-weight: 800;
+        letter-spacing: .04em;
+        transform: translateY(-50%);
+        pointer-events: none;
+    }
+
+    .payment-modal__help {
+        display: block;
+        margin-top: .55rem;
+        color: #758398;
+        font-size: .72rem;
+    }
+
+    .payment-modal__error {
+        display: flex;
+        align-items: flex-start;
+        gap: .55rem;
+        margin: 1rem 0 0;
+        padding: .75rem .85rem;
+        border: 1px solid #f1c7c5;
+        border-radius: 11px;
+        background: #fff1f0;
+        color: #9c3430;
+        font-size: .78rem;
+        line-height: 1.45;
+    }
+
+    .payment-modal__footer {
+        display: flex;
+        align-items: center;
+        gap: .55rem;
+        padding: 1rem 1.35rem;
+        border-top: 1px solid #e9edf1;
+        background: #fff;
+    }
+
+    .payment-modal__secure-note {
+        display: flex;
+        align-items: center;
+        gap: .4rem;
+        margin-right: auto;
+        color: #78869a;
+        font-size: .67rem;
+    }
+
+    .payment-modal__secure-note i {
+        color: #388d81;
+    }
+
+    .payment-modal__submit {
+        min-height: 42px;
+        padding-inline: 1rem;
+        border: 0;
+        border-radius: 10px;
+        background: #176f68;
+        font-size: .78rem;
+        font-weight: 750;
+        transition: transform .18s ease, background .18s ease, box-shadow .18s ease;
+    }
+
+    .payment-modal__submit:hover:not(:disabled) {
+        transform: translateY(-1px);
+        background: #125b56;
+        box-shadow: 0 7px 16px rgba(23, 111, 104, .2);
+    }
+
+    .payment-modal__submit:disabled {
+        cursor: wait;
+        opacity: .78;
     }
 
     .payment-form label {
         font-size: 0.875rem;
         font-weight: 500;
         color: var(--text-primary);
+    }
+
+    @media (max-width: 575px) {
+        .payment-modal-dialog { margin: .75rem; }
+        .payment-modal__header,
+        .payment-modal__body { padding-inline: 1rem; }
+        .payment-modal__footer {
+            align-items: stretch;
+            flex-direction: column-reverse;
+            padding: 1rem;
+        }
+        .payment-modal__secure-note { margin: 0; justify-content: center; }
+        .payment-modal__footer .btn { width: 100%; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .modal.fade .payment-modal-dialog,
+        .payment-modal,
+        .payment-modal__amount-wrap .form-control,
+        .payment-modal__submit {
+            animation: none;
+            transition: none;
+        }
     }
 
     /* Responsive Styles */
@@ -948,6 +1430,22 @@
     }
 
     @media (max-width: 575.98px) {
+        .attendance-overview { padding: 1.1rem; border-radius: 14px; }
+        .attendance-main { align-items: flex-start; gap: 12px; }
+        .attendance-description { font-size: .77rem; }
+        .attendance-meter { width: 84px; height: 84px; flex-basis: 84px; }
+        .attendance-meter-inner { width: 68px; height: 68px; }
+        .attendance-meter strong { font-size: 1.05rem; }
+        .attendance-meter span { font-size: .58rem; }
+        .attendance-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+        .attendance-stat { padding: .6rem .65rem; }
+        .attendance-stat span { font-size: .62rem; }
+        .attendance-modal-content .modal-body { padding: .85rem; }
+        .attendance-modal-header { padding: .9rem 1rem; }
+        .attendance-record { grid-template-columns: 54px minmax(0, 1fr); align-items: start; gap: .65rem; padding: .7rem; }
+        .attendance-date { min-height: 52px; font-size: .62rem; }
+        .attendance-record-actions { grid-column: 2; justify-content: flex-start; }
+        .attendance-record-actions .btn { flex: 1 1 auto; }
         .quick-access-grid {
             grid-template-columns: 1fr;
             gap: .65rem;
@@ -976,6 +1474,12 @@
     }
 
     @media (max-width: 360px) {
+        .attendance-main { flex-direction: column-reverse; }
+        .attendance-meter { position: absolute; top: 0; right: 0; }
+        .attendance-copy { padding-right: 88px; }
+        .attendance-title { font-size: 1.25rem; }
+        .attendance-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .attendance-stat span { white-space: normal; }
         .countdown-display {
             gap: 0.375rem;
         }
@@ -1137,6 +1641,11 @@
                 <span class="quick-access-copy"><strong>Test Skills</strong><span>Check what you have learned</span></span>
                 <i class="bi bi-arrow-up-right quick-access-arrow" aria-hidden="true"></i>
             </a>
+            <a class="quick-access-card" href="{{ route('student.assignments.index') }}">
+                <span class="quick-access-icon" aria-hidden="true"><i class="bi bi-journal-check"></i></span>
+                <span class="quick-access-copy"><strong>Assignments</strong><span>Check deadlines and submit your work</span></span>
+                <i class="bi bi-arrow-up-right quick-access-arrow" aria-hidden="true"></i>
+            </a>
             <a class="quick-access-card" href="{{ route('student.report-cards.index') }}">
                 <span class="quick-access-icon" aria-hidden="true"><i class="bi bi-award"></i></span>
                 <span class="quick-access-copy"><strong>Report cards</strong><span>View your academic results</span></span>
@@ -1157,74 +1666,84 @@
 
     <!-- Attendance Details Modal -->
     <div class="modal fade" id="attendanceDetailsModal" tabindex="-1" aria-labelledby="attendanceDetailsModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content attendance-modal-content">
+                <div class="modal-header attendance-modal-header">
                     <h5 class="modal-title" id="attendanceDetailsModalLabel">
-                        <i class="bi bi-calendar-check me-2"></i>Attendance Details
+                        <i class="bi bi-calendar2-check me-2"></i>Attendance history
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p class="text-muted small">Teacher-recorded attendance appears here immediately. Entries marked pending are waiting for DOS approval and are not yet included in your attendance percentage.</p>
-                    <div class="table-responsive">
-                        <table class="table table-bordered align-middle">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Lesson</th>
-                                    <th>Teacher</th>
-                                    <th>Status</th>
-                                    <th>Review</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($attendanceRecords as $attendance)
-                                    <tr>
-                                        <td>{{ $attendance->marked_at ? $attendance->marked_at->format('d M Y H:i') : ($attendance->date ? $attendance->date->format('d M Y') : '-') }}</td>
-                                        <td>{{ $attendance->lesson->title ?? '-' }}</td>
-                                        <td>{{ $attendance->lesson->teacher->teacher_name ?? '-' }}</td>
-                                        <td>
-                                            @if(in_array(strtoupper((string) $attendance->status), ['P', 'PRESENT'], true))
-                                                <span class="badge bg-success">Present</span>
-                                            @elseif(in_array(strtoupper((string) $attendance->status), ['L', 'LATE'], true))
-                                                <span class="badge bg-warning text-dark">Late</span>
-                                            @elseif(strtoupper((string) $attendance->status) === 'AR')
-                                                <span class="badge bg-danger">Absent with reason</span>
-                                            @elseif(in_array(strtoupper((string) $attendance->status), ['A', 'ABSENT'], true))
-                                                <span class="badge bg-danger">Absent</span>
-                                            @else
-                                                <span class="badge bg-secondary">{{ $attendance->status }}</span>
-                                            @endif
-                                        </td>
-                                        <td>
-                                            @if($attendance->approved)
-                                                <span class="badge bg-success">Approved</span>
-                                            @else
-                                                <span class="badge bg-warning text-dark">Pending DOS approval</span>
-                                            @endif
-                                        </td>
-                                        <td>
-                                            @if(in_array(strtoupper((string) $attendance->status), ['P', 'L', 'PRESENT', 'LATE'], true))
-                                                <a href="{{ route('lesson.show', $attendance->lesson_id) }}" class="btn btn-sm btn-primary">View Lesson</a>
-                                            @else
-                                                @if($attendance->lesson && $attendance->lesson->quiz_link)
-                                                    <a href="{{ $attendance->lesson->quiz_link }}" class="btn btn-sm btn-warning" target="_blank">Class Quiz</a>
-                                                @endif
-                                                @if($attendance->lesson && $attendance->lesson->marking_guide_link)
-                                                    <a href="{{ $attendance->lesson->marking_guide_link }}" class="btn btn-sm btn-info" target="_blank">Marking Guide</a>
-                                                @endif
-                                            @endif
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="6" class="text-center text-muted py-4">No attendance has been recorded yet.</td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
+                    <p class="attendance-modal-note">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Attendance is shown as soon as your teacher records it. Pending records are not included in your percentage until approved.
+                    </p>
+                    <div class="attendance-records">
+                        @forelse($attendanceRecords as $recordIndex => $attendance)
+                            @php
+                                $statusCode = strtoupper((string) $attendance->status);
+                                if (in_array($statusCode, ['P', 'PRESENT'], true)) {
+                                    $attendanceLabel = 'Present';
+                                    $attendanceClass = 'present';
+                                    $attendanceIcon = 'bi-check-circle-fill';
+                                } elseif (in_array($statusCode, ['L', 'LATE'], true)) {
+                                    $attendanceLabel = 'Late';
+                                    $attendanceClass = 'late';
+                                    $attendanceIcon = 'bi-clock-fill';
+                                } elseif ($statusCode === 'AR') {
+                                    $attendanceLabel = 'Absent with reason';
+                                    $attendanceClass = 'absent';
+                                    $attendanceIcon = 'bi-person-exclamation';
+                                } elseif (in_array($statusCode, ['A', 'ABSENT'], true)) {
+                                    $attendanceLabel = 'Absent';
+                                    $attendanceClass = 'absent';
+                                    $attendanceIcon = 'bi-person-x-fill';
+                                } else {
+                                    $attendanceLabel = ucfirst(strtolower($attendance->status));
+                                    $attendanceClass = 'other';
+                                    $attendanceIcon = 'bi-question-circle';
+                                }
+                            @endphp
+                            <article class="attendance-record" style="animation-delay: {{ min($recordIndex, 8) * 35 }}ms">
+                                <div class="attendance-date">
+                                    <i class="bi bi-calendar-event"></i>
+                                    {{ $attendance->date ? $attendance->date->format('d M Y') : '-' }}
+                                </div>
+                                <div class="attendance-record-copy">
+                                    <strong>{{ $attendance->lesson->title ?? 'Class session' }}</strong>
+                                    <small>
+                                        Marked by {{ $attendance->marker_name ?? 'Not recorded' }}
+                                        {{ $attendance->marked_at ? ' · ' . $attendance->marked_at->format('H:i') : '' }}
+                                    </small>
+                                    <div class="attendance-record-state">
+                                        <span class="attendance-pill {{ $attendanceClass }}"><i class="bi {{ $attendanceIcon }}"></i>{{ $attendanceLabel }}</span>
+                                        @if($attendance->approved)
+                                            <span class="attendance-pill approved"><i class="bi bi-patch-check-fill"></i>Approved</span>
+                                        @else
+                                            <span class="attendance-pill pending"><i class="bi bi-hourglass-split"></i>Pending review</span>
+                                        @endif
+                                    </div>
+                                </div>
+                                <div class="attendance-record-actions">
+                                    @if(in_array($statusCode, ['P', 'L', 'PRESENT', 'LATE'], true))
+                                        <a href="{{ route('lesson.show', $attendance->lesson_id) }}" class="btn btn-sm btn-outline-primary">View lesson</a>
+                                    @else
+                                        @if($attendance->lesson && $attendance->lesson->quiz_link)
+                                            <a href="{{ $attendance->lesson->quiz_link }}" class="btn btn-sm btn-outline-warning" target="_blank" rel="noopener noreferrer">Class quiz</a>
+                                        @endif
+                                        @if($attendance->lesson && $attendance->lesson->marking_guide_link)
+                                            <a href="{{ $attendance->lesson->marking_guide_link }}" class="btn btn-sm btn-outline-info" target="_blank" rel="noopener noreferrer">Marking guide</a>
+                                        @endif
+                                    @endif
+                                </div>
+                            </article>
+                        @empty
+                            <div class="attendance-empty">
+                                <i class="bi bi-calendar2-x"></i>
+                                No attendance has been recorded yet.
+                            </div>
+                        @endforelse
                     </div>
                 </div>
             </div>
@@ -1265,20 +1784,40 @@
         </div>
     @endif
 
-    <!-- Attendance Overview -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="alert alert-primary d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-calendar-check"></i>
-                    <span>Attendance Percentage: <strong>{{ $attendancePercent }}%</strong></span>
-                </div>
-                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#attendanceDetailsModal">
-                    View Details
+    @php
+        $dashboardAttendance = $approvedAttendances ?? collect();
+        $dashboardPresentCount = $dashboardAttendance->filter(fn ($record) =>
+            in_array(strtoupper((string) $record->status), ['P', 'L', 'PRESENT', 'LATE'], true)
+        )->count();
+        $dashboardAbsentCount = $dashboardAttendance->filter(fn ($record) =>
+            in_array(strtoupper((string) $record->status), ['A', 'ABSENT', 'AR'], true)
+        )->count();
+        $dashboardPendingCount = $attendanceRecords->where('approved', false)->count();
+    @endphp
+    <section class="attendance-overview" aria-labelledby="attendanceOverviewTitle">
+        <div class="attendance-main">
+            <div class="attendance-copy">
+                <p class="attendance-eyebrow">Class engagement</p>
+                <h2 class="attendance-title" id="attendanceOverviewTitle">Your attendance</h2>
+                <p class="attendance-description">Keep track of the classes you attend and stay up to date with your learning.</p>
+                <button type="button" class="attendance-open-button" data-bs-toggle="modal" data-bs-target="#attendanceDetailsModal">
+                    <i class="bi bi-clock-history"></i>Explore attendance history
                 </button>
             </div>
+            <div class="attendance-meter" style="--attendance-value: {{ min(max((float) $attendancePercent, 0), 100) }}%">
+                <div class="attendance-meter-inner">
+                    <strong>{{ $attendancePercent }}%</strong>
+                    <span>Attendance</span>
+                </div>
+            </div>
         </div>
-    </div>
+        <div class="attendance-stats" aria-label="Attendance statistics">
+            <div class="attendance-stat"><span>Approved sessions</span><strong>{{ $totalDays }}</strong></div>
+            <div class="attendance-stat"><span>Attended</span><strong>{{ $dashboardPresentCount }}</strong></div>
+            <div class="attendance-stat"><span>Absent</span><strong>{{ $dashboardAbsentCount }}</strong></div>
+            <div class="attendance-stat"><span>Pending review</span><strong>{{ $dashboardPendingCount }}</strong></div>
+        </div>
+    </section>
 
     <!-- Student Information -->
     <div class="row mb-4">
@@ -1491,21 +2030,27 @@
         }
         if (payAmountInput) {
             payAmountInput.value = remaining;
+            payAmountInput.max = remaining;
         }
 
         if (selectedFeeLabel) {
-            selectedFeeLabel.textContent = 'Fee: ' + formatFeeType(feeType);
+            selectedFeeLabel.textContent = formatFeeType(feeType);
         }
 
         if (selectedTermLabel) {
-            selectedTermLabel.textContent = 'Term: ' + (getTermName(termId) || 'Selected term');
+            selectedTermLabel.textContent = getTermName(termId) || 'Selected term';
         }
+
+        const errorDiv = document.getElementById('payFeeError');
+        const errorMessage = document.getElementById('payFeeErrorMessage');
+        if (errorMessage) errorMessage.textContent = '';
+        if (errorDiv) errorDiv.classList.add('d-none');
 
         const modalElement = document.getElementById('payFeeModal');
         if (modalElement) {
             try {
                 if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-                    new bootstrap.Modal(modalElement).show();
+                    bootstrap.Modal.getOrCreateInstance(modalElement).show();
                 } else {
                     modalElement.classList.add('show');
                     modalElement.style.display = 'block';
@@ -1518,9 +2063,6 @@
                 console.error('Error showing payment modal:', error);
                 alert('Error opening payment modal. Please try again.');
             }
-        } else {
-            console.error('Payment modal not found');
-            alert('Payment modal not found. Please refresh the page.');
         }
     }
 
@@ -2081,40 +2623,48 @@
     </div>
 
     <!-- Payment Modal -->
-    <div class="modal fade" id="payFeeModal" tabindex="-1" aria-labelledby="payFeeModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
+    <div class="modal fade" id="payFeeModal" tabindex="-1" aria-labelledby="payFeeModalLabel" aria-describedby="payFeeModalMeta payFeeHelp" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered payment-modal-dialog">
             <div class="modal-content payment-modal">
                 <form id="payFeeForm" action="{{ route('student.fees.pay.process') }}" method="POST">
                     @csrf
                     <input type="hidden" name="fee_type" id="feeTypeInput">
                     <input type="hidden" name="term_id" id="termIdInput">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="payFeeModalLabel">
-                            <i class="bi bi-credit-card me-2"></i>Pay Fee
-                        </h5>
+                    <div class="modal-header payment-modal__header">
+                        <span class="payment-modal__icon" aria-hidden="true"><i class="bi bi-credit-card"></i></span>
+                        <div class="payment-modal__heading">
+                            <span class="payment-modal__eyebrow">Secure checkout</span>
+                            <h5 class="modal-title" id="payFeeModalLabel">Pay your fee</h5>
+                        </div>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                    <div class="modal-body">
-                        <div class="mb-2 text-muted small" id="payFeeModalMeta">
-                            <span id="selectedFeeLabel">Fee: </span>
-                            <span id="selectedTermLabel">Term: </span>
+                    <div class="modal-body payment-modal__body">
+                        <div class="payment-modal__summary" id="payFeeModalMeta">
+                            <span id="selectedFeeLabel">Select a fee</span>
+                            <span id="selectedTermLabel">Selected term</span>
                         </div>
                         <div class="payment-form">
                             <div class="mb-3">
-                                <label for="payAmountInput" class="form-label">
-                                    <i class="bi bi-currency-exchange me-1"></i>Amount (Rwf)
-                                </label>
-                                <input type="number" class="form-control form-control-lg" id="payAmountInput" name="pay_amount" min="1" required>
+                                <label for="payAmountInput" class="payment-modal__amount-label">Amount to pay</label>
+                                <div class="payment-modal__amount-wrap">
+                                    <input type="number" class="form-control" id="payAmountInput" name="pay_amount" min="1" step="1" inputmode="numeric" required>
+                                    <span class="payment-modal__currency">RWF</span>
+                                </div>
+                                <small class="payment-modal__help" id="payFeeHelp">You will complete payment on Flutterwave's secure checkout.</small>
                             </div>
-                            <div id="payFeeError" class="alert alert-danger d-none"></div>
+                            <div id="payFeeError" class="payment-modal__error d-none" role="alert" aria-live="polite">
+                                <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+                                <span id="payFeeErrorMessage"></span>
+                            </div>
                         </div>
                     </div>
-                    <div class="modal-footer">
+                    <div class="modal-footer payment-modal__footer">
+                        <span class="payment-modal__secure-note"><i class="bi bi-shield-lock" aria-hidden="true"></i>Encrypted payment via Flutterwave</span>
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                            <i class="bi bi-x-circle me-1"></i>Cancel
+                            Cancel
                         </button>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-credit-card me-1"></i>Process Payment
+                        <button type="submit" class="btn btn-primary payment-modal__submit">
+                            <i class="bi bi-arrow-up-right-circle me-1" aria-hidden="true"></i>Continue to pay
                         </button>
                     </div>
                 </form>
@@ -2130,15 +2680,28 @@
 <script>
 function showPaymentModal(button) {
     const feeTypeInput = document.getElementById('feeTypeInput');
+    const termIdInput  = document.getElementById('termIdInput');
     const amountInput  = document.getElementById('payAmountInput');
-    if (feeTypeInput) feeTypeInput.value = button.getAttribute('data-feetype');
-    if (amountInput)  amountInput.value  = button.getAttribute('data-amount');
+    const feeType = button.getAttribute('data-feetype');
+    const termId = button.getAttribute('data-termid');
+    const amount = button.getAttribute('data-amount');
+    if (feeTypeInput) feeTypeInput.value = feeType;
+    if (termIdInput) termIdInput.value = termId || '';
+    if (amountInput) {
+        amountInput.value = amount;
+        amountInput.max = amount;
+    }
+
+    const selectedFeeLabel = document.getElementById('selectedFeeLabel');
+    const selectedTermLabel = document.getElementById('selectedTermLabel');
+    if (selectedFeeLabel) selectedFeeLabel.textContent = formatFeeType(feeType);
+    if (selectedTermLabel) selectedTermLabel.textContent = button.getAttribute('data-term-label') || 'Selected term';
 
     const modalElement = document.getElementById('payFeeModal');
     if (modalElement) {
         try {
             if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-                new bootstrap.Modal(modalElement).show();
+                bootstrap.Modal.getOrCreateInstance(modalElement).show();
             } else {
                 modalElement.classList.add('show');
                 modalElement.style.display = 'block';
@@ -2178,12 +2741,13 @@ document.addEventListener('DOMContentLoaded', function () {
         e.preventDefault();
         var form      = this;
         var errorDiv  = document.getElementById('payFeeError');
+        var errorMessage = document.getElementById('payFeeErrorMessage');
         var submitBtn = form.querySelector('button[type="submit"]');
 
-        submitBtn.innerHTML = '<i class="bi bi-arrow-clockwise me-1"></i>Processing...';
+        submitBtn.innerHTML = '<i class="bi bi-arrow-clockwise me-1"></i>Connecting to Flutterwave...';
         submitBtn.disabled  = true;
         errorDiv.classList.add('d-none');
-        errorDiv.innerHTML = '';
+        errorMessage.textContent = '';
 
         fetch(form.action, {
             method: 'POST',
@@ -2199,21 +2763,30 @@ document.addEventListener('DOMContentLoaded', function () {
                 term_id:    document.getElementById('termIdInput').value || null
             })
         })
-        .then(r => r.json())
-        .then(data => {
+        .then(async response => {
+            let data;
+            try {
+                data = await response.json();
+            } catch (error) {
+                throw new Error('The payment service returned an unreadable response. Please try again.');
+            }
+
+            if (!response.ok) {
+                throw new Error(data.message || `Payment could not be started (HTTP ${response.status}).`);
+            }
+
             if (data.payment_link) {
                 window.location.href = data.payment_link;
-            } else {
-                errorDiv.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i>' + (data.message || 'Payment failed.');
-                errorDiv.classList.remove('d-none');
+                return;
             }
+            throw new Error(data.message || 'Payment could not be started. Please try again.');
         })
-        .catch(() => {
-            errorDiv.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i>Payment failed. Please try again.';
+        .catch(error => {
+            errorMessage.textContent = error.message || 'Payment failed. Please try again.';
             errorDiv.classList.remove('d-none');
         })
         .finally(() => {
-            submitBtn.innerHTML = '<i class="bi bi-credit-card me-1"></i>Process Payment';
+            submitBtn.innerHTML = '<i class="bi bi-arrow-up-right-circle me-1" aria-hidden="true"></i>Continue to pay';
             submitBtn.disabled  = false;
         });
     });

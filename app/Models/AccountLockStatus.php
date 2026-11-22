@@ -49,6 +49,8 @@ class AccountLockStatus extends Model
             return Staff::find($this->user_id);
         } elseif ($this->user_type === 'admin') {
             return \App\Models\Admin::find($this->user_id);
+        } elseif ($this->user_type === 'teacher') {
+            return \App\Models\Teacher::find($this->user_id);
         }
         return null;
     }

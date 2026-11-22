@@ -371,8 +371,8 @@ document.addEventListener('keydown', function(e) {
 
 // --- Cheating detection: Tab switch or blur = immediate disqualify ---
 function disqualify() {
-    alert('You have been disqualified for leaving the exam window.');
-    window.location.href = "{{ route('student.exams.disqualified', $exam->id) }}";
+    // Redirect immediately without alert to avoid blocking
+    window.location.replace("{{ route('student.exams.disqualified', $exam->id) }}");
 }
 window.onblur = disqualify;
 document.addEventListener('visibilitychange', function() {

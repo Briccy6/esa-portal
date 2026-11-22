@@ -111,7 +111,7 @@ class AccountLockingSettingsController extends Controller
     public function unlockAccount(Request $request)
     {
         $request->validate([
-            'user_type' => 'required|in:staff,student,admin',
+            'user_type' => 'required|in:staff,student,admin,teacher',
             'user_id' => 'required|integer',
             'notes' => 'nullable|string',
         ]);

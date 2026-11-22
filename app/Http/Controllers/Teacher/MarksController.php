@@ -268,7 +268,7 @@ public function index()
                   ->whereColumn('lbc.course_id', 'marks.course_id')
                   ->where('lbc.teacher_id', $teacher->id);
             })
-            ->with(['student', 'course', 'branch', 'lesson', 'term'])
+            ->with(['student', 'course', 'branch', 'lesson', 'term', 'assignment'])
             ->orderBy('term_id')
             ->orderBy('course_id')
             ->orderBy('lesson_id')
@@ -292,7 +292,9 @@ public function index()
             }
             $lessonId = $mark->lesson_id;
             $lessonTitle = $mark->lesson->title;
-            $testDate = $mark->test_date ?: 'no-date'; // Handle empty dates
+            $testDate = $mark->assignment_id
+                ? 'assignment-' . $mark->assignment_id
+                : ($mark->test_date ?: 'no-date');
             $studentId = $mark->student_id;
             
             // Collect unique students
@@ -318,6 +320,7 @@ public function index()
                 $groupedMarks[$termId]['lessons'][$lessonId] = [
                     'title' => $lessonTitle,
                     'dates' => [],
+                    'date_labels' => [],
                     'students' => []
                 ];
             }
@@ -325,6 +328,9 @@ public function index()
             // Collect unique dates for this lesson
             if (!isset($groupedMarks[$termId]['lessons'][$lessonId]['dates'][$testDate])) {
                 $groupedMarks[$termId]['lessons'][$lessonId]['dates'][$testDate] = [];
+                $groupedMarks[$termId]['lessons'][$lessonId]['date_labels'][$testDate] = $mark->assignment_id
+                    ? $mark->assignment->title
+                    : null;
             }
             
             // Store mark for this student on this date

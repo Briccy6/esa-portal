@@ -147,9 +147,9 @@ class MarksController extends Controller
             ->selectRaw(
                 'COUNT(*) as total_marks, ' .
                 'COALESCE(SUM(CASE WHEN assessment_type = ? THEN 1 ELSE 0 END), 0) as exam_marks, ' .
-                'COALESCE(SUM(CASE WHEN assessment_type = ? THEN 1 ELSE 0 END), 0) as test_marks, ' .
+                'COALESCE(SUM(CASE WHEN assessment_type IN (?, ?) THEN 1 ELSE 0 END), 0) as test_marks, ' .
                 'AVG(value) as average_score, MAX(value) as highest_score, MIN(value) as lowest_score',
-                ['exam', 'test']
+                ['exam', 'test', 'assignment']
             )
             ->first()
             ->getAttributes();
@@ -178,6 +178,8 @@ class MarksController extends Controller
 
         if ($mark->assessment_type === 'test') {
             $sessionMarksQuery->whereDate('test_date', $mark->test_date);
+        } elseif ($mark->assessment_type === 'assignment') {
+            $sessionMarksQuery->where('assignment_id', $mark->assignment_id);
         } else {
             $sessionMarksQuery->where('exam_id', $mark->exam_id);
         }
@@ -379,7 +381,7 @@ class MarksController extends Controller
                 'highest_score' => $marks->max('value'),
                 'lowest_score' => $marks->min('value'),
                 'exam_count' => $marks->where('assessment_type', 'exam')->count(),
-                'test_count' => $marks->where('assessment_type', 'test')->count(),
+                'test_count' => $marks->whereIn('assessment_type', ['test', 'assignment'])->count(),
             ];
 
             // Group by course for better organization
@@ -403,7 +405,7 @@ class MarksController extends Controller
                     'count' => $termMarks->count(),
                     'average' => round($termAverage, 2),
                     'exam_count' => $termMarks->where('assessment_type', 'exam')->count(),
-                    'test_count' => $termMarks->where('assessment_type', 'test')->count(),
+                    'test_count' => $termMarks->whereIn('assessment_type', ['test', 'assignment'])->count(),
                     'highest' => $termMarks->max('value'),
                     'lowest' => $termMarks->min('value'),
                 ];
@@ -637,9 +639,9 @@ class MarksController extends Controller
                 $subject->credits = 3;
                 
                 // Tests: pool to one score out of 100 (sum marks / sum max * 100)
-                $testMarks = $lessonMarks->where('assessment_type', 'test');
+                $testMarks = $lessonMarks->whereIn('assessment_type', ['test', 'assignment']);
                 $subject->test_average = $testMarks->isNotEmpty()
-                    ? AssessmentMarkMath::pooledTestPercentFromMarksCollection($testMarks)
+                    ? AssessmentMarkMath::pooledTestPercentFromMarks($testMarks)
                     : 0;
 
                 // Exam: each row on its scale → % then mean (matches report card generation)
@@ -705,9 +707,9 @@ class MarksController extends Controller
                 
                 $classStudentLessonMarks = $classStudentMarks->groupBy('lesson_id');
                 foreach ($classStudentLessonMarks as $clessonId => $clessonMarks) {
-                    $ctestMarks = $clessonMarks->where('assessment_type', 'test');
+                    $ctestMarks = $clessonMarks->whereIn('assessment_type', ['test', 'assignment']);
                     $ctestAvg = $ctestMarks->isNotEmpty()
-                        ? AssessmentMarkMath::pooledTestPercentFromMarksCollection($ctestMarks)
+                        ? AssessmentMarkMath::pooledTestPercentFromMarks($ctestMarks)
                         : 0;
 
                     $cexamMarks = $clessonMarks->where('assessment_type', 'exam');
