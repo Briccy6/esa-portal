@@ -423,6 +423,26 @@
 @endsection
 
 @section('scripts')
+<style>
+#lessonDetailsModal .modal-body {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+#lessonDetailsModal .modal-dialog {
+    max-height: 90vh;
+}
+
+#currentAssignments {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+#newAssignments {
+    max-height: 400px;
+    overflow-y: auto;
+}
+</style>
 <script>
 (() => {
     const branches = @json($branches);
