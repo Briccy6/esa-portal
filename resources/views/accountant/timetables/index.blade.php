@@ -1,6 +1,8 @@
-@extends('accountant.partials.theme')
+@extends('staff.partials.sidebar_sec')
 
 @section('title', 'Timetables')
+
+@include('accountant.partials.theme')
 
 @section('content')
 <style>
