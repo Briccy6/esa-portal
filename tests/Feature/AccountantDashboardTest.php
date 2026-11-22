@@ -138,6 +138,16 @@ class AccountantDashboardTest extends TestCase
     }
 
     /** @test */
+    public function accountant_can_load_pending_teacher_payments_as_json()
+    {
+        $response = $this->actingAs($this->accountant, 'staff')
+            ->get(route('staff.accountant.teacher-payments.pending'));
+
+        $response->assertOk()
+            ->assertExactJson([]);
+    }
+
+    /** @test */
     public function admin_can_access_accountant_routes()
     {
         // Admin role should also have access
