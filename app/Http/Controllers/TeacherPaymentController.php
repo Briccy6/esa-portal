@@ -33,7 +33,7 @@ class TeacherPaymentController extends Controller
      */
     public function show($id)
     {
-        $payment = TeacherDailyPayment::with(['teacher', 'teacherDaily'])->findOrFail($id);
+        $payment = TeacherDailyPayment::with(['teacher', 'teacherDaily.course', 'teacherDaily.lesson'])->findOrFail($id);
         return view('accountant.teacher-payments.show', compact('payment'));
     }
 

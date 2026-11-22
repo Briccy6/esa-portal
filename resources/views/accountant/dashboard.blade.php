@@ -21,9 +21,128 @@
         opacity: .045;
         pointer-events: none;
     }
+    .accountant-payment-modal .modal-content {
+        overflow: hidden;
+        border: 1px solid rgba(255,255,255,.22);
+        border-radius: 20px;
+        box-shadow: 0 24px 70px rgba(15, 23, 42, .24);
+    }
+    .accountant-payment-modal__header {
+        display: flex;
+        align-items: flex-start;
+        gap: .9rem;
+        padding: 1.25rem 1.4rem;
+        border: 0;
+        background: linear-gradient(120deg, #14233a, #205f62);
+        color: #fff;
+    }
+    .accountant-payment-modal__icon {
+        display: grid;
+        width: 44px;
+        height: 44px;
+        flex: 0 0 44px;
+        place-items: center;
+        border: 1px solid rgba(255,255,255,.2);
+        border-radius: 13px;
+        background: rgba(255,255,255,.1);
+        color: #f0b29b;
+        font-size: 1.1rem;
+    }
+    .accountant-payment-modal__copy { min-width: 0; flex: 1; }
+    .accountant-payment-modal__eyebrow {
+        display: block;
+        margin-bottom: .2rem;
+        color: #f0b29b;
+        font-size: .64rem;
+        font-weight: 800;
+        letter-spacing: .13em;
+        text-transform: uppercase;
+    }
+    .accountant-payment-modal__header .modal-title { color: #fff; font-size: 1.05rem; font-weight: 800; }
+    .accountant-payment-modal__subtitle { margin: .25rem 0 0; color: rgba(255,255,255,.75); font-size: .78rem; }
+    .accountant-payment-modal__count {
+        flex: 0 0 auto;
+        padding: .38rem .65rem;
+        border: 1px solid rgba(255,255,255,.18);
+        border-radius: 999px;
+        background: rgba(255,255,255,.09);
+        color: #fff;
+        font-size: .7rem;
+        font-weight: 800;
+    }
+    .accountant-payment-modal .modal-body { max-height: min(62vh, 620px); overflow-y: auto; padding: 1.15rem 1.35rem; background: #f6f8fa; }
+    .accountant-payment-modal__summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: .85rem 1rem;
+        margin-bottom: .8rem;
+        border: 1px solid #e6e9ee;
+        border-radius: 12px;
+        background: #fff;
+    }
+    .accountant-payment-modal__summary-label { display: block; color: #728096; font-size: .69rem; font-weight: 700; }
+    .accountant-payment-modal__summary strong { display: block; margin-top: .15rem; color: #17243b; font-size: 1.15rem; font-weight: 850; }
+    .accountant-pending-payment {
+        display: grid;
+        grid-template-columns: minmax(0, 1.7fr) repeat(3, minmax(95px, .75fr));
+        align-items: center;
+        gap: .75rem;
+        padding: .85rem 1rem;
+        margin-bottom: .6rem;
+        border: 1px solid #e6e9ee;
+        border-radius: 12px;
+        background: #fff;
+        transition: border-color .16s ease, box-shadow .16s ease;
+    }
+    .accountant-pending-payment:hover { border-color: #cbd6d9; box-shadow: 0 5px 14px rgba(23,36,59,.05); }
+    .accountant-pending-payment__teacher { display: flex; min-width: 0; align-items: center; gap: .65rem; }
+    .accountant-pending-payment__avatar {
+        display: grid;
+        width: 37px;
+        height: 37px;
+        flex: 0 0 37px;
+        place-items: center;
+        border-radius: 11px;
+        background: #edf5f4;
+        color: #286d6b;
+    }
+    .accountant-pending-payment__teacher-copy { min-width: 0; }
+    .accountant-pending-payment__name { display: block; overflow: hidden; color: #17243b; font-size: .8rem; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+    .accountant-pending-payment__phone { display: inline-block; margin-top: .15rem; color: #738096; font-size: .7rem; text-decoration: none; }
+    .accountant-pending-payment__phone:hover { color: #205f62; text-decoration: underline; }
+    .accountant-pending-payment__field-label { display: block; color: #8993a3; font-size: .61rem; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; }
+    .accountant-pending-payment__field-value { display: block; margin-top: .2rem; color: #334056; font-size: .75rem; font-weight: 750; }
+    .accountant-pending-payment__amount { color: #205f62; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .accountant-payment-modal .modal-footer { gap: .5rem; padding: 1rem 1.35rem; border-top: 1px solid #e9edf1; background: #fff; }
+    .accountant-payment-modal__footer-note { margin-right: auto; color: #7b8698; font-size: .72rem; }
+    .accountant-payment-modal__process {
+        display: inline-flex;
+        min-height: 42px;
+        align-items: center;
+        gap: .45rem;
+        padding: .62rem .9rem;
+        border: 1px solid #205f62;
+        border-radius: 9px;
+        background: #205f62;
+        color: #fff;
+        font-size: .76rem;
+        font-weight: 800;
+        text-decoration: none;
+    }
+    .accountant-payment-modal__process:hover { border-color: #174b4d; background: #174b4d; color: #fff; }
     @media (max-width: 575.98px) {
         .accountant-dashboard .chart-wrap { height: 260px; }
         .accountant-dashboard .dashboard-watermark { width: 52vw; right: -10%; top: 35%; }
+        .accountant-payment-modal__header { flex-wrap: wrap; padding: 1rem; }
+        .accountant-payment-modal__count { margin-left: 3.3rem; }
+        .accountant-payment-modal .modal-body { padding: .8rem; }
+        .accountant-pending-payment { grid-template-columns: 1fr 1fr; gap: .7rem; padding: .8rem; }
+        .accountant-pending-payment__teacher { grid-column: 1 / -1; }
+        .accountant-payment-modal .modal-footer { align-items: stretch; flex-direction: column; padding: .85rem; }
+        .accountant-payment-modal__footer-note { margin-right: 0; }
+        .accountant-payment-modal__process, .accountant-payment-modal .btn { width: 100%; justify-content: center; }
     }
 </style>
 @endpush
@@ -1135,63 +1254,122 @@ function filterByPaymentPercentage() {
 // Load pending teacher payments for accountant
 async function loadPendingTeacherPayments() {
     try {
-        const response = await fetch('{{ route('staff.accountant.teacher-payments.pending') }}');
-        const payments = await response.json();
+        const response = await fetch('{{ route('staff.accountant.teacher-payments.pending') }}', {
+            headers: { Accept: 'application/json' },
+            credentials: 'same-origin'
+        });
+        if (!response.ok) {
+            throw new Error(`Pending payment request failed with status ${response.status}`);
+        }
 
-        if (payments && payments.length > 0) {
+        const payments = await response.json();
+        if (!Array.isArray(payments)) {
+            throw new TypeError('Pending payments response was not a list');
+        }
+
+        if (payments.length > 0) {
             showPendingPaymentsNotification(payments);
         }
     } catch (error) {
         console.error('Error loading pending teacher payments:', error);
+        const errorBox = document.getElementById('dashboardError');
+        if (errorBox) {
+            errorBox.textContent = 'Approved teacher payments could not be loaded. Please refresh the dashboard and try again.';
+            errorBox.classList.remove('d-none');
+        }
     }
 }
 
 function showPendingPaymentsNotification(payments) {
+    if (!window.bootstrap?.Modal || document.getElementById('pending-payments-modal')) {
+        throw new Error('The pending payments notification could not be opened.');
+    }
+
+    const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, character => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    })[character]);
+    const moneyFormat = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+    const hoursFormat = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 });
+    const formatMoney = value => moneyFormat.format(Number.isFinite(Number(value)) ? Number(value) : 0);
+    const formatHours = value => hoursFormat.format(Number.isFinite(Number(value)) ? Number(value) : 0);
+    const formatDate = value => {
+        const rawDate = String(value ?? '').slice(0, 10);
+        const date = new Date(`${rawDate}T00:00:00Z`);
+
+        return Number.isNaN(date.getTime())
+            ? escapeHtml(rawDate || 'Date not listed')
+            : new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(date);
+    };
+    const totalRemaining = payments.reduce((total, payment) => {
+        const remaining = Number(payment.calculated_amount || 0) - Number(payment.amount_paid || 0);
+        return total + Math.max(remaining, 0);
+    }, 0);
+    const paymentCards = payments.map(payment => {
+        const teacher = payment.teacher || {};
+        const daily = payment.teacher_daily || payment.teacherDaily || {};
+        const phone = String(teacher.telephone || '');
+        const remaining = Math.max(Number(payment.calculated_amount || 0) - Number(payment.amount_paid || 0), 0);
+
+        return `
+            <article class="accountant-pending-payment">
+                <div class="accountant-pending-payment__teacher">
+                    <span class="accountant-pending-payment__avatar" aria-hidden="true"><i class="fas fa-user-tie"></i></span>
+                    <span class="accountant-pending-payment__teacher-copy">
+                        <strong class="accountant-pending-payment__name">${escapeHtml(teacher.teacher_name || 'Teacher not listed')}</strong>
+                        ${phone
+                            ? `<a class="accountant-pending-payment__phone" href="tel:${escapeHtml(phone)}">${escapeHtml(phone)}</a>`
+                            : '<span class="accountant-pending-payment__phone">Telephone not listed</span>'}
+                    </span>
+                </div>
+                <div>
+                    <span class="accountant-pending-payment__field-label">Work date</span>
+                    <span class="accountant-pending-payment__field-value">${formatDate(payment.work_date)}</span>
+                </div>
+                <div>
+                    <span class="accountant-pending-payment__field-label">Hours</span>
+                    <span class="accountant-pending-payment__field-value">${formatHours(daily.hours_studied)} h</span>
+                </div>
+                <div>
+                    <span class="accountant-pending-payment__field-label">Amount due</span>
+                    <strong class="accountant-pending-payment__field-value accountant-pending-payment__amount">${formatMoney(remaining)} RWF</strong>
+                </div>
+            </article>
+        `;
+    }).join('');
     const modalHtml = `
-        <div class="modal fade" id="pending-payments-modal" tabindex="-1" data-bs-backdrop="static">
-            <div class="modal-dialog modal-lg">
+        <div class="modal fade accountant-payment-modal" id="pending-payments-modal" tabindex="-1" aria-labelledby="pending-payments-title" aria-describedby="pending-payments-description">
+            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
                 <div class="modal-content">
-                    <div class="modal-header bg-primary text-white">
-                        <h5 class="modal-title">
-                            <i class="fas fa-money-bill-wave me-2"></i> Pending Teacher Payments
-                        </h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <div class="modal-header accountant-payment-modal__header">
+                        <span class="accountant-payment-modal__icon" aria-hidden="true"><i class="fas fa-money-bill-transfer"></i></span>
+                        <div class="accountant-payment-modal__copy">
+                            <span class="accountant-payment-modal__eyebrow">Action required</span>
+                            <h2 class="modal-title" id="pending-payments-title">Approved teacher payments</h2>
+                            <p class="accountant-payment-modal__subtitle" id="pending-payments-description">Review the approved work records before processing payments.</p>
+                        </div>
+                        <span class="accountant-payment-modal__count">${payments.length} waiting</span>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle me-2"></i>
-                            You have ${payments.length} approved teacher payment${payments.length !== 1 ? 's' : ''} to process.
+                        <div class="accountant-payment-modal__summary">
+                            <div>
+                                <span class="accountant-payment-modal__summary-label">Total awaiting payment</span>
+                                <strong>${formatMoney(totalRemaining)} RWF</strong>
+                            </div>
+                            <span class="text-muted small">${payments.length} approved ${payments.length === 1 ? 'record' : 'records'}</span>
                         </div>
-                        <div class="table-responsive">
-                            <table class="table table-sm">
-                                <thead>
-                                    <tr>
-                                        <th>Teacher</th>
-                                        <th>Telephone</th>
-                                        <th>Work Date</th>
-                                        <th>Hours</th>
-                                        <th>Amount</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${payments.map(payment => `
-                                        <tr>
-                                            <td>${payment.teacher?.teacher_name || 'N/A'}</td>
-                                            <td>${payment.teacher?.telephone || 'N/A'}</td>
-                                            <td>${payment.work_date}</td>
-                                            <td>${payment.teacherDaily?.hours_studied || 0} hours</td>
-                                            <td class="fw-semibold">${number_format(payment.calculated_amount)} RWF</td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
+                        <div class="accountant-pending-payment-list">${paymentCards}</div>
                     </div>
                     <div class="modal-footer">
-                        <a href="{{ route('staff.accountant.teacher-payments.index') }}" class="btn btn-primary">
-                            <i class="fas fa-hand-holding-usd me-1"></i> Process Payments
+                        <span class="accountant-payment-modal__footer-note">You can review each record and enter payment notes on the next page.</span>
+                        <a href="{{ route('staff.accountant.teacher-payments.index') }}" class="accountant-payment-modal__process">
+                            <i class="fas fa-arrow-right" aria-hidden="true"></i>Process payments
                         </a>
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Review later</button>
                     </div>
                 </div>
             </div>
@@ -1199,7 +1377,7 @@ function showPendingPaymentsNotification(payments) {
     `;
 
     document.body.insertAdjacentHTML('beforeend', modalHtml);
-    const modal = new bootstrap.Modal(document.getElementById('pending-payments-modal'));
+    const modal = new window.bootstrap.Modal(document.getElementById('pending-payments-modal'));
     modal.show();
 }
 
