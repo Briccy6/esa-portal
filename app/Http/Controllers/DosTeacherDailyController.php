@@ -118,7 +118,7 @@ class DosTeacherDailyController extends Controller
             $daily->approved = true;
             $daily->approved_by = Auth::guard('staff')->user()->id;
             $daily->approved_at = now();
-            
+
             $saved = $daily->save();
 
             \Log::info('TeacherDaily save result', [
@@ -130,13 +130,23 @@ class DosTeacherDailyController extends Controller
             ]);
 
             // Create payment record for approved daily
-            $approver = Auth::guard('staff')->user();
-            $this->paymentService->approvePayment($daily, $approver);
+            try {
+                $approver = Auth::guard('staff')->user();
+                $payment = $this->paymentService->approvePayment($daily, $approver);
 
-            \Log::info('Payment record created for approved daily', [
-                'daily_id' => $id,
-                'teacher_id' => $daily->teacher_id,
-            ]);
+                \Log::info('Payment record created for approved daily', [
+                    'daily_id' => $id,
+                    'teacher_id' => $daily->teacher_id,
+                    'payment_id' => $payment->id,
+                    'calculated_amount' => $payment->calculated_amount,
+                ]);
+            } catch (\Exception $e) {
+                \Log::error('Failed to create payment record', [
+                    'daily_id' => $id,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ]);
+            }
 
             // Also approve related attendance records
             $attendanceUpdated = Attendance::where('date', $daily->date)
@@ -255,6 +265,75 @@ class DosTeacherDailyController extends Controller
         } catch (\Exception $e) {
             return back()->with('error', 'Failed to bulk approve: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Edit a teacher daily activity
+     */
+    public function edit($id)
+    {
+        $daily = TeacherDaily::with(['teacher', 'course', 'lesson', 'unit', 'branch'])
+            ->findOrFail($id);
+
+        // Prevent editing if already approved
+        if ($daily->approved) {
+            return back()->with('error', 'Cannot edit an approved daily activity.');
+        }
+
+        $courses = Course::query()->select('id', 'course_name')->get();
+        $branches = Branch::query()->select('id', 'name')->get();
+
+        return view('dos.teacher-dailies.edit', compact('daily', 'courses', 'branches'));
+    }
+
+    /**
+     * Update a teacher daily activity
+     */
+    public function update(Request $request, $id)
+    {
+        $daily = TeacherDaily::findOrFail($id);
+
+        // Prevent updating if already approved
+        if ($daily->approved) {
+            return back()->with('error', 'Cannot update an approved daily activity.');
+        }
+
+        $request->validate([
+            'course_id' => 'required|exists:courses,id',
+            'lesson_id' => 'required|exists:lessons,id',
+            'unit_id' => 'nullable|exists:lesson_units,id',
+            'branch_id' => 'required|exists:branches,id',
+            'hours_studied' => 'required|numeric|min:0|max:24',
+            'total_students' => 'required|integer|min:0',
+            'absences' => 'nullable|string',
+            'activity' => 'nullable|string',
+            'comment' => 'nullable|string',
+            'challenges' => 'nullable|string',
+            'quiz_link' => 'nullable|url',
+        ]);
+
+        // Convert activity from string (textarea) to array
+        $activities = null;
+        if ($request->filled('activity')) {
+            $activities = array_filter(array_map('trim', explode("\n", $request->activity)));
+        }
+
+        $daily->update([
+            'course_id' => $request->course_id,
+            'lesson_id' => $request->lesson_id,
+            'unit_id' => $request->unit_id,
+            'branch_id' => $request->branch_id,
+            'hours_studied' => $request->hours_studied,
+            'total_students' => $request->total_students,
+            'absences' => $request->absences,
+            'activity' => $activities,
+            'comment' => $request->comment,
+            'challenges' => $request->challenges,
+            'quiz_link' => $request->quiz_link,
+        ]);
+
+        return redirect()->route('dos.teacher-dailies.show', $daily->id)
+            ->with('success', 'Daily activity updated successfully!');
     }
 
     /**

@@ -264,4 +264,18 @@ class ExamQuestionController extends Controller
 
         return back()->with('error', 'No questions found in the CSV file.');
     }
+
+    public function downloadTemplate()
+    {
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="questions_template.csv"',
+        ];
+
+        $csvContent = "question_type,text,option_a,option_b,option_c,option_d,correct_answer,marks,difficulty_level,subject_area,explanation,keywords,weight\n";
+        $csvContent .= "multiple_choice,\"What is the capital of France?\",\"London\",\"Paris\",\"Berlin\",\"Madrid\",\"Paris\",5,easy,Geography,\"Paris is the capital city of France.\",\"capital,france,europe\",1\n";
+        $csvContent .= "multiple_choice,\"What is 2 + 2?\",\"3\",\"4\",\"5\",\"6\",\"4\",2,easy,Mathematics,\"Basic addition problem.\",\"addition,math\",1\n";
+
+        return response($csvContent, 200, $headers);
+    }
 }

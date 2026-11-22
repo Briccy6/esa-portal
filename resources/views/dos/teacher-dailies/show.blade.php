@@ -6,9 +6,16 @@
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2><i class="bi bi-calendar-check me-2"></i>Daily Activity Details</h2>
-        <a href="{{ route('dos.teacher-dailies.index') }}" class="btn btn-secondary">
-            <i class="bi bi-arrow-left me-2"></i>Back to List
-        </a>
+        <div class="d-flex gap-2">
+            @if(!$daily->approved)
+                <a href="{{ route('dos.teacher-dailies.edit', $daily->id) }}" class="btn btn-warning">
+                    <i class="bi bi-pencil me-2"></i>Edit Activity
+                </a>
+            @endif
+            <a href="{{ route('dos.teacher-dailies.index') }}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Back to List
+            </a>
+        </div>
     </div>
 
     <!-- Daily Activity Info -->

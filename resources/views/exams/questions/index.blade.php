@@ -327,7 +327,7 @@ window.MathJax = {
           <label for="questionsFile" class="form-label">Upload CSV or Excel File</label>
           <input type="file" class="form-control" id="questionsFile" name="questions_file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" required>
           <div class="form-text">
-              Download a <a href="{{ asset('questions_template.csv') }}" download>sample template</a>.
+              Download a <a href="{{ route('questions.template') }}" download>sample template</a>.
           </div>
         </div>
       </div>
