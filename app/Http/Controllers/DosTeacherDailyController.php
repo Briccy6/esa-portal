@@ -342,6 +342,16 @@ class DosTeacherDailyController extends Controller
             'quiz_link' => $request->quiz_link,
         ]);
 
+        // Delete payment record if daily is being updated while pending (in case it exists)
+        $payment = $daily->payment;
+        if ($payment) {
+            $payment->delete();
+            \Log::info('Payment record deleted when daily was updated (pending)', [
+                'daily_id' => $id,
+                'payment_id' => $payment->id,
+            ]);
+        }
+
         return redirect()->route('dos.teacher-dailies.show', $daily->id)
             ->with('success', 'Daily activity updated successfully!');
     }

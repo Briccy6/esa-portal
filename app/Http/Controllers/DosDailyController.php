@@ -183,8 +183,21 @@ class DosDailyController extends Controller
         ]);
 
         DB::transaction(function () use ($daily, $validated) {
+            $wasApproved = $daily->approved;
             $daily->approved = $validated['status'] === 'approved';
             $daily->save();
+
+            // If status is being changed from approved to pending, delete the payment record
+            if ($wasApproved && !$daily->approved) {
+                $payment = $daily->payment;
+                if ($payment) {
+                    $payment->delete();
+                    \Log::info('Payment record deleted when daily status changed to pending', [
+                        'daily_id' => $daily->id,
+                        'payment_id' => $payment->id,
+                    ]);
+                }
+            }
 
             $courseIds = collect($daily->course_ids ?? [])
                 ->push($daily->course_id)
