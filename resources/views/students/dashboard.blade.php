@@ -1166,6 +1166,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
+                    <p class="text-muted small">Teacher-recorded attendance appears here immediately. Entries marked pending are waiting for DOS approval and are not yet included in your attendance percentage.</p>
                     <div class="table-responsive">
                         <table class="table table-bordered align-middle">
                             <thead>
@@ -1174,26 +1175,38 @@
                                     <th>Lesson</th>
                                     <th>Teacher</th>
                                     <th>Status</th>
+                                    <th>Review</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($approvedAttendances as $attendance)
+                                @forelse($attendanceRecords as $attendance)
                                     <tr>
-                                        <td>{{ \Carbon\Carbon::parse($attendance->marked_at)->format('d M Y H:i') }}</td>
+                                        <td>{{ $attendance->marked_at ? $attendance->marked_at->format('d M Y H:i') : ($attendance->date ? $attendance->date->format('d M Y') : '-') }}</td>
                                         <td>{{ $attendance->lesson->title ?? '-' }}</td>
                                         <td>{{ $attendance->lesson->teacher->teacher_name ?? '-' }}</td>
                                         <td>
-                                            @if($attendance->status === 'P')
+                                            @if(in_array(strtoupper((string) $attendance->status), ['P', 'PRESENT'], true))
                                                 <span class="badge bg-success">Present</span>
-                                            @elseif($attendance->status === 'L')
+                                            @elseif(in_array(strtoupper((string) $attendance->status), ['L', 'LATE'], true))
                                                 <span class="badge bg-warning text-dark">Late</span>
-                                            @else
+                                            @elseif(strtoupper((string) $attendance->status) === 'AR')
+                                                <span class="badge bg-danger">Absent with reason</span>
+                                            @elseif(in_array(strtoupper((string) $attendance->status), ['A', 'ABSENT'], true))
                                                 <span class="badge bg-danger">Absent</span>
+                                            @else
+                                                <span class="badge bg-secondary">{{ $attendance->status }}</span>
                                             @endif
                                         </td>
                                         <td>
-                                            @if($attendance->status === 'present')
+                                            @if($attendance->approved)
+                                                <span class="badge bg-success">Approved</span>
+                                            @else
+                                                <span class="badge bg-warning text-dark">Pending DOS approval</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if(in_array(strtoupper((string) $attendance->status), ['P', 'L', 'PRESENT', 'LATE'], true))
                                                 <a href="{{ route('lesson.show', $attendance->lesson_id) }}" class="btn btn-sm btn-primary">View Lesson</a>
                                             @else
                                                 @if($attendance->lesson && $attendance->lesson->quiz_link)
@@ -1205,7 +1218,11 @@
                                             @endif
                                         </td>
                                     </tr>
-                                @endforeach
+                                @empty
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted py-4">No attendance has been recorded yet.</td>
+                                    </tr>
+                                @endforelse
                             </tbody>
                         </table>
                     </div>
@@ -2509,6 +2526,24 @@ function showOptionalFeesModal(fees) {
 
     const hasMandatory = fees.some(fee => fee.mandatory);
     const hasOptional = fees.some(fee => !fee.mandatory);
+    const feeTypes = [...new Set(fees.map(fee => fee.type))];
+    const feeTypeNames = { practical: 'Practical', trip: 'Trip' };
+    const feeTypeHeading = feeTypes.map(type => feeTypeNames[type] || 'Student').join(' and ');
+    const allFeesMandatory = fees.every(fee => fee.mandatory);
+    const feeTypeDescription = feeTypes.map(type => type === 'trip'
+        ? 'Trip fees are for student trips.'
+        : 'Practical fees are for hands-on class activities.'
+    ).join(' ');
+    const modalTitle = feeTypes.length === 1
+        ? `${feeTypeHeading} fee ${hasOptional ? 'approval' : 'notice'}`
+        : hasOptional
+            ? `${feeTypeHeading} fee decisions`
+            : `${feeTypeHeading} fee notices`;
+    const modalIntroduction = allFeesMandatory
+        ? `These mandatory ${feeTypeHeading.toLowerCase()} fees have been added to your account. No approval is required; please arrange payment by the due date.`
+        : hasMandatory
+            ? `${feeTypeDescription} Mandatory fees are already on your account. For each fee awaiting a decision, approve it to add the amount to your balance or reject it if you do not wish to take part.`
+            : `${feeTypeDescription} Approving a fee adds its amount to your student balance; reject it if you do not wish to take part.`;
     const formatAmount = amount => Number(amount || 0).toLocaleString(undefined, {
         minimumFractionDigits: 0,
         maximumFractionDigits: 2
@@ -2606,6 +2641,15 @@ function showOptionalFeesModal(fees) {
                 font-size: .92rem;
                 font-weight: 800;
             }
+            .fee-item-type {
+                display: inline-flex;
+                margin-bottom: 4px;
+                color: #667085;
+                font-size: .62rem;
+                font-weight: 850;
+                letter-spacing: .08em;
+                text-transform: uppercase;
+            }
             .fee-item-amount {
                 display: block;
                 margin-top: 3px;
@@ -2675,21 +2719,26 @@ function showOptionalFeesModal(fees) {
                     <div class="modal-header fee-modal-header">
                         <div class="fee-modal-icon"><i class="bi ${hasMandatory ? 'bi-exclamation-triangle-fill' : 'bi-receipt-cutoff'}"></i></div>
                         <div>
-                            <p>Account notification</p>
-                            <h5>${hasMandatory ? 'Mandatory fee notice' : 'Optional fee approval'}</h5>
+                            <p>Student account update</p>
+                            <h5>${modalTitle}</h5>
                         </div>
-                        ${hasMandatory ? '' : '<button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>'}
+                        ${hasOptional ? '<button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>' : ''}
                     </div>
                     <div class="modal-body">
-                        <p class="fee-introduction">${hasMandatory
-                            ? 'These mandatory fees have been added to your account. No approval is required; please arrange payment before the due date.'
-                            : 'Please review the optional fee below. Approve it to add it to your balance, or reject it if you do not need this activity.'}</p>
-                        ${fees.map(fee => `
+                        <p class="fee-introduction">${modalIntroduction}</p>
+                        ${fees.map(fee => {
+                            const typeName = feeTypeNames[fee.type] || 'Student';
+                            const purpose = fee.type === 'trip'
+                                ? 'For the student trip'
+                                : 'For hands-on class activities';
+
+                            return `
                             <div class="fee-item ${fee.mandatory ? 'is-mandatory' : ''}">
                                 <div class="fee-item-icon"><i class="bi ${fee.type === 'trip' ? 'bi-bus-front' : 'bi-flask'}"></i></div>
                                 <div>
-                                    <span class="fee-item-name">${fee.name}</span>
+                                    <span class="fee-item-type">${typeName} fee</span>
                                     <span class="fee-item-amount">RWF ${formatAmount(fee.amount)}</span>
+                                    <span class="fee-item-meta">${purpose}</span>
                                     ${fee.due_date ? `<span class="fee-item-meta">Due ${fee.due_date}</span>` : ''}
                                 </div>
                                 ${fee.mandatory
@@ -2703,11 +2752,12 @@ function showOptionalFeesModal(fees) {
                                         </button>
                                     </div>`}
                             </div>
-                        `).join('')}
+                        `;
+                        }).join('')}
                     </div>
                     <div class="modal-footer">
                         <span class="fee-footer-note"><i class="bi bi-shield-check me-1"></i> ESA student account</span>
-                        ${hasMandatory
+                        ${!hasOptional
                             ? `<button type="button" class="btn btn-primary px-4" data-bs-dismiss="modal">I understand</button>`
                             : `<button type="button" class="btn btn-light px-3" data-bs-dismiss="modal">Decide later</button>`}
                     </div>

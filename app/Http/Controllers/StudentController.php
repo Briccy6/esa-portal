@@ -1898,6 +1898,7 @@ class StudentController extends Controller
             && now('Africa/Kigali')->lt($profileDeadline);
 
         // Initialize all variables to avoid undefined variable errors
+        $attendanceRecords = collect();
         $approvedAttendances = collect();
         $totalDays = 0;
         $attendedDays = 0;
@@ -1933,6 +1934,7 @@ class StudentController extends Controller
                 'profileDeadline',
                 'showProfileReminder',
                 'profileAccessRestricted',
+                'attendanceRecords',
                 'approvedAttendances',
                 'totalDays',
                 'attendedDays',
@@ -1966,13 +1968,19 @@ class StudentController extends Controller
         $student->load('course');
         $student->initializeTokens();
 
-        $approvedAttendances = $student->attendances()
-            ->where('approved', 1)
+        $attendanceRecords = $student->attendances()
+            ->with(['lesson.teacher'])
             ->orderByDesc('marked_at')
+            ->orderByDesc('id')
             ->get();
+        $approvedAttendances = $attendanceRecords
+            ->where('approved', true)
+            ->values();
 
         $totalDays         = $approvedAttendances->count();
-        $attendedDays      = $approvedAttendances->where('status', 'present')->count();
+        $attendedDays      = $approvedAttendances->filter(function ($attendance) {
+            return in_array(strtoupper((string) $attendance->status), ['P', 'L', 'PRESENT', 'LATE'], true);
+        })->count();
         $attendancePercent = $totalDays > 0 ? round(($attendedDays / $totalDays) * 100, 2) : 0;
 
         // ─── TERM-BASED FEE CALCULATION ─────────────────────────────────
@@ -2321,6 +2329,7 @@ class StudentController extends Controller
 
         return view('students.dashboard', compact(
             'student',
+            'attendanceRecords',
             'approvedAttendances',
             'totalDays',
             'attendedDays',
@@ -4254,18 +4263,24 @@ class StudentController extends Controller
     public function attendance(Request $request)
     {
         if (auth()->guard('student')->check()) {
-            $user                = auth()->guard('student')->user();
-            $approvedAttendances = $user->attendances()
-                ->where('approved', 1)
+            $user = auth()->guard('student')->user();
+            $attendanceRecords = $user->attendances()
+                ->with(['lesson.teacher'])
                 ->orderByDesc('marked_at')
+                ->orderByDesc('id')
                 ->get();
+            $approvedAttendances = $attendanceRecords
+                ->where('approved', true)
+                ->values();
 
             $totalDays         = $approvedAttendances->count();
-            $attendedDays      = $approvedAttendances->where('status', 'present')->count();
+            $attendedDays      = $approvedAttendances->filter(function ($attendance) {
+                return in_array(strtoupper((string) $attendance->status), ['P', 'L', 'PRESENT', 'LATE'], true);
+            })->count();
             $attendancePercent = $totalDays > 0 ? round(($attendedDays / $totalDays) * 100, 2) : 0;
 
             return view('students.attendance', compact(
-                'approvedAttendances',
+                'attendanceRecords',
                 'totalDays',
                 'attendedDays',
                 'attendancePercent'

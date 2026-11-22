@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use App\Models\TeacherDaily;
 use App\Models\Course;
 use App\Models\Lesson;
@@ -33,6 +34,8 @@ class TeacherDailyController extends Controller
                 'hours_studied' => 'required|numeric',
                 'total_students' => 'required|integer',
                 'date' => 'nullable|date',
+                'attendance' => 'sometimes|array',
+                'attendance.*' => 'required|in:P,A,AR,L',
             ]);
 
             $teacher = Auth::guard('teacher')->user();
@@ -98,77 +101,77 @@ class TeacherDailyController extends Controller
                 'branch_id' => $branchId,
             ]);
 
-            // Create a single TeacherDaily record for the session
-            $daily = TeacherDaily::create([
-                'teacher_id'    => $teacher->id,
-                'course_id'     => $request->courses[0], // Store primary course
-                'course_ids'    => $request->courses, // Store all course IDs as JSON
-                'lesson_id'     => $request->lesson,
-                'unit_id'       => $request->unit,
-                'branch_id'     => $branchId, // Store branch
-                'activity'      => $request->activities, // Store as array
-                'hours_studied' => $request->hours_studied,
-                'total_students'=> $request->total_students,
-                'absences'      => isset($request->attendance) ? count(array_filter($request->attendance, fn($v) => $v !== 'P')) : 0,
-                'quiz_link'     => $request->quiz_link,
-                'marking_guide' => $request->marking_guide,
-                'total_marks'   => $request->total_marks,
-                'challenges'    => $request->challenges,
-                'comment'       => $request->comment,
-                'date'          => $request->date ?? now()->toDateString(),
-            ]);
+            $attendanceStatuses = $request->input('attendance');
+            $absences = is_array($attendanceStatuses)
+                ? count(array_filter($attendanceStatuses, fn ($status) => in_array($status, ['A', 'AR'], true)))
+                : 0;
 
-            \Log::info('TeacherDaily created successfully', ['daily_id' => $daily->id]);
+            $daily = DB::transaction(function () use ($request, $teacher, $branchId, $attendanceStatuses, $absences) {
+                $daily = TeacherDaily::create([
+                    'teacher_id'    => $teacher->id,
+                    'course_id'     => $request->courses[0],
+                    'course_ids'    => $request->courses,
+                    'lesson_id'     => $request->lesson,
+                    'unit_id'       => $request->unit,
+                    'branch_id'     => $branchId,
+                    'activity'      => $request->activities,
+                    'hours_studied' => $request->hours_studied,
+                    'total_students'=> $request->total_students,
+                    'absences'      => $absences,
+                    'quiz_link'     => $request->quiz_link,
+                    'marking_guide' => $request->marking_guide,
+                    'total_marks'   => $request->total_marks,
+                    'challenges'    => $request->challenges,
+                    'comment'       => $request->comment,
+                    'date'          => $request->date ?? now()->toDateString(),
+                ]);
 
-            // Get all students for the selected courses AND branch
-            $students = Student::whereIn('course_id', $request->courses)
-                ->where('branch_id', $branchId)
-                ->get();
-            
-            if ($students->isEmpty()) {
-                \Log::warning("No students found for courses " . implode(',', $request->courses) . " in branch {$branchId}");
-                // Continue without attendance if no students
-            } else {
-                // If attendance array is present, use it (manual marking)
-                if ($request->has('attendance')) {
-                    foreach ($request->attendance as $studentId => $status) {
-                        try {
-                            \App\Models\Attendance::create([
-                                'student_id'   => $studentId,
-                                'course_id'    => $request->courses[0], // Store primary course
-                                'lesson_id'    => $request->lesson,
-                                'date'         => $daily->date,
-                                'status'       => $status, // 'P', 'A', etc.
-                                'marked_by'    => $teacher->id,
-                                'marked_at'    => now(),
-                                'approved'     => false,
-                            ]);
-                        } catch (\Exception $e) {
-                            \Log::error("Failed to create attendance for student {$studentId}: " . $e->getMessage());
-                            // Continue with other students, don't fail the entire submission
-                        }
-                    }
-                } else {
-                    // All present by default
-                    foreach ($students as $student) {
-                        try {
-                            \App\Models\Attendance::create([
-                                'student_id'   => $student->id,
-                                'course_id'    => $request->courses[0], // Store primary course
-                                'lesson_id'    => $request->lesson,
-                                'date'         => $daily->date,
-                                'status'       => 'P',
-                                'marked_by'    => $teacher->id,
-                                'marked_at'    => now(),
-                                'approved'     => false,
-                            ]);
-                        } catch (\Exception $e) {
-                            \Log::error("Failed to create default attendance for student {$student->id}: " . $e->getMessage());
-                            // Continue with other students, don't fail the entire submission
-                        }
+                $studentsQuery = Student::whereIn('course_id', $request->courses)
+                    ->where('branch_id', $branchId)
+                    ->where('is_blocked', '!=', 1);
+                if ($yearId = \App\Services\AcademicYearContext::selectedId()) {
+                    $studentsQuery->where('academic_year_id', $yearId);
+                }
+                $students = $studentsQuery->get();
+
+                if (is_array($attendanceStatuses)) {
+                    $invalidStudentIds = array_diff(
+                        array_map('intval', array_keys($attendanceStatuses)),
+                        $students->modelKeys()
+                    );
+                    if ($invalidStudentIds) {
+                        throw \Illuminate\Validation\ValidationException::withMessages([
+                            'attendance' => 'Attendance can only be recorded for students in the selected courses and branch.',
+                        ]);
                     }
                 }
-            }
+
+                if ($students->isEmpty()) {
+                    \Log::warning("No students found for courses " . implode(',', $request->courses) . " in branch {$branchId}");
+                    return $daily;
+                }
+
+                foreach ($students as $student) {
+                    if (is_array($attendanceStatuses) && !array_key_exists($student->id, $attendanceStatuses)) {
+                        continue;
+                    }
+
+                    \App\Models\Attendance::create([
+                        'student_id' => $student->id,
+                        'course_id' => $student->course_id,
+                        'lesson_id' => $request->lesson,
+                        'date' => $daily->date,
+                        'status' => is_array($attendanceStatuses) ? $attendanceStatuses[$student->id] : 'P',
+                        'marked_by' => null, // This foreign key targets users; teachers use a separate table.
+                        'marked_at' => now(),
+                        'approved' => false,
+                    ]);
+                }
+
+                return $daily;
+            });
+
+            \Log::info('TeacherDaily created successfully', ['daily_id' => $daily->id]);
 
             return back()->with('success', 'Daily activity and attendance submitted successfully for ' . count($request->courses) . ' course(s)!');
         } catch (\Illuminate\Validation\ValidationException $e) {
