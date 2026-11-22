@@ -70,7 +70,13 @@
                     <div class="lesson-title-block">
                         <h2>{{ $lesson->title }}</h2>
                         <div class="teacher-row">
-                            <span class="teacher-avatar">{{ $initials }}</span>
+                            @if($teacher && ($teacher->photo || $teacher->google_avatar))
+                                <span class="teacher-avatar-img">
+                                    <img src="{{ $teacher->google_avatar ?? $teacher->photo_url }}" alt="{{ $teacher->teacher_name }}">
+                                </span>
+                            @else
+                                <span class="teacher-avatar">{{ $initials }}</span>
+                            @endif
                             <div>
                                 <span>Instructor</span>
                                 <strong>{{ $teacher->teacher_name ?? 'To be assigned' }}</strong>
@@ -110,7 +116,13 @@
                             <div class="modal-body lesson-modal-body">
                                 <div class="lesson-overview">
                                     <div class="overview-instructor">
-                                        <span class="teacher-avatar large">{{ $initials }}</span>
+                                        @if($teacher && ($teacher->photo || $teacher->google_avatar))
+                                            <span class="teacher-avatar-img large">
+                                                <img src="{{ $teacher->google_avatar ?? $teacher->photo_url }}" alt="{{ $teacher->teacher_name }}">
+                                            </span>
+                                        @else
+                                            <span class="teacher-avatar large">{{ $initials }}</span>
+                                        @endif
                                         <div>
                                             <span>Lesson teacher</span>
                                             <strong>{{ $teacher->teacher_name ?? 'To be assigned' }}</strong>
