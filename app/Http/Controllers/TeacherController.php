@@ -150,6 +150,7 @@ class TeacherController extends Controller
 
             // Financial Information - optional for partial updates
             'salary' => 'sometimes|numeric|min:0|max:99999999.99',
+            'payment_period' => 'sometimes|in:monthly,weekly,hourly,daily',
 
             // Course Assignment - optional
             'courses' => 'nullable|array',
@@ -193,6 +194,9 @@ class TeacherController extends Controller
         }
         if ($request->filled('salary')) {
             $updateData['salary'] = $data['salary'];
+        }
+        if ($request->filled('payment_period')) {
+            $updateData['payment_period'] = $data['payment_period'];
         }
 
         // Only update if there's actually data to update

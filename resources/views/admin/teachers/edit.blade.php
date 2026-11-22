@@ -605,6 +605,36 @@
                         </div>
 
                         <div class="form-group">
+                            <label for="payment_period" class="form-label">
+                                <span class="label-icon">
+                                    <i class="fas fa-clock"></i>
+                                </span>
+                                Payment Period
+                            </label>
+                            <div class="input-wrapper">
+                                <select class="form-control @error('payment_period') is-invalid @enderror"
+                                        name="payment_period"
+                                        id="payment_period">
+                                    <option value="">Select payment period</option>
+                                    <option value="hourly" {{ old('payment_period', $teacher->payment_period) == 'hourly' ? 'selected' : '' }}>Hourly</option>
+                                    <option value="daily" {{ old('payment_period', $teacher->payment_period) == 'daily' ? 'selected' : '' }}>Daily</option>
+                                    <option value="weekly" {{ old('payment_period', $teacher->payment_period) == 'weekly' ? 'selected' : '' }}>Weekly</option>
+                                    <option value="monthly" {{ old('payment_period', $teacher->payment_period) == 'monthly' ? 'selected' : '' }}>Monthly</option>
+                                </select>
+                            </div>
+                            @error('payment_period')
+                                <div class="error-message">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                    {{ $message }}
+                                </div>
+                            @enderror
+                            <div class="help-text">
+                                <i class="fas fa-info-circle"></i>
+                                Select how often the teacher is paid
+                            </div>
+                        </div>
+
+                        <div class="form-group">
                             <label for="salary" class="form-label">
                                 <span class="label-icon">
                                     <i class="fas fa-money-bill-wave"></i>
@@ -612,11 +642,11 @@
                                 Salary
                             </label>
                             <div class="input-wrapper">
-                                <input type="number" 
-                                       class="form-control @error('salary') is-invalid @enderror" 
-                                       name="salary" 
-                                       id="salary" 
-                                       value="{{ old('salary', $teacher->salary) }}" 
+                                <input type="number"
+                                       class="form-control @error('salary') is-invalid @enderror"
+                                       name="salary"
+                                       id="salary"
+                                       value="{{ old('salary', $teacher->salary) }}"
                                        placeholder="Enter salary amount"
                                        step="0.01"
                                        min="0">
@@ -627,6 +657,10 @@
                                     {{ $message }}
                                 </div>
                             @enderror
+                            <div class="help-text">
+                                <i class="fas fa-info-circle"></i>
+                                Enter the salary amount based on the payment period
+                            </div>
                         </div>
 
                         <div class="section-divider"></div>

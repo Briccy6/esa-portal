@@ -294,6 +294,38 @@
                                     @enderror
                                 </div>
 
+                                <!-- Payment Period Field -->
+                                <div class="mb-4">
+                                    <label for="payment_period" class="form-label fw-semibold text-dark mb-2">
+                                        <i class="fas fa-clock text-primary me-2"></i>Payment Period
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light border-end-0">
+                                            <i class="fas fa-calendar-check text-muted"></i>
+                                        </span>
+                                        <select name="payment_period"
+                                                id="payment_period"
+                                                class="form-select border-start-0 @error('payment_period') is-invalid @enderror"
+                                                required>
+                                            <option value="">Select payment period</option>
+                                            <option value="hourly" {{ old('payment_period') == 'hourly' ? 'selected' : '' }}>Hourly</option>
+                                            <option value="daily" {{ old('payment_period') == 'daily' ? 'selected' : '' }}>Daily</option>
+                                            <option value="weekly" {{ old('payment_period') == 'weekly' ? 'selected' : '' }}>Weekly</option>
+                                            <option value="monthly" {{ old('payment_period') == 'monthly' ? 'selected' : '' }}>Monthly</option>
+                                        </select>
+                                    </div>
+                                    <small class="text-muted mt-1">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Select how often the teacher is paid
+                                    </small>
+                                    @error('payment_period')
+                                        <div class="invalid-feedback d-block">
+                                            <i class="fas fa-exclamation-circle me-1"></i>{{ $message }}
+                                        </div>
+                                    @enderror
+                                </div>
+
                                 <!-- Salary Field -->
                                 <div class="mb-5">
                                     <label for="salary" class="form-label fw-semibold text-dark mb-2">
@@ -305,11 +337,11 @@
                                         <span class="input-group-text bg-light border-end-0">
                                             <i class="fas fa-money-bill text-muted"></i>
                                         </span>
-                                        <input type="number" 
-                                               name="salary" 
-                                               id="salary" 
-                                               class="form-control border-start-0 ps-0 @error('salary') is-invalid @enderror" 
-                                               value="{{ old('salary') }}" 
+                                        <input type="number"
+                                               name="salary"
+                                               id="salary"
+                                               class="form-control border-start-0 ps-0 @error('salary') is-invalid @enderror"
+                                               value="{{ old('salary') }}"
                                                placeholder="Enter amount"
                                                step="0.01"
                                                min="0"
@@ -320,7 +352,7 @@
                                     </div>
                                     <small id="salary-help" class="text-muted mt-1">
                                         <i class="fas fa-info-circle me-1"></i>
-                                        <span id="salary-help-text">Enter the salary amount</span>
+                                        <span id="salary-help-text">Enter the salary amount based on the payment period</span>
                                     </small>
                                     @error('salary')
                                         <div class="invalid-feedback d-block">

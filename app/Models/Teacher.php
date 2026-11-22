@@ -15,7 +15,7 @@ class Teacher extends Authenticatable
 
     protected $fillable = [
         'teacher_name', 'teacher_id_number', 'id_number', 'telephone', 'email',
-        'photo', 'branch_id', 'department', 'employment_type', 'level_of_education', 'salary', 'password',
+        'photo', 'branch_id', 'department', 'employment_type', 'level_of_education', 'salary', 'payment_period', 'password',
         'google_id', 'google_token', 'google_refresh_token', 'google_avatar'
     ];
 
