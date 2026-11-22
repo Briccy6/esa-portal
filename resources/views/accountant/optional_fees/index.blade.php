@@ -430,7 +430,7 @@
                                     </button>
                                     <span class="optional-fee-assign-note">To protect student balances, turn off notifications or update the fee instead.</span>
                                 @else
-                                    <form method="POST" action="{{ route('staff.accountant.optional-fees.destroy', $fee->id) }}" onsubmit="return confirm('Delete this fee configuration? Student response history will be preserved.');">
+                                    <form method="POST" action="{{ route('staff.accountant.optional-fees.index') }}/{{ $fee->id }}/delete" onsubmit="return confirm('Delete this fee configuration? Student response history will be preserved.');">
                                         @csrf
                                         <button type="submit" class="optional-fee-action optional-fee-action--delete">
                                             <i class="fa-regular fa-trash-can" aria-hidden="true"></i>Delete configuration
