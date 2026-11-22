@@ -105,6 +105,9 @@
                 <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#rejectModal">
                     <i class="bi bi-x-circle me-2"></i>Reject Activity
                 </button>
+                <button type="button" class="btn btn-danger" onclick="try { deleteDaily({{ $daily->id }}); } catch(e) { console.error('Delete error:', e); alert('Unable to delete activity. Please try again.'); }">
+                    <i class="bi bi-trash me-2"></i>Delete Activity
+                </button>
             @else
                 <span class="text-success"><i class="bi bi-check-circle me-2"></i>This activity has been approved</span>
             @endif
@@ -262,8 +265,35 @@ function submitReject() {
         alert('Please provide a rejection reason.');
         return;
     }
-    
+
     document.getElementById('rejectForm').submit();
+}
+
+function deleteDaily(id) {
+    if (confirm('Are you sure you want to delete this daily activity and all related attendance records? This action cannot be undone.')) {
+        fetch('{{ route('dos.teacher-dailies.destroy', ':id') }}'.replace(':id', id), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({
+                _method: 'DELETE'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                window.location.href = '{{ route('dos.teacher-dailies.index') }}';
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Error: ' + error.message);
+        });
+    }
 }
 </script>
 @endsection

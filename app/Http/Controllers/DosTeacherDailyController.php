@@ -211,6 +211,16 @@ class DosTeacherDailyController extends Controller
                     'rejection_reason' => $request->rejection_reason,
                 ]);
 
+            // Delete the payment record if it exists
+            $payment = $daily->payment;
+            if ($payment) {
+                $payment->delete();
+                \Log::info('Payment record deleted when daily was rejected', [
+                    'daily_id' => $id,
+                    'payment_id' => $payment->id,
+                ]);
+            }
+
             return back()->with('success', 'Daily activity rejected successfully!');
         } catch (\Exception $e) {
             return back()->with('error', 'Failed to reject daily activity: ' . $e->getMessage());
@@ -344,11 +354,32 @@ class DosTeacherDailyController extends Controller
         try {
             $daily = TeacherDaily::findOrFail($id);
 
+            // Only allow deletion if the daily is not approved (pending only)
+            if ($daily->approved) {
+                if (request()->expectsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Cannot delete an approved daily activity. Please reject it first.'
+                    ], 403);
+                }
+                return back()->with('error', 'Cannot delete an approved daily activity. Please reject it first.');
+            }
+
             \Log::info('Deleting TeacherDaily', [
                 'daily_id' => $id,
                 'teacher_id' => $daily->teacher_id,
                 'date' => $daily->date,
             ]);
+
+            // Delete the payment record if it exists
+            $payment = $daily->payment;
+            if ($payment) {
+                $payment->delete();
+                \Log::info('Payment record deleted when daily was deleted', [
+                    'daily_id' => $id,
+                    'payment_id' => $payment->id,
+                ]);
+            }
 
             // Delete related attendance records
             $attendanceDeleted = Attendance::where('date', $daily->date)
