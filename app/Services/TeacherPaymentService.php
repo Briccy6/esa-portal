@@ -150,11 +150,16 @@ class TeacherPaymentService
     /**
      * Get unreviewed teacher dailies for DOS
      */
-    public function getUnreviewedTeacherDailies(): \Illuminate\Database\Eloquent\Collection
+    public function getUnreviewedTeacherDailies($branchIds = null): \Illuminate\Database\Eloquent\Collection
     {
-        return TeacherDaily::with(['teacher', 'course', 'lesson'])
-            ->where('approval_status', 'pending')
-            ->orderBy('date', 'desc')
-            ->get();
+        $query = TeacherDaily::with(['teacher', 'course', 'lesson'])
+            ->where('approved', false)
+            ->orderBy('date', 'desc');
+
+        if ($branchIds) {
+            $query->whereIn('branch_id', $branchIds);
+        }
+
+        return $query->get();
     }
 }

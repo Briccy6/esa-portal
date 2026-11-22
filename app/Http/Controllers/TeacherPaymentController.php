@@ -76,7 +76,10 @@ class TeacherPaymentController extends Controller
      */
     public function getUnreviewedDailies()
     {
-        $dailies = $this->paymentService->getUnreviewedTeacherDailies();
+        $staff = Auth::guard('staff')->user();
+        $branchIds = $staff->branches->pluck('id')->toArray();
+
+        $dailies = $this->paymentService->getUnreviewedTeacherDailies($branchIds);
 
         return response()->json($dailies);
     }
