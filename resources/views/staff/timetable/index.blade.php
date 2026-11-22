@@ -87,12 +87,12 @@
                                 @csrf
                                 <button type="submit" class="card-action card-action-edit" onclick="return confirm('Run the approval checks and publish this timetable?');"><i class="bi bi-check2-circle me-1"></i>Approve &amp; publish</button>
                             </form>
-                            <form action="{{ route('dos.timetable.destroy', $timetable->id) }}" method="POST">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="card-action card-action-danger" onclick="return confirm('Delete this timetable? This action cannot be undone.');"><i class="bi bi-trash"></i></button>
-                            </form>
                         @endif
+                        <form action="{{ route('dos.timetable.destroy', $timetable->id) }}" method="POST">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="card-action card-action-danger" onclick="return confirm('Delete this timetable? This action cannot be undone.');"><i class="bi bi-trash"></i></button>
+                        </form>
                     </div>
                 </article>
             @endforeach
