@@ -272,8 +272,8 @@
                                 <div class="row g-3">
                                     <div class="col-12 col-lg-5">
                                         <label class="form-label" for="lesson-{{ $index }}">Lesson</label>
-                                        <input type="text" class="form-control lesson-search" id="lesson-search-{{ $index }}" placeholder="Search lesson..." list="lesson-list-{{ $index }}" autocomplete="off">
-                                        <datalist id="lesson-list-{{ $index }}"></datalist>
+                                        <input type="text" class="form-control lesson-search" id="lesson-search-{{ $index }}" placeholder="Type to search lessons..." autocomplete="off">
+                                        <div class="lesson-dropdown" id="lesson-dropdown-{{ $index }}" style="display: none; position: absolute; z-index: 1000; background: white; border: 1px solid #cedbd3; border-radius: 10px; max-height: 200px; overflow-y: auto; width: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.15);"></div>
                                         <input type="hidden" class="lesson-id-hidden" id="lesson-{{ $index }}" name="sessions[{{ $index }}][lesson_id]" value="{{ old("sessions.{$index}.lesson_id", $sessionData['lesson_id'] ?? '') }}">
                                         <div class="lesson-preview mt-1 text-muted small" id="lesson-preview-{{ $index }}"></div>
                                     </div>
@@ -396,7 +396,7 @@
             <div class="col-12 col-sm-6 col-lg-3"><label class="form-label" for="day-__INDEX__">Day</label><select class="form-select" id="day-__INDEX__" name="sessions[__INDEX__][day_of_week]" required>
                 <option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option><option value="0">Sunday</option>
             </select></div>
-            <div class="col-12 col-lg-5"><label class="form-label" for="lesson-__INDEX__">Lesson</label><input type="text" class="form-control lesson-search" id="lesson-search-__INDEX__" placeholder="Search lesson..." list="lesson-list-__INDEX__" autocomplete="off"><datalist id="lesson-list-__INDEX__"></datalist><input type="hidden" class="lesson-id-hidden" id="lesson-__INDEX__" name="sessions[__INDEX__][lesson_id]"><div class="lesson-preview mt-1 text-muted small" id="lesson-preview-__INDEX__"></div></div>
+            <div class="col-12 col-lg-5"><label class="form-label" for="lesson-__INDEX__">Lesson</label><input type="text" class="form-control lesson-search" id="lesson-search-__INDEX__" placeholder="Type to search lessons..." autocomplete="off"><div class="lesson-dropdown" id="lesson-dropdown-__INDEX__" style="display: none; position: absolute; z-index: 1000; background: white; border: 1px solid #cedbd3; border-radius: 10px; max-height: 200px; overflow-y: auto; width: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.15);"></div><input type="hidden" class="lesson-id-hidden" id="lesson-__INDEX__" name="sessions[__INDEX__][lesson_id]"><div class="lesson-preview mt-1 text-muted small" id="lesson-preview-__INDEX__"></div></div>
             <div class="col-6 col-sm-3 col-lg-2"><label class="form-label" for="shift-__INDEX__">Shift</label><select class="form-select" id="shift-__INDEX__" name="sessions[__INDEX__][shift]" required>
                 <option value="day">Day</option>
                 <option value="evening">Evening</option>
@@ -567,19 +567,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function refreshLessonSelect(row, preserve = true) {
         const searchInput = row.querySelector('.lesson-search');
-        const dataList = row.querySelector('datalist');
+        const dropdown = row.querySelector('.lesson-dropdown');
         const hiddenInput = row.querySelector('.lesson-id-hidden');
         const preview = row.querySelector('.lesson-preview');
         const previous = preserve ? (row.dataset.lessonId || hiddenInput.value) : '';
-        
-        // Clear and populate datalist
-        dataList.replaceChildren();
-        lessonData.forEach(lesson => {
-            const option = document.createElement('option');
-            option.value = lesson.lesson_title;
-            option.dataset.lessonId = lesson.lesson_id;
-            dataList.appendChild(option);
-        });
         
         // Set previous value if exists
         if (previous) {
@@ -587,7 +578,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (lesson) {
                 searchInput.value = lesson.lesson_title;
                 hiddenInput.value = lesson.lesson_id;
-                preview.textContent = `ID: ${lesson.lesson_id}`;
+                preview.textContent = `Selected: ${lesson.lesson_title}`;
             }
         }
         
@@ -760,42 +751,56 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function bindRow(row) {
         const searchInput = row.querySelector('.lesson-search');
+        const dropdown = row.querySelector('.lesson-dropdown');
         const hiddenInput = row.querySelector('.lesson-id-hidden');
-        const dataList = row.querySelector('datalist');
         const preview = row.querySelector('.lesson-preview');
         
-        if (!searchInput || !hiddenInput || !dataList) return;
+        if (!searchInput || !hiddenInput || !dropdown) return;
         
-        // Handle lesson selection from datalist
+        // Show dropdown on input
         searchInput.addEventListener('input', function() {
-            const value = this.value;
-            const matchingLesson = lessonData.find(l => l.lesson_title === value);
-            if (matchingLesson) {
-                hiddenInput.value = matchingLesson.lesson_id;
-                preview.textContent = `Selected: ${matchingLesson.lesson_title}`;
-                row.dataset.lessonId = matchingLesson.lesson_id;
-                row.dataset.selectedCourses = '';
-                renderCourses(row, []);
-            } else {
-                // Only clear if the input is empty
-                if (!value) {
-                    hiddenInput.value = '';
-                    preview.textContent = '';
-                    row.dataset.lessonId = '';
-                }
+            const value = this.value.toLowerCase();
+            dropdown.innerHTML = '';
+            
+            if (value.length < 1) {
+                dropdown.style.display = 'none';
+                return;
             }
+            
+            const filtered = lessonData.filter(l => l.lesson_title.toLowerCase().includes(value));
+            
+            if (filtered.length === 0) {
+                dropdown.style.display = 'none';
+                return;
+            }
+            
+            filtered.forEach(lesson => {
+                const div = document.createElement('div');
+                div.style.padding = '10px 15px';
+                div.style.cursor = 'pointer';
+                div.style.borderBottom = '1px solid #e2e8f0';
+                div.textContent = lesson.lesson_title;
+                div.addEventListener('mouseenter', () => div.style.background = '#f8fafc');
+                div.addEventListener('mouseleave', () => div.style.background = 'white');
+                div.addEventListener('click', () => {
+                    searchInput.value = lesson.lesson_title;
+                    hiddenInput.value = lesson.lesson_id;
+                    preview.textContent = `Selected: ${lesson.lesson_title}`;
+                    row.dataset.lessonId = lesson.lesson_id;
+                    row.dataset.selectedCourses = '';
+                    dropdown.style.display = 'none';
+                    renderCourses(row, []);
+                });
+                dropdown.appendChild(div);
+            });
+            
+            dropdown.style.display = 'block';
         });
         
-        // Also handle change event for when user selects from datalist
-        searchInput.addEventListener('change', function() {
-            const value = this.value;
-            const matchingLesson = lessonData.find(l => l.lesson_title === value);
-            if (matchingLesson) {
-                hiddenInput.value = matchingLesson.lesson_id;
-                preview.textContent = `Selected: ${matchingLesson.lesson_title}`;
-                row.dataset.lessonId = matchingLesson.lesson_id;
-                row.dataset.selectedCourses = '';
-                renderCourses(row, []);
+        // Hide dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.style.display = 'none';
             }
         });
         
