@@ -338,7 +338,7 @@ function editUnit(id, name, hours) {
     document.getElementById('editUnitId').value = id;
     document.getElementById('editUnitName').value = name;
     document.getElementById('editUnitHours').value = hours;
-    document.getElementById('editUnitForm').action = '{{ route('teacher.lesson-units.update', '') }}/' + id;
+    document.getElementById('editUnitForm').action = '{{ route('teacher.lesson-units.update', ['id' => ':id']) }}'.replace(':id', id);
     new bootstrap.Modal(document.getElementById('editUnitModal')).show();
 }
 </script>

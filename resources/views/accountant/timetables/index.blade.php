@@ -7,181 +7,229 @@
 @push('styles')
 <style>
     .accountant-timetable-page {
-        --tt-primary: #0f766e;
-        --tt-primary-dark: #115e59;
-        --tt-line: #e2e8f0;
-        --tt-surface: #ffffff;
-        --tt-muted: #64748b;
-        font-family: 'Poppins', sans-serif;
-        background: #f8fafc;
+        --accountant-ink: #17243b;
+        --accountant-muted: #748094;
+        --accountant-accent: #d26c4f;
+        max-width: 1480px;
+        margin: 0 auto;
+        color: var(--accountant-ink);
     }
-    .timetable-header {
-        background: linear-gradient(135deg, var(--tt-primary) 0%, var(--tt-primary-dark) 100%);
-        color: white;
-        padding: 1.5rem 2rem;
-        border-radius: 16px;
-        margin-bottom: 2rem;
-        box-shadow: 0 4px 16px rgba(15, 118, 110, .12);
+    .accountant-timetable-hero {
+        position: relative;
         display: flex;
+        align-items: flex-end;
         justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 1rem;
-    }
-    .timetable-header h2 {
-        font-size: 1.75rem;
-        font-weight: 700;
-        margin: 0;
-    }
-    .timetable-header p {
-        margin: 0;
-        opacity: .9;
-        font-size: .95rem;
-    }
-    .week-count {
-        background: rgba(255, 255, 255, .2);
-        padding: .5rem 1rem;
-        border-radius: 8px;
-        font-weight: 600;
-        font-size: .9rem;
-    }
-    .filter-panel {
-        background: white;
-        padding: 1rem 1.5rem;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, .05);
-        margin-bottom: 2rem;
-    }
-    .timetable-card {
-        background: white;
-        border-radius: 16px;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, .08);
-        margin-bottom: 2rem;
+        gap: 2rem;
         overflow: hidden;
+        padding: clamp(1.5rem, 4vw, 2.5rem);
+        margin-bottom: 1.25rem;
+        border-radius: 22px;
+        background:
+            radial-gradient(circle at 82% 15%, rgba(210,108,79,.2), transparent 25%),
+            radial-gradient(circle at 96% 95%, rgba(72,137,148,.22), transparent 34%),
+            linear-gradient(125deg, #14233a 0%, #1b3851 68%, #22545b 120%);
+        color: #fff;
+        box-shadow: 0 17px 36px rgba(23,36,59,.15);
     }
-    .timetable-card-header {
-        background: linear-gradient(135deg, var(--tt-primary) 0%, var(--tt-primary-dark) 100%);
-        color: white;
-        padding: 1.25rem 1.5rem;
+    .accountant-timetable-hero__eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: .55rem;
+        margin-bottom: .8rem;
+        color: #efb69f;
+        font-size: .68rem;
+        font-weight: 800;
+        letter-spacing: .15em;
+        text-transform: uppercase;
+    }
+    .accountant-timetable-hero__eyebrow::before { width: 22px; height: 1px; background: currentColor; content: ""; }
+    .accountant-timetable-hero h1 {
+        margin: 0;
+        color: #fff;
+        font-size: clamp(1.65rem, 3.8vw, 2.4rem);
+        font-weight: 800;
+        letter-spacing: -.04em;
+        line-height: 1.1;
+    }
+    .accountant-timetable-hero p { max-width: 580px; margin: .65rem 0 0; color: rgba(242,246,250,.76); font-size: .9rem; line-height: 1.6; }
+    .accountant-timetable-stats { display: flex; gap: .65rem; }
+    .accountant-timetable-stat {
+        min-width: 124px;
+        padding: .8rem .95rem;
+        border: 1px solid rgba(255,255,255,.15);
+        border-radius: 12px;
+        background: rgba(255,255,255,.075);
+        backdrop-filter: blur(8px);
+    }
+    .accountant-timetable-stat strong { display: block; color: #fff; font-size: 1.4rem; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.1; }
+    .accountant-timetable-stat span { display: block; margin-top: .35rem; color: rgba(242,246,250,.72); font-size: .68rem; font-weight: 700; }
+    .accountant-timetable-filters {
+        padding: 1.15rem 1.25rem;
+        margin-bottom: 1.25rem;
+        border: 1px solid #e6e9ee;
+        border-radius: 16px;
+        background: #fff;
+        box-shadow: 0 6px 20px rgba(23,36,59,.045);
+    }
+    .accountant-timetable-filters__heading { display: flex; align-items: center; gap: .55rem; margin-bottom: .9rem; color: var(--accountant-ink); font-size: .88rem; font-weight: 800; }
+    .accountant-timetable-filters__heading i { color: var(--accountant-accent); }
+    .accountant-timetable-filters .form-label { margin-bottom: .38rem; color: #58657a; font-size: .72rem; font-weight: 750; }
+    .accountant-timetable-filters .form-select {
+        min-height: 44px;
+        border-color: #dfe4eb;
+        border-radius: 9px;
+        color: #26334a;
+        font-size: .82rem;
+        box-shadow: none;
+    }
+    .accountant-timetable-filters .form-select:focus { border-color: #9db9ba; box-shadow: 0 0 0 .2rem rgba(45,111,110,.12); }
+    .accountant-filter-actions { display: flex; flex-wrap: wrap; gap: .55rem; }
+    .accountant-filter-button, .accountant-clear-button {
+        display: inline-flex;
+        min-height: 42px;
+        align-items: center;
+        justify-content: center;
+        gap: .45rem;
+        padding: .6rem .9rem;
+        border-radius: 9px;
+        font-size: .76rem;
+        font-weight: 800;
+        text-decoration: none;
+        transition: background .16s ease, transform .16s ease;
+    }
+    .accountant-filter-button { border: 1px solid #205f62; background: #205f62; color: #fff; }
+    .accountant-filter-button:hover { transform: translateY(-1px); border-color: #174b4d; background: #174b4d; color: #fff; }
+    .accountant-clear-button { border: 1px solid #dfe4eb; background: #fff; color: #536176; }
+    .accountant-clear-button:hover { background: #f5f7f9; color: var(--accountant-ink); }
+    .accountant-schedule-card {
+        overflow: hidden;
+        margin-bottom: 1.25rem;
+        border: 1px solid #e6e9ee;
+        border-radius: 20px;
+        background: #fff;
+        box-shadow: 0 8px 26px rgba(23,36,59,.055);
+    }
+    .accountant-schedule-card__header {
         display: flex;
+        align-items: center;
         justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
         gap: 1rem;
+        padding: 1.15rem 1.35rem;
+        background: linear-gradient(100deg, #fff 0%, #fbfaf8 100%);
     }
-    .timetable-card-header h3 {
-        margin: 0;
-        font-size: 1.25rem;
-        font-weight: 600;
-    }
-    .timetable-meta {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 1rem;
-        font-size: .85rem;
-        opacity: .9;
-    }
-    .timetable-meta span {
-        display: flex;
+    .accountant-schedule-card__eyebrow { display: block; margin-bottom: .25rem; color: var(--accountant-accent); font-size: .64rem; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+    .accountant-schedule-card__title { margin: 0; color: var(--accountant-ink); font-size: 1.08rem; font-weight: 800; letter-spacing: -.02em; }
+    .accountant-timetable-download {
+        display: inline-flex;
+        min-height: 42px;
         align-items: center;
-        gap: .25rem;
+        justify-content: center;
+        gap: .5rem;
+        padding: .62rem .9rem;
+        border: 1px solid #bc5b41;
+        border-radius: 9px;
+        background: #c96348;
+        color: #fff;
+        font-size: .76rem;
+        font-weight: 800;
+        transition: background .16s ease, box-shadow .16s ease, transform .16s ease;
     }
-    .download-btn {
-        background: rgba(255, 255, 255, .2);
-        border: 1px solid rgba(255, 255, 255, .3);
-        color: white;
-        padding: .5rem 1rem;
-        border-radius: 8px;
-        font-weight: 500;
-        font-size: .875rem;
-        transition: all .2s ease;
-    }
-    .download-btn:hover {
-        background: rgba(255, 255, 255, .3);
-        transform: translateY(-1px);
-    }
-    .timetable-card-body {
-        padding: 0;
-    }
-    .timetable-table-wrap {
-        overflow-x: auto;
-    }
-    .timetable-table {
-        width: 100%;
-        border-collapse: separate;
-        border-spacing: 0;
-        margin: 0;
-    }
-    .timetable-table thead th {
-        background: var(--tt-primary);
-        color: white;
-        font-weight: 600;
-        padding: 1rem;
-        text-align: left;
-        border-bottom: 2px solid var(--tt-primary-dark);
-        font-size: .875rem;
-    }
-    .timetable-table tbody td {
-        padding: 1rem;
-        border-bottom: 1px solid var(--tt-line);
-        vertical-align: middle;
-        font-size: .9rem;
-    }
-    .timetable-table tbody tr:hover {
-        background: #f8fafc;
-    }
-    .time-cell {
-        font-weight: 700;
-        background: #f0fdf4;
-        min-width: 120px;
-    }
-    .shift-line {
-        display: block;
-        margin-bottom: .25rem;
-    }
-    .shift-line:last-child {
-        margin-bottom: 0;
-    }
-    .course-badges {
+    .accountant-timetable-download:hover { transform: translateY(-1px); border-color: #a94e37; background: #a94e37; color: #fff; box-shadow: 0 7px 16px rgba(169,78,55,.2); }
+    .accountant-schedule-card__meta {
         display: flex;
         flex-wrap: wrap;
-        gap: .25rem;
+        gap: .5rem .65rem;
+        padding: .8rem 1.35rem;
+        border-top: 1px solid #edf0f3;
+        border-bottom: 1px solid #edf0f3;
+        background: #fbfcfd;
     }
-    .notes-cell {
-        max-width: 200px;
-        font-size: .85rem;
-        color: var(--tt-muted);
+    .accountant-schedule-card__meta span {
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+        padding: .34rem .58rem;
+        border: 1px solid #e8ebef;
+        border-radius: 7px;
+        background: #fff;
+        color: #667287;
+        font-size: .69rem;
+        font-weight: 650;
     }
-    @media (max-width: 768px) {
-        .timetable-header {
-            flex-direction: column;
-            align-items: flex-start;
-        }
-        .timetable-table {
-            font-size: .8rem;
-        }
-        .timetable-table thead th,
-        .timetable-table tbody td {
-            padding: .75rem .5rem;
-        }
+    .accountant-schedule-card__meta i { color: #a45b48; }
+    .accountant-timetable-empty {
+        display: grid;
+        min-height: 230px;
+        place-items: center;
+        padding: 2rem 1rem;
+        border: 1px solid #e6e9ee;
+        border-radius: 18px;
+        background: #fff;
+        text-align: center;
+        box-shadow: 0 7px 22px rgba(23,36,59,.045);
+    }
+    .accountant-timetable-empty__icon {
+        display: grid;
+        width: 52px;
+        height: 52px;
+        place-items: center;
+        margin: 0 auto .8rem;
+        border: 1px solid #f0dfd8;
+        border-radius: 15px;
+        background: #fff6f1;
+        color: var(--accountant-accent);
+        font-size: 1.1rem;
+    }
+    .accountant-timetable-empty h2 { margin: 0; color: var(--accountant-ink); font-size: 1.05rem; font-weight: 800; }
+    .accountant-timetable-empty p { max-width: 420px; margin: .45rem auto 0; color: var(--accountant-muted); font-size: .8rem; }
+    @media (max-width: 767.98px) {
+        .accountant-timetable-hero { align-items: flex-start; flex-direction: column; gap: 1.2rem; }
+        .accountant-timetable-stats { width: 100%; }
+        .accountant-timetable-stat { flex: 1; min-width: 0; }
+    }
+    @media (max-width: 520px) {
+        .accountant-timetable-page { padding-right: .25rem; padding-left: .25rem; }
+        .accountant-timetable-hero { padding: 1.25rem; border-radius: 17px; }
+        .accountant-timetable-stat { padding: .7rem; }
+        .accountant-timetable-stat strong { font-size: 1.2rem; }
+        .accountant-timetable-filters { padding: 1rem; }
+        .accountant-schedule-card { border-radius: 15px; }
+        .accountant-schedule-card__header { align-items: flex-start; flex-direction: column; padding: 1rem; }
+        .accountant-schedule-card__meta { padding: .7rem; }
+        .accountant-timetable-download { width: 100%; }
+        .accountant-filter-actions, .accountant-filter-button, .accountant-clear-button { width: 100%; }
     }
 </style>
 @endpush
 
 @section('content')
-<div class="container-fluid py-4 accountant-timetable-page">
-    <div class="timetable-header">
-        <div>
-            <h2><i class="fas fa-calendar-week me-2" aria-hidden="true"></i>Weekly timetables</h2>
-            <p>Choose a branch, course, and shift to review the full published week.</p>
-        </div>
-        <span class="week-count">
-            <i class="fas fa-list-check" aria-hidden="true"></i>
-            {{ $timetables->sum(fn ($timetable) => $timetable->sessions->count()) }} sessions shown
-        </span>
-    </div>
+@php
+    $sessionTotal = $timetables->sum(fn ($timetable) => $timetable->sessions->count());
+@endphp
 
-    <form method="GET" action="{{ route('staff.accountant.timetables.index') }}" class="filter-panel">
+<main class="container-fluid py-4 accountant-timetable-page">
+    <header class="accountant-timetable-hero">
+        <div>
+            <span class="accountant-timetable-hero__eyebrow">Accountant workspace · Weekly overview</span>
+            <h1>Timetables</h1>
+            <p>Review each branch’s published week, check lesson assignments, and download a clean copy for your records.</p>
+        </div>
+        <div class="accountant-timetable-stats" aria-label="Timetable summary">
+            <div class="accountant-timetable-stat">
+                <strong>{{ $timetables->count() }}</strong>
+                <span>Active schedules</span>
+            </div>
+            <div class="accountant-timetable-stat">
+                <strong>{{ $sessionTotal }}</strong>
+                <span>Sessions shown</span>
+            </div>
+        </div>
+    </header>
+
+    <form method="GET" action="{{ route('staff.accountant.timetables.index') }}" class="accountant-timetable-filters">
+        <div class="accountant-timetable-filters__heading">
+            <i class="fa-solid fa-sliders" aria-hidden="true"></i>Filter timetable
+        </div>
         <div class="row g-3 align-items-end">
             <div class="col-12 col-md-4">
                 <label class="form-label" for="branchFilter">Branch</label>
@@ -215,233 +263,63 @@
                     <option value="weekend" {{ $filters['shift'] === 'weekend' ? 'selected' : '' }}>Weekend</option>
                 </select>
             </div>
-            <div class="col-12 d-flex flex-wrap gap-2">
-                <button type="submit" class="btn btn-primary px-4">
-                    <i class="fas fa-filter me-2" aria-hidden="true"></i>Show timetable
-                </button>
-                <a href="{{ route('staff.accountant.timetables.index') }}" class="btn btn-outline-secondary px-4">Clear filters</a>
+            <div class="col-12">
+                <div class="accountant-filter-actions">
+                    <button type="submit" class="accountant-filter-button">
+                        <i class="fa-solid fa-filter" aria-hidden="true"></i>Show timetable
+                    </button>
+                    <a href="{{ route('staff.accountant.timetables.index') }}" class="accountant-clear-button">Clear filters</a>
+                </div>
             </div>
         </div>
     </form>
 
     @if($timetables->isEmpty())
-        <div class="alert alert-info border-0 shadow-sm">
-            <i class="fas fa-circle-info me-2" aria-hidden="true"></i>
-            @if(count(array_filter($filters)))
-                No active timetable matches the selected branch, course, and shift. Try another filter or clear the selection.
-            @else
-                No published timetables are active for your assigned branches this week.
-            @endif
-        </div>
+        <section class="accountant-timetable-empty">
+            <div>
+                <span class="accountant-timetable-empty__icon"><i class="fa-regular fa-calendar-xmark" aria-hidden="true"></i></span>
+                <h2>{{ count(array_filter($filters)) ? 'No matching timetable' : 'No active timetable yet' }}</h2>
+                <p>
+                    @if(count(array_filter($filters)))
+                        No active timetable matches the selected branch, course, and shift. Adjust your filters or clear them to see more schedules.
+                    @else
+                        Published timetables active for your assigned branches will appear here.
+                    @endif
+                </p>
+            </div>
+        </section>
     @else
         @foreach($timetables as $timetable)
-            <section class="timetable-card" data-timetable-id="{{ $timetable->id }}">
-                <header class="timetable-card-header">
+            <section class="accountant-schedule-card" aria-labelledby="accountant-timetable-{{ $timetable->id }}">
+                <header class="accountant-schedule-card__header">
                     <div>
-                        <h3 data-timetable-title>{{ $timetable->title }}</h3>
-                        <div class="timetable-meta">
-                            <span><i class="fas fa-location-dot me-1" aria-hidden="true"></i>{{ $timetable->branch->name ?? 'N/A' }}</span>
-                            <span><i class="fas fa-graduation-cap me-1" aria-hidden="true"></i>{{ $timetable->academicYear->year ?? 'N/A' }}</span>
-                            <span><i class="fas fa-book-open me-1" aria-hidden="true"></i>{{ $timetable->term->name ?? 'N/A' }}</span>
-                            <span>
-                                <i class="fas fa-calendar-days me-1" aria-hidden="true"></i>
-                                {{ $timetable->valid_from?->format('d M Y') ?? 'N/A' }} - {{ $timetable->valid_until?->format('d M Y') ?? 'N/A' }}
-                            </span>
-                        </div>
+                        <span class="accountant-schedule-card__eyebrow">Published weekly schedule</span>
+                        <h2 id="accountant-timetable-{{ $timetable->id }}" class="accountant-schedule-card__title">{{ $timetable->title }}</h2>
                     </div>
-                    <button onclick="downloadTimetable({{ $timetable->id }})" class="download-btn" type="button">
-                        <i class="fas fa-download me-2" aria-hidden="true"></i>Download week
+                    <button
+                        type="button"
+                        class="accountant-timetable-download"
+                        onclick="downloadTimetable({{ $timetable->id }})"
+                        aria-label="Download {{ $timetable->title }} timetable"
+                    >
+                        <i class="fa-solid fa-arrow-down-to-line" aria-hidden="true"></i>
+                        Download week
                     </button>
                 </header>
-                <div class="timetable-card-body">
-                    <div class="timetable-table-wrap">
-                        <table id="timetable-{{ $timetable->id }}" class="table timetable-table">
-                            <thead>
-                                <tr>
-                                    <th>Time</th>
-                                    <th>Day</th>
-                                    <th>Course</th>
-                                    <th>Lesson / activity</th>
-                                    <th>Room</th>
-                                    <th>Teacher</th>
-                                    <th>Shift</th>
-                                    <th>Session type</th>
-                                    <th>Notes</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @php
-                                    $days = [1 => 'Monday', 2 => 'Tuesday', 3 => 'Wednesday', 4 => 'Thursday', 5 => 'Friday', 6 => 'Saturday', 0 => 'Sunday'];
-                                @endphp
-                                @foreach($days as $dayNum => $dayName)
-                                    @php
-                                        $daySessions = $timetable->sessions->where('day_of_week', $dayNum)->sortBy('start_time');
-                                    @endphp
-                                    @if($daySessions->isEmpty())
-                                        <tr class="empty-day">
-                                            <td colspan="9"><strong>{{ $dayName }}</strong> - No sessions scheduled</td>
-                                        </tr>
-                                    @else
-                                        @foreach($daySessions as $session)
-                                            @php
-                                                $selectedShiftValues = $filters['shift'] === 'morning' ? ['morning', 'day'] : [$filters['shift']];
-                                                $visibleShifts = $filters['shift']
-                                                    ? $session->shifts->filter(fn ($shift) => in_array($shift->shift, $selectedShiftValues, true))
-                                                    : $session->shifts;
-                                                $activityType = $session->activity_type ?: 'lesson';
-                                                $isTest = $session->session_type === 'test' || $session->mark_as_test;
-                                                $teacherNames = $session->branch_teacher_names;
-                                                if ($teacherNames->isEmpty() && $session->lesson && $session->lesson->teacher) {
-                                                    $teacherNames->push($session->lesson->teacher->teacher_name);
-                                                }
-                                                if ($teacherNames->isEmpty() && $session->lesson) {
-                                                    $teacherNames = $session->lesson->teachers->pluck('teacher_name')->filter();
-                                                }
-                                            @endphp
-                                            <tr>
-                                                <td class="time-cell" data-label="Time">
-                                                    @forelse($visibleShifts as $shift)
-                                                        @php
-                                                            $shiftLabel = in_array($shift->shift, ['day', 'morning'], true) ? 'Morning' : ucfirst($shift->shift);
-                                                            $startTime = $shift->start_time ?: $session->start_time;
-                                                            $endTime = $shift->end_time ?: $session->end_time;
-                                                        @endphp
-                                                        <span class="shift-line">
-                                                            <strong>{{ $shiftLabel }}</strong>
-                                                            @if($startTime && $endTime)
-                                                                {{ \Carbon\Carbon::parse($startTime)->format('H:i') }} - {{ \Carbon\Carbon::parse($endTime)->format('H:i') }}
-                                                            @else
-                                                                Time not set
-                                                            @endif
-                                                        </span>
-                                                    @empty
-                                                        <span class="shift-line">
-                                                            @if($session->start_time && $session->end_time)
-                                                                {{ \Carbon\Carbon::parse($session->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($session->end_time)->format('H:i') }}
-                                                            @else
-                                                                Time not set
-                                                            @endif
-                                                        </span>
-                                                    @endforelse
-                                                </td>
-                                                <td class="day-cell" data-label="Day">{{ $dayName }}</td>
-                                                <td data-label="Course">
-                                                    <div class="course-badges">
-                                                        @forelse($session->courses as $course)
-                                                            <span class="badge text-bg-info">{{ $course->course_name }}</span>
-                                                        @empty
-                                                            <span class="text-muted">No course assigned</span>
-                                                        @endforelse
-                                                    </div>
-                                                </td>
-                                                <td data-label="Lesson / activity">
-                                                    <div class="fw-semibold">
-                                                        @if($activityType === 'lesson' && $session->lesson)
-                                                            {{ $session->lesson->title }}
-                                                        @elseif($activityType === 'group_work' && $session->lesson)
-                                                            {{ $session->lesson->title }}
-                                                        @elseif($activityType === 'self_study')
-                                                            Self study
-                                                        @elseif($activityType === 'group_work')
-                                                            Group work
-                                                        @elseif($activityType === 'reserve')
-                                                            {{ $session->reserve_text ?: 'Reserve time' }}
-                                                        @else
-                                                            {{ $session->lesson->title ?? 'N/A' }}
-                                                        @endif
-                                                    </div>
-                                                    <span class="badge text-bg-light mt-1">{{ ucfirst(str_replace('_', ' ', $activityType)) }}</span>
-                                                </td>
-                                                <td data-label="Room">{{ $session->classroom ?: 'Not assigned' }}</td>
-                                                <td data-label="Teacher">
-                                                    @if($teacherNames->isNotEmpty())
-                                                        <span class="badge text-bg-success">{{ $teacherNames->join(', ') }}</span>
-                                                    @elseif($activityType === 'lesson' || $activityType === 'group_work')
-                                                        <span class="badge text-bg-warning">To be assigned</span>
-                                                    @else
-                                                        <span class="text-muted">-</span>
-                                                    @endif
-                                                </td>
-                                                <td data-label="Shift">
-                                                    @forelse($visibleShifts as $shift)
-                                                        @php($shiftLabel = in_array($shift->shift, ['day', 'morning'], true) ? 'Morning' : ucfirst($shift->shift))
-                                                        <span class="badge {{ in_array($shift->shift, ['day', 'morning'], true) ? 'text-bg-success' : ($shift->shift === 'evening' ? 'text-bg-warning' : ($shift->shift === 'afternoon' ? 'text-bg-info' : 'text-bg-secondary')) }}">
-                                                            {{ $shiftLabel }}
-                                                        </span>
-                                                    @empty
-                                                        @if($session->shift)
-                                                            <span class="badge text-bg-secondary">{{ $session->shift === 'day' ? 'Morning' : ucfirst($session->shift) }}</span>
-                                                        @else
-                                                            <span class="text-muted">Not assigned</span>
-                                                        @endif
-                                                    @endforelse
-                                                </td>
-                                                <td data-label="Session type">
-                                                    <span class="badge {{ $isTest ? 'text-bg-danger' : 'text-bg-primary' }}">
-                                                        {{ $isTest ? 'Test' : ucfirst($session->session_type ?: 'Class') }}
-                                                    </span>
-                                                    @if($isTest && $session->minimum_paid_percentage !== null)
-                                                        <small class="d-block mt-1 text-muted">Minimum paid: {{ number_format((float) $session->minimum_paid_percentage, 0) }}%</small>
-                                                    @endif
-                                                </td>
-                                                <td class="notes-cell" data-label="Notes">{{ $session->notes ?: 'No notes' }}</td>
-                                            </tr>
-                                        @endforeach
-                                    @endif
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
+                <div class="accountant-schedule-card__meta">
+                    <span><i class="fa-solid fa-location-dot" aria-hidden="true"></i>{{ $timetable->branch->name ?? 'Branch not specified' }}</span>
+                    <span><i class="fa-solid fa-graduation-cap" aria-hidden="true"></i>{{ $timetable->academicYear->year ?? 'Academic year not specified' }}</span>
+                    <span><i class="fa-solid fa-book-open" aria-hidden="true"></i>{{ $timetable->term->name ?? 'Term not specified' }}</span>
+                    <span><i class="fa-regular fa-calendar" aria-hidden="true"></i>{{ $timetable->valid_from?->format('d M Y') ?? 'N/A' }} – {{ $timetable->valid_until?->format('d M Y') ?? 'N/A' }}</span>
                 </div>
+                @include('teacher.timetables._weekly-agenda', [
+                    'sessions' => $timetable->sessions,
+                    'showTeachers' => true,
+                    'shiftFilter' => $filters['shift'],
+                    'exportHeading' => 'Weekly timetable',
+                ])
             </section>
         @endforeach
     @endif
-</div>
-
-<script>
-function downloadTimetable(timetableId) {
-    const table = document.getElementById('timetable-' + timetableId);
-    if (!table) return;
-
-    const tableClone = table.cloneNode(true);
-    const timetableCard = table.closest('.timetable-card');
-    const title = timetableCard?.querySelector('[data-timetable-title]')?.textContent.trim() || 'Timetable';
-    const metadata = timetableCard?.querySelector('.timetable-meta')?.textContent.trim() || '';
-    const escapeHtml = value => String(value).replace(/[&<>"']/g, character => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
-    })[character]);
-    const html = `
-        <html>
-        <head>
-            <title>Timetable</title>
-            <style>
-                body { font-family: Arial, sans-serif; padding: 20px; }
-                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-                th { background-color: #667eea; color: white; }
-                tr:nth-child(even) { background-color: #f9f9f9; }
-            </style>
-        </head>
-        <body>
-            <h2>Timetable</h2>
-            ${tableClone.outerHTML}
-        </body>
-        </html>
-    `;
-
-    const blob = new Blob([html], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'timetable.html';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-}
-</script>
+</main>
 @endsection

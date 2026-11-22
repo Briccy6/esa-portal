@@ -62,6 +62,7 @@ class TeacherController extends Controller
             'employment_type' => 'required|string',
             'level_of_education' => 'required|string',
             'salary' => 'required|numeric|min:0',
+            'payment_period' => 'required|in:monthly,weekly,hourly,daily',
         ]);
 
         // Convert photo to base64
@@ -83,6 +84,7 @@ class TeacherController extends Controller
             'employment_type' => $request->employment_type,
             'level_of_education' => $request->level_of_education,
             'salary' => $request->salary,
+            'payment_period' => $request->payment_period,
             'password' => Hash::make($randomPassword),
         ]);
 

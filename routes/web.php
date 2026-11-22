@@ -105,6 +105,16 @@ Route::prefix('student')->name('student.')->middleware(['auth:student'])->group(
     Route::post('/notifications/mark-all-read', [\App\Http\Controllers\StudentNotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
 });
 
+// Teacher Payments API
+Route::prefix('teacher')->name('teacher.')->middleware(['auth:teacher'])->group(function() {
+    Route::get('/payments', [\App\Http\Controllers\TeacherPaymentController::class, 'getTeacherPayments'])->name('payments.index');
+});
+
+// DOS Notifications API
+Route::prefix('staff')->name('staff.')->middleware(['auth:staff', 'role:dos,admin'])->group(function() {
+    Route::get('/unreviewed-dailies', [\App\Http\Controllers\TeacherPaymentController::class, 'getUnreviewedDailies'])->name('unreviewed-dailies');
+});
+
 Route::prefix('timetable')->name('timetable.')->group(function () {
     Route::get('/', [TimetableController::class, 'index'])->name('index');
     Route::get('/courses-by-branch', [TimetableController::class, 'getCoursesByBranch'])->name('courses.by-branch');
@@ -825,6 +835,11 @@ Route::prefix('staff')->name('staff.')->group(function () {
                 Route::post('/{id}/assign', [\App\Http\Controllers\OptionalFeeController::class, 'assign'])->name('assign');
                 Route::get('/report', [\App\Http\Controllers\OptionalFeeController::class, 'report'])->name('report');
                 Route::get('/export', [\App\Http\Controllers\OptionalFeeController::class, 'exportReport'])->name('export');
+            });
+            Route::prefix('teacher-payments')->name('teacher-payments.')->group(function () {
+                Route::get('/', [\App\Http\Controllers\TeacherPaymentController::class, 'index'])->name('index');
+                Route::get('/{id}', [\App\Http\Controllers\TeacherPaymentController::class, 'show'])->name('show');
+                Route::post('/{id}/record', [\App\Http\Controllers\TeacherPaymentController::class, 'recordPayment'])->name('record');
             });
         });
 

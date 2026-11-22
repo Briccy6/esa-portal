@@ -214,6 +214,7 @@ function downloadTimetable(timetableId) {
     if (!agenda) return;
 
     const title = agenda.dataset.title || 'Teaching timetable';
+    const exportHeading = agenda.dataset.exportHeading || 'Teaching timetable';
     const escapeHtml = value => String(value).replace(/[&<>"']/g, character => ({
         '&': '&amp;',
         '<': '&lt;',
@@ -234,7 +235,7 @@ function downloadTimetable(timetableId) {
         <head>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1">
-            <title>${escapeHtml(title)}</title>
+            <title>${escapeHtml(title)} · ${escapeHtml(exportHeading)}</title>
             <style>
                 ${styles}
                 body { margin: 0; padding: 28px; background: #fff; color: #17243b; font-family: Arial, sans-serif; }
@@ -247,6 +248,7 @@ function downloadTimetable(timetableId) {
         </head>
         <body>
             <header class="teacher-agenda__export-heading">
+                <p>${escapeHtml(exportHeading)}</p>
                 <h1>${escapeHtml(title)}</h1>
                 <p>${escapeHtml(details)}</p>
             </header>
@@ -270,12 +272,14 @@ function downloadTimetable(timetableId) {
 @php
     $weekDays = [1 => 'Monday', 2 => 'Tuesday', 3 => 'Wednesday', 4 => 'Thursday', 5 => 'Friday', 6 => 'Saturday', 0 => 'Sunday'];
     $sessionTotal = $sessions->count();
+    $shiftFilter = $shiftFilter ?? '';
 @endphp
 
 <div
     class="teacher-agenda"
     id="teacher-agenda-{{ $timetable->id }}"
     data-title="{{ $timetable->title }}"
+    data-export-heading="{{ $exportHeading ?? 'Teaching timetable' }}"
     data-branch="{{ $timetable->branch->name ?? 'Branch not specified' }}"
     data-academic-year="{{ $timetable->academicYear->year ?? 'Academic year not specified' }}"
     data-term="{{ $timetable->term->name ?? 'Term not specified' }}"
@@ -287,8 +291,12 @@ function downloadTimetable(timetableId) {
     </div>
     @foreach($weekDays as $dayNum => $dayName)
         @php
-            $daySessions = $sessions->where('day_of_week', $dayNum)->sortBy(function ($session) {
-                $shiftStart = $session->shifts->pluck('start_time')->filter()->sort()->first();
+            $daySessions = $sessions->where('day_of_week', $dayNum)->sortBy(function ($session) use ($shiftFilter) {
+                $selectedValues = $shiftFilter === 'morning' ? ['morning', 'day'] : [$shiftFilter];
+                $shifts = $shiftFilter
+                    ? $session->shifts->filter(fn ($shift) => in_array($shift->shift, $selectedValues, true))
+                    : $session->shifts;
+                $shiftStart = $shifts->pluck('start_time')->filter()->sort()->first();
                 return $shiftStart ?: ($session->start_time ?: '99:99');
             });
         @endphp
@@ -303,7 +311,11 @@ function downloadTimetable(timetableId) {
             <div class="teacher-agenda__sessions">
                 @forelse($daySessions as $session)
                     @php
-                        $shiftBlocks = $session->shifts->map(function ($shift) use ($session) {
+                        $selectedValues = $shiftFilter === 'morning' ? ['morning', 'day'] : [$shiftFilter];
+                        $visibleShifts = $shiftFilter
+                            ? $session->shifts->filter(fn ($shift) => in_array($shift->shift, $selectedValues, true))
+                            : $session->shifts;
+                        $shiftBlocks = $visibleShifts->map(function ($shift) use ($session) {
                             $shiftName = $shift->shift === 'day' ? 'morning' : $shift->shift;
 
                             return [
@@ -335,6 +347,16 @@ function downloadTimetable(timetableId) {
                         $isTest = $session->session_type === 'test' || $session->mark_as_test;
                         $sessionType = $isTest ? 'Test' : ucfirst($session->session_type ?: 'Class');
                         $formatTime = fn ($value) => $value ? \Carbon\Carbon::parse($value)->format('H:i') : '--:--';
+                        $teacherNames = collect();
+                        if ($showTeachers ?? false) {
+                            $teacherNames = collect($session->getAttribute('branch_teacher_names') ?? []);
+                            if ($teacherNames->isEmpty() && $session->lesson?->teacher) {
+                                $teacherNames->push($session->lesson->teacher->teacher_name);
+                            }
+                            if ($teacherNames->isEmpty() && $session->lesson) {
+                                $teacherNames = $session->lesson->teachers->pluck('teacher_name')->filter();
+                            }
+                        }
                     @endphp
                     <article class="teacher-agenda__session">
                         <div class="teacher-agenda__times">
@@ -367,6 +389,18 @@ function downloadTimetable(timetableId) {
                                 <span class="teacher-agenda__detail">
                                     <i class="fa-solid fa-location-dot" aria-hidden="true"></i>{{ $session->classroom ?: 'Room not assigned' }}
                                 </span>
+                                @if($showTeachers ?? false)
+                                    <span class="teacher-agenda__detail">
+                                        <i class="fa-solid fa-user-tie" aria-hidden="true"></i>
+                                        @if($teacherNames->isNotEmpty())
+                                            {{ $teacherNames->join(', ') }}
+                                        @elseif(in_array($activityType, ['lesson', 'group_work'], true))
+                                            Teacher to be assigned
+                                        @else
+                                            Teacher not applicable
+                                        @endif
+                                    </span>
+                                @endif
                                 @if($isTest && $session->minimum_paid_percentage !== null)
                                     <span class="teacher-agenda__detail">
                                         <i class="fa-solid fa-percent" aria-hidden="true"></i>Minimum paid: {{ number_format((float) $session->minimum_paid_percentage, 0) }}%
