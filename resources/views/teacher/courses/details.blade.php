@@ -133,7 +133,8 @@
                                                             <div class="row g-3">
                                                                 @foreach($lesson['units'] as $unit)
                                                                     @php
-                                                                        $completedHours = $unitDailyHours[$unit['id']] ?? 0;
+                                                                        $unitBranchKey = $unit['id'] . '-' . $branchData['branch_id'];
+                                                                        $completedHours = $unitDailyHours[$unitBranchKey] ?? 0;
                                                                         $requiredHours = $unit['hours'] ?? 0;
                                                                         $isDone = $completedHours >= $requiredHours && $requiredHours > 0;
                                                                         $progressPercentage = $requiredHours > 0 ? min(($completedHours / $requiredHours) * 100, 100) : 0;

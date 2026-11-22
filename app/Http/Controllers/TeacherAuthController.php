@@ -146,25 +146,40 @@ class TeacherAuthController extends Controller
             })->values();
         }
 
-        // Collect all unit IDs for this teacher's courses
-        $unitIds = [];
+        // Collect all unit IDs with their branch IDs for this teacher's courses
+        $unitBranchPairs = [];
         foreach ($courseBranchLessons as $branches) {
-            foreach ($branches as $branch) {
+            foreach ($branches as $branchId => $branch) {
                 foreach ($branch['lessons'] as $lesson) {
                     foreach ($lesson['units'] as $unitId => $unit) {
-                        $unitIds[] = $unitId;
+                        $unitBranchPairs[] = [
+                            'unit_id' => $unitId,
+                            'branch_id' => $branchId,
+                        ];
                     }
                 }
             }
         }
 
-        // Get daily hours per unit for this teacher
-        $unitDailyHours = \App\Models\TeacherDaily::where('teacher_id', $teacher->id)
-            ->whereIn('unit_id', $unitIds)
-            ->selectRaw('unit_id, SUM(hours_studied) as total_hours')
-            ->groupBy('unit_id')
-            ->pluck('total_hours', 'unit_id')
-            ->toArray();
+        // Get daily hours per unit per branch for this teacher
+        $unitDailyHours = [];
+        if (!empty($unitBranchPairs)) {
+            $unitIds = array_column($unitBranchPairs, 'unit_id');
+            $branchIds = array_unique(array_column($unitBranchPairs, 'branch_id'));
+
+            $dailyRecords = \App\Models\TeacherDaily::where('teacher_id', $teacher->id)
+                ->whereIn('unit_id', $unitIds)
+                ->whereIn('branch_id', $branchIds)
+                ->selectRaw('unit_id, branch_id, SUM(hours_studied) as total_hours')
+                ->groupBy('unit_id', 'branch_id')
+                ->get();
+
+            // Create composite key: unit_id-branch_id
+            foreach ($dailyRecords as $record) {
+                $key = $record->unit_id . '-' . $record->branch_id;
+                $unitDailyHours[$key] = $record->total_hours;
+            }
+        }
 
         return view('teacher.courses.details', compact('teacher', 'systemName', 'courses', 'unitDailyHours', 'announcements'));
     }
