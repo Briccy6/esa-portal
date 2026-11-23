@@ -4,6 +4,8 @@
     $course = $card->course ?: ($card->student->course->course_name ?? '—');
     $branch = $card->branch ?: ($card->student->branch->name ?? '—');
     $academicYear = $card->academic_year ?: ($card->student->academicYear->year ?? '—');
+    $shift = strtolower((string) ($card->student->shift ?? ''));
+    $shiftLabel = $shift === 'morning' ? 'Day' : ($shift !== '' ? ucfirst($shift) : 'Not recorded');
     $academicYearRecord = $card->student->academicYear ?? null;
     $validUntil = $academicYearRecord && $academicYearRecord->expiry_date
         ? \Carbon\Carbon::parse($academicYearRecord->expiry_date)->format('M d, Y')
@@ -33,7 +35,7 @@
             <div class="school-title">{{ $schoolName }}</div>
             <div class="school-address">{{ $schoolAddress }}</div>
         </div>
-        <div class="logo-badge"><img src="{{ $logoUrl }}" alt="Excellent Servant Academy logo"></div>
+        <div class="logo-badge"><img src="{{ $logoUrl ?: \App\Helpers\LogoHelper::getLogoUrl() }}" onerror="this.onerror=null;this.src='{{ \App\Helpers\LogoHelper::getLogoUrl() }}';" alt="Excellent Servant Academy logo"></div>
     </div>
     <div class="front-body">
         <div class="photo-column">
@@ -57,6 +59,7 @@
                     <div class="meta-item"><span class="meta-label">Academic Year</span><span class="meta-value">{{ $academicYear }}</span></div>
                     <div class="meta-item"><span class="meta-label">Course / Combination</span><span class="meta-value">{{ $course }}</span></div>
                     <div class="meta-item"><span class="meta-label">Branch</span><span class="meta-value">{{ $branch }}</span></div>
+                    <div class="meta-item"><span class="meta-label">Shift</span><span class="meta-value">{{ $shiftLabel }}</span></div>
                 </div>
             </div>
             <div class="front-contact-strip">

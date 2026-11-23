@@ -12,6 +12,7 @@
         .brand img { width: 64px; height: 64px; object-fit: contain; }
         .brand h1 { margin: 0; font-size: 20px; }
         .brand p { margin: 3px 0 0; color: #64748b; }
+        .brand-student-name { color: #1d4ed8; font-weight: 700; }
         .panel { background: #fff; border: 1px solid #dbe4ea; border-radius: 18px; padding: 22px; box-shadow: 0 16px 40px rgba(15,23,42,.10); }
         .badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 9px 14px; font-size: 13px; font-weight: 800; letter-spacing: .5px; }
         .badge.valid { background: #dcfce7; color: #166534; }
@@ -80,11 +81,18 @@
     $validUntil = $verified && $student->academicYear && $student->academicYear->expiry_date
         ? \Carbon\Carbon::parse($student->academicYear->expiry_date)->format('M d, Y')
         : 'Unknown';
+    $shift = $verified ? strtolower((string) ($student->shift ?? '')) : '';
+    $shiftLabel = $shift === 'morning' ? 'Day' : ($shift !== '' ? ucfirst($shift) : 'Not recorded');
+    $fallbackLogoUrl = \App\Helpers\LogoHelper::getLogoUrl();
 @endphp
 <main class="page">
     <header class="brand">
-        <img src="{{ $logoUrl }}" alt="Excellent Servant Academy logo">
-        <div><h1>Excellent Servant Academy</h1><p>Official student identity verification</p></div>
+        <img src="{{ $logoUrl ?: $fallbackLogoUrl }}" onerror="this.onerror=null;this.src='{{ $fallbackLogoUrl }}';" alt="Excellent Servant Academy logo">
+        <div>
+            <h1>Excellent Servant Academy</h1>
+            <p>Official student identity verification</p>
+            @if($verified)<p class="brand-student-name">{{ $student->full_name }}</p>@endif
+        </div>
     </header>
     @if($verified)
         <section class="panel">
@@ -93,7 +101,7 @@
                 <article class="id-card">
                     <div class="front-header">
                         <div><div class="title">Excellent Servant Academy</div><div class="address">Kigali, Ndamage House, 2nd Floor</div></div>
-                        <div class="logo-badge"><img src="{{ $logoUrl }}" alt="School logo"></div>
+                        <div class="logo-badge"><img src="{{ $logoUrl ?: $fallbackLogoUrl }}" onerror="this.onerror=null;this.src='{{ $fallbackLogoUrl }}';" alt="School logo"></div>
                     </div>
                     <div class="front-body">
                         <div>
@@ -109,6 +117,7 @@
                                     <div><span class="meta-label">Academic Year</span><strong class="meta-value">{{ $card->academic_year ?: ($student->academicYear->year ?? '—') }}</strong></div>
                                     <div><span class="meta-label">Course / Combination</span><strong class="meta-value">{{ $card->course ?: ($student->course->course_name ?? '—') }}</strong></div>
                                     <div><span class="meta-label">Branch</span><strong class="meta-value">{{ $card->branch ?: ($student->branch->name ?? '—') }}</strong></div>
+                                    <div><span class="meta-label">Shift</span><strong class="meta-value">{{ $shiftLabel }}</strong></div>
                                 </div>
                             </div>
                             <div class="contact-strip"><span><strong>Phone:</strong> {{ $student->phone ?: 'Not provided' }}</span><span><strong>Valid Until:</strong> {{ $validUntil }}</span></div>
@@ -122,6 +131,7 @@
                 <div class="detail"><span>Status</span><strong>Active / Valid</strong></div>
                 <div class="detail"><span>Course / Combination</span><strong>{{ $card->course ?: ($student->course->course_name ?? 'Not recorded') }}</strong></div>
                 <div class="detail"><span>Branch</span><strong>{{ $card->branch ?: ($student->branch->name ?? 'Not recorded') }}</strong></div>
+                <div class="detail"><span>Shift</span><strong>{{ $shiftLabel }}</strong></div>
                 <div class="detail"><span>Valid Until</span><strong>{{ $validUntil }}</strong></div>
             </div>
         </section>
