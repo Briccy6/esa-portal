@@ -242,14 +242,9 @@
                             </div>
                         </div>
                     </div>
-                    @if($card->verification_url)
-                        <div class="verification-link mt-3">
-                            <span class="small text-muted">Verification link</span>
-                            <a href="{{ $card->verification_url }}" target="_blank" rel="noopener noreferrer" class="text-break">{{ $card->verification_url }}</a>
-                        </div>
-                    @else
+                    @unless($card->verification_url)
                         <div class="alert alert-warning mt-3 mb-0">This card does not have a verification link yet. Reopen or regenerate the card to refresh its QR code.</div>
-                    @endif
+                    @endunless
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
@@ -309,9 +304,11 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        padding: 20px;
-        background: #f8fafc;
-        border-radius: 12px;
+        padding: 18px;
+        min-height: 464px;
+        background: linear-gradient(145deg, #f8fbff, #edf4fa);
+        border: 1px solid #e1eaf2;
+        border-radius: 14px;
     }
 
     .cr80-card {
@@ -601,9 +598,9 @@
 
     /* Standard CR80 front and back layout */
     .cr80-card {
-        width: 505px;
+        width: 680px;
         max-width: 100%;
-        height: 318px;
+        height: auto;
         aspect-ratio: 680 / 428;
         border-radius: 12px;
         font-family: 'Segoe UI', Roboto, Arial, sans-serif;
@@ -611,57 +608,56 @@
     }
     .cr80-front { display: flex; flex-direction: column; }
     .cr80-front .front-header {
-        height: 58px;
-        min-height: 58px;
-        padding: 10px 16px;
+        height: 78px;
+        min-height: 78px;
+        padding: 14px 22px;
         display: flex;
         align-items: center;
         justify-content: space-between;
         background: linear-gradient(90deg,#1d4ed8 0%,#2563eb 65%,#3b82f6 100%);
         color: #fff;
     }
-    .cr80-front .school-title { font-size: 15px; font-weight: 800; }
-    .cr80-front .school-address { margin-top: 2px; font-size: 9px; opacity: .92; }
-    .cr80-front .logo-badge { width: 40px; height: 40px; border-radius: 8px; background: #fff; padding: 3px; display: flex; align-items: center; justify-content: center; }
-    .cr80-front .logo-badge img { max-width: 100%; max-height: 100%; object-fit: contain; }
-    .cr80-front .front-body { flex: 1; min-height: 0; padding: 12px 16px 10px; display: grid; grid-template-columns: 125px 1fr; gap: 15px; }
+    .cr80-front .school-title { font-size: 20px; font-weight: 800; }
+    .cr80-front .school-address { margin-top: 2px; font-size: 12px; opacity: .92; }
+    .cr80-front .logo-badge { width: 52px; height: 52px; border-radius: 10px; background: #fff; padding: 4px; display: flex; align-items: center; justify-content: center; }
+    .cr80-front .logo-badge img { width: 100%; height: 100%; object-fit: contain; }
+    .cr80-front .front-body { flex: 1; min-height: 0; padding: 18px 22px 16px; display: grid; grid-template-columns: 168px 1fr; gap: 20px; }
     .cr80-front .photo-column { display: flex; flex-direction: column; gap: 6px; }
-    .cr80-front .photo-frame { width: 125px; height: 152px; border-radius: 9px; border: 2px solid #dbeafe; overflow: hidden; background: #f8fafc; display: flex; align-items: center; justify-content: center; }
+    .cr80-front .photo-frame { width: 168px; height: 205px; border-radius: 12px; border: 2px solid #dbeafe; overflow: hidden; background: #f8fafc; display: flex; align-items: center; justify-content: center; }
     .cr80-front .photo-frame img { width: 100%; height: 100%; object-fit: cover; object-position: top center; }
     .cr80-front .photo-placeholder { font-size: 28px; color: #94a3b8; font-weight: 800; }
-    .cr80-front .id-badge-pill { text-align: center; color: #1d4ed8; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 5px; padding: 4px; font-size: 8px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; }
     .cr80-front .details-column { min-width: 0; display: flex; flex-direction: column; justify-content: space-between; }
-    .cr80-front .student-identity { border-bottom: 2px solid #2563eb; padding-bottom: 5px; margin-bottom: 7px; }
-    .cr80-front .student-name { font-size: 16px; line-height: 1.12; font-weight: 800; text-transform: uppercase; }
-    .cr80-front .student-role { margin-top: 2px; color: #2563eb; font-size: 8px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase; }
-    .cr80-front .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px 10px; }
+    .cr80-front .student-identity { border-bottom: 2px solid #2563eb; padding-bottom: 8px; margin-bottom: 10px; }
+    .cr80-front .student-name { font-size: 22px; line-height: 1.12; font-weight: 800; text-transform: uppercase; }
+    .cr80-front .student-role { margin-top: 3px; color: #2563eb; font-size: 11px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+    .cr80-front .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
     .cr80-front .meta-item { display: flex; flex-direction: column; min-width: 0; }
-    .cr80-front .meta-label { color: #64748b; font-size: 7px; font-weight: 800; text-transform: uppercase; letter-spacing: .4px; }
-    .cr80-front .meta-value { margin-top: 2px; color: #0f172a; font-size: 9px; font-weight: 800; overflow-wrap: anywhere; }
-    .cr80-front .meta-value.mono { color: #1e3a8a; font-family: 'Courier New', monospace; font-size: 9px; }
-    .cr80-front .front-contact-strip { margin-top: 6px; background: #f8fafc; border-left: 3px solid #2563eb; border-radius: 5px; padding: 6px 8px; display: flex; justify-content: space-between; gap: 8px; font-size: 8px; }
+    .cr80-front .meta-label { color: #64748b; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; }
+    .cr80-front .meta-value { margin-top: 2px; color: #0f172a; font-size: 13px; font-weight: 800; overflow-wrap: anywhere; }
+    .cr80-front .meta-value.mono { color: #1e3a8a; font-family: 'Courier New', monospace; font-size: 12px; }
+    .cr80-front .front-contact-strip { margin-top: 10px; background: #f8fafc; border-left: 4px solid #2563eb; border-radius: 6px; padding: 8px 12px; display: flex; justify-content: space-between; gap: 12px; font-size: 11px; }
     .cr80-back { display: flex; flex-direction: column; padding: 0; gap: 0; }
-    .cr80-back .back-header { height: 50px; padding: 7px 16px; background: #1e293b; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; text-align: center; }
-    .cr80-back .back-header .title { font-size: 11px; font-weight: 800; letter-spacing: .3px; }
-    .cr80-back .back-header .sub { color: #cbd5e1; font-size: 8px; }
-    .cr80-back .back-body { flex: 1; min-height: 0; padding: 13px 16px 10px; display: flex; flex-direction: column; justify-content: space-between; }
-    .cr80-back .notice-box { height: 144px; background: #f8fafc; border: 1px solid #dbeafe; border-left: 4px solid #2563eb; border-radius: 9px; padding: 10px; display: grid; grid-template-columns: 1fr 84px; gap: 12px; align-items: center; }
+    .cr80-back .back-header { height: 66px; padding: 10px 22px; background: #1e293b; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; text-align: center; }
+    .cr80-back .back-header .title { font-size: 15px; font-weight: 800; letter-spacing: .4px; }
+    .cr80-back .back-header .sub { color: #cbd5e1; font-size: 11px; }
+    .cr80-back .back-body { flex: 1; min-height: 0; padding: 18px 22px 16px; display: flex; flex-direction: column; justify-content: space-between; }
+    .cr80-back .notice-box { height: 230px; background: #f8fafc; border: 1px solid #dbeafe; border-left: 4px solid #2563eb; border-radius: 12px; padding: 14px; display: grid; grid-template-columns: 1fr 112px; gap: 16px; align-items: center; }
     .cr80-back .notice-copy { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
-    .cr80-back .notice-title { margin-bottom: 5px; color: #1d4ed8; font-size: 10px; font-weight: 800; text-align: center; }
-    .cr80-back .notice-text { color: #334155; font-size: 8px; line-height: 1.45; text-align: center; }
+    .cr80-back .notice-title { margin-bottom: 8px; color: #1d4ed8; font-size: 14px; font-weight: 800; text-align: center; }
+    .cr80-back .notice-text { color: #334155; font-size: 11px; line-height: 1.45; text-align: center; }
     .cr80-back .notice-text p { margin: 0; }
-    .cr80-back .notice-text p + p { margin-top: 5px; }
-    .cr80-back .qr-box { width: 84px; height: 84px; padding: 5px; border: 1px solid #bfdbfe; border-radius: 7px; background: #fff; text-align: center; }
-    .cr80-back .qr-caption { color: #1d4ed8; font-size: 6px; font-weight: 800; margin-bottom: 3px; text-transform: uppercase; }
-    .cr80-back .qr-box svg { width: 66px; height: 66px; display: block; margin: 0 auto; }
-    .cr80-back .qr-box img { width: 66px; height: 66px; display: block; margin: 0 auto; }
-    .cr80-back .back-footer { display: grid; grid-template-columns: 1.3fr 1fr; gap: 12px; align-items: center; min-height: 72px; border-top: 1px dashed #cbd5e1; }
-    .cr80-back .office-info { font-size: 8px; line-height: 1.4; color: #475569; text-align: center; }
+    .cr80-back .notice-text p + p { margin-top: 8px; }
+    .cr80-back .qr-box { width: 112px; height: 112px; padding: 8px; border: 1px solid #bfdbfe; border-radius: 10px; background: #fff; text-align: center; }
+    .cr80-back .qr-caption { color: #1d4ed8; font-size: 8px; font-weight: 800; margin-bottom: 5px; text-transform: uppercase; }
+    .cr80-back .qr-box svg { width: 88px; height: 88px; display: block; margin: 0 auto; }
+    .cr80-back .qr-box img { width: 88px; height: 88px; display: block; margin: 0 auto; }
+    .cr80-back .back-footer { display: grid; grid-template-columns: 1.3fr 1fr; gap: 18px; align-items: center; min-height: 76px; border-top: 1px dashed #cbd5e1; }
+    .cr80-back .office-info { font-size: 10px; line-height: 1.45; color: #475569; text-align: center; }
     .cr80-back .signature-block { text-align: center; }
-    .cr80-back .signature-line { width: 125px; height: 20px; margin: 0 auto 3px; border-bottom: 1.5px solid #334155; }
-    .cr80-back .signature-image { width: 125px; height: 30px; object-fit: contain; object-position: center bottom; display: block; margin: 0 auto; }
-    .cr80-back .signature-label { font-size: 8px; font-weight: 800; }
-    .cr80-back .signature-role { font-size: 7px; color: #64748b; }
+    .cr80-back .signature-line { width: 170px; height: 26px; margin: 0 auto 4px; border-bottom: 1.5px solid #334155; }
+    .cr80-back .signature-image { width: 170px; height: 32px; object-fit: contain; object-position: center bottom; display: block; margin: 0 auto; }
+    .cr80-back .signature-label { font-size: 10px; font-weight: 800; }
+    .cr80-back .signature-role { font-size: 9px; color: #64748b; }
 
     /* Both Sides View */
     .both-sides-container {
@@ -686,14 +682,7 @@
         letter-spacing: 0.5px;
     }
 
-    .both-preview {
-        max-width: 350px;
-    }
-
-    .verification-link {
-        display: grid;
-        gap: 4px;
-    }
+    .both-preview { max-width: 680px; }
 
     @media (max-width: 768px) {
         .both-sides-container {
@@ -701,9 +690,7 @@
             align-items: center;
         }
 
-        .both-preview {
-            max-width: 280px;
-        }
+        .both-preview { max-width: 100%; }
 
         .modal-footer {
             flex-direction: column;
@@ -924,7 +911,6 @@ function printStudentCard(cardId, side) {
             .cr80-front .front-body { padding: 2mm 3mm 1.5mm; grid-template-columns: 25mm 1fr; gap: 3mm; }
             .cr80-front .photo-frame { width: 25mm; height: 30mm; border: 0.3mm solid #dbeafe; border-radius: 1.5mm; overflow: hidden; }
             .cr80-front .photo-frame img { width: 100%; height: 100%; object-fit: cover; object-position: top center; }
-            .cr80-front .id-badge-pill { margin-top: 1mm; text-align: center; font-size: 3.5pt; color: #1d4ed8; background: #eff6ff; border: 0.2mm solid #bfdbfe; border-radius: 1mm; padding: 0.7mm; }
             .cr80-front .student-name { font-size: 8pt; font-weight: bold; border-bottom: 0.3mm solid #2563eb; padding-bottom: 1mm; }
             .cr80-front .student-role { font-size: 4pt; color: #2563eb; margin-top: 1mm; }
             .cr80-front .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5mm 2mm; margin-top: 1.5mm; }

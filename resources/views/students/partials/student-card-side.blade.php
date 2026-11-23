@@ -35,7 +35,7 @@
             <div class="school-title">{{ $schoolName }}</div>
             <div class="school-address">{{ $schoolAddress }}</div>
         </div>
-        <div class="logo-badge"><img src="{{ $logoUrl ?: \App\Helpers\LogoHelper::getLogoUrl() }}" onerror="this.onerror=null;this.src='{{ \App\Helpers\LogoHelper::getLogoUrl() }}';" alt="Excellent Servant Academy logo"></div>
+        <div class="logo-badge"><img src="{{ \App\Helpers\LogoHelper::getLogoUrl() }}" alt="Excellent Servant Academy logo"></div>
     </div>
     <div class="front-body">
         <div class="photo-column">
@@ -46,7 +46,6 @@
                     <div class="photo-placeholder">{{ strtoupper(substr($studentName, 0, 1)) }}</div>
                 @endif
             </div>
-            <div class="id-badge-pill">Student Identity Card</div>
         </div>
         <div class="details-column">
             <div>

@@ -27,7 +27,6 @@
         .front-body { height: 348px; display: grid; grid-template-columns: 168px 1fr; gap: 20px; padding: 18px 22px 16px; }
         .photo-frame { width: 168px; height: 205px; border: 2px solid #dbeafe; border-radius: 12px; overflow: hidden; background: #f8fafc; }
         .photo-frame img { width: 100%; height: 100%; object-fit: cover; object-position: top center; }
-        .id-pill { margin-top: 8px; text-align: center; color: #1d4ed8; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 5px; font-size: 11px; font-weight: 800; text-transform: uppercase; }
         .details { display: flex; flex-direction: column; justify-content: space-between; }
         .student-name { font-size: 22px; font-weight: 800; text-transform: uppercase; border-bottom: 2px solid #2563eb; padding-bottom: 8px; }
         .student-role { color: #2563eb; font-size: 11px; font-weight: 800; letter-spacing: 1px; margin-top: 4px; }
@@ -101,12 +100,11 @@
                 <article class="id-card">
                     <div class="front-header">
                         <div><div class="title">Excellent Servant Academy</div><div class="address">Kigali, Ndamage House, 2nd Floor</div></div>
-                        <div class="logo-badge"><img src="{{ $logoUrl ?: $fallbackLogoUrl }}" onerror="this.onerror=null;this.src='{{ $fallbackLogoUrl }}';" alt="School logo"></div>
+                        <div class="logo-badge"><img src="{{ $fallbackLogoUrl }}" alt="School logo"></div>
                     </div>
                     <div class="front-body">
                         <div>
                             <div class="photo-frame">@if($studentPhotoUrl)<img src="{{ $studentPhotoUrl }}" alt="{{ $student->full_name }}">@endif</div>
-                            <div class="id-pill">Student Identity Card</div>
                         </div>
                         <div class="details">
                             <div>
