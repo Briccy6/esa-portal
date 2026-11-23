@@ -371,7 +371,6 @@ Route::middleware(['auth:admin', 'admin.academic_year'])->prefix('admin')->name(
     Route::get('/students/cards', [StudentController::class, 'listStudentCards'])->name('students.StudentCards');
     Route::post('/students/{student}/generate-card', [StudentController::class, 'generateStudentCard'])->name('students.generate_card');
     Route::put('/students/{student}/update-passport-verification', [StudentController::class, 'updatePassportVerification'])->name('students.update-passport-verification');
-    Route::post('/students/bulk-verify-passport-photos', [StudentController::class, 'bulkVerifyPassportPhotos'])->name('students.bulk-verify-passport-photos');
     Route::post('/admin/students/{student}/send-passport-rejection-email', [StudentController::class, 'sendPassportRejectionEmail'])->name('students.send-passport-rejection-email');
     // NESA student endpoints removed
 

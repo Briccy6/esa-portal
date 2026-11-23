@@ -1,8 +1,7 @@
 <?php
 
 /**
- * Test Gemini API connection with a sample image
- * This script tests the passport photo verification service
+ * Test Gemini API connectivity and the passport photo validation service
  */
 
 require_once 'vendor/autoload.php';
@@ -61,7 +60,7 @@ try {
     echo "❌ Text test error: {$e->getMessage()}\n";
 }
 
-echo "\nTesting PassportPhotoVerificationService...\n\n";
+echo "\nTesting passport photo validation service...\n\n";
 
 // Test 2: Service initialization
 try {
@@ -91,5 +90,5 @@ try {
 echo "\n✅ Gemini API configuration test completed!\n";
 echo "\nNext steps:\n";
 echo "1. Upload a passport photo in the student profile page\n";
-echo "2. The system will automatically verify it using Gemini AI\n";
+echo "2. Basic image requirements will be checked and staff must review the photo\n";
 echo "3. Check the verification status in the admin panel\n";

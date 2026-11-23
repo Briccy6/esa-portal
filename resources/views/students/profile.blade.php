@@ -876,15 +876,15 @@
                                        data-error-target="passportPhotoError"
                                        data-original-status="{{ $passportPhotoSource ? 'Current photo is on file. Choose a new photo to replace it.' : 'No photo uploaded yet.' }}"
                                        data-max-bytes="2097152" data-max-label="2 MB" data-preview-kind="image">
-                                <span class="profile-field-hint">JPG, JPEG, or PNG, up to 2 MB. Camera-captured photos are accepted.</span>
+                                <span class="profile-field-hint">JPG, JPEG, or PNG, up to 2 MB. Basic dimensions are checked; staff review the saved photo.</span>
                                 <p class="profile-upload-status" id="passportPhotoName">
                                     {{ $passportPhotoSource ? 'Current photo is on file. Choose a new photo to replace it.' : 'No photo uploaded yet.' }}
                                 </p>
                                 <span class="profile-file-error" id="passportPhotoError" role="alert"></span>
                                 <div class="passport-verification-status" id="passportVerificationStatus" style="display:none;" aria-live="polite">
-                                    <div id="passportVerificationLoading" data-verification-loading style="display:none;">Checking your passport photo with AI...</div>
+                                    <div id="passportVerificationLoading" data-verification-loading style="display:none;">Checking photo file requirements...</div>
                                     <div id="passportVerificationSuccess" data-verification-success style="display:none;">
-                                        Approved. Save the profile to complete this step.
+                                        Basic image checks passed. Save your profile to submit the photo for staff review.
                                     </div>
                                     <div id="passportVerificationError" data-verification-error style="display:none;">
                                         <span id="passportVerificationErrorMessage">The photo was not approved.</span>
@@ -893,7 +893,7 @@
                                 @if($student->passport_photo)
                                     @if($student->passport_photo_verification_status === 'approved')
                                         <div class="passport-verification-status">
-                                            <div data-verification-success>Verified and approved.</div>
+                                            <div data-verification-success>Approved.</div>
                                         </div>
                                     @elseif($student->passport_photo_verification_status === 'manual_review')
                                         <div class="passport-verification-status">
@@ -905,19 +905,10 @@
                                         </div>
                                     @else
                                         <div class="passport-verification-status">
-                                            <div data-verification-loading>Verification pending. Upload and save a passport photo to verify it.</div>
+                                            <div data-verification-loading>Awaiting staff review. Save an uploaded photo to submit it for review.</div>
                                         </div>
                                     @endif
                                 @endif
-                                <div class="passport-verification-status" id="passportVerificationStatus" style="display:none;" aria-live="polite">
-                                    <div data-verification-loading style="display:none;">Checking your passport photo with AI...</div>
-                                    <div data-verification-success style="display:none;">
-                                        Approved. Save the profile to complete this step.
-                                    </div>
-                                    <div data-verification-error style="display:none;">
-                                        <span id="passportVerificationErrorMessage">The photo was not approved.</span>
-                                    </div>
-                                </div>
                                 @error('passport_photo')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                             </div>
                         </div>
@@ -1024,16 +1015,16 @@
                                            data-max-bytes="204800" data-preview-kind="image">
                                     <span class="profile-field-hint" id="idPhotoHint">
                                         {{ $selectedIdentificationType === 'Passport'
-                                            ? 'Upload the full Rwandan passport or Laissez-Passer bio-data page, including its MRZ. JPG, JPEG, or PNG, up to 200 KB.'
-                                            : 'Upload the front of the Rwandan National ID with all edges visible. JPG, JPEG, or PNG, up to 200 KB.' }}
+                                            ? 'Upload the full Rwandan passport or Laissez-Passer bio-data page, including its MRZ. JPG, JPEG, or PNG, up to 200 KB. The image is not checked automatically.'
+                                            : 'Upload the front of the Rwandan National ID with all edges visible. JPG, JPEG, or PNG, up to 200 KB. The image is not checked automatically.' }}
                                     </span>
                                     <p class="profile-upload-status" id="idPhotoName">
                                         {{ $idPhotoSource ? 'Current document image is on file. Choose a new image to replace it.' : 'No document image uploaded yet.' }}
                                     </p>
                                     <span class="profile-file-error" id="idPhotoError" role="alert"></span>
                                     <div class="passport-verification-status" id="idPhotoVerificationStatus" style="display:none;" aria-live="polite">
-                                        <div id="idPhotoVerificationLoading" data-verification-loading style="display:none;">Checking your identification document with AI...</div>
-                                        <div id="idPhotoVerificationSuccess" data-verification-success style="display:none;">Document verified. Save your profile to complete this step.</div>
+                                        <div id="idPhotoVerificationLoading" data-verification-loading style="display:none;">Checking file and number format...</div>
+                                        <div id="idPhotoVerificationSuccess" data-verification-success style="display:none;">Upload checks passed. Save your profile to accept the document without AI image inspection.</div>
                                         <div id="idPhotoVerificationError" data-verification-error style="display:none;">
                                             <span id="idPhotoVerificationErrorMessage">The document was not approved.</span>
                                         </div>
@@ -1041,11 +1032,11 @@
                                     @if($student->id_photo)
                                         @if($student->id_photo_verification_status === 'approved')
                                             <div class="passport-verification-status">
-                                                <div data-verification-success>Identification document verified and approved.</div>
+                                                <div data-verification-success>Accepted. Document details are not checked automatically.</div>
                                             </div>
                                         @else
                                             <div class="passport-verification-status">
-                                                <div data-verification-error>Identification document not verified. Upload the document again for AI verification.</div>
+                                                <div data-verification-error>Identification details changed. Upload the document again to accept it.</div>
                                             </div>
                                         @endif
                                     @endif
@@ -1358,7 +1349,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     image.hidden = false;
                     placeholder.hidden = true;
 
-                    // Trigger AI verification for passport photo
                     if (input.id === 'passportPhotoInput') {
                         verifyPassportPhoto(input);
                     }
@@ -1387,7 +1377,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // Passport photo AI verification
+    // Validate basic photo requirements before submission.
     function verifyPassportPhoto(input) {
         const verificationStatus = document.getElementById('passportVerificationStatus');
         const loadingDiv = document.getElementById('passportVerificationLoading');
@@ -1397,7 +1387,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (!verificationStatus) return;
 
-        // Show loading state
         verificationStatus.style.display = 'block';
         loadingDiv.style.display = 'block';
         successDiv.style.display = 'none';
@@ -1431,7 +1420,6 @@ document.addEventListener('DOMContentLoaded', function () {
             } else {
                 successDiv.style.display = 'none';
                 errorDiv.style.display = 'block';
-                // Show specific rejection reason from the API
                 errorMessage.textContent = data.message || 'Photo rejected. Please upload a clear passport-style photograph.';
             }
         })
@@ -1439,13 +1427,8 @@ document.addEventListener('DOMContentLoaded', function () {
             loadingDiv.style.display = 'none';
             successDiv.style.display = 'none';
             errorDiv.style.display = 'block';
-            // Show specific error message
-            if (error.message && error.message.includes('service temporarily unavailable')) {
-                errorMessage.textContent = 'Photo rejected. Please upload a clear passport-style photograph with a plain white background.';
-            } else {
-                errorMessage.textContent = error.message || 'Photo rejected. Please upload a clear passport-style photograph.';
-            }
-            console.error('Verification error:', error);
+            errorMessage.textContent = error.message || 'The photo did not pass the basic image checks.';
+            console.error('Photo validation error:', error);
         });
     }
 
@@ -1513,7 +1496,7 @@ document.addEventListener('DOMContentLoaded', function () {
         .catch(verificationError => {
             if (requestId !== identificationVerificationRequest) return;
             loading.style.display = 'none';
-            errorMessage.textContent = verificationError.message || 'Identification verification is temporarily unavailable.';
+            errorMessage.textContent = verificationError.message || 'The identification file could not be checked. Please try again.';
             error.style.display = 'block';
         });
     }
@@ -1526,8 +1509,8 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('idPhotoLabel').textContent = type === 'Passport' ? 'Passport / Laissez-Passer image' : 'National ID image';
         document.getElementById('idNumberLabel').textContent = type === 'Passport' ? 'Passport / Laissez-Passer number' : 'National ID number';
         document.getElementById('idPhotoHint').textContent = type === 'Passport'
-            ? 'Upload the full Rwandan passport or Laissez-Passer bio-data page, including its MRZ. JPG, JPEG, or PNG, up to 200 KB.'
-            : 'Upload the front of the Rwandan National ID with all edges visible. JPG, JPEG, or PNG, up to 200 KB.';
+            ? 'Upload the full Rwandan passport or Laissez-Passer bio-data page, including its MRZ. JPG, JPEG, or PNG, up to 200 KB. The image is not checked automatically.'
+            : 'Upload the front of the Rwandan National ID with all edges visible. JPG, JPEG, or PNG, up to 200 KB. The image is not checked automatically.';
     }
 
     function updateEducationFields() {

@@ -9,177 +9,69 @@ use Tests\TestCase;
 
 class IdentificationDocumentVerificationServiceTest extends TestCase
 {
-    public function test_it_approves_a_rwandan_national_id_when_its_number_matches_its_birth_year_and_sex(): void
+    protected function setUp(): void
     {
-        $result = $this->verify('ID', '1200181234567890', $this->nationalIdResponse());
+        parent::setUp();
+
+        Http::fake();
+    }
+
+    public function test_it_accepts_a_valid_national_id_upload_without_calling_gemini(): void
+    {
+        $result = $this->validate('ID', '1200181234567890');
 
         $this->assertTrue($result['success']);
-        $this->assertTrue($result['checks']['cross_field_math_valid']);
-        $this->assertTrue($result['checks']['document_number_matches']);
+        $this->assertSame('basic_upload_validation', $result['verification_result']['method']);
+        $this->assertNull($result['confidence']);
+        Http::assertNothingSent();
     }
 
-    public function test_it_rejects_a_national_id_when_the_birth_year_or_sex_digit_conflicts(): void
+    public function test_it_rejects_a_national_id_number_with_an_invalid_format(): void
     {
-        $response = $this->nationalIdResponse();
-        $response['date_of_birth'] = '02/03/2002';
-
-        $result = $this->verify('ID', '1200181234567890', $response);
+        $result = $this->validate('ID', '123456789012345');
 
         $this->assertFalse($result['success']);
-        $this->assertContains('The 16-digit ID birth year does not match the printed Date of Birth.', $result['issues']);
-        $this->assertFalse($result['checks']['cross_field_math_valid']);
-
+        $this->assertContains('Enter a National ID number containing exactly 16 digits.', $result['issues']);
+        Http::assertNothingSent();
     }
 
-    public function test_it_rejects_a_national_id_when_the_sex_digit_conflicts(): void
+    public function test_it_rejects_a_national_id_with_an_unrecognized_holder_category(): void
     {
-        $response = $this->nationalIdResponse();
-        $response['sex'] = 'F';
-
-        $result = $this->verify('ID', '1200181234567890', $response);
+        $result = $this->validate('ID', '9200181234567890');
 
         $this->assertFalse($result['success']);
-        $this->assertContains('The National ID sex digit does not match the printed sex.', $result['issues']);
-        $this->assertFalse($result['checks']['cross_field_math_valid']);
+        $this->assertContains('The first National ID digit is not a recognized holder category.', $result['issues']);
+        Http::assertNothingSent();
     }
 
-    public function test_it_rejects_an_expired_rwandan_passport(): void
+    public function test_it_accepts_a_passport_number_after_basic_upload_checks(): void
     {
-        $response = $this->passportResponse();
-        $response['expiry_date'] = now('Africa/Kigali')->subDay()->format('d/m/Y');
-
-        $result = $this->verify('Passport', 'PC123456', $response);
-
-        $this->assertFalse($result['success']);
-        $this->assertStringContainsString('The travel document expired on', implode(' ', $result['issues']));
-        $this->assertFalse($result['checks']['is_not_expired']);
-    }
-
-    public function test_it_approves_a_valid_rwandan_passport(): void
-    {
-        $result = $this->verify('Passport', 'PC123456', $this->passportResponse());
+        $result = $this->validate('Passport', 'PC123456');
 
         $this->assertTrue($result['success']);
-        $this->assertTrue($result['checks']['is_not_expired']);
-        $this->assertTrue($result['checks']['mrz_matches']);
+        $this->assertTrue($result['checks']['document_number_format_valid']);
+        Http::assertNothingSent();
     }
 
-    public function test_it_approves_a_valid_rwandan_laissez_passer(): void
+    public function test_it_rejects_identification_images_over_200_kb(): void
     {
-        $response = $this->passportResponse();
-        $response['document_type'] = 'RWANDA_LAISSEZ_PASSER';
-        $response['document_number'] = 'LP123456';
-        $response['type_code'] = 'PL';
-
-        $result = $this->verify('Passport', 'LP123456', $response);
-
-        $this->assertTrue($result['success']);
-        $this->assertSame('RWANDA_LAISSEZ_PASSER', $result['verification_result']['document_type']);
-    }
-
-    public function test_it_rejects_a_passport_when_the_mrz_does_not_match_the_printed_fields(): void
-    {
-        $response = $this->passportResponse();
-        $response['mrz_matches_printed_data'] = false;
-
-        $result = $this->verify('Passport', 'PC123456', $response);
-
-        $this->assertFalse($result['success']);
-        $this->assertContains(
-            'The complete MRZ is missing, cropped, or does not match the printed document details.',
-            $result['issues']
+        $result = app(IdentificationDocumentVerificationService::class)->validateUpload(
+            UploadedFile::fake()->image('document.jpg')->size(201),
+            'ID',
+            '1200181234567890'
         );
-        $this->assertFalse($result['checks']['mrz_matches']);
+
+        $this->assertFalse($result['success']);
+        $this->assertContains('The identification image must be 200 KB or smaller.', $result['issues']);
+        Http::assertNothingSent();
     }
 
-    private function verify(string $identificationType, string $documentNumber, array $response): array
+    private function validate(string $identificationType, string $documentNumber): array
     {
-        config(['services.gemini.api_key' => 'test-key']);
-        Http::fake([
-            '*' => Http::response([
-                'candidates' => [[
-                    'content' => [
-                        'parts' => [['text' => json_encode($response)]],
-                    ],
-                ]],
-            ]),
-        ]);
-
-        return (new IdentificationDocumentVerificationService())->verify(
+        return app(IdentificationDocumentVerificationService::class)->validateUpload(
             UploadedFile::fake()->image('document.jpg'),
             $identificationType,
             $documentNumber
         );
-    }
-
-    private function nationalIdResponse(): array
-    {
-        return array_merge($this->baseResponse(), [
-            'document_type' => 'RWANDA_NATIONAL_ID',
-            'has_ghost_portrait' => true,
-            'is_front_side' => true,
-            'security_background_valid' => true,
-            'signature_present' => true,
-            'place_of_issue_present' => true,
-            'full_name' => 'Test Student',
-            'document_number' => '1200181234567890',
-            'date_of_birth' => '02/03/2001',
-            'sex' => 'M',
-        ]);
-    }
-
-    private function passportResponse(): array
-    {
-        return array_merge($this->baseResponse(), [
-            'document_type' => 'RWANDA_PASSPORT',
-            'has_ghost_portrait' => true,
-            'full_name' => 'Test Student',
-            'document_number' => 'PC123456',
-            'date_of_birth' => '02/03/2001',
-            'sex' => 'M',
-            'nationality' => 'RWANDAN',
-            'country_code' => 'RWA',
-            'type_code' => 'P',
-            'place_of_birth' => 'Kigali',
-            'issue_date' => now('Africa/Kigali')->subYear()->format('d/m/Y'),
-            'expiry_date' => now('Africa/Kigali')->addYear()->format('d/m/Y'),
-            'issuing_authority_valid' => true,
-            'mrz_visible' => true,
-            'mrz_matches_printed_data' => true,
-        ]);
-    }
-
-    private function baseResponse(): array
-    {
-        return [
-            'document_type' => 'UNKNOWN_OR_OTHER',
-            'confidence' => 0.98,
-            'is_clear_and_unblurred' => true,
-            'all_edges_visible' => true,
-            'is_direct_capture' => true,
-            'is_screen_or_copy_of_copy' => false,
-            'is_digitally_altered' => false,
-            'has_clear_portrait' => true,
-            'branding_valid' => true,
-            'required_fields_present' => true,
-            'has_ghost_portrait' => false,
-            'is_front_side' => false,
-            'security_background_valid' => false,
-            'signature_present' => false,
-            'place_of_issue_present' => false,
-            'full_name' => '',
-            'document_number' => '',
-            'date_of_birth' => '',
-            'sex' => '',
-            'nationality' => '',
-            'country_code' => '',
-            'type_code' => '',
-            'place_of_birth' => '',
-            'issue_date' => '',
-            'expiry_date' => '',
-            'issuing_authority_valid' => false,
-            'mrz_visible' => false,
-            'mrz_matches_printed_data' => false,
-        ];
     }
 }

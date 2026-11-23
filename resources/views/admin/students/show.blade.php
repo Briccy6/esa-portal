@@ -1170,18 +1170,18 @@ function resetPassword() {
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="passportVerificationModalLabel">Override Passport Photo Verification</h5>
+                <h5 class="modal-title" id="passportVerificationModalLabel">Review Passport Photo</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <p class="text-muted mb-3">Manually override the AI verification status for this student's passport photo.</p>
+                <p class="text-muted mb-3">Record the staff review decision for this student's passport photo.</p>
 
                 <form action="{{ route('admin.students.update-passport-verification', $student) }}" method="POST">
                     @csrf
                     @method('PUT')
 
                     <div class="mb-3">
-                        <label for="verificationStatus" class="form-label">Verification Status</label>
+                        <label for="verificationStatus" class="form-label">Review Status</label>
                         <select class="form-select" id="verificationStatus" name="verification_status" required>
                             <option value="">Select status</option>
                             <option value="approved" {{ $student->passport_photo_verification_status === 'approved' ? 'selected' : '' }}>Approved</option>
@@ -1215,7 +1215,7 @@ function resetPassword() {
 
                     <div class="modal-footer px-0 pb-0">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Save Override</button>
+                        <button type="submit" class="btn btn-primary">Save Review</button>
                     </div>
                 </form>
             </div>
@@ -1224,51 +1224,6 @@ function resetPassword() {
 </div>
 @endsection
 <script>
-function runBulkPassportCheck() {
-    if (!confirm('This will run AI verification on all pending passport photos. Continue?')) {
-        return;
-    }
-
-    const btn = event.target;
-    const originalText = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Checking...';
-
-    fetch('/admin/students/bulk-verify-passport-photos', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        btn.disabled = false;
-        btn.innerHTML = originalText;
-
-        if (data.success) {
-            alert(data.message);
-            
-            if (data.rejected_students && data.rejected_students.length > 0) {
-                let message = 'The following students had their passport photos rejected:\n\n';
-                data.rejected_students.forEach(student => {
-                    message += '• ' + student.name + ' (' + student.email + ')\n  Reason: ' + student.rejection_reason + '\n\n';
-                });
-                alert(message);
-            }
-            
-            location.reload();
-        } else {
-            alert('Error: ' + data.message);
-        }
-    })
-    .catch(error => {
-        btn.disabled = false;
-        btn.innerHTML = originalText;
-        alert('Error: ' + error.message);
-    });
-}
-
 function sendRejectionEmail(studentId, rejectionReason) {
     if (!confirm('This will send a rejection email to the student and delete their passport photo. Continue?')) {
         return;

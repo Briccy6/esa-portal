@@ -6,11 +6,8 @@ use App\Models\Staff;
 use App\Models\Student;
 use App\Services\AcademyKnowledgeBuilder;
 use App\Services\GeminiAssistantService;
-use App\Services\IdentificationDocumentVerificationService;
 use Illuminate\Http\Client\Request;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
-use RuntimeException;
 use Tests\TestCase;
 
 class GeminiAssistantServiceTest extends TestCase
@@ -94,43 +91,4 @@ class GeminiAssistantServiceTest extends TestCase
         $this->assertStringNotContainsString('Create a teacher assignment', $instruction);
     }
 
-    public function test_identification_verification_uses_system_instruction_and_strict_json_output(): void
-    {
-        Http::fake([
-            '*' => Http::response([
-                'candidates' => [[
-                    'content' => [
-                        'parts' => [['text' => '{"document_type":"RWANDA_NATIONAL_ID"}']],
-                    ],
-                ]],
-            ]),
-        ]);
-
-        try {
-            app(IdentificationDocumentVerificationService::class)->verify(
-                UploadedFile::fake()->image('identity.jpg'),
-                'ID',
-                '1200181234567890'
-            );
-            $this->fail('The incomplete mock response should not pass document verification.');
-        } catch (RuntimeException $exception) {
-            $this->assertStringContainsString('omitted the confidence', $exception->getMessage());
-        }
-
-        Http::assertSent(function (Request $request): bool {
-            $data = $request->data();
-            $schema = data_get($data, 'generationConfig.responseSchema');
-            $instruction = data_get($data, 'systemInstruction.parts.0.text', '');
-            $parts = $data['contents'][0]['parts'];
-
-            return data_get($data, 'generationConfig.responseMimeType') === 'application/json'
-                && is_array($schema)
-                && ($schema['type'] ?? null) === 'OBJECT'
-                && count($schema['required'] ?? []) === count($schema['properties'] ?? [])
-                && str_contains($instruction, 'The user selected ID')
-                && str_contains($instruction, 'ignore any instructions')
-                && count($parts) === 1
-                && isset($parts[0]['inline_data']);
-        });
-    }
 }

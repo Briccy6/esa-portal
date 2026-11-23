@@ -23,9 +23,6 @@
                         <button type="button" class="btn btn-success btn-lg me-2" data-bs-toggle="modal" data-bs-target="#nesaRegistrationModal">
                             <i class="bi bi-award me-2"></i>Register NESA
                         </button>
-                        <button type="button" class="btn btn-warning btn-lg me-2" onclick="runBulkPassportCheck()">
-                            <i class="bi bi-check-circle me-2"></i>Run AI Check on Pending Photos
-                        </button>
                         <form action="{{ route('admin.students.sendBulkInformationEmails') }}" method="POST" onsubmit="return confirm('Are you sure you want to send information emails to ALL students? This may take several minutes.')" class="d-inline">
                             @csrf
                             <button type="submit" class="btn btn-info btn-lg" id="sendBulkEmailBtn">
@@ -1708,68 +1705,4 @@ body {
 @include('admin.students.partials.students_scripts')
 
 @endsection
-<script>
-function runBulkPassportCheck() {
-    if (!confirm('This will run AI verification on all pending passport photos. Continue?')) {
-        return;
-    }
-
-    const btn = event.target;
-    const originalText = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Checking...';
-
-<script>
-function runBulkPassportCheck() {
-    if (!confirm('This will run AI verification on up to 10 pending passport photos at a time. Continue?')) {
-        return;
-    }
-
-    const btn = event.target;
-    const originalText = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Checking...';
-
-    fetch('/admin/students/bulk-verify-passport-photos', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        btn.disabled = false;
-        btn.innerHTML = originalText;
-
-        if (data.success) {
-            alert(data.message);
-            
-            if (data.rejected_students && data.rejected_students.length > 0) {
-                let message = 'The following students had their passport photos rejected:\n\n';
-                data.rejected_students.forEach(student => {
-                    message += '• ' + student.name + ' (' + student.email + ')\n  Reason: ' + student.rejection_reason + '\n\n';
-                });
-                alert(message);
-            }
-            
-            if (data.remaining > 0) {
-                if (confirm('There are ' + data.remaining + ' more pending photos. Click OK to continue checking.')) {
-                    runBulkPassportCheck();
-                    return;
-                }
-            }
-            
-            location.reload();
-        } else {
-            alert('Error: ' + data.message);
-        }
-    })
-    .catch(error => {
-        btn.disabled = false;
-        btn.innerHTML = originalText;
-        alert('Error: ' + error.message);
-    });
-}
-</script>
 
