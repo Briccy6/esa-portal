@@ -1,0 +1,22 @@
+{
+  "resources/css/app.css": {
+    "file": "assets/app-r9l0xR-K.css",
+    "src": "resources/css/app.css",
+    "isEntry": true
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-Dg7P7094.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true,
+    "imports": [
+      "resources/js/realtime.js"
+    ]
+  },
+  "resources/js/realtime.js": {
+    "file": "assets/realtime-CeYw117V.js",
+    "name": "realtime",
+    "src": "resources/js/realtime.js",
+    "isEntry": true
+  }
+}
