@@ -2,8 +2,8 @@
 
 namespace App\Http\Middleware;
 
-use Closure;
 use App\Models\Student;
+use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -16,7 +16,7 @@ class RestrictIncompleteStudentProfile
 
         if ($route) {
             foreach ($route->gatherMiddleware() as $middleware) {
-                if (!is_string($middleware) || !str_starts_with($middleware, 'auth:')) {
+                if (! is_string($middleware) || ! str_starts_with($middleware, 'auth:')) {
                     continue;
                 }
 
@@ -27,7 +27,7 @@ class RestrictIncompleteStudentProfile
             }
         }
 
-        if (!$usesStudentGuard) {
+        if (! $usesStudentGuard) {
             return $next($request);
         }
 
@@ -36,6 +36,8 @@ class RestrictIncompleteStudentProfile
             'student.dashboard',
             'students.profile',
             'students.profile.update',
+            'students.profile.verify-passport-photo',
+            'students.profile.verify-identification-document',
             'student.logout',
             'api.assistant.chat',
             'api.ai.chat',
@@ -47,9 +49,9 @@ class RestrictIncompleteStudentProfile
 
         if (
             $student
-            && !$student->hasCompletedProfile()
+            && ! $student->hasCompletedProfile()
             && now('Africa/Kigali')->greaterThanOrEqualTo(Student::profileCompletionDeadline())
-            && !$request->routeIs(...$allowedRoutes)
+            && ! $request->routeIs(...$allowedRoutes)
         ) {
             return redirect()->route('student.dashboard');
         }
