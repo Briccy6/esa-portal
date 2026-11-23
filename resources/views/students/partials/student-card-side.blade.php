@@ -77,7 +77,7 @@
     </div>
     <div class="back-body">
         <div class="notice-box">
-            <div>
+            <div class="notice-copy">
                 <div class="notice-title">Important Notice</div>
                 <div class="notice-text">
                     <p><strong>If Found:</strong> Please return this card to Excellent Servant Academy administration office.</p>

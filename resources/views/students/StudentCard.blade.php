@@ -641,23 +641,25 @@
     .cr80-front .meta-value.mono { color: #1e3a8a; font-family: 'Courier New', monospace; font-size: 9px; }
     .cr80-front .front-contact-strip { margin-top: 6px; background: #f8fafc; border-left: 3px solid #2563eb; border-radius: 5px; padding: 6px 8px; display: flex; justify-content: space-between; gap: 8px; font-size: 8px; }
     .cr80-back { display: flex; flex-direction: column; padding: 0; gap: 0; }
-    .cr80-back .back-header { height: 50px; padding: 10px 16px; background: #1e293b; color: #fff; display: flex; align-items: center; justify-content: space-between; }
+    .cr80-back .back-header { height: 50px; padding: 7px 16px; background: #1e293b; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; text-align: center; }
     .cr80-back .back-header .title { font-size: 11px; font-weight: 800; letter-spacing: .3px; }
     .cr80-back .back-header .sub { color: #cbd5e1; font-size: 8px; }
     .cr80-back .back-body { flex: 1; min-height: 0; padding: 13px 16px 10px; display: flex; flex-direction: column; justify-content: space-between; }
-    .cr80-back .notice-box { height: 172px; background: #fdf4ff; border: 1px solid #f0abfc; border-left: 4px solid #a855f7; border-radius: 9px; padding: 10px; display: grid; grid-template-columns: 1fr 84px; gap: 12px; align-items: center; }
-    .cr80-back .notice-title { margin-bottom: 5px; color: #6b21a8; font-size: 10px; font-weight: 800; }
-    .cr80-back .notice-text { color: #334155; font-size: 8px; line-height: 1.45; }
+    .cr80-back .notice-box { height: 144px; background: #f8fafc; border: 1px solid #dbeafe; border-left: 4px solid #2563eb; border-radius: 9px; padding: 10px; display: grid; grid-template-columns: 1fr 84px; gap: 12px; align-items: center; }
+    .cr80-back .notice-copy { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+    .cr80-back .notice-title { margin-bottom: 5px; color: #1d4ed8; font-size: 10px; font-weight: 800; text-align: center; }
+    .cr80-back .notice-text { color: #334155; font-size: 8px; line-height: 1.45; text-align: center; }
+    .cr80-back .notice-text p { margin: 0; }
     .cr80-back .notice-text p + p { margin-top: 5px; }
-    .cr80-back .qr-box { width: 84px; height: 84px; padding: 5px; border: 1px solid #e9d5ff; border-radius: 7px; background: #fff; text-align: center; }
-    .cr80-back .qr-caption { color: #6b21a8; font-size: 6px; font-weight: 800; margin-bottom: 3px; text-transform: uppercase; }
+    .cr80-back .qr-box { width: 84px; height: 84px; padding: 5px; border: 1px solid #bfdbfe; border-radius: 7px; background: #fff; text-align: center; }
+    .cr80-back .qr-caption { color: #1d4ed8; font-size: 6px; font-weight: 800; margin-bottom: 3px; text-transform: uppercase; }
     .cr80-back .qr-box svg { width: 66px; height: 66px; display: block; margin: 0 auto; }
     .cr80-back .qr-box img { width: 66px; height: 66px; display: block; margin: 0 auto; }
-    .cr80-back .back-footer { display: grid; grid-template-columns: 1.3fr 1fr; gap: 12px; align-items: end; min-height: 58px; border-top: 1px dashed #cbd5e1; }
-    .cr80-back .office-info { font-size: 8px; line-height: 1.4; color: #475569; }
-    .cr80-back .signature-block { text-align: right; }
-    .cr80-back .signature-line { width: 125px; height: 20px; margin: 0 0 3px auto; border-bottom: 1.5px solid #334155; }
-    .cr80-back .signature-image { width: 125px; height: 30px; object-fit: contain; object-position: right bottom; display: block; margin-left: auto; }
+    .cr80-back .back-footer { display: grid; grid-template-columns: 1.3fr 1fr; gap: 12px; align-items: center; min-height: 72px; border-top: 1px dashed #cbd5e1; }
+    .cr80-back .office-info { font-size: 8px; line-height: 1.4; color: #475569; text-align: center; }
+    .cr80-back .signature-block { text-align: center; }
+    .cr80-back .signature-line { width: 125px; height: 20px; margin: 0 auto 3px; border-bottom: 1.5px solid #334155; }
+    .cr80-back .signature-image { width: 125px; height: 30px; object-fit: contain; object-position: center bottom; display: block; margin: 0 auto; }
     .cr80-back .signature-label { font-size: 8px; font-weight: 800; }
     .cr80-back .signature-role { font-size: 7px; color: #64748b; }
 
@@ -929,22 +931,25 @@ function printStudentCard(cardId, side) {
             .cr80-front .meta-label { display: block; font-size: 3.5pt; color: #64748b; font-weight: bold; text-transform: uppercase; }
             .cr80-front .meta-value { display: block; font-size: 4.5pt; font-weight: bold; margin-top: 0.5mm; }
             .cr80-front .front-contact-strip { margin-top: 1.5mm; background: #f8fafc; border-left: 0.6mm solid #2563eb; font-size: 3.5pt; padding: 1mm 1.5mm; display: flex; justify-content: space-between; }
-            .cr80-back .back-header { height: 9mm; padding: 2mm 3mm; background: #1e293b; color: #fff; display: flex; align-items: center; justify-content: space-between; }
+            .cr80-back .back-header { height: 9mm; padding: 1mm 3mm; background: #1e293b; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5mm; text-align: center; }
             .cr80-back .back-header .title { font-size: 5.5pt; font-weight: bold; }
             .cr80-back .back-header .sub { font-size: 4pt; color: #cbd5e1; }
             .cr80-back .back-body { padding: 2mm 3mm 1.5mm; }
-            .cr80-back .notice-box { height: 28mm; padding: 1.5mm; display: grid; grid-template-columns: 1fr 16mm; gap: 2mm; background: #fdf4ff; border: 0.2mm solid #f0abfc; border-left: 0.8mm solid #a855f7; border-radius: 1.5mm; }
-            .cr80-back .notice-title { font-size: 5pt; color: #6b21a8; font-weight: bold; }
-            .cr80-back .notice-text { font-size: 3.5pt; line-height: 1.35; }
-            .cr80-back .qr-box { width: 16mm; height: 16mm; padding: 1mm; background: #fff; border: 0.2mm solid #e9d5ff; text-align: center; }
-            .cr80-back .qr-caption { font-size: 3pt; color: #6b21a8; }
+            .cr80-back .notice-box { height: 24mm; padding: 1.5mm; display: grid; grid-template-columns: 1fr 16mm; gap: 2mm; background: #f8fafc; border: 0.2mm solid #dbeafe; border-left: 0.8mm solid #2563eb; border-radius: 1.5mm; }
+            .cr80-back .notice-copy { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+            .cr80-back .notice-title { font-size: 5pt; color: #1d4ed8; font-weight: bold; text-align: center; }
+            .cr80-back .notice-text { font-size: 3.5pt; line-height: 1.35; text-align: center; }
+            .cr80-back .notice-text p { margin: 0; }
+            .cr80-back .notice-text p + p { margin-top: 0.8mm; }
+            .cr80-back .qr-box { width: 16mm; height: 16mm; padding: 1mm; background: #fff; border: 0.2mm solid #bfdbfe; text-align: center; }
+            .cr80-back .qr-caption { font-size: 3pt; color: #1d4ed8; }
             .cr80-back .qr-box svg { width: 13mm; height: 13mm; display: block; }
             .cr80-back .qr-box img { width: 13mm; height: 13mm; display: block; margin: 0 auto; }
-            .cr80-back .back-footer { min-height: 9mm; display: grid; grid-template-columns: 1.3fr 1fr; border-top: 0.2mm dashed #cbd5e1; }
-            .cr80-back .office-info { font-size: 3.5pt; line-height: 1.35; }
-            .cr80-back .signature-block { text-align: right; }
-            .cr80-back .signature-line { width: 24mm; height: 4mm; border-bottom: 0.3mm solid #334155; margin-left: auto; }
-            .cr80-back .signature-image { width: 24mm; height: 5mm; object-fit: contain; object-position: right bottom; }
+            .cr80-back .back-footer { min-height: 12mm; display: grid; grid-template-columns: 1.3fr 1fr; align-items: center; border-top: 0.2mm dashed #cbd5e1; }
+            .cr80-back .office-info { font-size: 3.5pt; line-height: 1.35; text-align: center; }
+            .cr80-back .signature-block { text-align: center; }
+            .cr80-back .signature-line { width: 24mm; height: 4mm; border-bottom: 0.3mm solid #334155; margin: 0 auto; }
+            .cr80-back .signature-image { width: 24mm; height: 5mm; object-fit: contain; object-position: center bottom; margin: 0 auto; }
             .cr80-back .signature-label { font-size: 3.5pt; font-weight: bold; }
             .cr80-back .signature-role { font-size: 3pt; }
             @page { size: A4; margin: 10mm; }
