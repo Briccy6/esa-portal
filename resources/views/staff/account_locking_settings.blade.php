@@ -83,7 +83,7 @@
         </h5>
     </div>
     <div class="card-body">
-        <form action="{{ route('staff.account-locking.store') }}" method="POST" class="mb-4">
+        <form action="{{ route('staff.it.account-locking.store') }}" method="POST" class="mb-4">
             @csrf
             <input type="hidden" name="role" value="{{ $role }}">
 
@@ -185,7 +185,7 @@
                 <h5 class="modal-title">Unlock Account</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form action="{{ route('staff.account-locking.unlock') }}" method="POST">
+            <form action="{{ route('staff.it.account-locking.unlock') }}" method="POST">
                 @csrf
                 <input type="hidden" name="user_type" id="unlock_user_type">
                 <input type="hidden" name="user_id" id="unlock_user_id">
@@ -231,7 +231,7 @@
                 if (confirm('Are you sure you want to delete this setting?')) {
                     const form = document.createElement('form');
                     form.method = 'POST';
-                    form.action = '{{ route('staff.account-locking.destroy', '__id__') }}'.replace('__id__', this.dataset.id);
+                    form.action = '{{ route('staff.it.account-locking.destroy', '__id__') }}'.replace('__id__', this.dataset.id);
                     form.innerHTML = '<input type="hidden" name="_method" value="DELETE"><input type="hidden" name="_token" value="{{ csrf_token() }}">';
                     document.body.appendChild(form);
                     form.submit();
