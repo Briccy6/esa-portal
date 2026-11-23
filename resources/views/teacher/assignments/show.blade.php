@@ -10,6 +10,10 @@
     .assignment-grade-panel td, .assignment-grade-panel th { padding: .85rem; vertical-align: middle; }
     .assignment-grade-panel .form-control { min-width: 100px; }
     .assignment-grade-note { color: #d7e2d9; }
+    .assignment-grade-question { padding:1rem; margin:0 0 1.2rem; border-left:3px solid #bc9151; border-radius:0 10px 10px 0; background:#fbf8f0; white-space:pre-line; }
+    .assignment-grade-pdf { margin:0 0 1.2rem; border:1px solid #dfe7df; border-radius:12px; background:#fff; }
+    .assignment-grade-pdf summary { padding:.8rem 1rem; color:#28543d; font-weight:700; cursor:pointer; }
+    .assignment-grade-pdf iframe { display:block; width:100%; height:min(70vh, 800px); min-height:400px; border:0; border-top:1px solid #dfe7df; }
     @media (max-width: 767.98px) { .assignment-grade-panel table, .assignment-grade-panel tbody, .assignment-grade-panel tr, .assignment-grade-panel td { display:block; width:100%; } .assignment-grade-panel thead { display:none; } .assignment-grade-panel tr { padding:.65rem; border-bottom:1px solid #e4ebe4; } .assignment-grade-panel td { display:flex; justify-content:space-between; gap:1rem; border:0; padding:.45rem; } .assignment-grade-panel td::before { content:attr(data-label); color:#748278; font-size:.75rem; font-weight:700; } .assignment-grade-panel td:first-child { display:block; } .assignment-grade-panel td:first-child::before { display:none; } }
 </style>
 
@@ -26,6 +30,19 @@
         </div>
         @if($assignment->description)<p class="mb-0 mt-3">{{ $assignment->description }}</p>@endif
     </header>
+
+    @if($assignment->question)
+        <section class="assignment-grade-question">
+            <div class="small text-uppercase fw-bold mb-1" style="color:#80653b;letter-spacing:.1em">Assignment question</div>
+            {{ $assignment->question }}
+        </section>
+    @endif
+    @if($assignment->attachment_path)
+        <details class="assignment-grade-pdf">
+            <summary><i class="bi bi-file-earmark-pdf me-2"></i>Preview assignment PDF</summary>
+            <iframe src="{{ route('teacher.assignments.pdf', $assignment) }}" title="Assignment PDF: {{ $assignment->title }}" loading="lazy"></iframe>
+        </details>
+    @endif
 
     @if(session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif
     @if($errors->any())<div class="alert alert-danger">{{ $errors->first() }}</div>@endif

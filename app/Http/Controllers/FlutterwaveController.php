@@ -122,7 +122,7 @@ class FlutterwaveController extends Controller
                 ],
                 'customer'        => [
                     'email'       => $request->email,
-                    'phonenumber' => $request->phone,
+                    'phonenumber' => $this->formatRwandaPhoneNumber($request->phone),
                     'name'        => $request->full_name,
                 ],
                 'customizations'  => [
@@ -450,18 +450,7 @@ class FlutterwaveController extends Controller
             }
 
             // Format phone number to include country code if missing
-            $phoneNumber = $student->phone;
-            // Remove any spaces, dashes, or parentheses
-            $phoneNumber = preg_replace('/[\s\-\(\)]/', '', $phoneNumber);
-            // If doesn't start with +, add Rwanda country code (+250)
-            if (!preg_match('/^\+/', $phoneNumber)) {
-                // If starts with 0, replace with +250
-                if (preg_match('/^0/', $phoneNumber)) {
-                    $phoneNumber = '+250' . substr($phoneNumber, 1);
-                } else {
-                    $phoneNumber = '+250' . $phoneNumber;
-                }
-            }
+            $phoneNumber = $this->formatRwandaPhoneNumber($student->phone);
 
             // Course model uses 'course_name' column, not 'name'
             $courseName = $student->course->course_name
@@ -768,6 +757,19 @@ class FlutterwaveController extends Controller
     // ──────────────────────────────────────────────────────────────────────────
     // Private helpers
     // ──────────────────────────────────────────────────────────────────────────
+
+    private function formatRwandaPhoneNumber(string $phoneNumber): string
+    {
+        $phoneNumber = preg_replace('/[\s\-\(\)]/', '', $phoneNumber);
+
+        if (!preg_match('/^\+/', $phoneNumber)) {
+            $phoneNumber = preg_match('/^0/', $phoneNumber)
+                ? '+250' . substr($phoneNumber, 1)
+                : '+250' . $phoneNumber;
+        }
+
+        return $phoneNumber;
+    }
 
     private function createStudentRecord($studentData, $txRef)
     {

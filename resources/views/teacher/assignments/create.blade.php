@@ -28,7 +28,7 @@
         <div class="alert alert-warning">You have no lesson and branch assignments yet. Ask your administrator to assign a lesson before creating assignment work.</div>
     @endif
 
-    <form method="POST" action="{{ route('teacher.assignments.store') }}" class="assignment-form-card">
+    <form method="POST" action="{{ route('teacher.assignments.store') }}" class="assignment-form-card" enctype="multipart/form-data">
         @csrf
         <div class="row g-3">
             <div class="col-12">
@@ -60,6 +60,16 @@
             <div class="col-12">
                 <label for="description" class="form-label">Instructions <span class="text-muted fw-normal">(optional)</span></label>
                 <textarea id="description" name="description" rows="4" class="form-control" maxlength="10000">{{ old('description') }}</textarea>
+            </div>
+            <div class="col-12">
+                <label for="question" class="form-label">Assignment question</label>
+                <textarea id="question" name="question" rows="4" class="form-control" maxlength="20000" required>{{ old('question') }}</textarea>
+                <small class="text-muted">Write the question or task students need to complete.</small>
+            </div>
+            <div class="col-12">
+                <label for="attachment" class="form-label">Assignment PDF for students</label>
+                <input id="attachment" name="attachment" type="file" class="form-control" accept=".pdf,application/pdf" required>
+                <small class="text-muted">Required PDF, up to 20 MB. Students can read it in the assignment page without downloading it.</small>
             </div>
             <div class="col-md-4">
                 <label for="submission_method" class="form-label">How students submit</label>

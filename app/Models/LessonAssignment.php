@@ -13,8 +13,11 @@ class LessonAssignment extends Model
         'term_id',
         'title',
         'description',
+        'question',
         'submission_method',
         'allowed_file_types',
+        'attachment_path',
+        'attachment_original_name',
         'due_at',
         'marks_out_of',
     ];

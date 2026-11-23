@@ -15,6 +15,11 @@
     .student-assignment-meta { display:flex; flex-wrap:wrap; gap:.5rem 1rem; margin:.8rem 0; color:var(--muted); font-size:.88rem; }
     .student-assignment-meta span { display:inline-flex; align-items:center; gap:.35rem; }
     .assignment-description { padding:.8rem; margin:.8rem 0; border-radius:10px; background:#f5f8f3; white-space:pre-line; }
+    .assignment-question { padding:1rem; margin:.85rem 0; border-left:3px solid #bc9151; border-radius:0 10px 10px 0; background:#fbf8f0; white-space:pre-line; }
+    .assignment-question-label { display:block; margin-bottom:.35rem; color:#80653b; font-size:.72rem; font-weight:800; letter-spacing:.1em; text-transform:uppercase; }
+    .assignment-reading { margin:1rem 0; border:1px solid var(--line); border-radius:12px; background:#f8faf7; }
+    .assignment-reading summary { padding:.85rem 1rem; color:#28543d; font-weight:750; cursor:pointer; }
+    .assignment-pdf-frame { display:block; width:100%; height:min(72vh, 850px); min-height:420px; border:0; border-top:1px solid var(--line); background:#e9eeea; }
     .assignment-countdown { display:flex; flex-wrap:wrap; align-items:center; gap:.5rem; padding:.7rem .8rem; margin:1rem 0; border-radius:11px; color:#28543d; background:#edf5eb; font-weight:750; font-variant-numeric:tabular-nums; }
     .assignment-countdown.is-overdue { color:#8a3c30; background:#fff0ed; }
     .assignment-score { display:inline-flex; padding:.32rem .65rem; border:1px solid var(--line); border-radius:999px; color:#315d43; background:#f4f8f1; font-weight:750; }
@@ -50,6 +55,28 @@
                     <span><i class="bi bi-person"></i>{{ $assignment->teacher->teacher_name ?? 'Teacher' }}</span>
                 </div>
                 @if($assignment->description)<div class="assignment-description">{{ $assignment->description }}</div>@endif
+                @if($assignment->question)
+                    <div class="assignment-question">
+                        <span class="assignment-question-label">Your question</span>
+                        {{ $assignment->question }}
+                    </div>
+                @endif
+                @if($assignment->attachment_path)
+                    <details class="assignment-reading">
+                        <summary><i class="bi bi-file-earmark-pdf me-2" aria-hidden="true"></i>Read assignment PDF in this page</summary>
+                        <iframe
+                            class="assignment-pdf-frame"
+                            src="{{ route('student.assignments.pdf', $assignment) }}"
+                            title="Assignment PDF: {{ $assignment->title }}"
+                            loading="lazy"
+                        ></iframe>
+                        <div class="p-2 text-end">
+                            <a href="{{ route('student.assignments.pdf', $assignment) }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-success">
+                                <i class="bi bi-box-arrow-up-right me-1"></i>Open PDF in a new tab
+                            </a>
+                        </div>
+                    </details>
+                @endif
                 <div class="small text-muted">Deadline: {{ $assignment->due_at->format('l, M j g:i A') }}</div>
                 <div class="assignment-countdown" data-deadline="{{ $assignment->due_at->toIso8601String() }}">
                     <i class="bi bi-hourglass-split" aria-hidden="true"></i>

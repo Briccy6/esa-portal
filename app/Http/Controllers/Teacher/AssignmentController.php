@@ -11,9 +11,11 @@ use App\Models\Student;
 use App\Models\Term;
 use App\Services\AssignmentReportCardRefresher;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 class AssignmentController extends Controller
 {
@@ -78,6 +80,8 @@ class AssignmentController extends Controller
             'term_id' => ['required', 'integer', 'exists:terms,id'],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:10000'],
+            'question' => ['required', 'string', 'max:20000'],
+            'attachment' => ['required', 'file', 'mimes:pdf', 'max:20480'],
             'submission_method' => ['required', 'in:system,paper,in_class'],
             'allowed_file_types' => ['required_if:submission_method,system', 'array', 'min:1'],
             'allowed_file_types.*' => ['required', 'in:'.implode(',', self::ALLOWED_FILE_TYPES)],
@@ -103,13 +107,22 @@ class AssignmentController extends Controller
             ]);
         }
 
-        LessonAssignment::create([
-            ...$validated,
+        $assignment = LessonAssignment::create([
+            'lesson_id' => $validated['lesson_id'],
+            'branch_id' => $validated['branch_id'],
             'teacher_id' => $teacher->id,
+            'term_id' => $validated['term_id'],
+            'title' => $validated['title'],
+            'description' => $validated['description'] ?? null,
+            'question' => $validated['question'],
+            'submission_method' => $validated['submission_method'],
             'allowed_file_types' => $validated['submission_method'] === 'system'
                 ? array_values(array_unique($validated['allowed_file_types']))
                 : null,
+            'due_at' => $validated['due_at'],
+            'marks_out_of' => $validated['marks_out_of'],
         ]);
+        $this->replaceAttachment($assignment, $validated['attachment']);
 
         return redirect()->route('teacher.assignments.index')->with('success', 'Assignment created.');
     }
@@ -159,6 +172,9 @@ class AssignmentController extends Controller
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:10000'],
+            'question' => ['required', 'string', 'max:20000'],
+            'attachment' => ['nullable', 'file', 'mimes:pdf', 'max:20480'],
+            'remove_attachment' => ['nullable', 'boolean'],
             'submission_method' => ['required', 'in:system,paper,in_class'],
             'allowed_file_types' => ['required_if:submission_method,system', 'array', 'min:1'],
             'allowed_file_types.*' => ['required', 'in:'.implode(',', self::ALLOWED_FILE_TYPES)],
@@ -181,10 +197,20 @@ class AssignmentController extends Controller
             ]);
         }
 
+        if (
+            ! $request->hasFile('attachment')
+            && ($request->boolean('remove_attachment') || ! $assignment->attachment_path)
+        ) {
+            throw ValidationException::withMessages([
+                'attachment' => 'Keep the current assignment PDF or upload a PDF file.',
+            ]);
+        }
+
         $studentIds = $assignment->marks()->pluck('student_id');
         $assignment->update([
             'title' => $validated['title'],
             'description' => $validated['description'] ?? null,
+            'question' => $validated['question'],
             'submission_method' => $validated['submission_method'],
             'allowed_file_types' => $validated['submission_method'] === 'system'
                 ? array_values(array_unique($validated['allowed_file_types']))
@@ -192,6 +218,9 @@ class AssignmentController extends Controller
             'due_at' => $validated['due_at'],
             'marks_out_of' => $validated['marks_out_of'],
         ]);
+        if ($request->hasFile('attachment')) {
+            $this->replaceAttachment($assignment, $validated['attachment']);
+        }
         $assignment->marks()->update(['marks_out_of' => $assignment->marks_out_of]);
 
         if ($assignment->due_at->isFuture()) {
@@ -296,11 +325,51 @@ class AssignmentController extends Controller
         return Storage::disk('local')->download($submission->file_path, $submission->original_file_name);
     }
 
+    public function viewAttachment(LessonAssignment $assignment)
+    {
+        $assignment = $this->teacherAssignment($assignment);
+
+        return $this->inlineAttachment($assignment);
+    }
+
     private function teacherAssignment(LessonAssignment $assignment): LessonAssignment
     {
         abort_unless((int) $assignment->teacher_id === (int) auth('teacher')->id(), 403);
 
         return $assignment;
+    }
+
+    private function replaceAttachment(LessonAssignment $assignment, UploadedFile $file): void
+    {
+        $previousPath = $assignment->attachment_path;
+        $path = $file->store('lesson-assignment-pdfs', 'local');
+        if ($path === false) {
+            throw new RuntimeException('The assignment PDF could not be saved.');
+        }
+
+        $assignment->update([
+            'attachment_path' => $path,
+            'attachment_original_name' => $file->getClientOriginalName(),
+        ]);
+
+        if ($previousPath && $previousPath !== $path) {
+            Storage::disk('local')->delete($previousPath);
+        }
+    }
+
+    private function inlineAttachment(LessonAssignment $assignment)
+    {
+        abort_unless(
+            $assignment->attachment_path && Storage::disk('local')->exists($assignment->attachment_path),
+            404,
+        );
+
+        return Storage::disk('local')->response(
+            $assignment->attachment_path,
+            $assignment->attachment_original_name,
+            ['Content-Type' => 'application/pdf', 'X-Content-Type-Options' => 'nosniff'],
+            'inline',
+        );
     }
 
     private function eligibleStudents(LessonAssignment $assignment)

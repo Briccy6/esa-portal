@@ -60,6 +60,7 @@ use App\Http\Controllers\ReportCardController;
 use App\Http\Controllers\PublicExamController;
 use App\Http\Controllers\PopulateLessonBranchCourseController;
 use App\Http\Controllers\PaymentScheduleController;
+use App\Http\Controllers\Api\AssistantController;
 use App\Http\Controllers\SupportChatController;
 use App\Http\Controllers\SupportDashboardController;
 use Illuminate\Http\Request;
@@ -627,6 +628,14 @@ Route::middleware(['auth:student,teacher,staff,admin'])->prefix('api/chat')->nam
     Route::post('/message', [SupportChatController::class, 'sendMessage'])->name('message');
     Route::get('/history', [SupportChatController::class, 'getHistory'])->name('history');
     Route::post('/request-human', [SupportChatController::class, 'requestHumanSupport'])->name('request-human');
+});
+
+Route::middleware(['auth:student,teacher,staff,admin,client,web', 'throttle:10,1'])->group(function () {
+    Route::post('/api/assistant/chat', [AssistantController::class, 'chat'])
+        ->name('api.assistant.chat');
+
+    Route::post('/api/ai/chat', [AssistantController::class, 'chat'])
+        ->name('api.ai.chat');
 });
 
 // ============================================================

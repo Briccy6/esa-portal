@@ -107,6 +107,14 @@ it('completes student registration through the public verified callback', functi
         ->assertJsonPath('data.payment_link', 'https://checkout.flutterwave.com/test');
 
     $txRef = $response->json('data.transaction_reference');
+    Http::assertSent(function (HttpRequest $request) use ($txRef) {
+        return str_ends_with($request->url(), '/v3/payments')
+            && (float) $request['amount'] === 12500.0
+            && $request['currency'] === 'RWF'
+            && $request['customer']['phonenumber'] === '+250780000000'
+            && $request['redirect_url'] === route('students.flutterwave.callback')
+            && $request['tx_ref'] === $txRef;
+    });
 
     Http::fake([
         'api.flutterwave.com/v3/transactions/12345/verify' => Http::response([

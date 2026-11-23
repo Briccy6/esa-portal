@@ -122,6 +122,23 @@ class AssignmentController extends Controller
         return Storage::disk('local')->download($submission->file_path, $submission->original_file_name);
     }
 
+    public function viewAttachment(LessonAssignment $assignment)
+    {
+        $student = auth('student')->user();
+        $this->ensureStudentCanAccess($assignment, $student->branch_id, $student->course_id);
+        abort_unless(
+            $assignment->attachment_path && Storage::disk('local')->exists($assignment->attachment_path),
+            404,
+        );
+
+        return Storage::disk('local')->response(
+            $assignment->attachment_path,
+            $assignment->attachment_original_name,
+            ['Content-Type' => 'application/pdf', 'X-Content-Type-Options' => 'nosniff'],
+            'inline',
+        );
+    }
+
     private function ensureStudentCanAccess(LessonAssignment $assignment, ?int $branchId, ?int $courseId): void
     {
         abort_unless(
