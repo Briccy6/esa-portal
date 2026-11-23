@@ -39,6 +39,10 @@ class RestrictIncompleteStudentProfile
             'student.logout',
             'api.assistant.chat',
             'api.ai.chat',
+            'api.chat.conversation',
+            'api.chat.message',
+            'api.chat.history',
+            'api.chat.request-human',
         ];
 
         if (
