@@ -684,5 +684,6 @@
 @auth('staff')
     <x-chat-widget />
 @endauth
+@vite('resources/js/realtime.js')
 </body>
 </html>

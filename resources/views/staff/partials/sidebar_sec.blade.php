@@ -432,6 +432,7 @@
     // Load badge on page load
     updatePendingPaymentsBadge();
 </script>
+@vite('resources/js/realtime.js')
 @stack('scripts')
 </body>
 </html>

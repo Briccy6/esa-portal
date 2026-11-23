@@ -2,6 +2,10 @@
 
 use Illuminate\Support\Facades\Broadcast;
 
+Broadcast::channel('system.updates', function ($user) {
+    return $user !== null;
+});
+
 /*
 |--------------------------------------------------------------------------
 | Broadcast Channels

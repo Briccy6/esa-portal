@@ -21,6 +21,33 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        foreach ([
+            \App\Models\Student::class,
+            \App\Models\User::class,
+            \App\Models\Staff::class,
+            \App\Models\Teacher::class,
+            \App\Models\Course::class,
+            \App\Models\Lesson::class,
+            \App\Models\LessonUnit::class,
+            \App\Models\TeacherDaily::class,
+            \App\Models\Attendance::class,
+            \App\Models\Mark::class,
+            \App\Models\ReportCard::class,
+            \App\Models\CourseTermBranchFee::class,
+            \App\Models\StudentOptionalFeeResponse::class,
+            \App\Models\StudentTransaction::class,
+            \App\Models\Timetable::class,
+            \App\Models\LiveClass::class,
+            \App\Models\Announcement::class,
+            \App\Models\Exam::class,
+            \App\Models\Resource::class,
+            \App\Models\StudentSubscription::class,
+            \App\Models\AssignmentSubmission::class,
+            \App\Models\LessonAssignment::class,
+        ] as $model) {
+            $model::observe(\App\Observers\SystemDataChangeObserver::class);
+        }
+
         // Register morph map for support system polymorphic relationships
         \Illuminate\Database\Eloquent\Relations\Relation::morphMap([
             'student' => \App\Models\Student::class,
