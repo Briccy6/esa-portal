@@ -31,7 +31,7 @@ class GeminiAssistantService
             throw new RuntimeException('The Gemini API key is not configured.');
         }
 
-        $model = config('services.gemini.model', 'gemini-flash-latest');
+        $model = config('services.gemini.model', 'gemini-3.5-flash-lite');
         $endpoint = rtrim((string) config(
             'services.gemini.endpoint',
             'https://generativelanguage.googleapis.com/v1beta/models'

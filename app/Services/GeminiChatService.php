@@ -14,7 +14,7 @@ class GeminiChatService
     public function __construct()
     {
         $this->apiKey = config('services.gemini.api_key');
-        $this->model = config('services.gemini.model', 'gemini-flash-latest');
+        $this->model = config('services.gemini.model', 'gemini-3.5-flash-lite');
         $this->endpoint = config('services.gemini.endpoint', 'https://generativelanguage.googleapis.com/v1beta/models');
     }
 
@@ -81,13 +81,11 @@ class GeminiChatService
             $contents = $this->buildConversationContents($systemPrompt, $userMessage, $conversationHistory);
 
             // Try multiple models in order of preference
-            $models = [
-                $this->model, // Primary model from config
-                'gemini-flash-latest', // Fallback 1
-                'gemini-pro-latest', // Fallback 2
-                'gemini-1.5-flash', // Fallback 3
-                'gemini-1.5-pro', // Fallback 4
-            ];
+            $models = array_values(array_unique([
+                $this->model,
+                'gemini-3.5-flash-lite',
+                'gemini-3.8-flash',
+            ]));
 
             $lastError = null;
             

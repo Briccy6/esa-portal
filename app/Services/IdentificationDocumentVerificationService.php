@@ -17,7 +17,7 @@ class IdentificationDocumentVerificationService
     public function __construct()
     {
         $this->apiKey = config('services.gemini.api_key');
-        $this->model = config('services.gemini.model', 'gemini-flash-latest');
+        $this->model = config('services.gemini.model', 'gemini-3.5-flash-lite');
         $this->endpoint = config('services.gemini.endpoint', 'https://generativelanguage.googleapis.com/v1beta/models');
     }
 

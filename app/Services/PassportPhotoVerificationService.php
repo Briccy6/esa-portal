@@ -18,7 +18,7 @@ class PassportPhotoVerificationService
     {
         $this->apiKey = config('services.gemini.api_key');
         // Use a more stable model instead of the experimental one
-        $this->model = config('services.gemini.model', 'gemini-pro-latest');
+        $this->model = config('services.gemini.model', 'gemini-3.5-flash-lite');
         $this->endpoint = config('services.gemini.endpoint', 'https://generativelanguage.googleapis.com/v1beta/models');
     }
 
