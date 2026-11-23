@@ -6,7 +6,7 @@
 @php
     $schoolInfo = \App\Models\SchoolInformation::getActive();
     $schoolName = $schoolInfo->school_name ?? config('app.name', 'Excellent Servant Academy');
-    $schoolAddress = $schoolInfo->address ?? 'Excellent Servant Academy, Rwanda';
+    $schoolAddress = 'Kigali, Ndamage House, 2nd Floor';
     $schoolPhone = $schoolInfo->phone ?? '+250 788 525 247';
     $schoolEmail = $schoolInfo->email ?? 'info@excellentservantacademy.com';
     $schoolWebsite = $schoolInfo->website ?? 'www.excellentservantacademy.com';
@@ -177,161 +177,67 @@
                     <div class="tab-content">
                         <div class="tab-pane fade show active" id="front-{{ $card->id }}" role="tabpanel" aria-labelledby="front-tab-{{ $card->id }}">
                             <div class="card-preview-container">
-                                <div id="cardFront{{ $card->id }}" class="cr80-card cr80-front">
-                                    <div class="card-header">
-                                        <img src="{{ $logoUrl }}" alt="School Logo" class="school-logo">
-                                        <div class="school-info">
-                                            <div class="school-name">{{ $schoolName }}</div>
-                                            <div class="card-type">STUDENT IDENTIFICATION CARD</div>
-                                        </div>
-                                        <div class="academic-year">{{ $card->academic_year ?: 'Student' }}</div>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="photo-section">
-                                            @if($card->passport_photo)
-                                                <img src="data:image/jpeg;base64,{{ $card->passport_photo }}" alt="Student Photo">
-                                            @elseif($card->student && $card->student->passport_photo)
-                                                <img src="data:image/jpeg;base64,{{ $card->student->passport_photo }}" alt="Student Photo">
-                                            @else
-                                                <div class="photo-placeholder">{{ strtoupper(substr($card->student->full_name ?? '?', 0, 1)) }}</div>
-                                            @endif
-                                        </div>
-                                        <div class="student-info">
-                                            <div class="student-name">{{ $card->student->full_name ?? 'Unknown Student' }}</div>
-                                            <div class="reg-number">{{ $card->reg_number ?? '—' }}</div>
-                                            <div class="info-row">
-                                                <span class="label">Programme</span>
-                                                <span class="value">{{ $card->course ?: '—' }}</span>
-                                            </div>
-                                            <div class="info-row">
-                                                <span class="label">Branch</span>
-                                                <span class="value">{{ $card->branch ?: '—' }}</span>
-                                            </div>
-                                            <div class="info-row">
-                                                <span class="label">Academic Year</span>
-                                                <span class="value">{{ $card->academic_year ?: '—' }}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="card-footer">
-                                        <div class="issue-date">Issued: {{ $card->generated_at ? \Carbon\Carbon::parse($card->generated_at)->format('M Y') : '—' }}</div>
-                                        <div class="status-badge">VALID STUDENT</div>
-                                    </div>
-                                </div>
+                                @include('students.partials.student-card-side', [
+                                    'card' => $card,
+                                    'side' => 'front',
+                                    'idPrefix' => 'cardFront',
+                                    'schoolName' => $schoolName,
+                                    'schoolAddress' => $schoolAddress,
+                                    'schoolPhone' => $schoolPhone,
+                                    'schoolEmail' => $schoolEmail,
+                                    'schoolWebsite' => $schoolWebsite,
+                                    'logoUrl' => $logoUrl,
+                                    'schoolInfo' => $schoolInfo,
+                                ])
                             </div>
                         </div>
                         <div class="tab-pane fade" id="back-{{ $card->id }}" role="tabpanel" aria-labelledby="back-tab-{{ $card->id }}">
                             <div class="card-preview-container">
-                                <div id="cardBack{{ $card->id }}" class="cr80-card cr80-back">
-                                    <div class="qr-section">
-                                        @if($card->qr_code && $card->verification_url)
-                                            <div class="qr-code-wrapper">
-                                                {!! $card->qr_code !!}
-                                            </div>
-                                            <div class="qr-instruction">Scan to verify student identity</div>
-                                        @else
-                                            <div class="qr-unavailable">QR Code Unavailable</div>
-                                        @endif
-                                    </div>
-                                    <div class="notice-section">
-                                        <div class="notice-title">IMPORTANT NOTICE</div>
-                                        <div class="notice-text">
-                                            <p><strong>IF FOUND:</strong> Please return this card to Excellent Servant Academy administration office.</p>
-                                            <p><strong>WARNING:</strong> This card is institutional property. Unauthorized use, modification, or lending to another person is prohibited and may result in disciplinary action.</p>
-                                        </div>
-                                    </div>
-                                    <div class="contact-section">
-                                        <div class="contact-title">CONTACT INFORMATION</div>
-                                        <div class="contact-item"><i class="fas fa-map-marker-alt me-2"></i>{{ $schoolAddress }}</div>
-                                        <div class="contact-item"><i class="fas fa-phone me-2"></i>{{ $schoolPhone }}</div>
-                                        <div class="contact-item"><i class="fas fa-envelope me-2"></i>{{ $schoolEmail }}</div>
-                                        <div class="contact-item"><i class="fas fa-globe me-2"></i>{{ $schoolWebsite }}</div>
-                                    </div>
-                                    <div class="validity-section">
-                                        <div class="validity-item"><span class="label">Academic Year:</span> <span class="value">{{ $card->academic_year ?: '—' }}</span></div>
-                                        <div class="validity-item"><span class="label">Issue Date:</span> <span class="value">{{ $card->generated_at ? \Carbon\Carbon::parse($card->generated_at)->format('M d, Y') : '—' }}</span></div>
-                                    </div>
-                                </div>
+                                @include('students.partials.student-card-side', [
+                                    'card' => $card,
+                                    'side' => 'back',
+                                    'idPrefix' => 'cardBack',
+                                    'schoolName' => $schoolName,
+                                    'schoolAddress' => $schoolAddress,
+                                    'schoolPhone' => $schoolPhone,
+                                    'schoolEmail' => $schoolEmail,
+                                    'schoolWebsite' => $schoolWebsite,
+                                    'logoUrl' => $logoUrl,
+                                    'schoolInfo' => $schoolInfo,
+                                ])
                             </div>
                         </div>
                         <div class="tab-pane fade" id="both-{{ $card->id }}" role="tabpanel" aria-labelledby="both-tab-{{ $card->id }}">
                             <div class="both-sides-container">
                                 <div class="both-side-wrapper">
                                     <div class="side-label">FRONT</div>
-                                    <div class="cr80-card cr80-front both-preview">
-                                        <div class="card-header">
-                                            <img src="{{ $logoUrl }}" alt="School Logo" class="school-logo">
-                                            <div class="school-info">
-                                                <div class="school-name">{{ $schoolName }}</div>
-                                                <div class="card-type">STUDENT IDENTIFICATION CARD</div>
-                                            </div>
-                                            <div class="academic-year">{{ $card->academic_year ?: 'Student' }}</div>
-                                        </div>
-                                        <div class="card-body">
-                                            <div class="photo-section">
-                                                @if($card->passport_photo)
-                                                    <img src="data:image/jpeg;base64,{{ $card->passport_photo }}" alt="Student Photo">
-                                                @elseif($card->student && $card->student->passport_photo)
-                                                    <img src="data:image/jpeg;base64,{{ $card->student->passport_photo }}" alt="Student Photo">
-                                                @else
-                                                    <div class="photo-placeholder">{{ strtoupper(substr($card->student->full_name ?? '?', 0, 1)) }}</div>
-                                                @endif
-                                            </div>
-                                            <div class="student-info">
-                                                <div class="student-name">{{ $card->student->full_name ?? 'Unknown Student' }}</div>
-                                                <div class="reg-number">{{ $card->reg_number ?? '—' }}</div>
-                                                <div class="info-row">
-                                                    <span class="label">Programme</span>
-                                                    <span class="value">{{ $card->course ?: '—' }}</span>
-                                                </div>
-                                                <div class="info-row">
-                                                    <span class="label">Branch</span>
-                                                    <span class="value">{{ $card->branch ?: '—' }}</span>
-                                                </div>
-                                                <div class="info-row">
-                                                    <span class="label">Academic Year</span>
-                                                    <span class="value">{{ $card->academic_year ?: '—' }}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="card-footer">
-                                            <div class="issue-date">Issued: {{ $card->generated_at ? \Carbon\Carbon::parse($card->generated_at)->format('M Y') : '—' }}</div>
-                                            <div class="status-badge">VALID STUDENT</div>
-                                        </div>
-                                    </div>
+                                    @include('students.partials.student-card-side', [
+                                        'card' => $card,
+                                        'side' => 'front',
+                                        'idPrefix' => 'previewFront',
+                                        'schoolName' => $schoolName,
+                                        'schoolAddress' => $schoolAddress,
+                                        'schoolPhone' => $schoolPhone,
+                                        'schoolEmail' => $schoolEmail,
+                                        'schoolWebsite' => $schoolWebsite,
+                                        'logoUrl' => $logoUrl,
+                                        'schoolInfo' => $schoolInfo,
+                                    ])
                                 </div>
                                 <div class="both-side-wrapper">
                                     <div class="side-label">BACK</div>
-                                    <div class="cr80-card cr80-back both-preview">
-                                        <div class="qr-section">
-                                            @if($card->qr_code && $card->verification_url)
-                                                <div class="qr-code-wrapper">
-                                                    {!! $card->qr_code !!}
-                                                </div>
-                                                <div class="qr-instruction">Scan to verify student identity</div>
-                                            @else
-                                                <div class="qr-unavailable">QR Code Unavailable</div>
-                                            @endif
-                                        </div>
-                                        <div class="notice-section">
-                                            <div class="notice-title">IMPORTANT NOTICE</div>
-                                            <div class="notice-text">
-                                                <p><strong>IF FOUND:</strong> Please return this card to Excellent Servant Academy administration office.</p>
-                                                <p><strong>WARNING:</strong> This card is institutional property. Unauthorized use, modification, or lending to another person is prohibited and may result in disciplinary action.</p>
-                                            </div>
-                                        </div>
-                                        <div class="contact-section">
-                                            <div class="contact-title">CONTACT INFORMATION</div>
-                                            <div class="contact-item"><i class="fas fa-map-marker-alt me-2"></i>{{ $schoolAddress }}</div>
-                                            <div class="contact-item"><i class="fas fa-phone me-2"></i>{{ $schoolPhone }}</div>
-                                            <div class="contact-item"><i class="fas fa-envelope me-2"></i>{{ $schoolEmail }}</div>
-                                            <div class="contact-item"><i class="fas fa-globe me-2"></i>{{ $schoolWebsite }}</div>
-                                        </div>
-                                        <div class="validity-section">
-                                            <div class="validity-item"><span class="label">Academic Year:</span> <span class="value">{{ $card->academic_year ?: '—' }}</span></div>
-                                            <div class="validity-item"><span class="label">Issue Date:</span> <span class="value">{{ $card->generated_at ? \Carbon\Carbon::parse($card->generated_at)->format('M d, Y') : '—' }}</span></div>
-                                        </div>
-                                    </div>
+                                    @include('students.partials.student-card-side', [
+                                        'card' => $card,
+                                        'side' => 'back',
+                                        'idPrefix' => 'previewBack',
+                                        'schoolName' => $schoolName,
+                                        'schoolAddress' => $schoolAddress,
+                                        'schoolPhone' => $schoolPhone,
+                                        'schoolEmail' => $schoolEmail,
+                                        'schoolWebsite' => $schoolWebsite,
+                                        'logoUrl' => $logoUrl,
+                                        'schoolInfo' => $schoolInfo,
+                                    ])
                                 </div>
                             </div>
                         </div>
@@ -693,6 +599,68 @@
         font-weight: 600;
     }
 
+    /* Standard CR80 front and back layout */
+    .cr80-card {
+        width: 505px;
+        max-width: 100%;
+        height: 318px;
+        aspect-ratio: 680 / 428;
+        border-radius: 12px;
+        font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+        color: #0f172a;
+    }
+    .cr80-front { display: flex; flex-direction: column; }
+    .cr80-front .front-header {
+        height: 58px;
+        min-height: 58px;
+        padding: 10px 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: linear-gradient(90deg,#1d4ed8 0%,#2563eb 65%,#3b82f6 100%);
+        color: #fff;
+    }
+    .cr80-front .school-title { font-size: 15px; font-weight: 800; }
+    .cr80-front .school-address { margin-top: 2px; font-size: 9px; opacity: .92; }
+    .cr80-front .logo-badge { width: 40px; height: 40px; border-radius: 8px; background: #fff; padding: 3px; display: flex; align-items: center; justify-content: center; }
+    .cr80-front .logo-badge img { max-width: 100%; max-height: 100%; object-fit: contain; }
+    .cr80-front .front-body { flex: 1; min-height: 0; padding: 12px 16px 10px; display: grid; grid-template-columns: 125px 1fr; gap: 15px; }
+    .cr80-front .photo-column { display: flex; flex-direction: column; gap: 6px; }
+    .cr80-front .photo-frame { width: 125px; height: 152px; border-radius: 9px; border: 2px solid #dbeafe; overflow: hidden; background: #f8fafc; display: flex; align-items: center; justify-content: center; }
+    .cr80-front .photo-frame img { width: 100%; height: 100%; object-fit: cover; object-position: top center; }
+    .cr80-front .photo-placeholder { font-size: 28px; color: #94a3b8; font-weight: 800; }
+    .cr80-front .id-badge-pill { text-align: center; color: #1d4ed8; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 5px; padding: 4px; font-size: 8px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; }
+    .cr80-front .details-column { min-width: 0; display: flex; flex-direction: column; justify-content: space-between; }
+    .cr80-front .student-identity { border-bottom: 2px solid #2563eb; padding-bottom: 5px; margin-bottom: 7px; }
+    .cr80-front .student-name { font-size: 16px; line-height: 1.12; font-weight: 800; text-transform: uppercase; }
+    .cr80-front .student-role { margin-top: 2px; color: #2563eb; font-size: 8px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase; }
+    .cr80-front .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px 10px; }
+    .cr80-front .meta-item { display: flex; flex-direction: column; min-width: 0; }
+    .cr80-front .meta-label { color: #64748b; font-size: 7px; font-weight: 800; text-transform: uppercase; letter-spacing: .4px; }
+    .cr80-front .meta-value { margin-top: 2px; color: #0f172a; font-size: 9px; font-weight: 800; overflow-wrap: anywhere; }
+    .cr80-front .meta-value.mono { color: #1e3a8a; font-family: 'Courier New', monospace; font-size: 9px; }
+    .cr80-front .front-contact-strip { margin-top: 6px; background: #f8fafc; border-left: 3px solid #2563eb; border-radius: 5px; padding: 6px 8px; display: flex; justify-content: space-between; gap: 8px; font-size: 8px; }
+    .cr80-back { display: flex; flex-direction: column; padding: 0; gap: 0; }
+    .cr80-back .back-header { height: 50px; padding: 10px 16px; background: #1e293b; color: #fff; display: flex; align-items: center; justify-content: space-between; }
+    .cr80-back .back-header .title { font-size: 11px; font-weight: 800; letter-spacing: .3px; }
+    .cr80-back .back-header .sub { color: #cbd5e1; font-size: 8px; }
+    .cr80-back .back-body { flex: 1; min-height: 0; padding: 13px 16px 10px; display: flex; flex-direction: column; justify-content: space-between; }
+    .cr80-back .notice-box { height: 172px; background: #fdf4ff; border: 1px solid #f0abfc; border-left: 4px solid #a855f7; border-radius: 9px; padding: 10px; display: grid; grid-template-columns: 1fr 84px; gap: 12px; align-items: center; }
+    .cr80-back .notice-title { margin-bottom: 5px; color: #6b21a8; font-size: 10px; font-weight: 800; }
+    .cr80-back .notice-text { color: #334155; font-size: 8px; line-height: 1.45; }
+    .cr80-back .notice-text p + p { margin-top: 5px; }
+    .cr80-back .qr-box { width: 84px; height: 84px; padding: 5px; border: 1px solid #e9d5ff; border-radius: 7px; background: #fff; text-align: center; }
+    .cr80-back .qr-caption { color: #6b21a8; font-size: 6px; font-weight: 800; margin-bottom: 3px; text-transform: uppercase; }
+    .cr80-back .qr-box svg { width: 66px; height: 66px; display: block; margin: 0 auto; }
+    .cr80-back .qr-box img { width: 66px; height: 66px; display: block; margin: 0 auto; }
+    .cr80-back .back-footer { display: grid; grid-template-columns: 1.3fr 1fr; gap: 12px; align-items: end; min-height: 58px; border-top: 1px dashed #cbd5e1; }
+    .cr80-back .office-info { font-size: 8px; line-height: 1.4; color: #475569; }
+    .cr80-back .signature-block { text-align: right; }
+    .cr80-back .signature-line { width: 125px; height: 20px; margin: 0 0 3px auto; border-bottom: 1.5px solid #334155; }
+    .cr80-back .signature-image { width: 125px; height: 30px; object-fit: contain; object-position: right bottom; display: block; margin-left: auto; }
+    .cr80-back .signature-label { font-size: 8px; font-weight: 800; }
+    .cr80-back .signature-role { font-size: 7px; color: #64748b; }
+
     /* Both Sides View */
     .both-sides-container {
         display: flex;
@@ -946,6 +914,39 @@ function printStudentCard(cardId, side) {
                 border: 0.2mm solid #e5e7eb;
                 font-size: 4pt;
             }
+            .cr80-front .front-header { height: 10mm; min-height: 10mm; padding: 2mm 3mm; background: linear-gradient(90deg,#1d4ed8,#2563eb,#3b82f6); color: #fff; }
+            .cr80-front .school-title { font-size: 7pt; font-weight: bold; }
+            .cr80-front .school-address { font-size: 4.5pt; }
+            .cr80-front .logo-badge { width: 8mm; height: 8mm; background: #fff; border-radius: 1.5mm; padding: 1mm; }
+            .cr80-front .logo-badge img { max-width: 100%; max-height: 100%; object-fit: contain; }
+            .cr80-front .front-body { padding: 2mm 3mm 1.5mm; grid-template-columns: 25mm 1fr; gap: 3mm; }
+            .cr80-front .photo-frame { width: 25mm; height: 30mm; border: 0.3mm solid #dbeafe; border-radius: 1.5mm; overflow: hidden; }
+            .cr80-front .photo-frame img { width: 100%; height: 100%; object-fit: cover; object-position: top center; }
+            .cr80-front .id-badge-pill { margin-top: 1mm; text-align: center; font-size: 3.5pt; color: #1d4ed8; background: #eff6ff; border: 0.2mm solid #bfdbfe; border-radius: 1mm; padding: 0.7mm; }
+            .cr80-front .student-name { font-size: 8pt; font-weight: bold; border-bottom: 0.3mm solid #2563eb; padding-bottom: 1mm; }
+            .cr80-front .student-role { font-size: 4pt; color: #2563eb; margin-top: 1mm; }
+            .cr80-front .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5mm 2mm; margin-top: 1.5mm; }
+            .cr80-front .meta-label { display: block; font-size: 3.5pt; color: #64748b; font-weight: bold; text-transform: uppercase; }
+            .cr80-front .meta-value { display: block; font-size: 4.5pt; font-weight: bold; margin-top: 0.5mm; }
+            .cr80-front .front-contact-strip { margin-top: 1.5mm; background: #f8fafc; border-left: 0.6mm solid #2563eb; font-size: 3.5pt; padding: 1mm 1.5mm; display: flex; justify-content: space-between; }
+            .cr80-back .back-header { height: 9mm; padding: 2mm 3mm; background: #1e293b; color: #fff; display: flex; align-items: center; justify-content: space-between; }
+            .cr80-back .back-header .title { font-size: 5.5pt; font-weight: bold; }
+            .cr80-back .back-header .sub { font-size: 4pt; color: #cbd5e1; }
+            .cr80-back .back-body { padding: 2mm 3mm 1.5mm; }
+            .cr80-back .notice-box { height: 28mm; padding: 1.5mm; display: grid; grid-template-columns: 1fr 16mm; gap: 2mm; background: #fdf4ff; border: 0.2mm solid #f0abfc; border-left: 0.8mm solid #a855f7; border-radius: 1.5mm; }
+            .cr80-back .notice-title { font-size: 5pt; color: #6b21a8; font-weight: bold; }
+            .cr80-back .notice-text { font-size: 3.5pt; line-height: 1.35; }
+            .cr80-back .qr-box { width: 16mm; height: 16mm; padding: 1mm; background: #fff; border: 0.2mm solid #e9d5ff; text-align: center; }
+            .cr80-back .qr-caption { font-size: 3pt; color: #6b21a8; }
+            .cr80-back .qr-box svg { width: 13mm; height: 13mm; display: block; }
+            .cr80-back .qr-box img { width: 13mm; height: 13mm; display: block; margin: 0 auto; }
+            .cr80-back .back-footer { min-height: 9mm; display: grid; grid-template-columns: 1.3fr 1fr; border-top: 0.2mm dashed #cbd5e1; }
+            .cr80-back .office-info { font-size: 3.5pt; line-height: 1.35; }
+            .cr80-back .signature-block { text-align: right; }
+            .cr80-back .signature-line { width: 24mm; height: 4mm; border-bottom: 0.3mm solid #334155; margin-left: auto; }
+            .cr80-back .signature-image { width: 24mm; height: 5mm; object-fit: contain; object-position: right bottom; }
+            .cr80-back .signature-label { font-size: 3.5pt; font-weight: bold; }
+            .cr80-back .signature-role { font-size: 3pt; }
             @page { size: A4; margin: 10mm; }
             @media print {
                 body { padding: 0; }

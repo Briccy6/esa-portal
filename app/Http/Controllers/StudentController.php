@@ -3184,7 +3184,7 @@ class StudentController extends Controller
 
         $studentCard->forceFill([
             'verification_url' => $verificationUrl,
-            'qr_code' => (string) $qrSvg,
+            'qr_code' => 'data:image/svg+xml;base64,' . base64_encode((string) $qrSvg),
         ])->save();
     }
 
@@ -3294,10 +3294,11 @@ class StudentController extends Controller
                 'verified' => false,
                 'card' => null,
                 'student' => null,
+                'reason' => 'The verification signature is invalid or has been tampered with.',
             ], 403);
         }
 
-        $studentCard->loadMissing('student.course', 'student.branch');
+        $studentCard->loadMissing('student.course', 'student.branch', 'student.academicYear');
         $student = $studentCard->student;
 
         if (!$student) {
@@ -3305,7 +3306,25 @@ class StudentController extends Controller
                 'verified' => false,
                 'card' => null,
                 'student' => null,
+                'reason' => 'This student record could not be found.',
             ], 404);
+        }
+
+        $activeStudent = !$student->is_blocked;
+        $academicYear = $student->academicYear;
+        $academicYearActive = $academicYear
+            ? $academicYear->resolveStatus() === 'active'
+            : true;
+
+        if (!$activeStudent || !$academicYearActive) {
+            return response()->view('public.student-card-verification', [
+                'verified' => false,
+                'card' => $studentCard,
+                'student' => $student,
+                'reason' => !$activeStudent
+                    ? 'The student account is inactive or blocked.'
+                    : 'The academic year for this card is expired or not active.',
+            ], 410);
         }
 
         return view('public.student-card-verification', [

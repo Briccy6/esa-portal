@@ -384,7 +384,7 @@ class StudentController extends Controller
 
         $studentCard->forceFill([
             'verification_url' => $verificationUrl,
-            'qr_code' => (string) $qrSvg,
+            'qr_code' => 'data:image/svg+xml;base64,' . base64_encode((string) $qrSvg),
         ])->save();
     }
 
