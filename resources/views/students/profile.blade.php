@@ -876,7 +876,7 @@
                                        data-error-target="passportPhotoError"
                                        data-original-status="{{ $passportPhotoSource ? 'Current photo is on file. Choose a new photo to replace it.' : 'No photo uploaded yet.' }}"
                                        data-max-bytes="2097152" data-max-label="2 MB" data-preview-kind="image">
-                                <span class="profile-field-hint">JPG, JPEG, or PNG, up to 2 MB. Basic dimensions are checked; staff review the saved photo.</span>
+                                <span class="profile-field-hint">JPG, JPEG, or PNG, up to 2 MB. Basic file and dimension checks are performed; passing uploads are accepted automatically.</span>
                                 <p class="profile-upload-status" id="passportPhotoName">
                                     {{ $passportPhotoSource ? 'Current photo is on file. Choose a new photo to replace it.' : 'No photo uploaded yet.' }}
                                 </p>
@@ -884,7 +884,7 @@
                                 <div class="passport-verification-status" id="passportVerificationStatus" style="display:none;" aria-live="polite">
                                     <div id="passportVerificationLoading" data-verification-loading style="display:none;">Checking photo file requirements...</div>
                                     <div id="passportVerificationSuccess" data-verification-success style="display:none;">
-                                        Basic image checks passed. Save your profile to submit the photo for staff review.
+                                        Basic image checks passed. Save your profile to accept the photo automatically.
                                     </div>
                                     <div id="passportVerificationError" data-verification-error style="display:none;">
                                         <span id="passportVerificationErrorMessage">The photo was not approved.</span>
@@ -905,7 +905,7 @@
                                         </div>
                                     @else
                                         <div class="passport-verification-status">
-                                            <div data-verification-loading>Awaiting staff review. Save an uploaded photo to submit it for review.</div>
+                                            <div data-verification-loading>Photo is pending. Save a new photo for automatic approval after basic checks.</div>
                                         </div>
                                     @endif
                                 @endif

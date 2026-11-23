@@ -16,14 +16,14 @@ class PassportPhotoVerificationServiceTest extends TestCase
         Http::fake();
     }
 
-    public function test_valid_passport_photo_upload_is_queued_for_manual_review_without_ai(): void
+    public function test_valid_passport_photo_upload_is_approved_after_basic_checks_without_ai(): void
     {
-        $result = app(PassportPhotoVerificationService::class)->validateForManualReview(
+        $result = app(PassportPhotoVerificationService::class)->validateUpload(
             UploadedFile::fake()->image('passport.jpg', 700, 900)
         );
 
         $this->assertTrue($result['success']);
-        $this->assertTrue($result['requires_manual_review']);
+        $this->assertFalse($result['requires_manual_review']);
         $this->assertSame('basic_image_validation', $result['verification_result']['method']);
         $this->assertNull($result['confidence']);
         Http::assertNothingSent();
@@ -31,7 +31,7 @@ class PassportPhotoVerificationServiceTest extends TestCase
 
     public function test_invalid_passport_photo_dimensions_are_rejected_without_ai(): void
     {
-        $result = app(PassportPhotoVerificationService::class)->validateForManualReview(
+        $result = app(PassportPhotoVerificationService::class)->validateUpload(
             UploadedFile::fake()->image('passport.jpg', 500, 500)
         );
 

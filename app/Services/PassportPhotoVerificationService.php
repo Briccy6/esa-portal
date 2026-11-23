@@ -10,7 +10,7 @@ use Intervention\Image\ImageManager;
 
 class PassportPhotoVerificationService
 {
-    public function validateForManualReview(UploadedFile $file): array
+    public function validateUpload(UploadedFile $file): array
     {
         $validation = $this->validateImage($file);
 
@@ -27,7 +27,7 @@ class PassportPhotoVerificationService
             'success' => true,
             'verification_result' => ['method' => 'basic_image_validation'],
             'confidence' => null,
-            'requires_manual_review' => true,
+            'requires_manual_review' => false,
             'rejection_reason' => null,
         ];
     }

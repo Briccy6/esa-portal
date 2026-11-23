@@ -4004,7 +4004,7 @@ class StudentController extends Controller
             $updatedFields[] = ($request->identification_type === 'ID') ? 'ID Image' : 'Passport Image';
         }
         if ($request->hasFile('passport_photo')) {
-            $verificationResult = (new PassportPhotoVerificationService())->validateForManualReview($request->file('passport_photo'));
+            $verificationResult = (new PassportPhotoVerificationService())->validateUpload($request->file('passport_photo'));
 
             if (!$verificationResult['success']) {
                 return back()
@@ -4013,12 +4013,12 @@ class StudentController extends Controller
             }
 
             $student->passport_photo = base64_encode(file_get_contents($request->file('passport_photo')->getRealPath()));
-            $student->passport_photo_verification_status = 'manual_review';
-            $student->passport_photo_verified_at = null;
+            $student->passport_photo_verification_status = 'approved';
+            $student->passport_photo_verified_at = now();
             $student->passport_photo_verification_result = $verificationResult['verification_result'];
             $student->passport_photo_rejection_reason = null;
             $student->passport_photo_confidence_score = null;
-            $student->passport_photo_requires_manual_review = true;
+            $student->passport_photo_requires_manual_review = false;
             $student->passport_photo_verified_by = null;
             $updatedFields[] = 'Passport Photo';
         }
@@ -4072,14 +4072,14 @@ class StudentController extends Controller
 
         try {
             $service = new PassportPhotoVerificationService();
-            $result = $service->validateForManualReview($request->file('passport_photo'));
+            $result = $service->validateUpload($request->file('passport_photo'));
 
             if ($result['success']) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'Image checks passed. Save your profile to submit the photo for staff review.',
+                    'message' => 'Basic image checks passed. Save your profile to accept the photo automatically.',
                     'verification_result' => $result['verification_result'],
-                    'requires_manual_review' => true,
+                    'requires_manual_review' => false,
                 ]);
             } else {
                 return response()->json([
