@@ -29,6 +29,10 @@ class Student extends Authenticatable
         'id_number',
         'identification_type',
         'id_photo',
+        'id_photo_verification_status',
+        'id_photo_verified_at',
+        'id_photo_verification_result',
+        'id_photo_confidence_score',
         'passport_photo',
         'passport_photo_verification_status',
         'passport_photo_verified_at',
@@ -62,6 +66,9 @@ class Student extends Authenticatable
         'senior3_document' => 'string',
         'other_supporting_document' => 'string',
         'id_photo' => 'string',
+        'id_photo_verified_at' => 'datetime',
+        'id_photo_verification_result' => 'array',
+        'id_photo_confidence_score' => 'decimal:2',
         'passport_photo' => 'string',
         'passport_photo_verification_result' => 'array',
         'passport_photo_verified_at' => 'datetime',
@@ -108,6 +115,14 @@ class Student extends Authenticatable
             && !in_array('Profile photo', $missingFields, true)
         ) {
             $missingFields[] = 'Verified profile photo';
+        }
+
+        if (
+            filled($this->id_photo)
+            && $this->id_photo_verification_status !== 'approved'
+            && !in_array('Identification photo', $missingFields, true)
+        ) {
+            $missingFields[] = 'Verified identification document';
         }
 
         return $missingFields;

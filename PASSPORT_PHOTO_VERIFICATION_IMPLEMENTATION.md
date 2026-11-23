@@ -1,5 +1,24 @@
 # AI-Powered Student Passport Photograph Verification - Implementation Summary
 
+## Identification document verification
+
+The student profile's Identification step also verifies the uploaded Rwandan National ID front or
+passport/Laissez-Passer bio-data page with Gemini. The live check is served by
+`POST /student/profile/verify-identification-document`; the profile update repeats verification
+before saving so an unverified upload cannot be accepted.
+
+The document check rejects unclear or cropped images, screen images, copy-of-copy images, altered
+documents, missing branding/security features, and missing required fields. National IDs must have
+a 16-digit number matching the entered number, with digits 2-5 matching the printed birth year and
+digit 6 matching the printed sex. Passports and Laissez-Passer documents must have Rwanda codes,
+matching printed/MRZ data, all required bio-data, and a valid non-expired expiry date. Gemini
+failures do not approve an image.
+
+Successful checks are stored as `id_photo_verification_status = approved`; a new migration adds
+verification status, timestamp, confidence, and non-PII check results. Existing
+identification images without an approved verification status need to be uploaded again to complete
+the student profile.
+
 ## Overview
 This implementation adds AI-powered passport photograph verification to the ESA School Management System using Google's Gemini AI. The system automatically validates uploaded passport photos against school requirements before accepting them.
 

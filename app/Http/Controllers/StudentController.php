@@ -39,6 +39,7 @@ use App\Models\Attendance;
 use App\Support\StudentPaymentTranscript;
 use App\Support\OptionalFeeBilling;
 use App\Services\PassportPhotoVerificationService;
+use App\Services\IdentificationDocumentVerificationService;
 
 class StudentController extends Controller
 {
@@ -3904,8 +3905,8 @@ class StudentController extends Controller
             'telephone'                  => 'nullable|string|max:20',
             'email'                      => 'nullable|email|max:255',
             'sex'                        => 'nullable|in:Male,Female,Other',
-            'identification_type'        => 'nullable|in:ID,Passport',
-            'id_number'                  => 'nullable|string|max:50',
+            'identification_type'        => 'nullable|required_with:id_photo|in:ID,Passport',
+            'id_number'                  => 'nullable|required_with:id_photo|string|max:50',
             'id_photo'                   => 'nullable|image|mimes:jpg,jpeg,png|max:200',
             'passport_photo'             => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
             'education_level'            => 'nullable|string|max:50',
@@ -3916,7 +3917,41 @@ class StudentController extends Controller
             'password'                   => 'nullable|string|min:8|confirmed',
         ]);
 
+        $identificationVerification = null;
+        if ($request->hasFile('id_photo')) {
+            try {
+                $identificationVerification = (new IdentificationDocumentVerificationService())->verify(
+                    $request->file('id_photo'),
+                    $request->identification_type,
+                    $request->id_number
+                );
+            } catch (\Throwable $e) {
+                Log::error('Identification document verification failed during profile update', [
+                    'error' => $e->getMessage(),
+                    'student_id' => $student->id,
+                ]);
+
+                return back()
+                    ->with('error', 'Identification verification is temporarily unavailable. Please try again later.')
+                    ->withInput();
+            }
+
+            if (!$identificationVerification['success']) {
+                return back()
+                    ->with('error', implode(' ', $identificationVerification['issues']))
+                    ->withInput();
+            }
+        }
+
         $updatedFields = [];
+
+        $identificationDetailsChanged = (
+            $request->filled('identification_type')
+            && $request->identification_type !== $student->identification_type
+        ) || (
+            $request->filled('id_number')
+            && $request->id_number !== $student->id_number
+        );
 
         if ($request->filled('full_name') && $request->full_name !== $student->full_name) {
             $student->full_name = $request->full_name;
@@ -3942,8 +3977,22 @@ class StudentController extends Controller
             $student->id_number = $request->id_number;
             $updatedFields[] = ($request->identification_type === 'ID') ? 'ID Number' : 'Passport Number';
         }
+        if ($identificationDetailsChanged && !$request->hasFile('id_photo') && $student->id_photo) {
+            $student->id_photo_verification_status = 'pending';
+            $student->id_photo_verified_at = null;
+            $student->id_photo_verification_result = null;
+            $student->id_photo_confidence_score = null;
+            $updatedFields[] = 'Identification document verification';
+        }
         if ($request->hasFile('id_photo')) {
             $student->id_photo = base64_encode(file_get_contents($request->file('id_photo')->getRealPath()));
+            $student->id_photo_verification_status = 'approved';
+            $student->id_photo_verified_at = now();
+            $student->id_photo_verification_result = [
+                'document_type' => $identificationVerification['verification_result']['document_type'],
+                'checks' => $identificationVerification['checks'],
+            ];
+            $student->id_photo_confidence_score = round($identificationVerification['confidence'], 2);
             $updatedFields[] = ($request->identification_type === 'ID') ? 'ID Image' : 'Passport Image';
         }
         if ($request->hasFile('passport_photo')) {
@@ -4048,6 +4097,7 @@ class StudentController extends Controller
                     'requires_manual_review' => false,
                 ], 422);
             }
+
         } catch (\Exception $e) {
             Log::error('Passport photo verification failed', [
                 'error' => $e->getMessage(),
@@ -4059,6 +4109,48 @@ class StudentController extends Controller
                 'message' => 'Verification service temporarily unavailable. Please try again later.',
                 'requires_manual_review' => false,
             ], 500);
+        }
+    }
+
+    public function verifyIdentificationDocument(Request $request)
+    {
+        $request->validate([
+            'identification_type' => 'required|in:ID,Passport',
+            'id_number' => 'required|string|max:50',
+            'id_photo' => 'required|image|mimes:jpg,jpeg,png|max:200',
+        ]);
+
+        try {
+            $result = (new IdentificationDocumentVerificationService())->verify(
+                $request->file('id_photo'),
+                $request->identification_type,
+                $request->id_number
+            );
+
+            if (!$result['success']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => implode(' ', $result['issues']),
+                    'issues' => $result['issues'],
+                ], 422);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Identification document verified.',
+                'document_type' => $result['verification_result']['document_type'],
+                'confidence' => $result['confidence'],
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Identification document verification request failed', [
+                'error' => $e->getMessage(),
+                'student_id' => auth('student')->id(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Identification verification is temporarily unavailable. Please try again later.',
+            ], 503);
         }
     }
 

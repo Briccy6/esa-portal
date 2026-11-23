@@ -83,6 +83,7 @@ class RestrictIncompleteStudentProfileTest extends TestCase
             $student->setAttribute($field, 'provided');
         }
         $student->setAttribute('passport_photo_verification_status', 'approved');
+        $student->setAttribute('id_photo_verification_status', 'approved');
         Auth::guard('student')->setUser($student);
 
         [$response, $nextCalled] = $this->runMiddlewareFor('student.courses');

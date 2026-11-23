@@ -170,6 +170,7 @@ Route::middleware('auth:student')->prefix('student/assignments')->name('student.
     Route::get('/', [\App\Http\Controllers\Student\AssignmentController::class, 'index'])->name('index');
     Route::post('/{assignment}/submit', [\App\Http\Controllers\Student\AssignmentController::class, 'submit'])->name('submit');
     Route::get('/{assignment}/submission', [\App\Http\Controllers\Student\AssignmentController::class, 'downloadSubmission'])->name('submission.download');
+    Route::get('/{assignment}/pdf', [\App\Http\Controllers\Student\AssignmentController::class, 'viewAttachment'])->name('pdf');
 });
 
 Route::get('/', function () {
@@ -350,6 +351,7 @@ Route::middleware('auth:teacher')->prefix('teacher/assignments')->name('teacher.
     Route::put('/{assignment}/deadline', [\App\Http\Controllers\Teacher\AssignmentController::class, 'updateDeadline'])->name('deadline.update');
     Route::get('/{assignment}/configure', [\App\Http\Controllers\Teacher\AssignmentController::class, 'configure'])->name('configure');
     Route::put('/{assignment}/configure', [\App\Http\Controllers\Teacher\AssignmentController::class, 'updateConfiguration'])->name('configuration.update');
+    Route::get('/{assignment}/pdf', [\App\Http\Controllers\Teacher\AssignmentController::class, 'viewAttachment'])->name('pdf');
     Route::get('/{assignment}', [\App\Http\Controllers\Teacher\AssignmentController::class, 'show'])->name('show');
     Route::put('/{assignment}/marks', [\App\Http\Controllers\Teacher\AssignmentController::class, 'saveMarks'])->name('marks.save');
     Route::get('/{assignment}/submissions/{submission}/download', [\App\Http\Controllers\Teacher\AssignmentController::class, 'downloadSubmission'])->name('submission.download');
@@ -728,6 +730,7 @@ Route::middleware(['auth:student'])->group(function () {
     Route::get('/student/profile', [App\Http\Controllers\StudentController::class, 'profile'])->name('students.profile');
     Route::post('/student/profile', [App\Http\Controllers\StudentController::class, 'updateProfile'])->name('students.profile.update');
     Route::post('/student/profile/verify-passport-photo', [App\Http\Controllers\StudentController::class, 'verifyPassportPhoto'])->name('students.profile.verify-passport-photo');
+    Route::post('/student/profile/verify-identification-document', [App\Http\Controllers\StudentController::class, 'verifyIdentificationDocument'])->name('students.profile.verify-identification-document');
 });
 
 // Misc teacher routes

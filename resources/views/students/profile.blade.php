@@ -5,7 +5,9 @@
 @section('content')
 @php
     $missingProfileFields = $student->missingProfileFields();
-    $requiredProfileFieldCount = count(\App\Models\Student::requiredProfileFields());
+    $requiredProfileFieldCount = count(\App\Models\Student::requiredProfileFields())
+        + (filled($student->passport_photo) ? 1 : 0)
+        + (filled($student->id_photo) ? 1 : 0);
     $completedProfileFields = $requiredProfileFieldCount - count($missingProfileFields);
     $profileCompletionPercent = $requiredProfileFieldCount
         ? (int) round(($completedProfileFields / $requiredProfileFieldCount) * 100)
@@ -970,7 +972,7 @@
                                     class="form-select @error('identification_type') is-invalid @enderror">
                                 <option value="">Choose ID or passport</option>
                                 <option value="ID" {{ $selectedIdentificationType === 'ID' ? 'selected' : '' }}>National ID</option>
-                                <option value="Passport" {{ $selectedIdentificationType === 'Passport' ? 'selected' : '' }}>Passport</option>
+                                <option value="Passport" {{ $selectedIdentificationType === 'Passport' ? 'selected' : '' }}>Passport / Laissez-Passer</option>
                             </select>
                             <span class="profile-field-hint">Choose the type that matches the document image you upload below.</span>
                             @error('identification_type')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -980,7 +982,7 @@
                              id="idNumberDiv" @if(!in_array($selectedIdentificationType, ['ID', 'Passport'], true)) hidden @endif>
                             <label for="idNumberInput">
                                 <span id="idNumberLabel">
-                                {{ $selectedIdentificationType === 'Passport' ? 'Passport number' : 'National ID number' }}
+                                {{ $selectedIdentificationType === 'Passport' ? 'Passport / Laissez-Passer number' : 'National ID number' }}
                                 </span>
                                 <span class="profile-required-badge">Required to complete</span>
                             </label>
@@ -995,7 +997,7 @@
                              id="idPhotoDiv" @if(!in_array($selectedIdentificationType, ['ID', 'Passport'], true)) hidden @endif>
                             <label for="idPhotoInput">
                                 <span id="idPhotoLabel">
-                                {{ $selectedIdentificationType === 'Passport' ? 'Passport image' : 'National ID image' }}
+                                {{ $selectedIdentificationType === 'Passport' ? 'Passport / Laissez-Passer image' : 'National ID image' }}
                                 </span>
                                 <span class="profile-required-badge">Required to complete</span>
                             </label>
@@ -1020,11 +1022,33 @@
                                            data-error-target="idPhotoError"
                                            data-original-status="{{ $idPhotoSource ? 'Current document image is on file. Choose a new image to replace it.' : 'No document image uploaded yet.' }}"
                                            data-max-bytes="204800" data-preview-kind="image">
-                                    <span class="profile-field-hint">Clear, readable JPG, JPEG, or PNG, up to 200 KB.</span>
+                                    <span class="profile-field-hint" id="idPhotoHint">
+                                        {{ $selectedIdentificationType === 'Passport'
+                                            ? 'Upload the full Rwandan passport or Laissez-Passer bio-data page, including its MRZ. JPG, JPEG, or PNG, up to 200 KB.'
+                                            : 'Upload the front of the Rwandan National ID with all edges visible. JPG, JPEG, or PNG, up to 200 KB.' }}
+                                    </span>
                                     <p class="profile-upload-status" id="idPhotoName">
                                         {{ $idPhotoSource ? 'Current document image is on file. Choose a new image to replace it.' : 'No document image uploaded yet.' }}
                                     </p>
                                     <span class="profile-file-error" id="idPhotoError" role="alert"></span>
+                                    <div class="passport-verification-status" id="idPhotoVerificationStatus" style="display:none;" aria-live="polite">
+                                        <div id="idPhotoVerificationLoading" data-verification-loading style="display:none;">Checking your identification document with AI...</div>
+                                        <div id="idPhotoVerificationSuccess" data-verification-success style="display:none;">Document verified. Save your profile to complete this step.</div>
+                                        <div id="idPhotoVerificationError" data-verification-error style="display:none;">
+                                            <span id="idPhotoVerificationErrorMessage">The document was not approved.</span>
+                                        </div>
+                                    </div>
+                                    @if($student->id_photo)
+                                        @if($student->id_photo_verification_status === 'approved')
+                                            <div class="passport-verification-status">
+                                                <div data-verification-success>Identification document verified and approved.</div>
+                                            </div>
+                                        @else
+                                            <div class="passport-verification-status">
+                                                <div data-verification-error>Identification document not verified. Upload the document again for AI verification.</div>
+                                            </div>
+                                        @endif
+                                    @endif
                                     @error('id_photo')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                                 </div>
                             </div>
@@ -1338,6 +1362,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (input.id === 'passportPhotoInput') {
                         verifyPassportPhoto(input);
                     }
+                    if (input.id === 'idPhotoInput') {
+                        verifyIdentificationDocument();
+                    }
                 };
                 reader.onerror = function () {
                     input.value = '';
@@ -1422,13 +1449,85 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    let identificationVerificationRequest = 0;
+
+    function verifyIdentificationDocument() {
+        const requestId = ++identificationVerificationRequest;
+        const input = document.getElementById('idPhotoInput');
+        const file = input.files && input.files[0];
+        const status = document.getElementById('idPhotoVerificationStatus');
+        const loading = document.getElementById('idPhotoVerificationLoading');
+        const success = document.getElementById('idPhotoVerificationSuccess');
+        const error = document.getElementById('idPhotoVerificationError');
+        const errorMessage = document.getElementById('idPhotoVerificationErrorMessage');
+
+        if (!file) {
+            status.style.display = 'none';
+            return;
+        }
+
+        const type = document.getElementById('identificationTypeSelect').value;
+        const number = document.getElementById('idNumberInput').value.trim();
+        status.style.display = 'block';
+        loading.style.display = 'none';
+        success.style.display = 'none';
+        error.style.display = 'none';
+
+        if (!type || !number) {
+            errorMessage.textContent = 'Choose a document type and enter its number before verification.';
+            error.style.display = 'block';
+            return;
+        }
+
+        loading.style.display = 'block';
+
+        const formData = new FormData();
+        formData.append('identification_type', type);
+        formData.append('id_number', number);
+        formData.append('id_photo', file);
+
+        fetch('{{ route("students.profile.verify-identification-document") }}', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json',
+            },
+            body: formData,
+        })
+        .then(response => response.json().then(data => {
+            if (!response.ok) {
+                throw new Error(data.message || 'The identification document could not be verified.');
+            }
+            return data;
+        }))
+        .then(data => {
+            if (requestId !== identificationVerificationRequest) return;
+            loading.style.display = 'none';
+            if (data.success) {
+                success.style.display = 'block';
+            } else {
+                errorMessage.textContent = data.message || 'The identification document could not be verified.';
+                error.style.display = 'block';
+            }
+        })
+        .catch(verificationError => {
+            if (requestId !== identificationVerificationRequest) return;
+            loading.style.display = 'none';
+            errorMessage.textContent = verificationError.message || 'Identification verification is temporarily unavailable.';
+            error.style.display = 'block';
+        });
+    }
+
     function updateIdentificationFields() {
         const type = document.getElementById('identificationTypeSelect').value;
         const isSelected = type === 'ID' || type === 'Passport';
         document.getElementById('idNumberDiv').hidden = !isSelected;
         document.getElementById('idPhotoDiv').hidden = !isSelected;
-        document.getElementById('idNumberLabel').textContent = type === 'Passport' ? 'Passport number' : 'National ID number';
-        document.getElementById('idPhotoLabel').textContent = type === 'Passport' ? 'Passport image' : 'National ID image';
+        document.getElementById('idPhotoLabel').textContent = type === 'Passport' ? 'Passport / Laissez-Passer image' : 'National ID image';
+        document.getElementById('idNumberLabel').textContent = type === 'Passport' ? 'Passport / Laissez-Passer number' : 'National ID number';
+        document.getElementById('idPhotoHint').textContent = type === 'Passport'
+            ? 'Upload the full Rwandan passport or Laissez-Passer bio-data page, including its MRZ. JPG, JPEG, or PNG, up to 200 KB.'
+            : 'Upload the front of the Rwandan National ID with all edges visible. JPG, JPEG, or PNG, up to 200 KB.';
     }
 
     function updateEducationFields() {
@@ -1438,7 +1537,11 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('otherSupportingDocumentDiv').hidden = level !== 'Other';
     }
 
-    document.getElementById('identificationTypeSelect').addEventListener('change', updateIdentificationFields);
+    document.getElementById('identificationTypeSelect').addEventListener('change', function () {
+        updateIdentificationFields();
+        verifyIdentificationDocument();
+    });
+    document.getElementById('idNumberInput').addEventListener('change', verifyIdentificationDocument);
     document.getElementById('educationLevelSelect').addEventListener('change', updateEducationFields);
     updateIdentificationFields();
     updateEducationFields();

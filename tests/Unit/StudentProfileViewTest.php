@@ -28,6 +28,8 @@ class StudentProfileViewTest extends TestCase
             ->assertSee('Education details')
             ->assertSee('Account security')
             ->assertSee('data-preview-target="passportPhotoPreview"', false)
-            ->assertSee('data-preview-target="idPhotoPreview"', false);
+            ->assertSee('data-preview-target="idPhotoPreview"', false)
+            ->assertSee('verify-identification-document')
+            ->assertSee('Checking your identification document with AI...');
     }
 }

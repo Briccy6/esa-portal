@@ -45,6 +45,7 @@ class StudentProfileCompletionTest extends TestCase
             $student->setAttribute($field, 'provided');
         }
         $student->setAttribute('passport_photo_verification_status', 'approved');
+        $student->setAttribute('id_photo_verification_status', 'approved');
 
         $this->assertSame([], $student->missingProfileFields());
         $this->assertTrue($student->hasCompletedProfile());
@@ -67,8 +68,32 @@ class StudentProfileCompletionTest extends TestCase
             $student->setAttribute($field, 'provided');
         }
         $student->setAttribute('passport_photo_verification_status', 'pending');
+        $student->setAttribute('id_photo_verification_status', 'approved');
 
         $this->assertSame(['Verified profile photo'], $student->missingProfileFields());
+        $this->assertFalse($student->hasCompletedProfile());
+    }
+
+    public function test_it_marks_an_unverified_identification_document_as_incomplete(): void
+    {
+        $student = new Student();
+        foreach ([
+            'full_name',
+            'phone',
+            'email',
+            'sex',
+            'passport_photo',
+            'identification_type',
+            'id_number',
+            'id_photo',
+            'education_level',
+        ] as $field) {
+            $student->setAttribute($field, 'provided');
+        }
+        $student->setAttribute('passport_photo_verification_status', 'approved');
+        $student->setAttribute('id_photo_verification_status', 'pending');
+
+        $this->assertSame(['Verified identification document'], $student->missingProfileFields());
         $this->assertFalse($student->hasCompletedProfile());
     }
 
